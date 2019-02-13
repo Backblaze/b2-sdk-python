@@ -264,7 +264,7 @@ def make_b2_keep_days_actions(
 ):
     """
     Creates the actions to hide or delete existing versions of a file
-    stored in B2.
+    stored in b2_sdk.
 
     When keepDays is set, all files that were visible any time from
     keepDays ago until now must be kept.  If versions were uploaded 5

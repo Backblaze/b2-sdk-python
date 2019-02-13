@@ -21,7 +21,7 @@ from .utils import (BytesIoContextManager, hex_sha1_of_stream)
 @six.add_metaclass(ABCMeta)
 class AbstractUploadSource(object):
     """
-    The source of data for uploading to B2.
+    The source of data for uploading to b2_sdk.
     """
 
     @abstractmethod

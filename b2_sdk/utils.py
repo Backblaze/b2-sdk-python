@@ -31,21 +31,9 @@ except ImportError:
 _shutting_down = False
 
 
-def set_shutting_down():
-    global _shutting_down
-    _shutting_down = True
-
-
 def raise_if_shutting_down():
     if _shutting_down:
         raise KeyboardInterrupt()
-
-
-def current_time_millis():
-    """
-    File times are in integer milliseconds, to avoid roundoff errors.
-    """
-    return int(round(time.time() * 1000))
 
 
 def interruptible_get_result(future):

@@ -12,8 +12,8 @@ from abc import abstractmethod
 
 import six
 
-from b2.raw_api import ALL_CAPABILITIES
-from b2.utils import B2TraceMetaAbstract, limit_trace_arguments
+from b2_sdk.raw_api import ALL_CAPABILITIES
+from b2_sdk.utils import B2TraceMetaAbstract, limit_trace_arguments
 
 
 @six.add_metaclass(B2TraceMetaAbstract)
@@ -30,8 +30,8 @@ class AbstractAccountInfo(object):
     """
 
     REALM_URLS = {
-        'production': 'https://api.backblazeb2.com',
-        'dev': 'http://api.backblazeb2.xyz:8180',
+        'production': 'https://api.backblazeb2_sdk.com',
+        'dev': 'http://api.backblazeb2_sdk.xyz:8180',
         'staging': 'https://api.backblaze.net',
     }
 

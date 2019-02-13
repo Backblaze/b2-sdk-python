@@ -14,7 +14,7 @@ import six
 import sys
 
 from abc import ABCMeta, abstractmethod
-from b2.exception import CommandError
+from b2_sdk.exception import CommandError
 from .exception import EnvironmentEncodingError
 from .file import File, FileVersion
 from .scan_policies import DEFAULT_SCAN_MANAGER
@@ -225,7 +225,7 @@ class LocalFolder(AbstractFolder):
 
 class B2Folder(AbstractFolder):
     """
-    Folder interface to B2.
+    Folder interface to b2_sdk.
     """
 
     def __init__(self, bucket_name, folder_name, api):
