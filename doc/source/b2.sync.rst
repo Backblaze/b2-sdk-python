@@ -7,7 +7,7 @@ Submodules
 b2\.sync\.action module
 -----------------------
 
-.. automodule:: b2.sync.action
+.. automodule:: b2_sdk.sync.action
     :members:
     :undoc-members:
     :show-inheritance:
@@ -15,7 +15,7 @@ b2\.sync\.action module
 b2\.sync\.exception module
 --------------------------
 
-.. automodule:: b2.sync.exception
+.. automodule:: b2_sdk.sync.exception
     :members:
     :undoc-members:
     :show-inheritance:
@@ -23,7 +23,7 @@ b2\.sync\.exception module
 b2\.sync\.file module
 ---------------------
 
-.. automodule:: b2.sync.file
+.. automodule:: b2_sdk.sync.file
     :members:
     :undoc-members:
     :show-inheritance:
@@ -31,7 +31,7 @@ b2\.sync\.file module
 b2\.sync\.folder module
 -----------------------
 
-.. automodule:: b2.sync.folder
+.. automodule:: b2_sdk.sync.folder
     :members:
     :undoc-members:
     :show-inheritance:
@@ -39,7 +39,7 @@ b2\.sync\.folder module
 b2\.sync\.folder\_parser module
 -------------------------------
 
-.. automodule:: b2.sync.folder_parser
+.. automodule:: b2_sdk.sync.folder_parser
     :members:
     :undoc-members:
     :show-inheritance:
@@ -47,7 +47,7 @@ b2\.sync\.folder\_parser module
 b2\.sync\.policy module
 -----------------------
 
-.. automodule:: b2.sync.policy
+.. automodule:: b2_sdk.sync.policy
     :members:
     :undoc-members:
     :show-inheritance:
@@ -55,7 +55,7 @@ b2\.sync\.policy module
 b2\.sync\.policy\_manager module
 --------------------------------
 
-.. automodule:: b2.sync.policy_manager
+.. automodule:: b2_sdk.sync.policy_manager
     :members:
     :undoc-members:
     :show-inheritance:
@@ -63,7 +63,7 @@ b2\.sync\.policy\_manager module
 b2\.sync\.report module
 -----------------------
 
-.. automodule:: b2.sync.report
+.. automodule:: b2_sdk.sync.report
     :members:
     :undoc-members:
     :show-inheritance:
@@ -71,7 +71,7 @@ b2\.sync\.report module
 b2\.sync\.sync module
 ---------------------
 
-.. automodule:: b2.sync.sync
+.. automodule:: b2_sdk.sync.sync
     :members:
     :undoc-members:
     :show-inheritance:
@@ -80,7 +80,7 @@ b2\.sync\.sync module
 Module contents
 ---------------
 
-.. automodule:: b2.sync
+.. automodule:: b2_sdk.sync
     :members:
     :undoc-members:
     :show-inheritance:
