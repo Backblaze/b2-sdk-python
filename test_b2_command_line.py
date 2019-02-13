@@ -24,7 +24,7 @@ import tempfile
 import threading
 import unittest
 
-from b2.utils import fix_windows_path_limit
+from b2_sdk.utils import fix_windows_path_limit
 
 USAGE = """
 This program tests the B2 command-line client.
@@ -121,10 +121,10 @@ def run_command(path_to_script, args):
     # We'll run the b2 command-line by running the b2 module from
     # the current directory.  Python 2.6 doesn't support using
     # '-m' with a package, so we explicitly say to run the module
-    # b2.__main__
+    # b2_sdk.__main__
     os.environ['PYTHONPATH'] = '.'
     os.environ['PYTHONIOENCODING'] = 'utf-8'
-    command = ['python', '-m', 'b2.__main__']
+    command = ['python', '-m', 'b2_sdk.__main__']
     command.extend(args)
 
     print('Running:', ' '.join(command))

@@ -20,14 +20,14 @@ import tempfile
 import six
 
 from .test_base import TestBase
-from b2.account_info.abstract import AbstractAccountInfo
-from b2.account_info.upload_url_pool import UploadUrlPool
-from b2.account_info.exception import CorruptAccountInfo, MissingAccountData
-from b2.account_info import InMemoryAccountInfo
+from b2_sdk.account_info.abstract import AbstractAccountInfo
+from b2_sdk.account_info.upload_url_pool import UploadUrlPool
+from b2_sdk.account_info.exception import CorruptAccountInfo, MissingAccountData
+from b2_sdk.account_info import InMemoryAccountInfo
 
 if not platform.system().lower().startswith('java'):
     # in Jython 2.7.1b3 there is no sqlite3
-    from b2.account_info.sqlite_account_info import SqliteAccountInfo
+    from b2_sdk.account_info.sqlite_account_info import SqliteAccountInfo
 
 try:
     import unittest.mock as mock

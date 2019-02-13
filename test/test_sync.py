@@ -19,14 +19,14 @@ import unittest
 import six
 
 from .test_base import TestBase
-from b2.exception import CommandError, DestFileNewer
-from b2.file_version import FileVersionInfo
-from b2.sync.folder import AbstractFolder, B2Folder, LocalFolder
-from b2.sync.file import File, FileVersion
-from b2.sync.scan_policies import ScanPoliciesManager, DEFAULT_SCAN_MANAGER
-from b2.sync.sync import BoundedQueueExecutor, make_folder_sync_actions, zip_folders
-from b2.sync.folder_parser import parse_sync_folder
-from b2.utils import TempDir
+from b2_sdk.exception import CommandError, DestFileNewer
+from b2_sdk.file_version import FileVersionInfo
+from b2_sdk.sync.folder import AbstractFolder, B2Folder, LocalFolder
+from b2_sdk.sync.file import File, FileVersion
+from b2_sdk.sync.scan_policies import ScanPoliciesManager, DEFAULT_SCAN_MANAGER
+from b2_sdk.sync.sync import BoundedQueueExecutor, make_folder_sync_actions, zip_folders
+from b2_sdk.sync.folder_parser import parse_sync_folder
+from b2_sdk.utils import TempDir
 
 try:
     from unittest.mock import MagicMock

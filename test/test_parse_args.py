@@ -9,7 +9,7 @@
 ######################################################################
 
 from .test_base import TestBase
-from b2.parse_args import parse_arg_list
+from b2_sdk.parse_args import parse_arg_list
 
 
 class TestParseArgs(TestBase):

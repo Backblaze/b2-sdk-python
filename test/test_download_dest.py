@@ -12,9 +12,9 @@ import os
 
 import six
 
-from b2.download_dest import DownloadDestLocalFile, DownloadDestProgressWrapper, PreSeekedDownloadDest
-from b2.progress import ProgressListenerForTest
-from b2.utils import TempDir
+from b2_sdk.download_dest import DownloadDestLocalFile, DownloadDestProgressWrapper, PreSeekedDownloadDest
+from b2_sdk.progress import ProgressListenerForTest
+from b2_sdk.utils import TempDir
 from .test_base import TestBase
 
 
