@@ -16,7 +16,6 @@ import platform
 import re
 import shutil
 import tempfile
-import time
 
 from logfury.v0_1 import DefaultTraceAbstractMeta, DefaultTraceMeta, limit_trace_arguments, disable_trace, trace_call
 
