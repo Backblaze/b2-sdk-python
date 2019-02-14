@@ -225,7 +225,7 @@ class LocalFolder(AbstractFolder):
 
 class B2Folder(AbstractFolder):
     """
-    Folder interface to b2_sdk.
+    Folder interface to b2.
     """
 
     def __init__(self, bucket_name, folder_name, api):

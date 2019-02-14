@@ -126,7 +126,7 @@ class AbstractRawApi(object):
 
 class B2RawApi(AbstractRawApi):
     """
-    Provides access to the B2 web APIs, exactly as they are provided by b2_sdk.
+    Provides access to the B2 web APIs, exactly as they are provided by b2.
 
     Requires that you provide all necessary URLs and auth tokens for each call.
 
@@ -151,10 +151,10 @@ class B2RawApi(AbstractRawApi):
     def _post_json(self, base_url, api_name, auth, **params):
         """
         Helper method for calling an API with the given auth and params.
-        :param base_url: Something like "https://api001.backblazeb2_sdk.com/"
+        :param base_url: Something like "https://api001.backblazeb2.com/"
         :param auth: Passed in Authorization header.
         :param api_name: Example: "b2_create_bucket"
-        :param args: The rest of the parameters are passed to b2_sdk.
+        :param args: The rest of the parameters are passed to b2.
         :return:
         """
         url = '%s/b2api/%s/%s' % (base_url, API_VERSION, api_name)
@@ -473,7 +473,7 @@ class B2RawApi(AbstractRawApi):
         file_infos, data_stream
     ):
         """
-        Uploads one small file to b2_sdk.
+        Uploads one small file to b2.
 
         :param upload_url: The upload_url from b2_authorize_account
         :param upload_auth_token: The auth token from b2_authorize_account
@@ -554,7 +554,7 @@ def test_raw_api_helper(raw_api):
     if application_key is None:
         print('TEST_APPLICATION_KEY is not set.', file=sys.stderr)
         sys.exit(1)
-    realm_url = 'https://api.backblazeb2_sdk.com'
+    realm_url = 'https://api.backblazeb2.com'
 
     # b2_authorize_account
     print('b2_authorize_account')

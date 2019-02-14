@@ -138,7 +138,7 @@ class B2DownloadAction(AbstractAction):
             raise Exception('could not create directory %s' % (parent_dir,))
 
         # Download the file to a .tmp file
-        download_path = self.local_full_path + '.b2_sdk.sync.tmp'
+        download_path = self.local_full_path + '.b2.sync.tmp'
         download_dest = DownloadDestLocalFile(download_path)
         bucket.download_file_by_name(self.b2_file_name, download_dest, SyncFileReporter(reporter))
 
