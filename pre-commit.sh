@@ -98,7 +98,7 @@ fi
 
 header Pyflakes
 
-for d in b2 test *.py
+for d in b2_sdk test *.py
 do
     if pyflakes "$d"
     then
