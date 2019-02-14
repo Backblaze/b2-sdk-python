@@ -794,3 +794,7 @@ def _add_range_header(headers, range_):
         assert (range_[0] + 0) <= (range_[1] + 0), range_  # not strings
         assert range_[0] >= 0, range_
         headers['Range'] = "bytes=%d-%d" % range_
+
+
+if __name__ == '__main__':
+    test_raw_api()
