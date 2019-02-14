@@ -1,10 +1,10 @@
-b2\.account\_info package
+b2_sdk\.account\_info package
 =========================
 
 Submodules
 ----------
 
-b2\.account\_info\.abstract module
+b2_sdk\.account\_info\.abstract module
 ----------------------------------
 
 .. automodule:: b2_sdk.account_info.abstract
@@ -12,7 +12,7 @@ b2\.account\_info\.abstract module
     :undoc-members:
     :show-inheritance:
 
-b2\.account\_info\.exception module
+b2_sdk\.account\_info\.exception module
 -----------------------------------
 
 .. automodule:: b2_sdk.account_info.exception
@@ -20,7 +20,7 @@ b2\.account\_info\.exception module
     :undoc-members:
     :show-inheritance:
 
-b2\.account\_info\.in\_memory module
+b2_sdk\.account\_info\.in\_memory module
 ------------------------------------
 
 .. automodule:: b2_sdk.account_info.in_memory
@@ -28,7 +28,7 @@ b2\.account\_info\.in\_memory module
     :undoc-members:
     :show-inheritance:
 
-b2\.account\_info\.sqlite\_account\_info module
+b2_sdk\.account\_info\.sqlite\_account\_info module
 -----------------------------------------------
 
 .. automodule:: b2_sdk.account_info.sqlite_account_info
@@ -36,7 +36,7 @@ b2\.account\_info\.sqlite\_account\_info module
     :undoc-members:
     :show-inheritance:
 
-b2\.account\_info\.test\_upload\_url\_concurrency module
+b2_sdk\.account\_info\.test\_upload\_url\_concurrency module
 --------------------------------------------------------
 
 .. automodule:: b2_sdk.account_info.test_upload_url_concurrency
@@ -44,7 +44,7 @@ b2\.account\_info\.test\_upload\_url\_concurrency module
     :undoc-members:
     :show-inheritance:
 
-b2\.account\_info\.upload\_url\_pool module
+b2_sdk\.account\_info\.upload\_url\_pool module
 -------------------------------------------
 
 .. automodule:: b2_sdk.account_info.upload_url_pool

@@ -29,7 +29,7 @@
 
 import os
 import sys
-sys.path.insert(0, os.path.abspath('../b2'))
+sys.path.insert(0, os.path.abspath('../b2_sdk'))
 
 # -- General configuration ------------------------------------------------
 

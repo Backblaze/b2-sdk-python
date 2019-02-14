@@ -1,5 +1,5 @@
-b2 package
-==========
+b2_sdk package
+==============
 
 Subpackages
 -----------
@@ -12,144 +12,144 @@ Subpackages
 Submodules
 ----------
 
-b2\.api module
---------------
+b2_sdk\.api module
+------------------
 
 .. automodule:: b2_sdk.api
     :members:
     :undoc-members:
     :show-inheritance:
 
-b2\.b2http module
------------------
+b2_sdk\.b2http module
+---------------------
 
 .. automodule:: b2_sdk.b2http
     :members:
     :undoc-members:
     :show-inheritance:
 
-b2\.bucket module
------------------
+b2_sdk\.bucket module
+---------------------
 
 .. automodule:: b2_sdk.bucket
     :members:
     :undoc-members:
     :show-inheritance:
 
-b2\.cache module
-----------------
+b2_sdk\.cache module
+--------------------
 
 .. automodule:: b2_sdk.cache
     :members:
     :undoc-members:
     :show-inheritance:
 
-b2\.console\_tool module
-------------------------
+b2_sdk\.console\_tool module
+----------------------------
 
 .. automodule:: b2_sdk.console_tool
     :members:
     :undoc-members:
     :show-inheritance:
 
-b2\.download\_dest module
--------------------------
+b2_sdk\.download\_dest module
+-----------------------------
 
 .. automodule:: b2_sdk.download_dest
     :members:
     :undoc-members:
     :show-inheritance:
 
-b2\.exception module
---------------------
+b2_sdk\.exception module
+------------------------
 
 .. automodule:: b2_sdk.exception
     :members:
     :undoc-members:
     :show-inheritance:
 
-b2\.file\_version module
-------------------------
+b2_sdk\.file\_version module
+----------------------------
 
 .. automodule:: b2_sdk.file_version
     :members:
     :undoc-members:
     :show-inheritance:
 
-b2\.parse\_args module
-----------------------
+b2_sdk\.parse\_args module
+--------------------------
 
 .. automodule:: b2_sdk.parse_args
     :members:
     :undoc-members:
     :show-inheritance:
 
-b2\.part module
----------------
+b2_sdk\.part module
+-------------------
 
 .. automodule:: b2_sdk.part
     :members:
     :undoc-members:
     :show-inheritance:
 
-b2\.progress module
--------------------
+b2_sdk\.progress module
+-----------------------
 
 .. automodule:: b2_sdk.progress
     :members:
     :undoc-members:
     :show-inheritance:
 
-b2\.raw\_api module
--------------------
+b2_sdk\.raw\_api module
+-----------------------
 
 .. automodule:: b2_sdk.raw_api
     :members:
     :undoc-members:
     :show-inheritance:
 
-b2\.raw\_simulator module
--------------------------
+b2_sdk\.raw\_simulator module
+-----------------------------
 
 .. automodule:: b2_sdk.raw_simulator
     :members:
     :undoc-members:
     :show-inheritance:
 
-b2\.session module
-------------------
+b2_sdk\.session module
+----------------------
 
 .. automodule:: b2_sdk.session
     :members:
     :undoc-members:
     :show-inheritance:
 
-b2\.unfinished\_large\_file module
-----------------------------------
+b2_sdk\.unfinished\_large\_file module
+--------------------------------------
 
 .. automodule:: b2_sdk.unfinished_large_file
     :members:
     :undoc-members:
     :show-inheritance:
 
-b2\.upload\_source module
--------------------------
+b2_sdk\.upload\_source module
+-----------------------------
 
 .. automodule:: b2_sdk.upload_source
     :members:
     :undoc-members:
     :show-inheritance:
 
-b2\.utils module
-----------------
+b2_sdk\.utils module
+--------------------
 
 .. automodule:: b2_sdk.utils
     :members:
     :undoc-members:
     :show-inheritance:
 
-b2\.version module
-------------------
+b2_sdk\.version module
+----------------------
 
 .. automodule:: b2_sdk.version
     :members:
@@ -160,7 +160,7 @@ b2\.version module
 Module contents
 ---------------
 
-.. automodule:: b2
+.. automodule:: b2_sdk
     :members:
     :undoc-members:
     :show-inheritance:
