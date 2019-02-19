@@ -1,10 +1,10 @@
-# B2 Command Line Tool&nbsp;[![Travis CI](https://img.shields.io/travis/Backblaze/B2_Command_Line_Tool/master.svg?label=Travis%20CI)](https://travis-ci.org/Backblaze/B2_Command_Line_Tool)&nbsp;[![License](https://img.shields.io/pypi/l/b2.svg?label=License)](https://pypi.python.org/pypi/b2)&nbsp;[![python versions](https://img.shields.io/pypi/pyversions/b2.svg?label=python%20versions)](https://pypi.python.org/pypi/b2)&nbsp;[![PyPI version](https://img.shields.io/pypi/v/b2.svg?label=PyPI%20version)](https://pypi.python.org/pypi/b2)
+# B2 Command Line Tool&nbsp;[![Travis CI](https://img.shields.io/travis/Backblaze/b2-sdk-python/master.svg?label=Travis%20CI)](https://travis-ci.org/Backblaze/b2-sdk-python)&nbsp;[![License](https://img.shields.io/pypi/l/b2-sdk.svg?label=License)](https://pypi.python.org/pypi/b2)&nbsp;[![python versions](https://img.shields.io/pypi/pyversions/b2-sdk.svg?label=python%20versions)](https://pypi.python.org/pypi/b2-sdk)&nbsp;[![PyPI version](https://img.shields.io/pypi/v/b2-sdk.svg?label=PyPI%20version)](https://pypi.python.org/pypi/b2-sdk)
 
 The command-line tool that gives easy access to all of the capabilities of B2 Cloud Storage.
 
 This program provides command-line access to the B2 service.
 
-Version 1.3.9
+Version 1.0.0
 
 # Installation
 
@@ -20,98 +20,10 @@ this:
 
 # Release History
 
-## 1.3.8 (December 6, 2018)
+## 1.0.0 (February ????, 2019)
 
-New features:
+Initial official release of SDK as a separate package (until now it was a part of B2 CLI)
 
-* New `--excludeAllSymlinks` option for `sync`.
-* Faster downloading of large files using multiple threads and bigger buffers. 
-
-Bug fixes:
-
-* Fixed doc for cancel-all-unfinished-large-files
-
-## 1.3.6 (August 21, 2018)
-
-Bug fixes:
-
-* Fix auto-reauthorize for application keys.
-* Fix problem with bash auto-completion module.
-* Fix (hopefully) markdown display in PyPI.
-
-## 1.3.4 (August 10, 2018)
-
-Bug fixes:
-
-* Better documentation for authorize-account command.
-* Fix error reporting when using application keys
-* Fix auth issues with bucket-restricted application keys. 
-
-## 1.3.2 (July 28, 2018)
-
-Bug fixes:
-
-* Tests fixed for Python 3.7
-* Add documentation about what capabilites are required for different commands.
-* Better error messages for authorization problems with application keys.
-
-## 1.3.0 (July 20, 2018)
-
-New features:
-
-* Support for [application keys](https://www.backblaze.com/b2/docs/application_keys.html).
-* Support for Python 3.6
-* Drop support for Python 3.3 (`setuptools` no longer supports 3.3)
-
-Bug fixes:
-
-* Fix content type so markdown displays properly in PyPI
-* The testing package is called `test`, not `tests`
-
-Internal upgrades:
-
-* Faster and more complete integration tests
-
-## 1.2.0 (July 6, 2018)
-
-New features:
-
-* New `--recursive` option for ls
-* New `--showSize` option for get-bucket
-* New `--excludeDirRegex` option for sync
-
-And some bug fixes:
-
-* Include LICENSE file in the source tarball. Fixes #433
-* Test suite now runs as root (fixes #427)
-* Validate file names before trying to upload
-* Fix scaling problems when syncing large numbers of files
-* Prefix Windows paths during sync to handle long paths (fixes #265)
-* Check if file to be synced is still accessible before syncing (fixes #397)
-
-## 1.1.0 (November 30, 2017)
-
-Just one change in this release:
-
-* Add support for CORS rules in `create-bucket` and `update-bucket`.  `get-bucket` will display CORS rules.
-
-## 1.0.0 (November 9, 2017)
-
-This is the same code as 0.7.4, with one incompatible change:
-
-* Require `--allowEmptySource` to sync from empty directory, to help avoid accidental deletion of all files.
-
-## 0.7.4 (November 9, 2017)
-
-New features:
-
-* More efficient uploads by sending SHA1 checksum at the end.
-
-Includes a number of bug fixes:
-
-* File modification times are set correctly when downloading.
-* Fix an off-by-one issue when downloading a range of a file (affects library, but not CLI).
-* Better handling of some errors from the B2 service.
 
 # Developer Info
 
