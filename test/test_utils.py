@@ -11,7 +11,7 @@
 import six
 
 from .test_base import TestBase
-import b2.utils
+import b2_sdk.utils
 
 # These are from the B2 Docs (https://www.backblaze.com/b2/docs/string_encoding.html)
 ENCODING_TEST_CASES = [
@@ -234,7 +234,7 @@ class TestUrlEncoding(TestBase):
             string = test_case['string']
             fully_encoded = test_case['fullyEncoded']
             minimally_encoded = test_case['minimallyEncoded']
-            encoded = b2.utils.b2_url_encode(string)
+            encoded = b2_sdk.utils.b2_url_encode(string)
 
             expected_encoded = (minimally_encoded, fully_encoded)
             if encoded not in expected_encoded:
@@ -243,8 +243,8 @@ class TestUrlEncoding(TestBase):
                     (repr(string), encoded, expected_encoded)
                 )
             self.assertTrue(encoded in expected_encoded)
-            self.assertEqual(string, b2.utils.b2_url_decode(fully_encoded))
-            self.assertEqual(string, b2.utils.b2_url_decode(minimally_encoded))
+            self.assertEqual(string, b2_sdk.utils.b2_url_decode(fully_encoded))
+            self.assertEqual(string, b2_sdk.utils.b2_url_decode(minimally_encoded))
 
 
 class TestChooseParts(TestBase):
@@ -257,11 +257,11 @@ class TestChooseParts(TestBase):
         one_GB = 1000 * 1000 * 1000
 
         expected = [(i * one_GB, one_GB) for i in six.moves.range(10000)]
-        actual = b2.utils.choose_part_ranges(ten_TB, 100 * 1000 * 1000)
+        actual = b2_sdk.utils.choose_part_ranges(ten_TB, 100 * 1000 * 1000)
         self.assertEqual(expected, actual)
 
     def _check_one(self, expected, content_length, min_part_size):
-        self.assertEqual(expected, b2.utils.choose_part_ranges(content_length, min_part_size))
+        self.assertEqual(expected, b2_sdk.utils.choose_part_ranges(content_length, min_part_size))
 
 
 class TestFormatAndScaleNumber(TestBase):
@@ -272,7 +272,7 @@ class TestFormatAndScaleNumber(TestBase):
         self._check_one('999 kB', 999000)
 
     def _check_one(self, expected, x):
-        self.assertEqual(expected, b2.utils.format_and_scale_number(x, 'B'))
+        self.assertEqual(expected, b2_sdk.utils.format_and_scale_number(x, 'B'))
 
 
 class TestFormatAndScaleFraction(TestBase):
@@ -282,4 +282,6 @@ class TestFormatAndScaleFraction(TestBase):
         self._check_one('9.4 / 10.0 kB', 9400, 10000)
 
     def _check_one(self, expected, numerator, denominator):
-        self.assertEqual(expected, b2.utils.format_and_scale_fraction(numerator, denominator, 'B'))
+        self.assertEqual(
+            expected, b2_sdk.utils.format_and_scale_fraction(numerator, denominator, 'B')
+        )

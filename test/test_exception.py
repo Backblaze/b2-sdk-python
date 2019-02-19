@@ -8,7 +8,7 @@
 #
 ######################################################################
 
-from b2.exception import (
+from b2_sdk.exception import (
     AlreadyFailed,
     B2Error,
     BadJson,

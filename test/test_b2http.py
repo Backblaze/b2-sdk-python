@@ -15,9 +15,9 @@ import socket
 import sys
 
 from .test_base import TestBase
-from b2.b2http import _translate_and_retry, _translate_errors, B2Http, ClockSkewHook
-from b2.exception import BadDateFormat, BadJson, BrokenPipe, B2ConnectionError, ClockSkew, ConnectionReset, ServiceError, UnknownError, UnknownHost
-from b2.version import USER_AGENT
+from b2_sdk.b2http import _translate_and_retry, _translate_errors, B2Http, ClockSkewHook
+from b2_sdk.exception import BadDateFormat, BadJson, BrokenPipe, B2ConnectionError, ClockSkew, ConnectionReset, ServiceError, UnknownError, UnknownHost
+from b2_sdk.version import USER_AGENT
 
 if sys.version_info < (3, 3):
     from mock import call, MagicMock, patch

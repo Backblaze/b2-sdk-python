@@ -15,7 +15,7 @@ import six
 import time
 
 from .test_base import TestBase
-from b2.bounded_queue_executor import BoundedQueueExecutor
+from b2_sdk.bounded_queue_executor import BoundedQueueExecutor
 
 try:
     import concurrent.futures as futures

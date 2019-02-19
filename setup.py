@@ -52,18 +52,18 @@ with open('requirements-setup.txt', encoding='utf-8') as f:
     requirements_setup = f.read().splitlines()
 
 setup(
-    name='b2',
+    name='b2-sdk',
 
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
-    version='1.3.9',
-    description='Command Line Tool for Backblaze B2',
+    version='1.0.0',
+    description='Backblaze B2 SDK',
     long_description=long_description,
     long_description_content_type='text/markdown',
 
     # The project's main homepage.
-    url='https://github.com/Backblaze/B2_Command_Line_Tool',
+    url='https://github.com/Backblaze/b2-sdk-python',
 
     # Author details
     author='Backblaze, Inc.',
@@ -135,7 +135,9 @@ setup(
     # If there are data files included in your packages that need to be
     # installed, specify them here.  If using Python 2.6 or less, then these
     # have to be included in MANIFEST.in as well.
-    package_data={'b2': ['requirements.txt', 'requirements-test.txt', 'requirements-setup.txt']},
+    package_data={
+        'b2-sdk': ['requirements.txt', 'requirements-test.txt', 'requirements-setup.txt']
+    },
 
     # Although 'package_data' is the preferred approach, in some case you may
     # need to place data files outside of your packages. See:
@@ -144,11 +146,4 @@ setup(
     data_files=[
         #('my_data', ['data/data_file'])
     ],
-
-    # To provide executable scripts, use entry points in preference to the
-    # "scripts" keyword. Entry points provide cross-platform support and allow
-    # pip to create the appropriate form of executable for the target platform.
-    entry_points={
-        'console_scripts': ['b2=b2.console_tool:main',],
-    },
 )

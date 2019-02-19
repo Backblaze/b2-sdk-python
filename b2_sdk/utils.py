@@ -16,7 +16,6 @@ import platform
 import re
 import shutil
 import tempfile
-import time
 
 from logfury.v0_1 import DefaultTraceAbstractMeta, DefaultTraceMeta, limit_trace_arguments, disable_trace, trace_call
 
@@ -31,21 +30,9 @@ except ImportError:
 _shutting_down = False
 
 
-def set_shutting_down():
-    global _shutting_down
-    _shutting_down = True
-
-
 def raise_if_shutting_down():
     if _shutting_down:
         raise KeyboardInterrupt()
-
-
-def current_time_millis():
-    """
-    File times are in integer milliseconds, to avoid roundoff errors.
-    """
-    return int(round(time.time() * 1000))
 
 
 def interruptible_get_result(future):

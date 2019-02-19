@@ -98,7 +98,7 @@ fi
 
 header Pyflakes
 
-for d in b2 test *.py
+for d in b2_sdk test *.py
 do
     if pyflakes "$d"
     then
@@ -111,7 +111,7 @@ done
 
 header test_raw_api
 
-if TEST_ACCOUNT_ID="$(head -n 1 ~/.b2_auth)" TEST_APPLICATION_KEY="$(tail -n 1 ~/.b2_auth)" python -m b2.__main__ test_raw_api
+if TEST_ACCOUNT_ID="$(head -n 1 ~/.b2_auth)" TEST_APPLICATION_KEY="$(tail -n 1 ~/.b2_auth)" python -m b2_sdk.raw_api
 then
     echo "raw API test PASSED"
 else
@@ -125,34 +125,4 @@ then
     echo Skipping integration tests in quick mode.
     echo
     exit 0
-fi
-
-header Integration Tests
-
-function run_integration_tests
-{
-    if time python test_b2_command_line.py "$(head -n 1 ~/.b2_auth)" "$(tail -n 1 ~/.b2_auth)" $*
-    then
-        echo "integration tests passed"
-    else
-        echo
-        echo "integration tests FAILED"
-        exit 1
-    fi
-}
-
-# Check if the variable is set, without triggering an "unbound variable" warning
-# http://stackoverflow.com/a/16753536/95920
-if [[ -z "${PYTHON_VIRTUAL_ENVS:-}" ]]
-then
-    run_integration_tests $*
-else
-    for virtual_env in $PYTHON_VIRTUAL_ENVS
-    do
-        header "Integration tests in: $virtual_env"
-        set +u  # if PS1 is not set and -u is set, $virtual_env/bin/active crashes
-        source "$virtual_env/bin/activate"
-        set -u
-        run_integration_tests $*
-    done
 fi

@@ -126,7 +126,7 @@ class AbstractRawApi(object):
 
 class B2RawApi(AbstractRawApi):
     """
-    Provides access to the B2 web APIs, exactly as they are provided by B2.
+    Provides access to the B2 web APIs, exactly as they are provided by b2.
 
     Requires that you provide all necessary URLs and auth tokens for each call.
 
@@ -154,7 +154,7 @@ class B2RawApi(AbstractRawApi):
         :param base_url: Something like "https://api001.backblazeb2.com/"
         :param auth: Passed in Authorization header.
         :param api_name: Example: "b2_create_bucket"
-        :param args: The rest of the parameters are passed to B2.
+        :param args: The rest of the parameters are passed to b2.
         :return:
         """
         url = '%s/b2api/%s/%s' % (base_url, API_VERSION, api_name)
@@ -473,7 +473,7 @@ class B2RawApi(AbstractRawApi):
         file_infos, data_stream
     ):
         """
-        Uploads one small file to B2.
+        Uploads one small file to b2.
 
         :param upload_url: The upload_url from b2_authorize_account
         :param upload_auth_token: The auth token from b2_authorize_account
@@ -794,3 +794,7 @@ def _add_range_header(headers, range_):
         assert (range_[0] + 0) <= (range_[1] + 0), range_  # not strings
         assert range_[0] >= 0, range_
         headers['Range'] = "bytes=%d-%d" % range_
+
+
+if __name__ == '__main__':
+    test_raw_api()

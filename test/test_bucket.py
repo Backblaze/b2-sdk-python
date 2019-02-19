@@ -18,18 +18,18 @@ import six
 
 from .stub_account_info import StubAccountInfo
 from .test_base import TestBase
-from b2.api import B2Api
-from b2.bucket import LargeFileUploadState
-from b2.download_dest import DownloadDestBytes, PreSeekedDownloadDest
-from b2.exception import AlreadyFailed, B2Error, InvalidAuthToken, InvalidRange, InvalidUploadSource, MaxRetriesExceeded
-from b2.file_version import FileVersionInfo
-from b2.part import Part
-from b2.progress import AbstractProgressListener
-from b2.raw_simulator import RawSimulator
-from b2.transferer.parallel import ParallelDownloader
-from b2.transferer.simple import SimpleDownloader
-from b2.upload_source import UploadSourceBytes
-from b2.utils import hex_sha1_of_bytes, TempDir
+from b2_sdk.api import B2Api
+from b2_sdk.bucket import LargeFileUploadState
+from b2_sdk.download_dest import DownloadDestBytes, PreSeekedDownloadDest
+from b2_sdk.exception import AlreadyFailed, B2Error, InvalidAuthToken, InvalidRange, InvalidUploadSource, MaxRetriesExceeded
+from b2_sdk.file_version import FileVersionInfo
+from b2_sdk.part import Part
+from b2_sdk.progress import AbstractProgressListener
+from b2_sdk.raw_simulator import RawSimulator
+from b2_sdk.transferer.parallel import ParallelDownloader
+from b2_sdk.transferer.simple import SimpleDownloader
+from b2_sdk.upload_source import UploadSourceBytes
+from b2_sdk.utils import hex_sha1_of_bytes, TempDir
 
 try:
     import unittest.mock as mock

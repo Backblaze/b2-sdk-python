@@ -10,90 +10,13 @@ Version 1.3.9
 
 This tool can be installed with:
 
-    pip install b2
+    pip install b2-sdk
 
 If you see a message saying that the `six` library cannot be installed, which
 happens if you're installing with the system python on OS X El Capitan, try
 this:
 
-    pip install --ignore-installed b2
-
-# Usage
-
-    b2 authorize-account [<accountIdOrKeyId>] [<applicationKey>]
-    b2 cancel-all-unfinished-large-files <bucketName>
-    b2 cancel-large-file <fileId>
-    b2 clear-account
-    b2 create-bucket [--bucketInfo <json>] [--corsRules <json>] [--lifecycleRules <json>] <bucketName> [allPublic | allPrivate]
-    b2 create-key [--duration <validDurationSeconds>] [--bucket <bucketName>] [--namePrefix <namePrefix>] <keyName> <capabilities>
-    b2 delete-bucket <bucketName>
-    b2 delete-file-version [<fileName>] <fileId>
-    b2 delete-key <applicationKeyId>
-    b2 download-file-by-id [--noProgress] <fileId> <localFileName>
-    b2 download-file-by-name [--noProgress] <bucketName> <fileName> <localFileName>
-    b2 get-account-info
-    b2 get-bucket [--showSize] <bucketName>
-    b2 get-download-auth [--prefix <fileNamePrefix>] [--duration <durationInSeconds>] <bucketName>
-    b2 get-download-url-with-auth [--duration <durationInSeconds>] <bucketName> <fileName>
-    b2 get-file-info <fileId>
-    b2 help [commandName]
-    b2 hide-file <bucketName> <fileName>
-    b2 list-buckets
-    b2 list-file-names <bucketName> [<startFileName>] [<maxToShow>]
-    b2 list-file-versions <bucketName> [<startFileName>] [<startFileId>] [<maxToShow>]
-    b2 list-keys
-    b2 list-parts <largeFileId>
-    b2 list-unfinished-large-files <bucketName>
-    b2 ls [--long] [--versions] [--recursive] <bucketName> [<folderName>]
-    b2 make-url <fileId>
-    b2 sync [--delete] [--keepDays N] [--skipNewer] [--replaceNewer] \
-        [--compareVersions <option>] [--compareThreshold N] \
-        [--threads N] [--noProgress] [--dryRun ] [--allowEmptySource ] \
-        [--excludeRegex <regex> [--includeRegex <regex>]] \
-        [--excludeDirRegex <regex>] \
-        [--excludeAllSymlinks ] \
-        <source> <destination>
-    b2 update-bucket [--bucketInfo <json>] [--corsRules <json>] [--lifecycleRules <json>] <bucketName> [allPublic | allPrivate]
-    b2 upload-file [--sha1 <sha1sum>] [--contentType <contentType>] \
-        [--info <key>=<value>]* [--minPartSize N] \
-        [--noProgress] [--threads N] <bucketName> <localFilePath> <b2FileName>
-    b2 version
-
-The environment variable B2_ACCOUNT_INFO specifies the sqlite
-file to use for caching authentication information.
-The default file to use is: ~/.b2_account_info
-
-For more details on one command: b2 help <command>
-
-When authorizing with application keys, this tool requires that the key
-have the 'listBuckets' capability so that it can take the bucket names 
-you provide on the command line and translate them into bucket IDs for the 
-B2 Storage service.  Each different command may required additional 
-capabilities.  You can find the details for each command in the help for 
-that command.
-
-## Parallelism and the --threads parameter
-
-Users with high performance networks, or file sets with very small files, may benefit from
-increased parallelism. Experiment with using the --threads parameter with small values to
-determine if there are benefits.
-
-Note that using multiple threads will usually be detrimental to the other users on your network.
-
-# Contrib
-
-## bash completion
-
-You can find a [bash completion](https://www.gnu.org/software/bash/manual/html_node/Programmable-Completion.html#Programmable-Completion)
-script in the `contrib` directory. See [this](doc/bash_completion.md) for installation instructions.
-
-## detailed logs
-
-Verbose logs to stdout can be enabled with the `--verbose` flag.
-
-A hidden flag `--debugLogs` can be used to enable logging to a `b2_cli.log` file (with log rotation at midnight) in current working directory. Please take care to not launch the tool from the directory that you are syncing, or the logs will get synced to the remote server (unless that is really what you want to do).
-
-For advanced users, a hidden option `--logConfig <filename.ini>` can be used to enable logging in a user-defined format and verbosity. An example log configuration can be found [here](contrib/debug_logs.ini).
+    pip install --ignore-installed b2-sdk
 
 # Release History
 
