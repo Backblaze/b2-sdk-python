@@ -11,6 +11,7 @@ python:
   - 3.4
   - 3.5
   - 3.6
+  - 3.7
   - nightly
   # stock versions of pypy provided by Travis CI don't work with cryptography 1.0
   #- pypy
@@ -71,7 +72,7 @@ matrix:
     # test_raw_api takes too long to be run in every cell of the build matrix
     - python: 2.7
       env: MODE=TEST_RAW_API
-    - python: 3.6
+    - python: 3.7
       env: MODE=TEST_RAW_API
 
     # coverage
