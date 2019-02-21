@@ -296,7 +296,7 @@ script:
                 python setup.py install
             fi
         fi
-  # custom things specific to b2 CLI
+  # custom things specific to b2 SDK
   - if [ -n "$TEST_ACCOUNT_ID" -a "$MODE" == "TEST_RAW_API" ]; then python -m b2_sdk.__main__ test_raw_api; else echo skip; fi
 
 after_success:
