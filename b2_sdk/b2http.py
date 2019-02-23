@@ -169,7 +169,7 @@ class HttpCallback(object):
 
 
 class ClockSkewHook(HttpCallback):
-    def post_request(self, method, url, headers, http_response):
+    def post_request(self, method, url, headers, response):
         """
         Raises an exception if the clock in the server is too different from the
         clock on the local host.
@@ -177,7 +177,7 @@ class ClockSkewHook(HttpCallback):
         The Date header contains a string that looks like: "Fri, 16 Dec 2016 20:52:30 GMT".
         """
         # Make a string that uses month numbers instead of month names
-        server_date_str = http_response.headers['Date']
+        server_date_str = response.headers['Date']
 
         # Convert the server time to a datetime object
         try:

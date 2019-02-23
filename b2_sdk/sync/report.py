@@ -207,7 +207,8 @@ class SyncFileReporter(AbstractProgressListener):
     Listens to the progress for a single file and passes info on to a SyncReporter.
     """
 
-    def __init__(self, reporter):
+    def __init__(self, reporter, *args, **kwargs):
+        super(SyncFileReporter, self).__init__(*args, **kwargs)
         self.bytes_so_far = 0
         self.reporter = reporter
 
