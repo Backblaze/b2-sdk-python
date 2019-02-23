@@ -52,7 +52,7 @@ with open('requirements-setup.txt', encoding='utf-8') as f:
     requirements_setup = f.read().splitlines()
 
 setup(
-    name='b2-sdk',
+    name='b2_sdk',
 
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
