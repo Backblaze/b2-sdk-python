@@ -2,7 +2,7 @@
 #
 # File: b2/b2http.py
 #
-# Copyright 2018 Backblaze Inc. All Rights Reserved.
+# Copyright 2019 Backblaze Inc. All Rights Reserved.
 #
 # License https://www.backblaze.com/using_b2_code.html
 #
@@ -169,7 +169,7 @@ class HttpCallback(object):
 
 
 class ClockSkewHook(HttpCallback):
-    def post_request(self, method, url, headers, http_response):
+    def post_request(self, method, url, headers, response):
         """
         Raises an exception if the clock in the server is too different from the
         clock on the local host.
@@ -177,7 +177,7 @@ class ClockSkewHook(HttpCallback):
         The Date header contains a string that looks like: "Fri, 16 Dec 2016 20:52:30 GMT".
         """
         # Make a string that uses month numbers instead of month names
-        server_date_str = http_response.headers['Date']
+        server_date_str = response.headers['Date']
 
         # Convert the server time to a datetime object
         try:
@@ -371,8 +371,9 @@ def test_http():
 
     # Successful get
     print('TEST: get')
-    with b2_http.get_content('https://api.backblazeb2.com/test/echo_zeros?length=10',
-                             {}) as response:
+    with b2_http.get_content(
+        'https://api.backblazeb2.com/test/echo_zeros?length=10', {}
+    ) as response:
         assert response.status_code == 200
         response_data = six.b('').join(response.iter_content())
         assert response_data == six.b(chr(0) * 10)

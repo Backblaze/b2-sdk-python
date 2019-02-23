@@ -2,7 +2,7 @@
 #
 # File: b2/sync/report.py
 #
-# Copyright 2018 Backblaze Inc. All Rights Reserved.
+# Copyright 2019 Backblaze Inc. All Rights Reserved.
 #
 # License https://www.backblaze.com/using_b2_code.html
 #
@@ -207,7 +207,8 @@ class SyncFileReporter(AbstractProgressListener):
     Listens to the progress for a single file and passes info on to a SyncReporter.
     """
 
-    def __init__(self, reporter):
+    def __init__(self, reporter, *args, **kwargs):
+        super(SyncFileReporter, self).__init__(*args, **kwargs)
         self.bytes_so_far = 0
         self.reporter = reporter
 

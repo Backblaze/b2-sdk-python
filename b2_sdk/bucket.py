@@ -2,7 +2,7 @@
 #
 # File: b2/bucket.py
 #
-# Copyright 2018 Backblaze Inc. All Rights Reserved.
+# Copyright 2019 Backblaze Inc. All Rights Reserved.
 #
 # License https://www.backblaze.com/using_b2_code.html
 #
@@ -74,7 +74,8 @@ class PartProgressReporter(AbstractProgressListener):
     negative delta.
     """
 
-    def __init__(self, large_file_upload_state):
+    def __init__(self, large_file_upload_state, *args, **kwargs):
+        super(PartProgressReporter, self).__init__(*args, **kwargs)
         self.large_file_upload_state = large_file_upload_state
         self.prev_byte_count = 0
 

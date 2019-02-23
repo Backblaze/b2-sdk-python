@@ -11,7 +11,6 @@ python:
   - 3.4
   - 3.5
   - 3.6
-  - 3.7
   - nightly
   # stock versions of pypy provided by Travis CI don't work with cryptography 1.0
   #- pypy
@@ -31,12 +30,16 @@ matrix:
     - python: pypy3  # https://github.com/pyca/cryptography/issues/2880
     - python: nightly  # on 2018-02-14 it was found failing installation with ValueError: bad marshal data (unknown type code)
   include:
-    # Source Code Analysis is slow.  We just run it once on
-    # Python 2 and once on Python 3.
+    # Source Code Analysis is slow, so we run it just once on Python 2 and once on Python 3
     - python: 2.7
       env: MODE=SCA
     - python: 3.5
       env: MODE=SCA
+
+    # Enable 3.7 without globally enabling sudo and xenial for other build jobs
+    - python: 3.7
+      dist: xenial
+      sudo: true
 
     # Travis CI doesn't support OSX python builds officially,
     # but that won't stop us...
@@ -72,7 +75,7 @@ matrix:
     # test_raw_api takes too long to be run in every cell of the build matrix
     - python: 2.7
       env: MODE=TEST_RAW_API
-    - python: 3.7
+    - python: 3.6
       env: MODE=TEST_RAW_API
 
     # coverage
@@ -296,7 +299,7 @@ script:
                 python setup.py install
             fi
         fi
-  # custom things specific to b2 CLI
+  # custom things specific to b2 SDK
   - if [ -n "$TEST_ACCOUNT_ID" -a "$MODE" == "TEST_RAW_API" ]; then python -m b2_sdk.__main__ test_raw_api; else echo skip; fi
 
 after_success:
