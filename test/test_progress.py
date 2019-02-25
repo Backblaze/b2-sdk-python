@@ -8,8 +8,8 @@
 #
 ######################################################################
 
-from b2_sdk.progress import StreamWithHash
-from b2_sdk.utils import hex_sha1_of_bytes
+from b2sdk.progress import StreamWithHash
+from b2sdk.utils import hex_sha1_of_bytes
 import six
 from .test_base import TestBase
 

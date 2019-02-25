@@ -98,7 +98,7 @@ fi
 
 header Pyflakes
 
-for d in b2_sdk test *.py
+for d in b2sdk test *.py
 do
     if pyflakes "$d"
     then
@@ -111,7 +111,7 @@ done
 
 header test_raw_api
 
-if TEST_ACCOUNT_ID="$(head -n 1 ~/.b2_auth)" TEST_APPLICATION_KEY="$(tail -n 1 ~/.b2_auth)" python -m b2_sdk.raw_api
+if TEST_ACCOUNT_ID="$(head -n 1 ~/.b2_auth)" TEST_APPLICATION_KEY="$(tail -n 1 ~/.b2_auth)" python -m b2sdk.raw_api
 then
     echo "raw API test PASSED"
 else

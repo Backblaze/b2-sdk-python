@@ -8,9 +8,9 @@
 #
 ######################################################################
 
-from b2_sdk.exception import InvalidAuthToken, Unauthorized
-from b2_sdk.raw_api import ALL_CAPABILITIES
-from b2_sdk.session import B2Session
+from b2sdk.exception import InvalidAuthToken, Unauthorized
+from b2sdk.raw_api import ALL_CAPABILITIES
+from b2sdk.session import B2Session
 from .test_base import TestBase
 
 try:
