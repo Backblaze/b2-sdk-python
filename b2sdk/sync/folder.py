@@ -14,7 +14,7 @@ import six
 import sys
 
 from abc import ABCMeta, abstractmethod
-from b2_sdk.exception import CommandError
+from b2sdk.exception import CommandError
 from .exception import EnvironmentEncodingError
 from .file import File, FileVersion
 from .scan_policies import DEFAULT_SCAN_MANAGER

@@ -1,4 +1,4 @@
-b2_sdk package
+b2sdk package
 ==============
 
 Subpackages
@@ -6,152 +6,152 @@ Subpackages
 
 .. toctree::
 
-    b2_sdk.account_info
-    b2_sdk.sync
+    b2sdk.account_info
+    b2sdk.sync
 
 Submodules
 ----------
 
-b2_sdk\.api module
+b2sdk\.api module
 ------------------
 
-.. automodule:: b2_sdk.api
+.. automodule:: b2sdk.api
     :members:
     :undoc-members:
     :show-inheritance:
 
-b2_sdk\.b2http module
+b2sdk\.b2http module
 ---------------------
 
-.. automodule:: b2_sdk.b2http
+.. automodule:: b2sdk.b2http
     :members:
     :undoc-members:
     :show-inheritance:
 
-b2_sdk\.bucket module
+b2sdk\.bucket module
 ---------------------
 
-.. automodule:: b2_sdk.bucket
+.. automodule:: b2sdk.bucket
     :members:
     :undoc-members:
     :show-inheritance:
 
-b2_sdk\.cache module
+b2sdk\.cache module
 --------------------
 
-.. automodule:: b2_sdk.cache
+.. automodule:: b2sdk.cache
     :members:
     :undoc-members:
     :show-inheritance:
 
-b2_sdk\.console\_tool module
+b2sdk\.console\_tool module
 ----------------------------
 
-.. automodule:: b2_sdk.console_tool
+.. automodule:: b2sdk.console_tool
     :members:
     :undoc-members:
     :show-inheritance:
 
-b2_sdk\.download\_dest module
+b2sdk\.download\_dest module
 -----------------------------
 
-.. automodule:: b2_sdk.download_dest
+.. automodule:: b2sdk.download_dest
     :members:
     :undoc-members:
     :show-inheritance:
 
-b2_sdk\.exception module
+b2sdk\.exception module
 ------------------------
 
-.. automodule:: b2_sdk.exception
+.. automodule:: b2sdk.exception
     :members:
     :undoc-members:
     :show-inheritance:
 
-b2_sdk\.file\_version module
+b2sdk\.file\_version module
 ----------------------------
 
-.. automodule:: b2_sdk.file_version
+.. automodule:: b2sdk.file_version
     :members:
     :undoc-members:
     :show-inheritance:
 
-b2_sdk\.parse\_args module
+b2sdk\.parse\_args module
 --------------------------
 
-.. automodule:: b2_sdk.parse_args
+.. automodule:: b2sdk.parse_args
     :members:
     :undoc-members:
     :show-inheritance:
 
-b2_sdk\.part module
+b2sdk\.part module
 -------------------
 
-.. automodule:: b2_sdk.part
+.. automodule:: b2sdk.part
     :members:
     :undoc-members:
     :show-inheritance:
 
-b2_sdk\.progress module
+b2sdk\.progress module
 -----------------------
 
-.. automodule:: b2_sdk.progress
+.. automodule:: b2sdk.progress
     :members:
     :undoc-members:
     :show-inheritance:
 
-b2_sdk\.raw\_api module
+b2sdk\.raw\_api module
 -----------------------
 
-.. automodule:: b2_sdk.raw_api
+.. automodule:: b2sdk.raw_api
     :members:
     :undoc-members:
     :show-inheritance:
 
-b2_sdk\.raw\_simulator module
+b2sdk\.raw\_simulator module
 -----------------------------
 
-.. automodule:: b2_sdk.raw_simulator
+.. automodule:: b2sdk.raw_simulator
     :members:
     :undoc-members:
     :show-inheritance:
 
-b2_sdk\.session module
+b2sdk\.session module
 ----------------------
 
-.. automodule:: b2_sdk.session
+.. automodule:: b2sdk.session
     :members:
     :undoc-members:
     :show-inheritance:
 
-b2_sdk\.unfinished\_large\_file module
+b2sdk\.unfinished\_large\_file module
 --------------------------------------
 
-.. automodule:: b2_sdk.unfinished_large_file
+.. automodule:: b2sdk.unfinished_large_file
     :members:
     :undoc-members:
     :show-inheritance:
 
-b2_sdk\.upload\_source module
+b2sdk\.upload\_source module
 -----------------------------
 
-.. automodule:: b2_sdk.upload_source
+.. automodule:: b2sdk.upload_source
     :members:
     :undoc-members:
     :show-inheritance:
 
-b2_sdk\.utils module
+b2sdk\.utils module
 --------------------
 
-.. automodule:: b2_sdk.utils
+.. automodule:: b2sdk.utils
     :members:
     :undoc-members:
     :show-inheritance:
 
-b2_sdk\.version module
+b2sdk\.version module
 ----------------------
 
-.. automodule:: b2_sdk.version
+.. automodule:: b2sdk.version
     :members:
     :undoc-members:
     :show-inheritance:
@@ -160,7 +160,7 @@ b2_sdk\.version module
 Module contents
 ---------------
 
-.. automodule:: b2_sdk
+.. automodule:: b2sdk
     :members:
     :undoc-members:
     :show-inheritance:

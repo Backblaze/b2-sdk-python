@@ -52,7 +52,7 @@ with open('requirements-setup.txt', encoding='utf-8') as f:
     requirements_setup = f.read().splitlines()
 
 setup(
-    name='b2_sdk',
+    name='b2sdk',
 
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
@@ -135,9 +135,7 @@ setup(
     # If there are data files included in your packages that need to be
     # installed, specify them here.  If using Python 2.6 or less, then these
     # have to be included in MANIFEST.in as well.
-    package_data={
-        'b2-sdk': ['requirements.txt', 'requirements-test.txt', 'requirements-setup.txt']
-    },
+    package_data={'b2sdk': ['requirements.txt', 'requirements-test.txt', 'requirements-setup.txt']},
 
     # Although 'package_data' is the preferred approach, in some case you may
     # need to place data files outside of your packages. See:

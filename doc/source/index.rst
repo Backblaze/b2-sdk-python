@@ -10,7 +10,7 @@ Welcome to B2_Command_Line_Tool's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-   b2_sdk
+   b2sdk
 
 Indices and tables
 ==================

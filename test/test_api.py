@@ -9,11 +9,11 @@
 ######################################################################
 
 from .test_base import TestBase
-from b2_sdk.account_info import InMemoryAccountInfo
-from b2_sdk.api import B2Api
-from b2_sdk.cache import DummyCache
-from b2_sdk.exception import RestrictedBucket
-from b2_sdk.raw_simulator import RawSimulator
+from b2sdk.account_info import InMemoryAccountInfo
+from b2sdk.api import B2Api
+from b2sdk.cache import DummyCache
+from b2sdk.exception import RestrictedBucket
+from b2sdk.raw_simulator import RawSimulator
 
 
 class TestApi(TestBase):

@@ -1,6 +1,6 @@
 *.pyc
 .idea
-b2_sdk.egg-info
+b2sdk.egg-info
 build
 dist
 .eggs/

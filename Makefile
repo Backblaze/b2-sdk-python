@@ -19,6 +19,6 @@ format:	## Format code using yapf
 
 .PHONY: clean
 clean: ## Remove stuff you can regenerate
-	rm -rf b2_sdk.egg-info build TAGS
+	rm -rf b2sdk.egg-info build TAGS
 	find . -name __pycache__ | xargs rm -rf
 	find . -name \*~ -o -name \*.pyc | xargs rm -f

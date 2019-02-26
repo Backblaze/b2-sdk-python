@@ -1,4 +1,4 @@
-# B2 Command Line Tool&nbsp;[![Travis CI](https://img.shields.io/travis/Backblaze/b2-sdk-python/master.svg?label=Travis%20CI)](https://travis-ci.org/Backblaze/b2-sdk-python)&nbsp;[![License](https://img.shields.io/pypi/l/b2-sdk.svg?label=License)](https://pypi.python.org/pypi/b2)&nbsp;[![python versions](https://img.shields.io/pypi/pyversions/b2-sdk.svg?label=python%20versions)](https://pypi.python.org/pypi/b2-sdk)&nbsp;[![PyPI version](https://img.shields.io/pypi/v/b2-sdk.svg?label=PyPI%20version)](https://pypi.python.org/pypi/b2-sdk)
+# B2 Command Line Tool&nbsp;[![Travis CI](https://img.shields.io/travis/Backblaze/b2-sdk-python/master.svg?label=Travis%20CI)](https://travis-ci.org/Backblaze/b2-sdk-python)&nbsp;[![License](https://img.shields.io/pypi/l/b2sdk.svg?label=License)](https://pypi.python.org/pypi/b2)&nbsp;[![python versions](https://img.shields.io/pypi/pyversions/b2sdk.svg?label=python%20versions)](https://pypi.python.org/pypi/b2sdk)&nbsp;[![PyPI version](https://img.shields.io/pypi/v/b2sdk.svg?label=PyPI%20version)](https://pypi.python.org/pypi/b2sdk)
 
 The command-line tool that gives easy access to all of the capabilities of B2 Cloud Storage.
 
@@ -10,13 +10,13 @@ Version 1.0.0
 
 This tool can be installed with:
 
-    pip install b2-sdk
+    pip install b2sdk
 
 If you see a message saying that the `six` library cannot be installed, which
 happens if you're installing with the system python on OS X El Capitan, try
 this:
 
-    pip install --ignore-installed b2-sdk
+    pip install --ignore-installed b2sdk
 
 # Release History
 

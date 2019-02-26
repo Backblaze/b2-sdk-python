@@ -1,7 +1,7 @@
-b2_sdk
+b2sdk
 ======
 
 .. toctree::
    :maxdepth: 4
 
-   b2_sdk
+   b2sdk
