@@ -1,11 +1,8 @@
 b2sdk\.sync package
-====================
-
-Submodules
-----------
+===================
 
 b2sdk\.sync\.action module
----------------------------
+--------------------------
 
 .. automodule:: b2sdk.sync.action
     :members:
@@ -13,7 +10,7 @@ b2sdk\.sync\.action module
     :show-inheritance:
 
 b2sdk\.sync\.exception module
-------------------------------
+-----------------------------
 
 .. automodule:: b2sdk.sync.exception
     :members:
@@ -21,7 +18,7 @@ b2sdk\.sync\.exception module
     :show-inheritance:
 
 b2sdk\.sync\.file module
--------------------------
+------------------------
 
 .. automodule:: b2sdk.sync.file
     :members:
@@ -29,7 +26,7 @@ b2sdk\.sync\.file module
     :show-inheritance:
 
 b2sdk\.sync\.folder module
----------------------------
+--------------------------
 
 .. automodule:: b2sdk.sync.folder
     :members:
@@ -37,7 +34,7 @@ b2sdk\.sync\.folder module
     :show-inheritance:
 
 b2sdk\.sync\.folder\_parser module
------------------------------------
+----------------------------------
 
 .. automodule:: b2sdk.sync.folder_parser
     :members:
@@ -45,7 +42,7 @@ b2sdk\.sync\.folder\_parser module
     :show-inheritance:
 
 b2sdk\.sync\.policy module
----------------------------
+--------------------------
 
 .. automodule:: b2sdk.sync.policy
     :members:
@@ -53,7 +50,7 @@ b2sdk\.sync\.policy module
     :show-inheritance:
 
 b2sdk\.sync\.policy\_manager module
-------------------------------------
+-----------------------------------
 
 .. automodule:: b2sdk.sync.policy_manager
     :members:
@@ -61,15 +58,23 @@ b2sdk\.sync\.policy\_manager module
     :show-inheritance:
 
 b2sdk\.sync\.report module
----------------------------
+--------------------------
 
 .. automodule:: b2sdk.sync.report
     :members:
     :undoc-members:
     :show-inheritance:
 
+b2sdk\.sync\.scan\_policies
+---------------------------
+
+.. automodule:: b2sdk.sync.scan_policies
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 b2sdk\.sync\.sync module
--------------------------
+------------------------
 
 .. automodule:: b2sdk.sync.sync
     :members:

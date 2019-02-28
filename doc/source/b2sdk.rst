@@ -1,19 +1,8 @@
 b2sdk package
 ==============
 
-Subpackages
------------
-
-.. toctree::
-
-    b2sdk.account_info
-    b2sdk.sync
-
-Submodules
-----------
-
 b2sdk\.api module
-------------------
+-----------------
 
 .. automodule:: b2sdk.api
     :members:
@@ -21,15 +10,23 @@ b2sdk\.api module
     :show-inheritance:
 
 b2sdk\.b2http module
----------------------
+--------------------
 
 .. automodule:: b2sdk.b2http
     :members:
     :undoc-members:
     :show-inheritance:
 
+b2sdk\.bounded\_queue\_executor module
+--------------------------------------
+
+.. automodule:: b2sdk.bounded_queue_executor
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 b2sdk\.bucket module
----------------------
+--------------------
 
 .. automodule:: b2sdk.bucket
     :members:
@@ -37,23 +34,15 @@ b2sdk\.bucket module
     :show-inheritance:
 
 b2sdk\.cache module
---------------------
+-------------------
 
 .. automodule:: b2sdk.cache
     :members:
     :undoc-members:
     :show-inheritance:
 
-b2sdk\.console\_tool module
-----------------------------
-
-.. automodule:: b2sdk.console_tool
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 b2sdk\.download\_dest module
------------------------------
+----------------------------
 
 .. automodule:: b2sdk.download_dest
     :members:
@@ -61,7 +50,7 @@ b2sdk\.download\_dest module
     :show-inheritance:
 
 b2sdk\.exception module
-------------------------
+-----------------------
 
 .. automodule:: b2sdk.exception
     :members:
@@ -69,7 +58,7 @@ b2sdk\.exception module
     :show-inheritance:
 
 b2sdk\.file\_version module
-----------------------------
+---------------------------
 
 .. automodule:: b2sdk.file_version
     :members:
@@ -77,7 +66,7 @@ b2sdk\.file\_version module
     :show-inheritance:
 
 b2sdk\.parse\_args module
---------------------------
+-------------------------
 
 .. automodule:: b2sdk.parse_args
     :members:
@@ -85,7 +74,7 @@ b2sdk\.parse\_args module
     :show-inheritance:
 
 b2sdk\.part module
--------------------
+------------------
 
 .. automodule:: b2sdk.part
     :members:
@@ -93,7 +82,7 @@ b2sdk\.part module
     :show-inheritance:
 
 b2sdk\.progress module
------------------------
+----------------------
 
 .. automodule:: b2sdk.progress
     :members:
@@ -101,7 +90,7 @@ b2sdk\.progress module
     :show-inheritance:
 
 b2sdk\.raw\_api module
------------------------
+----------------------
 
 .. automodule:: b2sdk.raw_api
     :members:
@@ -109,7 +98,7 @@ b2sdk\.raw\_api module
     :show-inheritance:
 
 b2sdk\.raw\_simulator module
------------------------------
+----------------------------
 
 .. automodule:: b2sdk.raw_simulator
     :members:
@@ -117,7 +106,7 @@ b2sdk\.raw\_simulator module
     :show-inheritance:
 
 b2sdk\.session module
-----------------------
+---------------------
 
 .. automodule:: b2sdk.session
     :members:
@@ -125,7 +114,7 @@ b2sdk\.session module
     :show-inheritance:
 
 b2sdk\.unfinished\_large\_file module
---------------------------------------
+-------------------------------------
 
 .. automodule:: b2sdk.unfinished_large_file
     :members:
@@ -133,7 +122,7 @@ b2sdk\.unfinished\_large\_file module
     :show-inheritance:
 
 b2sdk\.upload\_source module
------------------------------
+----------------------------
 
 .. automodule:: b2sdk.upload_source
     :members:
@@ -141,7 +130,7 @@ b2sdk\.upload\_source module
     :show-inheritance:
 
 b2sdk\.utils module
---------------------
+-------------------
 
 .. automodule:: b2sdk.utils
     :members:
@@ -149,7 +138,7 @@ b2sdk\.utils module
     :show-inheritance:
 
 b2sdk\.version module
-----------------------
+---------------------
 
 .. automodule:: b2sdk.version
     :members:
