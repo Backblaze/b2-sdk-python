@@ -34,14 +34,15 @@ class File(object):
 class FileVersion(object):
     """
     Holds information about one version of a file:
-
-       id - The B2 file id, or the local full path name
-       mod_time - modification time, in milliseconds, to avoid rounding issues
-                  with millisecond times from B2
-       action - "hide" or "upload" (never "start")
     """
 
     def __init__(self, id_, file_name, mod_time, action, size):
+        """
+        :param id_: the B2 file id, or the local full path name
+        :param mod_time: modification time, in milliseconds, to avoid rounding issues 
+        with millisecond times from B2
+        :param action: "hide" or "upload" (never "start")
+        """
         self.id_ = id_
         self.name = file_name
         self.mod_time = mod_time

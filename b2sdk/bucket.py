@@ -646,16 +646,21 @@ class BucketFactory(object):
     @classmethod
     def from_api_bucket_dict(cls, api, bucket_dict):
         """
-            turns this:
-            {
-                "bucketType": "allPrivate",
-                "bucketId": "a4ba6a39d8b6b5fd561f0010",
-                "bucketName": "zsdfrtsazsdfafr",
-                "accountId": "4aa9865d6f00",
-                "bucketInfo": {},
-                "revision": 1
-            }
-            into a Bucket object
+        turns this:
+
+        .. code-block:: python
+
+           {
+               "bucketType": "allPrivate",
+               "bucketId": "a4ba6a39d8b6b5fd561f0010",
+               "bucketName": "zsdfrtsazsdfafr",
+               "accountId": "4aa9865d6f00",
+               "bucketInfo": {},
+               "revision": 1
+           }
+
+        into a Bucket object
+
         """
         bucket_name = bucket_dict['bucketName']
         bucket_id = bucket_dict['bucketId']

@@ -63,26 +63,35 @@ class FileVersionInfoFactory(object):
     @classmethod
     def from_api_response(cls, file_info_dict, force_action=None):
         """
-            turns this:
-            {
-              "action": "hide",
-              "fileId": "4_zBucketName_f103b7ca31313c69c_d20151230_m030117_c001_v0001015_t0000",
-              "fileName": "randomdata",
-              "size": 0,
-              "uploadTimestamp": 1451444477000
-            }
-            or this:
-            {
-              "accountId": "4aa9865d6f00",
-              "bucketId": "547a2a395826655d561f0010",
-              "contentLength": 1350,
-              "contentSha1": "753ca1c2d0f3e8748320b38f5da057767029a036",
-              "contentType": "application/octet-stream",
-              "fileId": "4_z547a2a395826655d561f0010_f106d4ca95f8b5b78_d20160104_m003906_c001_v0001013_t0005",
-              "fileInfo": {},
-              "fileName": "randomdata"
-            }
-            into a FileVersionInfo object
+        turns this:
+
+        .. code-block:: python
+
+           {
+               "action": "hide",
+               "fileId": "4_zBucketName_f103b7ca31313c69c_d20151230_m030117_c001_v0001015_t0000",
+               "fileName": "randomdata",
+               "size": 0,
+               "uploadTimestamp": 1451444477000
+           }
+
+        or this:
+
+        .. code-block:: python
+        
+           {
+               "accountId": "4aa9865d6f00",
+               "bucketId": "547a2a395826655d561f0010",
+               "contentLength": 1350,
+               "contentSha1": "753ca1c2d0f3e8748320b38f5da057767029a036",
+               "contentType": "application/octet-stream",
+               "fileId": "4_z547a2a395826655d561f0010_f106d4ca95f8b5b78_d20160104_m003906_c001_v0001013_t0005",
+               "fileInfo": {},
+               "fileName": "randomdata"
+           }
+
+        into a FileVersionInfo object
+
         """
         assert file_info_dict.get('action') is None or force_action is None, \
             'action was provided by both info_dict and function argument'

@@ -38,11 +38,14 @@ def check_for_duplicate_args(args_dict):
     This args_dict has a problem because 'required' and 'optional'
     both contain 'a':
 
+    .. code-block:: python
+
        {
-          'option_args': ['b', 'c'],
-          'required': ['a', 'd']
-          'optional': ['a', 'e']
+           'option_args': ['b', 'c'],
+           'required': ['a', 'd'],
+           'optional': ['a', 'e']
        }
+
     """
     categories = sorted(six.iterkeys(args_dict))
     for index_a, category_a in enumerate(categories):
