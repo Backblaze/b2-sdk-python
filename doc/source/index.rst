@@ -11,6 +11,9 @@ Welcome to B2_Command_Line_Tool's documentation!
    :caption: Contents:
 
    b2sdk
+   b2sdk.account_info
+   b2sdk.sync
+   b2sdk.transferer
 
 Indices and tables
 ==================
