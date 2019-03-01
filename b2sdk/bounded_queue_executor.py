@@ -13,7 +13,7 @@ import threading
 
 class BoundedQueueExecutor(object):
     """
-    Wraps a futures.Executor and limits the number of requests that
+    Wraps a concurrent.futures.Executor and limits the number of requests that
     can be queued at once.  Requests to submit() tasks block until
     there is room in the queue.
 
@@ -26,11 +26,25 @@ class BoundedQueueExecutor(object):
     """
 
     def __init__(self, executor, queue_limit):
+        """
+        :param executor: an executor to be wrapped
+        :type executor: concurrent.futures.Executor
+        :param queue_limit: a queue limit
+        :type queue_limit: int
+        """
         self.executor = executor
         self.semaphore = threading.Semaphore(queue_limit)
         self.num_exceptions = 0
 
     def submit(self, fcn, *args, **kwargs):
+        """
+        Start execution of a callable with the given optional and positional arguments
+
+        :param fcn: a callable object
+        :type fcn: callable
+        :return: a future object
+        :rtype: concurrent.futures.Future
+        """
         # Wait until there is room in the queue.
         self.semaphore.acquire()
 
@@ -49,7 +63,15 @@ class BoundedQueueExecutor(object):
         return self.executor.submit(run_it)
 
     def shutdown(self):
+        """
+        Shutdown an executor
+        """
         self.executor.shutdown()
 
     def get_num_exceptions(self):
+        """
+        Return a number of exceptions
+
+        :rtype: int
+        """
         return self.num_exceptions
