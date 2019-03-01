@@ -32,6 +32,9 @@ logger = logging.getLogger(__name__)
 def _print_exception(e, indent=''):
     """
     Used for debugging to print out nested exception structures.
+
+    :param indent: message prefix
+    :type indent: str
     """
     print(indent + 'EXCEPTION', repr(e))
     print(indent + 'CLASS', type(e))
@@ -45,6 +48,9 @@ def _translate_errors(fcn, post_params=None):
     """
     Calls the given function, turning any exception raised into the right
     kind of B2Error.
+
+    :param post_params: request parameters
+    :type post_params: dict
     """
     try:
         response = fcn()
@@ -103,6 +109,11 @@ def _translate_and_retry(fcn, try_count, post_params=None):
     """
     Try calling fcn try_count times, retrying only if
     the exception is a retryable B2Error.
+
+    :param try_count: a number of retries
+    :type try_count: int
+    :param post_params: request parameters
+    :type post_params: dict
     """
     # For all but the last try, catch the exception.
     wait_time = 1.0
@@ -147,9 +158,12 @@ class HttpCallback(object):
         Raises an exception if this request should not be processed.
         The exception raised must inherit from B2HttpCallbackPreRequestException.
 
-        :param method: One of: 'POST', 'GET', etc.
+        :param method: str, One of: 'POST', 'GET', etc.
+        :type method: str
         :param url: The URL that will be used.
+        :type url: str
         :param headers: The header sent with the request.
+        :type headers: dict
 
         """
 
@@ -161,10 +175,13 @@ class HttpCallback(object):
         Raises an exception if this request should be treated as failing.
         The exception raised must inherit from B2HttpCallbackPostRequestException.
 
-        :param method: One of: 'POST', 'GET', etc.
-        :param url: The URL that will be used.
-        :param headers: The header sent with the request.
-        :param response: A response object from the requests library.
+        :param method: one of: 'POST', 'GET', etc.
+        :type method: str
+        :param url: the URL that will be used.
+        :type url: str
+        :param headers: the header sent with the request.
+        :type headers: dict
+        :param response: a response object from the requests library.
         """
 
 
@@ -175,6 +192,14 @@ class ClockSkewHook(HttpCallback):
         clock on the local host.
 
         The Date header contains a string that looks like: "Fri, 16 Dec 2016 20:52:30 GMT".
+
+        :param method: one of: 'POST', 'GET', etc.
+        :type method: str
+        :param url: the URL that will be used.
+        :type url: str
+        :param headers: the header sent with the request.
+        :type headers: dict
+        :param response: a response object from the requests library.
         """
         # Make a string that uses month numbers instead of month names
         server_date_str = response.headers['Date']
@@ -216,11 +241,14 @@ class B2Http(object):
     The methods that return JSON either return a Python dict  or
     raise a subclass of B2Error.  They can be used like this:
 
-        try:
-            response_dict = b2_http.post_json_return_json(url, headers, params)
-            ...
-        except B2Error as e:
-            ...
+    .. code-block:: python
+
+       try:
+           response_dict = b2_http.post_json_return_json(url, headers, params)
+           ...
+       except B2Error as e:
+           ...
+
     """
 
     def __init__(self, requests_module=None, install_clock_skew_hook=True):
@@ -228,8 +256,9 @@ class B2Http(object):
         Initialize with a reference to the requests module, which makes
         it easy to mock for testing.
 
-        The optional after_request_hook is called on the Response
-        object after every request that doesn't throw an exception.
+        :param requests_module: a reference to requests module
+        :param install_clock_skew_hook: if True, install a clock skew hook
+        :type install_clock_skew_hook: bool
         """
         requests_to_use = requests_module or requests
         self.session = requests_to_use.Session()
@@ -240,6 +269,9 @@ class B2Http(object):
     def add_callback(self, callback):
         """
         Adds a callback that inherits from HttpCallback.
+
+        :param callback: a callback to be added to a chain
+        :type callback: callable
         """
         self.callbacks.append(callback)
 
@@ -247,16 +279,21 @@ class B2Http(object):
         """
         Use like this:
 
-            try:
-                response_dict = b2_http.post_content_return_json(url, headers, data)
-                ...
-            except B2Error as e:
-                ...
+        .. code-block:: python
+
+           try:
+               response_dict = b2_http.post_content_return_json(url, headers, data)
+               ...
+           except B2Error as e:
+               ...
 
         :param url: URL to call
-        :param headers: Headers to send.
+        :type url: str
+        :param headers: headers to send.
+        :type headers: dict
         :param data: bytes (Python 3) or str (Python 2), or a file-like object, to send
         :return: a dict that is the decoded JSON
+        :rtype: dict
         """
         # Make the headers we'll send by adding User-Agent to what
         # the caller provided.  Make a copy before modifying.
@@ -287,15 +324,20 @@ class B2Http(object):
         """
         Use like this:
 
-            try:
-                response_dict = b2_http.post_json_return_json(url, headers, params)
-                ...
-            except B2Error as e:
-                ...
+        .. code-block:: python
+
+           try:
+               response_dict = b2_http.post_json_return_json(url, headers, params)
+               ...
+           except B2Error as e:
+               ...
 
         :param url: URL to call
-        :param headers: Headers to send.
-        :param params: A dict that will be converted to JSON
+        :type url: str
+        :param headers: headers to send.
+        :type headers: dict
+        :param params: a dict that will be converted to JSON
+        :type params: dict
         :return: a dict that is the decoded JSON
         """
         data = six.BytesIO(six.b(json.dumps(params)))
@@ -307,19 +349,25 @@ class B2Http(object):
 
         Use like this:
 
-            try:
-                with b2_http.get_content(url, headers) as response:
-                    for byte_data in response.iter_content(chunk_size=1024):
-                        ...
-            except B2Error as e:
-                ...
+        .. code-block:: python
+            
+           try:
+               with b2_http.get_content(url, headers) as response:
+                   for byte_data in response.iter_content(chunk_size=1024):
+                       ...
+           except B2Error as e:
+               ...
 
         The response object is only guarantee to have:
             - headers
             - iter_content()
 
         :param url: URL to call
-        :param headers: Headers to send
+        :type url: str
+        :param headers: headers to send
+        :type headers: dict
+        :param try_count: a number or retries
+        :type try_count: int
         :return: Context manager that returns an object that supports iter_content()
         """
         # Make the headers we'll send by adding User-Agent to what
