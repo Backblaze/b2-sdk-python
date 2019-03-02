@@ -49,24 +49,37 @@ class AbstractFolder(object):
         If a file is found, but does not exist (for example due to
         a broken symlink or a race), reporter will be informed about
         each such problem.
+
+        :param reporter: a place to report errors
+        :param policies_manager: a policies manager object
         """
 
     @abstractmethod
     def folder_type(self):
         """
         Returns one of:  'b2', 'local'
+
+        :rtype: str
         """
 
     @abstractmethod
     def make_full_path(self, file_name):
         """
         Only for local folders, returns the full path to the file.
+
+        :param file_name: a file name
+        :type file_name: str
         """
 
 
 def join_b2_path(b2_dir, b2_name):
     """
     Like os.path.join, but for B2 file names where the root directory is called ''.
+
+    :param b2_dir: a directory path
+    :type b2_dir: str
+    :param b2_name: a file name
+    :type b2_name: str
     """
     if b2_dir == '':
         return b2_name
@@ -84,19 +97,37 @@ class LocalFolder(AbstractFolder):
         Initializes a new folder.
 
         :param root: Path to the root of the local folder.  Must be unicode.
+        :type root: str
         """
         if not isinstance(root, six.text_type):
             raise ValueError('folder path should be unicode: %s' % repr(root))
         self.root = fix_windows_path_limit(os.path.abspath(root))
 
     def folder_type(self):
+        """
+        Return folder type
+
+        :rtype: str
+        """
         return 'local'
 
     def all_files(self, reporter, policies_manager=DEFAULT_SCAN_MANAGER):
+        """
+        Yield all files
+
+        :param reporter: a place to report errors
+        :param policies_manager: a policy manager object, default is DEFAULT_SCAN_MANAGER
+        """
         for file_object in self._walk_relative_paths(self.root, '', reporter, policies_manager):
             yield file_object
 
     def make_full_path(self, file_name):
+        """
+        Convert a file name into an absolute path
+
+        :param file_name: a file name
+        :type file_name: str
+        """
         return os.path.join(self.root, file_name.replace('/', os.path.sep))
 
     def ensure_present(self):
@@ -229,12 +260,26 @@ class B2Folder(AbstractFolder):
     """
 
     def __init__(self, bucket_name, folder_name, api):
+        """
+        :param bucket_name: a name of the bucket
+        :type bucket_name: str
+        :param folder_name: a folder name
+        :type folder_name: str
+        :param api: an API object
+        :type api: b2sdk.api.B2Api
+        """
         self.bucket_name = bucket_name
         self.folder_name = folder_name
         self.bucket = api.get_bucket_by_name(bucket_name)
         self.prefix = '' if self.folder_name == '' else self.folder_name + '/'
 
     def all_files(self, reporter, policies_manager=DEFAULT_SCAN_MANAGER):
+        """
+        Yield all files
+
+        :param reporter: a place to report errors
+        :param policies_manager: a policies manager object, default is DEFAULT_SCAN_MANAGER
+        """
         current_name = None
         current_versions = []
         for (file_version_info, folder_name) in self.bucket.ls(
@@ -267,9 +312,20 @@ class B2Folder(AbstractFolder):
             yield File(current_name, current_versions)
 
     def folder_type(self):
+        """
+        Return folder type
+
+        :rtype: str
+        """
         return 'b2'
 
     def make_full_path(self, file_name):
+        """
+        Make an absolute path from a file name
+
+        :param file_name: a file name
+        :type file_name: str
+        """
         if self.folder_name == '':
             return file_name
         else:
