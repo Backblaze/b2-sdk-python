@@ -330,13 +330,7 @@ class Bucket(object):
         """
         return self.api.list_parts(file_id, start_part_number, batch_size)
 
-    def ls(
-        self,
-        folder_to_list='',
-        show_versions=False,
-        recursive=False,
-        fetch_count=None
-    ):
+    def ls(self, folder_to_list='', show_versions=False, recursive=False, fetch_count=None):
         """
         Pretends that folders exist, and yields the information about the files in a folder.
 
@@ -874,6 +868,7 @@ class BucketFactory(object):
     """
     This is a factory for creating bucket objects from another kind of objects
     """
+
     @classmethod
     def from_api_response(cls, api, response):
         """

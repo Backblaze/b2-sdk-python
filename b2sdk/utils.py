@@ -9,7 +9,6 @@
 ######################################################################
 
 from __future__ import division, print_function
-import time
 import hashlib
 import os
 import platform
@@ -25,7 +24,6 @@ try:
     import concurrent.futures as futures
 except ImportError:
     import futures
-
 
 # Global variable that says whether the app is shutting down
 _shutting_down = False
