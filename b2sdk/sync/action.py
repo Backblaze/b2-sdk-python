@@ -42,7 +42,7 @@ class AbstractAction(object):
         :param bucket: a Bucket object
         :type bucket: b2sdk.bucket.Bucket
         :param reporter: a SyncReport object
-        :type reporter: b2sdk.report.SyhncReport
+        :type reporter: b2sdk.sync.report.SyncReport
         :param dry_run: if True, perform a dry run
         :type dry_run: bool
         """
@@ -72,7 +72,7 @@ class AbstractAction(object):
         :param bucket: a Bucket object
         :type bucket: b2sdk.bucket.Bucket
         :param reporter: a SyncReport object
-        :type reporter: b2sdk.report.SyhncReport
+        :type reporter: b2sdk.sync.report.SyncReport
         """
 
     @abstractmethod
@@ -83,7 +83,7 @@ class AbstractAction(object):
         :param bucket: a Bucket object
         :type bucket: b2sdk.bucket.Bucket
         :param reporter: a SyncReport object
-        :type reporter: b2sdk.report.SyhncReport
+        :type reporter: b2sdk.sync.report.SyncReport
         """
 
 
@@ -126,7 +126,7 @@ class B2UploadAction(AbstractAction):
         :param bucket: a Bucket object
         :type bucket: b2sdk.bucket.Bucket
         :param reporter: a SyncReport object
-        :type reporter: b2sdk.report.SyhncReport
+        :type reporter: b2sdk.sync.report.SyncReport
         """
         bucket.upload(
             UploadSourceLocalFile(self.local_full_path),
@@ -142,7 +142,7 @@ class B2UploadAction(AbstractAction):
         :param bucket: a Bucket object
         :type bucket: b2sdk.bucket.Bucket
         :param reporter: a SyncReport object
-        :type reporter: b2sdk.report.SyhncReport
+        :type reporter: b2sdk.sync.report.SyncReport
         """
         reporter.print_completion('upload ' + self.relative_name)
 
@@ -179,7 +179,7 @@ class B2HideAction(AbstractAction):
         :param bucket: a Bucket object
         :type bucket: b2sdk.bucket.Bucket
         :param reporter: a SyncReport object
-        :type reporter: b2sdk.report.SyhncReport
+        :type reporter: b2sdk.sync.report.SyncReport
         """
         bucket.hide_file(self.b2_file_name)
 
@@ -190,7 +190,7 @@ class B2HideAction(AbstractAction):
         :param bucket: a Bucket object
         :type bucket: b2sdk.bucket.Bucket
         :param reporter: a SyncReport object
-        :type reporter: b2sdk.report.SyhncReport
+        :type reporter: b2sdk.sync.report.SyncReport
         """
         reporter.update_transfer(1, 0)
         reporter.print_completion('hide   ' + self.relative_name)
@@ -239,7 +239,7 @@ class B2DownloadAction(AbstractAction):
         :param bucket: a Bucket object
         :type bucket: b2sdk.bucket.Bucket
         :param reporter: a SyncReport object
-        :type reporter: b2sdk.report.SyhncReport
+        :type reporter: b2sdk.sync.report.SyncReport
         """
         # Make sure the directory exists
         parent_dir = os.path.dirname(self.local_full_path)
@@ -270,7 +270,7 @@ class B2DownloadAction(AbstractAction):
         :param bucket: a Bucket object
         :type bucket: b2sdk.bucket.Bucket
         :param reporter: a SyncReport object
-        :type reporter: b2sdk.report.SyhncReport
+        :type reporter: b2sdk.sync.report.SyncReport
         """
         reporter.print_completion('dnload ' + self.relative_name)
 
@@ -314,7 +314,7 @@ class B2DeleteAction(AbstractAction):
         :param bucket: a Bucket object
         :type bucket: b2sdk.bucket.Bucket
         :param reporter: a SyncReport object
-        :type reporter: b2sdk.report.SyhncReport
+        :type reporter: b2sdk.sync.report.SyncReport
         """
         bucket.api.delete_file_version(self.file_id, self.b2_file_name)
 
@@ -325,7 +325,7 @@ class B2DeleteAction(AbstractAction):
         :param bucket: a Bucket object
         :type bucket: b2sdk.bucket.Bucket
         :param reporter: a SyncReport object
-        :type reporter: b2sdk.report.SyhncReport
+        :type reporter: b2sdk.sync.report.SyncReport
         """
         reporter.update_transfer(1, 0)
         reporter.print_completion('delete ' + self.relative_name + ' ' + self.note)
@@ -362,7 +362,7 @@ class LocalDeleteAction(AbstractAction):
         :param bucket: a Bucket object
         :type bucket: b2sdk.bucket.Bucket
         :param reporter: a SyncReport object
-        :type reporter: b2sdk.report.SyhncReport
+        :type reporter: b2sdk.sync.report.SyncReport
         """
         os.unlink(self.full_path)
 
@@ -373,7 +373,7 @@ class LocalDeleteAction(AbstractAction):
         :param bucket: a Bucket object
         :type bucket: b2sdk.bucket.Bucket
         :param reporter: a SyncReport object
-        :type reporter: b2sdk.report.SyhncReport
+        :type reporter: b2sdk.sync.report.SyncReport
         """
         reporter.update_transfer(1, 0)
         reporter.print_completion('delete ' + self.relative_name)
