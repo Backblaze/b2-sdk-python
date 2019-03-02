@@ -12,7 +12,17 @@ from ..exception import B2Error
 
 
 class EnvironmentEncodingError(B2Error):
+    """
+    Raised when a file name can not be decoded with system encoding
+    """
+
     def __init__(self, filename, encoding):
+        """
+        :param filename: an encoded file name
+        :type filename: str, bytes
+        :param encoding: file name encoding
+        :type encoding: str
+        """
         super(EnvironmentEncodingError, self).__init__()
         self.filename = filename
         self.encoding = encoding
