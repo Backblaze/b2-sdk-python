@@ -21,10 +21,19 @@ class File(object):
     """
 
     def __init__(self, name, versions):
+        """
+        :param name: a relative file name
+        :type name: str
+        :param versions: a list of file versions
+        :type versions: list
+        """
         self.name = name
         self.versions = versions
 
     def latest_version(self):
+        """
+        Return the latest file version
+        """
         return self.versions[0]
 
     def __repr__(self):
@@ -39,9 +48,16 @@ class FileVersion(object):
     def __init__(self, id_, file_name, mod_time, action, size):
         """
         :param id_: the B2 file id, or the local full path name
+        :type id_: str
+        :param file_name: a relative file name
+        :type file_name: str
         :param mod_time: modification time, in milliseconds, to avoid rounding issues 
         with millisecond times from B2
+        :type mod_time: int
         :param action: "hide" or "upload" (never "start")
+        :type action: str
+        :param size: a file size
+        :type size: int
         """
         self.id_ = id_
         self.name = file_name
