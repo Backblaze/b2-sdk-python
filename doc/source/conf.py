@@ -10,7 +10,7 @@
 
 # -*- coding: utf-8 -*-
 #
-# B2_Command_Line_Tool documentation build configuration file, created by
+# B2 Python SDK documentation build configuration file, created by
 # sphinx-quickstart on Fri Oct 20 18:27:20 2017.
 #
 # This file is execfile()d with the current directory set to its
@@ -59,7 +59,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'B2_Command_Line_Tool'
+project = u'B2 Python SDK'
 copyright = u'2019, Backblaze'
 author = u'Backblaze'
 
@@ -127,7 +127,7 @@ html_sidebars = {
 # -- Options for HTMLHelp output ------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'B2_Command_Line_Tooldoc'
+htmlhelp_basename = 'B2_Python_SDKdoc'
 
 # -- Options for LaTeX output ---------------------------------------------
 
@@ -154,7 +154,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
     (
-        master_doc, 'B2_Command_Line_Tool.tex', u'B2\\_Command\\_Line\\_Tool Documentation',
+        master_doc, 'B2_Python_SDK.tex', u'B2\\_Python\\_SDK',
         u'Backblaze', 'manual'
     ),
 ]
@@ -164,7 +164,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'b2_command_line_tool', u'B2_Command_Line_Tool Documentation', [author], 1)
+    (master_doc, 'b2_python_sdk', u'B2 Python SDK Documentation', [author], 1)
 ]
 
 # -- Options for Texinfo output -------------------------------------------
@@ -174,8 +174,8 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
     (
-        master_doc, 'B2_Command_Line_Tool', u'B2_Command_Line_Tool Documentation', author,
-        'B2_Command_Line_Tool', 'One line description of project.', 'Miscellaneous'
+        master_doc, 'B2_Python_SDK', u'B2 Python SDK Documentation', author,
+        'B2_Python_SDK', 'Backblaze Python SDK', 'Miscellaneous'
     ),
 ]
 
