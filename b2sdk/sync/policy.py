@@ -31,14 +31,10 @@ class AbstractFileSyncPolicy(object):
 
     def __init__(self, source_file, source_folder, dest_file, dest_folder, now_millis, args):
         """
-        :param source_file: source file name
-        :type source_file: str
-        :param source_folder: source folder name
-        :type source_folder: str
-        :param dest_file: destination file name
-        :type dest_file: str
-        :param dest_folder: destination folder name
-        :type dest_folder: str
+        :param source_file: source file object
+        :param source_folder: source folder object
+        :param dest_file: destination file object
+        :param dest_folder: destination folder object
         :param now_millis: current time in milliseconds
         :type now_millis: int
         :param args: an object which holds command line arguments
@@ -73,10 +69,8 @@ class AbstractFileSyncPolicy(object):
         Compare two files and determine if the the destination file
         should be replaced by the source file.
 
-        :param source_file: source file name
-        :type source_file: str
-        :param dest_file: destination file name
-        :type dest_file: str
+        :param source_file: source file object
+        :param dest_file: destination file object
         :param args: an object which holds command line arguments
         :rtype: bool
         """
