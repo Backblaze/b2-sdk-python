@@ -32,9 +32,13 @@ class AbstractFileSyncPolicy(object):
     def __init__(self, source_file, source_folder, dest_file, dest_folder, now_millis, args):
         """
         :param source_file: source file object
+        :type source_file: b2sdk.sync.file.File
         :param source_folder: source folder object
+        :type source_folder: b2sdk.sync.folder.AbstractFolder
         :param dest_file: destination file object
+        :type dest_file: b2sdk.sync.file.File
         :param dest_folder: destination folder object
+        :type dest_folder: b2sdk.sync.folder.AbstractFolder
         :param now_millis: current time in milliseconds
         :type now_millis: int
         :param args: an object which holds command line arguments
@@ -70,7 +74,9 @@ class AbstractFileSyncPolicy(object):
         should be replaced by the source file.
 
         :param source_file: source file object
+        :type source_file: b2sdk.sync.file.File
         :param dest_file: destination file object
+        :type dest_file: b2sdk.sync.file.File
         :param args: an object which holds command line arguments
         :rtype: bool
         """
@@ -274,12 +280,12 @@ def make_b2_delete_actions(source_file, dest_file, dest_folder, transferred):
     """
     Creates the actions to delete files stored on B2, which are not present locally.
 
-    :param source_file: source file name
-    :type source_file: str
-    :param dest_file: destination file name
-    :type dest_file: str
+    :param source_file: source file object
+    :type source_file: b2sdk.sync.file.File
+    :param dest_file: destination file object
+    :type dest_file: b2sdk.sync.file.File
     :param dest_folder: destination folder
-    :type dest_folder: str
+    :type dest_folder: b2sdk.sync.folder.AbstractFolder
     :param transferred: if True, file has been transferred, 
                         False otherwise
     :type transferred: bool
@@ -312,12 +318,12 @@ def make_b2_keep_days_actions(
     only the 25-day old version can be deleted.  The 15 day-old version
     was visible 10 days ago.
 
-    :param source_file: source file name
-    :type source_file: str
-    :param dest_file: destination file name
-    :type dest_file: str
-    :param dest_folder: destination folder
-    :type dest_folder: str
+    :param source_file: source file object
+    :type source_file: b2sdk.sync.file.File
+    :param dest_file: destination file object
+    :type dest_file: b2sdk.sync.file.File
+    :param dest_folder: destination folder object
+    :type dest_folder: b2sdk.sync.folder.AbstractFolder
     :param transferred: if True, file has been transferred, 
                         False otherwise
     :type transferred: bool
