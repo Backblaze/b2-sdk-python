@@ -80,12 +80,3 @@ b2sdk\.sync\.sync module
     :members:
     :undoc-members:
     :show-inheritance:
-
-
-Module contents
----------------
-
-.. automodule:: b2sdk.sync
-    :members:
-    :undoc-members:
-    :show-inheritance:

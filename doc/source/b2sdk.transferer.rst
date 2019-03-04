@@ -48,12 +48,3 @@ b2sdk\.transferer\.transferer module
     :members:
     :undoc-members:
     :show-inheritance:
-
-
-Module contents
----------------
-
-.. automodule:: b2sdk.transferer
-    :members:
-    :undoc-members:
-    :show-inheritance:

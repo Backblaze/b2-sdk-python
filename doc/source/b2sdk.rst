@@ -144,12 +144,3 @@ b2sdk\.version module
     :members:
     :undoc-members:
     :show-inheritance:
-
-
-Module contents
----------------
-
-.. automodule:: b2sdk
-    :members:
-    :undoc-members:
-    :show-inheritance:

@@ -48,12 +48,3 @@ b2sdk\.account\_info\.upload\_url\_pool module
     :members:
     :undoc-members:
     :show-inheritance:
-
-
-Module contents
----------------
-
-.. automodule:: b2sdk.account_info
-    :members:
-    :undoc-members:
-    :show-inheritance:
