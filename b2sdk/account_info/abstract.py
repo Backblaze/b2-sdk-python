@@ -124,7 +124,11 @@ class AbstractAccountInfo(object):
 
     @abstractmethod
     def get_account_auth_token(self):
-        """ returns account_auth_token or raises MissingAccountData exception """
+        """ 
+        Returns account_auth_token or raises MissingAccountData exception
+
+        :rtype: str
+        """
 
     @abstractmethod
     def get_api_url(self):
