@@ -381,7 +381,7 @@ def repr_dict_deterministically(dict_):
 
 class B2TraceMeta(DefaultTraceMeta):
     """
-    Traces all public method calls, except for ones with names that begin with 'get_'
+    Traces all public method calls, except for ones with names that begin with `get_`
     """
     pass
 
