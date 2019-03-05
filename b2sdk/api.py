@@ -30,6 +30,14 @@ except ImportError:
 
 
 def url_for_api(info, api_name):
+    """
+    Return URL for an API endpoint
+
+    :param info: account info
+    :param api_name:
+    :type api_name: str
+    :rtype: str
+    """
     if api_name in ['b2_download_file_by_id']:
         base = info.get_download_url()
     else:
