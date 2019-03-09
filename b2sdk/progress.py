@@ -14,7 +14,6 @@ import sys
 import time
 import hashlib
 
-
 # tqdm doesn't work on 2.6 with at least some encodings
 # on sys.stderr.  See: https://github.com/Backblaze/B2_Command_Line_Tool/issues/272
 if sys.version_info < (2, 7):
