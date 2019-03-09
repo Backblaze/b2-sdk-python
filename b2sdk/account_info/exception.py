@@ -27,6 +27,7 @@ class CorruptAccountInfo(AccountInfoError):
     """
     Raised when an account info file is corrupted
     """
+
     def __init__(self, file_name):
         """
         :param file_name: an account info file name
@@ -45,6 +46,7 @@ class MissingAccountData(AccountInfoError):
     """
     Raised when there is no account info data available
     """
+
     def __init__(self, key):
         """
         :param key: a key for getting account data

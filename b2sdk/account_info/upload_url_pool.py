@@ -78,6 +78,7 @@ class UrlPoolAccountInfo(AbstractAccountInfo):
     This concrete implementation uses an instance of UploadUrlPool 
     as an underlying storage
     """
+
     def __init__(self):
         super(UrlPoolAccountInfo, self).__init__()
         self._reset_upload_pools()

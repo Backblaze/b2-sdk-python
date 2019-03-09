@@ -18,6 +18,7 @@ def _raise_missing_if_result_is_none(function):
     """
     Raise MissingAccountData if function's result is None
     """
+
     @wraps(function)
     def inner(*args, **kwargs):
         assert function.__name__.startswith('get_')
@@ -37,6 +38,7 @@ class InMemoryAccountInfo(UrlPoolAccountInfo):
     tool.  This includes: account id, application key, auth tokens,
     API URL, download URL, and uploads URLs.
     """
+
     def __init__(self, *args, **kwargs):
         super(InMemoryAccountInfo, self).__init__(*args, **kwargs)
         self._clear_in_memory_account_fields()

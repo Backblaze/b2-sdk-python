@@ -153,19 +153,14 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (
-        master_doc, 'B2_Python_SDK.tex', u'B2\\_Python\\_SDK',
-        u'Backblaze', 'manual'
-    ),
+    (master_doc, 'B2_Python_SDK.tex', u'B2\\_Python\\_SDK', u'Backblaze', 'manual'),
 ]
 
 # -- Options for manual page output ---------------------------------------
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [
-    (master_doc, 'b2_python_sdk', u'B2 Python SDK Documentation', [author], 1)
-]
+man_pages = [(master_doc, 'b2_python_sdk', u'B2 Python SDK Documentation', [author], 1)]
 
 # -- Options for Texinfo output -------------------------------------------
 
@@ -174,8 +169,8 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
     (
-        master_doc, 'B2_Python_SDK', u'B2 Python SDK Documentation', author,
-        'B2_Python_SDK', 'Backblaze Python SDK', 'Miscellaneous'
+        master_doc, 'B2_Python_SDK', u'B2 Python SDK Documentation', author, 'B2_Python_SDK',
+        'Backblaze Python SDK', 'Miscellaneous'
     ),
 ]
 
