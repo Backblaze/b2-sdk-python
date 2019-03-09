@@ -350,22 +350,6 @@ def camelcase_to_underscore(input_):
     return _CAMELCASE_TO_UNDERSCORE_RE.sub(r'_\1', input_).lower()
 
 
-def repr_dict_deterministically(dict_):
-    """
-    Represent a dictionary in a deterministic way, i.e. with
-    the same order of keys
-
-    :param dict_: a dictionary
-    :type dict_: dict
-    :return: a string representation of a dictionary
-    :rtype: str
-    """
-    # a simple version had a disadvantage of outputting dictionary keys in random order.
-    # It was hard to read. Therefore we sort items by key.
-    fields = ', '.join('%s: %s' % (repr(k), repr(v)) for k, v in sorted(six.iteritems(dict_)))
-    return '{%s}' % (fields,)
-
-
 class B2TraceMeta(DefaultTraceMeta):
     """
     Traces all public method calls, except for ones with names that begin with `get_`
