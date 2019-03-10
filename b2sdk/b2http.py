@@ -350,7 +350,7 @@ class B2Http(object):
         Use like this:
 
         .. code-block:: python
-            
+
            try:
                with b2_http.get_content(url, headers) as response:
                    for byte_data in response.iter_content(chunk_size=1024):

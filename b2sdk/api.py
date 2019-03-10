@@ -70,8 +70,8 @@ class B2Api(object):
         """
         Initializes the API using the given account info.
 
-        :param account_info: an instance of :class:`~b2sdk.account_info.upload_url_pool.UrlPoolAccountInfo`, 
-                             or any custom class derived from 
+        :param account_info: an instance of :class:`~b2sdk.account_info.upload_url_pool.UrlPoolAccountInfo`,
+                             or any custom class derived from
                              :class:`~b2sdk.account_info.abstract.AbstractAccountInfo`
         :param cache: an instance of the one of the following classes:
                       :class:`~b2sdk.cache.DummyCache`, :class:`~b2sdk.cache.InMemoryCache`,
@@ -121,7 +121,7 @@ class B2Api(object):
 
     def authorize_automatically(self):
         """
-        Perform automatic account authorization, retrieving all account data 
+        Perform automatic account authorization, retrieving all account data
         from account info object passed during initialization
         """
         try:

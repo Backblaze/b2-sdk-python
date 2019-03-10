@@ -126,7 +126,7 @@ class InMemoryAccountInfo(UrlPoolAccountInfo):
     @_raise_missing_if_result_is_none
     def get_account_id(self):
         """
-        Returns account_id or raises MissingAccountData exception 
+        Returns account_id or raises MissingAccountData exception
 
         :rtype: str
         """
@@ -135,7 +135,7 @@ class InMemoryAccountInfo(UrlPoolAccountInfo):
     @_raise_missing_if_result_is_none
     def get_account_id_or_app_key_id(self):
         """ 
-        Returns the account id or key id used to authenticate 
+        Returns the account id or key id used to authenticate
 
         :rtype: str
         """
@@ -153,7 +153,7 @@ class InMemoryAccountInfo(UrlPoolAccountInfo):
     @_raise_missing_if_result_is_none
     def get_api_url(self):
         """ 
-        Returns api_url or raises MissingAccountData exception 
+        Returns api_url or raises MissingAccountData exception
 
         :rtype: str
         """
@@ -162,7 +162,7 @@ class InMemoryAccountInfo(UrlPoolAccountInfo):
     @_raise_missing_if_result_is_none
     def get_application_key(self):
         """ 
-        Returns application_key or raises MissingAccountData exception 
+        Returns application_key or raises MissingAccountData exception
 
         :rtype: str
         """
@@ -171,7 +171,7 @@ class InMemoryAccountInfo(UrlPoolAccountInfo):
     @_raise_missing_if_result_is_none
     def get_download_url(self):
         """ 
-        Returns download_url or raises MissingAccountData exception 
+        Returns download_url or raises MissingAccountData exception
 
         :rtype: str
         """
@@ -189,8 +189,8 @@ class InMemoryAccountInfo(UrlPoolAccountInfo):
 
     @_raise_missing_if_result_is_none
     def get_realm(self):
-        """ 
-        Returns realm or raises MissingAccountData exception 
+        """
+        Returns realm or raises MissingAccountData exception
 
         :rtype: str
         """

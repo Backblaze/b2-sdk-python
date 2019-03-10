@@ -78,7 +78,7 @@ class FileVersionInfoFactory(object):
         or this:
 
         .. code-block:: python
-        
+
            {
                "accountId": "4aa9865d6f00",
                "bucketId": "547a2a395826655d561f0010",

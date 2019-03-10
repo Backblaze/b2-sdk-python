@@ -237,8 +237,8 @@ class Bucket(object):
         :type cors_rules: dict
         :param lifecycle_rules: lifecycle rules to store with a bucket
         :type lifecycle_rules: dict
-        :param if_revision_is: revision number, 
-                               update the info if revision equals to 
+        :param if_revision_is: revision number,
+                               update the info if revision equals to
                                if_revision_is' value
         :type if_revision_is: int
         """

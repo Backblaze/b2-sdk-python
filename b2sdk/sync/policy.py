@@ -324,7 +324,7 @@ def make_b2_keep_days_actions(
     :type dest_file: b2sdk.sync.file.File
     :param dest_folder: destination folder object
     :type dest_folder: b2sdk.sync.folder.AbstractFolder
-    :param transferred: if True, file has been transferred, 
+    :param transferred: if True, file has been transferred,
                         False otherwise
     :type transferred: bool
     :param keep_days: how many days to keep a file

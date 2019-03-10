@@ -14,7 +14,7 @@ from .policy import UpAndDeletePolicy, UpAndKeepDaysPolicy, UpPolicy
 
 class SyncPolicyManager(object):
     """
-    Policy manager, implements a logic to get a correct policy class 
+    Policy manager, implements a logic to get a correct policy class
     and create a policy object based on various parameters
     """
 

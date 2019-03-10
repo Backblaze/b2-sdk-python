@@ -59,7 +59,7 @@ class UploadUrlPool(object):
     def clear_for_key(self, key):
         """
         Remove an intem from the pool by key
-        
+
         :param key: bucket ID or large file ID
         :type param: str
         """
@@ -75,7 +75,7 @@ class UrlPoolAccountInfo(AbstractAccountInfo):
     tool.  This includes: account id, application key, auth tokens,
     API URL, download URL, and uploads URLs.
 
-    This concrete implementation uses an instance of UploadUrlPool 
+    This concrete implementation uses an instance of UploadUrlPool
     as an underlying storage
     """
 

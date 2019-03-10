@@ -51,7 +51,7 @@ class FileVersion(object):
         :type id_: str
         :param file_name: a relative file name
         :type file_name: str
-        :param mod_time: modification time, in milliseconds, to avoid rounding issues 
+        :param mod_time: modification time, in milliseconds, to avoid rounding issues
                          with millisecond times from B2
         :type mod_time: int
         :param action: "hide" or "upload" (never "start")

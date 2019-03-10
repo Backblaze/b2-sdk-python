@@ -343,7 +343,7 @@ class LocalDeleteAction(AbstractAction):
 
     def do_action(self, bucket, reporter):
         """
-        Performs the deleting of a local file action, 
+        Performs the deleting of a local file action,
         returning only after the action is completed.
 
         :param bucket: a Bucket object
