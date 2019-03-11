@@ -15,7 +15,7 @@ import time
 import six
 
 from ..progress import AbstractProgressListener
-from ..utils import format_and_scale_number, format_and_scale_fraction, raise_if_shutting_down
+from ..utils import format_and_scale_number, format_and_scale_fraction
 
 logger = logging.getLogger(__name__)
 
@@ -87,7 +87,6 @@ class SyncReport(object):
                 self._update_progress()
 
     def _update_progress(self):
-        raise_if_shutting_down()
         if not self.closed and not self.no_progress:
             now = time.time()
             interval = now - self._last_update_time

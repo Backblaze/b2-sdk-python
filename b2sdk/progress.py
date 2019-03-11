@@ -14,8 +14,6 @@ import sys
 import time
 import hashlib
 
-from .utils import raise_if_shutting_down
-
 # tqdm doesn't work on 2.6 with at least some encodings
 # on sys.stderr.  See: https://github.com/Backblaze/B2_Command_Line_Tool/issues/272
 if sys.version_info < (2, 7):
@@ -88,7 +86,6 @@ class TqdmProgressListener(AbstractProgressListener):
         super(TqdmProgressListener, self).__init__(*args, **kwargs)
 
     def set_total_bytes(self, total_byte_count):
-        raise_if_shutting_down()
         if self.tqdm is None:
             self.tqdm = tqdm(
                 desc=self.description,
@@ -103,7 +100,6 @@ class TqdmProgressListener(AbstractProgressListener):
         # tqdm doesn't support running the progress bar backwards,
         # so on an upload retry, it just won't move until it gets
         # past the point where it failed.
-        raise_if_shutting_down()
         if self.prev_value < byte_count:
             self.tqdm.update(byte_count - self.prev_value)
             self.prev_value = byte_count
@@ -123,11 +119,9 @@ class SimpleProgressListener(AbstractProgressListener):
         super(SimpleProgressListener, self).__init__(*args, **kwargs)
 
     def set_total_bytes(self, total_byte_count):
-        raise_if_shutting_down()
         self.total = total_byte_count
 
     def bytes_completed(self, byte_count):
-        raise_if_shutting_down()
         now = time.time()
         elapsed = now - self.last_time
         if 3 <= elapsed and self.total != 0:
@@ -138,7 +132,6 @@ class SimpleProgressListener(AbstractProgressListener):
             self.any_printed = True
 
     def close(self):
-        raise_if_shutting_down()
         if self.any_printed:
             print('    DONE.')
         super(SimpleProgressListener, self).close()
@@ -146,10 +139,10 @@ class SimpleProgressListener(AbstractProgressListener):
 
 class DoNothingProgressListener(AbstractProgressListener):
     def set_total_bytes(self, total_byte_count):
-        raise_if_shutting_down()
+        pass
 
     def bytes_completed(self, byte_count):
-        raise_if_shutting_down()
+        pass
 
     def close(self):
         super(DoNothingProgressListener, self).close()

@@ -16,7 +16,6 @@ import six
 
 from ..download_dest import DownloadDestLocalFile
 from ..upload_source import UploadSourceLocalFile
-from ..utils import raise_if_shutting_down
 from ..raw_api import SRC_LAST_MODIFIED_MILLIS
 from .report import SyncFileReporter
 
@@ -36,7 +35,6 @@ class AbstractAction(object):
     """
 
     def run(self, bucket, reporter, dry_run=False):
-        raise_if_shutting_down()
         try:
             if not dry_run:
                 self.do_action(bucket, reporter)

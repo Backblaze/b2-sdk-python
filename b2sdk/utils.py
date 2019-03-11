@@ -26,14 +26,6 @@ try:
 except ImportError:
     import futures
 
-# Global variable that says whether the app is shutting down
-_shutting_down = False
-
-
-def raise_if_shutting_down():
-    if _shutting_down:
-        raise KeyboardInterrupt()
-
 
 def interruptible_get_result(future):
     """
