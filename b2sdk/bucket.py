@@ -202,8 +202,8 @@ class Bucket(object):
 
         :param new_bucket_info: new bucket info dictionary
         :type new_bucket_info: dict
-        :param if_revision_is: revision number, 
-                               update the info if revision equals to 
+        :param if_revision_is: revision number,
+                               update the info if revision equals to
                                if_revision_is' value
         :type if_revision_is: int
         """

@@ -148,7 +148,7 @@ class AbstractAccountInfo(object):
 
     @abstractmethod
     def get_download_url(self):
-        """ 
+        """
         Returns download_url or raises MissingAccountData exception
 
         :rtype: str

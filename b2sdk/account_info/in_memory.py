@@ -170,7 +170,7 @@ class InMemoryAccountInfo(UrlPoolAccountInfo):
 
     @_raise_missing_if_result_is_none
     def get_download_url(self):
-        """ 
+        """
         Returns download_url or raises MissingAccountData exception
 
         :rtype: str

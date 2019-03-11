@@ -286,7 +286,7 @@ def make_b2_delete_actions(source_file, dest_file, dest_folder, transferred):
     :type dest_file: b2sdk.sync.file.File
     :param dest_folder: destination folder
     :type dest_folder: b2sdk.sync.folder.AbstractFolder
-    :param transferred: if True, file has been transferred, 
+    :param transferred: if True, file has been transferred,
                         False otherwise
     :type transferred: bool
     """
