@@ -1,14 +1,29 @@
-.. B2 Python SDK documentation master file, created by
-   sphinx-quickstart on Fri Oct 20 18:27:20 2017.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
+=========================================
 Welcome to B2 Python SDK's documentation!
 =========================================
 
+First steps
+===========
+
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+   :caption: First Steps
+   :hidden:
+
+   intro/install
+   intro/tutorial
+
+:doc:`intro/install`
+    Get B2 SDK installed on your computer
+
+:doc:`intro/tutorial`
+    A quick tutorial on how to get started with B2 SDK
+
+API Reference
+=============
+
+.. toctree::
+   :caption: API Reference
+   :hidden:
 
    b2sdk/api
    b2sdk/bucket
@@ -32,6 +47,50 @@ Welcome to B2 Python SDK's documentation!
    b2sdk/sync/policy
    b2sdk/sync/scan_policies
    b2sdk/sync/sync
+
+:doc:`b2sdk/api`
+
+:doc:`b2sdk/bucket`
+
+:doc:`b2sdk/cache`
+
+:doc:`b2sdk/download_dest`
+
+:doc:`b2sdk/exception`
+
+:doc:`b2sdk/file_version`
+
+:doc:`b2sdk/progress`
+
+:doc:`b2sdk/upload_source`
+
+:doc:`b2sdk/utils`
+
+:doc:`b2sdk/account_info/abstract`
+
+:doc:`b2sdk/account_info/exception`
+
+:doc:`b2sdk/account_info/sqlite_account_info`
+
+:doc:`b2sdk/account_info/upload_url_pool`
+
+:doc:`b2sdk/sync/action`
+
+:doc:`b2sdk/sync/exception`
+
+:doc:`b2sdk/sync/file`
+
+:doc:`b2sdk/sync/folder_parser`
+
+:doc:`b2sdk/sync/folder`
+
+:doc:`b2sdk/sync/policy_manager`
+
+:doc:`b2sdk/sync/policy`
+
+:doc:`b2sdk/sync/scan_policies`
+
+:doc:`b2sdk/sync/sync`
 
 Indices and tables
 ==================
