@@ -264,7 +264,7 @@ def make_b2_delete_note(version, index, transferred):
     :param version: an object which contains file version info
     :param index: file version index
     :type index: int
-    :param transferred: if True, file has been transferred, 
+    :param transferred: if True, file has been transferred,
                         False otherwise
     :type transferred: bool
     """

@@ -161,7 +161,7 @@ class InMemoryAccountInfo(UrlPoolAccountInfo):
 
     @_raise_missing_if_result_is_none
     def get_application_key(self):
-        """ 
+        """
         Returns application_key or raises MissingAccountData exception
 
         :rtype: str

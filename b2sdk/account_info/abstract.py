@@ -140,7 +140,7 @@ class AbstractAccountInfo(object):
 
     @abstractmethod
     def get_application_key(self):
-        """ 
+        """
         Returns application_key or raises MissingAccountData exception
 
         :rtype: str
