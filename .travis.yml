@@ -222,6 +222,10 @@ install:
   - pip install -r requirements.txt
   - pip install -r requirements-setup.txt
   - pip install -r requirements-test.txt
+  - |
+        if [ "$MODE" == 'doc' ]; then
+          pip install -r requirements-doc.txt
+        fi
 
   - |
         # coverage has additional requirements
@@ -299,6 +303,15 @@ script:
                 python setup.py install
             fi
         fi
+
+  # build docs
+  - |
+        # needs package to be installed already
+        if [ "$MODE" == 'doc' ]; then
+            cd doc
+            make html
+        fi
+
   # custom things specific to b2 SDK
   - if [ -n "$TEST_ACCOUNT_ID" -a "$MODE" == "TEST_RAW_API" ]; then python -m b2sdk.__main__ test_raw_api; else echo skip; fi
 
