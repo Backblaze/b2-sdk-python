@@ -2,7 +2,7 @@
 #
 
 # You can set these variables from the command line.
-SPHINXOPTS    =
+SPHINXOPTS    = -T -W --keep-going -E
 SPHINXBUILD   = python -msphinx
 SPHINXPROJ    = B2_Command_Line_Tool
 SOURCEDIR     = source
@@ -10,7 +10,7 @@ BUILDDIR      = build
 
 # Put it first so that "make" without argument is like "make help".
 help:
-	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)"
 
 .PHONY: help Makefile
 
