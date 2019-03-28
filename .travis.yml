@@ -312,6 +312,18 @@ script:
             make html
         fi
 
+  # check docs coverage
+  - |
+        # needs package to be installed already
+        if [ "$MODE" == 'doc' ]; then
+            cd doc
+            make coverage
+            cat build/coverage/python.txt
+            if [ "$(wc -l < build/coverage/python.txt)" != '3' ]; then
+                exit 1
+            fi
+        fi
+
   # custom things specific to b2 SDK
   - if [ -n "$TEST_ACCOUNT_ID" -a "$MODE" == "TEST_RAW_API" ]; then python -m b2sdk.__main__ test_raw_api; else echo skip; fi
 
