@@ -4,7 +4,7 @@
 # You can set these variables from the command line.
 SPHINXOPTS    = -T -W --keep-going -E
 SPHINXBUILD   = python -msphinx
-SPHINXPROJ    = B2_Command_Line_Tool
+SPHINXPROJ    = b2sdk
 SOURCEDIR     = source
 BUILDDIR      = build
 
