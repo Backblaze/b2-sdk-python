@@ -331,7 +331,7 @@ script:
             cd doc
             make coverage
             cd ..
-            if [ "$(wc -l < doc/build/coverage/python.txt)" != '3' ]; then
+            if [ "$(wc -l < doc/build/coverage/python.txt)" != '2' ]; then
                 cat doc/build/coverage/python.txt >&2
                 return 1
             fi

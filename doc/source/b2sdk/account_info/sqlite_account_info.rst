@@ -6,6 +6,5 @@
     :undoc-members:
     :show-inheritance:
     :special-members: __init__
-    :exclude-members: set_auth_data_with_schema_0_for_test
 
     .. graphviz:: /dot/sqlite_account_info_schema.dot
