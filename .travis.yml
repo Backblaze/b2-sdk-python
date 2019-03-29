@@ -82,6 +82,10 @@ matrix:
     - python: 3.5
       env: MODE=coverage
 
+    # doc
+    - python: 3.6
+      env: MODE=doc
+
 cache:
   - pip
   - directories:
@@ -97,6 +101,7 @@ cache:
     - $HOME/.virtualenvs/osx-python3
     #- /usr/local/Cellar/python  # see comment in the install script
     #- /usr/local/Cellar/python3
+    - $HOME/plantuml.jar
 before_install:
   - uname -a
   - if [[ "$TRAVIS_OS_NAME" != "osx" ]]; then lsb_release -a; fi
@@ -225,6 +230,10 @@ install:
   - |
         if [ "$MODE" == 'doc' ]; then
           pip install -r requirements-doc.txt
+
+          # install plantuml without sudo
+          travis_retry wget http://sourceforge.net/projects/plantuml/files/plantuml.1.2019.3.jar/downloadA -O ~/plantuml.jar
+          alias plantuml="java -jar ~/plantuml.jar"
         fi
 
   - |
