@@ -2,7 +2,7 @@
 #
 
 # You can set these variables from the command line.
-SPHINXOPTS    = -T -W --keep-going -E
+SPHINXOPTS    = -T -W --keep-going
 SPHINXBUILD   = python -msphinx
 SPHINXPROJ    = b2sdk
 SOURCEDIR     = source
