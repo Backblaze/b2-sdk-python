@@ -97,12 +97,12 @@ todo_include_todos = False
 # -- Options for HTML output ----------------------------------------------
 
 html_context = {
-  "display_github": True, # Add 'Edit on Github' link instead of 'View page source'
-  "github_user": "reef-technologies",  # TODO
-  "github_repo": project,
-  "github_version": "shipping_split_fixes",  # TODO
-  "conf_py_path": "/doc/source/",
-  "source_suffix": source_suffix,
+    "display_github": True, # Add 'Edit on Github' link instead of 'View page source'
+    "github_user": "reef-technologies",  # TODO
+    "github_repo": project,
+    "github_version": "shipping_split_fixes",  # TODO
+    "conf_py_path": "/doc/source/",
+    "source_suffix": source_suffix,
 }
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
