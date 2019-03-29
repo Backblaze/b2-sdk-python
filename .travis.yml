@@ -85,6 +85,7 @@ matrix:
     # doc
     - python: 3.6
       env: MODE=doc
+      sudo: true
 
 cache:
   - pip
@@ -229,6 +230,7 @@ install:
   - pip install -r requirements-test.txt
   - |
         if [ "$MODE" == 'doc' ]; then
+          sudo apt-get install graphviz
           pip install -r requirements-doc.txt
 
           # install plantuml without sudo
@@ -319,6 +321,7 @@ script:
         if [ "$MODE" == 'doc' ]; then
             cd doc
             make html
+            cd ..
         fi
 
   # check docs coverage
@@ -327,9 +330,10 @@ script:
         if [ "$MODE" == 'doc' ]; then
             cd doc
             make coverage
-            cat build/coverage/python.txt
-            if [ "$(wc -l < build/coverage/python.txt)" != '3' ]; then
-                exit 1
+            cd ..
+            if [ "$(wc -l < doc/build/coverage/python.txt)" != '3' ]; then
+                cat doc/build/coverage/python.txt >&2
+                return 1
             fi
         fi
 
