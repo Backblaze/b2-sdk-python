@@ -1,5 +1,15 @@
-import tempfile
+######################################################################
+#
+# File: sqlite_account_info_schema.py
+#
+# Copyright 2019 Backblaze Inc. All Rights Reserved.
+#
+# License https://www.backblaze.com/using_b2_code.html
+#
+######################################################################
+""" generates a dot file with SqliteAccountInfo database structure """
 
+import tempfile
 import operator
 
 from sadisplay import describe, render
@@ -20,8 +30,7 @@ def main():
 
         tables = set(meta.tables.keys())
 
-        desc = describe(
-            map(lambda x: operator.getitem(meta.tables, x), sorted(tables)))
+        desc = describe(map(lambda x: operator.getitem(meta.tables, x), sorted(tables)))
         print(getattr(render, 'dot')(desc).encode('utf-8'))
 
 

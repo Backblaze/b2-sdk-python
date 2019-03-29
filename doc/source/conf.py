@@ -49,6 +49,9 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinx.ext.coverage',
     'sphinx.ext.graphviz',
+    'sphinx.ext.autosummary',
+    #'sphinxcontrib.fulltoc',  # 2019-03-29: unfortunately this doesn't work with sphinx_rtd_theme
+    'sphinxcontrib.plantuml',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
