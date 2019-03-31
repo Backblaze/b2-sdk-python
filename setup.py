@@ -51,6 +51,9 @@ with open('requirements-test.txt', encoding='utf-8') as f:
 with open('requirements-setup.txt', encoding='utf-8') as f:
     requirements_setup = f.read().splitlines()
 
+with open('requirements-doc.txt', encoding='utf-8') as f:
+    requirements_doc = f.read().splitlines()
+
 version = __import__('b2sdk.version').version.VERSION
 
 setup(
@@ -130,8 +133,7 @@ setup(
     # for example:
     # $ pip install -e .[dev,test]
     extras_require={
-        'dev': [],
-        'test': [],
+        'doc': requirements_doc,
     },
 
     # If there are data files included in your packages that need to be
