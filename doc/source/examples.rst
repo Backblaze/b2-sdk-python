@@ -1,5 +1,5 @@
 ========
-Tutorial
+Examples
 ========
 
 Account authorization
@@ -72,3 +72,4 @@ Account information
 ===================
 
 TODO
+
