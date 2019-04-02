@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: b2/account_info/upload_url_pool.py
+# File: b2sdk/account_info/upload_url_pool.py
 #
 # Copyright 2019 Backblaze Inc. All Rights Reserved.
 #

@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: sqlite_account_info_schema.py
+# File: doc/sqlite_account_info_schema.py
 #
 # Copyright 2019 Backblaze Inc. All Rights Reserved.
 #

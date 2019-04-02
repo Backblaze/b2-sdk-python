@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: b2/transferer/simple.py
+# File: b2sdk/transferer/simple.py
 #
 # Copyright 2019 Backblaze Inc. All Rights Reserved.
 #

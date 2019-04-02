@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: b2/session.py
+# File: b2sdk/session.py
 #
 # Copyright 2019 Backblaze Inc. All Rights Reserved.
 #

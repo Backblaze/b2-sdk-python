@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: b2/sync/exception.py
+# File: b2sdk/sync/exception.py
 #
 # Copyright 2019 Backblaze Inc. All Rights Reserved.
 #

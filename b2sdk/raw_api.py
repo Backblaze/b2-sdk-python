@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: b2/raw_api.py
+# File: b2sdk/raw_api.py
 #
 # Copyright 2019 Backblaze Inc. All Rights Reserved.
 #

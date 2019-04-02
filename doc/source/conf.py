@@ -11,7 +11,7 @@
 # -*- coding: utf-8 -*-
 #
 # B2 Python SDK documentation build configuration file, created by
-# sphinx-quickstart on Fri Oct 20 18:27:20 2017.
+# sphinx-quickstart on Fri Oct 20 18:2doc/source/conf.py
 #
 # This file is execfile()d with the current directory set to its
 # containing dir.

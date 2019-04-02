@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: b2/bounded_queue_executor.py
+# File: b2sdk/bounded_queue_executor.py
 #
 # Copyright 2019 Backblaze Inc. All Rights Reserved.
 #

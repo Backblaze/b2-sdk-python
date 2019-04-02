@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: utils.py
+# File: b2sdk/utils.py
 #
 # Copyright 2019 Backblaze Inc. All Rights Reserved.
 #

@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: b2/file_version.py
+# File: b2sdk/file_version.py
 #
 # Copyright 2019 Backblaze Inc. All Rights Reserved.
 #
