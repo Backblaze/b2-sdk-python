@@ -88,13 +88,34 @@ missing="$(
     (
         grep -l 'All Rights Reserved' $(git ls-files | grep .py)
         git ls-files | grep .py
-    ) | sort | uniq -c | sort -n | awk '$1 == 1 && $2 !~ ".*/__init__.py"'
+    ) | sort | uniq -c | sort -n | awk '$1 == 1'
 )"
 if [ -n "$missing" ]; then
     echo 'license is missing from:' >&2
     echo "$missing" >&2
     exit 1
 fi
+
+failing=0
+for file in $(git ls-files | grep .py)
+do
+    if [ ! -f "$file" ]; then
+        echo "file with a newline in the name or space or something? \"$file\""
+        exit 1
+    fi
+	license_path="$(grep -B3 'All Rights Reserved' "$file" | awk '/# File: / {print $3}')"
+    if [ "$file" != "$license_path" ]; then
+        failing=1
+        echo "$file contains an inappropriate path in license header: \"$license_path\""
+    fi
+done
+if [ "$failing" == 1 ]; then
+	echo "license checker FAILED"
+	exit 1
+else
+	echo "license checker passed"
+fi
+
 
 header Pyflakes
 
