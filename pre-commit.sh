@@ -109,6 +109,18 @@ do
     fi
 done
 
+header docs
+
+cd doc
+if ./regenerate.sh
+then
+    echo "docs passed on $d"
+else
+    echo "docs FAILED on $d"
+    exit 1
+fi
+cd ..
+
 header test_raw_api
 
 if TEST_ACCOUNT_ID="$(head -n 1 ~/.b2_auth)" TEST_APPLICATION_KEY="$(tail -n 1 ~/.b2_auth)" python -m b2sdk.raw_api
@@ -117,12 +129,4 @@ then
 else
     echo "raw API test FAILED"
     exit 1
-fi
-
-if [[ $# -ne 0 && "${1:-}" == quick ]]
-then
-    header QUICK
-    echo Skipping integration tests in quick mode.
-    echo
-    exit 0
 fi

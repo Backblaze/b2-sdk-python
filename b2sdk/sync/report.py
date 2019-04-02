@@ -39,6 +39,11 @@ class SyncReport(object):
     UPDATE_INTERVAL = 0.1
 
     def __init__(self, stdout, no_progress):
+        """
+        :param stdout: standard output file object
+        :param no_progress: if True, do not show progress
+        :type no_progress: bool
+        """
         self.stdout = stdout
         self.no_progress = no_progress
         self.start_time = time.time()
@@ -59,6 +64,9 @@ class SyncReport(object):
         self.warnings = []
 
     def close(self):
+        """
+        Perform clean up
+        """
         with self.lock:
             if not self.no_progress:
                 self._print_line('', False)
@@ -73,12 +81,21 @@ class SyncReport(object):
         self.close()
 
     def error(self, message):
+        """
+        Print an error, gracefully interleaving it with a progress bar
+
+        :param message: an error message
+        :type message: str
+        """
         self.print_completion(message)
 
     def print_completion(self, message):
         """
         Removes the progress bar, prints a message, and puts the progress
         bar back.
+
+        :param message: an error message
+        :type message: str
         """
         with self.lock:
             if not self.closed:
@@ -126,7 +143,9 @@ class SyncReport(object):
         Prints a line to stdout.
 
         :param line: A string without a \r or \n in it.
+        :type line: str
         :param newline: True if the output should move to a new line after this one.
+        :type newline: bool
         """
         if len(line) < len(self.current_line):
             line += ' ' * (len(self.current_line) - len(line))
@@ -155,6 +174,9 @@ class SyncReport(object):
     def update_local(self, delta):
         """
         Reports that more local files have been found.
+
+        :param delta: number of files found since the last check
+        :type delta: int
         """
         with self.lock:
             self.local_file_count += delta
@@ -171,12 +193,23 @@ class SyncReport(object):
     def update_compare(self, delta):
         """
         Reports that more files have been compared.
+
+        :param delta: number of files compared
+        :type delta: int
         """
         with self.lock:
             self.compare_count += delta
             self._update_progress()
 
     def end_compare(self, total_transfer_files, total_transfer_bytes):
+        """
+        Report that the comparison has been finished
+
+        :param total_transfer_files: total number of transferred files
+        :type total_transfer_files: int
+        :param total_transfer_bytes: total number of transferred bytes
+        :type total_transfer_bytes: int
+        """
         with self.lock:
             self.compare_done = True
             self.total_transfer_files = total_transfer_files
@@ -184,15 +217,35 @@ class SyncReport(object):
             self._update_progress()
 
     def update_transfer(self, file_delta, byte_delta):
+        """
+        Update transfer info
+
+        :param file_delta: number of files transferred
+        :type file_delta: int
+        :param byte_delta: number of bytes transferred
+        :type byte_delta: int
+        """
         with self.lock:
             self.transfer_files += file_delta
             self.transfer_bytes += byte_delta
             self._update_progress()
 
     def local_access_error(self, path):
+        """
+        Add a file access error message to the list of warnings
+
+        :param path: file path
+        :type path: str
+        """
         self.warnings.append('WARNING: %s could not be accessed (broken symlink?)' % (path,))
 
     def local_permission_error(self, path):
+        """
+        Add a permission error message to the list of warnings
+
+        :param path: file path
+        :type path: str
+        """
         self.warnings.append(
             'WARNING: %s could not be accessed (no permissions to read?)' % (path,)
         )
@@ -207,23 +260,44 @@ class SyncFileReporter(AbstractProgressListener):
     """
 
     def __init__(self, reporter, *args, **kwargs):
+        """
+        :param reporter: a reporter object
+        """
         super(SyncFileReporter, self).__init__(*args, **kwargs)
         self.bytes_so_far = 0
         self.reporter = reporter
 
     def close(self):
+        """
+        Perform clean up
+        """
         # no more bytes are done, but the file is done
         self.reporter.update_transfer(1, 0)
 
     def set_total_bytes(self, total_byte_count):
+        """
+        Set total bytes count
+
+        :param total_byte_count: total byte count
+        :type total_byte_count: int
+        """
         pass
 
     def bytes_completed(self, byte_count):
+        """
+        Set bytes completed count
+
+        :param byte_count: total byte count
+        :type byte_count: int
+        """
         self.reporter.update_transfer(0, byte_count - self.bytes_so_far)
         self.bytes_so_far = byte_count
 
 
 def sample_sync_report_run():
+    """
+    Generate sample report
+    """
     import sys
     sync_report = SyncReport(sys.stdout, False)
 

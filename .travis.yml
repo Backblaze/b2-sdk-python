@@ -11,7 +11,6 @@ python:
   - 3.4
   - 3.5
   - 3.6
-  - nightly
   # stock versions of pypy provided by Travis CI don't work with cryptography 1.0
   #- pypy
   #- pypy3
@@ -28,7 +27,6 @@ branches:
 matrix:
   allow_failures:
     - python: pypy3  # https://github.com/pyca/cryptography/issues/2880
-    - python: nightly  # on 2018-02-14 it was found failing installation with ValueError: bad marshal data (unknown type code)
   include:
     # Source Code Analysis is slow, so we run it just once on Python 2 and once on Python 3
     - python: 2.7
@@ -38,6 +36,11 @@ matrix:
 
     # Enable 3.7 without globally enabling sudo and xenial for other build jobs
     - python: 3.7
+      dist: xenial
+      sudo: true
+
+    # Enable nightly without globally enabling sudo and xenial for other build jobs
+    - python: nightly
       dist: xenial
       sudo: true
 
@@ -82,6 +85,11 @@ matrix:
     - python: 3.5
       env: MODE=coverage
 
+    # doc
+    - python: 3.6
+      env: MODE=doc
+      sudo: true
+
 cache:
   - pip
   - directories:
@@ -97,6 +105,7 @@ cache:
     - $HOME/.virtualenvs/osx-python3
     #- /usr/local/Cellar/python  # see comment in the install script
     #- /usr/local/Cellar/python3
+    - $HOME/plantuml.jar
 before_install:
   - uname -a
   - if [[ "$TRAVIS_OS_NAME" != "osx" ]]; then lsb_release -a; fi
@@ -222,6 +231,15 @@ install:
   - pip install -r requirements.txt
   - pip install -r requirements-setup.txt
   - pip install -r requirements-test.txt
+  - |
+        if [ "$MODE" == 'doc' ]; then
+          sudo apt-get install graphviz
+          pip install -r requirements-doc.txt
+
+          # install plantuml without sudo
+          travis_retry wget http://sourceforge.net/projects/plantuml/files/plantuml.1.2019.3.jar/downloadA -O ~/plantuml.jar
+          alias plantuml="java -jar ~/plantuml.jar"
+        fi
 
   - |
         # coverage has additional requirements
@@ -299,6 +317,29 @@ script:
                 python setup.py install
             fi
         fi
+
+  # build docs
+  - |
+        # needs package to be installed already
+        if [ "$MODE" == 'doc' ]; then
+            cd doc
+            make html
+            cd ..
+        fi
+
+  # check docs coverage
+  - |
+        # needs package to be installed already
+        if [ "$MODE" == 'doc' ]; then
+            cd doc
+            make coverage
+            cd ..
+            if [ "$(wc -l < doc/build/coverage/python.txt)" != '2' ]; then
+                cat doc/build/coverage/python.txt >&2
+                return 1
+            fi
+        fi
+
   # custom things specific to b2 SDK
   - if [ -n "$TEST_ACCOUNT_ID" -a "$MODE" == "TEST_RAW_API" ]; then python -m b2sdk.__main__ test_raw_api; else echo skip; fi
 

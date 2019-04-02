@@ -46,8 +46,14 @@ def zip_folders(folder_a, folder_b, reporter, policies_manager=DEFAULT_SCAN_MANA
     Each item is a pair (file_a, file_b) with the corresponding file
     in both folders.  Either file (but not both) will be None if the
     file is in only one folder.
-    :param folder_a: A Folder object.
-    :param folder_b: A Folder object.
+
+    :param folder_a: first folder object.
+    :type folder_a: b2sdk.sync.folder.AbstractFolder
+    :param folder_b: second folder object.
+    :type folder_b: b2sdk.sync.folder.AbstractFolder
+    :param reporter: reporter object
+    :param policies_manager: policies manager object
+    :return: yields two element tuples
     """
 
     iter_a = folder_a.all_files(reporter, policies_manager)
@@ -81,6 +87,20 @@ def make_file_sync_actions(
 ):
     """
     Yields the sequence of actions needed to sync the two files
+
+    :param sync_type: synchronization type
+    :type sync_type: str
+    :param source_file: source file object
+    :type source_folder: b2sdk.sync.folder.AbstractFolder
+    :param dest_file: destination file object
+    :type dest_file: b2sdk.sync.file.File
+    :param source_folder: a source folder object
+    :type source_folder: b2sdk.sync.folder.AbstractFolder
+    :param dest_folder: a destination folder object
+    :type dest_folder: b2sdk.sync.folder.AbstractFolder
+    :param args: an object which holds command line arguments
+    :param now_millis: current time in milliseconds
+    :type now_millis: int
     """
 
     policy = POLICY_MANAGER.get_policy(
@@ -96,6 +116,16 @@ def make_folder_sync_actions(
     """
     Yields a sequence of actions that will sync the destination
     folder to the source folder.
+
+    :param source_folder: source folder object
+    :type source_folder: b2sdk.sync.folder.AbstractFolder
+    :param dest_folder: destination folder object
+    :type dest_folder: b2sdk.sync.folder.AbstractFolder
+    :param args: an object which holds command line arguments
+    :param now_millis: current time in milliseconds
+    :type now_millis: int
+    :param reporter: reporter object
+    :param policies_manager: policies manager object
     """
     if args.skipNewer and args.replaceNewer:
         raise CommandError('--skipNewer and --replaceNewer are incompatible')
@@ -137,6 +167,10 @@ def make_folder_sync_actions(
 def count_files(local_folder, reporter):
     """
     Counts all of the files in a local folder.
+
+    :param local_folder: a folder object.
+    :type local_folder: b2sdk.sync.folder.AbstractFolder
+    :param reporter: reporter object
     """
     # Don't pass in a reporter to all_files.  Broken symlinks will be reported
     # during the next pass when the source and dest files are compared.
@@ -162,6 +196,24 @@ def sync_folders(
     Syncs two folders.  Always ensures that every file in the
     source is also in the destination.  Deletes any file versions
     in the destination older than history_days.
+
+    :param source_folder: source folder object
+    :type source_folder: b2sdk.sync.folder.AbstractFolder
+    :param dest_folder: destination folder object
+    :type dest_folder: b2sdk.sync.folder.AbstractFolder
+    :param args: an object which holds command line arguments
+    :param now_millis: current time in milliseconds
+    :type now_millis: int
+    :param stdout: standard output file object
+    :param no_progress: if True, do not show progress
+    :type no_progress: bool
+    :param max_workers: max number of workers
+    :type max_workers: int
+    :param policies_manager: policies manager object
+    :param dry_run:
+    :type dry_run: bool
+    :param allow_empty_source: if True, do not check whether source folder is empty
+    :type allow_empty_source: bool
     """
 
     # For downloads, make sure that the target directory is there.

@@ -21,9 +21,19 @@ class RegexSet(object):
     """
 
     def __init__(self, regex_iterable):
+        """
+        :param regex_iterable: an interable which yields regexes
+        """
         self._compiled_list = [re.compile(r) for r in regex_iterable]
 
     def matches(self, s):
+        """
+        Check whether a string matches any of regular expressions
+
+        :param s: a string to check
+        :type s: str
+        :rtype: bool
+        """
         return any(c.match(s) is not None for c in self._compiled_list)
 
 
@@ -47,6 +57,9 @@ def convert_dir_regex_to_dir_prefix_regex(dir_regex):
 
     If the original regex is valid, there are only two cases to consider:
     either the regex ends in '$' or does not.
+
+    :param dir_regex: a regular expression string or literal
+    :type dir_regex: str
     """
     if dir_regex.endswith('$'):
         return dir_regex[:-1] + r'/'
@@ -75,6 +88,16 @@ class ScanPoliciesManager(object):
         include_file_regexes=tuple(),
         exclude_all_symlinks=False,
     ):
+        """
+        :param exclude_dir_regexes: a tuple of regexes to exclude directories
+        :type exclude_dir_regexes: tuple
+        :param exclude_file_regexes: a tuple of regexes to exclude files
+        :type exclude_file_regexes: tuple
+        :param include_file_regexes: a tuple of regexes to include files
+        :type include_file_regexes: tuple
+        :param exclude_all_symlinks: if True, exclude all symlinks
+        :type exclude_all_symlinks: bool
+        """
         self._exclude_dir_set = RegexSet(exclude_dir_regexes)
         self._exclude_file_because_of_dir_set = RegexSet(
             map(convert_dir_regex_to_dir_prefix_regex, exclude_dir_regexes)
@@ -89,7 +112,9 @@ class ScanPoliciesManager(object):
 
         :param file_path: The path of the file, relative to the root directory
                           being scanned.
-        :return: True iff excluded.
+        :type: str
+        :return: True if excluded.
+        :rtype: bool
         """
         exclude_because_of_dir = self._exclude_file_because_of_dir_set.matches(file_path)
         exclude_because_of_file = (
@@ -105,7 +130,8 @@ class ScanPoliciesManager(object):
 
         :param dir_path: The path of the directory, relative to the root directory
                          being scanned.  The path will never end in '/'.
-        :return: True iff excluded.
+        :type dir_path: str
+        :return: True if excluded.
         """
         return self._exclude_dir_set.matches(dir_path)
 
