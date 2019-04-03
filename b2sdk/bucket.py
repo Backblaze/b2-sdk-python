@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: b2/bucket.py
+# File: b2sdk/bucket.py
 #
 # Copyright 2019 Backblaze Inc. All Rights Reserved.
 #

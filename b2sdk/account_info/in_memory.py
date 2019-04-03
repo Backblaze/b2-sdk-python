@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: b2/account_info/in_memory.py
+# File: b2sdk/account_info/in_memory.py
 #
 # Copyright 2019 Backblaze Inc. All Rights Reserved.
 #

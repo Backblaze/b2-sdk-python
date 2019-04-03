@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: b2/sync/file.py
+# File: b2sdk/sync/file.py
 #
 # Copyright 2019 Backblaze Inc. All Rights Reserved.
 #

@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: b2/sync/report.py
+# File: b2sdk/sync/report.py
 #
 # Copyright 2019 Backblaze Inc. All Rights Reserved.
 #

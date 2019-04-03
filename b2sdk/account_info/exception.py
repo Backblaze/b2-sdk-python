@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: b2/account_info/exception.py
+# File: b2sdk/account_info/exception.py
 #
 # Copyright 2019 Backblaze Inc. All Rights Reserved.
 #

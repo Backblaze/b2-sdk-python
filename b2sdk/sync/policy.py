@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: b2/sync/policy.py
+# File: b2sdk/sync/policy.py
 #
 # Copyright 2019 Backblaze Inc. All Rights Reserved.
 #

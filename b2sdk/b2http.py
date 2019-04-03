@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: b2/b2http.py
+# File: b2sdk/b2http.py
 #
 # Copyright 2019 Backblaze Inc. All Rights Reserved.
 #

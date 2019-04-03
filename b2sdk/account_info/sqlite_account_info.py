@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: b2/account_info/sqlite_account_info.py
+# File: b2sdk/account_info/sqlite_account_info.py
 #
 # Copyright 2019 Backblaze Inc. All Rights Reserved.
 #

@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: b2/download_dest.py
+# File: b2sdk/download_dest.py
 #
 # Copyright 2019 Backblaze Inc. All Rights Reserved.
 #

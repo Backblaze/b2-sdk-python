@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: b2/transferer/parallel.py
+# File: b2sdk/transferer/parallel.py
 #
 # Copyright 2019 Backblaze Inc. All Rights Reserved.
 #

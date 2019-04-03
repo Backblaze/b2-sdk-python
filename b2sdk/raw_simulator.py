@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: raw_simulator.py
+# File: b2sdk/raw_simulator.py
 #
 # Copyright 2019 Backblaze Inc. All Rights Reserved.
 #

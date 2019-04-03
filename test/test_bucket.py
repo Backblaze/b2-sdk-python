@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: test_bucket.py
+# File: test/test_bucket.py
 #
 # Copyright 2019 Backblaze Inc. All Rights Reserved.
 #

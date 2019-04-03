@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: progress.py
+# File: b2sdk/progress.py
 #
 # Copyright 2019 Backblaze Inc. All Rights Reserved.
 #

@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: test_policy
+# File: test/test_policy.py
 #
 # Copyright 2019, Backblaze Inc. All Rights Reserved.
 #

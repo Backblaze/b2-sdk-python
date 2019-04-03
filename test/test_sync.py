@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: b2/test_sync.py
+# File: test/test_sync.py
 #
 # Copyright 2019 Backblaze Inc. All Rights Reserved.
 #
