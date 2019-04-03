@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: b2/test_scan_policies.py
+# File: test/test_scan_policies.py
 #
 # Copyright 2019 Backblaze Inc. All Rights Reserved.
 #

@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: b2/transferer/file_metadata.py
+# File: b2sdk/transferer/file_metadata.py
 #
 # Copyright 2019 Backblaze Inc. All Rights Reserved.
 #

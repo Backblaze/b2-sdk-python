@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: b2/account_info/sqlite_account_info.py
+# File: b2sdk/account_info/sqlite_account_info.py
 #
 # Copyright 2019 Backblaze Inc. All Rights Reserved.
 #
@@ -40,7 +40,9 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
     def __init__(self, file_name=None, last_upgrade_to_run=None):
         """
         :param file_name: The sqlite file to use; overrides the default.
+        :type file_name: str
         :param last_upgrade_to_run: For testing only, override the auto-update on the db.
+        :type last_upgrade_to_run: int
         """
         self.thread_local = threading.local()
         user_account_info_path = file_name or os.environ.get(
@@ -207,6 +209,9 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
                 )
 
     def clear(self):
+        """
+        Remove all info about accounts and buckets
+        """
         with self._get_connection() as conn:
             conn.execute('DELETE FROM account;')
             conn.execute('DELETE FROM bucket;')
@@ -259,6 +264,24 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
         application_key,
         realm,
     ):
+        """
+        Set authentication data for tests
+
+        :param account_id: an account ID
+        :type account_id: str
+        :param auth_token: an authentication token
+        :type auth_token: str
+        :param api_url: an API URL
+        :type api_url: str
+        :param download_url: a download URL
+        :type download_url: str
+        :param minimum_part_size: a minimum part size
+        :type minimum_part_size: int
+        :param application_key: an application key
+        :type application_key: str
+        :param realm: a realm to authorize account in
+        :type realm: str
+        """
         with self._get_connection() as conn:
             conn.execute('DELETE FROM account;')
             conn.execute('DELETE FROM bucket;')
@@ -282,14 +305,27 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
             )
 
     def get_application_key(self):
+        """
+        Return application key
+
+        :rtype: str
+        """
         return self._get_account_info_or_raise('application_key')
 
     def get_account_id(self):
+        """
+        Return account ID
+
+        :rtype: str
+        """
         return self._get_account_info_or_raise('account_id')
 
     def get_account_id_or_app_key_id(self):
         """
+        Return account ID or appliction key ID.
         The 'account_id_or_app_key_id' column was not in the original schema, so it may be NULL.
+
+        :rtype: str
         """
         result = self._get_account_info_or_raise('account_id_or_app_key_id')
         if result is None:
@@ -298,23 +334,51 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
             return result
 
     def get_api_url(self):
+        """
+        Return API URL
+
+        :rtype: str
+        """
         return self._get_account_info_or_raise('api_url')
 
     def get_account_auth_token(self):
+        """
+        Return account authentication token
+
+        :rtype: str
+        """
         return self._get_account_info_or_raise('account_auth_token')
 
     def get_download_url(self):
+        """
+        Return download URL
+
+        :rtype: str
+        """
         return self._get_account_info_or_raise('download_url')
 
     def get_realm(self):
+        """
+        Return realm name
+
+        :rtype: str
+        """
         return self._get_account_info_or_raise('realm')
 
     def get_minimum_part_size(self):
+        """
+        Return minimum part size
+
+        :rtype: int
+        """
         return self._get_account_info_or_raise('minimum_part_size')
 
     def get_allowed(self):
         """
+        Return 'allowed' dictionary info.
         The 'allowed" column was not in the original schema, so it may be NULL.
+
+        :rtype: dict
         """
         allowed_json = self._get_account_info_or_raise('allowed')
         if allowed_json is None:
@@ -336,6 +400,11 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
             raise MissingAccountData(str(e))
 
     def refresh_entire_bucket_name_cache(self, name_id_iterable):
+        """
+        Refresh names and IDs of buckets
+
+        :param name_id_iterable: an iterable which yields buakcet name and ID
+        """
         with self._get_connection() as conn:
             conn.execute('DELETE FROM bucket;')
             for (bucket_name, bucket_id) in name_id_iterable:
@@ -345,6 +414,12 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
                 )
 
     def save_bucket(self, bucket):
+        """
+        Save bucket info
+
+        :param bucket: a Bucket object
+        :type: b2sdk.bucket.Bucket
+        """
         with self._get_connection() as conn:
             conn.execute('DELETE FROM bucket WHERE bucket_id = ?;', (bucket.id_,))
             conn.execute(
@@ -353,10 +428,23 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
             )
 
     def remove_bucket_name(self, bucket_name):
+        """
+        Remove bucket info by a given name
+
+        :param bucket_name: a bucket name
+        :type bucket_name: str
+        """
         with self._get_connection() as conn:
             conn.execute('DELETE FROM bucket WHERE bucket_name = ?;', (bucket_name,))
 
     def get_bucket_id_or_none_from_bucket_name(self, bucket_name):
+        """
+        Return bucket ID or None by a given name
+
+        :param bucket_name: a bucket name
+        :type bucket_name: str
+        :rtype: str, None
+        """
         try:
             with self._get_connection() as conn:
                 cursor = conn.execute(

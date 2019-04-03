@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: progress.py
+# File: b2sdk/progress.py
 #
 # Copyright 2019 Backblaze Inc. All Rights Reserved.
 #
@@ -45,6 +45,9 @@ class AbstractProgressListener(object):
         Always called before __enter__ to set the expected total number of bytes.
 
         May be called more than once if an upload is retried.
+
+        :param total_byte_count: expected total number of bytes
+        :type total_byte_count: int
         """
 
     @abstractmethod
@@ -53,6 +56,9 @@ class AbstractProgressListener(object):
         Reports that the given number of bytes have been transferred
         so far.  This is not a delta, it is the total number of bytes
         transferred so far.
+
+        :param byte_count: number of bytes have been transferred
+        :type byte_count: int
         """
 
     @abstractmethod
@@ -79,6 +85,10 @@ class AbstractProgressListener(object):
 
 
 class TqdmProgressListener(AbstractProgressListener):
+    """
+    Progress listener based on tqdm library
+    """
+
     def __init__(self, description, *args, **kwargs):
         self.description = description
         self.tqdm = None  # set in set_total_bytes()
@@ -86,6 +96,12 @@ class TqdmProgressListener(AbstractProgressListener):
         super(TqdmProgressListener, self).__init__(*args, **kwargs)
 
     def set_total_bytes(self, total_byte_count):
+        """
+        Set the expected total number of bytes.
+
+        :param total_byte_count: expected total number of bytes
+        :type total_byte_count: int
+        """
         if self.tqdm is None:
             self.tqdm = tqdm(
                 desc=self.description,
@@ -97,6 +113,14 @@ class TqdmProgressListener(AbstractProgressListener):
             )
 
     def bytes_completed(self, byte_count):
+        """
+        Reports that the given number of bytes have been transferred
+        so far.  This is not a delta, it is the total number of bytes
+        transferred so far.
+
+        :param byte_count: number of bytes have been transferred
+        :type byte_count: int
+        """
         # tqdm doesn't support running the progress bar backwards,
         # so on an upload retry, it just won't move until it gets
         # past the point where it failed.
@@ -105,12 +129,19 @@ class TqdmProgressListener(AbstractProgressListener):
             self.prev_value = byte_count
 
     def close(self):
+        """
+        Perform clean up operations
+        """
         if self.tqdm is not None:
             self.tqdm.close()
         super(TqdmProgressListener, self).close()
 
 
 class SimpleProgressListener(AbstractProgressListener):
+    """
+    Just a simple progress listener which prints info on a console
+    """
+
     def __init__(self, description, *args, **kwargs):
         self.desc = description
         self.complete = 0
@@ -119,9 +150,23 @@ class SimpleProgressListener(AbstractProgressListener):
         super(SimpleProgressListener, self).__init__(*args, **kwargs)
 
     def set_total_bytes(self, total_byte_count):
+        """
+        Set the expected total number of bytes.
+
+        :param total_byte_count: expected total number of bytes
+        :type total_byte_count: int
+        """
         self.total = total_byte_count
 
     def bytes_completed(self, byte_count):
+        """
+        Reports that the given number of bytes have been transferred
+        so far.  This is not a delta, it is the total number of bytes
+        transferred so far.
+
+        :param byte_count: number of bytes have been transferred
+        :type byte_count: int
+        """
         now = time.time()
         elapsed = now - self.last_time
         if 3 <= elapsed and self.total != 0:
@@ -132,19 +177,43 @@ class SimpleProgressListener(AbstractProgressListener):
             self.any_printed = True
 
     def close(self):
+        """
+        Perform clean up operations
+        """
         if self.any_printed:
             print('    DONE.')
         super(SimpleProgressListener, self).close()
 
 
 class DoNothingProgressListener(AbstractProgressListener):
+    """
+    This listener performs no any output
+    """
+
     def set_total_bytes(self, total_byte_count):
+        """
+        Set the expected total number of bytes.
+
+        :param total_byte_count: expected total number of bytes
+        :type total_byte_count: int
+        """
         pass
 
     def bytes_completed(self, byte_count):
+        """
+        Reports that the given number of bytes have been transferred
+        so far.  This is not a delta, it is the total number of bytes
+        transferred so far.
+
+        :param byte_count: number of bytes have been transferred
+        :type byte_count: int
+        """
         pass
 
     def close(self):
+        """
+        Perform clean up operations
+        """
         super(DoNothingProgressListener, self).close()
 
 
@@ -172,6 +241,15 @@ class ProgressListenerForTest(AbstractProgressListener):
 
 
 def make_progress_listener(description, quiet):
+    """
+    Returns a progress listener object depending on some conditions
+
+    :param description: listener description
+    :type description: str
+    :param quiet: if True, do not output anything
+    :type quiet: bool
+    :return: a listener object
+    """
     if quiet:
         return DoNothingProgressListener()
     elif tqdm is not None:
@@ -187,6 +265,13 @@ class RangeOfInputStream(object):
     """
 
     def __init__(self, stream, offset, length):
+        """
+        :param stream: a seekable stream
+        :param offset: offset in the stream
+        :type offset: int
+        :param length: max number of bytes to read
+        :type length: int
+        """
         self.stream = stream
         self.offset = offset
         self.remaining = length
@@ -199,9 +284,22 @@ class RangeOfInputStream(object):
         return self.stream.__exit__(exc_type, exc_val, exc_tb)
 
     def seek(self, pos):
+        """
+        Seek to a given position in the stream
+
+        :param pos: position in the stream
+        :type pos: int
+        """
         self.stream.seek(self.offset + pos)
 
     def read(self, size=None):
+        """
+        Read data from the stream
+
+        :param size: number of bytes to read
+        :type size: int
+        :return: data read from the stream
+        """
         if size is None:
             to_read = self.remaining
         else:
@@ -224,8 +322,9 @@ class AbstractStreamWithProgress(object):
 
         :param stream: the stream to read from or write to
         :param progress_listener: the listener that we tell about progress
+        :type progress_listener: b2sdk.progress.AbstractProgressListener
         :param offset: the starting byte offset in the file
-        :return: None
+        :type offset: int
         """
         assert progress_listener is not None
         self.stream = stream
@@ -240,15 +339,36 @@ class AbstractStreamWithProgress(object):
         return self.stream.__exit__(exc_type, exc_val, exc_tb)
 
     def seek(self, pos):
+        """
+        Seek to a given position in the stream
+
+        :param pos: position in the stream
+        :type pos: int
+        """
         return self.stream.seek(pos)
 
     def tell(self):
+        """
+        Return current stream position
+
+        :rtype: int
+        """
         return self.stream.tell()
 
     def flush(self):
+        """
+        Flush the stream
+        """
         self.stream.flush()
 
     def read(self, size=None):
+        """
+        Read data from the stream
+
+        :param size: number of bytes to read
+        :type size: int
+        :return: data read from the stream
+        """
         if size is None:
             data = self.stream.read()
         else:
@@ -256,6 +376,11 @@ class AbstractStreamWithProgress(object):
         return data
 
     def write(self, data):
+        """
+        Write data to the stream
+
+        :param data: a data to write to the stream
+        """
         self.stream.write(data)
 
     def _update(self, delta):
@@ -264,14 +389,34 @@ class AbstractStreamWithProgress(object):
 
 
 class ReadingStreamWithProgress(AbstractStreamWithProgress):
+    """
+    Wraps a file-like object, updates progress while reading
+    """
+
     def read(self, size=None):
+        """
+        Read data from the stream
+
+        :param size: number of bytes to read
+        :type size: int
+        :return: data read from the stream
+        """
         data = super(ReadingStreamWithProgress, self).read(size)
         self._update(len(data))
         return data
 
 
 class WritingStreamWithProgress(AbstractStreamWithProgress):
+    """
+    Wraps a file-like object, updates progress while writing
+    """
+
     def write(self, data):
+        """
+        Write data to the stream
+
+        :param data: a data to write to the stream
+        """
         self._update(len(data))
         super(WritingStreamWithProgress, self).write(data)
 
@@ -299,6 +444,12 @@ class StreamWithHash(object):
         return self.stream.__exit__(exc_type, exc_val, exc_tb)
 
     def seek(self, pos):
+        """
+        Seek to a given position in the stream
+
+        :param pos: position in the stream
+        :type pos: int
+        """
         assert pos == 0
         self.stream.seek(0)
         self.digest = hashlib.sha1()
@@ -306,6 +457,13 @@ class StreamWithHash(object):
         self.hash_read = 0
 
     def read(self, size=None):
+        """
+        Read data from the stream
+
+        :param size: number of bytes to read
+        :type size: int
+        :return: data read from the stream
+        """
         data = b''
         if self.hash is None:
             # Read some bytes from stream
@@ -332,4 +490,9 @@ class StreamWithHash(object):
         return data
 
     def hash_size(self):
+        """
+        Calculate size of a hash string
+
+        :rtype: int
+        """
         return self.digest.digest_size * 2

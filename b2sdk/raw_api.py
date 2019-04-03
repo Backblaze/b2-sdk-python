@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: b2/raw_api.py
+# File: b2sdk/raw_api.py
 #
 # Copyright 2019 Backblaze Inc. All Rights Reserved.
 #
@@ -424,10 +424,12 @@ class B2RawApi(AbstractRawApi):
         )
 
     def unprintable_to_hex(self, string):
-        """Replace unprintable chars in string with a hex representation.
+        """
+        Replace unprintable chars in string with a hex representation.
 
         :param string: An arbitrary string, possibly with unprintable characters.
-        :return The string, with unprintable characters changed to hex (e.g., "\x07")
+        :return: The string, with unprintable characters changed to hex (e.g., "\x07")
+
         """
         unprintables_pattern = re.compile(r'[\x00-\x1f]')
 

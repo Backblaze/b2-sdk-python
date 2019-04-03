@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: b2/upload_source.py
+# File: b2sdk/upload_source.py
 #
 # Copyright 2019 Backblaze Inc. All Rights Reserved.
 #

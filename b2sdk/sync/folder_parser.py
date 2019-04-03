@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: b2/sync/folder_parser.py
+# File: b2sdk/sync/folder_parser.py
 #
 # Copyright 2019 Backblaze Inc. All Rights Reserved.
 #
@@ -21,6 +21,11 @@ def parse_sync_folder(folder_name, api):
     because the previous sync command didn't use it.
 
     Anything else is treated like a local folder.
+
+    :param folder_name: a name of the folder, either local or remote
+    :type folder_name: str
+    :param api: an API object
+    :type api: b2sdk.api.B2Api
     """
     if folder_name.startswith('b2://'):
         return _parse_bucket_and_folder(folder_name[5:], api)

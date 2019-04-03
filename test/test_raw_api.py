@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: b2/test_raw_api.py
+# File: test/test_raw_api.py
 #
 # Copyright 2019 Backblaze Inc. All Rights Reserved.
 #

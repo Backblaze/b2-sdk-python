@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: b2/transferer/abstract.py
+# File: b2sdk/transferer/abstract.py
 #
 # Copyright 2019 Backblaze Inc. All Rights Reserved.
 #
@@ -55,7 +55,7 @@ class AbstractDownloader(object):
     def is_suitable(self, metadata, progress_listener):
         """
         analyzes metadata (possibly against options passed earlier to constructor
-        to find out whether the given download request should be handled by this downloader
+        to find out whether the given download request should be handled by this downloader)
         """
         pass
 

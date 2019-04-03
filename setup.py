@@ -51,13 +51,18 @@ with open('requirements-test.txt', encoding='utf-8') as f:
 with open('requirements-setup.txt', encoding='utf-8') as f:
     requirements_setup = f.read().splitlines()
 
+with open('requirements-doc.txt', encoding='utf-8') as f:
+    requirements_doc = f.read().splitlines()
+
+version = __import__('b2sdk.version').version.VERSION
+
 setup(
     name='b2sdk',
 
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
-    version='1.0.0',
+    version=version,
     description='Backblaze B2 SDK',
     long_description=long_description,
     long_description_content_type='text/markdown',
@@ -128,8 +133,7 @@ setup(
     # for example:
     # $ pip install -e .[dev,test]
     extras_require={
-        'dev': [],
-        'test': [],
+        'doc': requirements_doc,
     },
 
     # If there are data files included in your packages that need to be

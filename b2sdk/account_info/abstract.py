@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: b2/account_info/abstract.py
+# File: b2sdk/account_info/abstract.py
 #
 # Copyright 2019 Backblaze Inc. All Rights Reserved.
 #
@@ -45,6 +45,11 @@ class AbstractAccountInfo(object):
 
     @classmethod
     def all_capabilities(cls):
+        """
+        Return a list of all possible capabilities
+
+        :rtype: list
+        """
         return cls.ALL_CAPABILITIES
 
     @abstractmethod
@@ -58,64 +63,112 @@ class AbstractAccountInfo(object):
     def refresh_entire_bucket_name_cache(self, name_id_iterable):
         """
         Removes all previous name-to-id mappings and stores new ones.
+
+        :param name_id_iterable: a list of tuples of the form (name, id)
+        :type name_id_iterable: list
         """
 
     @abstractmethod
     def remove_bucket_name(self, bucket_name):
         """
         Removes one entry from the bucket name cache.
+
+        :param bucket_name: a bucket name
+        :type bucket_name: str
         """
 
     @abstractmethod
     def save_bucket(self, bucket):
         """
         Remembers the ID for a bucket name.
+
+        :param bucket: a Bucket object
+        :type bucket: b2sdk.bucket.Bucket
         """
 
     @abstractmethod
     def get_bucket_id_or_none_from_bucket_name(self, bucket_name):
         """
         Looks up the bucket ID for a given bucket name.
+
+        :param bucket_name: a bucket name
+        :type bucket_name: str
+        :return bucket ID or None:
+        :rtype: str, None
         """
 
     @abstractmethod
     def clear_bucket_upload_data(self, bucket_id):
         """
         Removes all upload URLs for the given bucket.
+
+        :param bucket_id: a bucket ID
+        :type bucket_id: str
         """
 
     @abstractmethod
     def get_account_id(self):
-        """ returns account_id or raises MissingAccountData exception """
+        """
+        Returns account_id or raises MissingAccountData exception
+
+        :rtype: str
+        """
 
     @abstractmethod
     def get_account_id_or_app_key_id(self):
-        """ returns the account id or key id used to authenticate """
+        """ 
+        Returns the account id or key id used to authenticate
+
+        :rtype: str
+        """
 
     @abstractmethod
     def get_account_auth_token(self):
-        """ returns account_auth_token or raises MissingAccountData exception """
+        """ 
+        Returns account_auth_token or raises MissingAccountData exception
+
+        :rtype: str
+        """
 
     @abstractmethod
     def get_api_url(self):
-        """ returns api_url or raises MissingAccountData exception """
+        """ 
+        Returns api_url or raises MissingAccountData exception
+
+        :rtype: str
+        """
 
     @abstractmethod
     def get_application_key(self):
-        """ returns application_key or raises MissingAccountData exception """
+        """
+        Returns application_key or raises MissingAccountData exception
+
+        :rtype: str
+        """
 
     @abstractmethod
     def get_download_url(self):
-        """ returns download_url or raises MissingAccountData exception """
+        """
+        Returns download_url or raises MissingAccountData exception
+
+        :rtype: str
+        """
 
     @abstractmethod
     def get_realm(self):
-        """ returns realm or raises MissingAccountData exception """
+        """
+        Returns realm or raises MissingAccountData exception
+
+        :rtype: str
+        """
 
     @abstractmethod
     def get_minimum_part_size(self):
         """
-        :return: returns the minimum number of bytes in a part of a large file
+        Return the minimum number of bytes in a part of a large file
+
+        :return: number of bytes
+        :rtype: int
         """
 
     @abstractmethod
@@ -124,6 +177,8 @@ class AbstractAccountInfo(object):
         An 'allowed' dict, as returned by b2_authorize_account.
         Never None; for account info that was saved before 'allowed' existed,
         returns DEFAULT_ALLOWED.
+
+        :rtype: dict
         """
 
     @limit_trace_arguments(only=['self', 'api_url', 'download_url', 'minimum_part_size', 'realm'])
@@ -149,6 +204,25 @@ class AbstractAccountInfo(object):
         a bucketName field.  For keys with bucket restrictions, the name of the bucket is looked
         up and stored, too.  The console_tool does everything by bucket name, so it's convenient
         to have the restricted bucket name handy.
+
+        :param account_id: user account ID
+        :type account_id: str
+        :param auth_token: user authentication token
+        :type auth_token: str
+        :param api_url: an API URL
+        :type api_url: str
+        :param download_url: path download URL
+        :type download_url: str
+        :param minimum_part_size: minimum size of the file part
+        :type minimum_part_size: int
+        :param application_key: application key
+        :type application_key: str
+        :param realm: a realm to authiroze account in
+        :type realm: str
+        :param allowed: the structure to use for old account info that was saved without 'allowed'
+        :type allowed: dict
+        :param account_id_or_app_key_id: account ID or application key ID
+        :type account_id_or_app_key_id: str
         """
         if allowed is None:
             allowed = self.DEFAULT_ALLOWED
@@ -173,6 +247,10 @@ class AbstractAccountInfo(object):
 
         If the bucketId is for a bucket that no longer exists, or the
         capabilities do not allow listBuckets, then we won't have a bucketName.
+
+        :param allowed: the structure to use for old account info that was saved without 'allowed'
+        :type allowed: dict
+        :rtype: bool
         """
         return (
             ('bucketId' in allowed) and ('bucketName' in allowed) and
@@ -203,6 +281,10 @@ class AbstractAccountInfo(object):
         Returns a pair (upload_url, upload_auth_token) that has been removed
         from the pool for this bucket, or (None, None) if there are no more
         left.
+
+        :param bucket_id: a bucket ID
+        :type bucket_id: str
+        :rtype: tuple
         """
 
     @abstractmethod
@@ -211,17 +293,47 @@ class AbstractAccountInfo(object):
         """
         Add an (upload_url, upload_auth_token) pair to the pool available for
         the bucket.
+
+        :param bucket_id: a bucket ID
+        :type bucket_id: str
+        :param upload_url: an upload URL
+        :type upload_url: str
+        :param upload_auth_token: an upload authentication token
+        :type upload_auth_token: str
+        :rtype: tuple
         """
 
     @abstractmethod
     @limit_trace_arguments(only=['self'])
     def put_large_file_upload_url(self, file_id, upload_url, upload_auth_token):
+        """
+        Put large file upload URL into a pool
+
+        :param file_id: a file ID
+        :type file_id: str
+        :param upload_url: an upload URL
+        :type upload_url: str
+        :param upload_auth_token: an upload authentication token
+        :type upload_auth_token: str
+        """
         pass
 
     @abstractmethod
     def take_large_file_upload_url(self, file_id):
+        """
+        Take large file upload URL from a pool
+
+        :param file_id: a file ID
+        :type file_id: str
+        """
         pass
 
     @abstractmethod
     def clear_large_file_upload_urls(self, file_id):
+        """
+        Clear a pool of URLs for a given file ID
+
+        :param file_id: a file ID
+        :type file_id: str
+        """
         pass

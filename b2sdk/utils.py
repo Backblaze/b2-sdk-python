@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: utils.py
+# File: b2sdk/utils.py
 #
 # Copyright 2019 Backblaze Inc. All Rights Reserved.
 #
@@ -9,7 +9,6 @@
 ######################################################################
 
 from __future__ import division, print_function
-
 import hashlib
 import os
 import platform
@@ -33,6 +32,9 @@ def interruptible_get_result(future):
     by a KeyboardInterrupt.
 
     This is not necessary in Python 3, but is needed for Python 2.
+
+    :param future: a future to get result of
+    :type future: Future
     """
     while True:
         try:
@@ -42,15 +44,25 @@ def interruptible_get_result(future):
 
 
 def b2_url_encode(s):
-    """URL-encodes a unicode string to be sent to B2 in an HTTP header.
+    """
+    URL-encodes a unicode string to be sent to B2 in an HTTP header.
+
+    :param s: a unicode string to encode
+    :type s: str
+    :return: URL-encoded string
+    :rtype: str
     """
     return six.moves.urllib.parse.quote(s.encode('utf-8'))
 
 
 def b2_url_decode(s):
-    """Decodes a Unicode string returned from B2 in an HTTP header.
+    """
+    Decodes a Unicode string returned from B2 in an HTTP header.
 
-    Returns a Python unicode string.
+    :param s: a unicode string to decode
+    :type s: str
+    :return: a Python unicode string.
+    :rtype: str
     """
     result = six.moves.urllib.parse.unquote_plus(s)
     if six.PY2:
@@ -63,6 +75,12 @@ def b2_url_decode(s):
 def choose_part_ranges(content_length, minimum_part_size):
     """
     Returns a list of (offset, length) for the parts of a large file.
+
+    :param content_length: content length value
+    :type content_length: int
+    :param minimum_part_size: a minimum file part size
+    :type minimum_part_size: int
+    :rtype: list
     """
 
     # If the file is at least twice the minimum part size, we are guaranteed
@@ -95,6 +113,11 @@ def hex_sha1_of_stream(input_stream, content_length):
     """
     Returns the 40-character hex SHA1 checksum of the first content_length
     bytes in the input stream.
+
+    :param input_stream: stream object, which exposes read() method
+    :param content_length: expected length of the stream
+    :type content_length: int
+    :rtype: str
     """
     remaining = content_length
     block_size = 1024 * 1024
@@ -113,8 +136,11 @@ def hex_sha1_of_stream(input_stream, content_length):
 
 def hex_sha1_of_bytes(data):
     """
-    Returns the 40-character hex SHA1 checksum of the first content_length
-    bytes in the input stream.
+    Returns the 40-character hex SHA1 checksum of the data
+
+    :param data: an array of bytes
+    :type data: bytes
+    :rtype: str
     """
     return hashlib.sha1(data).hexdigest()
 
@@ -123,8 +149,8 @@ def validate_b2_file_name(name):
     """
     Raises a ValueError if the name is not a valid B2 file name.
 
-    :param name: a string
-    :return: None
+    :param name: a string to check
+    :type name: str
     """
     if not isinstance(name, six.string_types):
         raise ValueError('file name must be a string, not bytes')
@@ -148,6 +174,14 @@ def validate_b2_file_name(name):
 
 
 def is_file_readable(local_path, reporter=None):
+    """
+    Check if the local file has read permissions
+
+    :param local_path: a file path
+    :type local_path: str
+    :param reporter: reporter object to put errors on
+    :rtype: bool
+    """
     if not os.path.exists(local_path):
         if reporter is not None:
             reporter.local_access_error(local_path)
@@ -163,6 +197,11 @@ def fix_windows_path_limit(path):
     """
     Prefix paths when running on Windows to overcome 260 character path length limit
     See https://msdn.microsoft.com/en-us/library/windows/desktop/aa365247(v=vs.85).aspx#maxpath
+
+    :param path: a path to prefix
+    :type path: str
+    :return: a prefixed path
+    :rtype: str
     """
     if platform.system() == 'Windows':
         if path.startswith('\\\\'):
@@ -185,6 +224,9 @@ class BytesIoContextManager(object):
     """
 
     def __init__(self, byte_data):
+        """
+        :param bytes_data: a byte stream
+        """
         self.byte_data = byte_data
 
     def __enter__(self):
@@ -229,6 +271,13 @@ def _pick_scale_and_suffix(x):
 def format_and_scale_number(x, unit):
     """
     Picks a good scale for representing a number and formats it.
+
+    :param x: a number
+    :type x: int
+    :param unit: an arbitrary unit name
+    :type unit: str
+    :return: scaled and formatted number
+    :rtype: str
     """
 
     # simple case for small numbers
@@ -254,6 +303,15 @@ def format_and_scale_number(x, unit):
 def format_and_scale_fraction(numerator, denominator, unit):
     """
     Picks a good scale for representing a fraction, and formats it.
+
+    :param numerator: a numerator of a fraction
+    :type numerator: int
+    :param denominator: a denominator of a fraction
+    :type denominator: int
+    :param unit: an arbitrary unit name
+    :type unit: str
+    :return: scaled and formatted fraction
+    :rtype: str
     """
 
     # simple case for small numbers
@@ -281,21 +339,29 @@ _CAMELCASE_TO_UNDERSCORE_RE = re.compile('((?<=[a-z0-9])[A-Z]|(?!^)[A-Z](?=[a-z]
 
 
 def camelcase_to_underscore(input_):
+    """
+    Convert camel cased string to string with underscores
+
+    :param input_: an input string
+    :type input_: str
+    :return: string with underscores
+    :rtype: str
+    """
     return _CAMELCASE_TO_UNDERSCORE_RE.sub(r'_\1', input_).lower()
 
 
-def repr_dict_deterministically(dict_):
-    # a simple version had a disadvantage of outputting dictionary keys in random order.
-    # It was hard to read. Therefore we sort items by key.
-    fields = ', '.join('%s: %s' % (repr(k), repr(v)) for k, v in sorted(six.iteritems(dict_)))
-    return '{%s}' % (fields,)
-
-
 class B2TraceMeta(DefaultTraceMeta):
+    """
+    Traces all public method calls, except for ones with names that begin with `get_`
+    """
     pass
 
 
 class B2TraceMetaAbstract(DefaultTraceAbstractMeta):
+    """
+    Default class for tracers, to be set as
+    a metaclass for abstract base classes
+    """
     pass
 
 
