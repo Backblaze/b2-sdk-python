@@ -130,17 +130,6 @@ do
     fi
 done
 
-header docs
-
-cd doc
-if ./regenerate.sh
-then
-    echo "docs passed on $d"
-else
-    echo "docs FAILED on $d"
-    exit 1
-fi
-cd ..
 
 header test_raw_api
 
