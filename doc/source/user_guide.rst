@@ -39,7 +39,7 @@ In other words, if you pin your dependencies to
 
 .. hint:: If the current version of b2sdk is 4.5.6 and you only use the public interfaces, put this in your requirements.txt::
   
-  >=4.5.6;<5.0.0
+    b2sdk>=4.5.6,<5.0.0
 
 .. note:: b2sdk.*._something and b2sdk.*.*._something, having a name which begins with an underscore, are NOT considred public interface.
 
@@ -60,7 +60,7 @@ Things which sometimes might be necssary to use that are NOT considered public i
 
 .. hint:: If the current version of b2sdk is 4.5.6 and you use the public and protected interfaces, put this in your requirements.txt::
   
-    >=4.5.6;<4.6.0
+    b2sdk>=4.5.6,<4.6.0
 
 
 Private
@@ -70,5 +70,5 @@ If you need to use some of our private interfaces, pin your dependencies strictl
 
 .. hint:: If the current version of b2sdk is 4.5.6 and you use the private interface, put this in your requirements.txt::
   
-  ==4.5.6
+    b2sdk==4.5.6
 
