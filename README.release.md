@@ -3,7 +3,7 @@
 - Get the latest versions of dependencies
   - `pip install --upgrade --upgrade-strategy eager -r requirements.txt -r requirements-test.txt -r requirements-setup.txt -r requirements-doc.txt`
 - Bump the version number to an even number.
-  - version number is in: `b2/version.py`, `README.md`, and `setup.py`.
+  - version number is in: `b2/version.py` and `README.md`.
 - Update the release history in README.md.
 - Run full tests (currently: `pre-commit.sh`)
 - Build docs locally (currently: `python setup.py develop; cd doc; ./regenerate.sh && echo ok`)
@@ -15,3 +15,4 @@
   - `twine upload dist/*`
 - Install using pip and verify that it gets the correct version.
 - Bump the version number to an odd number and commit.
+- Push to GitHub again.
