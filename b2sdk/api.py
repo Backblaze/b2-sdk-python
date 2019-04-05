@@ -139,7 +139,7 @@ class B2Api(object):
         """
         Perform account authorization
 
-        :param realm: a realm to authiroze account in
+        :param realm: a realm to authorize account in (usually just "production")
         :type realm: str
         :param account_id_or_key_id: account or key ID
         :type account_id_or_key_id: str
