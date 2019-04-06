@@ -216,13 +216,10 @@ class ClockSkewHook(HttpCallback):
         # Get the local time
         local_time = arrow.utcnow()
 
-        # Check the difference.  The timedelta.total_seconds() method is not available
-        # in Python 2.6, so we'll compute it using the formula from the Python docs.
+        # Check the difference.
         max_allowed = 10 * 60  # ten minutes, in seconds
         skew = local_time - server_time
-        skew_seconds = int(
-            (skew.microseconds + (skew.seconds + skew.days * 24 * 3600) * 1000000) / 1000000
-        )
+        skew_seconds = skew.total_seconds()
         if max_allowed < abs(skew_seconds):
             raise ClockSkew(skew_seconds)
 
