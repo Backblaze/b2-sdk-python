@@ -227,7 +227,7 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
         application_key,
         realm,
         allowed,
-        app_key_id,
+        application_key_id,
     ):
         assert self.allowed_is_valid(allowed)
         with self._get_connection() as conn:
@@ -243,7 +243,7 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
             conn.execute(
                 insert_statement, (
                     account_id,
-                    app_key_id,
+                    application_key_id,
                     application_key,
                     auth_token,
                     api_url,
@@ -322,8 +322,13 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
 
     def get_application_key_id(self):
         """
-        Return application key ID or Account ID.
+        Returns an application key ID.
         The 'account_id_or_app_key_id' column was not in the original schema, so it may be NULL.
+
+        In addition, this is the only place where we are not renaming account_id_or_app_key_id to application_key_id
+        because it requires a column change.
+
+        application_key_id == account_id_or_app_key_id
 
         :rtype: str
         """
@@ -403,7 +408,7 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
         """
         Refresh names and IDs of buckets
 
-        :param name_id_iterable: an iterable which yields buakcet name and ID
+        :param name_id_iterable: an iterable which yields bucket name and ID
         """
         with self._get_connection() as conn:
             conn.execute('DELETE FROM bucket;')

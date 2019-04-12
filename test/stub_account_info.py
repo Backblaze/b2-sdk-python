@@ -34,7 +34,7 @@ class StubAccountInfo(AbstractAccountInfo):
         self.download_url = None
         self.minimum_part_size = None
         self.realm = None
-        self.app_key_id = None
+        self.application_key_id = None
         self._large_file_uploads = collections.defaultdict(list)
         self._large_file_uploads_lock = threading.Lock()
 
@@ -52,7 +52,7 @@ class StubAccountInfo(AbstractAccountInfo):
         application_key,
         realm,
         allowed,
-        app_key_id,
+        application_key_id,
     ):
         self.account_id = account_id
         self.auth_token = auth_token
@@ -62,7 +62,7 @@ class StubAccountInfo(AbstractAccountInfo):
         self.application_key = application_key
         self.realm = realm
         self.allowed = allowed
-        self.app_key_id = app_key_id
+        self.application_key_id = application_key_id
 
     def refresh_entire_bucket_name_cache(self, name_id_iterable):
         self.buckets = {}
@@ -86,7 +86,7 @@ class StubAccountInfo(AbstractAccountInfo):
         return self.account_id
 
     def get_application_key_id(self):
-        return self.app_key_id
+        return self.application_key_id
 
     def get_account_auth_token(self):
         return self.auth_token

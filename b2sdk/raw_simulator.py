@@ -53,12 +53,12 @@ class KeySimulator(object):
     """
 
     def __init__(
-        self, account_id, name, key_id, key, capabilities, expiration_timestamp_or_none,
+        self, account_id, name, application_key_id, key, capabilities, expiration_timestamp_or_none,
         bucket_id_or_none, bucket_name_or_none, name_prefix_or_none
     ):
         self.name = name
         self.account_id = account_id
-        self.key_id = key_id
+        self.application_key_id = application_key_id
         self.key = key
         self.capabilities = capabilities
         self.expiration_timestamp_or_none = expiration_timestamp_or_none
@@ -70,7 +70,7 @@ class KeySimulator(object):
             accountId=self.account_id,
             bucketId=self.bucket_id_or_none,
             applicationKey=self.key,
-            applicationKeyId=self.key_id,
+            applicationKeyId=self.application_key_id,
             capabilities=self.capabilities,
             expirationTimestamp=self.expiration_timestamp_or_none,
             keyName=self.name,
@@ -544,9 +544,9 @@ class RawSimulator(AbstractRawApi):
     )  # yapf: disable
 
     def __init__(self):
-        # Map from account_id or application_key_id to KeySimulator.
-        # The entry for the master application_key_id is for the master application
-        # key for the account, and the entries with application_key_id
+        # Map from application_key_id to KeySimulator.
+        # The entry for the master application key ID is for the master application
+        # key for the account, and the entries with non-master application keys
         # are for keys created b2 createKey().
         self.key_id_to_key = dict()
 
@@ -593,7 +593,7 @@ class RawSimulator(AbstractRawApi):
         self.key_id_to_key[account_id] = KeySimulator(
             account_id=account_id,
             name='master',
-            key_id=account_id,
+            application_key_id=account_id,
             key=master_key,
             capabilities=ALL_CAPABILITES,
             expiration_timestamp_or_none=None,
@@ -690,7 +690,7 @@ class RawSimulator(AbstractRawApi):
 
         index = self.app_key_counter
         self.app_key_counter += 1
-        app_key_id = 'appKeyId%d' % (index,)
+        application_key_id = 'appKeyId%d' % (index,)
         app_key = 'appKey%d' % (index,)
         if bucket_id is None:
             bucket_name_or_none = None
@@ -699,7 +699,7 @@ class RawSimulator(AbstractRawApi):
         key_sim = KeySimulator(
             account_id=account_id,
             name=key_name,
-            key_id=app_key_id,
+            application_key_id=application_key_id,
             key=app_key,
             capabilities=capabilities,
             expiration_timestamp_or_none=expiration_timestamp_or_none,
@@ -707,7 +707,7 @@ class RawSimulator(AbstractRawApi):
             bucket_name_or_none=bucket_name_or_none,
             name_prefix_or_none=name_prefix
         )
-        self.key_id_to_key[app_key_id] = key_sim
+        self.key_id_to_key[application_key_id] = key_sim
         self.all_application_keys.append(key_sim)
         return key_sim.as_created_key()
 

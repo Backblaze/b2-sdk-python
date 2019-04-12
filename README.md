@@ -37,8 +37,8 @@ b2sdk>=0.0.0,<1.0.0
 Changes:
 
 * Fix transferer crashing on empty file download attempt
-* Rename accountId for authentication to application key Id
-    Note: this means account Id is still backwards compatible,
+* Rename account ID for authentication to application key ID
+    Note: this means account ID is still backwards compatible,
     only the terminology has changed.
 
 
@@ -79,7 +79,7 @@ Before checking in, use the `pre-commit.sh` script to check code formatting, run
 unit tests, run integration tests etc.
 
 The integration tests need a file in your home directory called `.b2_auth`
-that contains two lines with nothing on them but your application Key ID and application key:
+that contains two lines with nothing on them but your application key ID and application key:
 
      applicationKeyId
      applicationKey

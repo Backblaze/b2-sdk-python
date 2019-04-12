@@ -280,7 +280,7 @@ class TestSqliteAccountInfo(AccountInfoBase, TestBase):
 
     def test_upgrade_2_default_app_key(self):
         """
-        The 'account_id_or_app_key_id' field should default to the account id.
+        The 'application_key_id' field should default to the account id.
         """
         old_account_info = self._make_sqlite_account_info(last_upgrade_to_run=0)
         old_account_info.set_auth_data_with_schema_0_for_test(
