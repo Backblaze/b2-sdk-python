@@ -293,7 +293,7 @@ class TestSqliteAccountInfo(AccountInfoBase, TestBase):
             'realm',
         )
         new_account_info = self._make_info()
-        self.assertEqual('account_id', new_account_info.get_account_id_or_app_key_id())
+        self.assertEqual('account_id', new_account_info.get_application_key_id())
 
     def _make_info(self):
         return self._make_sqlite_account_info()

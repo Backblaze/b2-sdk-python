@@ -35,8 +35,8 @@ class InMemoryAccountInfo(UrlPoolAccountInfo):
     """
     Holder for all account-related information that needs to be kept
     between API calls, and between invocations of the command-line
-    tool.  This includes: account id, application key, auth tokens,
-    API URL, download URL, and uploads URLs.
+    tool.  This includes: account id, application key id, application key,
+    auth tokens, API URL, download URL, and uploads URLs.
     """
 
     def __init__(self, *args, **kwargs):
@@ -52,7 +52,7 @@ class InMemoryAccountInfo(UrlPoolAccountInfo):
 
     def _clear_in_memory_account_fields(self):
         self._account_id = None
-        self._account_id_or_app_key_id = None
+        self._app_key_id = None
         self._allowed = None
         self._api_url = None
         self._application_key = None
@@ -72,10 +72,10 @@ class InMemoryAccountInfo(UrlPoolAccountInfo):
         application_key,
         realm,
         allowed,
-        account_id_or_app_key_id,
+        app_key_id,
     ):
         self._account_id = account_id
-        self._account_id_or_app_key_id = account_id_or_app_key_id
+        self._app_key_id = app_key_id
         self._auth_token = auth_token
         self._api_url = api_url
         self._download_url = download_url
@@ -133,13 +133,13 @@ class InMemoryAccountInfo(UrlPoolAccountInfo):
         return self._account_id
 
     @_raise_missing_if_result_is_none
-    def get_account_id_or_app_key_id(self):
+    def get_application_key_id(self):
         """ 
-        Returns the account id or key id used to authenticate
+        Returns the application key id used to authenticate
 
         :rtype: str
         """
-        return self._account_id_or_app_key_id
+        return self._app_key_id
 
     @_raise_missing_if_result_is_none
     def get_account_auth_token(self):

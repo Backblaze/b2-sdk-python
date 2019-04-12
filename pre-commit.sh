@@ -133,7 +133,7 @@ done
 
 header test_raw_api
 
-if TEST_ACCOUNT_ID="$(head -n 1 ~/.b2_auth)" TEST_APPLICATION_KEY="$(tail -n 1 ~/.b2_auth)" python -m b2sdk.raw_api
+if TEST_APPLICATION_KEY_ID="$(head -n 1 ~/.b2_auth)" TEST_APPLICATION_KEY="$(tail -n 1 ~/.b2_auth)" python -m b2sdk.raw_api
 then
     echo "raw API test PASSED"
 else

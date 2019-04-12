@@ -227,7 +227,7 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
         application_key,
         realm,
         allowed,
-        account_id_or_app_key_id,
+        app_key_id,
     ):
         assert self.allowed_is_valid(allowed)
         with self._get_connection() as conn:
@@ -243,7 +243,7 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
             conn.execute(
                 insert_statement, (
                     account_id,
-                    account_id_or_app_key_id,
+                    app_key_id,
                     application_key,
                     auth_token,
                     api_url,
@@ -320,9 +320,9 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
         """
         return self._get_account_info_or_raise('account_id')
 
-    def get_account_id_or_app_key_id(self):
+    def get_application_key_id(self):
         """
-        Return account ID or appliction key ID.
+        Return application key ID or Account ID.
         The 'account_id_or_app_key_id' column was not in the original schema, so it may be NULL.
 
         :rtype: str

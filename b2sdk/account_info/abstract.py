@@ -21,8 +21,8 @@ class AbstractAccountInfo(object):
     """
     Holder for all account-related information that needs to be kept
     between API calls, and between invocations of the command-line
-    tool.  This includes: account id, application key, auth tokens,
-    API URL, download URL, and uploads URLs.
+    tool.  This includes: account id, application key id,  application key,
+    auth tokens, API URL, download URL, and uploads URLs.
 
     This class must be THREAD SAFE because it may be used by multiple
     threads running in the same Python process.  It also needs to be
@@ -115,9 +115,9 @@ class AbstractAccountInfo(object):
         """
 
     @abstractmethod
-    def get_account_id_or_app_key_id(self):
+    def get_application_key_id(self):
         """ 
-        Returns the account id or key id used to authenticate
+        Returns the application key id used to authenticate
 
         :rtype: str
         """
@@ -192,7 +192,7 @@ class AbstractAccountInfo(object):
         application_key,
         realm,
         allowed=None,
-        account_id_or_app_key_id=None,
+        application_key_id=None,
     ):
         """
         Stores the results of b2_authorize_account.
@@ -217,12 +217,12 @@ class AbstractAccountInfo(object):
         :type minimum_part_size: int
         :param application_key: application key
         :type application_key: str
-        :param realm: a realm to authiroze account in
+        :param realm: a realm to authorize account in
         :type realm: str
         :param allowed: the structure to use for old account info that was saved without 'allowed'
         :type allowed: dict
-        :param account_id_or_app_key_id: account ID or application key ID
-        :type account_id_or_app_key_id: str
+        :param application_key_id: application key ID
+        :type application_key_id: str
         """
         if allowed is None:
             allowed = self.DEFAULT_ALLOWED
@@ -236,7 +236,7 @@ class AbstractAccountInfo(object):
             application_key,
             realm,
             allowed,
-            account_id_or_app_key_id,
+            application_key_id,
         )
 
     @classmethod

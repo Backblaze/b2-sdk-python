@@ -127,7 +127,7 @@ class B2Api(object):
         try:
             self.authorize_account(
                 self.account_info.get_realm(),
-                self.account_info.get_account_id_or_app_key_id(),
+                self.account_info.get_application_key_id(),
                 self.account_info.get_application_key(),
             )
         except MissingAccountData:
@@ -135,14 +135,14 @@ class B2Api(object):
         return True
 
     @limit_trace_arguments(only=('self', 'realm'))
-    def authorize_account(self, realm, account_id_or_key_id, application_key):
+    def authorize_account(self, realm, application_key_id, application_key):
         """
         Perform account authorization
 
         :param realm: a realm to authorize account in (usually just "production")
         :type realm: str
-        :param account_id_or_key_id: account or key ID
-        :type account_id_or_key_id: str
+        :param application_key_id: application key ID
+        :type application_key_id: str
         :param application_key: user's application key
         :type application_key: str
         """
@@ -150,14 +150,14 @@ class B2Api(object):
         try:
             old_account_id = self.account_info.get_account_id()
             old_realm = self.account_info.get_realm()
-            if account_id_or_key_id != old_account_id or realm != old_realm:
+            if application_key_id != old_account_id or realm != old_realm:
                 self.cache.clear()
         except MissingAccountData:
             self.cache.clear()
 
         # Authorize
         realm_url = self.account_info.REALM_URLS[realm]
-        response = self.raw_api.authorize_account(realm_url, account_id_or_key_id, application_key)
+        response = self.raw_api.authorize_account(realm_url, application_key_id, application_key)
         allowed = response['allowed']
 
         # Store the auth data
@@ -170,7 +170,7 @@ class B2Api(object):
             application_key,
             realm,
             allowed,
-            account_id_or_key_id,
+            application_key_id,
         )
 
     def get_account_id(self):
