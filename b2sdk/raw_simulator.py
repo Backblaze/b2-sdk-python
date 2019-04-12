@@ -545,7 +545,7 @@ class RawSimulator(AbstractRawApi):
 
     def __init__(self):
         # Map from account_id or application_key_id to KeySimulator.
-        # The entry for the account_id is for the master application
+        # The entry for the master application_key_id is for the master application
         # key for the account, and the entries with application_key_id
         # are for keys created b2 createKey().
         self.key_id_to_key = dict()
@@ -614,10 +614,10 @@ class RawSimulator(AbstractRawApi):
         assert len(self.upload_errors) == 0
         self.upload_errors = errors
 
-    def authorize_account(self, realm_url, account_id, application_key):
-        key_sim = self.key_id_to_key.get(account_id)
+    def authorize_account(self, realm_url, application_key_id, application_key):
+        key_sim = self.key_id_to_key.get(application_key_id)
         if key_sim is None:
-            raise InvalidAuthToken('account/key ID not valid', 'unauthorized')
+            raise InvalidAuthToken('application key ID not valid', 'unauthorized')
         if application_key != key_sim.key:
             raise InvalidAuthToken('secret key is wrong', 'unauthorized')
         auth_token = 'auth_token_%d' % (self.auth_token_counter,)

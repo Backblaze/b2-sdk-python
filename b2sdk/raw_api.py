@@ -161,8 +161,8 @@ class B2RawApi(AbstractRawApi):
         headers = {'Authorization': auth}
         return self.b2_http.post_json_return_json(url, headers, params)
 
-    def authorize_account(self, realm_url, account_id, application_key):
-        auth = b'Basic ' + base64.b64encode(six.b('%s:%s' % (account_id, application_key)))
+    def authorize_account(self, realm_url, application_key_id, application_key):
+        auth = b'Basic ' + base64.b64encode(six.b('%s:%s' % (application_key_id, application_key)))
         return self._post_json(realm_url, 'b2_authorize_account', auth)
 
     def cancel_large_file(self, api_url, account_auth_token, file_id):
@@ -548,9 +548,9 @@ def test_raw_api_helper(raw_api):
     this test will break and we'll have to do something about
     it.
     """
-    account_id = os.environ.get('TEST_ACCOUNT_ID')
-    if account_id is None:
-        print('TEST_ACCOUNT_ID is not set.', file=sys.stderr)
+    application_key_id = os.environ.get('TEST_APPLICATION_KEY_ID')
+    if application_key_id is None:
+        print('TEST_APPLICATION_KEY_ID is not set.', file=sys.stderr)
         sys.exit(1)
     application_key = os.environ.get('TEST_APPLICATION_KEY')
     if application_key is None:
@@ -560,7 +560,8 @@ def test_raw_api_helper(raw_api):
 
     # b2_authorize_account
     print('b2_authorize_account')
-    auth_dict = raw_api.authorize_account(realm_url, account_id, application_key)
+    auth_dict = raw_api.authorize_account(realm_url, application_key_id, application_key)
+    account_id = auth_dict['accountId']
     account_auth_token = auth_dict['authorizationToken']
     api_url = auth_dict['apiUrl']
     download_url = auth_dict['downloadUrl']
