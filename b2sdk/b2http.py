@@ -49,8 +49,7 @@ def _translate_errors(fcn, post_params=None):
     Calls the given function, turning any exception raised into the right
     kind of B2Error.
 
-    :param post_params: request parameters
-    :type post_params: dict
+    :param dict post_params: request parameters
     """
     try:
         response = fcn()
@@ -110,10 +109,8 @@ def _translate_and_retry(fcn, try_count, post_params=None):
     Try calling fcn try_count times, retrying only if
     the exception is a retryable B2Error.
 
-    :param try_count: a number of retries
-    :type try_count: int
-    :param post_params: request parameters
-    :type post_params: dict
+    :param int try_count: a number of retries
+    :param dict post_params: request parameters
     """
     # For all but the last try, catch the exception.
     wait_time = 1.0
@@ -158,12 +155,9 @@ class HttpCallback(object):
         Raises an exception if this request should not be processed.
         The exception raised must inherit from B2HttpCallbackPreRequestException.
 
-        :param method: str, One of: 'POST', 'GET', etc.
-        :type method: str
-        :param url: The URL that will be used.
-        :type url: str
-        :param headers: The header sent with the request.
-        :type headers: dict
+        :param str method: str, One of: 'POST', 'GET', etc.
+        :param str url: The URL that will be used.
+        :param dict headers: The header sent with the request.
 
         """
 
@@ -175,12 +169,9 @@ class HttpCallback(object):
         Raises an exception if this request should be treated as failing.
         The exception raised must inherit from B2HttpCallbackPostRequestException.
 
-        :param method: one of: 'POST', 'GET', etc.
-        :type method: str
-        :param url: the URL that will be used.
-        :type url: str
-        :param headers: the header sent with the request.
-        :type headers: dict
+        :param str method: one of: 'POST', 'GET', etc.
+        :param str url: the URL that will be used.
+        :param dict headers: the header sent with the request.
         :param response: a response object from the requests library.
         """
 
@@ -193,12 +184,9 @@ class ClockSkewHook(HttpCallback):
 
         The Date header contains a string that looks like: "Fri, 16 Dec 2016 20:52:30 GMT".
 
-        :param method: one of: 'POST', 'GET', etc.
-        :type method: str
-        :param url: the URL that will be used.
-        :type url: str
-        :param headers: the header sent with the request.
-        :type headers: dict
+        :param str method: one of: 'POST', 'GET', etc.
+        :param str url: the URL that will be used.
+        :param dict headers: the header sent with the request.
         :param response: a response object from the requests library.
         """
         # Make a string that uses month numbers instead of month names
@@ -228,7 +216,7 @@ class B2Http(object):
     """
     A wrapper for the requests module.  Provides the operations
     needed to access B2, and handles retrying when the returned
-    status is 503 Service Unavailable or 429 Too Many Requests.
+    status is 503 Service Unavailable, 429 Too Many Requests etc
 
     The operations supported are:
        - post_json_return_json
@@ -254,8 +242,7 @@ class B2Http(object):
         it easy to mock for testing.
 
         :param requests_module: a reference to requests module
-        :param install_clock_skew_hook: if True, install a clock skew hook
-        :type install_clock_skew_hook: bool
+        :param bool install_clock_skew_hook: if True, install a clock skew hook
         """
         requests_to_use = requests_module or requests
         self.session = requests_to_use.Session()
@@ -272,7 +259,7 @@ class B2Http(object):
         """
         self.callbacks.append(callback)
 
-    def post_content_return_json(self, url, headers, data, try_count=1, post_params=None):
+    def post_content_return_json(self, url, headers, data, try_count=5, post_params=None):
         """
         Use like this:
 
@@ -284,10 +271,8 @@ class B2Http(object):
            except B2Error as e:
                ...
 
-        :param url: URL to call
-        :type url: str
-        :param headers: headers to send.
-        :type headers: dict
+        :param str url: URL to call
+        :param dict headers: headers to send.
         :param data: bytes (Python 3) or str (Python 2), or a file-like object, to send
         :return: a dict that is the decoded JSON
         :rtype: dict
@@ -317,7 +302,7 @@ class B2Http(object):
         finally:
             response.close()
 
-    def post_json_return_json(self, url, headers, params, try_count=1):
+    def post_json_return_json(self, url, headers, params, try_count=5):
         """
         Use like this:
 
@@ -329,18 +314,16 @@ class B2Http(object):
            except B2Error as e:
                ...
 
-        :param url: URL to call
-        :type url: str
-        :param headers: headers to send.
-        :type headers: dict
-        :param params: a dict that will be converted to JSON
-        :type params: dict
-        :return: a dict that is the decoded JSON
+        :param str url: URL to call
+        :param dict headers: headers to send.
+        :param dict params: a dict that will be converted to JSON
+        :return: the decoded JSON document
+        :rtype: dict
         """
         data = six.BytesIO(six.b(json.dumps(params)))
         return self.post_content_return_json(url, headers, data, try_count, params)
 
-    def get_content(self, url, headers, try_count=1):
+    def get_content(self, url, headers, try_count=5):
         """
         Fetches content from a URL.
 
@@ -359,12 +342,9 @@ class B2Http(object):
             - headers
             - iter_content()
 
-        :param url: URL to call
-        :type url: str
-        :param headers: headers to send
-        :type headers: dict
-        :param try_count: a number or retries
-        :type try_count: int
+        :param str url: URL to call
+        :param dict headers: headers to send
+        :param int try_count: a number or retries
         :return: Context manager that returns an object that supports iter_content()
         """
         # Make the headers we'll send by adding User-Agent to what
