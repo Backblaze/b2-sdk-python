@@ -21,7 +21,7 @@ class AbstractAccountInfo(object):
     """
     Holder for all account-related information that needs to be kept
     between API calls, and between invocations of the command-line
-    tool.  This includes: account id, application key id,  application key,
+    tool.  This includes: account ID, application key ID,  application key,
     auth tokens, API URL, download URL, and uploads URLs.
 
     This class must be THREAD SAFE because it may be used by multiple
@@ -109,7 +109,7 @@ class AbstractAccountInfo(object):
     @abstractmethod
     def get_account_id(self):
         """
-        Returns account_id or raises MissingAccountData exception
+        Returns account ID or raises MissingAccountData exception
 
         :rtype: str
         """
@@ -117,7 +117,7 @@ class AbstractAccountInfo(object):
     @abstractmethod
     def get_application_key_id(self):
         """ 
-        Returns the application key id used to authenticate
+        Returns the application key ID used to authenticate
 
         :rtype: str
         """
@@ -269,7 +269,7 @@ class AbstractAccountInfo(object):
         application_key,
         realm,
         allowed,
-        account_id_or_app_key_id,
+        application_key_id,
     ):
         """
         Stores the auth data.  Can assume that 'allowed' is present and valid.
