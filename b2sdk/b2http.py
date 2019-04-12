@@ -262,7 +262,7 @@ class B2Http(object):
         """
         self.callbacks.append(callback)
 
-    def post_content_return_json(self, url, headers, data, try_count=1, post_params=None):
+    def post_content_return_json(self, url, headers, data, try_count=5, post_params=None):
         """
         Use like this:
 
@@ -305,7 +305,7 @@ class B2Http(object):
         finally:
             response.close()
 
-    def post_json_return_json(self, url, headers, params, try_count=1):
+    def post_json_return_json(self, url, headers, params, try_count=5):
         """
         Use like this:
 
@@ -326,7 +326,7 @@ class B2Http(object):
         data = six.BytesIO(six.b(json.dumps(params)))
         return self.post_content_return_json(url, headers, data, try_count, params)
 
-    def get_content(self, url, headers, try_count=1):
+    def get_content(self, url, headers, try_count=5):
         """
         Fetches content from a URL.
 
