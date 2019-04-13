@@ -114,6 +114,7 @@ class AbstractAccountInfo(object):
         :rtype: str
         """
 
+    # TODO: make a decorator for get_account_id_or_app_key_id()
     @abstractmethod
     def get_application_key_id(self):
         """ 
@@ -258,6 +259,7 @@ class AbstractAccountInfo(object):
             ('capabilities' in allowed) and ('namePrefix' in allowed)
         )
 
+    # TODO: make a decorator for set_auth_data()
     @abstractmethod
     def _set_auth_data(
         self,
