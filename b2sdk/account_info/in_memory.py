@@ -35,7 +35,7 @@ class InMemoryAccountInfo(UrlPoolAccountInfo):
     """
     Holder for all account-related information that needs to be kept
     between API calls, and between invocations of the command-line
-    tool.  This includes: account id, application key ID, application key,
+    tool.  This includes: account ID, application key ID, application key,
     auth tokens, API URL, download URL, and uploads URLs.
     """
 
