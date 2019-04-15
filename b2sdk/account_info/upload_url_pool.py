@@ -72,7 +72,7 @@ class UrlPoolAccountInfo(AbstractAccountInfo):
     """
     Holder for all account-related information that needs to be kept
     between API calls, and between invocations of the command-line
-    tool.  This includes: account id, application key, auth tokens,
+    tool.  This includes: account ID, application key, auth tokens,
     API URL, download URL, and uploads URLs.
 
     This concrete implementation uses an instance of UploadUrlPool
