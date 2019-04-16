@@ -29,7 +29,7 @@ class Deprecat:
     def _get_verified_versions(self, tuple_, subject, from_=None, allow_future=False):
         """
         subject may be "function", "method", "argument", "class" etc
-        returns None if replacement is going to happen in the future, or a 3-tuple with replacemnt specification:
+        returns None if replacement is going to happen in the future, or a 3-tuple with replacement specification:
             * name to replace to
             * version where the change was introduced
             * version where the support for the old name is going to be dropped
@@ -70,7 +70,6 @@ class Deprecat:
         if replacements is None:
             replacements = {}
 
-        to_remove = set()
         self.replacements = {}
         for from_, tuple_ in six.iteritems(replacements):
             parsed = self._get_verified_versions(
@@ -82,16 +81,16 @@ class Deprecat:
             if parsed is not None:
                 self.replacements[from_] = parsed
 
-    def __call__(self, callable):
-        @wraps(callable)
+    def __call__(self, func):
+        @wraps(func)
         def wrapper(*args, **kwargs):
             if self.rename is not None:
                 to_, version_changed, version_dropped = self.rename
                 warnings.warn(
                     '%r is deprecated since version %s - it was moved to %r, please switch to use that. The proxy for the old name is going to be removed in %s.'
-                    % (callable.__name__, version_changed, to_, version_dropped), DeprecationWarning
+                    % (func.__name__, version_changed, to_, version_dropped), DeprecationWarning
                 )
-            signature = inspect.getfullargspec(callable)
+            signature = inspect.getfullargspec(func)
             for from_, (to_, version_changed, version_dropped) in six.iteritems(self.replacements):
                 assert to_ in signature.args or to_ in signature.kwonlyargs, '%r is not an argument of the decorated function so it cannot be remapped to from a deprecated parameter name' % (
                     from_,
@@ -104,10 +103,10 @@ class Deprecat:
                     del kwargs[from_]
                     warnings.warn(
                         '%r is a deprecated argument for %r function/method - it was renamed to %r in version %s. Support for the old name is going to be dropped in %s'
-                        % (from_, callable.__name__, to_, version_changed, version_dropped),
+                        % (from_, func.__name__, to_, version_changed, version_dropped),
                         DeprecationWarning,
                     )
-            return callable(*args, **kwargs)
+            return func(*args, **kwargs)
 
         return wrapper
 
