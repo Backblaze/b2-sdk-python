@@ -32,6 +32,13 @@ b2sdk>=0.0.0,<1.0.0
 
 # Release History
 
+## 0.1.6 (not released yet)
+
+Changes:
+
+* Fix transferer crashing on empty file download attempt
+
+
 ## 0.1.4 (2019-04-04)
 
 Initial official release of SDK as a separate package (until now it was a part of B2 CLI)
