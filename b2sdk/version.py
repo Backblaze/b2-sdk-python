@@ -9,11 +9,7 @@
 ######################################################################
 
 from functools import wraps
-import inspect
 import sys
-import warnings
-
-import six
 
 # To avoid confusion between official Backblaze releases of this tool and
 # the versions on Github, we use the convention that the third number is
@@ -25,99 +21,159 @@ PYTHON_VERSION = '.'.join(map(str, sys.version_info[:3]))  # something like: 2.7
 USER_AGENT = 'backblaze-b2/%s python/%s' % (VERSION, PYTHON_VERSION)
 
 
-class Deprecat:
-    def _get_verified_versions(self, tuple_, subject, from_=None, allow_future=False):
+### XXX
+
+from abc import ABCMeta, abstractmethod
+import inspect
+import warnings
+
+from pkg_resources import parse_version
+import six
+
+@six.add_metaclass(ABCMeta)
+class AbstractVersionDecorator(object):
+    WHAT = NotImplemented  # 'function', 'method', 'class' etc
+    def __init__(self, changed_version, cutoff_version=None, reason=''):
         """
-        subject may be "function", "method", "argument", "class" etc
-        returns None if replacement is going to happen in the future, or a 3-tuple with replacement specification:
-            * name to replace to
-            * version where the change was introduced
-            * version where the support for the old name is going to be dropped
+        changed_version, cutoff_version and current_version are version strings
         """
-        to_, version_changed, version_dropped = tuple_
-        assert len(version_changed) == len(version_dropped) == len(
-            VERSION
-        ) == 5  # TODO the comparator used below is too naiive for the provided version number
-        assert version_changed < version_dropped, '%s decorator is set to start renaming %s %r starting at version %s and finishing in %s. It needs to start at a lower version and finish at a higher version.' % (
-            self.__class__.__name__, subject, from_, version_changed, version_dropped
-        )
-        assert VERSION < version_dropped, '%s decorator is still used in version %s when old %s name %r was scheduled to be dropped in %s. It is time to remove that mapping.' % (
-            self.__class__.__name__, VERSION, subject, from_, version_dropped
-        )
-        if not allow_future:
-            assert version_changed <= VERSION, '%s decorator indicates that the replacement of %s %s should take place in the future version %s, while the current version is %s' % (
-                self.__class__.__name__, subject, from_, version_changed, VERSION
+
+        current_version = VERSION  # TODO autodetect by going up the qualname tree and trying getattr(part, '__version__')
+        self.current_version = parse_version(current_version)
+        self.reason = reason
+
+        self.changed_version = parse_version(changed_version)
+        self.cutoff_version = self._parse_if_not_none(cutoff_version)
+        if self.cutoff_version is not None:
+            assert self.changed_version < self.cutoff_version, '%s decorator is set to start renaming %s %r starting at version %s and finishing in %s. It needs to start at a lower version and finish at a higher version.' % (
+                self.__class__.__name__, self.WHAT, self.source, self.changed_version, self.cutoff_version,
             )
-        if version_changed >= VERSION:
+            assert self.current_version < self.cutoff_version, '%s decorator is still used in version %s when old %s name %r was scheduled to be dropped in %s. It is time to remove the mapping.' % (
+                self.__class__.__name__, self.current_version, self.WHAT, self.source, self.cutoff_version,
+            )
+
+    @classmethod
+    def _parse_if_not_none(cls, version):
+        if version is None:
             return None
-        return to_, version_changed, version_dropped
+        return parse_version(version)
+
+    @abstractmethod
+    def __call__(self, func):
+        """ the actual implementation of decorator """
+
+
+class AbstractDiscourager(AbstractVersionDecorator):
+    def __call__(self, func):
+        # TODO: modify docstring using self.WHAT, self.reason
+        return func  # returns unmodified function, only the documentation is modified
+
+
+class AbstractDeprecator(AbstractVersionDecorator):
+    ALTERNATIVE_DECORATOR = NotImplemented
+    def __init__(
+        self,
+        target,
+        *args,
+        **kwargs
+    ):
+        super(AbstractDeprecator, self).__init__(*args, **kwargs)
+        assert self.changed_version <= self.current_version, '%s decorator indicates that the replacement of %s %r should take place in the future version %s, while the current version is %s. It looks like should be _discouraged_ at this point and not _deprecated_ yet. Consider using %r decorator instead.' % (
+            self.__class__.__name__, self.WHAT, self.source, self.changed_version, self.cutoff_version, self.ALTERNATIVE_DECORATOR,
+        )
+        self.target = target
+
+
+class discourage_argument(AbstractDiscourager):
+    """ Discourages usage of an argument by adding an appropriate note to documentation """
+    WHAT = 'argument'
+
+
+class discourage_function(AbstractDiscourager):
+    """ Discourages usage of a function by adding an appropriate note to documentation """
+    WHAT = 'function'
+
+
+class discourage_method(AbstractDiscourager):
+    """ Discourages usage of a method by adding an appropriate note to documentation """
+    WHAT = 'method'
+
+
+class rename_argument(AbstractDeprecator):
+    """ Changes the argument name to new one if old one is used, warns about deprecation in docs and through a warning """
+    WHAT = 'argument'
+    ALTERNATIVE_DECORATOR = 'discourage_argument'
 
     def __init__(
         self,
-        replacements=None,
-        rename=None,
-        allow_future_replacements=False,
-        allow_future_rename=False,
+        source,
+        *args,
+        **kwargs
     ):
-        self.rename = rename
-        if self.rename is not None:
-            _ = self._get_verified_versions(
-                self.rename,
-                'function',
-                allow_future=allow_future_rename,
-            )
-
-        if replacements is None:
-            replacements = {}
-
-        self.replacements = {}
-        for from_, tuple_ in six.iteritems(replacements):
-            parsed = self._get_verified_versions(
-                tuple_,
-                'argument',
-                from_=from_,
-                allow_future=allow_future_replacements,
-            )
-            if parsed is not None:
-                self.replacements[from_] = parsed
+        self.source = source
+        super(rename_argument, self).__init__(*args, **kwargs)
 
     def __call__(self, func):
         @wraps(func)
         def wrapper(*args, **kwargs):
-            if self.rename is not None:
-                to_, version_changed, version_dropped = self.rename
-                warnings.warn(
-                    '%r is deprecated since version %s - it was moved to %r, please switch to use that. The proxy for the old name is going to be removed in %s.'
-                    % (func.__name__, version_changed, to_, version_dropped), DeprecationWarning
-                )
             signature = inspect.getfullargspec(func)
-            for from_, (to_, version_changed, version_dropped) in six.iteritems(self.replacements):
-                assert to_ in signature.args or to_ in signature.kwonlyargs, '%r is not an argument of the decorated function so it cannot be remapped to from a deprecated parameter name' % (
-                    from_,
+            assert self.target in signature.args or to_ in signature.kwonlyargs, '%r is not an argument of the decorated function so it cannot be remapped to from a deprecated parameter name' % (
+                self.source,
+            )
+            if self.source in kwargs:
+                assert self.target not in kwargs, 'both argument names were provided: %r (deprecated) and %r (new)' % (
+                    self.source, self.target
                 )
-                if from_ in kwargs:
-                    assert to_ not in kwargs, 'both argument names were provided: %r (deprecated) and %r (new)' % (
-                        from_, to_
-                    )
-                    kwargs[to_] = kwargs[from_]
-                    del kwargs[from_]
-                    warnings.warn(
-                        '%r is a deprecated argument for %r function/method - it was renamed to %r in version %s. Support for the old name is going to be dropped in %s'
-                        % (from_, func.__name__, to_, version_changed, version_dropped),
-                        DeprecationWarning,
-                    )
+                kwargs[self.target] = kwargs[self.source]
+                del kwargs[self.source]
+                warnings.warn(
+                    '%r is a deprecated argument for %r function/method - it was renamed to %r in version %s. Support for the old name is going to be dropped in %s.'
+                    % (self.source, func.__name__, self.target, self.changed_version, self.cutoff_version,),
+                    DeprecationWarning,
+                )
             return func(*args, **kwargs)
-
         return wrapper
 
 
+class rename_function(AbstractDeprecator):
+    """
+    Warns about deprecation in docs and through a DeprecationWarning when used. Use it to decorate a proxy function, like this:
+
+    >>> def new(foobar):
+    >>>     return foobar ** 2
+    >>> @rename_function(new, '0.1.0', '0.2.0')
+    >>> def old(foo, bar):
+    >>>     return new(foo + bar)
+    >>> old()
+    'old' is deprecated since version 0.1.0 - it was moved to 'new', please switch to use that. The proxy for the old name is going to be removed in 0.2.0.
+    123
+    >>>
+
+    """
+    WHAT = 'function'
+    ALTERNATIVE_DECORATOR = 'discourage_function'
+    def __init__(self, target, *args, **kwargs):
+        if callable(target):
+            target = target.__name__
+        super(rename_function, self).__init__(target, *args, **kwargs)
+    def __call__(self, func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            warnings.warn(
+                '%r is deprecated since version %s - it was moved to %r, please switch to use that. The proxy for the old name is going to be removed in %s.'
+                % (func.__name__, self.changed_version, self.target, self.cutoff_version,), DeprecationWarning,
+            )
+            return func(*args, **kwargs)
+        return wrapper
+
+
+class rename_method(rename_function):
+    WHAT = 'method'
+    ALTERNATIVE_DECORATOR = 'discourage_method'
+
+
 if __name__ == '__main__':
-    # yapf: disable
-    @Deprecat(
-        replacements={
-            'aaa': ('bbb', '0.1.0', '0.2.0'),
-        },
-    )
+    @rename_argument('aaa', 'bbb', '0.1.0', '0.2.0')
     def easy(bbb):
         """ easy docstring """
         return bbb
@@ -132,68 +188,41 @@ if __name__ == '__main__':
         assert len(w) == 0
 
     # emit deprecation warning
+    assert easy(aaa=5) == 5
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
         assert easy(aaa=5) == 5
         assert len(w) == 1
         assert issubclass(w[-1].category, DeprecationWarning)
-        assert str(w[-1].message) == "'aaa' is a deprecated argument for 'easy' function/method - it was renamed to 'bbb' in version 0.1.0. Support for the old name is going to be dropped in 0.2.0"
+        assert str(w[-1].message) == "'aaa' is a deprecated argument for 'easy' function/method - it was renamed to 'bbb' in version 0.1.0. Support for the old name is going to be dropped in 0.2.0.", str(w[-1].message)
 
 
-    #@Deprecat(
-    #    replacements={
-    #        'aaa': ('bbb', '0.1.0', '0.1.2'),
-    #    },
-    #)
+    #@rename_argument('aaa', 'bbb', '0.1.0', '0.1.2')
     #def late(bbb):
     #    return bbb
-    # AssertionError: Deprecat decorator is still used in version 0.1.4 when old argument name 'aaa' was scheduled to be dropped in 0.1.2. It is time to remove that mapping.
+    # AssertionError: rename_argument decorator is still used in version 0.1.4 when old argument name 'aaa' was scheduled to be dropped in 0.1.2. It is time to remove the mapping.
 
-    #@Deprecat(
-    #    replacements={
-    #        'aaa': ('bbb', '0.2.0', '0.2.2'),
-    #    },
-    #)
+    #@rename_argument('aaa', 'bbb', '0.2.0', '0.2.2')
     #def early(bbb):
     #    return bbb
-    # AssertionError: Deprecat decorator indicates that the replacement of aaa should take place in the future version 0.2.0, while the current version is 0.1.4
+    # AssertionError: rename_argument decorator indicates that the replacement of argument 'aaa' should take place in the future version 0.2.0, while the current version is 0.2.2. It looks like should be _discouraged_ at this point and not _deprecated_ yet. Consider using 'discourage_argument' decorator instead.
 
-    @Deprecat(
-        replacements={
-            'aaa': ('bbb', '0.2.0', '0.2.2'),
-        },
-        allow_future_replacements=True
-    )
-    def early(bbb):
-        return bbb
-    with warnings.catch_warnings(record=True) as w:
-        warnings.simplefilter("always")
-        assert early(5) == 5
-        assert early(bbb=5) == 5
-        #assert early(aaa=5) == 5
-        # TypeError: early() got an unexpected keyword argument 'aaa'
-        assert len(w) == 0
-
-    #@Deprecat(
-    #    replacements={
-    #        'aaa': ('bbb', '0.2.2', '0.2.0'),
-    #    },
-    #)
+    #@rename_argument('aaa', 'bbb', '0.2.2', '0.2.0')
     #def backwards(bbb):
     #    return bbb
-    # AssertionError: Deprecat decorator is set to start renaming argument 'aaa' starting at version 0.2.2 and finishing in 0.2.0. It needs to start at a lower version and finish at a higher version.
+    # AssertionError: rename_argument decorator is set to start renaming argument 'aaa' starting at version 0.2.2 and finishing in 0.2.0. It needs to start at a lower version and finish at a higher version.
 
-    @Deprecat(
-        rename=('new', '0.1.0', '0.2.0'),
-    )
-    def old(bbb):
+    def new(bbb):
         return bbb
-    with warnings.catch_warnings(record=True) as w:
-        warnings.simplefilter("always")
-        assert old(5) == 5
-        assert len(w) == 1
-        print(str(w[-1].message))
-        assert issubclass(w[-1].category, DeprecationWarning)
-        assert str(w[-1].message) == "'old' is deprecated since version 0.1.0 - it was moved to 'new', please switch to use that. The proxy for the old name is going to be removed in 0.2.0."
 
-    # yapf: enable
+    for i in ('new', new):
+        @rename_function(i, '0.1.0', '0.2.0')
+        def old(bbb):
+            return bbb
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            assert old(5) == 5
+            assert len(w) == 1
+            print(str(w[-1].message))
+            assert issubclass(w[-1].category, DeprecationWarning)
+            assert str(w[-1].message) == "'old' is deprecated since version 0.1.0 - it was moved to 'new', please switch to use that. The proxy for the old name is going to be removed in 0.2.0.", str(w[-1].message)
