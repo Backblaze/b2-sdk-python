@@ -578,11 +578,20 @@ class DownloadTests(object):
             self.assertEqual(contents, expected_contents)
 
 
-class TestDownloadDefault(DownloadTests, TestCaseWithBucket):
+class EmptyFileDownloadScenarioMixin(object):
+    """ use with DownloadTests, but not for TestDownloadParallel as it does not like empty files """
+
+    def test_download_by_name_empty_file(self):
+        self.file_info = self.bucket.upload_bytes(six.b(''), 'empty')
+        self.bucket.download_file_by_name('empty', self.download_dest, self.progress_listener)
+        self._verify('')
+
+
+class TestDownloadDefault(DownloadTests, EmptyFileDownloadScenarioMixin, TestCaseWithBucket):
     pass
 
 
-class TestDownloadSimple(DownloadTests, TestCaseWithBucket):
+class TestDownloadSimple(DownloadTests, EmptyFileDownloadScenarioMixin, TestCaseWithBucket):
     def setUp(self):
         super(TestDownloadSimple, self).setUp()
         self.bucket.api.transferer.strategies = [SimpleDownloader(force_chunk_size=20,)]
