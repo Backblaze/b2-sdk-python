@@ -51,6 +51,7 @@ class TestRenameArgument(TestBase):
             @rename_argument('aaa', 'bbb', '0.1.0', '0.1.2')
             def late(bbb):
                 return bbb
+            assert late  # make linters happy
 
     def test_future_replacement(self):
         with self.assertRaises(
@@ -62,6 +63,7 @@ class TestRenameArgument(TestBase):
             @rename_argument('aaa', 'bbb', '0.2.0', '0.2.2')
             def early(bbb):
                 return bbb
+            assert early  # make linters happy
 
     def test_inverted_versions(self):
         with self.assertRaises(
@@ -73,6 +75,7 @@ class TestRenameArgument(TestBase):
             @rename_argument('aaa', 'bbb', '0.2.2', '0.2.0')
             def backwards(bbb):
                 return bbb
+            assert backwards  # make linters happy
 
 
 class TestRenameFunction(TestBase):
