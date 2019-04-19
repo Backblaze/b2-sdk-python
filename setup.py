@@ -54,7 +54,7 @@ with open('requirements-setup.txt', encoding='utf-8') as f:
 with open('requirements-doc.txt', encoding='utf-8') as f:
     requirements_doc = f.read().splitlines()
 
-version = __import__('b2sdk.version').version.VERSION
+version = __import__('b2sdk').__version__
 
 setup(
     name='b2sdk',

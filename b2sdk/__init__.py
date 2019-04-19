@@ -37,3 +37,7 @@ except ImportError:  # Python 2.6
 
 
 logging.getLogger(__name__).addHandler(NullHandler())
+
+import b2sdk.version
+__version__ = b2sdk.version.VERSION
+assert __version__  # PEP-0396
