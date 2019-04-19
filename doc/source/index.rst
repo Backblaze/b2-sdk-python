@@ -12,7 +12,6 @@ to provide command-line access to the B2 service, but there are many possible ap
 
    install
    quick_start
-   user_guide
    api_reference
 
 #########################################
