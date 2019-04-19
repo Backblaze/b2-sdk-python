@@ -117,7 +117,7 @@ class AbstractAccountInfo(object):
     # TODO: make a decorator for get_account_id_or_app_key_id()
     @abstractmethod
     def get_application_key_id(self):
-        """ 
+        """
         Returns the application key ID used to authenticate
 
         :rtype: str
@@ -125,7 +125,7 @@ class AbstractAccountInfo(object):
 
     @abstractmethod
     def get_account_auth_token(self):
-        """ 
+        """
         Returns account_auth_token or raises MissingAccountData exception
 
         :rtype: str
@@ -133,7 +133,7 @@ class AbstractAccountInfo(object):
 
     @abstractmethod
     def get_api_url(self):
-        """ 
+        """
         Returns api_url or raises MissingAccountData exception
 
         :rtype: str
