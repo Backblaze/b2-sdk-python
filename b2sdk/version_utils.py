@@ -176,24 +176,3 @@ class rename_function(AbstractDeprecator):
 class rename_method(rename_function):
     WHAT = 'method'
     ALTERNATIVE_DECORATOR = 'discourage_method'
-
-
-class AbstractDiscourager(AbstractVersionDecorator):
-    def __call__(self, func):
-        # TODO: modify docstring using self.WHAT, self.reason
-        return func  # returns unmodified function, only the documentation is modified
-
-
-class discourage_argument(AbstractDiscourager):
-    """ Discourages usage of an argument by adding an appropriate note to documentation """
-    WHAT = 'argument'
-
-
-class discourage_function(AbstractDiscourager):
-    """ Discourages usage of a function by adding an appropriate note to documentation """
-    WHAT = 'function'
-
-
-class discourage_method(AbstractDiscourager):
-    """ Discourages usage of a method by adding an appropriate note to documentation """
-    WHAT = 'method'
