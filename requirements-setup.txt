@@ -1,3 +1,2 @@
 nose
-setuptools
 twine; python_version >= '2.7'
