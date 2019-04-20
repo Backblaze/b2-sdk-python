@@ -23,9 +23,9 @@ Account authorization
 
 .. code-block:: python
 
-    >>> account_id_or_key_id = '4a5b6c7d8e9f'  # get credentials from from B2 website
+    >>> application_key_id = '4a5b6c7d8e9f'  # get credentials from from B2 website
     >>> application_key = '001b8e23c26ff6efb941e237deb182b9599a84bef7'
-    >>> b2_api.authorize_account("production", account_id_or_key_id, application_key)
+    >>> b2_api.authorize_account("production", application_key_id, application_key)
 
 To find out more about account authorization, see :meth:`b2sdk.api.B2Api.authorize_account`
 
