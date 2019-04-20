@@ -5,12 +5,14 @@ Installation Guide
 Installing B2 SDK
 =================
 
-Safety first
-~~~~~~~~~~~~~~~
+Installing as a dependency
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. caution:: Correct version pinning is necessary to make sure your code remains compatible with upcoming b2sdk releases.
+b2sdk can simply be added to ``requirements.txt`` (or equivalent such as ``setup.py``, ``.pipfile``). 
+In order to properly set a dependency, see :ref:`this <Semantic Versioning>` chapter for details.
 
-  See :ref:`this <semver>` chapter for details.
+.. caution:: the stability of your application depends on correct pinning of versions
+
 
 Installing for development
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
