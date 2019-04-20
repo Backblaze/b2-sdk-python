@@ -1,51 +1,24 @@
-#######################################
-Semantic Versioning
-#######################################
-
-Excerpt (modified slightly) from `SemVer <https://semver.org/>`_, the version convention adopted by this project::
-
-  Given a version number MAJOR.MINOR.PATCH, increment the:
-
-   1. MAJOR version when you make incompatible changes [to the public API],
-   2. MINOR version when you add functionality in a backwards-compatible manner, and
-   3. PATCH version when you make backwards-compatible bug fixes.
-
+.. _semantic_versioning:
 
 #######################################
-Version pinning
+API types
 #######################################
 
-b2sdk API is divided into two parts, *public* and *internal*. Please pay attention to which interface type you use
+**b2sdk** API is divided into two parts, *public* and *internal*. Please pay attention to which interface type you use and pin the version range accordingly.
 
-.. caution:: the stability of your application depends on correct pinning of versions
+.. caution:: The stability of your application depends on correct pinning of versions.
 
 
-#######################################
-Interfaces
-#######################################
+Public interface
+================
 
-Public
-======
+Public interface consists of **public** members of modules listed in :doc:`api_public` chapter.
 
-Public interface consists of *public* members of the following modules:
+Those modules will not change in a backwards-incompatible way between non-major versions.
 
-.. autosummary::
-  :nosignatures:
+This should be used in 99% of use cases, it's enough to implement anything from a web application to a `FUSE filesystem <https://github.com/sondree/b2_fuse>`_.
 
-  b2sdk.api.B2Api
-  b2sdk.bucket.Bucket
-  b2sdk.exception
-  b2sdk.file_version
-  b2sdk.sync
-  b2sdk.sync.exception
-  b2sdk.account_info.abstract
-  b2sdk.account_info.exception
-  b2sdk.account_info.sqlite_account_info
-  b2sdk.account_info.upload_url_pool
-
-This should be enough for 99% of use cases, one can implement anything from a web application to a filesystem using just those.  Those modules will not change in a backwards-incompatible way between non-major versions.
-
-.. hint:: If the current version of b2sdk is 4.5.6 and you only use the *public* interface,
+.. hint:: If the current version of **b2sdk** is 4.5.6 and you only use the *public* interface,
   put this in your ``requirements.txt`` to be safe::
 
     b2sdk>=4.5.6,<5.0.0
@@ -53,22 +26,23 @@ This should be enough for 99% of use cases, one can implement anything from a we
 .. note:: ``b2sdk.*._something`` and ``b2sdk.*.*._something``, having a name which begins with an underscore, are NOT considred public interface.
 
 
-Internal
-========
+.. _internal_interface:
 
-Things which sometimes might be necssary to use that are NOT considered public interface (and may change in a non-major version):
+Internal interface
+==================
 
-.. autosummary::
-  :nosignatures:
+Some rarely used features of B2 cloud are not implemented in **b2sdk**. Tracking usage of transactions and transferred data is a good example - if it is required,
+additional work would need to be put into a specialized internal interface layer to enable tracking and reporting.
 
-  b2sdk.session.B2Session
-  b2sdk.raw_api.B2RawApi
-  b2sdk.b2http.B2Http
-  b2sdk.transferer
+**b2sdk** maintainers are very supportive in case someone wants to contribute an additional feature. Please consider adding it to the sdk, so that it's centrally
+supported (unlike your an implementation of your own, which would not receive updates).
 
-.. note:: it is ok for you to use those (better that, than copying our source files!), however if you do, please pin your dependencies to *middle* version.
+Internal interface modules are listed in :doc:`api_internal` chapter.
 
-.. hint:: If the current version of b2sdk is 4.5.6 and you use the *internal* interface,
-  put this in your requirements.txt::
+.. note:: It is ok for you to use our internal interface (better that, than copying our source files!), however if you do, please pin your dependencies to **middle** version
+  as backwards-incompatible changes may be introduced in a non-major version.
 
-    b2sdk>=4.5.6,<4.6.0
+  .. hint:: If the current version of **b2sdk** is 4.5.6 and you use the *internal* interface,
+    put this in your requirements.txt::
+
+      b2sdk>=4.5.6,<4.6.0

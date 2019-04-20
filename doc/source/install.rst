@@ -2,28 +2,28 @@
 Installation Guide
 ########################
 
-Installing B2 SDK
+Installing b2sdk
 =================
 
 Installing as a dependency
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-b2sdk can simply be added to ``requirements.txt`` (or equivalent such as ``setup.py``, ``.pipfile``). 
-In order to properly set a dependency, see :ref:`this <Semantic Versioning>` chapter for details.
+**b2sdk** can simply be added to ``requirements.txt`` (or equivalent such as ``setup.py``, ``.pipfile``).
+In order to properly set a dependency, see :ref:`this <semantic_versioning>` chapter for details.
 
-.. caution:: the stability of your application depends on correct pinning of versions
+.. caution:: The stability of your application depends on correct pinning of versions
 
 
 Installing for development
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-B2 SDK runs on Python 2.7+ under CPython and PyPy.
+**b2sdk** runs on Python 2.7+ under CPython and PyPy.
 
-To install B2 SDK, simply run::
+To install **b2sdk**, simply run::
 
  pip install b2sdk
 
-In your python environment.
+in your python environment.
 
 .. note:: If you see a message saying that the ``six`` library cannot be installed, which
   happens if you're installing with the system python on OS X El Capitan, try this::
