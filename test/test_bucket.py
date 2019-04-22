@@ -473,15 +473,18 @@ class DownloadTests(object):
         self.download_dest = DownloadDestBytes()
         self.progress_listener = StubProgressListener()
 
-    def _verify(self, expected_result):
+    def _verify(self, expected_result, check_progress_listener=True):
         assert self.download_dest.get_bytes_written() == six.b(expected_result)
-        assert self.progress_listener.is_valid()
+        if check_progress_listener:
+            assert self.progress_listener.is_valid()
 
     def test_download_by_id_no_progress(self):
         self.bucket.download_file_by_id(self.file_info.id_, self.download_dest)
+        self._verify('hello world', check_progress_listener=False)
 
     def test_download_by_name_no_progress(self):
         self.bucket.download_file_by_name('file1', self.download_dest)
+        self._verify('hello world', check_progress_listener=False)
 
     def test_download_by_name_progress(self):
         self.bucket.download_file_by_name('file1', self.download_dest, self.progress_listener)
