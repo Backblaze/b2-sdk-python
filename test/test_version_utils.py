@@ -11,6 +11,7 @@
 import warnings
 
 from .test_base import TestBase
+from b2sdk.version import VERSION
 from b2sdk.version_utils import rename_argument, rename_function
 
 
@@ -45,7 +46,8 @@ class TestRenameArgument(TestBase):
         with self.assertRaises(
             AssertionError,
             msg=
-            "rename_argument decorator is still used in version 0.1.4 when old argument name 'aaa' was scheduled to be dropped in 0.1.2. It is time to remove the mapping.",
+            "rename_argument decorator is still used in version %s when old argument name 'aaa' was scheduled to be dropped in 0.1.2. It is time to remove the mapping."
+            % (VERSION,),
         ):
 
             @rename_argument('aaa', 'bbb', '0.1.0', '0.1.2')

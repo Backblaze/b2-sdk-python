@@ -12,6 +12,7 @@ from abc import abstractmethod
 
 import six
 
+from b2sdk import version_utils
 from b2sdk.raw_api import ALL_CAPABILITIES
 from b2sdk.utils import B2TraceMetaAbstract, limit_trace_arguments
 
@@ -21,8 +22,8 @@ class AbstractAccountInfo(object):
     """
     Holder for all account-related information that needs to be kept
     between API calls, and between invocations of the command-line
-    tool.  This includes: account id, application key, auth tokens,
-    API URL, download URL, and uploads URLs.
+    tool.  This includes: account ID, application key ID,  application key,
+    auth tokens, API URL, download URL, and uploads URLs.
 
     This class must be THREAD SAFE because it may be used by multiple
     threads running in the same Python process.  It also needs to be
@@ -109,22 +110,34 @@ class AbstractAccountInfo(object):
     @abstractmethod
     def get_account_id(self):
         """
-        Returns account_id or raises MissingAccountData exception
+        Returns account ID or raises MissingAccountData exception
 
         :rtype: str
         """
 
     @abstractmethod
-    def get_account_id_or_app_key_id(self):
-        """ 
-        Returns the account id or key id used to authenticate
+    def get_application_key_id(self):
+        """
+        Returns the application key ID used to authenticate
 
         :rtype: str
         """
+
+    @version_utils.rename_method(get_application_key_id, '0.1.5', '0.2.0')
+    def get_account_id_or_app_key_id(self):
+        """
+        Returns the application key ID used to authenticate
+
+        :rtype: str
+
+        .. deprecated:: 0.1.6
+           Use :func:`get_application_key_id` instead.
+        """
+        return self.get_application_key_id()
 
     @abstractmethod
     def get_account_auth_token(self):
-        """ 
+        """
         Returns account_auth_token or raises MissingAccountData exception
 
         :rtype: str
@@ -132,7 +145,7 @@ class AbstractAccountInfo(object):
 
     @abstractmethod
     def get_api_url(self):
-        """ 
+        """
         Returns api_url or raises MissingAccountData exception
 
         :rtype: str
@@ -181,6 +194,12 @@ class AbstractAccountInfo(object):
         :rtype: dict
         """
 
+    @version_utils.rename_argument(
+        'account_id_or_app_key_id',
+        'application_key_id',
+        '0.1.5',
+        '0.2.0',
+    )
     @limit_trace_arguments(only=['self', 'api_url', 'download_url', 'minimum_part_size', 'realm'])
     def set_auth_data(
         self,
@@ -192,7 +211,7 @@ class AbstractAccountInfo(object):
         application_key,
         realm,
         allowed=None,
-        account_id_or_app_key_id=None,
+        application_key_id=None,
     ):
         """
         Stores the results of b2_authorize_account.
@@ -217,12 +236,15 @@ class AbstractAccountInfo(object):
         :type minimum_part_size: int
         :param application_key: application key
         :type application_key: str
-        :param realm: a realm to authiroze account in
+        :param realm: a realm to authorize account in
         :type realm: str
         :param allowed: the structure to use for old account info that was saved without 'allowed'
         :type allowed: dict
-        :param account_id_or_app_key_id: account ID or application key ID
-        :type account_id_or_app_key_id: str
+        :param application_key_id: application key ID
+        :type application_key_id: str
+
+        .. versionchanged:: 0.1.5
+           `account_id_or_app_key_id` renamed to `get_application_key_id`
         """
         if allowed is None:
             allowed = self.DEFAULT_ALLOWED
@@ -236,7 +258,7 @@ class AbstractAccountInfo(object):
             application_key,
             realm,
             allowed,
-            account_id_or_app_key_id,
+            application_key_id,
         )
 
     @classmethod
@@ -258,6 +280,7 @@ class AbstractAccountInfo(object):
             ('capabilities' in allowed) and ('namePrefix' in allowed)
         )
 
+    # TODO: make a decorator for set_auth_data()
     @abstractmethod
     def _set_auth_data(
         self,
@@ -269,7 +292,7 @@ class AbstractAccountInfo(object):
         application_key,
         realm,
         allowed,
-        account_id_or_app_key_id,
+        application_key_id,
     ):
         """
         Stores the auth data.  Can assume that 'allowed' is present and valid.
