@@ -267,6 +267,35 @@ class FileSimulator(object):
         return dict(parts=parts, nextPartNumber=next_part_number)
 
 
+FakeRequest = collections.namedtuple('FakeRequest', 'url headers')
+
+
+class FakeResponse(object):
+    def __init__(self, file_sim, url, range_=None):
+        self.data_bytes = file_sim.data_bytes
+        self.headers = file_sim.as_download_headers(range_)
+        self.url = url
+        self.range_ = range_
+        if range_ is not None:
+            self.data_bytes = self.data_bytes[range_[0]:range_[1] + 1]
+
+    def iter_content(self, chunk_size=1):
+        start = 0
+        while start <= len(self.data_bytes):
+            yield self.data_bytes[start:start + chunk_size]
+            start += chunk_size
+
+    @property
+    def request(self):
+        headers = {}
+        if self.range_ is not None:
+            headers['Range'] = '%s-%s' % self.range_
+        return FakeRequest(self.url, headers)
+
+    def close(self):
+        pass
+
+
 class BucketSimulator(object):
 
     # File IDs start at 9999 and count down, so they sort in the order
@@ -980,32 +1009,3 @@ class RawSimulator(AbstractRawApi):
         if bucket_name not in self.bucket_name_to_bucket:
             raise NonExistentBucket(bucket_name)
         return self.bucket_name_to_bucket[bucket_name]
-
-
-FakeRequest = collections.namedtuple('FakeRequest', 'url headers')
-
-
-class FakeResponse(object):
-    def __init__(self, file_sim, url, range_=None):
-        self.data_bytes = file_sim.data_bytes
-        self.headers = file_sim.as_download_headers(range_)
-        self.url = url
-        self.range_ = range_
-        if range_ is not None:
-            self.data_bytes = self.data_bytes[range_[0]:range_[1] + 1]
-
-    def iter_content(self, chunk_size=1):
-        start = 0
-        while start <= len(self.data_bytes):
-            yield self.data_bytes[start:start + chunk_size]
-            start += chunk_size
-
-    @property
-    def request(self):
-        headers = {}
-        if self.range_ is not None:
-            headers['Range'] = '%s-%s' % self.range_
-        return FakeRequest(self.url, headers)
-
-    def close(self):
-        pass
