@@ -304,6 +304,9 @@ class BucketSimulator(object):
 
     FIRST_FILE_ID = str(FIRST_FILE_NUMBER)
 
+    FILE_SIMULATOR_CLASS = FileSimulator
+    RESPONSE_CLASS = FakeResponse
+
     def __init__(
         self,
         account_id,
@@ -377,7 +380,7 @@ class BucketSimulator(object):
         return self._download_file_sim(file_sim, url, range_=range_)
 
     def _download_file_sim(self, file_sim, url, range_=None):
-        return ResponseContextManager(FakeResponse(file_sim, url, range_))
+        return ResponseContextManager(self.RESPONSE_CLASS(file_sim, url, range_))
 
     def finish_large_file(self, file_id, part_sha1_array):
         file_sim = self.file_id_to_file[file_id]
@@ -398,7 +401,7 @@ class BucketSimulator(object):
 
     def hide_file(self, file_name):
         file_id = self._next_file_id()
-        file_sim = FileSimulator(
+        file_sim = self.FILE_SIMULATOR_CLASS(
             self.account_id, self.bucket_id, file_id, 'hide', file_name, None, "none", {},
             six.b(''), six.next(self.upload_timestamp_counter)
         )
@@ -475,7 +478,7 @@ class BucketSimulator(object):
 
     def start_large_file(self, file_name, content_type, file_info):
         file_id = self._next_file_id()
-        file_sim = FileSimulator(
+        file_sim = self.FILE_SIMULATOR_CLASS(
             self.account_id, self.bucket_id, file_id, 'start', file_name, content_type, 'none',
             file_info, None, six.next(self.upload_timestamp_counter)
         )  # yapf: disable
@@ -516,7 +519,7 @@ class BucketSimulator(object):
             data_bytes = data_bytes[0:-40]
             content_length -= 40
         file_id = self._next_file_id()
-        file_sim = FileSimulator(
+        file_sim = self.FILE_SIMULATOR_CLASS(
             self.account_id, self.bucket_id, file_id, 'upload', file_name, content_type,
             content_sha1, file_infos, data_bytes, six.next(self.upload_timestamp_counter)
         )
@@ -554,6 +557,7 @@ class RawSimulator(AbstractRawApi):
     built on top of B2RawApi.
     """
 
+    BUCKET_SIMULATOR_CLASS = BucketSimulator
     API_URL = 'http://api.example.com'
     DOWNLOAD_URL = 'http://download.example.com'
 
@@ -691,7 +695,7 @@ class RawSimulator(AbstractRawApi):
         if bucket_name in self.bucket_name_to_bucket:
             raise DuplicateBucketName(bucket_name)
         bucket_id = 'bucket_' + str(six.next(self.bucket_id_counter))
-        bucket = BucketSimulator(
+        bucket = self.BUCKET_SIMULATOR_CLASS(
             account_id, bucket_id, bucket_name, bucket_type, bucket_info, cors_rules,
             lifecycle_rules
         )

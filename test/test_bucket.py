@@ -25,7 +25,7 @@ from b2sdk.exception import AlreadyFailed, B2Error, InvalidAuthToken, InvalidRan
 from b2sdk.file_version import FileVersionInfo
 from b2sdk.part import Part
 from b2sdk.progress import AbstractProgressListener
-from b2sdk.raw_simulator import RawSimulator
+from b2sdk.raw_simulator import RawSimulator, BucketSimulator
 from b2sdk.transferer.parallel import ParallelDownloader
 from b2sdk.transferer.simple import SimpleDownloader
 from b2sdk.upload_source import UploadSourceBytes
@@ -92,9 +92,11 @@ class CanRetry(B2Error):
 
 
 class TestCaseWithBucket(TestBase):
+    RAW_SIMULATOR_CLASS = RawSimulator
+
     def setUp(self):
         self.bucket_name = 'my-bucket'
-        self.simulator = RawSimulator()
+        self.simulator = self.RAW_SIMULATOR_CLASS()
         self.account_info = StubAccountInfo()
         self.api = B2Api(self.account_info, raw_api=self.simulator)
         (self.account_id, self.master_key) = self.simulator.create_account()
