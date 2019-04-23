@@ -25,7 +25,7 @@ from b2sdk.exception import AlreadyFailed, B2Error, InvalidAuthToken, InvalidRan
 from b2sdk.file_version import FileVersionInfo
 from b2sdk.part import Part
 from b2sdk.progress import AbstractProgressListener
-from b2sdk.raw_simulator import RawSimulator, BucketSimulator
+from b2sdk.raw_simulator import RawSimulator, BucketSimulator, FakeResponse
 from b2sdk.transferer.parallel import ParallelDownloader
 from b2sdk.transferer.simple import SimpleDownloader
 from b2sdk.upload_source import UploadSourceBytes
@@ -466,6 +466,9 @@ class TestUpload(TestCaseWithBucket):
         return six.b('').join(fragments)
 
 
+# Downloads
+
+
 class DownloadTests(object):
     def setUp(self):
         super(DownloadTests, self).setUp()
@@ -605,6 +608,52 @@ class TestDownloadSimple(DownloadTests, EmptyFileDownloadScenarioMixin, TestCase
 class TestDownloadParallel(DownloadTests, TestCaseWithBucket):
     def setUp(self):
         super(TestDownloadParallel, self).setUp()
+        self.bucket.api.transferer.strategies = [
+            ParallelDownloader(
+                force_chunk_size=2,
+                max_streams=999,
+                min_part_size=2,
+            )
+        ]
+
+
+# Truncated downloads
+
+
+class TruncatedFakeResponse(FakeResponse):
+    """
+    A special FakeResponse class which returns everything except the very last byte,
+    unless only one byte is requested - then it is returned correctly.
+    Use it to test followup retries for truncated download issues.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super(TruncatedFakeResponse, self).__init__(*args, **kwargs)
+        if len(self.data_bytes) >= 2:
+            self.data_bytes = self.data_bytes[:-1]
+
+
+class TruncatedDownloadBucketSimulator(BucketSimulator):
+    RESPONSE_CLASS = TruncatedFakeResponse
+
+
+class TruncatedDownloadRawSimulator(RawSimulator):
+    BUCKET_SIMULATOR_CLASS = TruncatedDownloadBucketSimulator
+
+
+class TestCaseWithTruncatedDownloadBucket(TestCaseWithBucket):
+    RAW_SIMULATOR_CLASS = TruncatedDownloadRawSimulator
+
+
+class TestTruncatedDownloadSimple(DownloadTests, TestCaseWithTruncatedDownloadBucket):
+    def setUp(self):
+        super(TestTruncatedDownloadSimple, self).setUp()
+        self.bucket.api.transferer.strategies = [SimpleDownloader(force_chunk_size=20,)]
+
+
+class TestTruncatedDownloadParallel(DownloadTests, TestCaseWithTruncatedDownloadBucket):
+    def setUp(self):
+        super(TestTruncatedDownloadParallel, self).setUp()
         self.bucket.api.transferer.strategies = [
             ParallelDownloader(
                 force_chunk_size=2,

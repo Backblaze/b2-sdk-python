@@ -21,7 +21,13 @@ from .range import Range
 
 @six.add_metaclass(B2TraceMetaAbstract)
 class AbstractDownloader(object):
-    def __init__(self, force_chunk_size=None, min_chunk_size=None, max_chunk_size=None):
+    def __init__(
+        self,
+        force_chunk_size=None,
+        min_chunk_size=None,
+        max_chunk_size=None,
+        num_tries=5,
+    ):
         assert force_chunk_size is not None or (
             min_chunk_size is not None and max_chunk_size is not None and min_chunk_size > 0 and
             max_chunk_size >= min_chunk_size
@@ -29,6 +35,7 @@ class AbstractDownloader(object):
         self._min_chunk_size = min_chunk_size
         self._max_chunk_size = max_chunk_size
         self._forced_chunk_size = force_chunk_size
+        self._num_tries = num_tries
 
     def _get_chunk_size(self, content_length):
         if self._forced_chunk_size is not None:
