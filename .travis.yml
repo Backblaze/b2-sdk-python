@@ -341,14 +341,12 @@ script:
   - |
         # needs package to be installed already
         if [ "$MODE" == 'doc' ]; then
-            cd doc
-            if make html; then
+            if (cd doc && make html); then
                 echo "doc build succeeded"
             else
                 echo "doc build FAILED"
                 return 1
             fi
-            cd ..
         fi
 
   # check docs coverage
