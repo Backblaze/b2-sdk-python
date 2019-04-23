@@ -167,7 +167,6 @@ class WriterThread(threading.Thread):
             file.seek(offset)
             file.write(data)
             self.total += len(data)
-            #print('writer total %i', self.total)
 
     def __enter__(self):
         self.start()
@@ -208,27 +207,50 @@ class FirstPartDownloaderThread(AbstractDownloaderThread):
         super(FirstPartDownloaderThread, self).__init__(*args, **kwargs)
 
     def run(self):
-        writer_queue = self.writer.queue
-        stop = False
-        bytes_read = 0
+        writer_queue_put = self.writer.queue.put
         hasher_update = self.hasher.update
         first_offset = self.part_to_download.local_range.start
         last_offset = self.part_to_download.local_range.end + 1
+        actual_part_size = self.part_to_download.local_range.size()
+        starting_cloud_range = self.part_to_download.cloud_range
+
+        bytes_read = 0
+        stop = False
         for data in self.response.iter_content(chunk_size=self.chunk_size):
             if first_offset + bytes_read + len(data) >= last_offset:
                 to_write = data[:last_offset - bytes_read]
                 stop = True
             else:
                 to_write = data
-            writer_queue.put((False, first_offset + bytes_read, to_write))
+            writer_queue_put((False, first_offset + bytes_read, to_write))
             hasher_update(to_write)
             bytes_read += len(to_write)
             if stop:
                 break
-        logging.debug('%s retrieved a total of %s bytes', self, bytes_read)
-        # since we got everything we need, close the socket and free the buffer
+
+        # since we got everything we need from original response, close the socket and free the buffer
         # to avoid a timeout exception during hashing and other trouble
         self.response.close()
+
+        url = self.response.request.url
+        tries_left = 5 - 1  # this is hardcoded because we are going to replace the entire retry interface soon, so we'll avoid deprecation here and keep it private
+        while tries_left and bytes_read < actual_part_size:
+            cloud_range = starting_cloud_range.subrange(
+                bytes_read, actual_part_size - 1
+            )  # first attempt was for the whole file, but retries are bound correctly
+            logger.debug(
+                'download attempts remaining: %i, bytes read already: %i. Getting range %s now.',
+                tries_left, bytes_read, cloud_range
+            )
+            with self.session.download_file_from_url(
+                url,
+                cloud_range.as_tuple(),
+            ) as response:
+                for to_write in response.iter_content(chunk_size=self.chunk_size):
+                    writer_queue_put((False, first_offset + bytes_read, to_write))
+                    hasher_update(to_write)
+                    bytes_read += len(to_write)
+            tries_left -= 1
 
 
 class NonHashingDownloaderThread(AbstractDownloaderThread):
@@ -242,14 +264,26 @@ class NonHashingDownloaderThread(AbstractDownloaderThread):
     def run(self):
         writer_queue_put = self.writer.queue.put
         start_range = self.part_to_download.local_range.start
+        actual_part_size = self.part_to_download.local_range.size()
         bytes_read = 0
-        with self.session.download_file_from_url(
-            self.url, self.part_to_download.cloud_range.as_tuple()
-        ) as response:
-            for to_write in response.iter_content(chunk_size=self.chunk_size):
-                writer_queue_put((False, start_range + bytes_read, to_write))
-                bytes_read += len(to_write)
-        logging.debug('%s retrieved a total of %s bytes', self, bytes_read)
+
+        starting_cloud_range = self.part_to_download.cloud_range
+
+        retries_left = 5  # this is hardcoded because we are going to replace the entire retry interface soon, so we'll avoid deprecation here and keep it private
+        while retries_left and bytes_read < actual_part_size:
+            cloud_range = starting_cloud_range.subrange(bytes_read, actual_part_size - 1)
+            logger.debug(
+                'download attempts remaining: %i, bytes read already: %i. Getting range %s now.',
+                retries_left, bytes_read, cloud_range
+            )
+            with self.session.download_file_from_url(
+                self.url,
+                cloud_range.as_tuple(),
+            ) as response:
+                for to_write in response.iter_content(chunk_size=self.chunk_size):
+                    writer_queue_put((False, start_range + bytes_read, to_write))
+                    bytes_read += len(to_write)
+            retries_left -= 1
 
 
 class PartToDownload(object):
