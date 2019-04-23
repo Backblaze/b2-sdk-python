@@ -41,10 +41,12 @@ class SimpleDownloader(AbstractDownloader):
         # with the truncated output, so we detect it here and try to continue
 
         num_tries = 5  # this is hardcoded because we are going to replace the entire retry interface soon, so we'll avoid deprecation here and keep it private
-        retries_left = num_tries- 1
+        retries_left = num_tries - 1
         while retries_left and bytes_read < metadata.content_length:
-            new_range = self._get_remote_range(response,
-                                               metadata).subrange(bytes_read, actual_size - 1)
+            new_range = self._get_remote_range(
+                response,
+                metadata,
+            ).subrange(bytes_read, actual_size - 1)
             # original response is not closed at this point yet, as another layer is responsible for closing it, so a new socket might be allocated,
             # but this is a very rare case and so not worth the optimization
             logger.debug(
