@@ -46,7 +46,8 @@ Internal interface modules are listed in :ref:`API Internal <api_internal>` sect
   It is ok for you to use our internal interface (better that, than copying our source files!), however if you do, please pin your dependencies to **middle** version
   as backwards-incompatible changes may be introduced in a non-major version.
 
-  .. hint:: If the current version of **b2sdk** is 4.5.6 and you use the *internal* interface,
+  .. hint::
+    If the current version of **b2sdk** is 4.5.6 and you use the *internal* interface,
     put this in your requirements.txt::
 
       b2sdk>=4.5.6,<4.6.0
