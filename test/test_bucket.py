@@ -25,7 +25,7 @@ from b2sdk.exception import AlreadyFailed, B2Error, InvalidAuthToken, InvalidRan
 from b2sdk.file_version import FileVersionInfo
 from b2sdk.part import Part
 from b2sdk.progress import AbstractProgressListener
-from b2sdk.raw_simulator import RawSimulator
+from b2sdk.raw_simulator import RawSimulator, BucketSimulator, FakeResponse
 from b2sdk.transferer.parallel import ParallelDownloader
 from b2sdk.transferer.simple import SimpleDownloader
 from b2sdk.upload_source import UploadSourceBytes
@@ -92,9 +92,11 @@ class CanRetry(B2Error):
 
 
 class TestCaseWithBucket(TestBase):
+    RAW_SIMULATOR_CLASS = RawSimulator
+
     def setUp(self):
         self.bucket_name = 'my-bucket'
-        self.simulator = RawSimulator()
+        self.simulator = self.RAW_SIMULATOR_CLASS()
         self.account_info = StubAccountInfo()
         self.api = B2Api(self.account_info, raw_api=self.simulator)
         (self.account_id, self.master_key) = self.simulator.create_account()
@@ -464,55 +466,63 @@ class TestUpload(TestCaseWithBucket):
         return six.b('').join(fragments)
 
 
+# Downloads
+
+
 class DownloadTests(object):
+    DATA = 'abcdefghijklmnopqrs'
+
     def setUp(self):
         super(DownloadTests, self).setUp()
-        self.file_info = self.bucket.upload_bytes(six.b('hello world'), 'file1')
+        self.file_info = self.bucket.upload_bytes(six.b(self.DATA), 'file1')
         self.download_dest = DownloadDestBytes()
         self.progress_listener = StubProgressListener()
 
-    def _verify(self, expected_result):
+    def _verify(self, expected_result, check_progress_listener=True):
         assert self.download_dest.get_bytes_written() == six.b(expected_result)
-        assert self.progress_listener.is_valid()
+        if check_progress_listener:
+            assert self.progress_listener.is_valid()
 
     def test_download_by_id_no_progress(self):
         self.bucket.download_file_by_id(self.file_info.id_, self.download_dest)
+        self._verify(self.DATA, check_progress_listener=False)
 
     def test_download_by_name_no_progress(self):
         self.bucket.download_file_by_name('file1', self.download_dest)
+        self._verify(self.DATA, check_progress_listener=False)
 
     def test_download_by_name_progress(self):
         self.bucket.download_file_by_name('file1', self.download_dest, self.progress_listener)
-        self._verify('hello world')
+        self._verify(self.DATA)
 
     def test_download_by_id_progress(self):
         self.bucket.download_file_by_id(
             self.file_info.id_, self.download_dest, self.progress_listener
         )
-        self._verify('hello world')
+        self._verify(self.DATA)
 
     def test_download_by_id_progress_partial(self):
         self.bucket.download_file_by_id(
             self.file_info.id_, self.download_dest, self.progress_listener, range_=(3, 9)
         )
-        self._verify('lo worl')
+        self._verify('defghij')
 
     def test_download_by_id_progress_exact_range(self):
         self.bucket.download_file_by_id(
-            self.file_info.id_, self.download_dest, self.progress_listener, range_=(0, 10)
+            self.file_info.id_, self.download_dest, self.progress_listener, range_=(0, 18)
         )
-        self._verify('hello world')
+        self._verify(self.DATA)
 
     def test_download_by_id_progress_range_one_off(self):
         with self.assertRaises(
             InvalidRange,
-            msg='A range of 0-11 was requested (size of 12), but cloud could only serve 11 of that',
+            msg='A range of 0-19 was requested (size of 20), but cloud could only serve 19 of that',
         ):
             self.bucket.download_file_by_id(
                 self.file_info.id_,
                 self.download_dest,
                 self.progress_listener,
-                range_=(0, 11),
+                range_=(0, 19),
             )
 
     def test_download_by_id_progress_partial_inplace_overwrite(self):
@@ -521,12 +531,12 @@ class DownloadTests(object):
         #
         # and then:
         #
-        # hello world
+        # abcdefghijklmnopqrs
         #    |||||||
         #    |||||||
         #    vvvvvvv
         #
-        # 123lo worl1234567890
+        # 123defghij1234567890
 
         with TempDir() as d:
             path = os.path.join(d, 'file2')
@@ -539,7 +549,7 @@ class DownloadTests(object):
                 self.progress_listener,
                 range_=(3, 9),
             )
-            self._check_local_file_contents(path, six.b('123lo worl1234567890'))
+            self._check_local_file_contents(path, six.b('123defghij1234567890'))
 
     def test_download_by_id_progress_partial_shifted_overwrite(self):
         # LOCAL is
@@ -547,7 +557,7 @@ class DownloadTests(object):
         #
         # and then:
         #
-        # hello world
+        # abcdefghijklmnopqrs
         #    |||||||
         #    \\\\\\\
         #     \\\\\\\
@@ -557,7 +567,7 @@ class DownloadTests(object):
         #        |||||||
         #        vvvvvvv
         #
-        # 1234567lo worl567890
+        # 1234567defghij567890
 
         with TempDir() as d:
             path = os.path.join(d, 'file2')
@@ -570,12 +580,15 @@ class DownloadTests(object):
                 self.progress_listener,
                 range_=(3, 9),
             )
-            self._check_local_file_contents(path, six.b('1234567lo worl567890'))
+            self._check_local_file_contents(path, six.b('1234567defghij567890'))
 
     def _check_local_file_contents(self, path, expected_contents):
         with open(path, 'rb') as f:
             contents = f.read()
             self.assertEqual(contents, expected_contents)
+
+
+# download empty file
 
 
 class EmptyFileDownloadScenarioMixin(object):
@@ -585,6 +598,9 @@ class EmptyFileDownloadScenarioMixin(object):
         self.file_info = self.bucket.upload_bytes(six.b(''), 'empty')
         self.bucket.download_file_by_name('empty', self.download_dest, self.progress_listener)
         self._verify('')
+
+
+# actual tests
 
 
 class TestDownloadDefault(DownloadTests, EmptyFileDownloadScenarioMixin, TestCaseWithBucket):
@@ -604,6 +620,53 @@ class TestDownloadParallel(DownloadTests, TestCaseWithBucket):
             ParallelDownloader(
                 force_chunk_size=2,
                 max_streams=999,
+                min_part_size=2,
+            )
+        ]
+
+
+# Truncated downloads
+
+
+class TruncatedFakeResponse(FakeResponse):
+    """
+    A special FakeResponse class which returns only the first 4 bytes of data.
+    Use it to test followup retries for truncated download issues.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super(TruncatedFakeResponse, self).__init__(*args, **kwargs)
+        self.data_bytes = self.data_bytes[:4]
+
+
+class TruncatedDownloadBucketSimulator(BucketSimulator):
+    RESPONSE_CLASS = TruncatedFakeResponse
+
+
+class TruncatedDownloadRawSimulator(RawSimulator):
+    BUCKET_SIMULATOR_CLASS = TruncatedDownloadBucketSimulator
+
+
+class TestCaseWithTruncatedDownloadBucket(TestCaseWithBucket):
+    RAW_SIMULATOR_CLASS = TruncatedDownloadRawSimulator
+
+
+####### actual tests of truncated downloads
+
+
+class TestTruncatedDownloadSimple(DownloadTests, TestCaseWithTruncatedDownloadBucket):
+    def setUp(self):
+        super(TestTruncatedDownloadSimple, self).setUp()
+        self.bucket.api.transferer.strategies = [SimpleDownloader(force_chunk_size=20,)]
+
+
+class TestTruncatedDownloadParallel(DownloadTests, TestCaseWithTruncatedDownloadBucket):
+    def setUp(self):
+        super(TestTruncatedDownloadParallel, self).setUp()
+        self.bucket.api.transferer.strategies = [
+            ParallelDownloader(
+                force_chunk_size=3,
+                max_streams=2,
                 min_part_size=2,
             )
         ]
