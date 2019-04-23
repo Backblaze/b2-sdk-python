@@ -2,6 +2,8 @@
 API Reference
 ########################
 
+.. _api_public:
+
 Public API
 ========================
 
@@ -22,6 +24,7 @@ Public API
    b2sdk/account_info/sqlite_account_info
    b2sdk/account_info/upload_url_pool
 
+.. _api_internal:
 
 Internal API
 ========================
