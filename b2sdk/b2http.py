@@ -28,6 +28,8 @@ from six.moves import range
 
 logger = logging.getLogger(__name__)
 
+# the timeout used for requests
+TIMEOUT = 10
 
 def _print_exception(e, indent=''):
     """
@@ -287,7 +289,7 @@ class B2Http(object):
         def do_post():
             data.seek(0)
             self._run_pre_request_hooks('POST', url, headers)
-            response = self.session.post(url, headers=headers, data=data)
+            response = self.session.post(url, headers=headers, data=data, timeout=TIMEOUT)
             self._run_post_request_hooks('POST', url, headers, response)
             return response
 
@@ -355,7 +357,7 @@ class B2Http(object):
         # Do the HTTP GET.
         def do_get():
             self._run_pre_request_hooks('GET', url, headers)
-            response = self.session.get(url, headers=headers, stream=True)
+            response = self.session.get(url, headers=headers, stream=True, timeout=TIMEOUT)
             self._run_post_request_hooks('GET', url, headers, response)
             return response
 
