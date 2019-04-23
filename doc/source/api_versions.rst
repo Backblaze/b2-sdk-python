@@ -20,7 +20,7 @@ Those modules will not change in a backwards-incompatible way between non-major 
 This should be used in 99% of use cases, it's enough to implement anything from a `console tool <https://github.com/Backblaze/B2_Command_Line_Tool>`_ to a `FUSE filesystem <https://github.com/sondree/b2_fuse>`_.
 
 .. hint::
-  If the current version of **b2sdk** is 4.5.6 and you only use the *public* interface,
+  If the current version of **b2sdk** is ``4.5.6`` and you only use the *public* interface,
   put this in your ``requirements.txt`` to be safe::
 
     b2sdk>=4.5.6,<5.0.0
@@ -50,7 +50,7 @@ Internal interface modules are listed in :ref:`API Internal <api_internal>` sect
   as backwards-incompatible changes may be introduced in a non-major version.
 
   .. hint::
-    If the current version of **b2sdk** is 4.5.6 and you use the *internal* interface,
+    If the current version of **b2sdk** is ``4.5.6`` and you use the *internal* interface,
     put this in your requirements.txt::
 
       b2sdk>=4.5.6,<4.6.0
