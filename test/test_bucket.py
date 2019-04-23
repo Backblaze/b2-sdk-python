@@ -588,6 +588,9 @@ class DownloadTests(object):
             self.assertEqual(contents, expected_contents)
 
 
+# download empty file
+
+
 class EmptyFileDownloadScenarioMixin(object):
     """ use with DownloadTests, but not for TestDownloadParallel as it does not like empty files """
 
@@ -595,6 +598,9 @@ class EmptyFileDownloadScenarioMixin(object):
         self.file_info = self.bucket.upload_bytes(six.b(''), 'empty')
         self.bucket.download_file_by_name('empty', self.download_dest, self.progress_listener)
         self._verify('')
+
+
+# actual tests
 
 
 class TestDownloadDefault(DownloadTests, EmptyFileDownloadScenarioMixin, TestCaseWithBucket):
@@ -624,15 +630,13 @@ class TestDownloadParallel(DownloadTests, TestCaseWithBucket):
 
 class TruncatedFakeResponse(FakeResponse):
     """
-    A special FakeResponse class which returns everything except the very last byte,
-    unless only one byte is requested - then it is returned correctly.
+    A special FakeResponse class which returns only the first 4 bytes of data.
     Use it to test followup retries for truncated download issues.
     """
 
     def __init__(self, *args, **kwargs):
         super(TruncatedFakeResponse, self).__init__(*args, **kwargs)
-        if len(self.data_bytes) >= 2:
-            self.data_bytes = self.data_bytes[:-1]
+        self.data_bytes = self.data_bytes[:4]
 
 
 class TruncatedDownloadBucketSimulator(BucketSimulator):
@@ -647,6 +651,9 @@ class TestCaseWithTruncatedDownloadBucket(TestCaseWithBucket):
     RAW_SIMULATOR_CLASS = TruncatedDownloadRawSimulator
 
 
+####### actual tests of truncated downloads
+
+
 class TestTruncatedDownloadSimple(DownloadTests, TestCaseWithTruncatedDownloadBucket):
     def setUp(self):
         super(TestTruncatedDownloadSimple, self).setUp()
@@ -658,8 +665,8 @@ class TestTruncatedDownloadParallel(DownloadTests, TestCaseWithTruncatedDownload
         super(TestTruncatedDownloadParallel, self).setUp()
         self.bucket.api.transferer.strategies = [
             ParallelDownloader(
-                force_chunk_size=2,
-                max_streams=999,
+                force_chunk_size=3,
+                max_streams=2,
                 min_part_size=2,
             )
         ]
