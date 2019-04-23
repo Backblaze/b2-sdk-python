@@ -28,6 +28,7 @@ from six.moves import range
 
 logger = logging.getLogger(__name__)
 
+
 def _print_exception(e, indent=''):
     """
     Used for debugging to print out nested exception structures.
@@ -234,7 +235,6 @@ class B2Http(object):
            ...
 
     """
-
 
     # timeout for HTTP GET/POST requests
     TIMEOUT = 120
