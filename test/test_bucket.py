@@ -470,9 +470,11 @@ class TestUpload(TestCaseWithBucket):
 
 
 class DownloadTests(object):
+    DATA = 'abcdefghijklmnopqrs'
+
     def setUp(self):
         super(DownloadTests, self).setUp()
-        self.file_info = self.bucket.upload_bytes(six.b('hello world'), 'file1')
+        self.file_info = self.bucket.upload_bytes(six.b(self.DATA), 'file1')
         self.download_dest = DownloadDestBytes()
         self.progress_listener = StubProgressListener()
 
@@ -483,44 +485,44 @@ class DownloadTests(object):
 
     def test_download_by_id_no_progress(self):
         self.bucket.download_file_by_id(self.file_info.id_, self.download_dest)
-        self._verify('hello world', check_progress_listener=False)
+        self._verify(self.DATA, check_progress_listener=False)
 
     def test_download_by_name_no_progress(self):
         self.bucket.download_file_by_name('file1', self.download_dest)
-        self._verify('hello world', check_progress_listener=False)
+        self._verify(self.DATA, check_progress_listener=False)
 
     def test_download_by_name_progress(self):
         self.bucket.download_file_by_name('file1', self.download_dest, self.progress_listener)
-        self._verify('hello world')
+        self._verify(self.DATA)
 
     def test_download_by_id_progress(self):
         self.bucket.download_file_by_id(
             self.file_info.id_, self.download_dest, self.progress_listener
         )
-        self._verify('hello world')
+        self._verify(self.DATA)
 
     def test_download_by_id_progress_partial(self):
         self.bucket.download_file_by_id(
             self.file_info.id_, self.download_dest, self.progress_listener, range_=(3, 9)
         )
-        self._verify('lo worl')
+        self._verify('defghij')
 
     def test_download_by_id_progress_exact_range(self):
         self.bucket.download_file_by_id(
-            self.file_info.id_, self.download_dest, self.progress_listener, range_=(0, 10)
+            self.file_info.id_, self.download_dest, self.progress_listener, range_=(0, 18)
         )
-        self._verify('hello world')
+        self._verify(self.DATA)
 
     def test_download_by_id_progress_range_one_off(self):
         with self.assertRaises(
             InvalidRange,
-            msg='A range of 0-11 was requested (size of 12), but cloud could only serve 11 of that',
+            msg='A range of 0-19 was requested (size of 20), but cloud could only serve 19 of that',
         ):
             self.bucket.download_file_by_id(
                 self.file_info.id_,
                 self.download_dest,
                 self.progress_listener,
-                range_=(0, 11),
+                range_=(0, 19),
             )
 
     def test_download_by_id_progress_partial_inplace_overwrite(self):
@@ -529,12 +531,12 @@ class DownloadTests(object):
         #
         # and then:
         #
-        # hello world
+        # abcdefghijklmnopqrs
         #    |||||||
         #    |||||||
         #    vvvvvvv
         #
-        # 123lo worl1234567890
+        # 123defghij1234567890
 
         with TempDir() as d:
             path = os.path.join(d, 'file2')
@@ -547,7 +549,7 @@ class DownloadTests(object):
                 self.progress_listener,
                 range_=(3, 9),
             )
-            self._check_local_file_contents(path, six.b('123lo worl1234567890'))
+            self._check_local_file_contents(path, six.b('123defghij1234567890'))
 
     def test_download_by_id_progress_partial_shifted_overwrite(self):
         # LOCAL is
@@ -555,7 +557,7 @@ class DownloadTests(object):
         #
         # and then:
         #
-        # hello world
+        # abcdefghijklmnopqrs
         #    |||||||
         #    \\\\\\\
         #     \\\\\\\
@@ -565,7 +567,7 @@ class DownloadTests(object):
         #        |||||||
         #        vvvvvvv
         #
-        # 1234567lo worl567890
+        # 1234567defghij567890
 
         with TempDir() as d:
             path = os.path.join(d, 'file2')
@@ -578,7 +580,7 @@ class DownloadTests(object):
                 self.progress_listener,
                 range_=(3, 9),
             )
-            self._check_local_file_contents(path, six.b('1234567lo worl567890'))
+            self._check_local_file_contents(path, six.b('1234567defghij567890'))
 
     def _check_local_file_contents(self, path, expected_contents):
         with open(path, 'rb') as f:
