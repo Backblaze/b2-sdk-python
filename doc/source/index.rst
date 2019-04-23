@@ -2,7 +2,7 @@
 Overview
 #########################################
 
-B2 SDK is a client library for easy access to all of the capabilities of B2 Cloud Storage.
+**b2sdk** is a client library for easy access to all of the capabilities of B2 Cloud Storage.
 
 `B2 command-line tool <https://github.com/Backblaze/B2_Command_Line_Tool>`_ is an example of how it can be used
 to provide command-line access to the B2 service, but there are many possible applications
@@ -12,7 +12,7 @@ to provide command-line access to the B2 service, but there are many possible ap
 
    install
    quick_start
-   user_guide
+   api_versions
    api_reference
 
 #########################################

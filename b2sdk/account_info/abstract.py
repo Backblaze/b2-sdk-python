@@ -187,9 +187,9 @@ class AbstractAccountInfo(object):
     @abstractmethod
     def get_allowed(self):
         """
-        An 'allowed' dict, as returned by b2_authorize_account.
-        Never None; for account info that was saved before 'allowed' existed,
-        returns DEFAULT_ALLOWED.
+        An 'allowed' dict, as returned by ``b2_authorize_account``.
+        Never ``None``; for account info that was saved before 'allowed' existed,
+        returns :attr:`DEFAULT_ALLOWED`.
 
         :rtype: dict
         """
@@ -214,12 +214,12 @@ class AbstractAccountInfo(object):
         application_key_id=None,
     ):
         """
-        Stores the results of b2_authorize_account.
+        Stores the results of ``b2_authorize_account``.
 
-        All of the information returned by b2_authorize_account is saved, because all of it is
+        All of the information returned by ``b2_authorize_account`` is saved, because all of it is
         needed by some command.
 
-        The allowed structure is the one returned b2_authorize_account, with the addition of
+        The allowed structure is the one returned ``b2_authorize_account``, with the addition of
         a bucketName field.  For keys with bucket restrictions, the name of the bucket is looked
         up and stored, too.  The console_tool does everything by bucket name, so it's convenient
         to have the restricted bucket name handy.
