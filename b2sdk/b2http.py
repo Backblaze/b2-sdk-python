@@ -237,7 +237,7 @@ class B2Http(object):
     """
 
     # timeout for HTTP GET/POST requests
-    TIMEOUT = 120
+    TIMEOUT = 130
 
     def __init__(self, requests_module=None, install_clock_skew_hook=True):
         """
