@@ -236,6 +236,9 @@ class B2Http(object):
 
     """
 
+    # timeout for HTTP GET/POST requests
+    TIMEOUT = 130
+
     def __init__(self, requests_module=None, install_clock_skew_hook=True):
         """
         Initialize with a reference to the requests module, which makes
@@ -287,7 +290,7 @@ class B2Http(object):
         def do_post():
             data.seek(0)
             self._run_pre_request_hooks('POST', url, headers)
-            response = self.session.post(url, headers=headers, data=data)
+            response = self.session.post(url, headers=headers, data=data, timeout=self.TIMEOUT)
             self._run_post_request_hooks('POST', url, headers, response)
             return response
 
@@ -355,7 +358,7 @@ class B2Http(object):
         # Do the HTTP GET.
         def do_get():
             self._run_pre_request_hooks('GET', url, headers)
-            response = self.session.get(url, headers=headers, stream=True)
+            response = self.session.get(url, headers=headers, stream=True, timeout=self.TIMEOUT)
             self._run_post_request_hooks('GET', url, headers, response)
             return response
 
