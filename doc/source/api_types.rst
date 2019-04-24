@@ -1,23 +1,16 @@
 .. _semantic_versioning:
 
-#######################################
-API types
-#######################################
+########################
+API Types
+########################
 
-**b2sdk** API is divided into two parts, *public* and *internal*. Please pay attention to which interface type you use and pin the version range accordingly.
-
-.. caution::
-  The stability of your application depends on correct pinning of versions.
-
-
-Public interface
+Public Interface
 ================
 
-Public interface consists of **public** members of modules listed in :ref:`API Public <api_public>` section
+Public interface consists of **public** members of modules listed in :ref:`API Public <api_public>` section.
+This should be used in 99% of use cases, it's enough to implement anything from a `console tool <https://github.com/Backblaze/B2_Command_Line_Tool>`_ to a `FUSE filesystem <https://github.com/sondree/b2_fuse>`_.
 
 Those modules will not change in a backwards-incompatible way between non-major versions.
-
-This should be used in 99% of use cases, it's enough to implement anything from a `console tool <https://github.com/Backblaze/B2_Command_Line_Tool>`_ to a `FUSE filesystem <https://github.com/sondree/b2_fuse>`_.
 
 .. hint::
   If the current version of **b2sdk** is ``4.5.6`` and you only use the *public* interface,
@@ -31,7 +24,7 @@ This should be used in 99% of use cases, it's enough to implement anything from 
 
 .. _internal_interface:
 
-Internal interface
+Internal Interface
 ==================
 
 Some rarely used features of B2 cloud are not implemented in **b2sdk**. Tracking usage of transactions and transferred data is a good example - if it is required,
