@@ -33,14 +33,14 @@ b2sdk>=0.0.0,<1.0.0
 
 # Release History
 
-## 0.1.6 (not released yet)
+## 0.1.6 (2019-04-24)
 
 Changes:
 
 * Fix transferer crashing on empty file download attempt
-* Rename account ID for authentication to application key ID
-    Note: this means account ID is still backwards compatible,
-    only the terminology has changed.
+* Rename account ID for authentication to application key ID.
+Account ID is still backwards compatible, only the terminology
+has changed.
 
 
 ## 0.1.4 (2019-04-04)
