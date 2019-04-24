@@ -1,5 +1,5 @@
-:mod:`b2sdk.transferer.simple`
-=======================================
+:mod:`b2sdk.transferer.transferer` -- Manager of downloaders
+============================================================
 
 .. automodule:: b2sdk.transferer.transferer
     :members:

@@ -1,4 +1,4 @@
-:mod:`b2sdk.sync.sync` -- Sync
+:mod:`b2sdk.sync.sync`
 ==============================
 
 .. automodule:: b2sdk.sync.sync

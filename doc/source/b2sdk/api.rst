@@ -1,5 +1,5 @@
-:mod:`b2sdk.api` -- API client
-==============================
+:mod:`b2sdk.api` -- B2 API client
+=================================
 
 .. automodule:: b2sdk.api
     :members:

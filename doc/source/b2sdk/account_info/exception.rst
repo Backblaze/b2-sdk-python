@@ -1,4 +1,4 @@
-:mod:`b2sdk.account_info.exception` -- Account info exceptions
+:mod:`b2sdk.account_info.exception`
 ==============================================================
 
 .. automodule:: b2sdk.account_info.exception

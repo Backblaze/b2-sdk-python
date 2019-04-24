@@ -1,4 +1,4 @@
-:mod:`b2sdk.cache` -- Cache
+:mod:`b2sdk.cache`
 ===========================
 
 .. automodule:: b2sdk.cache

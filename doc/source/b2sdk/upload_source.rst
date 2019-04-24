@@ -1,4 +1,4 @@
-:mod:`b2sdk.upload_source` -- Upload source
+:mod:`b2sdk.upload_source`
 ===========================================
 
 .. automodule:: b2sdk.upload_source

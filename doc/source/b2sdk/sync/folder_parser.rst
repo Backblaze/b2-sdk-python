@@ -1,4 +1,4 @@
-:mod:`b2sdk.sync.folder_parser` -- Folder parser
+:mod:`b2sdk.sync.folder_parser`
 ================================================
 
 .. automodule:: b2sdk.sync.folder_parser
