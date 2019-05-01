@@ -1,4 +1,4 @@
-:mod:`b2sdk.sync.policy_manager` -- Policy manager
+:mod:`b2sdk.sync.policy_manager`
 ==================================================
 
 .. automodule:: b2sdk.sync.policy_manager

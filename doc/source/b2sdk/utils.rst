@@ -1,5 +1,5 @@
-:mod:`b2sdk.utils` -- Utils
-===========================
+:mod:`b2sdk.utils`
+========================================
 
 .. automodule:: b2sdk.utils
     :members:

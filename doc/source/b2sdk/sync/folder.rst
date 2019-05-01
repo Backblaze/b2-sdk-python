@@ -1,4 +1,4 @@
-:mod:`b2sdk.sync.folder` -- Folder
+:mod:`b2sdk.sync.folder`
 ==================================
 
 .. automodule:: b2sdk.sync.folder

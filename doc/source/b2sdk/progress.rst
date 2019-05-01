@@ -1,5 +1,5 @@
-:mod:`b2sdk.progress` -- Progress
-=================================
+:mod:`b2sdk.progress` -- Progress reporter
+==========================================
 
 .. automodule:: b2sdk.progress
     :members:

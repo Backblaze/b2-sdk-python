@@ -1,5 +1,5 @@
-:mod:`b2sdk.transferer.parallel`
-=======================================
+:mod:`b2sdk.transferer.parallel` -- ParallelTransferer
+======================================================
 
 .. automodule:: b2sdk.transferer.parallel
     :members:

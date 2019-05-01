@@ -1,13 +1,23 @@
+.. hint:: Use :doc:`quick_start` to quickly jump into examples
+
 ########################
 API Reference
 ########################
+
+Interface types
+=======================
+
+**b2sdk** API is divided into two parts, :ref:`public <api_public>` and :ref:`internal <api_internal>`. Please pay attention to which interface type you use and :ref:`pin the version range accordingly <semantic_versioning>`.
+
+
+.. caution::
+  The stability of your application depends on correct :ref:`pinning of versions <semantic_versioning>`.
+
 
 .. _api_public:
 
 Public API
 ========================
-
-.. hint:: Use :doc:`quick_start` to quickly jump into examples
 
 .. toctree::
    authentication
@@ -19,10 +29,6 @@ Public API
    b2sdk/exception
    b2sdk/file_version
    sync
-   b2sdk/account_info/abstract
-   b2sdk/account_info/exception
-   b2sdk/account_info/sqlite_account_info
-   b2sdk/account_info/upload_url_pool
 
 .. _api_internal:
 

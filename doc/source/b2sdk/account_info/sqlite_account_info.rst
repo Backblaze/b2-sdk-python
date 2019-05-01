@@ -1,4 +1,4 @@
-:mod:`b2sdk.account_info.sqlite_account_info` -- SQLite account info
+:mod:`b2sdk.account_info.sqlite_account_info`
 ====================================================================
 
 AccountInfo class which uses a `SQLite database <https://www.sqlite.org/index.html>`_ as backend.

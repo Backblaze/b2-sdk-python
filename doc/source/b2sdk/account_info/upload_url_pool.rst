@@ -1,4 +1,4 @@
-:mod:`b2sdk.account_info.upload_url_pool` -- Upload URL pool
+:mod:`b2sdk.account_info.upload_url_pool`
 ============================================================
 
 .. automodule:: b2sdk.account_info.upload_url_pool

@@ -1,4 +1,4 @@
-:mod:`b2sdk.session` -- B2Session class
+:mod:`b2sdk.session` -- B2 Session
 =============================================
 
 .. automodule:: b2sdk.session

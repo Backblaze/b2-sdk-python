@@ -1,5 +1,5 @@
-:mod:`b2sdk.transferer.range`
-=======================================
+:mod:`b2sdk.transferer.range` -- transfer range toolkit
+=======================================================
 
 .. automodule:: b2sdk.transferer.range
     :members:

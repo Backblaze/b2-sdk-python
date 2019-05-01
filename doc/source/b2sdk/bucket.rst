@@ -1,5 +1,5 @@
-:mod:`b2sdk.bucket` -- Bucket
-=============================
+:mod:`b2sdk.bucket` -- B2 Bucket
+================================
 
 .. automodule:: b2sdk.bucket
     :members:

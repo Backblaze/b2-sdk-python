@@ -1,5 +1,5 @@
-:mod:`b2sdk.transferer.abstract`
-=======================================
+:mod:`b2sdk.transferer.abstract` -- Downloader base class
+=========================================================
 
 .. automodule:: b2sdk.transferer.abstract
     :members:

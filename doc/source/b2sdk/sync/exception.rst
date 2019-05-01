@@ -1,4 +1,4 @@
-:mod:`b2sdk.sync.exception` -- Sync exceptions
+:mod:`b2sdk.sync.exception`
 ==============================================
 
 .. automodule:: b2sdk.sync.exception

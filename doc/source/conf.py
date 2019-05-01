@@ -120,7 +120,7 @@ html_theme = 'sphinx_rtd_theme'
 #
 html_theme_options = {
     'prev_next_buttons_location': 'both',
-    'collapse_navigation': False,
+    'collapse_navigation': True,
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,

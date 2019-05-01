@@ -1,4 +1,4 @@
-:mod:`b2sdk.sync.policy` -- Policy
+:mod:`b2sdk.sync.policy`
 ==================================
 
 .. automodule:: b2sdk.sync.policy

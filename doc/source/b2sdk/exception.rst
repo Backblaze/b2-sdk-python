@@ -1,4 +1,4 @@
-:mod:`b2sdk.exception` -- Exceptions
+:mod:`b2sdk.exception`
 ====================================
 
 .. automodule:: b2sdk.exception
