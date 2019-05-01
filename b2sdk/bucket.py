@@ -284,6 +284,10 @@ class Bucket(object):
         """
         Download a file by name
 
+        .. seealso::
+
+            :ref:`Synchronizer <sync>`, a *high-performance* utility that synchronizes a local folder with a Bucket.
+
         :param file_id: a file ID
         :type file_id: str
         :param download_dest: a local file path
@@ -509,6 +513,10 @@ class Bucket(object):
     ):
         """
         Uploads a file on local disk to a B2 file.
+
+        .. seealso::
+
+            :ref:`Synchronizer <sync>`, a *high-performance* utility that synchronizes a local folder with a Bucket.
 
         :param local_file: a path to a file on local disk
         :type local_file: str
