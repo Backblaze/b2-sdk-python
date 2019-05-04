@@ -11,6 +11,7 @@ to provide command-line access to the B2 service, but there are many possible ap
 .. toctree::
 
    install
+   tutorial
    quick_start
    api_types
    api_reference

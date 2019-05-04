@@ -20,9 +20,9 @@ Public API
 ========================
 
 .. toctree::
-   authentication
    source_dest
-   b2sdk/api
+   account_info
+   b2sdk/v1/api
    b2sdk/bucket
    b2sdk/cache
    b2sdk/progress

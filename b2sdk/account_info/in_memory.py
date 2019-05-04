@@ -33,10 +33,7 @@ def _raise_missing_if_result_is_none(function):
 
 class InMemoryAccountInfo(UrlPoolAccountInfo):
     """
-    Holder for all account-related information that needs to be kept
-    between API calls, and between invocations of the command-line
-    tool.  This includes: account ID, application key ID, application key,
-    auth tokens, API URL, download URL, and uploads URLs.
+    AccountInfo with url pool, keeps all data in memory
     """
 
     def __init__(self, *args, **kwargs):
@@ -44,9 +41,6 @@ class InMemoryAccountInfo(UrlPoolAccountInfo):
         self._clear_in_memory_account_fields()
 
     def clear(self):
-        """
-        Remove all stored information
-        """
         self._clear_in_memory_account_fields()
         return super(InMemoryAccountInfo, self).clear()
 
@@ -88,8 +82,7 @@ class InMemoryAccountInfo(UrlPoolAccountInfo):
         """
         Removes all previous name-to-id mappings and stores new ones.
 
-        :param name_id_iterable: a list of tuples of the form (name, id)
-        :type name_id_iterable: list
+        :param list name_id_iterable: a list of tuples of the form (name, id)
         """
         self._buckets = dict(name_id_iterable)
 
@@ -97,8 +90,7 @@ class InMemoryAccountInfo(UrlPoolAccountInfo):
         """
         Looks up the bucket ID for a given bucket name.
 
-        :param bucket_name: a bucket name
-        :type bucket_name: str
+        :param str bucket_name: a bucket name
         :return bucket ID or None:
         :rtype: str, None
         """
@@ -108,8 +100,7 @@ class InMemoryAccountInfo(UrlPoolAccountInfo):
         """
         Remembers the ID for a bucket name.
 
-        :param bucket: a Bucket object
-        :type bucket: b2sdk.bucket.Bucket
+        :param b2sdk.v1.Bucket: a Bucket object
         """
         self._buckets[bucket.name] = bucket.id_
 
@@ -117,8 +108,7 @@ class InMemoryAccountInfo(UrlPoolAccountInfo):
         """
         Removes one entry from the bucket name cache.
 
-        :param bucket_name: a bucket name
-        :type bucket_name: str
+        :param str bucket_name: a bucket name
         """
         if bucket_name in self._buckets:
             del self._buckets[bucket_name]

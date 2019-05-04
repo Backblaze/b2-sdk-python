@@ -34,8 +34,7 @@ def url_for_api(info, api_name):
     Return URL for an API endpoint
 
     :param info: account info
-    :param api_name:
-    :type api_name: str
+    :param str api_nam:
     :rtype: str
     """
     if api_name in ['b2_download_file_by_id']:
@@ -80,8 +79,7 @@ class B2Api(object):
         :param raw_api: an instance of one of the following classes:
                         :class:`~b2sdk.raw_api.B2RawApi`, :class:`~b2sdk.raw_simulator.RawSimulator`,
                         or any custom class derived from :class:`~b2sdk.raw_api.AbstractRawApi`
-        :param max_upload_workers: a number of upload threads, default is 10
-        :type max_upload_workers: int
+        :param int max_upload_workers: a number of upload threads, default is 10
         """
         self.raw_api = raw_api or B2RawApi(B2Http())
         if account_info is None:
@@ -104,8 +102,7 @@ class B2Api(object):
         Must be called before any work starts, or the thread pool will get
         the default size of 1.
 
-        :param max_workers: maximum allowed number of workers in a pool
-        :type max_workers: int
+        :param int max_workers: maximum allowed number of workers in a pool
         """
         if self.upload_executor is not None:
             raise Exception('thread pool already created')
@@ -139,12 +136,9 @@ class B2Api(object):
         """
         Perform account authorization
 
-        :param realm: a realm to authorize account in (usually just "production")
-        :type realm: str
-        :param application_key_id: application key ID
-        :type application_key_id: str
-        :param application_key: user's application key
-        :type application_key: str
+        :param str realm: a realm to authorize account in (usually just "production")
+        :param str application_key_id: application key ID
+        :param str application_key: user's application key
         """
         # Clean up any previous account info if it was for a different account.
         try:
@@ -190,16 +184,11 @@ class B2Api(object):
         """
         Create a bucket
 
-        :param name: bucket name
-        :type name: str
-        :param bucket_type: a bucket type, could be one of the following values: "allPublic", "allPrivate"
-        :type bucket_type: str
-        :param bucket_info: additional bucket info to store with the bucket
-        :type bucket_info: dict
-        :param cors_rules: bucket CORS rules to store with the bucket
-        :type cors_rules: dict
-        :param lifecycle_rules: bucket lifecycle rules to store with the bucket
-        :type lifecycle_rules: dict
+        :param str name: bucket name
+        :param str bucket_type: a bucket type, could be one of the following values: "allPublic", "allPrivate"
+        :param dict bucket_info: additional bucket info to store with the bucket
+        :param dict cors_rules: bucket CORS rules to store with the bucket
+        :param dict lifecycle_rules: bucket lifecycle rules to store with the bucket
         :return: a Bucket object
         :rtype: b2sdk.bucket.Bucket
         """
@@ -227,10 +216,8 @@ class B2Api(object):
         """
         Download a file with a given ID
 
-        :param file_id: a file ID
-        :type file_id: str
-        :param download_dest: a local file path
-        :type download_dest: str
+        :param str file_id: a file ID
+        :param str download_dest: a local file path
         :param progress_listener: an instance of the one of the following classes: \
         :class:`~b2sdk.bucket.PartProgressReporter`,\
         :class:`~b2sdk.progress.TqdmProgressListener`,\
@@ -239,9 +226,8 @@ class B2Api(object):
         :class:`~b2sdk.progress.ProgressListenerForTest`,\
         :class:`~b2sdk.report.SyncFileReporter`,\
         or any sub class of :class:`~b2sdk.progress.AbstractProgressListener`
-        :param range_: a list of two integers, the first one is a start\
-        position, and the second oe is the end position in the file
-        :type range_: list
+        :param list range_: a list of two integers, the first one is a start\
+        position, and the second one is the end position in the file
         :return: context manager that returns an object that supports iter_content()
         """
         url = self.session.get_download_url_by_id(
@@ -254,10 +240,9 @@ class B2Api(object):
         """
         Return bucket object with a given ID
 
-        :param bucket_id: a bucket ID
-        :type bucket_id: str
+        :param str bucket_id: a bucket ID
         :return: a Bucket object
-        :rtype: b2sdk.bucket.Bucket
+        :rtype: b2sdk.v1.Bucket
         """
         return Bucket(self, bucket_id)
 
@@ -265,10 +250,9 @@ class B2Api(object):
         """
         Returns the Bucket for the given bucket_name.
 
-        :param bucket_name: The name of the bucket to return.
-        :type bucket_name: str
+        :param str bucket_name: The name of the bucket to return.
         :return: a Bucket object
-        :rtype: b2sdk.bucket.Bucket
+        :rtype: b2sdk.v1.Bucket
         :raises b2sdk.exception.NonExistentBucket: if the bucket does not exist in the account
         """
         # Give a useful warning if the current application key does not
@@ -295,8 +279,7 @@ class B2Api(object):
         but API user should not rely on the response: if it doesn't raise
         an exception, it means that the operation was a success
 
-        :param bucket: a Bucket object
-        :type bucket: b2sdk.bucket.Bucket
+        :param b2sdk.v1.Bucket bucket: a Bucket object
         """
         account_id = self.account_info.get_account_id()
         return self.session.delete_bucket(account_id, bucket.id_)
@@ -341,12 +324,9 @@ class B2Api(object):
         """
         Generator that yields a Part for each of the parts that have been uploaded.
 
-        :param file_id: the ID of the large file that is not finished
-        :type file_id: str
-        :param start_part_number: the first part number to return.  defaults to the first part.
-        :type start_part_number: int
-        :param batch_size: the number of parts to fetch at a time from the server
-        :type batch_size: int
+        :param str file_id: the ID of the large file that is not finished
+        :param int start_part_number: the first part number to return.  defaults to the first part.
+        :param int batch_size: the number of parts to fetch at a time from the server
         """
         batch_size = batch_size or 100
         while True:
@@ -362,8 +342,7 @@ class B2Api(object):
         """
         Cancel a large file upload
 
-        :param file_id: a file ID
-        :type file_id: str
+        :param str file_id: a file ID
         """
         response = self.session.cancel_large_file(file_id)
         return FileVersionInfoFactory.from_cancel_large_file_response(response)
@@ -372,10 +351,8 @@ class B2Api(object):
         """
         Permanently and irrevocably delete one version of a file
 
-        :param file_id: a file ID
-        :type: file_id: str
-        :param file_name: a file name
-        :type file_name: str
+        :param str file_id: a file ID
+        :param str file_name: a file name
         """
         # filename argument is not first, because one day it may become optional
         response = self.session.delete_file_version(file_id, file_name)
@@ -388,8 +365,7 @@ class B2Api(object):
         """
         Returns a URL to download the given file by ID.
 
-        :param file_id: a file ID
-        :type file_id: str
+        :param str file_id: a file ID
         """
         url = url_for_api(self.account_info, 'b2_download_file_by_id')
         return '%s?fileId=%s' % (url, file_id)
@@ -398,10 +374,8 @@ class B2Api(object):
         """
         Returns a URL to download the given file by name.
 
-        :param bucket_name: a bucket name
-        :type bucket_name: str
-        :param file_name: a file name
-        :type file_name: str
+        :param str bucket_name: a bucket name
+        :param str file_name: a file name
         """
         self.check_bucket_restrictions(bucket_name)
         return '%s/file/%s/%s' % (
@@ -415,16 +389,11 @@ class B2Api(object):
         """
         Create a new application key
 
-        :param capabilities: a list of capabilities
-        :type capabilities: list
-        :param key_name: a name of a key
-        :type key_name: str
-        :param valid_duration_seconds: key duration in seconds
-        :type valid_duration_seconds: int
-        :param bucket_id: a bucket ID
-        :type bucket_id: str
-        :param name_prefix: a name prefix
-        :type name_prefix: str
+        :param list capabilities: a list of capabilities
+        :param str key_name: a name of a key
+        :param int valid_duration_seconds: key duration in seconds
+        :param str bucket_id: a bucket ID
+        :param str name_prefix: a name prefix
         """
         account_id = self.account_info.get_account_id()
 
@@ -457,8 +426,7 @@ class B2Api(object):
         """
         List application keys
 
-        :param start_application_key_id: an application key ID to start from
-        :type start_application_key_id: str
+        :param str start_application_key_id: an application key ID to start from
         """
         account_id = self.account_info.get_account_id()
 
@@ -479,8 +447,8 @@ class B2Api(object):
         If it does, does the bucket_name for a given api call match that.
         If not it raises a RestrictedBucket error.
 
-        :param bucket_name: a bucket name
-        :type bucket_name: str
+        :param str bucket_name: a bucket name
+        :raises b2sdk.exception.RestrictedBucket: if the account is allowed to use this bucket
         """
         allowed = self.account_info.get_allowed()
         allowed_bucket_name = allowed['bucketName']

@@ -397,8 +397,7 @@ class ReadingStreamWithProgress(AbstractStreamWithProgress):
         """
         Read data from the stream
 
-        :param size: number of bytes to read
-        :type size: int
+        :param int size: number of bytes to read
         :return: data read from the stream
         """
         data = super(ReadingStreamWithProgress, self).read(size)
@@ -415,7 +414,7 @@ class WritingStreamWithProgress(AbstractStreamWithProgress):
         """
         Write data to the stream
 
-        :param data: a data to write to the stream
+        :param bytes data: data to write to the stream
         """
         self._update(len(data))
         super(WritingStreamWithProgress, self).write(data)
@@ -430,7 +429,6 @@ class StreamWithHash(object):
     def __init__(self, stream):
         """
         :param stream: the stream to read from
-        :return: None
         """
         self.stream = stream
         self.digest = hashlib.sha1()
@@ -447,8 +445,7 @@ class StreamWithHash(object):
         """
         Seek to a given position in the stream
 
-        :param pos: position in the stream
-        :type pos: int
+        :param int pos: position in the stream
         """
         assert pos == 0
         self.stream.seek(0)
@@ -460,9 +457,9 @@ class StreamWithHash(object):
         """
         Read data from the stream
 
-        :param size: number of bytes to read
-        :type size: int
-        :return: data read from the stream
+        :param int size: number of bytes to read
+        :return: read data
+        :rtype: bytes|None
         """
         data = b''
         if self.hash is None:
