@@ -125,7 +125,7 @@ html_theme_options = {
 
 autodoc_default_options = {
     'member-order': 'bysource',
-    'exclude-members': '__weakref__',
+    'exclude-members': '__weakref__, _abc_cache, _abc_negative_cache, _abc_negative_cache_version, _abc_registry',
     'members': True,
     'undoc-members': True,
 }

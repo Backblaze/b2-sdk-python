@@ -209,12 +209,9 @@ class AbstractAccountInfo(object):
         application_key_id=None,
     ):
         """
-        Stores the results of ``b2_authorize_account``.
+        Checks permission correctness and stores the results of ``b2_authorize_account``.
 
-        All of the information returned by ``b2_authorize_account`` is saved, because all of it is
-        needed by some command.
-
-        The allowed structure is the one returned ``b2_authorize_account``, with the addition of
+        The allowed structure is the one returned by ``b2_authorize_account``, with the addition of
         a bucketName field.  For keys with bucket restrictions, the name of the bucket is looked
         up and stored, too.  The console_tool does everything by bucket name, so it's convenient
         to have the restricted bucket name handy.
@@ -280,7 +277,10 @@ class AbstractAccountInfo(object):
         application_key_id,
     ):
         """
-        Stores the auth data.  Can assume that 'allowed' is present and valid.
+        Actually stores the auth data.  Can assume that 'allowed' is present and valid.
+
+        All of the information returned by ``b2_authorize_account`` is saved, because all of it is
+        needed at some point.
         """
 
     @abstractmethod
