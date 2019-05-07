@@ -102,9 +102,9 @@ todo_include_todos = False
 
 html_context = {
     "display_github": True,  # Add 'Edit on Github' link instead of 'View page source'
-    "github_user": "reef-technologies",  # TODO
+    "github_user": "Backblaze",
     "github_repo": project,
-    "github_version": "shipping_split_fixes",  # TODO
+    "github_version": "master",
     "conf_py_path": "/doc/source/",
     "source_suffix": source_suffix,
 }
