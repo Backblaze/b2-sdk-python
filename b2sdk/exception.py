@@ -364,6 +364,7 @@ class StorageCapExceeded(B2Error):
 
 class TooManyRequests(B2Error):
     def __init__(self, retry_after_seconds=None):
+        super(TooManyRequests, self).__init__()
         self.retry_after_seconds = retry_after_seconds
 
     def __str__(self):
