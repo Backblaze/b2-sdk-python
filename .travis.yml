@@ -276,6 +276,14 @@ script:
         else
             echo skip
         fi
+  - |
+        # run command to check liccheck
+        if [ "$MODE" == 'SCA' ]; then
+            liccheck -s ci/license_strategy.ini -r requirements.txt
+        else
+            echo skip
+        fi
+
   - if [ "$MODE" == 'SCA' ]; then pyflakes . || exit; else echo skip; fi
 
   # isort doesn't get along with yapf. Hopefully we'll figure it out and re-enable in the future.
