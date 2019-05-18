@@ -57,7 +57,11 @@ def _translate_errors(fcn, post_params=None):
             # Decode the error object returned by the service
             error = json.loads(response.content.decode('utf-8'))
             raise interpret_b2_error(
-                int(error['status']), error['code'], error['message'], post_params
+                int(error['status']),
+                error['code'],
+                error['message'],
+                response.headers,
+                post_params,
             )
         return response
 
@@ -120,7 +124,14 @@ def _translate_and_retry(fcn, try_count, post_params=None):
         except B2Error as e:
             if not e.should_retry_http():
                 raise
-            time.sleep(wait_time)
+            if e.retry_after_seconds is not None:
+                sleep_duration = e.retry_after_seconds
+                sleep_reason = 'server asked us to'
+            else:
+                sleep_duration = wait_time
+                sleep_reason = 'that is what the default exponential backoff is'
+            logger.info('Pausing thread for %i seconds because %s', sleep_duration, sleep_reason)
+            time.sleep(sleep_duration)
             wait_time *= 1.5
 
     # If the last try gets an exception, it will be raised.
