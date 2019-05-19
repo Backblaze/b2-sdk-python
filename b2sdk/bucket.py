@@ -512,7 +512,7 @@ class Bucket(object):
         progress_listener=None
     ):
         """
-        Uploads a file on local disk to a B2 file.
+        Upload a file on local disk to a B2 file.
 
         .. seealso::
 

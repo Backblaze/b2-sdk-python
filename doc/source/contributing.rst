@@ -1,3 +1,5 @@
+.. _contributors_guide:
+
 #########################################
 Contributors Guide
 #########################################
@@ -15,7 +17,7 @@ We encourage outside contributors to perform changes on our codebase. Many such 
 
 We marked the places in the code which are significantly less intuitive than others in a special way. To find them occurrences, use ``git grep '*magic*'``.
 
-To install a development environment, please follow `this link <install_contributors>`.
+To install a development environment, please follow :ref:`this link <install_contributors>`.
 
 To test in multiple python virtual environments, set the enviroment variable ``PYTHON_VIRTUAL_ENVS``
 to be a space-separated list of their root directories.  When set, the makefile will run the

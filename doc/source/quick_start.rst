@@ -1,7 +1,10 @@
+.. _quick_start:
+
 ########################
 Quick Start Guide
 ########################
 
+*********************
 Initialize API
 *********************
 
@@ -15,9 +18,10 @@ Initialize API
     >>> info = SqliteAccountInfo()  # to store credentials, tokens and cache in ~/.b2_account_info
     >>> b2_api = B2Api(info)
 
-To find out more about API object initialization, see :meth:`b2sdk.api.B2Api.__init__`.
+To find out more about API object initialization, see :meth:`b2sdk.v1.B2Api.__init__`.
 
 
+*********************
 Account authorization
 *********************
 
@@ -27,9 +31,10 @@ Account authorization
     >>> application_key = '001b8e23c26ff6efb941e237deb182b9599a84bef7'
     >>> b2_api.authorize_account("production", application_key_id, application_key)
 
-To find out more about account authorization, see :meth:`b2sdk.api.B2Api.authorize_account`
+To find out more about account authorization, see :meth:`b2sdk.v1.B2Api.authorize_account`
 
 
+***************
 Synchronization
 ***************
 
@@ -69,6 +74,7 @@ Synchronization
     To learn more about sync, see `Sync <sync.html>`_.
 
 
+**************
 Bucket actions
 **************
 
@@ -83,7 +89,6 @@ List buckets
             print('%s  %-10s  %s' % (b.id_, b.type_, b.name))
     346501784642eb3e60980d10  allPublic   example-mybucket-b2-1
 
-
 Create a bucket
 ===============
 
@@ -95,7 +100,7 @@ Create a bucket
     >>> b2_api.create_bucket(bucket_name, bucket_type)
     Bucket<346501784642eb3e60980d10,example-mybucket-b2-1,allPublic>
 
-You can optionally store bucket info, CORS rules and lifecycle rules with the bucket. See :meth:`b2sdk.api.create_bucket`.
+You can optionally store bucket info, CORS rules and lifecycle rules with the bucket. See :meth:`b2sdk.v1.B2Api.create_bucket`.
 
 
 Remove a bucket
@@ -135,9 +140,10 @@ Update bucket info
      'lifecycleRules': [],
      'revision': 3}
 
-For more information see :meth:`b2sdk.bucket.Bucket.update`.
+For more information see :meth:`b2sdk.v1.Bucket.update`.
 
 
+************
 File actions
 ************
 
@@ -286,8 +292,8 @@ Delete file
     >>>
 
 
-Cancel file operations
-======================
+Cancel large file uploads
+=========================
 
 .. code-block:: python
 
@@ -296,24 +302,3 @@ Cancel file operations
             bucket.cancel_large_file(file_version.file_id)
     >>>
 
-
-Inspect account info
-********************
-
-.. code-block:: python
-
-    TODO
-
-    account_info = b2_api.account_info
-
-    accountId = account_info.get_account_id()
-
-    allowed = account_info.get_allowed()
-
-    applicationKey = account_info.get_application_key()
-
-    accountAuthToken = account_info.get_account_auth_token()
-
-    apiUrl = account_info.get_api_url()
-
-    downloadUrl = account_info.get_download_url()

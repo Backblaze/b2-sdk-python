@@ -20,9 +20,9 @@ from b2sdk.utils import B2TraceMetaAbstract, limit_trace_arguments
 @six.add_metaclass(B2TraceMetaAbstract)
 class AbstractAccountInfo(object):
     """
-    Holder for all account-related information that needs to be kept
-    between API calls, and between invocations of the command-line
-    tool.  This includes: account ID, application key ID,  application key,
+    Abstract class for holder for all account-related information that needs to be kept between API calls and between invocations of the program.
+
+    This includes: account ID, application key ID,  application key,
     auth tokens, API URL, download URL, and uploads URLs.
 
     This class must be THREAD SAFE because it may be used by multiple

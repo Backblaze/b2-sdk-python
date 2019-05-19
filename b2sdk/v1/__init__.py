@@ -4,6 +4,7 @@ from b2sdk.account_info.abstract import AbstractAccountInfo
 from b2sdk.account_info.in_memory import InMemoryAccountInfo
 from b2sdk.account_info.sqlite_account_info import SqliteAccountInfo
 from b2sdk.account_info.upload_url_pool import UrlPoolAccountInfo
+from b2sdk.account_info.upload_url_pool import UploadUrlPool
 
 assert AbstractAccountInfo
 assert B2Api
@@ -11,6 +12,7 @@ assert Bucket
 assert InMemoryAccountInfo
 assert SqliteAccountInfo
 assert UrlPoolAccountInfo
+assert UploadUrlPool
 
 #raw_simulator.py:49:class KeySimulator(object):
 #raw_simulator.py:101:class PartSimulator(object):

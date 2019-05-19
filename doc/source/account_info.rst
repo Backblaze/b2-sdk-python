@@ -26,6 +26,8 @@ AccountInfo with no persistence.
 .. autoclass:: b2sdk.v1.InMemoryAccountInfo()
    :no-members:
 
+   Implements all methods of :ref:`AccountInfo interface <account_info_interface>`.
+
    .. method:: __init__()
 
       The constructor takes no parameters.
@@ -37,6 +39,8 @@ SqliteAccountInfo
 .. autoclass:: b2sdk.v1.SqliteAccountInfo()
    :no-members:
    :special-members: __init__
+
+   Implements all methods of :ref:`AccountInfo interface <account_info_interface>`.
 
    Uses a `SQLite database <https://www.sqlite.org/index.html>`_ for persistence
    and access synchronization between multiple processes. Not suitable for usage over NFS.
@@ -52,7 +56,7 @@ SqliteAccountInfo
 Implementing your own
 *********************
 
-When building a web service, you might want to implement your own ``AccountInfo`` class backed by a database. In such case, you should inherit from :py:class:`b2sdk.v1.UrlPoolAccountInfo` - it has groundwork for url pool functionality).
+When building a web service, you might want to implement your own ``AccountInfo`` class backed by a database. In such case, you should inherit from :py:class:`b2sdk.v1.UrlPoolAccountInfo` - it has groundwork for url pool functionality). If you cannot, inherit directly from :py:class:`b2sdk.v1.AbstractAccountInfo`.
 
 .. code-block:: python
 
@@ -61,7 +65,7 @@ When building a web service, you might want to implement your own ``AccountInfo`
             ...
 
 
-:py:class:`b2sdk.v1.AbstractAccountInfo` describes the interface. Below it, you can find :py:class:`b2sdk.v1.UrlPoolAccountInfo` and :py:class:`b2sdk.v1.UploadUrlPool`, which together implement a part of the interface for in-memory upload token management..
+:py:class:`b2sdk.v1.AbstractAccountInfo` describes the interface. Below it, you can find :py:class:`b2sdk.v1.UrlPoolAccountInfo` and :py:class:`b2sdk.v1.UploadUrlPool`, which together implement a part of the interface for in-memory upload token management.
 
 
 .. _account_info_interface:
