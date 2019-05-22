@@ -65,7 +65,7 @@ class AbstractAccountInfo(object):
         """
         Removes all previous name-to-id mappings and stores new ones.
 
-        :param list name_id_iterable: a list of tuples of the form (name, id)
+        :param iterable name_id_iterable: an iterable of tuples of the form (name, id)
         """
 
     @abstractmethod

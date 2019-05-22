@@ -13,12 +13,15 @@ class PartFactory(object):
     @classmethod
     def from_list_parts_dict(cls, part_dict):
         return Part(
-            part_dict['fileId'], part_dict['partNumber'], part_dict['contentLength'],
-            part_dict['contentSha1']
+            part_dict['fileId'],
+            part_dict['partNumber'],
+            part_dict['contentLength'],
+            part_dict['contentSha1'],
         )
 
 
 class Part(object):
+    """ Large file upload part """
     def __init__(self, file_id, part_number, content_length, content_sha1):
         self.file_id = file_id
         self.part_number = part_number

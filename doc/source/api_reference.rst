@@ -10,8 +10,8 @@ Interface types
 **b2sdk** API is divided into two parts, :ref:`public <api_public>` and :ref:`internal <api_internal>`. Please pay attention to which interface type you use and :ref:`pin the version range accordingly <semantic_versioning>`.
 
 
-.. caution::
-  The stability of your application depends on correct :ref:`pinning of versions <semantic_versioning>`.
+.. tip::
+   Proper :ref:`pinning of versions <semantic_versioning>` ensures the stability of your application.
 
 
 .. _api_public:
@@ -23,11 +23,11 @@ Public API
    source_dest
    account_info
    b2sdk/v1/api
-   b2sdk/bucket
+   b2sdk/v1/exception
+   b2sdk/v1/bucket
+   b2sdk/v1/file_version
    b2sdk/cache
    b2sdk/progress
-   b2sdk/exception
-   b2sdk/file_version
    sync
 
 .. _api_internal:

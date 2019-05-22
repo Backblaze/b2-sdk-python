@@ -29,15 +29,17 @@ B2_ACCOUNT_INFO_DEFAULT_FILE = '~/.b2_account_info'
 
 class SqliteAccountInfo(UrlPoolAccountInfo):
     """
-    Stores account information in an sqlite3 database, which is
+    Stores account information in an `sqlite3 <https://www.sqlite.org>`_ database, which is
     used to manage concurrent access to the data.
 
-    The 'update_done' table tracks the schema updates that have been
+    The ``update_done`` table tracks the schema updates that have been
     completed.
     """
 
     def __init__(self, file_name=None, last_upgrade_to_run=None):
         """
+        If ``file_name`` argument is empty or ``None``, path from ``B2_ACCOUNT_INFO`` environment variable is used. If that is not available, a default of ``~/.b2_account_info`` is used.
+
         :param str file_name: The sqlite file to use; overrides the default.
         :param int last_upgrade_to_run: For testing only, override the auto-update on the db.
         """
@@ -360,11 +362,6 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
             raise MissingAccountData(str(e))
 
     def refresh_entire_bucket_name_cache(self, name_id_iterable):
-        """
-        Refresh names and IDs of buckets
-
-        :param iterable name_id_iterable: an iterable which yields bucket name and ID
-        """
         with self._get_connection() as conn:
             conn.execute('DELETE FROM bucket;')
             for (bucket_name, bucket_id) in name_id_iterable:
@@ -374,11 +371,6 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
                 )
 
     def save_bucket(self, bucket):
-        """
-        Save bucket info
-
-        :param b2sdk.v1.Bucket bucket: a Bucket object
-        """
         with self._get_connection() as conn:
             conn.execute('DELETE FROM bucket WHERE bucket_id = ?;', (bucket.id_,))
             conn.execute(
@@ -387,21 +379,10 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
             )
 
     def remove_bucket_name(self, bucket_name):
-        """
-        Remove bucket info by a given name
-
-        :param str bucket_name: a bucket name
-        """
         with self._get_connection() as conn:
             conn.execute('DELETE FROM bucket WHERE bucket_name = ?;', (bucket_name,))
 
     def get_bucket_id_or_none_from_bucket_name(self, bucket_name):
-        """
-        Return bucket ID or None by a given name
-
-        :param str bucket_name: a bucket name
-        :rtype: str, None
-        """
         try:
             with self._get_connection() as conn:
                 cursor = conn.execute(

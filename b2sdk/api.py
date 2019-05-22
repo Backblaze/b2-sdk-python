@@ -190,7 +190,7 @@ class B2Api(object):
         :param dict cors_rules: bucket CORS rules to store with the bucket
         :param dict lifecycle_rules: bucket lifecycle rules to store with the bucket
         :return: a Bucket object
-        :rtype: b2sdk.bucket.Bucket
+        :rtype: b2sdk.v1.Bucket
         """
         account_id = self.account_info.get_account_id()
 
@@ -219,13 +219,13 @@ class B2Api(object):
         :param str file_id: a file ID
         :param str download_dest: a local file path
         :param progress_listener: an instance of the one of the following classes: \
-        :class:`~b2sdk.bucket.PartProgressReporter`,\
-        :class:`~b2sdk.progress.TqdmProgressListener`,\
-        :class:`~b2sdk.progress.SimpleProgressListener`,\
-        :class:`~b2sdk.progress.DoNothingProgressListener`,\
-        :class:`~b2sdk.progress.ProgressListenerForTest`,\
-        :class:`~b2sdk.report.SyncFileReporter`,\
-        or any sub class of :class:`~b2sdk.progress.AbstractProgressListener`
+        :class:`~b2sdk.v1.PartProgressReporter`,\
+        :class:`~b2sdk.v1.TqdmProgressListener`,\
+        :class:`~b2sdk.v1.SimpleProgressListener`,\
+        :class:`~b2sdk.v1.DoNothingProgressListener`,\
+        :class:`~b2sdk.v1.ProgressListenerForTest`,\
+        :class:`~b2sdk.v1.SyncFileReporter`,\
+        or any sub class of :class:`~b2sdk.v1.AbstractProgressListener`
         :param list range_: a list of two integers, the first one is a start\
         position, and the second one is the end position in the file
         :return: context manager that returns an object that supports iter_content()
@@ -238,7 +238,7 @@ class B2Api(object):
 
     def get_bucket_by_id(self, bucket_id):
         """
-        Return bucket object with a given ID
+        Return bucket object with a given ID. Unlike ``get_bucket_by_name``, this method does not need to make any API calls.
 
         :param str bucket_id: a bucket ID
         :return: a Bucket object
@@ -253,7 +253,7 @@ class B2Api(object):
         :param str bucket_name: The name of the bucket to return.
         :return: a Bucket object
         :rtype: b2sdk.v1.Bucket
-        :raises b2sdk.exception.NonExistentBucket: if the bucket does not exist in the account
+        :raises b2sdk.v1.exception.NonExistentBucket: if the bucket does not exist in the account
         """
         # Give a useful warning if the current application key does not
         # allow access to the named bucket.
@@ -294,9 +294,8 @@ class B2Api(object):
         one bucket, you must specify the bucket name, or the request
         will be unauthorized.
 
-        :param bucket_name: the name of the one bucket to return.
-        :type bucket_name: str
-        :return: A list of instances of b2sdk.bucket.Bucket.
+        :param str bucket_name: the name of the one bucket to return.
+        :return: A list of :py:class:`b2sdk.v1.Bucket` objects.
         :rtype: list
         """
         # Give a useful warning if the current application key does not
@@ -322,11 +321,12 @@ class B2Api(object):
 
     def list_parts(self, file_id, start_part_number=None, batch_size=None):
         """
-        Generator that yields a Part for each of the parts that have been uploaded.
+        Generator that yields a :py:class:`b2sdk.v1.Part` for each of the parts that have been uploaded.
 
         :param str file_id: the ID of the large file that is not finished
         :param int start_part_number: the first part number to return.  defaults to the first part.
         :param int batch_size: the number of parts to fetch at a time from the server
+        :rtype: generator
         """
         batch_size = batch_size or 100
         while True:
@@ -343,16 +343,18 @@ class B2Api(object):
         Cancel a large file upload
 
         :param str file_id: a file ID
+        :rtype: None
         """
         response = self.session.cancel_large_file(file_id)
         return FileVersionInfoFactory.from_cancel_large_file_response(response)
 
     def delete_file_version(self, file_id, file_name):
         """
-        Permanently and irrevocably delete one version of a file
+        Permanently and irrevocably delete one version of a file.
 
         :param str file_id: a file ID
         :param str file_name: a file name
+        :rtype: FileIdAndName
         """
         # filename argument is not first, because one day it may become optional
         response = self.session.delete_file_version(file_id, file_name)
@@ -415,8 +417,7 @@ class B2Api(object):
         """
         Delete application key with a given ID
 
-        :param application_key_id: an application key ID
-        :type application_key_id:
+        :param str application_key_id: an application key ID
         """
 
         response = self.session.delete_key(application_key_id=application_key_id)
@@ -441,14 +442,13 @@ class B2Api(object):
 
     def check_bucket_restrictions(self, bucket_name):
         """
-        Checks to see if the allowed field from authorize-account
-        has a bucket restriction.
+        Checks to see if the allowed field from authorize-account has a bucket restriction.
 
         If it does, does the bucket_name for a given api call match that.
-        If not it raises a RestrictedBucket error.
+        If not it raises a :py:exc:`b2sdk.v1.exception.RestrictedBucket` error.
 
         :param str bucket_name: a bucket name
-        :raises b2sdk.exception.RestrictedBucket: if the account is allowed to use this bucket
+        :raises b2sdk.v1.exception.RestrictedBucket: if the account is not allowed to use this bucket
         """
         allowed = self.account_info.get_allowed()
         allowed_bucket_name = allowed['bucketName']

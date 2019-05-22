@@ -33,7 +33,7 @@ def _raise_missing_if_result_is_none(function):
 
 class InMemoryAccountInfo(UrlPoolAccountInfo):
     """
-    AccountInfo with url pool, keeps all data in memory
+    *AccountInfo* which keeps all data in memory
     """
 
     def __init__(self, *args, **kwargs):
@@ -79,120 +79,50 @@ class InMemoryAccountInfo(UrlPoolAccountInfo):
         self._allowed = allowed
 
     def refresh_entire_bucket_name_cache(self, name_id_iterable):
-        """
-        Removes all previous name-to-id mappings and stores new ones.
-
-        :param list name_id_iterable: a list of tuples of the form (name, id)
-        """
         self._buckets = dict(name_id_iterable)
 
     def get_bucket_id_or_none_from_bucket_name(self, bucket_name):
-        """
-        Looks up the bucket ID for a given bucket name.
-
-        :param str bucket_name: a bucket name
-        :return bucket ID or None:
-        :rtype: str, None
-        """
         return self._buckets.get(bucket_name)
 
     def save_bucket(self, bucket):
-        """
-        Remembers the ID for a bucket name.
-
-        :param b2sdk.v1.Bucket: a Bucket object
-        """
         self._buckets[bucket.name] = bucket.id_
 
     def remove_bucket_name(self, bucket_name):
-        """
-        Removes one entry from the bucket name cache.
-
-        :param str bucket_name: a bucket name
-        """
         if bucket_name in self._buckets:
             del self._buckets[bucket_name]
 
     @_raise_missing_if_result_is_none
     def get_account_id(self):
-        """
-        Returns account_id or raises MissingAccountData exception
-
-        :rtype: str
-        """
         return self._account_id
 
     @_raise_missing_if_result_is_none
     def get_application_key_id(self):
-        """ 
-        Returns the application key ID used to authenticate
-
-        :rtype: str
-        """
         return self._application_key_id
 
     @_raise_missing_if_result_is_none
     def get_account_auth_token(self):
-        """ 
-        Return account_auth_token or raises MissingAccountData exception
-
-        :rtype: str
-        """
         return self._auth_token
 
     @_raise_missing_if_result_is_none
     def get_api_url(self):
-        """ 
-        Returns api_url or raises MissingAccountData exception
-
-        :rtype: str
-        """
         return self._api_url
 
     @_raise_missing_if_result_is_none
     def get_application_key(self):
-        """
-        Returns application_key or raises MissingAccountData exception
-
-        :rtype: str
-        """
         return self._application_key
 
     @_raise_missing_if_result_is_none
     def get_download_url(self):
-        """
-        Returns download_url or raises MissingAccountData exception
-
-        :rtype: str
-        """
         return self._download_url
 
     @_raise_missing_if_result_is_none
     def get_minimum_part_size(self):
-        """
-        Return the minimum number of bytes in a part of a large file
-
-        :return: number of bytes
-        :rtype: int
-        """
         return self._minimum_part_size
 
     @_raise_missing_if_result_is_none
     def get_realm(self):
-        """
-        Returns realm or raises MissingAccountData exception
-
-        :rtype: str
-        """
         return self._realm
 
     @_raise_missing_if_result_is_none
     def get_allowed(self):
-        """
-        An 'allowed' dict, as returned by b2_authorize_account.
-        Never None; for account info that was saved before 'allowed' existed,
-        returns DEFAULT_ALLOWED.
-
-        :rtype: dict
-        """
         return self._allowed

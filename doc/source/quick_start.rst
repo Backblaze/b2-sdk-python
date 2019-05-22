@@ -20,6 +20,8 @@ Initialize API
 
 To find out more about API object initialization, see :meth:`b2sdk.v1.B2Api.__init__`.
 
+.. hint:: See :doc:`account_info` section to find out which *AccountInfo* implementation is best for your application.
+
 
 *********************
 Account authorization
@@ -173,6 +175,9 @@ Upload file
         )
     <b2sdk.file_version.FileVersionInfo at 0x7fc8cd560550>
 
+This will work regardless of the size of the file - ``upload_local_file`` automatically uses large file upload API when necessary.
+
+For more information see :meth:`b2sdk.v1.Bucket.upload_local_file`.
 
 Download file
 =============
@@ -262,6 +267,8 @@ List files
        'fileName': 'som2.pdf',
        'uploadTimestamp': 1554296578000}
 
+For more information see :meth:`b2sdk.v1.Bucket.ls`.
+
 
 Get file meta information
 =========================
@@ -289,7 +296,6 @@ Delete file
 
     >>> file_id = '4_z5485a1682662eb3e60980d10_f113f963288e711a6_d20190404_m065910_c002_v0001095_t0044'
     >>> file_info = b2_api.delete_file_version(file_id, 'dummy_new.pdf')
-    >>>
 
 
 Cancel large file uploads
@@ -300,5 +306,3 @@ Cancel large file uploads
     >>> bucket = b2_api.get_bucket_by_name(bucket_name)
     >>> for file_version in bucket.list_unfinished_large_files():
             bucket.cancel_large_file(file_version.file_id)
-    >>>
-

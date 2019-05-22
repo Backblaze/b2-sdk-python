@@ -6,6 +6,10 @@ from b2sdk.account_info.sqlite_account_info import SqliteAccountInfo
 from b2sdk.account_info.upload_url_pool import UrlPoolAccountInfo
 from b2sdk.account_info.upload_url_pool import UploadUrlPool
 
+from b2sdk.file_version import FileIdAndName
+from b2sdk.file_version import FileVersionInfo
+from b2sdk.part import Part
+
 assert AbstractAccountInfo
 assert B2Api
 assert Bucket
@@ -13,6 +17,10 @@ assert InMemoryAccountInfo
 assert SqliteAccountInfo
 assert UrlPoolAccountInfo
 assert UploadUrlPool
+
+assert FileIdAndName
+assert FileVersionInfo
+assert Part
 
 #raw_simulator.py:49:class KeySimulator(object):
 #raw_simulator.py:101:class PartSimulator(object):
