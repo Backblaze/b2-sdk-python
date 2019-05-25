@@ -19,6 +19,9 @@ Interface types
 Public API
 ========================
 
+.. todo::
+   Public API doc list
+
 .. toctree::
    source_dest
    account_info
@@ -36,6 +39,9 @@ Internal API
 ========================
 
 .. warning:: See :ref:`Internal interface <internal_interface>` chapter to learn when and how to safely use the Internal API
+
+.. todo::
+   Private API doc list
 
 .. toctree::
    b2sdk/session

@@ -50,6 +50,7 @@ extensions = [
     'sphinx.ext.coverage',
     'sphinx.ext.graphviz',
     'sphinx.ext.autosummary',
+    'sphinx.ext.todo',
     #'sphinxcontrib.fulltoc',  # 2019-03-29: unfortunately this doesn't work with sphinx_rtd_theme
     'sphinxcontrib.plantuml',
 ]

@@ -4,10 +4,13 @@
 API Types
 ########################
 
+.. todo::
+   write a few words about imports structured like ``b2sdk.vX.*``
+
 Public Interface
 ================
 
-Public interface consists of **public** members of modules listed in :ref:`API Public <api_public>` section.
+Public interface consists of **public** members of modules listed in :ref:`Public API <api_public>` section.
 This should be used in 99% of use cases, it's enough to implement anything from a `console tool <https://github.com/Backblaze/B2_Command_Line_Tool>`_ to a `FUSE filesystem <https://github.com/sondree/b2_fuse>`_.
 
 Those modules will not change in a backwards-incompatible way between non-major versions.

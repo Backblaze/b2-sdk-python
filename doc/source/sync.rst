@@ -18,6 +18,10 @@ The **high performance** of sync is credited to parallelization of:
 Synchronizer spawns threads to perform the operations listed above in parallel to shorten
 the backup window to a minimum.
 
+
+.. todo::
+   practically the whole sync documentation is missing
+
 .. toctree::
 
    b2sdk/sync/action

@@ -40,6 +40,8 @@ Initializing B2Api
 
 To find out more about API object initialization, see :meth:`b2sdk.v1.B2Api.__init__`.
 
+.. todo::
+   show how to perform account authorization
 
 Typical B2Api operations
 ========================

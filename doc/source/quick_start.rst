@@ -269,6 +269,9 @@ List files
 
 For more information see :meth:`b2sdk.v1.Bucket.ls`.
 
+.. todo::
+   use ls in the examples above, ``list_file_names`` and ``list_file_versions`` are legacy/discouraged, we shouldn't be promoting them
+
 
 Get file meta information
 =========================
