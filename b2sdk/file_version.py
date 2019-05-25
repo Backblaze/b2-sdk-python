@@ -23,7 +23,7 @@ class FileVersionInfo(object):
     :ivar ~.content_sha1: sha1 checksum of the entire file, can be ``None`` (unknown) if it is a large file uploaded by a client which did not provide it
     :vartype ~.content_sha1: str or None
     :ivar dict ~.file_info: file info dict
-    :ivar ~.upload_timestamp: can be ``None`` (unknown)
+    :ivar ~.upload_timestamp: in milliseconds since :abbr:`epoch (1970-01-01 00:00:00)`. Can be ``None`` (unknown).
     :vartype ~.upload_timestamp: int or None
     :ivar str ~.action: ``"upload"``, ``"hide"`` or ``"delete"``
     """
