@@ -156,27 +156,18 @@ class Bucket(object):
         cors_rules=None,
         lifecycle_rules=None,
         revision=None,
-        bucket_dict=None
+        bucket_dict=None,
     ):
         """
-        :param api: an API object
-        :type api: b2sdk.api.B2Api
-        :param id_: a bucket id
-        :type id_: str
-        :param name: a bucket name
-        :type name: str
-        :param type_: a bucket type
-        :type type_: str
-        :param bucket_info: an info to store with a bucket
-        :type bucket_info: dict
-        :param cors_rules: CORS rules to store with a bucket
-        :type cors_rules: dict
-        :param lifecycle_rules: lifecycle rules to store with a bucket
-        :type lifecycle_rules: dict
-        :param revision: a bucket revision number
-        :type revision: int
-        :param bucket_dict: a dictionary which contains bucket parameters
-        :type bucket_dict: dict
+        :param b2sdk.v1.B2Api api: an API object
+        :param str id_: a bucket id
+        :param str name: a bucket name
+        :param str type_: a bucket type
+        :param dict bucket_info: an info to store with a bucket
+        :param dict cors_rules: CORS rules to store with a bucket
+        :param dict lifecycle_rules: lifecycle rules to store with a bucket
+        :param int revision: a bucket revision number
+        :param dict bucket_dict: a dictionary which contains bucket parameters
         """
         self.api = api
         self.id_ = id_
@@ -192,7 +183,7 @@ class Bucket(object):
         """
         Return bucket ID
 
-        :type: str
+        :rtype: str
         """
         return self.id_
 
@@ -200,12 +191,8 @@ class Bucket(object):
         """
         Update bucket info
 
-        :param new_bucket_info: new bucket info dictionary
-        :type new_bucket_info: dict
-        :param if_revision_is: revision number,
-                               update the info if revision equals to
-                               if_revision_is' value
-        :type if_revision_is: int
+        :param dict new_bucket_info: new bucket info dictionary
+        :param int if_revision_is: revision number, update the info **only if** *revision* equals to *if_revision_is*
         """
         return self.update(bucket_info=new_bucket_info, if_revision_is=if_revision_is)
 
@@ -213,8 +200,7 @@ class Bucket(object):
         """
         Update bucket type
 
-        :param bucket_type: a bucket type
-        :type bucket_type: str
+        :param str bucket_type: a bucket type ("allPublic" or "allPrivate")
         """
         return self.update(bucket_type=bucket_type)
 
@@ -224,23 +210,16 @@ class Bucket(object):
         bucket_info=None,
         cors_rules=None,
         lifecycle_rules=None,
-        if_revision_is=None
+        if_revision_is=None,
     ):
         """
         Update various bucket parameters
 
-        :param bucket_type: a bucket type
-        :type bucket_type: str
-        :param bucket_info: an info to store with a bucket
-        :type bucket_info: dict
-        :param cors_rules: CORS rules to store with a bucket
-        :type cors_rules: dict
-        :param lifecycle_rules: lifecycle rules to store with a bucket
-        :type lifecycle_rules: dict
-        :param if_revision_is: revision number,
-                               update the info if revision equals to
-                               if_revision_is' value
-        :type if_revision_is: int
+        :param str bucket_type: a bucket type
+        :param dict bucket_info: an info to store with a bucket
+        :param dict cors_rules: CORS rules to store with a bucket
+        :param dict lifecycle_rules: lifecycle rules to store with a bucket
+        :param int if_revision_is: revision number, update the info **only if** *revision* equals to *if_revision_is*
         """
         account_id = self.api.account_info.get_account_id()
         return self.api.session.update_bucket(
@@ -257,8 +236,7 @@ class Bucket(object):
         """
         Cancel large file transfer
 
-        :param file_id: a file ID
-        :type file_id: str
+        :param str file_id: a file ID
         """
         return self.api.cancel_large_file(file_id)
 
@@ -267,14 +245,10 @@ class Bucket(object):
         Download a file by ID, download_file_by_id actually belongs in B2Api,
         not in Bucket, we just provide a convenient redirect here
 
-        :param file_id: a file ID
-        :type file_id: str
-        :param download_dest: a local file path
-        :type download_dest: str
-        :param progress_listener: a progress listener object
-        :type progress_listener: b2sdk.progress.AbstractProgressListener
-        :param range_: a list of two integer values, start and end offsets
-        :type range_: list
+        :param str file_id: a file ID
+        :param str download_dest: a local file path
+        :param b2sdk.v1.AbstractProgressListener progress_listener: a progress listener object
+        :param tuple[int,int] range_: two integer values, start and end offsets
         """
         return self.api.download_file_by_id(
             file_id, download_dest, progress_listener, range_=range_
@@ -288,14 +262,10 @@ class Bucket(object):
 
             :ref:`Synchronizer <sync>`, a *high-performance* utility that synchronizes a local folder with a Bucket.
 
-        :param file_id: a file ID
-        :type file_id: str
-        :param download_dest: a local file path
-        :type download_dest: str
-        :param progress_listener: a progress listener object
-        :type progress_listener: b2sdk.progress.AbstractProgressListener
-        :param range_: a list of two integer values, start and end offsets
-        :type range_: list
+        :param str file_id: a file ID
+        :param str download_dest: a local file path
+        :param b2sdk.v1.AbstractProgressListener progress_listener: a progress listener object
+        :param tuple[int,int] range_: two integer values, start and end offsets
         """
         url = self.api.session.get_download_url_by_name(
             self.name,
@@ -311,10 +281,8 @@ class Bucket(object):
         Return an authorization token that is valid only for downloading
         files from the given bucket
 
-        :param file_name_prefix: a file name prefix, only files that match it could be downloaded
-        :type file_name_prefix: str
-        :param valid_duration_in_seconds: a token is valid only during this amount of seconds
-        :type valid_duration_in_seconds: int
+        :param str file_name_prefix: a file name prefix, only files that match it could be downloaded
+        :param int valid_duration_in_seconds: a token is valid only during this amount of seconds
         """
         response = self.api.session.get_download_authorization(
             self.id_, file_name_prefix, valid_duration_in_seconds
@@ -325,12 +293,9 @@ class Bucket(object):
         """
         Get a list of all parts that have been uploaded for a given file
 
-        :param file_id: a file ID
-        :type file_id: str
-        :param start_part_number: the first part number to return.  defaults to the first part.
-        :type start_part_number: int
-        :param batch_size: the number of parts to fetch at a time from the server
-        :type batch_size: int
+        :param str file_id: a file ID
+        :param int start_part_number: the first part number to return.  defaults to the first part.
+        :param int batch_size: the number of parts to fetch at a time from the server
         """
         return self.api.list_parts(file_id, start_part_number, batch_size)
 
@@ -346,18 +311,14 @@ class Bucket(object):
         When the `recursive` flag is set, lists all of the files in the given
         folder, and all of its sub-folders.
 
-        :param folder_to_list: the name of the folder to list.  Must not start with "/".
+        :param str folder_to_list: the name of the folder to list.  Must not start with "/".
                                Empty string means top-level folder.
-        :type folder_to_list: str
-        :param show_versions: when true returns info about all versions of a file,
-                              when false, just returns info about the most recent
-                              versions.
-        :type show_versions: bool
-        :param recursive: if True, list folders recursively
-        :type recursive: bool
-        :param fetch_count: how many entries to return. 1 - 1000
-        :type fetch_count: int
-        :rtype: generator
+        :param bool show_versions: when true returns info about all versions of a file,
+                              when false, just returns info about the most recent versions.
+        :param bool recursive: if ``True``, list folders recursively
+        :param int fetch_count: how many entries to return. 1 - 1000
+        :rtype: generator[tuple[b2sdk.v1.FileVersionInfo,str]]
+        :returns: generator of (file_version_info, folder_name) tuples
         """
         # Every file returned must have a name that starts with the
         # folder name and a "/".
@@ -448,14 +409,12 @@ class Bucket(object):
 
     def list_unfinished_large_files(self, start_file_id=None, batch_size=None):
         """
-        A generator that yields an UnfinishedLargeFile for each
+        A generator that yields an :py:class:b2sdk.b1.UnfinishedLargeFile for each
         unfinished large file in the bucket, starting at the
         given file.
 
-        :param start_file_id: a file ID to start with
-        :type start_file_id: str
-        :param batch_size: max file count
-        :type batch_size: int
+        :param str start_file_id: a file ID to start with
+        :param int batch_size: max file count
         :rtype: generator
         """
         batch_size = batch_size or 100
@@ -473,12 +432,9 @@ class Bucket(object):
         """
         Start large file transfer
 
-        :param file_name: a file name
-        :type file_name: str
-        :param content_type: request content type
-        :type content_type: str
-        :param file_info: a file info to store with the file
-        :type file_info: dict
+        :param str file_name: a file name
+        :param str content_type: request content type
+        :param dict file_info: a file info to store with the file
         """
         return UnfinishedLargeFile(
             self.api.session.start_large_file(self.id_, file_name, content_type, file_info)
@@ -486,21 +442,16 @@ class Bucket(object):
 
     @limit_trace_arguments(skip=('data_bytes',))
     def upload_bytes(
-        self, data_bytes, file_name, content_type=None, file_infos=None, progress_listener=None
+        self, data_bytes, file_name, content_type=None, file_infos=None, progress_listener=None,
     ):
         """
         Upload bytes in memory to a B2 file
 
-        :param data_bytes: a byte array to upload
-        :type data_bytes: bytes
-        :param file_name: a file name to upload bytes to
-        :type file_name: str
-        :param content_type: request content type
-        :type content_type: str
-        :param file_infos: a file info to store with the file
-        :type file_infos: dict
-        :param progress_listener: a progress listener object
-        :type progress_listener: b2sdk.progress.AbstractProgressListener
+        :param bytes data_bytes: a byte array to upload
+        :param str file_name: a file name to upload bytes to
+        :param str content_type: request content type
+        :param dict file_infos: a file info to store with the file
+        :param b2sdk.v1.AbstractProgressListener progress_listener: a progress listener object
         """
         upload_source = UploadSourceBytes(data_bytes)
         return self.upload(
@@ -528,20 +479,13 @@ class Bucket(object):
 
             :ref:`Synchronizer <sync>`, a *high-performance* utility that synchronizes a local folder with a Bucket.
 
-        :param local_file: a path to a file on local disk
-        :type local_file: str
-        :param file_name: a file name of the new B2 file
-        :type file_name: str
-        :param content_type: request content type
-        :type content_type: str
-        :param file_infos: a file info to store with the file
-        :type file_infos: dict
-        :param sha1_sum: file SHA1 hash
-        :type sha1_sum: str
-        :param min_part_size: a minimum size of a part
-        :type min_part_size: int
-        :param progress_listener: a progress listener object
-        :type progress_listener: b2sdk.progress.AbstractProgressListener
+        :param str local_file: a path to a file on local disk
+        :param str file_name: a file name of the new B2 file
+        :param str content_type: request content type
+        :param dict file_infos: a file info to store with the file
+        :param str sha1_sum: file SHA1 hash
+        :param int min_part_size: a minimum size of a part
+        :param b2sdk.v1.AbstractProgressListener progress_listener: a progress listener object
         """
         upload_source = UploadSourceLocalFile(local_path=local_file, content_sha1=sha1_sum)
         return self.upload(
@@ -569,18 +513,12 @@ class Bucket(object):
         open (and re-open) the file.  The result of opening should be a binary
         file whose read() method returns bytes.
 
-        :param upload_source: an UploadSource object that opens the source of the upload
-        :type upload_source: b2sdk.upload_source.UploadSource
-        :param file_name: the file name of the new B2 file
-        :type file_name: str
-        :param content_type: the MIME type, or None to accept the default based on file extension of the B2 file name
-        :type content_type: str, None
-        :param file_infos: custom file info to be stored with the file
-        :type file_infos: dict
-        :param min_part_size: the smallest part size to use
-        :type min_part_size: int
-        :param progress_listener: object to notify as data is transferred
-        :type progress_listener: b2sdk.progress.AbstractProgressListener
+        :param b2sdk.v1.UploadSource upload_source: an object that opens the source of the upload
+        :param str file_name: the file name of the new B2 file
+        :param str,None content_type: the MIME type, or ``None`` to accept the default based on file extension of the B2 file name
+        :param dict file_infos: custom file info to be stored with the file
+        :param int min_part_size: the smallest part size to use
+        :param b2sdk.v1.AbstractProgressListener progress_listener: object to notify as data is transferred
 
         The function `opener` should return a file-like object, and it
         must be possible to call it more than once in case the upload
@@ -826,8 +764,7 @@ class Bucket(object):
         """
         Get file download URL
 
-        :param filename: a file name
-        :type filename: str
+        :param str filename: a file name
         :return: file download URL
         :rtype: str
         """
@@ -841,10 +778,9 @@ class Bucket(object):
         """
         Hide a file
 
-        :param file_name: a file name
-        :type file_name: str
+        :param str file_name: a file name
         :return: file version info
-        :rtype: b2sdk.file_version.FileVersionInfoFactory
+        :rtype: b2sdk.file_version.FileVersionInfo
         """
         response = self.api.session.hide_file(self.id_, file_name)
         return FileVersionInfoFactory.from_api_response(response)
@@ -853,10 +789,8 @@ class Bucket(object):
         """
         Delete file version
 
-        :param file_id: a file ID
-        :type file_id: str
-        :param file_name: a file name
-        :type file_name: str
+        :param str file_id: a file ID
+        :param str file_name: a file name
         """
         # filename argument is not first, because one day it may become optional
         return self.api.delete_file_version(file_id, file_name)
@@ -892,12 +826,10 @@ class BucketFactory(object):
         """
         Create a Bucket object from API response
 
-        :param api: API object
-        :type api: b2sdk.api.B2Api
-        :param response: response object
-        :type response: object
+        :param b2sdk.v1.B2Api api: API object
+        :param requests.Response response: response object
         :return: a Bucket object
-        :rtype: b2sdk.bucket.Bucket
+        :rtype: b2sdk.v1.Bucket
         """
         return [cls.from_api_bucket_dict(api, bucket_dict) for bucket_dict in response['buckets']]
 
@@ -919,12 +851,10 @@ class BucketFactory(object):
 
         into a Bucket object
 
-        :param api: API object
-        :type api: b2sdk.api.B2Api
-        :param bucket_dict: a dictionary with bucket properties
-        :type bucket_dict: dict
+        :param b2sdk.v1.B2Api api: API lient
+        :param dict bucket_dict: a dictionary with bucket properties
         :return: a Bucket object
-        :rtype: b2sdk.bucket.Bucket
+        :rtype: b2sdk.v1.Bucket
 
         """
         bucket_name = bucket_dict['bucketName']
