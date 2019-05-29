@@ -21,7 +21,14 @@ class PartFactory(object):
 
 
 class Part(object):
-    """ Large file upload part """
+    """
+    A structure which represents a *part* of a large file upload
+
+    :ivar str ~.file_id: ``fileId``
+    :ivar int ~.part_number: part number, starting with 1
+    :ivar str ~.content_length: content length, in bytes
+    :ivar str ~.content_sha1: checksum
+    """
     def __init__(self, file_id, part_number, content_length, content_sha1):
         self.file_id = file_id
         self.part_number = part_number

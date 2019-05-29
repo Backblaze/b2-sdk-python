@@ -23,14 +23,14 @@ Public API
    Public API doc list
 
 .. toctree::
-   source_dest
    account_info
    b2sdk/v1/api
    b2sdk/v1/exception
    b2sdk/v1/bucket
-   b2sdk/v1/file_version
+   b2sdk/v1/data_classes
    b2sdk/cache
    b2sdk/progress
+   source_dest
    sync
 
 .. _api_internal:
@@ -38,7 +38,7 @@ Public API
 Internal API
 ========================
 
-.. warning:: See :ref:`Internal interface <internal_interface>` chapter to learn when and how to safely use the Internal API
+.. note:: See :ref:`Internal interface <internal_interface>` chapter to learn when and how to safely use the Internal API
 
 .. todo::
    Private API doc list

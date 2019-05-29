@@ -8,7 +8,7 @@ Installing as a dependency
 **b2sdk** can simply be added to ``requirements.txt`` (or equivalent such as ``setup.py``, ``.pipfile`` etc).
 In order to properly set a dependency, see :ref:`this <semantic_versioning>` chapter for details.
 
-.. caution::
+.. note::
   The stability of your application depends on correct :ref:`pinning of versions <semantic_versioning>`.
 
 

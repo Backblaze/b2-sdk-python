@@ -409,7 +409,7 @@ class Bucket(object):
 
     def list_unfinished_large_files(self, start_file_id=None, batch_size=None):
         """
-        A generator that yields an :py:class:b2sdk.b1.UnfinishedLargeFile for each
+        A generator that yields an :py:class:`b2sdk.v1.UnfinishedLargeFile` for each
         unfinished large file in the bucket, starting at the
         given file.
 

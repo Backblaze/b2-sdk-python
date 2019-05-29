@@ -99,8 +99,7 @@ class TqdmProgressListener(AbstractProgressListener):
         """
         Set the expected total number of bytes.
 
-        :param total_byte_count: expected total number of bytes
-        :type total_byte_count: int
+        :param int total_byte_count: expected total number of bytes
         """
         if self.tqdm is None:
             self.tqdm = tqdm(
@@ -118,8 +117,7 @@ class TqdmProgressListener(AbstractProgressListener):
         so far.  This is not a delta, it is the total number of bytes
         transferred so far.
 
-        :param byte_count: number of bytes have been transferred
-        :type byte_count: int
+        :param int byte_count: number of bytes have been transferred
         """
         # tqdm doesn't support running the progress bar backwards,
         # so on an upload retry, it just won't move until it gets
@@ -153,8 +151,7 @@ class SimpleProgressListener(AbstractProgressListener):
         """
         Set the expected total number of bytes.
 
-        :param total_byte_count: expected total number of bytes
-        :type total_byte_count: int
+        :param int total_byte_count: expected total number of bytes
         """
         self.total = total_byte_count
 
@@ -164,8 +161,7 @@ class SimpleProgressListener(AbstractProgressListener):
         so far.  This is not a delta, it is the total number of bytes
         transferred so far.
 
-        :param byte_count: number of bytes have been transferred
-        :type byte_count: int
+        :param int byte_count: number of bytes have been transferred
         """
         now = time.time()
         elapsed = now - self.last_time
@@ -194,8 +190,7 @@ class DoNothingProgressListener(AbstractProgressListener):
         """
         Set the expected total number of bytes.
 
-        :param total_byte_count: expected total number of bytes
-        :type total_byte_count: int
+        :param int total_byte_count: expected total number of bytes
         """
         pass
 
@@ -205,8 +200,7 @@ class DoNothingProgressListener(AbstractProgressListener):
         so far.  This is not a delta, it is the total number of bytes
         transferred so far.
 
-        :param byte_count: number of bytes have been transferred
-        :type byte_count: int
+        :param int byte_count: number of bytes have been transferred
         """
         pass
 
@@ -244,10 +238,8 @@ def make_progress_listener(description, quiet):
     """
     Returns a progress listener object depending on some conditions
 
-    :param description: listener description
-    :type description: str
-    :param quiet: if True, do not output anything
-    :type quiet: bool
+    :param str description: listener description
+    :param bool quiet: if ``True``, do not output anything
     :return: a listener object
     """
     if quiet:
@@ -267,10 +259,8 @@ class RangeOfInputStream(object):
     def __init__(self, stream, offset, length):
         """
         :param stream: a seekable stream
-        :param offset: offset in the stream
-        :type offset: int
-        :param length: max number of bytes to read
-        :type length: int
+        :param int offset: offset in the stream
+        :param int length: max number of bytes to read
         """
         self.stream = stream
         self.offset = offset
@@ -287,8 +277,7 @@ class RangeOfInputStream(object):
         """
         Seek to a given position in the stream
 
-        :param pos: position in the stream
-        :type pos: int
+        :param int pos: position in the stream
         """
         self.stream.seek(self.offset + pos)
 
@@ -296,8 +285,7 @@ class RangeOfInputStream(object):
         """
         Read data from the stream
 
-        :param size: number of bytes to read
-        :type size: int
+        :param int size: number of bytes to read
         :return: data read from the stream
         """
         if size is None:
@@ -321,10 +309,8 @@ class AbstractStreamWithProgress(object):
         """
 
         :param stream: the stream to read from or write to
-        :param progress_listener: the listener that we tell about progress
-        :type progress_listener: b2sdk.progress.AbstractProgressListener
-        :param offset: the starting byte offset in the file
-        :type offset: int
+        :param b2sdk.v1.AbstractProgressListener progress_listener: the listener that we tell about progress
+        :param int offset: the starting byte offset in the file
         """
         assert progress_listener is not None
         self.stream = stream
@@ -342,8 +328,7 @@ class AbstractStreamWithProgress(object):
         """
         Seek to a given position in the stream
 
-        :param pos: position in the stream
-        :type pos: int
+        :param int pos: position in the stream
         """
         return self.stream.seek(pos)
 
@@ -365,8 +350,7 @@ class AbstractStreamWithProgress(object):
         """
         Read data from the stream
 
-        :param size: number of bytes to read
-        :type size: int
+        :param int size: number of bytes to read
         :return: data read from the stream
         """
         if size is None:

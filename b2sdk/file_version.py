@@ -75,7 +75,7 @@ class FileVersionInfo(object):
 
 
 class FileVersionInfoFactory(object):
-    """ constructs :py:class:b2sdk.v1.FileVersionInfo objects from various structures """
+    """ constructs :py:class:`b2sdk.v1.FileVersionInfo` objects from various structures """
     @classmethod
     def from_api_response(cls, file_info_dict, force_action=None):
         """
@@ -106,7 +106,7 @@ class FileVersionInfoFactory(object):
                "fileName": "randomdata"
            }
 
-        into a :py:class:b2sdk.v1.FileVersionInfo object
+        into a :py:class:`b2sdk.v1.FileVersionInfo` object
 
         """
         assert file_info_dict.get('action') is None or force_action is None, \

@@ -174,7 +174,6 @@ class B2Api(object):
         """
         Return account ID
 
-        :return: account ID
         :rtype: str
         """
         return self.account_info.get_account_id()
@@ -188,7 +187,7 @@ class B2Api(object):
         Create a bucket
 
         :param str name: bucket name
-        :param str bucket_type: a bucket type, could be one of the following values: "allPublic", "allPrivate"
+        :param str bucket_type: a bucket type, could be one of the following values: ``"allPublic"``, ``"allPrivate"``
         :param dict bucket_info: additional bucket info to store with the bucket
         :param dict cors_rules: bucket CORS rules to store with the bucket
         :param dict lifecycle_rules: bucket lifecycle rules to store with the bucket
