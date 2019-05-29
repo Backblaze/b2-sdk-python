@@ -102,6 +102,9 @@ class B2Api(object):
         Must be called before any work starts, or the thread pool will get
         the default size of 1.
 
+        .. todo::
+            move set_thread_pool_size and get_thread_pool to transferer
+
         :param int max_workers: maximum allowed number of workers in a pool
         """
         if self.upload_executor is not None:
@@ -279,6 +282,9 @@ class B2Api(object):
         but API user should not rely on the response: if it doesn't raise
         an exception, it means that the operation was a success
 
+        .. todo::
+            delete_bucket should return ``True``
+
         :param b2sdk.v1.Bucket bucket: a Bucket object
         """
         account_id = self.account_info.get_account_id()
@@ -437,7 +443,12 @@ class B2Api(object):
 
     # other
     def get_file_info(self, file_id):
-        """ legacy interface which just returns whatever remote API returns """
+        """
+        legacy interface which just returns whatever remote API returns
+
+        .. todo::
+            get_file_info() should return a File with .delete(), copy(), rename(), read() and so on
+        """
         return self.session.get_file_info(file_id)
 
     def check_bucket_restrictions(self, bucket_name):

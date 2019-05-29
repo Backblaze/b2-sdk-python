@@ -427,11 +427,21 @@ class Bucket(object):
                 )
 
     def list_file_names(self, start_filename=None, max_entries=None):
-        """ legacy interface which just returns whatever remote API returns """
+        """
+        legacy interface which just returns whatever remote API returns
+
+        .. todo::
+            list_file_names should be deprecated/removed
+        """
         return self.api.session.list_file_names(self.id_, start_filename, max_entries)
 
     def list_file_versions(self, start_filename=None, start_file_id=None, max_entries=None):
-        """ legacy interface which just returns whatever remote API returns """
+        """
+        legacy interface which just returns whatever remote API returns
+
+        .. todo::
+            list_file_versions should be deprecated/removed
+        """
         return self.api.session.list_file_versions(
             self.id_, start_filename, start_file_id, max_entries
         )
