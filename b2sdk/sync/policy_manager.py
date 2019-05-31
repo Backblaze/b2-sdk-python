@@ -22,7 +22,15 @@ class SyncPolicyManager(object):
         self.policies = {}  # dict<,>
 
     def get_policy(
-        self, sync_type, source_file, source_folder, dest_file, dest_folder, now_millis, args
+        self,
+        sync_type,
+            source_file,
+            source_folder,
+            dest_file,
+            dest_folder,
+            now_millis,
+            delete,
+            keep_days
     ):
         """
         Return a policy object.
@@ -39,13 +47,16 @@ class SyncPolicyManager(object):
         :type dest_folder: str
         :param now_millis: current time in milliseconds
         :type now_millis: int
-        :param args: an object which holds command line arguments
+        :param delete: delete policy
+        :type delete: bool
+        :param keep_days: keep for days policy
+        :type keep_days: int
         :return: a policy object
         """
-        policy_class = self.get_policy_class(sync_type, args)
-        return policy_class(source_file, source_folder, dest_file, dest_folder, now_millis, args)
+        policy_class = self.get_policy_class(sync_type, delete, keep_days)
+        return policy_class(source_file, source_folder, dest_file, dest_folder, now_millis)
 
-    def get_policy_class(self, sync_type, args):
+    def get_policy_class(self, sync_type, delete, keep_days):
         """
         Get policy class by a given sync type.
 
@@ -55,20 +66,20 @@ class SyncPolicyManager(object):
         :return: a policy class
         """
         if sync_type == 'local-to-b2':
-            if args.delete:
+            if delete:
                 return UpAndDeletePolicy
-            elif args.keepDays:
+            elif keep_days:
                 return UpAndKeepDaysPolicy
             else:
                 return UpPolicy
         elif sync_type == 'b2-to-local':
-            if args.delete:
+            if delete:
                 return DownAndDeletePolicy
-            elif args.keepDays:
+            elif keep_days:
                 return DownAndKeepDaysPolicy
             else:
                 return DownPolicy
-        assert False, 'invalid sync type: %s, args: %s' % (sync_type, str(args))
+        assert False, 'invalid sync type: %s, keep_days: %s' % (sync_type, str(keep_days))
 
 
 POLICY_MANAGER = SyncPolicyManager()
