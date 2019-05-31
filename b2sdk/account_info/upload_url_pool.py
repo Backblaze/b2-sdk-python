@@ -70,8 +70,9 @@ class UrlPoolAccountInfo(AbstractAccountInfo):
     Implements part of :py:class:`AbstractAccountInfo` for upload URL pool management
     with a simple, key-value storage, such as :py:class:`b2sdk.v1.UploadUrlPool`
     """
-    BUCKET_UPLOAD_POOL_CLASS = UploadUrlPool  #: url pool class to use for small files
-    LARGE_FILE_UPLOAD_POOL_CLASS = UploadUrlPool  #: url pool class to use for large files
+    # here staticmethod is necessary to avoid the first argument binding to the first argument (like ``partial(fun, arg)``)
+    BUCKET_UPLOAD_POOL_CLASS = staticmethod(UploadUrlPool)  #: url pool class to use for small files
+    LARGE_FILE_UPLOAD_POOL_CLASS = staticmethod(UploadUrlPool)  #: url pool class to use for large files
 
     def __init__(self):
         super(UrlPoolAccountInfo, self).__init__()
