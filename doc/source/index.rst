@@ -15,6 +15,9 @@ Why use b2sdk?
 #########################################
 
 .. todo::
+   delete doc/source/b2sdk?
+
+.. todo::
    describe raw_simulator in detail
 
 .. todo::
