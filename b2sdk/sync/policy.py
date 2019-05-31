@@ -29,7 +29,28 @@ class AbstractFileSyncPolicy(object):
     DESTINATION_PREFIX = NotImplemented
     SOURCE_PREFIX = NotImplemented
 
-    def __init__(self, source_file, source_folder, dest_file, dest_folder, now_millis, args):
+    NEWER_FILE_SKIP = 101
+    NEWER_FILE_REPLACE = 102
+
+    NEWER_FILE_MODES = [NEWER_FILE_REPLACE, NEWER_FILE_SKIP]
+
+    COMPARE_VERSION_MODTIME = 201
+    COMPARE_VERSION_SIZE = 202
+    COMPARE_VERSION_NONE = 203
+
+    COMPARE_VERSION_MODES = [COMPARE_VERSION_MODTIME, COMPARE_VERSION_SIZE]
+
+    def __init__(
+            self,
+            source_file,
+            source_folder,
+            dest_file,
+            dest_folder,
+            now_millis,
+            keep_days,
+            compare_threshold,
+            compare_version_mode=COMPARE_VERSION_MODTIME,
+    ):
         """
         :param source_file: source file object
         :type source_file: b2sdk.sync.file.File
@@ -41,14 +62,13 @@ class AbstractFileSyncPolicy(object):
         :type dest_folder: b2sdk.sync.folder.AbstractFolder
         :param now_millis: current time in milliseconds
         :type now_millis: int
-        :param args: an object which holds command line arguments
         """
         self._source_file = source_file
         self._source_folder = source_folder
         self._dest_file = dest_file
-        self._delete = args.delete
-        self._keepDays = args.keepDays
-        self._args = args
+        self._keep_days = keep_days
+        self._compare_version_mode = compare_version_mode
+        self._compare_threshold = compare_threshold
         self._dest_folder = dest_folder
         self._now_millis = now_millis
         self._transferred = False
@@ -65,10 +85,17 @@ class AbstractFileSyncPolicy(object):
             return True
         else:
             # Both exist.  Transfer only if the two are different.
-            return self.files_are_different(self._source_file, self._dest_file, self._args)
+            return self.files_are_different(
+                self._source_file,
+                self._dest_file,
+                self._compare_threshold,
+                self._compare_version_mode,
+            )
 
     @classmethod
-    def files_are_different(cls, source_file, dest_file, args):
+    def files_are_different(
+            cls, source_file, dest_file, compare_threshold=None, compare_version_mode=None, newer_file_mode=None,
+    ):
         """
         Compare two files and determine if the the destination file
         should be replaced by the source file.
@@ -82,28 +109,26 @@ class AbstractFileSyncPolicy(object):
         """
 
         # Compare using modification time by default
-        compareVersions = args.compareVersions or 'modTime'
+        compare_version_mode = compare_version_mode or cls.COMPARE_VERSION_MODTIME
 
         # Optionally set a compare threshold for fuzzy comparison
-        compareThreshold = args.compareThreshold or 0
-        if compareThreshold < 0:
-            raise CommandError('Invalid option for --compareThreshold (must be a positive integer')
+        compare_threshold = compare_threshold or 0
 
         # Compare using file name only
-        if compareVersions == 'none':
+        if compare_version_mode == cls.COMPARE_VERSION_NONE:
             return False
 
         # Compare using modification time
-        elif compareVersions == 'modTime':
+        elif compare_version_mode == cls.COMPARE_VERSION_MODTIME:
             # Get the modification time of the latest versions
             source_mod_time = source_file.latest_version().mod_time
             dest_mod_time = dest_file.latest_version().mod_time
             diff_mod_time = abs(source_mod_time - dest_mod_time)
-            compare_threshold_exceeded = diff_mod_time > compareThreshold
+            compare_threshold_exceeded = diff_mod_time > compare_threshold
 
             logger.debug(
                 'File %s: source time %s, dest time %s, diff %s, threshold %s, diff > threshold %s',
-                source_file.name, source_mod_time, dest_mod_time, diff_mod_time, compareThreshold,
+                source_file.name, source_mod_time, dest_mod_time, diff_mod_time, compare_threshold,
                 compare_threshold_exceeded
             )
 
@@ -114,9 +139,9 @@ class AbstractFileSyncPolicy(object):
 
                 # Source is older
                 elif source_mod_time < dest_mod_time:
-                    if args.replaceNewer:
+                    if newer_file_mode == cls.NEWER_FILE_REPLACE:
                         return True
-                    elif args.skipNewer:
+                    elif newer_file_mode == cls.NEWER_FILE_SKIP:
                         return False
                     else:
                         raise DestFileNewer(
@@ -124,16 +149,16 @@ class AbstractFileSyncPolicy(object):
                         )
 
         # Compare using file size
-        elif compareVersions == 'size':
+        elif compare_version_mode == cls.COMPARE_VERSION_SIZE:
             # Get file size of the latest versions
             source_size = source_file.latest_version().size
             dest_size = dest_file.latest_version().size
             diff_size = abs(source_size - dest_size)
-            compare_threshold_exceeded = diff_size > compareThreshold
+            compare_threshold_exceeded = diff_size > compare_threshold
 
             logger.debug(
                 'File %s: source size %s, dest size %s, diff %s, threshold %s, diff > threshold %s',
-                source_file.name, source_size, dest_size, diff_size, compareThreshold,
+                source_file.name, source_size, dest_size, diff_size, compare_threshold,
                 compare_threshold_exceeded
             )
 
@@ -233,7 +258,7 @@ class UpAndKeepDaysPolicy(UpPolicy):
             yield action
         for action in make_b2_keep_days_actions(
             self._source_file, self._dest_file, self._dest_folder, self._transferred,
-            self._keepDays, self._now_millis
+            self._keep_days, self._now_millis
         ):
             yield action
 
