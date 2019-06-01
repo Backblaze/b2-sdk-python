@@ -27,6 +27,7 @@ logger = logging.getLogger(__name__)
 B2_ACCOUNT_INFO_ENV_VAR = 'B2_ACCOUNT_INFO'
 B2_ACCOUNT_INFO_DEFAULT_FILE = '~/.b2_account_info'
 
+
 class SqliteAccountInfo(UrlPoolAccountInfo):
     """
     Stores account information in an `sqlite3 <https://www.sqlite.org>`_ database, which is

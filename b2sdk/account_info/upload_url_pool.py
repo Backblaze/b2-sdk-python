@@ -72,7 +72,9 @@ class UrlPoolAccountInfo(AbstractAccountInfo):
     """
     # here staticmethod is necessary to avoid the first argument binding to the first argument (like ``partial(fun, arg)``)
     BUCKET_UPLOAD_POOL_CLASS = staticmethod(UploadUrlPool)  #: url pool class to use for small files
-    LARGE_FILE_UPLOAD_POOL_CLASS = staticmethod(UploadUrlPool)  #: url pool class to use for large files
+    LARGE_FILE_UPLOAD_POOL_CLASS = staticmethod(
+        UploadUrlPool
+    )  #: url pool class to use for large files
 
     def __init__(self):
         super(UrlPoolAccountInfo, self).__init__()

@@ -76,6 +76,7 @@ class FileVersionInfo(object):
 
 class FileVersionInfoFactory(object):
     """ constructs :py:class:`b2sdk.v1.FileVersionInfo` objects from various structures """
+
     @classmethod
     def from_api_response(cls, file_info_dict, force_action=None):
         """
@@ -152,6 +153,7 @@ class FileIdAndName(object):
     :ivar str ~.file_id: ``fileId``
     :ivar str ~.file_name: full file name (with path)
     """
+
     def __init__(self, file_id, file_name):
         self.file_id = file_id
         self.file_name = file_name

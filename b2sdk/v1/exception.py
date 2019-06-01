@@ -1,3 +1,13 @@
+######################################################################
+#
+# File: b2sdk/v1/exception.py
+#
+# Copyright 2019 Backblaze Inc. All Rights Reserved.
+#
+# License https://www.backblaze.com/using_b2_code.html
+#
+######################################################################
+
 from b2sdk.account_info.exception import AccountInfoError
 from b2sdk.account_info.exception import CorruptAccountInfo
 from b2sdk.account_info.exception import MissingAccountData

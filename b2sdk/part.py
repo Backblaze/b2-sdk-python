@@ -29,6 +29,7 @@ class Part(object):
     :ivar str ~.content_length: content length, in bytes
     :ivar str ~.content_sha1: checksum
     """
+
     def __init__(self, file_id, part_number, content_length, content_sha1):
         self.file_id = file_id
         self.part_number = part_number

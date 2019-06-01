@@ -20,6 +20,7 @@ class UnfinishedLargeFile(object):
     :ivar str ~.content_type: :rfc:`822` content type, for example ``"application/octet-stream"``
     :ivar dict ~.file_info: file info dict
     """
+
     def __init__(self, file_dict):
         """
         Initializes from one file returned by ``b2_start_large_file`` or ``b2_list_unfinished_large_files``

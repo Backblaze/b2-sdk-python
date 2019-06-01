@@ -97,7 +97,7 @@ exclude_patterns = []
 pygments_style = 'sphinx'
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
-todo_include_todos = False
+todo_include_todos = True
 
 # -- Options for HTML output ----------------------------------------------
 
@@ -129,7 +129,7 @@ autodoc_default_options = {
     'exclude-members': '__weakref__, _abc_cache, _abc_negative_cache, _abc_negative_cache_version, _abc_registry',
     'members': True,
     'undoc-members': True,
-}
+}  # yapf: disable
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
