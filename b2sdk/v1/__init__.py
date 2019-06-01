@@ -24,6 +24,22 @@ assert FileVersionInfo
 assert Part
 assert UnfinishedLargeFile
 
+# progress reporting
+
+from b2sdk.progress import AbstractProgressListener
+from b2sdk.progress import DoNothingProgressListener
+from b2sdk.progress import ProgressListenerForTest
+from b2sdk.progress import SimpleProgressListener
+from b2sdk.progress import TqdmProgressListener
+
+assert AbstractProgressListener
+assert DoNothingProgressListener
+assert ProgressListenerForTest
+assert SimpleProgressListener
+assert TqdmProgressListener
+
+# other
+
 #raw_simulator.py:49:class KeySimulator(object):
 #raw_simulator.py:101:class PartSimulator(object):
 #raw_simulator.py:118:class FileSimulator(object):
@@ -41,16 +57,13 @@ assert UnfinishedLargeFile
 #download_dest.py:113:class PreSeekedDownloadDest(DownloadDestLocalFile):
 #download_dest.py:132:class DownloadDestBytes(AbstractDownloadDestination):
 #download_dest.py:183:class DownloadDestProgressWrapper(AbstractDownloadDestination):
-#progress.py:29:class AbstractProgressListener(object):
-#progress.py:87:class TqdmProgressListener(AbstractProgressListener):
-#progress.py:140:class SimpleProgressListener(AbstractProgressListener):
-#progress.py:188:class DoNothingProgressListener(AbstractProgressListener):
-#progress.py:220:class ProgressListenerForTest(AbstractProgressListener):
-#progress.py:261:class RangeOfInputStream(object):
-#progress.py:312:class AbstractStreamWithProgress(object):
-#progress.py:391:class ReadingStreamWithProgress(AbstractStreamWithProgress):
-#progress.py:408:class WritingStreamWithProgress(AbstractStreamWithProgress):
-#progress.py:423:class StreamWithHash(object):
+
+#from b2sdk.progress import RangeOfInputStream
+#from b2sdk.progress import AbstractStreamWithProgress
+#from b2sdk.progress import ReadingStreamWithProgress
+#from b2sdk.progress import WritingStreamWithProgress
+#from b2sdk.progress import StreamWithHash
+
 #upload_source.py:22:class AbstractUploadSource(object):
 #upload_source.py:48:class UploadSourceBytes(AbstractUploadSource):
 #upload_source.py:62:class UploadSourceLocalFile(AbstractUploadSource):

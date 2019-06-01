@@ -46,8 +46,7 @@ class AbstractProgressListener(object):
 
         May be called more than once if an upload is retried.
 
-        :param total_byte_count: expected total number of bytes
-        :type total_byte_count: int
+        :param int total_byte_count: expected total number of bytes
         """
 
     @abstractmethod
@@ -57,8 +56,7 @@ class AbstractProgressListener(object):
         so far.  This is not a delta, it is the total number of bytes
         transferred so far.
 
-        :param byte_count: number of bytes have been transferred
-        :type byte_count: int
+        :param int byte_count: number of bytes have been transferred
         """
 
     @abstractmethod
@@ -96,11 +94,6 @@ class TqdmProgressListener(AbstractProgressListener):
         super(TqdmProgressListener, self).__init__(*args, **kwargs)
 
     def set_total_bytes(self, total_byte_count):
-        """
-        Set the expected total number of bytes.
-
-        :param int total_byte_count: expected total number of bytes
-        """
         if self.tqdm is None:
             self.tqdm = tqdm(
                 desc=self.description,
@@ -108,17 +101,10 @@ class TqdmProgressListener(AbstractProgressListener):
                 unit='B',
                 unit_scale=True,
                 leave=True,
-                miniters=1
+                miniters=1,
             )
 
     def bytes_completed(self, byte_count):
-        """
-        Reports that the given number of bytes have been transferred
-        so far.  This is not a delta, it is the total number of bytes
-        transferred so far.
-
-        :param int byte_count: number of bytes have been transferred
-        """
         # tqdm doesn't support running the progress bar backwards,
         # so on an upload retry, it just won't move until it gets
         # past the point where it failed.
@@ -127,9 +113,6 @@ class TqdmProgressListener(AbstractProgressListener):
             self.prev_value = byte_count
 
     def close(self):
-        """
-        Perform clean up operations
-        """
         if self.tqdm is not None:
             self.tqdm.close()
         super(TqdmProgressListener, self).close()
@@ -148,21 +131,9 @@ class SimpleProgressListener(AbstractProgressListener):
         super(SimpleProgressListener, self).__init__(*args, **kwargs)
 
     def set_total_bytes(self, total_byte_count):
-        """
-        Set the expected total number of bytes.
-
-        :param int total_byte_count: expected total number of bytes
-        """
         self.total = total_byte_count
 
     def bytes_completed(self, byte_count):
-        """
-        Reports that the given number of bytes have been transferred
-        so far.  This is not a delta, it is the total number of bytes
-        transferred so far.
-
-        :param int byte_count: number of bytes have been transferred
-        """
         now = time.time()
         elapsed = now - self.last_time
         if 3 <= elapsed and self.total != 0:
@@ -173,9 +144,6 @@ class SimpleProgressListener(AbstractProgressListener):
             self.any_printed = True
 
     def close(self):
-        """
-        Perform clean up operations
-        """
         if self.any_printed:
             print('    DONE.')
         super(SimpleProgressListener, self).close()
@@ -183,31 +151,16 @@ class SimpleProgressListener(AbstractProgressListener):
 
 class DoNothingProgressListener(AbstractProgressListener):
     """
-    This listener performs no any output
+    This listener performs no output whatsoever
     """
 
     def set_total_bytes(self, total_byte_count):
-        """
-        Set the expected total number of bytes.
-
-        :param int total_byte_count: expected total number of bytes
-        """
         pass
 
     def bytes_completed(self, byte_count):
-        """
-        Reports that the given number of bytes have been transferred
-        so far.  This is not a delta, it is the total number of bytes
-        transferred so far.
-
-        :param int byte_count: number of bytes have been transferred
-        """
         pass
 
     def close(self):
-        """
-        Perform clean up operations
-        """
         super(DoNothingProgressListener, self).close()
 
 
