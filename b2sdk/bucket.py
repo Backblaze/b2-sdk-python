@@ -39,8 +39,7 @@ class LargeFileUploadState(object):
 
     def __init__(self, file_progress_listener):
         """
-        :param file_progress_listener: a progress listener object
-        :type file_progress_listener: b2sdk.progress.AbstractProgressListener
+        :param b2sdk.v1.AbstractProgressListener file_progress_listener: a progress listener object to use. Use :py:class:`b2sdk.v1.DoNothingProgressListener` to disable.
         """
         self.lock = threading.RLock()
         self.error_message = None
@@ -52,8 +51,7 @@ class LargeFileUploadState(object):
         """
         Set error message
 
-        :param message: an error message
-        :type message: str
+        :param str message: an error message
         """
         with self.lock:
             self.error_message = message
@@ -82,8 +80,7 @@ class LargeFileUploadState(object):
         """
         Update listener progress info
 
-        :param bytes_delta: number of bytes to increase a progress for
-        :type bytes_delta: int
+        :param int bytes_delta: number of bytes to increase a progress for
         """
         with self.lock:
             self.bytes_completed += bytes_delta
@@ -93,46 +90,30 @@ class LargeFileUploadState(object):
 class PartProgressReporter(AbstractProgressListener):
     """
     An adapter that listens to the progress of upload a part and
-    gives the information to a LargeFileUploadState.
+    gives the information to a :py:class:`b2sdk.bucket.LargeFileUploadState`.
 
     Accepts absolute bytes_completed from the uploader, and reports
-    deltas to the LargeFileUploadState.  The bytes_completed for the
+    deltas to the :py:class:`b2sdk.bucket.LargeFileUploadState`.  The bytes_completed for the
     part will drop back to 0 on a retry, which will result in a
     negative delta.
     """
 
     def __init__(self, large_file_upload_state, *args, **kwargs):
         """
-        :param large_file_upload_state: LargeFileUploadState object
-        :type large_file_upload_state: b2sdk.bucket.LargeFileUploadState
+        :param b2sdk.bucket.LargeFileUploadState large_file_upload_state: object to relay the progress to
         """
         super(PartProgressReporter, self).__init__(*args, **kwargs)
         self.large_file_upload_state = large_file_upload_state
         self.prev_byte_count = 0
 
     def bytes_completed(self, byte_count):
-        """
-        Update bytes completed value
-
-        :param bytes_count: a value to increase progress to
-        :type bytes_count: int
-        """
         self.large_file_upload_state.update_part_bytes(byte_count - self.prev_byte_count)
         self.prev_byte_count = byte_count
 
     def close(self):
-        """
-        Perform cleanup operations
-        """
         pass
 
     def set_total_bytes(self, total_byte_count):
-        """
-        Set total bytes value
-
-        :param total_bytes_count:
-        :type total_bytes_count: int
-        """
         pass
 
 
@@ -242,12 +223,14 @@ class Bucket(object):
 
     def download_file_by_id(self, file_id, download_dest, progress_listener=None, range_=None):
         """
-        Download a file by ID, download_file_by_id actually belongs in B2Api,
-        not in Bucket, we just provide a convenient redirect here
+        Download a file by ID
+
+        .. note::
+          download_file_by_id actually belongs in :py:class:`b2sdk.v1.B2Api`, not in :py:class:`b2sdk.v1.Bucket`, we just provide a convenient redirect here
 
         :param str file_id: a file ID
         :param str download_dest: a local file path
-        :param b2sdk.v1.AbstractProgressListener progress_listener: a progress listener object
+        :param b2sdk.v1.AbstractProgressListener,None progress_listener: a progress listener object to use, or ``None`` to not report progress
         :param tuple[int,int] range_: two integer values, start and end offsets
         """
         return self.api.download_file_by_id(
@@ -264,7 +247,7 @@ class Bucket(object):
 
         :param str file_id: a file ID
         :param str download_dest: a local file path
-        :param b2sdk.v1.AbstractProgressListener progress_listener: a progress listener object
+        :param b2sdk.v1.AbstractProgressListener,None progress_listener: a progress listener object to use, or ``None`` to not track progress
         :param tuple[int,int] range_: two integer values, start and end offsets
         """
         url = self.api.session.get_download_url_by_name(
@@ -313,10 +296,10 @@ class Bucket(object):
 
         :param str folder_to_list: the name of the folder to list.  Must not start with "/".
                                Empty string means top-level folder.
-        :param bool show_versions: when true returns info about all versions of a file,
-                              when false, just returns info about the most recent versions.
+        :param bool show_versions: when ``True`` returns info about all versions of a file,
+                              when ``False``, just returns info about the most recent versions.
         :param bool recursive: if ``True``, list folders recursively
-        :param int fetch_count: how many entries to return. 1 - 1000
+        :param int,None fetch_count: how many entries to return or ``None`` to use the default. Acceptable values: 1 - 1000
         :rtype: generator[tuple[b2sdk.v1.FileVersionInfo,str]]
         :returns: generator of (file_version_info, folder_name) tuples
         """
@@ -410,12 +393,11 @@ class Bucket(object):
     def list_unfinished_large_files(self, start_file_id=None, batch_size=None):
         """
         A generator that yields an :py:class:`b2sdk.v1.UnfinishedLargeFile` for each
-        unfinished large file in the bucket, starting at the
-        given file.
+        unfinished large file in the bucket, starting at the given file.
 
-        :param str start_file_id: a file ID to start with
-        :param int batch_size: max file count
-        :rtype: generator
+        :param str,None start_file_id: a file ID to start from or None to start from the begi
+        :param int,None batch_size: max file count
+        :rtype: generator[b2sdk.v1.UnfinishedLargeFile]
         """
         batch_size = batch_size or 100
         while True:
@@ -433,8 +415,8 @@ class Bucket(object):
         Start large file transfer
 
         :param str file_name: a file name
-        :param str content_type: request content type
-        :param dict file_info: a file info to store with the file
+        :param str,None content_type: the MIME type, or ``None`` to accept the default based on file extension of the B2 file name
+        :param dict,None file_infos: a file info to store with the file or ``None`` to not store anything
         """
         return UnfinishedLargeFile(
             self.api.session.start_large_file(self.id_, file_name, content_type, file_info)
@@ -449,9 +431,9 @@ class Bucket(object):
 
         :param bytes data_bytes: a byte array to upload
         :param str file_name: a file name to upload bytes to
-        :param str content_type: request content type
-        :param dict file_infos: a file info to store with the file
-        :param b2sdk.v1.AbstractProgressListener progress_listener: a progress listener object
+        :param str,None content_type: the MIME type, or ``None`` to accept the default based on file extension of the B2 file name
+        :param dict,None file_infos: a file info to store with the file or ``None`` to not store anything
+        :param b2sdk.v1.AbstractProgressListener,None progress_listener: a progress listener object to use, or ``None`` to not track progress
         """
         upload_source = UploadSourceBytes(data_bytes)
         return self.upload(
@@ -459,7 +441,7 @@ class Bucket(object):
             file_name,
             content_type=content_type,
             file_info=file_infos,
-            progress_listener=progress_listener
+            progress_listener=progress_listener,
         )
 
     def upload_local_file(
@@ -470,22 +452,22 @@ class Bucket(object):
         file_infos=None,
         sha1_sum=None,
         min_part_size=None,
-        progress_listener=None
+        progress_listener=None,
     ):
         """
         Upload a file on local disk to a B2 file.
 
         .. seealso::
 
-            :ref:`Synchronizer <sync>`, a *high-performance* utility that synchronizes a local folder with a Bucket.
+            :ref:`Synchronizer <sync>`, a *high-performance* utility that synchronizes a local folder with a :term:`Bucket`.
 
         :param str local_file: a path to a file on local disk
         :param str file_name: a file name of the new B2 file
-        :param str content_type: request content type
-        :param dict file_infos: a file info to store with the file
-        :param str sha1_sum: file SHA1 hash
+        :param str,None content_type: the MIME type, or ``None`` to accept the default based on file extension of the B2 file name
+        :param dict,None file_infos: a file info to store with the file or ``None`` to not store anything
+        :param str,None sha1_sum: file SHA1 hash or ``None`` to compute it automatically
         :param int min_part_size: a minimum size of a part
-        :param b2sdk.v1.AbstractProgressListener progress_listener: a progress listener object
+        :param b2sdk.v1.AbstractProgressListener,None progress_listener: a progress listener object to use, or ``None`` to not report progress
         """
         upload_source = UploadSourceLocalFile(local_path=local_file, content_sha1=sha1_sum)
         return self.upload(
@@ -494,7 +476,7 @@ class Bucket(object):
             content_type=content_type,
             file_info=file_infos,
             min_part_size=min_part_size,
-            progress_listener=progress_listener
+            progress_listener=progress_listener,
         )
 
     def upload(
@@ -516,9 +498,9 @@ class Bucket(object):
         :param b2sdk.v1.UploadSource upload_source: an object that opens the source of the upload
         :param str file_name: the file name of the new B2 file
         :param str,None content_type: the MIME type, or ``None`` to accept the default based on file extension of the B2 file name
-        :param dict file_infos: custom file info to be stored with the file
-        :param int min_part_size: the smallest part size to use
-        :param b2sdk.v1.AbstractProgressListener progress_listener: object to notify as data is transferred
+        :param dict,None file_infos: a file info to store with the file or ``None`` to not store anything
+        :param int,None min_part_size: the smallest part size to use or ``None`` to determine automatically
+        :param b2sdk.v1.AbstractProgressListener,None progress_listener: a progress listener object to use, or ``None`` to not report progress
 
         The function `opener` should return a file-like object, and it
         must be possible to call it more than once in case the upload
@@ -640,7 +622,7 @@ class Bucket(object):
         file is found using the filename and comparing the uploaded parts against
         the local file.
 
-        This is only possible if the application key being used allows listFiles access.
+        This is only possible if the application key being used allows ``listFiles`` access.
         """
         if 'listFiles' in self.api.account_info.get_allowed()['capabilities']:
             for file_ in self.list_unfinished_large_files():
@@ -765,7 +747,6 @@ class Bucket(object):
         Get file download URL
 
         :param str filename: a file name
-        :return: file download URL
         :rtype: str
         """
         return "%s/file/%s/%s" % (
@@ -779,8 +760,7 @@ class Bucket(object):
         Hide a file
 
         :param str file_name: a file name
-        :return: file version info
-        :rtype: b2sdk.file_version.FileVersionInfo
+        :rtype: b2sdk.v1.FileVersionInfo
         """
         response = self.api.session.hide_file(self.id_, file_name)
         return FileVersionInfoFactory.from_api_response(response)
@@ -828,7 +808,6 @@ class BucketFactory(object):
 
         :param b2sdk.v1.B2Api api: API object
         :param requests.Response response: response object
-        :return: a Bucket object
         :rtype: b2sdk.v1.Bucket
         """
         return [cls.from_api_bucket_dict(api, bucket_dict) for bucket_dict in response['buckets']]
@@ -853,7 +832,6 @@ class BucketFactory(object):
 
         :param b2sdk.v1.B2Api api: API lient
         :param dict bucket_dict: a dictionary with bucket properties
-        :return: a Bucket object
         :rtype: b2sdk.v1.Bucket
 
         """

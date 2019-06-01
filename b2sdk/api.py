@@ -140,8 +140,8 @@ class B2Api(object):
         Perform account authorization
 
         :param str realm: a realm to authorize account in (usually just "production")
-        :param str application_key_id: application key ID
-        :param str application_key: user's application key
+        :param str application_key_id: :term:`application key ID`
+        :param str application_key: user's :term:`application key`
         """
         # Clean up any previous account info if it was for a different account.
         try:
@@ -284,24 +284,23 @@ class B2Api(object):
         .. todo::
             delete_bucket should return ``True``
 
-        :param b2sdk.v1.Bucket bucket: a Bucket object
+        :param b2sdk.v1.Bucket bucket: a :term:`Bucket` to delete
         """
         account_id = self.account_info.get_account_id()
         return self.session.delete_bucket(account_id, bucket.id_)
 
     def list_buckets(self, bucket_name=None):
         """
-        Calls b2_list_buckets and returns a list of buckets.
+        Calls ``b2_list_buckets`` and returns a list of buckets.
 
         When no bucket name is specified, returns *all* of the buckets
         in the account.  When a bucket name is given, returns just that
-        bucket.  When authorized with an application key restricted to
-        one bucket, you must specify the bucket name, or the request
+        bucket.  When authorized with an :term:`application key` restricted to
+        one :term:`bucket`, you must specify the bucket name, or the request
         will be unauthorized.
 
         :param str bucket_name: the name of the one bucket to return.
-        :return: A list of :py:class:`b2sdk.v1.Bucket` objects.
-        :rtype: list
+        :rtype: list[b2sdk.v1.Bucket]
         """
         # Give a useful warning if the current application key does not
         # allow access to the named bucket.
@@ -391,16 +390,21 @@ class B2Api(object):
 
     # keys
     def create_key(
-        self, capabilities, key_name, valid_duration_seconds=None, bucket_id=None, name_prefix=None
+        self,
+        capabilities,
+        key_name,
+        valid_duration_seconds=None,
+        bucket_id=None,
+        name_prefix=None,
     ):
         """
-        Create a new application key
+        Create a new :term:`application key`
 
         :param list capabilities: a list of capabilities
         :param str key_name: a name of a key
-        :param int valid_duration_seconds: key duration in seconds
-        :param str bucket_id: a bucket ID
-        :param str name_prefix: a name prefix
+        :param int,None valid_duration_seconds: key auto-expire time after it is created, in seconds, or ``None`` to not expire
+        :param str,None bucket_id: a bucket ID to restrict the key to, or ``None`` to not restrict
+        :param str,None name_prefix: a remote filename prefix to restrict the key to or ``None`` to not restrict
         """
         account_id = self.account_info.get_account_id()
 
@@ -420,9 +424,9 @@ class B2Api(object):
 
     def delete_key(self, application_key_id):
         """
-        Delete application key with a given ID
+        Delete :term:`application key`
 
-        :param str application_key_id: an application key ID
+        :param str application_key_id: an :term:`application key ID`
         """
 
         response = self.session.delete_key(application_key_id=application_key_id)
@@ -432,7 +436,7 @@ class B2Api(object):
         """
         List application keys
 
-        :param str start_application_key_id: an application key ID to start from
+        :param str,None start_application_key_id: an :term:`application key ID` to start from or ``None`` to start from the beginning
         """
         account_id = self.account_info.get_account_id()
 
