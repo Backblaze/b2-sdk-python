@@ -10,9 +10,7 @@ Initialize API
 
 .. code-block:: python
 
-    >>> from b2sdk.account_info.in_memory import InMemoryAccountInfo
-    >>> from b2sdk.account_info.sqlite_account_info import SqliteAccountInfo
-    >>> from b2sdk.api import B2Api
+    >>> from b2sdk.v1 import *
 
     >>> info = InMemoryAccountInfo()  # to store credentials, tokens and cache in memory OR
     >>> info = SqliteAccountInfo()  # to store credentials, tokens and cache in ~/.b2_account_info
@@ -20,7 +18,7 @@ Initialize API
 
 To find out more about API object initialization, see :meth:`b2sdk.v1.B2Api.__init__`.
 
-.. hint:: See :doc:`account_info` section to find out which *AccountInfo* implementation is best for your application.
+.. hint:: See :doc:`api/account_info` section to find out which *AccountInfo* implementation is best for your application.
 
 
 *********************
@@ -39,6 +37,9 @@ To find out more about account authorization, see :meth:`b2sdk.v1.B2Api.authoriz
 ***************
 Synchronization
 ***************
+
+.. todo::
+   sync examples need to be redone with the new interface
 
 .. code-block:: python
 
@@ -161,8 +162,6 @@ Upload file
 
 .. code-block:: python
 
-    >>> from b2sdk.progress import make_progress_listener
-
     >>> local_file_path = '/home/user1/b2_example/new.pdf'
     >>> b2_file_name = 'dummy_new.pdf'
     >>> file_info = {'how': 'good-file'}
@@ -187,12 +186,10 @@ By id
 
 .. code-block:: python
 
-    >>> from b2sdk.progress import make_progress_listener
-    >>> from b2sdk.download_dest import DownloadDestLocalFile
+    >>> from b2sdk.v1 import DownloadDestLocalFile
 
     >>> local_file_path = '/home/user1/b2_example/new2.pdf'
     >>> file_id = '4_z5485a1682662eb3e60980d10_f1195145f42952533_d20190403_m130258_c002_v0001111_t0002'
-    >>> progress_listener = make_progress_listener(local_file_path, True)
     >>> download_dest = DownloadDestLocalFile(local_file_path)
     >>> b2_api.download_file_by_id(file_id, download_dest, progress_listener)
     {'fileId': '4_z5485a1682662eb3e60980d10_f1195145f42952533_d20190403_m130258_c002_v0001111_t0002',
@@ -222,8 +219,7 @@ By name
     >>> b2_file_name = 'dummy_new.pdf'
     >>> local_file_name = '/home/user1/b2_example/new3.pdf'
     >>> download_dest = DownloadDestLocalFile(local_file_name)
-    >>> progress_listener = make_progress_listener(local_file_path, True)
-    >>> bucket.download_file_by_name(b2_file_name, download_dest, progress_listener)
+    >>> bucket.download_file_by_name(b2_file_name, download_dest)
     {'fileId': '4_z5485a1682662eb3e60980d10_f113f963288e711a6_d20190404_m065910_c002_v0001095_t0044',
      'fileName': 'dummy_new.pdf',
      'contentType': 'application/pdf',
