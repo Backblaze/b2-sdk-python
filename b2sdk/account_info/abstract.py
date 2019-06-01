@@ -20,9 +20,9 @@ from b2sdk.utils import B2TraceMetaAbstract, limit_trace_arguments
 @six.add_metaclass(B2TraceMetaAbstract)
 class AbstractAccountInfo(object):
     """
-    Holder for all account-related information that needs to be kept
-    between API calls, and between invocations of the command-line
-    tool.  This includes: account ID, application key ID,  application key,
+    Abstract class for holder for all account-related information that needs to be kept between API calls and between invocations of the program.
+
+    This includes: account ID, application key ID,  application key,
     auth tokens, API URL, download URL, and uploads URLs.
 
     This class must be THREAD SAFE because it may be used by multiple
@@ -65,8 +65,7 @@ class AbstractAccountInfo(object):
         """
         Removes all previous name-to-id mappings and stores new ones.
 
-        :param name_id_iterable: a list of tuples of the form (name, id)
-        :type name_id_iterable: list
+        :param iterable name_id_iterable: an iterable of tuples of the form (name, id)
         """
 
     @abstractmethod
@@ -74,8 +73,7 @@ class AbstractAccountInfo(object):
         """
         Removes one entry from the bucket name cache.
 
-        :param bucket_name: a bucket name
-        :type bucket_name: str
+        :param str bucket_name: a bucket name
         """
 
     @abstractmethod
@@ -83,8 +81,7 @@ class AbstractAccountInfo(object):
         """
         Remembers the ID for a bucket name.
 
-        :param bucket: a Bucket object
-        :type bucket: b2sdk.bucket.Bucket
+        :param b2sdk.v1.Bucket bucket: a Bucket object
         """
 
     @abstractmethod
@@ -92,8 +89,7 @@ class AbstractAccountInfo(object):
         """
         Looks up the bucket ID for a given bucket name.
 
-        :param bucket_name: a bucket name
-        :type bucket_name: str
+        :param str bucket_name: a bucket name
         :return bucket ID or None:
         :rtype: str, None
         """
@@ -103,8 +99,7 @@ class AbstractAccountInfo(object):
         """
         Removes all upload URLs for the given bucket.
 
-        :param bucket_id: a bucket ID
-        :type bucket_id: str
+        :param str bucket_id: a bucket ID
         """
 
     @abstractmethod
@@ -214,34 +209,22 @@ class AbstractAccountInfo(object):
         application_key_id=None,
     ):
         """
-        Stores the results of ``b2_authorize_account``.
+        Checks permission correctness and stores the results of ``b2_authorize_account``.
 
-        All of the information returned by ``b2_authorize_account`` is saved, because all of it is
-        needed by some command.
-
-        The allowed structure is the one returned ``b2_authorize_account``, with the addition of
+        The allowed structure is the one returned by ``b2_authorize_account``, with the addition of
         a bucketName field.  For keys with bucket restrictions, the name of the bucket is looked
         up and stored, too.  The console_tool does everything by bucket name, so it's convenient
         to have the restricted bucket name handy.
 
-        :param account_id: user account ID
-        :type account_id: str
-        :param auth_token: user authentication token
-        :type auth_token: str
-        :param api_url: an API URL
-        :type api_url: str
-        :param download_url: path download URL
-        :type download_url: str
-        :param minimum_part_size: minimum size of the file part
-        :type minimum_part_size: int
-        :param application_key: application key
-        :type application_key: str
-        :param realm: a realm to authorize account in
-        :type realm: str
-        :param allowed: the structure to use for old account info that was saved without 'allowed'
-        :type allowed: dict
-        :param application_key_id: application key ID
-        :type application_key_id: str
+        :param str account_id: user account ID
+        :param str auth_token: user authentication token
+        :param str api_url: an API URL
+        :param str download_url: path download URL
+        :param int minimum_part_size: minimum size of the file part
+        :param str application_key: application key
+        :param str realm: a realm to authorize account in
+        :param dict allowed: the structure to use for old account info that was saved without 'allowed'
+        :param str application_key_id: application key ID
 
         .. versionchanged:: 0.1.5
            `account_id_or_app_key_id` renamed to `get_application_key_id`
@@ -270,8 +253,7 @@ class AbstractAccountInfo(object):
         If the bucketId is for a bucket that no longer exists, or the
         capabilities do not allow listBuckets, then we won't have a bucketName.
 
-        :param allowed: the structure to use for old account info that was saved without 'allowed'
-        :type allowed: dict
+        :param dict allowed: the structure to use for old account info that was saved without 'allowed'
         :rtype: bool
         """
         return (
@@ -295,7 +277,10 @@ class AbstractAccountInfo(object):
         application_key_id,
     ):
         """
-        Stores the auth data.  Can assume that 'allowed' is present and valid.
+        Actually stores the auth data.  Can assume that 'allowed' is present and valid.
+
+        All of the information returned by ``b2_authorize_account`` is saved, because all of it is
+        needed at some point.
         """
 
     @abstractmethod
@@ -305,8 +290,7 @@ class AbstractAccountInfo(object):
         from the pool for this bucket, or (None, None) if there are no more
         left.
 
-        :param bucket_id: a bucket ID
-        :type bucket_id: str
+        :param str bucket_id: a bucket ID
         :rtype: tuple
         """
 
@@ -317,12 +301,9 @@ class AbstractAccountInfo(object):
         Add an (upload_url, upload_auth_token) pair to the pool available for
         the bucket.
 
-        :param bucket_id: a bucket ID
-        :type bucket_id: str
-        :param upload_url: an upload URL
-        :type upload_url: str
-        :param upload_auth_token: an upload authentication token
-        :type upload_auth_token: str
+        :param str bucket_id: a bucket ID
+        :param str upload_url: an upload URL
+        :param str upload_auth_token: an upload authentication token
         :rtype: tuple
         """
 
@@ -332,12 +313,9 @@ class AbstractAccountInfo(object):
         """
         Put large file upload URL into a pool
 
-        :param file_id: a file ID
-        :type file_id: str
-        :param upload_url: an upload URL
-        :type upload_url: str
-        :param upload_auth_token: an upload authentication token
-        :type upload_auth_token: str
+        :param str file_id: a file ID
+        :param str upload_url: an upload URL
+        :param str upload_auth_token: an upload authentication token
         """
         pass
 
@@ -346,8 +324,7 @@ class AbstractAccountInfo(object):
         """
         Take large file upload URL from a pool
 
-        :param file_id: a file ID
-        :type file_id: str
+        :param str file_id: a file ID
         """
         pass
 
@@ -356,7 +333,6 @@ class AbstractAccountInfo(object):
         """
         Clear a pool of URLs for a given file ID
 
-        :param file_id: a file ID
-        :type file_id: str
+        :param str file_id: a file ID
         """
         pass

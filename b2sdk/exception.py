@@ -39,6 +39,7 @@ class B2Error(Exception):
     def prefix(self):
         """
         nice auto-generated error message prefix
+
         >>> B2SimpleError().prefix
         'Simple error'
         >>> AlreadyFailed().prefix
@@ -157,7 +158,7 @@ class ClockSkew(B2HttpCallbackPostRequestException):
 
     def __init__(self, clock_skew_seconds):
         """
-        :param clock_skew_seconds: The different: local_clock - server_clock
+        :param int clock_skew_seconds: The different: local_clock - server_clock
         """
         super(ClockSkew, self).__init__()
         self.clock_skew_seconds = clock_skew_seconds
@@ -175,8 +176,9 @@ class ClockSkew(B2HttpCallbackPostRequestException):
 
 class CommandError(B2Error):
     """
-    b2 command error (user caused). Accepts exactly one argument.
-    We expect users of shell scripts will parse our __str__ output.
+    b2 command error (user caused). Accepts exactly one argument: message.
+
+    We expect users of shell scripts will parse our ``__str__`` output.
     """
 
     def __init__(self, message):

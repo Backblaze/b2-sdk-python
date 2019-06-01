@@ -12,6 +12,21 @@ import datetime
 
 
 class FileVersionInfo(object):
+    """
+    A structure which represents a version of a file (in B2 cloud)
+
+    :ivar str ~.id\_: ``fileId``
+    :ivar str ~.file_name: full file name (with path)
+    :ivar ~.size: size in bytes, can be ``None`` (unknown)
+    :vartype ~.size: int or None
+    :ivar str ~.content_type: RFC 822 content type, for example ``"application/octet-stream"``
+    :ivar ~.content_sha1: sha1 checksum of the entire file, can be ``None`` (unknown) if it is a large file uploaded by a client which did not provide it
+    :vartype ~.content_sha1: str or None
+    :ivar dict ~.file_info: file info dict
+    :ivar ~.upload_timestamp: in milliseconds since :abbr:`epoch (1970-01-01 00:00:00)`. Can be ``None`` (unknown).
+    :vartype ~.upload_timestamp: int or None
+    :ivar str ~.action: ``"upload"``, ``"hide"`` or ``"delete"``
+    """
     LS_ENTRY_TEMPLATE = '%83s  %6s  %10s  %8s  %9d  %s'  # order is file_id, action, date, time, size, name
 
     def __init__(
@@ -19,12 +34,12 @@ class FileVersionInfo(object):
     ):
         self.id_ = id_
         self.file_name = file_name
-        self.size = size  # can be None (unknown)
+        self.size = size
         self.content_type = content_type
         self.content_sha1 = content_sha1
         self.file_info = file_info or {}
-        self.upload_timestamp = upload_timestamp  # can be None (unknown)
-        self.action = action  # "upload" or "hide" or "delete"
+        self.upload_timestamp = upload_timestamp
+        self.action = action
 
     def as_dict(self):
         result = {
@@ -60,6 +75,8 @@ class FileVersionInfo(object):
 
 
 class FileVersionInfoFactory(object):
+    """ constructs :py:class:`b2sdk.v1.FileVersionInfo` objects from various structures """
+
     @classmethod
     def from_api_response(cls, file_info_dict, force_action=None):
         """
@@ -90,7 +107,7 @@ class FileVersionInfoFactory(object):
                "fileName": "randomdata"
            }
 
-        into a FileVersionInfo object
+        into a :py:class:`b2sdk.v1.FileVersionInfo` object
 
         """
         assert file_info_dict.get('action') is None or force_action is None, \
@@ -128,6 +145,15 @@ class FileVersionInfoFactory(object):
 
 
 class FileIdAndName(object):
+    """
+    A structure which represents a B2 cloud file with just `file_name` and `fileId` attributes.
+
+    Used to return data from calls to :py:meth:`b2sdk.v1.Bucket.delete_file_version`
+
+    :ivar str ~.file_id: ``fileId``
+    :ivar str ~.file_name: full file name (with path)
+    """
+
     def __init__(self, file_id, file_name):
         self.file_id = file_id
         self.file_name = file_name

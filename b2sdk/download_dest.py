@@ -43,13 +43,13 @@ class AbstractDownloadDestination(object):
         Returns a context manager that yields a binary file-like object to use for
         writing the contents of the file.
 
-        :param file_id: the B2 file ID from the headers
-        :param file_name: the B2 file name from the headers
-        :param content_type: the content type from the headers
-        :param content_sha1: the content sha1 from the headers (or "none" for large files)
-        :param file_info: the user file info from the headers
-        :param mod_time_millis: the desired file modification date in ms since 1970-01-01
-        :param range_: starting and ending offsets of the received file contents. Usually None,
+        :param str file_id: the B2 file ID from the headers
+        :param str file_name: the B2 file name from the headers
+        :param str content_type: the content type from the headers
+        :param str content_sha1: the content sha1 from the headers (or ``"none"`` for large files)
+        :param dict file_info: the user file info from the headers
+        :param int mod_time_millis: the desired file modification date in ms since 1970-01-01
+        :param None,tuple[int,int] range_: starting and ending offsets of the received file contents. Usually ``None``,
                        which means that the whole file is downloaded.
         :return: None
         """

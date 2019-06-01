@@ -7,11 +7,11 @@ API Reference
 Interface types
 =======================
 
-**b2sdk** API is divided into two parts, :ref:`public <api_public>` and :ref:`internal <api_internal>`. Please pay attention to which interface type you use and :ref:`pin the version range accordingly <semantic_versioning>`.
+**b2sdk** API is divided into two parts, :ref:`public <api_public>` and :ref:`internal <api_internal>`. Please pay attention to which interface type you use.
 
 
-.. caution::
-  The stability of your application depends on correct :ref:`pinning of versions <semantic_versioning>`.
+.. tip::
+   Proper :ref:`pinning of versions <semantic_versioning>` ensures the stability of your application.
 
 
 .. _api_public:
@@ -19,32 +19,49 @@ Interface types
 Public API
 ========================
 
+.. todo::
+   Public API doc list
+
 .. toctree::
-   authentication
-   source_dest
-   b2sdk/api
-   b2sdk/bucket
-   b2sdk/cache
-   b2sdk/progress
-   b2sdk/exception
-   b2sdk/file_version
-   sync
+   api/account_info
+   api/api
+   api/exception
+   api/bucket
+   api/data_classes
+   api/progress
+   api/sync
 
 .. _api_internal:
 
 Internal API
 ========================
 
-.. warning:: See :ref:`Internal interface <internal_interface>` chapter to learn when and how to safely use the Internal API
+.. note:: See :ref:`Internal interface <internal_interface>` chapter to learn when and how to safely use the Internal API
+
+.. todo::
+   Private API doc list
 
 .. toctree::
-   b2sdk/session
-   b2sdk/raw_api
-   b2sdk/b2http
-   b2sdk/utils
-   b2sdk/transferer/abstract
-   b2sdk/transferer/file_metadata
-   b2sdk/transferer/parallel
-   b2sdk/transferer/range
-   b2sdk/transferer/simple
-   b2sdk/transferer/transferer
+   api/internal/session
+   api/internal/raw_api
+   api/internal/b2http
+   api/internal/utils
+   api/internal/cache
+   api/internal/download_dest
+   api/internal/sync/action
+   api/internal/sync/exception
+   api/internal/sync/file
+   api/internal/sync/folder
+   api/internal/sync/folder_parser
+   api/internal/sync/policy
+   api/internal/sync/policy_manager
+   api/internal/sync/scan_policies
+   api/internal/sync/sync
+   api/internal/transferer/abstract
+   api/internal/transferer/file_metadata
+   api/internal/transferer/parallel
+   api/internal/transferer/range
+   api/internal/transferer/simple
+   api/internal/transferer/transferer
+   api/internal/upload_source
+

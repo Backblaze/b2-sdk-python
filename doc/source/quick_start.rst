@@ -1,23 +1,27 @@
+.. _quick_start:
+
 ########################
 Quick Start Guide
 ########################
 
+*********************
 Initialize API
 *********************
 
 .. code-block:: python
 
-    >>> from b2sdk.account_info.in_memory import InMemoryAccountInfo
-    >>> from b2sdk.account_info.sqlite_account_info import SqliteAccountInfo
-    >>> from b2sdk.api import B2Api
+    >>> from b2sdk.v1 import *
 
     >>> info = InMemoryAccountInfo()  # to store credentials, tokens and cache in memory OR
     >>> info = SqliteAccountInfo()  # to store credentials, tokens and cache in ~/.b2_account_info
     >>> b2_api = B2Api(info)
 
-To find out more about API object initialization, see :meth:`b2sdk.api.B2Api.__init__`.
+To find out more about API object initialization, see :meth:`b2sdk.v1.B2Api.__init__`.
+
+.. hint:: See :doc:`api/account_info` section to find out which *AccountInfo* implementation is best for your application.
 
 
+*********************
 Account authorization
 *********************
 
@@ -27,11 +31,15 @@ Account authorization
     >>> application_key = '001b8e23c26ff6efb941e237deb182b9599a84bef7'
     >>> b2_api.authorize_account("production", application_key_id, application_key)
 
-To find out more about account authorization, see :meth:`b2sdk.api.B2Api.authorize_account`
+To find out more about account authorization, see :meth:`b2sdk.v1.B2Api.authorize_account`
 
 
+***************
 Synchronization
 ***************
+
+.. todo::
+   sync examples need to be redone with the new interface
 
 .. code-block:: python
 
@@ -69,6 +77,7 @@ Synchronization
     To learn more about sync, see `Sync <sync.html>`_.
 
 
+**************
 Bucket actions
 **************
 
@@ -83,7 +92,6 @@ List buckets
             print('%s  %-10s  %s' % (b.id_, b.type_, b.name))
     346501784642eb3e60980d10  allPublic   example-mybucket-b2-1
 
-
 Create a bucket
 ===============
 
@@ -95,7 +103,7 @@ Create a bucket
     >>> b2_api.create_bucket(bucket_name, bucket_type)
     Bucket<346501784642eb3e60980d10,example-mybucket-b2-1,allPublic>
 
-You can optionally store bucket info, CORS rules and lifecycle rules with the bucket. See :meth:`b2sdk.api.create_bucket`.
+You can optionally store bucket info, CORS rules and lifecycle rules with the bucket. See :meth:`b2sdk.v1.B2Api.create_bucket`.
 
 
 Remove a bucket
@@ -135,9 +143,10 @@ Update bucket info
      'lifecycleRules': [],
      'revision': 3}
 
-For more information see :meth:`b2sdk.bucket.Bucket.update`.
+For more information see :meth:`b2sdk.v1.Bucket.update`.
 
 
+************
 File actions
 ************
 
@@ -153,8 +162,6 @@ Upload file
 
 .. code-block:: python
 
-    >>> from b2sdk.progress import make_progress_listener
-
     >>> local_file_path = '/home/user1/b2_example/new.pdf'
     >>> b2_file_name = 'dummy_new.pdf'
     >>> file_info = {'how': 'good-file'}
@@ -167,6 +174,9 @@ Upload file
         )
     <b2sdk.file_version.FileVersionInfo at 0x7fc8cd560550>
 
+This will work regardless of the size of the file - ``upload_local_file`` automatically uses large file upload API when necessary.
+
+For more information see :meth:`b2sdk.v1.Bucket.upload_local_file`.
 
 Download file
 =============
@@ -176,12 +186,10 @@ By id
 
 .. code-block:: python
 
-    >>> from b2sdk.progress import make_progress_listener
-    >>> from b2sdk.download_dest import DownloadDestLocalFile
+    >>> from b2sdk.v1 import DownloadDestLocalFile
 
     >>> local_file_path = '/home/user1/b2_example/new2.pdf'
     >>> file_id = '4_z5485a1682662eb3e60980d10_f1195145f42952533_d20190403_m130258_c002_v0001111_t0002'
-    >>> progress_listener = make_progress_listener(local_file_path, True)
     >>> download_dest = DownloadDestLocalFile(local_file_path)
     >>> b2_api.download_file_by_id(file_id, download_dest, progress_listener)
     {'fileId': '4_z5485a1682662eb3e60980d10_f1195145f42952533_d20190403_m130258_c002_v0001111_t0002',
@@ -211,8 +219,7 @@ By name
     >>> b2_file_name = 'dummy_new.pdf'
     >>> local_file_name = '/home/user1/b2_example/new3.pdf'
     >>> download_dest = DownloadDestLocalFile(local_file_name)
-    >>> progress_listener = make_progress_listener(local_file_path, True)
-    >>> bucket.download_file_by_name(b2_file_name, download_dest, progress_listener)
+    >>> bucket.download_file_by_name(b2_file_name, download_dest)
     {'fileId': '4_z5485a1682662eb3e60980d10_f113f963288e711a6_d20190404_m065910_c002_v0001095_t0044',
      'fileName': 'dummy_new.pdf',
      'contentType': 'application/pdf',
@@ -256,6 +263,11 @@ List files
        'fileName': 'som2.pdf',
        'uploadTimestamp': 1554296578000}
 
+For more information see :meth:`b2sdk.v1.Bucket.ls`.
+
+.. todo::
+   use ls in the examples above, ``list_file_names`` and ``list_file_versions`` are legacy/discouraged, we shouldn't be promoting them
+
 
 Get file meta information
 =========================
@@ -283,37 +295,13 @@ Delete file
 
     >>> file_id = '4_z5485a1682662eb3e60980d10_f113f963288e711a6_d20190404_m065910_c002_v0001095_t0044'
     >>> file_info = b2_api.delete_file_version(file_id, 'dummy_new.pdf')
-    >>>
 
 
-Cancel file operations
-======================
+Cancel large file uploads
+=========================
 
 .. code-block:: python
 
     >>> bucket = b2_api.get_bucket_by_name(bucket_name)
     >>> for file_version in bucket.list_unfinished_large_files():
             bucket.cancel_large_file(file_version.file_id)
-    >>>
-
-
-Inspect account info
-********************
-
-.. code-block:: python
-
-    TODO
-
-    account_info = b2_api.account_info
-
-    accountId = account_info.get_account_id()
-
-    allowed = account_info.get_allowed()
-
-    applicationKey = account_info.get_application_key()
-
-    accountAuthToken = account_info.get_account_auth_token()
-
-    apiUrl = account_info.get_api_url()
-
-    downloadUrl = account_info.get_download_url()

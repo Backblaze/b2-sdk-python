@@ -50,6 +50,7 @@ extensions = [
     'sphinx.ext.coverage',
     'sphinx.ext.graphviz',
     'sphinx.ext.autosummary',
+    'sphinx.ext.todo',
     #'sphinxcontrib.fulltoc',  # 2019-03-29: unfortunately this doesn't work with sphinx_rtd_theme
     'sphinxcontrib.plantuml',
 ]
@@ -96,15 +97,15 @@ exclude_patterns = []
 pygments_style = 'sphinx'
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
-todo_include_todos = False
+todo_include_todos = True
 
 # -- Options for HTML output ----------------------------------------------
 
 html_context = {
     "display_github": True,  # Add 'Edit on Github' link instead of 'View page source'
-    "github_user": "reef-technologies",  # TODO
+    "github_user": "Backblaze",
     "github_repo": project,
-    "github_version": "shipping_split_fixes",  # TODO
+    "github_version": "master",
     "conf_py_path": "/doc/source/",
     "source_suffix": source_suffix,
 }
@@ -122,6 +123,13 @@ html_theme_options = {
     'prev_next_buttons_location': 'both',
     'collapse_navigation': True,
 }
+
+autodoc_default_options = {
+    'member-order': 'bysource',
+    'exclude-members': '__weakref__, _abc_cache, _abc_negative_cache, _abc_negative_cache_version, _abc_registry',
+    'members': True,
+    'undoc-members': True,
+}  # yapf: disable
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
