@@ -17,7 +17,7 @@ class UnfinishedLargeFile(object):
     :ivar str ~.file_name: full file name (with path)
     :ivar str ~.account_id: Account ID
     :ivar str ~.bucket_id: Bucket ID
-    :ivar str ~.content_type: RFC 822 content type, for example ``"application/octet-stream"``
+    :ivar str ~.content_type: :rfc:`822` content type, for example ``"application/octet-stream"``
     :ivar dict ~.file_info: file info dict
     """
     def __init__(self, file_dict):

@@ -1,5 +1,5 @@
-:mod:`b2sdk.v1.Bucket` -- B2 Bucket object
+B2 Bucket
 ===============================================
 
-.. autoclass:: b2sdk.v1.Bucket
+.. autoclass:: b2sdk.v1.Bucket()
     :special-members: __init__

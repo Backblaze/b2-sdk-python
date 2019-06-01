@@ -6,11 +6,6 @@ from b2sdk.account_info.sqlite_account_info import SqliteAccountInfo
 from b2sdk.account_info.upload_url_pool import UrlPoolAccountInfo
 from b2sdk.account_info.upload_url_pool import UploadUrlPool
 
-from b2sdk.file_version import FileIdAndName
-from b2sdk.file_version import FileVersionInfo
-from b2sdk.part import Part
-from b2sdk.unfinished_large_file import UnfinishedLargeFile
-
 assert AbstractAccountInfo
 assert B2Api
 assert Bucket
@@ -18,6 +13,13 @@ assert InMemoryAccountInfo
 assert SqliteAccountInfo
 assert UrlPoolAccountInfo
 assert UploadUrlPool
+
+# data classes
+
+from b2sdk.file_version import FileIdAndName
+from b2sdk.file_version import FileVersionInfo
+from b2sdk.part import Part
+from b2sdk.unfinished_large_file import UnfinishedLargeFile
 
 assert FileIdAndName
 assert FileVersionInfo
