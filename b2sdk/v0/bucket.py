@@ -8,10 +8,10 @@
 #
 ######################################################################
 
-from b2sdk.v1 import Bucket, BucketFactory
+from b2sdk import v1
 
 
-class Bucket(Bucket):
+class Bucket(v1.Bucket):
     def list_file_names(self, start_filename=None, max_entries=None):
         """
         legacy interface which just returns whatever remote API returns
@@ -27,5 +27,5 @@ class Bucket(Bucket):
         )
 
 
-class BucketFactory(BucketFactory):
+class BucketFactory(v1.BucketFactory):
     BUCKET_CLASS = staticmethod(Bucket)

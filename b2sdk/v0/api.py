@@ -9,9 +9,9 @@
 ######################################################################
 
 from .bucket import Bucket, BucketFactory
-from b2sdk.v1 import B2Api
+from b2sdk import v1
 
 
-class B2Api(B2Api):
+class B2Api(v1.B2Api):
     BUCKET_FACTORY_CLASS = staticmethod(BucketFactory)
     BUCKET_CLASS = staticmethod(Bucket)
