@@ -269,11 +269,8 @@ class TestLs(TestCaseWithBucket):
 
     def test_delete_file_version(self):
         data = six.b('hello world')
-        self.bucket.upload_bytes(data, 'hello.txt')
 
-        files = self.bucket.list_file_names('hello.txt', 1)['files']
-        file_dict = files[0]
-        file_id = file_dict['fileId']
+        file_id = self.bucket.upload_bytes(data, 'hello.txt').id_
 
         data = six.b('hello new world')
         self.bucket.upload_bytes(data, 'hello.txt')

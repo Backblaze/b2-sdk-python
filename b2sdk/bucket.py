@@ -370,26 +370,6 @@ class Bucket(object):
                     prefix + current_dir[:-1] + '0',
                 )
 
-    def list_file_names(self, start_filename=None, max_entries=None):
-        """
-        legacy interface which just returns whatever remote API returns
-
-        .. todo::
-            list_file_names should be deprecated/removed
-        """
-        return self.api.session.list_file_names(self.id_, start_filename, max_entries)
-
-    def list_file_versions(self, start_filename=None, start_file_id=None, max_entries=None):
-        """
-        legacy interface which just returns whatever remote API returns
-
-        .. todo::
-            list_file_versions should be deprecated/removed
-        """
-        return self.api.session.list_file_versions(
-            self.id_, start_filename, start_file_id, max_entries
-        )
-
     def list_unfinished_large_files(self, start_file_id=None, batch_size=None):
         """
         A generator that yields an :py:class:`b2sdk.v1.UnfinishedLargeFile` for each
