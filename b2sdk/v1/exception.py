@@ -60,58 +60,6 @@ from b2sdk.exception import UnusableFileName
 from b2sdk.exception import interpret_b2_error
 from b2sdk.sync.exception import EnvironmentEncodingError
 
-assert AccountInfoError
-assert AlreadyFailed
-assert B2ConnectionError
-assert B2Error
-assert B2HttpCallbackException
-assert B2HttpCallbackPostRequestException
-assert B2HttpCallbackPreRequestException
-assert B2RequestTimeout
-assert B2SimpleError
-assert BadDateFormat
-assert BadFileInfo
-assert BadJson
-assert BadUploadUrl
-assert BrokenPipe
-assert BucketNotAllowed
-assert CapabilityNotAllowed
-assert ChecksumMismatch
-assert ClockSkew
-assert CommandError
-assert Conflict
-assert ConnectionReset
-assert CorruptAccountInfo
-assert DestFileNewer
-assert DuplicateBucketName
-assert EnvironmentEncodingError
-assert FileAlreadyHidden
-assert FileNameNotAllowed
-assert FileNotPresent
-assert InvalidAuthToken
-assert InvalidRange
-assert InvalidUploadSource
-assert MaxFileSizeExceeded
-assert MaxRetriesExceeded
-assert MissingAccountData
-assert MissingPart
-assert NonExistentBucket
-assert NotAllowedByAppKeyError
-assert PartSha1Mismatch
-assert RestrictedBucket
-assert ServiceError
-assert StorageCapExceeded
-assert TooManyRequests
-assert TransientErrorMixin
-assert TruncatedOutput
-assert Unauthorized
-assert UnexpectedCloudBehaviour
-assert UnknownError
-assert UnknownHost
-assert UnrecognizedBucketType
-assert UnusableFileName
-assert interpret_b2_error
-
 __all__ = (
     'AccountInfoError',
     'AlreadyFailed',
