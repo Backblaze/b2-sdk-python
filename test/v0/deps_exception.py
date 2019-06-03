@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: b2sdk/v0/exception.py
+# File: test/v0/deps_exception.py
 #
 # Copyright 2019 Backblaze Inc. All Rights Reserved.
 #
@@ -8,4 +8,4 @@
 #
 ######################################################################
 
-from b2sdk.v1.exception import *
+from b2sdk.v0.exception import *
