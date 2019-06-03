@@ -27,6 +27,9 @@ class B2Error(Exception):
 
         https://pythonhosted.org/kitchen/unicode-frustrations.html#frustration-5-exceptions
         """
+        # If the exception is caused by a b2 server response,
+        # the server MAY have included instructions to pause the thread before issuing any more requests
+        self.retry_after_seconds = None
         if six.PY2:
             if args and isinstance(args[0], six.text_type):
                 args = tuple([json.dumps(args[0])[1:-1]] + list(args[1:]))
@@ -362,6 +365,10 @@ class StorageCapExceeded(B2Error):
 
 
 class TooManyRequests(B2Error):
+    def __init__(self, retry_after_seconds=None):
+        super(TooManyRequests, self).__init__()
+        self.retry_after_seconds = retry_after_seconds
+
     def __str__(self):
         return 'Too many requests'
 
@@ -399,7 +406,7 @@ class UnrecognizedBucketType(B2Error):
     pass
 
 
-def interpret_b2_error(status, code, message, post_params=None):
+def interpret_b2_error(status, code, message, response_headers, post_params=None):
     post_params = post_params or {}
     if status == 400 and code == "already_hidden":
         return FileAlreadyHidden(post_params.get('fileName'))
@@ -414,10 +421,7 @@ def interpret_b2_error(status, code, message, post_params=None):
         # get_file_info returns 404 and "not_found"
         # download_file_by_name/download_file_by_id return 404 and "not_found"
         # but don't have post_params
-        if 'fileName' in post_params:
-            return FileNotPresent(post_params.get('fileName'))
-        else:
-            return FileNotPresent()
+        return FileNotPresent(post_params.get('fileName'))
     elif status == 400 and code == "duplicate_bucket_name":
         return DuplicateBucketName(post_params.get('bucketName'))
     elif status == 400 and code == "missing_part":
@@ -433,8 +437,8 @@ def interpret_b2_error(status, code, message, post_params=None):
     elif status == 409:
         return Conflict()
     elif status == 429:
-        return TooManyRequests()
-    elif 500 <= status and status < 600:
+        return TooManyRequests(retry_after_seconds=response_headers.get('retry-after'))
+    elif 500 <= status < 600:
         return ServiceError('%d %s %s' % (status, code, message))
     else:
         return UnknownError('%d %s %s' % (status, code, message))

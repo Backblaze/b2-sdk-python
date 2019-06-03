@@ -16,7 +16,7 @@ import sys
 
 from .test_base import TestBase
 
-from .deps_exception import BadDateFormat, BadJson, BrokenPipe, B2ConnectionError, ClockSkew, ConnectionReset, ServiceError, UnknownError, UnknownHost
+from .deps_exception import BadDateFormat, BadJson, BrokenPipe, B2ConnectionError, ClockSkew, ConnectionReset, ServiceError, UnknownError, UnknownHost, TooManyRequests
 from .deps import USER_AGENT
 from .deps import B2Http
 from .deps import ClockSkewHook
@@ -95,6 +95,16 @@ class TestTranslateErrors(TestBase):
         with self.assertRaises(UnknownError):
             _translate_errors(fcn)
 
+    def test_too_many_requests(self):
+        response = MagicMock()
+        response.status_code = 429
+        response.headers = {'retry-after': 1}
+        response.content = six.b(
+            '{"status": 429, "code": "Too Many requests", "message": "retry after some time"}'
+        )
+        with self.assertRaises(TooManyRequests):
+            _translate_errors(lambda: response)
+
 
 class TestTranslateAndRetry(TestBase):
     def setUp(self):
@@ -140,6 +150,52 @@ class TestTranslateAndRetry(TestBase):
             except ServiceError:
                 pass
             self.assertEqual([call(1.0), call(1.5)], mock_time.mock_calls)
+
+    def test_too_many_requests_works_after_sleep(self):
+        with patch('time.sleep') as mock_time:
+            fcn = MagicMock()
+            fcn.side_effect = [TooManyRequests(retry_after_seconds=2), self.response]
+            self.assertIs(self.response, _translate_and_retry(fcn, 3))
+            self.assertEqual([call(2)], mock_time.mock_calls)
+
+    def test_too_many_requests_failed_after_sleep(self):
+        with patch('time.sleep') as mock_time:
+            fcn = MagicMock()
+            fcn.side_effect = [
+                TooManyRequests(retry_after_seconds=2),
+                TooManyRequests(retry_after_seconds=5),
+            ]
+            with self.assertRaises(TooManyRequests):
+                _translate_and_retry(fcn, 2)
+            self.assertEqual([call(2)], mock_time.mock_calls)
+
+    def test_too_many_requests_retry_header_combination_one(self):
+        # If the first response didn't have a header, second one has, and third one doesn't have, what should happen?
+
+        with patch('time.sleep') as mock_time:
+            fcn = MagicMock()
+            fcn.side_effect = [
+                TooManyRequests(retry_after_seconds=2),
+                TooManyRequests(),
+                TooManyRequests(retry_after_seconds=2),
+                self.response,
+            ]
+            self.assertIs(self.response, _translate_and_retry(fcn, 4))
+            self.assertEqual([call(2), call(1.5), call(2)], mock_time.mock_calls)
+
+    def test_too_many_requests_retry_header_combination_two(self):
+        # If the first response had header, and the second did not, but the third has header again, what should happen?
+
+        with patch('time.sleep') as mock_time:
+            fcn = MagicMock()
+            fcn.side_effect = [
+                TooManyRequests(),
+                TooManyRequests(retry_after_seconds=5),
+                TooManyRequests(),
+                self.response,
+            ]
+            self.assertIs(self.response, _translate_and_retry(fcn, 4))
+            self.assertEqual([call(1.0), call(5), call(2.25)], mock_time.mock_calls)
 
 
 class TestB2Http(TestBase):
