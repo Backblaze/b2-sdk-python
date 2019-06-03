@@ -17,7 +17,6 @@ import platform
 import six
 
 from .test_base import TestBase
-from .stub_account_info import StubAccountInfo
 
 from .deps_exception import AlreadyFailed, B2Error, InvalidAuthToken, InvalidRange, InvalidUploadSource, MaxRetriesExceeded
 from .deps import B2Api
@@ -26,7 +25,7 @@ from .deps import DownloadDestBytes, PreSeekedDownloadDest
 from .deps import FileVersionInfo
 from .deps import Part
 from .deps import AbstractProgressListener
-from .deps import RawSimulator, BucketSimulator, FakeResponse
+from .deps import StubAccountInfo, RawSimulator, BucketSimulator, FakeResponse
 from .deps import ParallelDownloader
 from .deps import SimpleDownloader
 from .deps import UploadSourceBytes

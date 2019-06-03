@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: test/stub_account_info.py
+# File: b2sdk/account_info/stub.py
 #
 # Copyright 2019 Backblaze Inc. All Rights Reserved.
 #
@@ -11,7 +11,7 @@
 import collections
 import threading
 
-from .deps import AbstractAccountInfo
+from .abstract import AbstractAccountInfo
 
 
 class StubAccountInfo(AbstractAccountInfo):

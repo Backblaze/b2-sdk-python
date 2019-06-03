@@ -33,12 +33,14 @@ from b2sdk.raw_api import ALL_CAPABILITIES
 from b2sdk.account_info.abstract import AbstractAccountInfo
 from b2sdk.account_info.in_memory import InMemoryAccountInfo
 from b2sdk.account_info.sqlite_account_info import SqliteAccountInfo
-from b2sdk.account_info.upload_url_pool import UrlPoolAccountInfo
+from b2sdk.account_info.stub import StubAccountInfo
 from b2sdk.account_info.upload_url_pool import UploadUrlPool
+from b2sdk.account_info.upload_url_pool import UrlPoolAccountInfo
 
 assert AbstractAccountInfo
 assert InMemoryAccountInfo
 assert SqliteAccountInfo
+assert StubAccountInfo
 assert UrlPoolAccountInfo
 assert UploadUrlPool
 
