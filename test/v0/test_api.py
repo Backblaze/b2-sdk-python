@@ -28,9 +28,22 @@ class TestApi(TestBase):
     def test_list_buckets(self):
         self._authorize_account()
         self.api.create_bucket('bucket1', 'allPrivate')
-        self.api.create_bucket('bucket2', 'allPrivate')
+        bucket2 = self.api.create_bucket('bucket2', 'allPrivate')
+        delete_output = self.api.delete_bucket(bucket2)
+        expected = {
+            'accountId': 'account-0',
+            'bucketName': 'bucket2',
+            'bucketId': 'bucket_1',
+            'bucketType': 'allPrivate',
+            'bucketInfo': {},
+            'corsRules': [],
+            'lifecycleRules': [],
+            'revision': 1,
+        }
+        assert delete_output == expected, delete_output
+        self.api.create_bucket('bucket3', 'allPrivate')
         self.assertEqual(
-            ['bucket1', 'bucket2'],
+            ['bucket1', 'bucket3'],
             [b.name for b in self.api.list_buckets()],
         )
 
