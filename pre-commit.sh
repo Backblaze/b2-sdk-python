@@ -107,6 +107,11 @@ do
     if [ "$file" != "$license_path" ]; then
         failing=1
         echo "$file contains an inappropriate path in license header: \"$license_path\""
+
+        # uncomment for naive autofix
+        #data=`sed 3d "$file" | sed "3i\# File: $file"`
+        #echo "$data" > "$file"
+        #failing=0
     fi
 done
 if [ "$failing" == 1 ]; then
