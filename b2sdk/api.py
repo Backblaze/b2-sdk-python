@@ -279,17 +279,12 @@ class B2Api(object):
     def delete_bucket(self, bucket):
         """
         Deletes the bucket remotely.
-        For legacy reasons it returns whatever server sends in response,
-        but API user should not rely on the response: if it doesn't raise
-        an exception, it means that the operation was a success
-
-        .. todo::
-            delete_bucket should return ``True``
 
         :param b2sdk.v1.Bucket bucket: a :term:`Bucket` to delete
+        :rtype: None
         """
         account_id = self.account_info.get_account_id()
-        return self.session.delete_bucket(account_id, bucket.id_)
+        self.session.delete_bucket(account_id, bucket.id_)
 
     def list_buckets(self, bucket_name=None):
         """
