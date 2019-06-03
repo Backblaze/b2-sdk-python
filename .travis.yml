@@ -284,7 +284,19 @@ script:
             echo skip
         fi
 
-  - if [ "$MODE" == 'SCA' ]; then pyflakes . || exit; else echo skip; fi
+  - |
+        if [ "$MODE" == 'SCA' ]; then
+            output="$(pyflakes . | egrep -v "(b2sdk/v[0-9]+/(__init__|exception)\.py|test/v[0-9]+/deps(_exception)?.py):[0-9]+: ('from b2sdk.v[0-9]+(\.exception)? import \*' used; unable to detect undefined names|'b2sdk\..*' imported but unused)")"
+            if [ -z "$output" ]; then
+                echo "pyflakes passed"
+            else
+                echo "$output"
+                echo "pyflakes FAILED"
+                exit 1
+            fi
+        else
+            echo skip
+        fi
 
   # isort doesn't get along with yapf. Hopefully we'll figure it out and re-enable in the future.
   # - if [ "$MODE" == 'SCA' ]; then isort --order-by-type --recursive --line-width 100 --diff --verbose --check-only || exit; else echo skip; fi
