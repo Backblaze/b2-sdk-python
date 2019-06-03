@@ -805,6 +805,7 @@ class BucketFactory(object):
     """
     This is a factory for creating bucket objects from another kind of objects
     """
+    BUCKET_CLASS = staticmethod(Bucket)
 
     @classmethod
     def from_api_response(cls, api, response):
@@ -849,7 +850,7 @@ class BucketFactory(object):
         revision = bucket_dict['revision']
         if type_ is None:
             raise UnrecognizedBucketType(bucket_dict['bucketType'])
-        return Bucket(
+        return cls.BUCKET_CLASS(
             api, bucket_id, bucket_name, type_, bucket_info, cors_rules, lifecycle_rules, revision,
             bucket_dict
         )

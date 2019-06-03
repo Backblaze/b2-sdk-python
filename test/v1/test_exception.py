@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: test/test_exception.py
+# File: test/v1/test_exception.py
 #
 # Copyright 2019 Backblaze Inc. All Rights Reserved.
 #
@@ -8,7 +8,9 @@
 #
 ######################################################################
 
-from b2sdk.exception import (
+from .test_base import TestBase
+
+from .deps_exception import (
     AlreadyFailed,
     B2Error,
     BadJson,
@@ -28,7 +30,6 @@ from b2sdk.exception import (
     Unauthorized,
     UnknownError,
 )
-from .test_base import TestBase
 
 import six
 

@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: test/test_scan_policies.py
+# File: test/v1/test_scan_policies.py
 #
 # Copyright 2019 Backblaze Inc. All Rights Reserved.
 #
@@ -10,8 +10,9 @@
 
 from __future__ import print_function
 
-from b2sdk.sync.scan_policies import DEFAULT_SCAN_MANAGER, ScanPoliciesManager
 from .test_base import TestBase
+
+from .deps import DEFAULT_SCAN_MANAGER, ScanPoliciesManager
 
 
 class TestScanPolicies(TestBase):

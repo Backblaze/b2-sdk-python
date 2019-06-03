@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: test/test_download_dest.py
+# File: test/v1/test_download_dest.py
 #
 # Copyright 2019 Backblaze Inc. All Rights Reserved.
 #
@@ -12,10 +12,11 @@ import os
 
 import six
 
-from b2sdk.download_dest import DownloadDestLocalFile, DownloadDestProgressWrapper, PreSeekedDownloadDest
-from b2sdk.progress import ProgressListenerForTest
-from b2sdk.utils import TempDir
 from .test_base import TestBase
+
+from .deps import DownloadDestLocalFile, DownloadDestProgressWrapper, PreSeekedDownloadDest
+from .deps import ProgressListenerForTest
+from .deps import TempDir
 
 
 class TestDownloadDestLocalFile(TestBase):

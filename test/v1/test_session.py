@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: test/test_session.py
+# File: test/v1/test_session.py
 #
 # Copyright 2019 Backblaze Inc. All Rights Reserved.
 #
@@ -8,10 +8,11 @@
 #
 ######################################################################
 
-from b2sdk.exception import InvalidAuthToken, Unauthorized
-from b2sdk.raw_api import ALL_CAPABILITIES
-from b2sdk.session import B2Session
 from .test_base import TestBase
+
+from .deps_exception import InvalidAuthToken, Unauthorized
+from .deps import ALL_CAPABILITIES
+from .deps import B2Session
 
 try:
     import unittest.mock as mock

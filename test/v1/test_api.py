@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: test/test_api.py
+# File: test/v1/test_api.py
 #
 # Copyright 2019 Backblaze Inc. All Rights Reserved.
 #
@@ -9,11 +9,12 @@
 ######################################################################
 
 from .test_base import TestBase
-from b2sdk.account_info import InMemoryAccountInfo
-from b2sdk.api import B2Api
-from b2sdk.cache import DummyCache
-from b2sdk.exception import RestrictedBucket
-from b2sdk.raw_simulator import RawSimulator
+
+from .deps import B2Api
+from .deps import DummyCache
+from .deps import InMemoryAccountInfo
+from .deps import RawSimulator
+from .deps_exception import RestrictedBucket
 
 
 class TestApi(TestBase):

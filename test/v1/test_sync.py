@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: test/test_sync.py
+# File: test/v1/test_sync.py
 #
 # Copyright 2019 Backblaze Inc. All Rights Reserved.
 #
@@ -19,14 +19,15 @@ import unittest
 import six
 
 from .test_base import TestBase
-from b2sdk.exception import CommandError, DestFileNewer
-from b2sdk.file_version import FileVersionInfo
-from b2sdk.sync.folder import AbstractFolder, B2Folder, LocalFolder
-from b2sdk.sync.file import File, FileVersion
-from b2sdk.sync.scan_policies import ScanPoliciesManager, DEFAULT_SCAN_MANAGER
-from b2sdk.sync.sync import BoundedQueueExecutor, make_folder_sync_actions, zip_folders
-from b2sdk.sync.folder_parser import parse_sync_folder
-from b2sdk.utils import TempDir
+
+from .deps_exception import CommandError, DestFileNewer
+from .deps import FileVersionInfo
+from .deps import AbstractFolder, B2Folder, LocalFolder
+from .deps import File, FileVersion
+from .deps import ScanPoliciesManager, DEFAULT_SCAN_MANAGER
+from .deps import BoundedQueueExecutor, make_folder_sync_actions, zip_folders
+from .deps import parse_sync_folder
+from .deps import TempDir
 
 try:
     from unittest.mock import MagicMock

@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: test/test_sync_report.py
+# File: test/v1/test_sync_report.py
 #
 # Copyright 2019 Backblaze Inc. All Rights Reserved.
 #
@@ -11,7 +11,8 @@
 from __future__ import print_function
 
 from .test_base import TestBase
-from b2sdk.sync.report import SyncReport
+
+from .deps import SyncReport
 
 try:
     from unittest.mock import MagicMock

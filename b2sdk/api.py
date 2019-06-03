@@ -64,6 +64,8 @@ class B2Api(object):
     Also,  keeps a cache of information needed to access the service,
     such as auth tokens and upload URLs.
     """
+    BUCKET_FACTORY_CLASS = staticmethod(BucketFactory)
+    BUCKET_CLASS = staticmethod(Bucket)
 
     def __init__(self, account_info=None, cache=None, raw_api=None, max_upload_workers=10):
         """
@@ -204,7 +206,7 @@ class B2Api(object):
             cors_rules=cors_rules,
             lifecycle_rules=lifecycle_rules
         )
-        bucket = BucketFactory.from_api_bucket_dict(self, response)
+        bucket = self.BUCKET_FACTORY_CLASS.from_api_bucket_dict(self, response)
         assert name == bucket.name, 'API created a bucket with different name\
                                      than requested: %s != %s' % (name, bucket.name)
         assert bucket_type == bucket.type_, 'API created a bucket with different type\
@@ -246,7 +248,7 @@ class B2Api(object):
         :return: a Bucket object
         :rtype: b2sdk.v1.Bucket
         """
-        return Bucket(self, bucket_id)
+        return self.BUCKET_CLASS(self, bucket_id)
 
     def get_bucket_by_name(self, bucket_name):
         """
@@ -264,7 +266,7 @@ class B2Api(object):
         # First, try the cache.
         id_ = self.cache.get_bucket_id_or_none_from_bucket_name(bucket_name)
         if id_ is not None:
-            return Bucket(self, id_, name=bucket_name)
+            return self.BUCKET_CLASS(self, id_, name=bucket_name)
 
         # Second, ask the service
         for bucket in self.list_buckets(bucket_name=bucket_name):
@@ -310,7 +312,7 @@ class B2Api(object):
         self.check_bucket_restrictions(bucket_name)
 
         response = self.session.list_buckets(account_id, bucket_name=bucket_name)
-        buckets = BucketFactory.from_api_response(self, response)
+        buckets = self.BUCKET_FACTORY_CLASS.from_api_response(self, response)
 
         if bucket_name is not None:
             # If a bucket_name is specified we don't clear the cache because the other buckets could still
