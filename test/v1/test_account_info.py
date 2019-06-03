@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: test/test_account_info.py
+# File: test/v1/test_account_info.py
 #
 # Copyright 2019 Backblaze Inc. All Rights Reserved.
 #

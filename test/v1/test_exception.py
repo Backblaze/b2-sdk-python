@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: test/test_exception.py
+# File: test/v1/test_exception.py
 #
 # Copyright 2019 Backblaze Inc. All Rights Reserved.
 #

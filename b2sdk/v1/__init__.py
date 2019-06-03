@@ -11,7 +11,6 @@
 # this file maps the external interface into internal interface
 # it will come handy if we ever need to move something
 
-
 # core
 
 from b2sdk.api import B2Api

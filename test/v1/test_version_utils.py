@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: test/test_version_utils.py
+# File: test/v1/test_version_utils.py
 #
 # Copyright 2019 Backblaze Inc. All Rights Reserved.
 #

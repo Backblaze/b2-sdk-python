@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: test/test_utils.py
+# File: test/v1/test_utils.py
 #
 # Copyright 2019 Backblaze Inc. All Rights Reserved.
 #
@@ -13,7 +13,6 @@ import six
 from .test_base import TestBase
 
 from .deps import b2_url_encode, b2_url_decode, choose_part_ranges, format_and_scale_number, format_and_scale_fraction
-
 
 # These are from the B2 Docs (https://www.backblaze.com/b2/docs/string_encoding.html)
 ENCODING_TEST_CASES = [
@@ -248,6 +247,7 @@ class TestUrlEncoding(TestBase):
             self.assertEqual(string, b2_url_decode(fully_encoded))
             self.assertEqual(string, b2_url_decode(minimally_encoded))
 
+
 class TestChooseParts(TestBase):
     def test_it(self):
         self._check_one([(0, 100), (100, 100)], 200, 100)
@@ -264,6 +264,7 @@ class TestChooseParts(TestBase):
     def _check_one(self, expected, content_length, min_part_size):
         self.assertEqual(expected, choose_part_ranges(content_length, min_part_size))
 
+
 class TestFormatAndScaleNumber(TestBase):
     def test_it(self):
         self._check_one('1 B', 1)
@@ -274,6 +275,7 @@ class TestFormatAndScaleNumber(TestBase):
     def _check_one(self, expected, x):
         self.assertEqual(expected, format_and_scale_number(x, 'B'))
 
+
 class TestFormatAndScaleFraction(TestBase):
     def test_it(self):
         self._check_one('0 / 100 B', 0, 100)
@@ -281,6 +283,4 @@ class TestFormatAndScaleFraction(TestBase):
         self._check_one('9.4 / 10.0 kB', 9400, 10000)
 
     def _check_one(self, expected, numerator, denominator):
-        self.assertEqual(
-            expected, format_and_scale_fraction(numerator, denominator, 'B')
-        )
+        self.assertEqual(expected, format_and_scale_fraction(numerator, denominator, 'B'))
