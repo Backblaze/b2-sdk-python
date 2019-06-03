@@ -11,8 +11,9 @@
 import warnings
 
 from .test_base import TestBase
-from b2sdk.version import VERSION
-from b2sdk.version_utils import rename_argument, rename_function
+
+from .deps import VERSION
+from .deps import rename_argument, rename_function
 
 
 class TestRenameArgument(TestBase):

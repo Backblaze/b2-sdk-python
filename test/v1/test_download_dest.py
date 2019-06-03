@@ -12,10 +12,11 @@ import os
 
 import six
 
-from b2sdk.download_dest import DownloadDestLocalFile, DownloadDestProgressWrapper, PreSeekedDownloadDest
-from b2sdk.progress import ProgressListenerForTest
-from b2sdk.utils import TempDir
 from .test_base import TestBase
+
+from .deps import DownloadDestLocalFile, DownloadDestProgressWrapper, PreSeekedDownloadDest
+from .deps import ProgressListenerForTest
+from .deps import TempDir
 
 
 class TestDownloadDestLocalFile(TestBase):

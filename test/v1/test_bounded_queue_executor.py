@@ -10,12 +10,13 @@
 
 from __future__ import print_function
 
-import six
-
 import time
 
+import six
+
 from .test_base import TestBase
-from b2sdk.bounded_queue_executor import BoundedQueueExecutor
+
+from .deps import BoundedQueueExecutor
 
 try:
     import concurrent.futures as futures

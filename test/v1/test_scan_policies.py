@@ -10,8 +10,9 @@
 
 from __future__ import print_function
 
-from b2sdk.sync.scan_policies import DEFAULT_SCAN_MANAGER, ScanPoliciesManager
 from .test_base import TestBase
+
+from .deps import DEFAULT_SCAN_MANAGER, ScanPoliciesManager
 
 
 class TestScanPolicies(TestBase):

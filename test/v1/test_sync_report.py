@@ -11,7 +11,8 @@
 from __future__ import print_function
 
 from .test_base import TestBase
-from b2sdk.sync.report import SyncReport
+
+from .deps import SyncReport
 
 try:
     from unittest.mock import MagicMock

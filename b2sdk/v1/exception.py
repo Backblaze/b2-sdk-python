@@ -57,11 +57,10 @@ from b2sdk.exception import UnknownError
 from b2sdk.exception import UnknownHost
 from b2sdk.exception import UnrecognizedBucketType
 from b2sdk.exception import UnusableFileName
+from b2sdk.exception import interpret_b2_error
 from b2sdk.sync.exception import EnvironmentEncodingError
 
 assert AccountInfoError
-assert CorruptAccountInfo
-assert MissingAccountData
 assert AlreadyFailed
 assert B2ConnectionError
 assert B2Error
@@ -82,8 +81,10 @@ assert ClockSkew
 assert CommandError
 assert Conflict
 assert ConnectionReset
+assert CorruptAccountInfo
 assert DestFileNewer
 assert DuplicateBucketName
+assert EnvironmentEncodingError
 assert FileAlreadyHidden
 assert FileNameNotAllowed
 assert FileNotPresent
@@ -92,6 +93,7 @@ assert InvalidRange
 assert InvalidUploadSource
 assert MaxFileSizeExceeded
 assert MaxRetriesExceeded
+assert MissingAccountData
 assert MissingPart
 assert NonExistentBucket
 assert NotAllowedByAppKeyError
@@ -108,7 +110,7 @@ assert UnknownError
 assert UnknownHost
 assert UnrecognizedBucketType
 assert UnusableFileName
-assert EnvironmentEncodingError
+assert interpret_b2_error
 
 __all__ = (
     'AccountInfoError',
@@ -161,4 +163,5 @@ __all__ = (
     'UnknownHost',
     'UnrecognizedBucketType',
     'UnusableFileName',
+    'interpret_b2_error',
 )

@@ -15,9 +15,13 @@ import socket
 import sys
 
 from .test_base import TestBase
-from b2sdk.b2http import _translate_and_retry, _translate_errors, B2Http, ClockSkewHook
-from b2sdk.exception import BadDateFormat, BadJson, BrokenPipe, B2ConnectionError, ClockSkew, ConnectionReset, ServiceError, UnknownError, UnknownHost
-from b2sdk.version import USER_AGENT
+
+from .deps_exception import BadDateFormat, BadJson, BrokenPipe, B2ConnectionError, ClockSkew, ConnectionReset, ServiceError, UnknownError, UnknownHost
+from .deps import USER_AGENT
+from .deps import B2Http
+from .deps import ClockSkewHook
+from .deps import translate_errors as _translate_errors
+from .deps import translate_and_retry as _translate_and_retry
 
 if sys.version_info < (3, 3):
     from mock import call, MagicMock, patch

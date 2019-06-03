@@ -8,10 +8,11 @@
 #
 ######################################################################
 
-from b2sdk.sync.file import File, FileVersion
-from b2sdk.sync.folder import B2Folder
-from b2sdk.sync.policy import make_b2_keep_days_actions
 from .test_base import TestBase
+
+from .deps import File, FileVersion
+from .deps import B2Folder
+from .deps import make_b2_keep_days_actions
 
 try:
     from unittest.mock import MagicMock

@@ -12,10 +12,11 @@ from __future__ import print_function
 
 from six import unichr
 
-from b2sdk.raw_api import B2RawApi
-from b2sdk.b2http import B2Http
-from b2sdk.exception import UnusableFileName
 from .test_base import TestBase
+
+from .deps import B2RawApi
+from .deps import B2Http
+from .deps_exception import UnusableFileName
 
 # Unicode characters for testing filenames.  (0x0394 is a letter Delta.)
 TWO_BYTE_UNICHR = unichr(0x0394)

@@ -11,7 +11,7 @@
 import collections
 import threading
 
-from b2sdk.account_info.abstract import AbstractAccountInfo
+from .deps import AbstractAccountInfo
 
 
 class StubAccountInfo(AbstractAccountInfo):
