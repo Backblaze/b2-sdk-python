@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: b2sdk/v0/__init__.py
+# File: b2sdk/v0/api.py
 #
 # Copyright 2019 Backblaze Inc. All Rights Reserved.
 #
@@ -8,7 +8,10 @@
 #
 ######################################################################
 
-from b2sdk.v1 import *
-from b2sdk.v0.api import B2Api
-from b2sdk.v0.bucket import Bucket
-from b2sdk.v0.bucket import BucketFactory
+from .bucket import Bucket, BucketFactory
+from b2sdk import v1
+
+
+class B2Api(v1.B2Api):
+    BUCKET_FACTORY_CLASS = staticmethod(BucketFactory)
+    BUCKET_CLASS = staticmethod(Bucket)
