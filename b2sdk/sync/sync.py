@@ -194,8 +194,8 @@ class Synchronizer(object):
             allow_empty_source=False,
             newer_file_mode=None,
             keep_days_or_delete=None,
-            compare_version_mode=AbstractFileSyncPolicy.COMPARE_VERSION_MODTIME,
-            compare_threshold=0,
+            compare_version_mode=None,
+            compare_threshold=None,
             keep_days=None,
     ):
         """
@@ -214,18 +214,18 @@ class Synchronizer(object):
         :type newer_file_mode: int
         :param keep_days_or_delete: one of 301 (Delete policy), 302 (keep for days policy), can be None
         :type keep_days_or_delete: int
-        :param compare_version_mode: one of 201 (Modification time), 201 (Size), can be None, default is 201
+        :param compare_version_mode: one of 201 (Modification time), 202 (Size), 203 (none), default is 201
         :type compare_version_mode: int
         :param compare_threshold: should be greater than 0, default is 0
         :type compare_threshold: int
-        :param keep_days: if keep_days_or_delete is 302, then this should be greater than 0, default is None
+        :param keep_days: if keep_days_or_delete is 302, then this should be greater than 0
         :type keep_days: int
         """
         self.newer_file_mode = newer_file_mode
         self.keep_days_or_delete = keep_days_or_delete
         self.keep_days = keep_days
-        self.compare_version_mode = compare_version_mode
-        self.compare_threshold = compare_threshold
+        self.compare_version_mode = compare_version_mode or AbstractFileSyncPolicy.COMPARE_VERSION_MODTIME
+        self.compare_threshold = compare_threshold or 0
         self.dry_run = dry_run
         self.allow_empty_source = allow_empty_source
         self.policies_manager = policies_manager
@@ -409,3 +409,38 @@ class Synchronizer(object):
                 sync_type, source_file, dest_file, source_folder, dest_folder, now_millis
             ):
                 yield action
+
+    def make_file_sync_actions(
+        self, sync_type, source_file, dest_file, source_folder, dest_folder, now_millis,
+    ):
+        """
+        Yields the sequence of actions needed to sync the two files
+
+        :param sync_type: synchronization type
+        :type sync_type: str
+        :param source_file: source file object
+        :type source_folder: b2sdk.sync.folder.AbstractFolder
+        :param dest_file: destination file object
+        :type dest_file: b2sdk.sync.file.File
+        :param source_folder: a source folder object
+        :type source_folder: b2sdk.sync.folder.AbstractFolder
+        :param dest_folder: a destination folder object
+        :type dest_folder: b2sdk.sync.folder.AbstractFolder
+        :param now_millis: current time in milliseconds
+        :type now_millis: int
+        """
+        delete = self.keep_days_or_delete == self.DELETE_MODE
+        keep_days = self.keep_days
+
+        policy = POLICY_MANAGER.get_policy(
+            sync_type,
+            source_file,
+            source_folder,
+            dest_file,
+            dest_folder,
+            now_millis,
+            delete,
+            keep_days,
+        )
+        for action in policy.get_all_actions():
+            yield action

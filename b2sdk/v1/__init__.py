@@ -110,6 +110,8 @@ from b2sdk.sync.action import B2HideAction
 from b2sdk.sync.action import B2UploadAction
 from b2sdk.sync.action import LocalDeleteAction
 from b2sdk.sync.exception import EnvironmentEncodingError
+from b2sdk.sync.exception import IncompleteSync
+from b2sdk.sync.exception import InvalidArgument
 from b2sdk.sync.file import File
 from b2sdk.sync.file import FileVersion
 from b2sdk.sync.folder import AbstractFolder
@@ -130,7 +132,7 @@ from b2sdk.sync.report import SyncReport
 from b2sdk.sync.scan_policies import DEFAULT_SCAN_MANAGER
 from b2sdk.sync.scan_policies import RegexSet
 from b2sdk.sync.scan_policies import ScanPoliciesManager
-from b2sdk.sync.sync import make_folder_sync_actions
+from b2sdk.sync.sync import Synchronizer
 from b2sdk.sync.sync import zip_folders
 
 # other

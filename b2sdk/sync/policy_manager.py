@@ -31,6 +31,9 @@ class SyncPolicyManager(object):
             now_millis,
             delete,
             keep_days,
+            newer_file_mode,
+            compare_threshold,
+            compare_version_mode,
     ):
         """
         Return a policy object.
@@ -60,6 +63,10 @@ class SyncPolicyManager(object):
             dest_file,
             dest_folder,
             now_millis,
+            keep_days,
+            newer_file_mode,
+            compare_threshold,
+            compare_version_mode,
         )
 
     def get_policy_class(self, sync_type, delete, keep_days):
