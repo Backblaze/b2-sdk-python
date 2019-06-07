@@ -38,7 +38,7 @@ class AbstractFileSyncPolicy(object):
     COMPARE_VERSION_SIZE = 202
     COMPARE_VERSION_NONE = 203
 
-    COMPARE_VERSION_MODES = [COMPARE_VERSION_MODTIME, COMPARE_VERSION_SIZE]
+    COMPARE_VERSION_MODES = [COMPARE_VERSION_MODTIME, COMPARE_VERSION_SIZE, COMPARE_VERSION_NONE]
 
     def __init__(
             self,
@@ -48,6 +48,7 @@ class AbstractFileSyncPolicy(object):
             dest_folder,
             now_millis,
             keep_days,
+            newer_file_mode,
             compare_threshold,
             compare_version_mode=COMPARE_VERSION_MODTIME,
     ):
@@ -67,6 +68,7 @@ class AbstractFileSyncPolicy(object):
         self._source_folder = source_folder
         self._dest_file = dest_file
         self._keep_days = keep_days
+        self._newer_file_mode = newer_file_mode
         self._compare_version_mode = compare_version_mode
         self._compare_threshold = compare_threshold
         self._dest_folder = dest_folder
@@ -90,6 +92,7 @@ class AbstractFileSyncPolicy(object):
                 self._dest_file,
                 self._compare_threshold,
                 self._compare_version_mode,
+                self._newer_file_mode,
             )
 
     @classmethod
