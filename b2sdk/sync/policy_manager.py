@@ -22,15 +22,15 @@ class SyncPolicyManager(object):
         self.policies = {}  # dict<,>
 
     def get_policy(
-        self,
-        sync_type,
+            self,
+            sync_type,
             source_file,
             source_folder,
             dest_file,
             dest_folder,
             now_millis,
             delete,
-            keep_days
+            keep_days,
     ):
         """
         Return a policy object.
@@ -54,7 +54,13 @@ class SyncPolicyManager(object):
         :return: a policy object
         """
         policy_class = self.get_policy_class(sync_type, delete, keep_days)
-        return policy_class(source_file, source_folder, dest_file, dest_folder, now_millis)
+        return policy_class(
+            source_file,
+            source_folder,
+            dest_file,
+            dest_folder,
+            now_millis,
+        )
 
     def get_policy_class(self, sync_type, delete, keep_days):
         """
@@ -79,7 +85,11 @@ class SyncPolicyManager(object):
                 return DownAndKeepDaysPolicy
             else:
                 return DownPolicy
-        assert False, 'invalid sync type: %s, keep_days: %s' % (sync_type, str(keep_days))
+        assert False, 'invalid sync type: %s, keep_days: %s, delete: %s' % (
+            sync_type,
+            keep_days,
+            delete,
+        )
 
 
 POLICY_MANAGER = SyncPolicyManager()

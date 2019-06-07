@@ -8,7 +8,7 @@
 #
 ######################################################################
 
-from ..exception import B2Error
+from ..exception import B2Error, B2SimpleError
 
 
 class EnvironmentEncodingError(B2Error):
@@ -35,3 +35,27 @@ export LANG=en_US.UTF-8""" % (
             self.filename,
             self.encoding,
         )
+
+
+class InvalidArgument(B2Error):
+    """
+    Raised when one or more arguments are invalid
+    """
+
+    def __init__(self, field_name, message):
+        """
+
+        :param field_name:
+        :param message:
+        :return:
+        """
+        super(InvalidArgument, self).__init__()
+        self.field_name = field_name
+        self.message = message
+
+    def __str__(self):
+        return "%s %s" % (self.field_name, self.message)
+
+
+class IncompleteSync(B2SimpleError):
+    pass
