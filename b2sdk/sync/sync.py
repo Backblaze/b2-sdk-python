@@ -15,6 +15,7 @@ import six
 
 from ..bounded_queue_executor import BoundedQueueExecutor
 from ..exception import CommandError
+from .exception import InvalidArgument, IncompleteSync
 from ..utils import trace_call
 from .policy import AbstractFileSyncPolicy
 from .policy_manager import POLICY_MANAGER
@@ -159,8 +160,8 @@ def sync_folders(
         no_progress,
         max_workers,
         policies_manager=policies_manager,
-        dry_run=False,
-        allow_empty_source=False,
+        dry_run=dry_run,
+        allow_empty_source=allow_empty_source,
         newer_file_mode=newer_file_mode,
         keep_days_or_delete=keep_days_or_delete,
         compare_version_mode=AbstractFileSyncPolicy.COMPARE_VERSION_MODTIME,
@@ -173,7 +174,9 @@ def sync_folders(
         try:
             synchronizer.sync_folders(source_folder, dest_folder, now_millis, reporter)
         except InvalidArgument as e:
-            raise CommandError('--%s %s', (e.field_name, e.message))
+            raise CommandError('--%s %s' % (e.field_name, e.message))
+        except IncompleteSync as e:
+            raise CommandError(e.message)
 
 
 class Synchronizer(object):
@@ -232,30 +235,30 @@ class Synchronizer(object):
 
     def _validate(self):
         if self.compare_threshold < 0:
-            raise InvalidArgument('compare_threshold', 'compare_threshold (must be a positive integer')
+            raise InvalidArgument('compare_threshold', 'must be a positive integer')
 
         if self.newer_file_mode and self.newer_file_mode not in AbstractFileSyncPolicy.NEWER_FILE_MODES:
             raise InvalidArgument(
                 'newer_file_mode',
-                'newer_file_mode must be one of :%s' % AbstractFileSyncPolicy.NEWER_FILE_MODES,
+                'must be one of :%s' % AbstractFileSyncPolicy.NEWER_FILE_MODES,
             )
 
         if self.keep_days_or_delete and self.keep_days_or_delete not in self.KEEP_OR_DELETE_MODES:
             raise InvalidArgument(
                 'keep_days_or_delete',
-                'keep_days_or_delete must be one of :%s' % self.KEEP_OR_DELETE_MODES,
+                'must be one of :%s' % self.KEEP_OR_DELETE_MODES,
             )
 
         if self.keep_days_or_delete == self.KEEP_DAYS_MODE and self.keep_days is None:
             raise InvalidArgument(
                 'keep_days',
-                'keep_days is required when keep_days_or_delete is %s' % self.KEEP_DAYS_MODE,
+                'is required when keep_days_or_delete is %s' % self.KEEP_DAYS_MODE,
             )
 
         if self.compare_version_mode and self.compare_version_mode not in AbstractFileSyncPolicy.COMPARE_VERSION_MODES:
             raise InvalidArgument(
                 'compare_version_mode',
-                'compare_version_mode must be one of :%s' % AbstractFileSyncPolicy.COMPARE_VERSION_MODES,
+                'must be one of :%s' % AbstractFileSyncPolicy.COMPARE_VERSION_MODES,
             )
 
     def sync_folders(self, source_folder, dest_folder, now_millis, reporter):
@@ -323,7 +326,7 @@ class Synchronizer(object):
         # Wait for everything to finish
         sync_executor.shutdown()
         if sync_executor.get_num_exceptions() != 0:
-            raise CommandError('sync is incomplete')
+            raise IncompleteSync('sync is incomplete')
 
     def make_file_sync_actions(
         self, sync_type, source_file, dest_file, source_folder, dest_folder, now_millis,
@@ -376,19 +379,19 @@ class Synchronizer(object):
         :param reporter: reporter object
         :param policies_manager: policies manager object
         """
-        if (self.keep_days_or_delete == self.KEEP_DAYS_MODE) and (dest_folder.folder_type() == 'local'):
+        if self.keep_days_or_delete == self.KEEP_DAYS_MODE and dest_folder.folder_type() == 'local':
             raise InvalidArgument('keep_days_or_delete', 'cannot be used for local files')
 
         source_type = source_folder.folder_type()
         dest_type = dest_folder.folder_type()
         sync_type = '%s-to-%s' % (source_type, dest_type)
-        if (source_folder.folder_type(), dest_folder.folder_type()) not in [
+        if (source_type, dest_type) not in [
             ('b2', 'local'), ('local', 'b2')
         ]:
             raise NotImplementedError("Sync support only local-to-b2 and b2-to-local")
 
         for source_file, dest_file in zip_folders(
-            source_folder, dest_folder, reporter, policies_manager
+            source_folder, dest_folder, reporter, policies_manager,
         ):
             if source_file is None:
                 logger.debug('determined that %s is not present on source', dest_file)

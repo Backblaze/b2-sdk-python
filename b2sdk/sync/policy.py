@@ -94,7 +94,12 @@ class AbstractFileSyncPolicy(object):
 
     @classmethod
     def files_are_different(
-            cls, source_file, dest_file, compare_threshold=None, compare_version_mode=None, newer_file_mode=None,
+            cls,
+            source_file,
+            dest_file,
+            compare_threshold=None,
+            compare_version_mode=None,
+            newer_file_mode=None,
     ):
         """
         Compare two files and determine if the the destination file
@@ -128,9 +133,8 @@ class AbstractFileSyncPolicy(object):
 
             logger.debug(
                 'File %s: source time %s, dest time %s, diff %s, threshold %s, diff > threshold %s',
-                source_file.name, source_mod_time, dest_mod_time, diff_mod_time, compare_threshold,
-                compare_threshold_exceeded
-            )
+                source_file.name, source_mod_time, dest_mod_time,
+                diff_mod_time, compare_threshold, compare_threshold_exceeded,)
 
             if compare_threshold_exceeded:
                 # Source is newer
@@ -144,9 +148,9 @@ class AbstractFileSyncPolicy(object):
                     elif newer_file_mode == cls.NEWER_FILE_SKIP:
                         return False
                     else:
-                        raise DestFileNewer(
-                            dest_file, source_file, cls.DESTINATION_PREFIX, cls.SOURCE_PREFIX
-                        )
+                        raise DestFileNewer(dest_file, source_file,
+                                            cls.DESTINATION_PREFIX,
+                                            cls.SOURCE_PREFIX)
 
         # Compare using file size
         elif compare_version_mode == cls.COMPARE_VERSION_SIZE:
@@ -158,9 +162,8 @@ class AbstractFileSyncPolicy(object):
 
             logger.debug(
                 'File %s: source size %s, dest size %s, diff %s, threshold %s, diff > threshold %s',
-                source_file.name, source_size, dest_size, diff_size, compare_threshold,
-                compare_threshold_exceeded
-            )
+                source_file.name, source_size, dest_size, diff_size,
+                compare_threshold, compare_threshold_exceeded,)
 
             # Replace if size difference is over threshold
             return compare_threshold_exceeded
@@ -237,13 +240,14 @@ class UpAndDeletePolicy(UpPolicy):
     """
 
     def _get_hide_delete_actions(self):
-        for action in super(UpAndDeletePolicy, self)._get_hide_delete_actions():
+        for action in super(UpAndDeletePolicy,
+                            self)._get_hide_delete_actions():
             yield action
         for action in make_b2_delete_actions(
-            self._source_file,
-            self._dest_file,
-            self._dest_folder,
-            self._transferred,
+                self._source_file,
+                self._dest_file,
+                self._dest_folder,
+                self._transferred,
         ):
             yield action
 
@@ -254,11 +258,16 @@ class UpAndKeepDaysPolicy(UpPolicy):
     """
 
     def _get_hide_delete_actions(self):
-        for action in super(UpAndKeepDaysPolicy, self)._get_hide_delete_actions():
+        for action in super(UpAndKeepDaysPolicy,
+                            self)._get_hide_delete_actions():
             yield action
         for action in make_b2_keep_days_actions(
-            self._source_file, self._dest_file, self._dest_folder, self._transferred,
-            self._keep_days, self._now_millis
+                self._source_file,
+                self._dest_file,
+                self._dest_folder,
+                self._transferred,
+                self._keep_days,
+                self._now_millis,
         ):
             yield action
 
@@ -269,12 +278,14 @@ class DownAndDeletePolicy(DownPolicy):
     """
 
     def _get_hide_delete_actions(self):
-        for action in super(DownAndDeletePolicy, self)._get_hide_delete_actions():
+        for action in super(DownAndDeletePolicy,
+                            self)._get_hide_delete_actions():
             yield action
         if self._dest_file is not None and self._source_file is None:
             # Local files have either 0 or 1 versions.  If the file is there,
             # it must have exactly 1 version.
-            yield LocalDeleteAction(self._dest_file.name, self._dest_file.versions[0].id_)
+            yield LocalDeleteAction(self._dest_file.name,
+                                    self._dest_file.versions[0].id_)
 
 
 class DownAndKeepDaysPolicy(DownPolicy):
@@ -322,7 +333,8 @@ def make_b2_delete_actions(source_file, dest_file, dest_folder, transferred):
         # them or delete them
         return
     for version_index, version in enumerate(dest_file.versions):
-        keep = (version_index == 0) and (source_file is not None) and not transferred
+        keep = (version_index == 0) and (source_file is
+                                         not None) and not transferred
         if not keep:
             yield B2DeleteAction(
                 dest_file.name,
@@ -332,9 +344,8 @@ def make_b2_delete_actions(source_file, dest_file, dest_folder, transferred):
             )
 
 
-def make_b2_keep_days_actions(
-    source_file, dest_file, dest_folder, transferred, keep_days, now_millis
-):
+def make_b2_keep_days_actions(source_file, dest_file, dest_folder, transferred,
+                              keep_days, now_millis):
     """
     Create the actions to hide or delete existing versions of a file
     stored in b2.
@@ -382,7 +393,8 @@ def make_b2_keep_days_actions(
 
         # Do we need to hide this version?
         if version_index == 0 and source_file is None and version.action == 'upload':
-            yield B2HideAction(dest_file.name, dest_folder.make_full_path(dest_file.name))
+            yield B2HideAction(dest_file.name,
+                               dest_folder.make_full_path(dest_file.name))
 
         # Can we start deleting? Once we start deleting, all older
         # versions will also be deleted.
