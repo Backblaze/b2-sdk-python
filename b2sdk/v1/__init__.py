@@ -132,6 +132,8 @@ from b2sdk.sync.report import SyncReport
 from b2sdk.sync.scan_policies import DEFAULT_SCAN_MANAGER
 from b2sdk.sync.scan_policies import RegexSet
 from b2sdk.sync.scan_policies import ScanPoliciesManager
+from b2sdk.sync.sync import make_folder_sync_actions
+from b2sdk.sync.sync import sync_folders
 from b2sdk.sync.sync import Synchronizer
 from b2sdk.sync.sync import zip_folders
 

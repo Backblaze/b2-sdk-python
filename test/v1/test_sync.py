@@ -21,7 +21,7 @@ import six
 
 from .test_base import TestBase
 
-from .deps_exception import CommandError, DestFileNewer
+from .deps_exception import DestFileNewer
 from .deps import FileVersionInfo
 from .deps import AbstractFolder, B2Folder, LocalFolder
 from .deps import File, FileVersion
@@ -771,11 +771,8 @@ class TestMakeSyncActions(TestSync):
             self._check_local_to_b2(src_file, dst_file, FakeArgs(), [])
             self.fail('should have raised DestFileNewer')
         except DestFileNewer as e:
-            print("=="*80)
-            print(str(e))
-            print("==" * 80)
             self.assertEqual(
-                'source file is older than destination: local://a.txt with a time of 100 cannot be synced to b2://a.txt with a time of 200, unless --skipNewer or --replaceNewer is provided',
+                'source file is older than destination: local://a.txt with a time of 100 cannot be synced to b2://a.txt with a time of 200, unless a valid newer_file_mode is provided',
                 str(e)
             )
 
@@ -808,7 +805,7 @@ class TestMakeSyncActions(TestSync):
             self.fail('should have raised DestFileNewer')
         except DestFileNewer as e:
             self.assertEqual(
-                'source file is older than destination: b2://directory/a.txt with a time of 100 cannot be synced to local://directory/a.txt with a time of 200, unless --skipNewer or --replaceNewer is provided',
+                'source file is older than destination: b2://directory/a.txt with a time of 100 cannot be synced to local://directory/a.txt with a time of 200, unless a valid newer_file_mode is provided',
                 str(e)
             )
 
