@@ -201,8 +201,6 @@ def make_folder_sync_actions(
     except InvalidArgument as e:
         raise CommandError('--%s %s' % (e.field_name, e.message))
     except DestFileNewer as e:
-        print("HEREHERE")
-        pass
         raise DestFileNewerV0(e.dest_file, e.source_file, e.dest_prefix, e.source_prefix)
 
 
