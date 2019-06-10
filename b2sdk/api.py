@@ -444,7 +444,7 @@ class B2Api(object):
     # other
     def get_file_info(self, file_id):
         """
-        legacy interface which just returns whatever remote API returns
+        Legacy interface which just returns whatever remote API returns
 
         .. todo::
             get_file_info() should return a File with .delete(), copy(), rename(), read() and so on
