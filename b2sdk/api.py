@@ -278,7 +278,7 @@ class B2Api(object):
 
     def delete_bucket(self, bucket):
         """
-        Deletes the bucket remotely.
+        Deletes a chosen bucket.
 
         :param b2sdk.v1.Bucket bucket: a :term:`Bucket` to delete
         :rtype: None
