@@ -133,6 +133,6 @@ To find out more, see :class:`b2sdk.v1.Bucket`.
 Summary
 ***************************
 
-You now know how to use *AccountInfo*, *B2Api* and *Bucket* objects.
+You now know how to use ``AccountInfo``, ``B2Api`` and ``Bucket`` objects.
 
 To see examples of some of the methods presented above, visit the :ref:`quick start guide <quick_start>` section.
