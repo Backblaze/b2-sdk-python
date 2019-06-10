@@ -242,7 +242,7 @@ class B2Api(object):
 
     def get_bucket_by_id(self, bucket_id):
         """
-        Return bucket object with a given ID. Unlike ``get_bucket_by_name``, this method does not need to make any API calls.
+        Returns a bucket object with a given ID. Unlike ``get_bucket_by_name``, this method does not need to make any API calls.
 
         :param str bucket_id: a bucket ID
         :return: a Bucket object
