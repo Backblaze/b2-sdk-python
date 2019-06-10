@@ -30,7 +30,7 @@ B2_ACCOUNT_INFO_DEFAULT_FILE = '~/.b2_account_info'
 
 class SqliteAccountInfo(UrlPoolAccountInfo):
     """
-    Stores account information in an `sqlite3 <https://www.sqlite.org>`_ database, which is
+    Stores account information in an `sqlite3 <https://www.sqlite.org>`_ database which is
     used to manage concurrent access to the data.
 
     The ``update_done`` table tracks the schema updates that have been

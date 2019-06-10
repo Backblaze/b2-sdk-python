@@ -34,7 +34,7 @@ InMemoryAccountInfo
 
    .. hint::
 
-      Usage of this class is appropriate for secure Web applications, which do not wish to persist any user data.
+      Usage of this class is appropriate for secure Web applications which do not wish to persist any user data.
 
    Using this class for applications such as CLI, GUI or backup is discouraged, as ``InMemoryAccountInfo`` does not write down the authorization token persistently, which will force the application to retrieve a new one on every command/click/backup start. This would be slow. Furthermore - an important property of *AccountInfo* is caching the ``bucket_name:bucket_id`` mapping; in case of ``InMemoryAccountInfo`` the cache will be flushed between executions of the program.
 
