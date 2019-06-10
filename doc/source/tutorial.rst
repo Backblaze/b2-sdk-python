@@ -73,7 +73,7 @@ The most practical operation on ``B2Api`` object is :meth:`b2sdk.v1.B2Api.get_bu
 Bucket
 ***************************
 
-Initializing Bucket
+Initializing a Bucket
 ========================
 
 Retrieve an existing Bucket
