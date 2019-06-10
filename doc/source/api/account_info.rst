@@ -12,7 +12,7 @@ There are two usable implementations provided by **b2sdk**:
  * :py:class:`b2sdk.v1.InMemoryAccountInfo` - basic implementation with no persistence
  * :py:class:`b2sdk.v1.SqliteAccountInfo` - for console and GUI applications
 
-Both provide the full :ref:`AccountInfo interface <account_info_interface>`.
+They both provide the full :ref:`AccountInfo interface <account_info_interface>`.
 
 .. note::
    Backup applications and many server-side applications should :ref:`implement their own <my_account_info>` *AccountInfo*, backed by the metadata/configuration database of the application.
