@@ -31,7 +31,7 @@ except ImportError:
 
 def url_for_api(info, api_name):
     """
-    Return URL for an API endpoint
+    Returns URL for an API endpoint
 
     :param info: account info
     :param str api_nam:
@@ -123,7 +123,7 @@ class B2Api(object):
 
     def authorize_automatically(self):
         """
-        Perform automatic account authorization, retrieving all account data
+        Performs automatic account authorization, retrieving all account data
         from account info object passed during initialization
         """
         try:
@@ -139,7 +139,7 @@ class B2Api(object):
     @limit_trace_arguments(only=('self', 'realm'))
     def authorize_account(self, realm, application_key_id, application_key):
         """
-        Perform account authorization
+        Performs account authorization
 
         :param str realm: a realm to authorize account in (usually just "production")
         :param str application_key_id: :term:`application key ID`
@@ -174,7 +174,7 @@ class B2Api(object):
 
     def get_account_id(self):
         """
-        Return account ID
+        Returns account ID
 
         :rtype: str
         """
@@ -186,7 +186,7 @@ class B2Api(object):
         self, name, bucket_type, bucket_info=None, cors_rules=None, lifecycle_rules=None
     ):
         """
-        Create a bucket
+        Creates a bucket
 
         :param str name: bucket name
         :param str bucket_type: a bucket type, could be one of the following values: ``"allPublic"``, ``"allPrivate"``
@@ -218,7 +218,7 @@ class B2Api(object):
 
     def download_file_by_id(self, file_id, download_dest, progress_listener=None, range_=None):
         """
-        Download a file with a given ID
+        Downloads a file with a given ID
 
         :param str file_id: a file ID
         :param str download_dest: a local file path
@@ -341,7 +341,7 @@ class B2Api(object):
     # delete/cancel
     def cancel_large_file(self, file_id):
         """
-        Cancel a large file upload
+        Cancels a large file upload
 
         :param str file_id: a file ID
         :rtype: None
@@ -351,7 +351,7 @@ class B2Api(object):
 
     def delete_file_version(self, file_id, file_name):
         """
-        Permanently and irrevocably delete one version of a file.
+        Permanently and irrevocably deletes one version of a file.
 
         :param str file_id: a file ID
         :param str file_name: a file name
@@ -395,7 +395,7 @@ class B2Api(object):
         name_prefix=None,
     ):
         """
-        Create a new :term:`application key`
+        Creates a new :term:`application key`
 
         :param list capabilities: a list of capabilities
         :param str key_name: a name of a key
@@ -421,7 +421,7 @@ class B2Api(object):
 
     def delete_key(self, application_key_id):
         """
-        Delete :term:`application key`
+        Deletes :term:`application key`
 
         :param str application_key_id: an :term:`application key ID`
         """
@@ -431,7 +431,7 @@ class B2Api(object):
 
     def list_keys(self, start_application_key_id=None):
         """
-        List application keys
+        Lists application keys
 
         :param str,None start_application_key_id: an :term:`application key ID` to start from or ``None`` to start from the beginning
         """
