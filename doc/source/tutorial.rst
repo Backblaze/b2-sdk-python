@@ -79,7 +79,7 @@ Initializing Bucket
 Retrieve an existing Bucket
 ---------------------------
 
-To get a Bucket object for an existing B2 Bucket:
+To get a ``Bucket`` object for an existing B2 Bucket:
 
 .. code-block:: python
 
