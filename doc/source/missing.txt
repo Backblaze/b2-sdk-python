@@ -1,0 +1,22 @@
+Missing explanations
+
+In 
+doc/source/tutorial.rst 
+    line 102 
+AND in 
+b2sdk/api.py 
+    line 194 
+there are mentions of "CORS rules" which are not explained anywhere.
+Nothing in doc/source/glossary.rst either. 
+Proposed fix: add to glossary, if possible, add to on-hover
+
+
+In 
+doc/source/tutorial.rst 
+    line 102
+AND in 
+b2sdk/api.py 
+    line 195
+there are mentions of "bucket lifecycle rules" which are not explained anywhere.
+Nothing in doc/source/glossary.rst either.
+Proposed fix: add to glossary, if possible, add to on-hover
