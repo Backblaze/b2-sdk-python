@@ -18,7 +18,7 @@ In the tutorial we will use :py:class:`b2sdk.v1.InMemoryAccountInfo`:
     >>> info = InMemoryAccountInfo()  # store credentials, tokens and cache in memory
 
 
-With the ``info`` object in hand, we can now proceed to creating a ``B2Api`` object.
+With the ``info`` object in hand, we can now proceed to create a ``B2Api`` object.
 
 .. note::
    :ref:`AccountInfo` section provides guidance for choosing the correct ``AccountInfo`` class for your application.
