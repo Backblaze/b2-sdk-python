@@ -252,7 +252,7 @@ class B2Api(object):
 
     def get_bucket_by_name(self, bucket_name):
         """
-        Returns the Bucket for the given bucket_name.
+        Returns the Bucket matching the given bucket_name.
 
         :param str bucket_name: The name of the bucket to return.
         :return: a Bucket object
