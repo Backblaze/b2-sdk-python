@@ -17,7 +17,7 @@ def parse_sync_folder(folder_name, api):
     Takes either a local path, or a B2 path, and returns a Folder
     object for it.
 
-    B2 paths look like: b2://bucketName/path/name.  The '//' is optional,
+    B2 paths look like: b2://bucketName/path/name. The '//' is optional,
     because the previous sync command didn't use it.
 
     Anything else is treated like a local folder.

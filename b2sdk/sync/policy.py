@@ -313,9 +313,9 @@ def make_b2_keep_days_actions(
     stored in b2.
 
     When keepDays is set, all files that were visible any time from
-    keepDays ago until now must be kept.  If versions were uploaded 5
+    keepDays ago until now must be kept. If versions were uploaded 5
     days ago, 15 days ago, and 25 days ago, and the keepDays is 10,
-    only the 25-day old version can be deleted.  The 15 day-old version
+    only the 25-day old version can be deleted. The 15 day-old version
     was visible 10 days ago.
 
     :param source_file: source file object
@@ -342,10 +342,10 @@ def make_b2_keep_days_actions(
         age_days = (now_millis - version.mod_time) / ONE_DAY_IN_MS
 
         # Mostly, the versions are ordered by time, newest first,
-        # BUT NOT ALWAYS.  The mod time we have is the src_last_modified_millis
+        # BUT NOT ALWAYS. The mod time we have is the src_last_modified_millis
         # from the file info (if present), or the upload start time
-        # (if not present).  The user-specified src_last_modified_millis
-        # may not be in order.  Because of that, we no longer
+        # (if not present). The user-specified src_last_modified_millis
+        # may not be in order. Because of that, we no longer
         # assert that age_days is non-decreasing.
         #
         # Note that if there is an out-of-order date that is old enough
@@ -357,7 +357,7 @@ def make_b2_keep_days_actions(
         if version_index == 0 and source_file is None and version.action == 'upload':
             yield B2HideAction(dest_file.name, dest_folder.make_full_path(dest_file.name))
 
-        # Can we start deleting?  Once we start deleting, all older
+        # Can we start deleting? Once we start deleting, all older
         # versions will also be deleted.
         if version.action == 'hide':
             if keep_days < age_days:

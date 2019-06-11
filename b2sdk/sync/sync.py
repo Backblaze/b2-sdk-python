@@ -44,7 +44,7 @@ def zip_folders(folder_a, folder_b, reporter, policies_manager=DEFAULT_SCAN_MANA
     matching file names.
 
     Each item is a pair (file_a, file_b) with the corresponding file
-    in both folders.  Either file (but not both) will be None if the
+    in both folders. Either file (but not both) will be None if the
     file is in only one folder.
 
     :param folder_a: first folder object.
@@ -194,8 +194,8 @@ def sync_folders(
     allow_empty_source=False
 ):
     """
-    Syncs two folders.  Always ensures that every file in the
-    source is also in the destination.  Deletes any file versions
+    Syncs two folders. Always ensures that every file in the
+    source is also in the destination. Deletes any file versions
     in the destination older than history_days.
 
     :param source_folder: source folder object
@@ -227,9 +227,9 @@ def sync_folders(
     # Make a reporter to report progress.
     with SyncReport(stdout, no_progress) as reporter:
 
-        # Make an executor to count files and run all of the actions.  This is
-        # not the same as the executor in the API object, which is used for
-        # uploads.  The tasks in this executor wait for uploads.  Putting them
+        # Make an executor to count files and run all of the actions. This is
+        # not the same as the executor in the API object which is used for
+        # uploads. The tasks in this executor wait for uploads. Putting them
         # in the same thread pool could lead to deadlock.
         #
         # We use an executor with a bounded queue to avoid using up lots of memory
@@ -238,7 +238,7 @@ def sync_folders(
         queue_limit = max_workers + 1000
         sync_executor = BoundedQueueExecutor(unbounded_executor, queue_limit=queue_limit)
 
-        # First, start the thread that counts the local files.  That's the operation
+        # First, start the thread that counts the local files. That's the operation
         # that should be fastest, and it provides scale for the progress reporting.
         local_folder = None
         if source_folder.folder_type() == 'local':

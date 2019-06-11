@@ -477,7 +477,7 @@ class Bucket(object):
         Uploads a file to B2, retrying as needed.
 
         The source of the upload is an UploadSource object that can be used to
-        open (and re-open) the file.  The result of opening should be a binary
+        open (and re-open) the file. The result of opening should be a binary
         file whose read() method returns bytes.
 
         :param b2sdk.v1.UploadSource upload_source: an object that opens the source of the upload

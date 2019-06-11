@@ -136,7 +136,7 @@ class B2RawApi(AbstractRawApi):
         https://www.backblaze.com/b2/docs/
 
     This class is intended to be a super-simple, very thin layer on top
-    of the HTTP calls.  It can be mocked-out for testing higher layers.
+    of the HTTP calls. It can be mocked-out for testing higher layers.
     And this class can be tested by exercising each call just once,
     which is relatively quick.
 
@@ -538,13 +538,13 @@ def test_raw_api():
 
 def test_raw_api_helper(raw_api):
     """
-    Tries each of the calls to the raw api.  Raises an
-    except if anything goes wrong.
+    Tries each of the calls to the raw api. Raises an
+    exception if anything goes wrong.
 
     This uses a Backblaze account that is just for this test.
     The account uses the free level of service, which should
     be enough to run this test a reasonable number of times
-    each day.  If somebody abuses the account for other things,
+    each day. If somebody abuses the account for other things,
     this test will break and we'll have to do something about
     it.
     """
@@ -749,7 +749,7 @@ def test_raw_api_helper(raw_api):
     # Clean up this test.
     _clean_and_delete_bucket(raw_api, api_url, account_auth_token, account_id, bucket_id)
 
-    # Clean up from old tests.  Empty and delete any buckets more than an hour old.
+    # Clean up from old tests. Empty and delete any buckets more than an hour old.
     for bucket_dict in bucket_list_dict['buckets']:
         bucket_id = bucket_dict['bucketId']
         bucket_name = bucket_dict['bucketName']
@@ -759,7 +759,7 @@ def test_raw_api_helper(raw_api):
 
 
 def _clean_and_delete_bucket(raw_api, api_url, account_auth_token, account_id, bucket_id):
-    # Delete the files.  This test never creates more than a few files,
+    # Delete the files. This test never creates more than a few files,
     # so one call to list_file_versions should get them all.
     versions_dict = raw_api.list_file_versions(api_url, account_auth_token, bucket_id)
     for version_dict in versions_dict['files']:

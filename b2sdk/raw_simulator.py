@@ -299,7 +299,7 @@ class FakeResponse(object):
 class BucketSimulator(object):
 
     # File IDs start at 9999 and count down, so they sort in the order
-    # returned by list_file_versions.  The IDs are strings.
+    # returned by list_file_versions. The IDs are strings.
     FIRST_FILE_NUMBER = 9999
 
     FIRST_FILE_ID = str(FIRST_FILE_NUMBER)
@@ -640,8 +640,8 @@ class RawSimulator(AbstractRawApi):
 
     def set_upload_errors(self, errors):
         """
-        Stores a sequence of exceptions to raise on upload.  Each one will
-        be raised in turn, until they are all gone.  Then the next upload
+        Stores a sequence of exceptions to raise on upload. Each one will
+        be raised in turn, until they are all gone. Then the next upload
         will succeed.
         """
         assert len(self.upload_errors) == 0

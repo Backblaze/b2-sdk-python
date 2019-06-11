@@ -26,10 +26,10 @@ logger = logging.getLogger(__name__)
 class AbstractAction(object):
     """
     An action to take, such as uploading, downloading, or deleting
-    a file.  Multi-threaded tasks create a sequence of Actions, which
+    a file. Multi-threaded tasks create a sequence of Actions which
     are then run by a pool of threads.
 
-    An action can depend on other actions completing.  An example of
+    An action can depend on other actions completing. An example of
     this is making sure a CreateBucketAction happens before an
     UploadFileAction.
     """
