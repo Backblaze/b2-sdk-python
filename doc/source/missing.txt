@@ -21,3 +21,10 @@ b2sdk/api.py
 there are mentions of "bucket lifecycle rules" which are not explained anywhere.
 Nothing in doc/source/glossary.rst either.
 Proposed fix: add to glossary, if possible, add to on-hover
+
+3. Dead link
+doc/source/quick_start.rst
+    line 77:
+"""
+    To learn more about sync, see `Sync <sync.html>`_.
+"""
