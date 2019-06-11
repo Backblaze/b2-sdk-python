@@ -339,7 +339,7 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
     def get_allowed(self):
         """
         Return 'allowed' dictionary info.
-        The 'allowed" column was not in the original schema, so it may be NULL.
+        The 'allowed' column was not in the original schema, so it may be NULL.
 
         :rtype: dict
         """
