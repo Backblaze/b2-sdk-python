@@ -1,5 +1,6 @@
-Missing explanations
+Missing
 
+1. Missing explanation
 In 
 doc/source/tutorial.rst 
     line 102 
@@ -10,7 +11,7 @@ there are mentions of "CORS rules" which are not explained anywhere.
 Nothing in doc/source/glossary.rst either. 
 Proposed fix: add to glossary, if possible, add to on-hover
 
-
+2. Missing explanation
 In 
 doc/source/tutorial.rst 
     line 102
