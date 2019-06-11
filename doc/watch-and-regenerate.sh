@@ -1,2 +1,3 @@
 #!/bin/bash -eu
-sudo fatrace | awk '/.* CW .*\/b2-sdk-python\/.*\.(rst|py)$/ {print;system("./regenerate.sh")}'
+cd ..
+sudo fatrace | awk '/.* CW .*\/b2-sdk-python\/.*\.(rst|py)$/ {print;system("cd doc; ./regenerate.sh")}'
