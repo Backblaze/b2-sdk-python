@@ -81,23 +81,23 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
                     'account_id', 'application_key', 'account_auth_token', 'api_url',
                     'download_url', 'minimum_part_size', 'realm'
                 ]
-                if all(k in data for k in keys):
-                    # remove the json file
-                    os.unlink(self.filename)
-                    # create a database
-                    self._create_database(last_upgrade_to_run)
-                    # add the data from the JSON file
-                    with self._connect() as conn:
-                        self._create_tables(conn, last_upgrade_to_run)
-                        insert_statement = """
-                            INSERT INTO account
-                            (account_id, application_key, account_auth_token, api_url, download_url, minimum_part_size, realm)
-                            values (?, ?, ?, ?, ?, ?, ?);
-                        """
+            if all(k in data for k in keys):
+                # remove the json file
+                os.unlink(self.filename)
+                # create a database
+                self._create_database(last_upgrade_to_run)
+                # add the data from the JSON file
+                with self._connect() as conn:
+                    self._create_tables(conn, last_upgrade_to_run)
+                    insert_statement = """
+                        INSERT INTO account
+                        (account_id, application_key, account_auth_token, api_url, download_url, minimum_part_size, realm)
+                        values (?, ?, ?, ?, ?, ?, ?);
+                    """
 
-                        conn.execute(insert_statement, tuple(data[k] for k in keys))
-                    # all is happy now
-                    return
+                    conn.execute(insert_statement, tuple(data[k] for k in keys))
+                # all is happy now
+                return
         except ValueError:  # includes json.decoder.JSONDecodeError
             pass
 
