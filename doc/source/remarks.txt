@@ -105,3 +105,7 @@ are displayed as
  when they expire - retrying uploads when an upload URL is busy - breaking large files into parts
  - emulating a directory structure (B2 buckets are flat)
 """
+
+
+#The same for:
+#b2sdk\b2http.py, lines 233-235  # I haven't encountered it as displayed in docs yet, but I provide it in this list so if a fix requires formatting, a pointer to it will survive
