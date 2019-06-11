@@ -1,3 +1,4 @@
+1. 
 In the first code block in
 doc\source\quick_start.rst
 
@@ -14,3 +15,23 @@ I have no recommendation for clearing this up at this moment.
     >>> info = InMemoryAccountInfo()  # to store credentials, tokens and cache in memory OR
     >>> info = SqliteAccountInfo()  # to store credentials, tokens and cache in ~/.b2_account_info
     >>> b2_api = B2Api(info)
+
+
+2. 
+quick_start.rst, lines 30-33:
+"""
+    >>> application_key_id = '4a5b6c7d8e9f'  # get credentials from from B2 website
+    >>> application_key = '001b8e23c26ff6efb941e237deb182b9599a84bef7'
+    >>> b2_api.authorize_account("production", application_key_id, application_key)
+"""
+Does the 
+# get credentials from from B2 website
+pertain to application_key_id only or to all of them? If to more than appplication_key_id, consider pushing it out to a separate line (i.e.:
+"""
+    >>> # get credentials from from B2 website
+    >>> application_key_id = '4a5b6c7d8e9f'
+    >>> application_key = '001b8e23c26ff6efb941e237deb182b9599a84bef7'
+    >>> b2_api.authorize_account("production", application_key_id, application_key)
+"""
+)
+
