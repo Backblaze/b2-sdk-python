@@ -375,7 +375,7 @@ class Bucket(object):
         A generator that yields an :py:class:`b2sdk.v1.UnfinishedLargeFile` for each
         unfinished large file in the bucket, starting at the given file.
 
-        :param str,None start_file_id: a file ID to start from or None to start from the begi
+        :param str,None start_file_id: a file ID to start from or None to start from the beginning
         :param int,None batch_size: max file count
         :rtype: generator[b2sdk.v1.UnfinishedLargeFile]
         """
