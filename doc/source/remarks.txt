@@ -1,4 +1,4 @@
-1. 
+1.
 In the first code block in
 doc\source\quick_start.rst
 
@@ -17,14 +17,14 @@ I have no recommendation for clearing this up at this moment.
     >>> b2_api = B2Api(info)
 
 
-2. 
+2.
 quick_start.rst, lines 30-33:
 """
     >>> application_key_id = '4a5b6c7d8e9f'  # get credentials from from B2 website
     >>> application_key = '001b8e23c26ff6efb941e237deb182b9599a84bef7'
     >>> b2_api.authorize_account("production", application_key_id, application_key)
 """
-Does the 
+Does the
 # get credentials from from B2 website
 pertain to application_key_id only or to all of them? If to more than appplication_key_id, consider pushing it out to a separate line (i.e.:
 """
@@ -34,4 +34,16 @@ pertain to application_key_id only or to all of them? If to more than appplicati
     >>> b2_api.authorize_account("production", application_key_id, application_key)
 """
 )
+
+
+3.
+b2sdk\account_info\sqlite_account_info.py, lines 104-105:
+"""
+        # Remove the corrupted file and create a new database
+        raise CorruptAccountInfo(self.filename)
+"""
+Is removing corrupted (_how badly_?) corrupted databases a regular
+practice? I would opt for a raise exception, creation of a new one
+and running some internal or external tool to see if it could be
+recovered, instead of deleting it wholesale.
 
