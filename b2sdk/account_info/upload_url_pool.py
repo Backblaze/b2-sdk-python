@@ -56,7 +56,7 @@ class UploadUrlPool(object):
 
     def clear_for_key(self, key):
         """
-        Remove an intem from the pool by key
+        Removes an item from the pool by key.
 
         :param str key: bucket ID or large file ID
         """

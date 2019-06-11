@@ -47,7 +47,7 @@ class AbstractAccountInfo(object):
     @classmethod
     def all_capabilities(cls):
         """
-        Return a list of all possible capabilities
+        Returns a list of all possible capabilities.
 
         :rtype: list
         """
@@ -173,7 +173,7 @@ class AbstractAccountInfo(object):
     @abstractmethod
     def get_minimum_part_size(self):
         """
-        Return the minimum number of bytes in a part of a large file
+        Returns the minimum number of bytes in a part of a large file.
 
         :return: number of bytes
         :rtype: int
@@ -298,7 +298,7 @@ class AbstractAccountInfo(object):
     @limit_trace_arguments(only=['self', 'bucket_id'])
     def put_bucket_upload_url(self, bucket_id, upload_url, upload_auth_token):
         """
-        Add an (upload_url, upload_auth_token) pair to the pool available for
+        Adds an (upload_url, upload_auth_token) pair to the pool available for
         the bucket.
 
         :param str bucket_id: a bucket ID
@@ -311,7 +311,7 @@ class AbstractAccountInfo(object):
     @limit_trace_arguments(only=['self'])
     def put_large_file_upload_url(self, file_id, upload_url, upload_auth_token):
         """
-        Put large file upload URL into a pool
+        Puts a large file upload URL into a pool.
 
         :param str file_id: a file ID
         :param str upload_url: an upload URL
@@ -322,7 +322,7 @@ class AbstractAccountInfo(object):
     @abstractmethod
     def take_large_file_upload_url(self, file_id):
         """
-        Take large file upload URL from a pool
+        Takes the chosen large file upload URL from the pool.
 
         :param str file_id: a file ID
         """
@@ -331,7 +331,7 @@ class AbstractAccountInfo(object):
     @abstractmethod
     def clear_large_file_upload_urls(self, file_id):
         """
-        Clear a pool of URLs for a given file ID
+        Clears the pool of URLs for a given file ID.
 
         :param str file_id: a file ID
         """
