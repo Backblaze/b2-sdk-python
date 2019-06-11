@@ -49,7 +49,7 @@ class B2Api(object):
     """
     Provide file-level access to B2 services.
 
-    While B2RawApi provides direct access to the B2 web APIs, this
+    While :class:`b2sdk.v1.B2RawApi` provides direct access to the B2 web APIs, this
     class handles several things that simplify the task of uploading
     and downloading files:
     - re-acquires authorization tokens when they expire
