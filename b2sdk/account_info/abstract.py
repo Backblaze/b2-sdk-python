@@ -22,11 +22,11 @@ class AbstractAccountInfo(object):
     """
     Abstract class for a holder for all account-related information that needs to be kept between API calls and between invocations of the program.
 
-    This includes: account ID, application key ID,  application key,
+    This includes: account ID, application key ID, application key,
     auth tokens, API URL, download URL, and uploads URLs.
 
     This class must be THREAD SAFE because it may be used by multiple
-    threads running in the same Python process.  It also needs to be
+    threads running in the same Python process. It also needs to be
     safe against multiple processes running at the same time.
     """
 
@@ -277,7 +277,7 @@ class AbstractAccountInfo(object):
         application_key_id,
     ):
         """
-        Actually stores the auth data.  Can assume that 'allowed' is present and valid.
+        Actually stores the auth data. Can assume that 'allowed' is present and valid.
 
         All of the information returned by ``b2_authorize_account`` is saved, because all of it is
         needed at some point.
