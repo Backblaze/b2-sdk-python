@@ -20,7 +20,7 @@ from b2sdk.utils import B2TraceMetaAbstract, limit_trace_arguments
 @six.add_metaclass(B2TraceMetaAbstract)
 class AbstractAccountInfo(object):
     """
-    Abstract class for holder for all account-related information that needs to be kept between API calls and between invocations of the program.
+    Abstract class for a holder for all account-related information that needs to be kept between API calls and between invocations of the program.
 
     This includes: account ID, application key ID,  application key,
     auth tokens, API URL, download URL, and uploads URLs.
@@ -79,7 +79,7 @@ class AbstractAccountInfo(object):
     @abstractmethod
     def save_bucket(self, bucket):
         """
-        Remembers the ID for a bucket name.
+        Remembers the ID for the given bucket name.
 
         :param b2sdk.v1.Bucket bucket: a Bucket object
         """
@@ -87,7 +87,7 @@ class AbstractAccountInfo(object):
     @abstractmethod
     def get_bucket_id_or_none_from_bucket_name(self, bucket_name):
         """
-        Looks up the bucket ID for a given bucket name.
+        Looks up the bucket ID for the given bucket name.
 
         :param str bucket_name: a bucket name
         :return bucket ID or None:
@@ -211,7 +211,7 @@ class AbstractAccountInfo(object):
         """
         Checks permission correctness and stores the results of ``b2_authorize_account``.
 
-        The allowed structure is the one returned by ``b2_authorize_account``, with the addition of
+        The allowed structure is the one returned by ``b2_authorize_account`` with an addition of
         a bucketName field.  For keys with bucket restrictions, the name of the bucket is looked
         up and stored, too.  The console_tool does everything by bucket name, so it's convenient
         to have the restricted bucket name handy.

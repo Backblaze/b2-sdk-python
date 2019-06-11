@@ -42,7 +42,7 @@ class UploadUrlPool(object):
 
     def take(self, key):
         """
-        Returns (url, auth_token) if one is available, or (None, None) if not.
+        Returns a (url, auth_token) if one is available, or (None, None) if not.
 
         :param str key: bucket ID or large file ID
         :rtype: tuple
@@ -74,7 +74,7 @@ class UrlPoolAccountInfo(AbstractAccountInfo):
     BUCKET_UPLOAD_POOL_CLASS = staticmethod(UploadUrlPool)  #: url pool class to use for small files
     LARGE_FILE_UPLOAD_POOL_CLASS = staticmethod(
         UploadUrlPool
-    )  #: url pool class to use for large files
+    )  #: A url pool class to use for large files.
 
     def __init__(self):
         super(UrlPoolAccountInfo, self).__init__()

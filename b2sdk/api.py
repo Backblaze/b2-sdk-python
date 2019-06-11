@@ -218,7 +218,7 @@ class B2Api(object):
 
     def download_file_by_id(self, file_id, download_dest, progress_listener=None, range_=None):
         """
-        Downloads a file with a given ID
+        Downloads a file with the given ID.
 
         :param str file_id: a file ID
         :param str download_dest: a local file path
