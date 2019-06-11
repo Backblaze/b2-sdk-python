@@ -47,3 +47,21 @@ practice? I would opt for a raise exception, creation of a new one
 and running some internal or external tool to see if it could be
 recovered, instead of deleting it wholesale.
 
+
+4.
+I cannot find these in code, but some of the elements of .. toctree:: in doc\source\api_reference.rst - lines 44-66 - do not have any titles (the fact that some of the others have them non-descriptive or non-helpful is another matter entirely).
+    api/internal/utils                      - b2sdk.utils
+    api/internal/cache                      - b2sdk.cache
+    api/internal/sync/action                - b2sdk.sync.action
+    api/internal/sync/exception             - b2sdk.sync.exception
+    api/internal/sync/file                  - b2sdk.sync.file
+    api/internal/sync/folder                - b2sdk.sync.folder
+    api/internal/sync/folder_parser         - b2sdk.sync.folder_parser
+    api/internal/sync/policy                - b2sdk.sync.policy
+    api/internal/sync/policy_manager        - b2sdk.sync.policy_manager
+    api/internal/sync/scan_policies         - b2sdk.sync.scan_policies
+    api/internal/sync/sync                  - b2sdk.sync.sync
+    api/internal/transferer/file_metadata   - b2sdk.transferer.file_metadata
+    api/internal/upload_source              - b2sdk.upload_source
+
+
