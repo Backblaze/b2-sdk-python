@@ -65,3 +65,43 @@ I cannot find these in code, but some of the elements of .. toctree:: in doc\sou
     api/internal/upload_source              - b2sdk.upload_source
 
 
+5.
+Dicts get squashed and much less convenient to read/copy from. E.g.:
+b2sdk\account_info\abstract.py, lines 33-37:
+"""
+    REALM_URLS = {
+        'production': 'https://api.backblazeb2.com',
+        'dev': 'http://api.backblazeb2.xyz:8180',
+        'staging': 'https://api.backblaze.net',
+    }
+"""
+
+while in the docs it looks like this:
+"""
+REALM_URLS = {'dev': 'http://api.backblazeb2.xyz:8180', 'production': 'https://api.backblazeb2.com', 'staging':
+'https://api.backblaze.net'}
+"""
+
+
+6.
+https://b2-sdk-python.readthedocs.io/en/master/api/account_info.html#b2sdk.v1.AbstractAccountInfo._abc_impl
+... what is this, exactly?
+
+
+7.
+Bulleted lists get squashed and their readability and usefulness is lost. E.g.:
+b2sdk\api.py, lines 55-58:
+"""
+    - re-acquires authorization tokens when they expire
+    - retrying uploads when an upload URL is busy
+    - breaking large files into parts
+    - emulating a directory structure (B2 buckets are flat)
+"""
+at
+    https://b2-sdk-python.readthedocs.io/en/master/api/api.html#b2-api-client
+are displayed as
+"""
+                                    - re-acquires authorization tokens
+ when they expire - retrying uploads when an upload URL is busy - breaking large files into parts
+ - emulating a directory structure (B2 buckets are flat)
+"""
