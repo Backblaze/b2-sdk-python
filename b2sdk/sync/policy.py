@@ -166,7 +166,9 @@ class AbstractFileSyncPolicy(object):
 
     @abstractmethod
     def _make_transfer_action(self):
-        """ return an action representing transfer of file according to the selected policy """
+        """
+        Returns an action representing transfer of file according to the selected policy.
+        """
 
 
 class DownPolicy(AbstractFileSyncPolicy):

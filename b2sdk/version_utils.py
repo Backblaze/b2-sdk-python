@@ -58,7 +58,9 @@ class AbstractVersionDecorator(object):
 
     @abstractmethod
     def __call__(self, func):
-        """ the actual implementation of decorator """
+        """
+        The actual implementation of decorator.
+        """
 
 
 class AbstractDeprecator(AbstractVersionDecorator):

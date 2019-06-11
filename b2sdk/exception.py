@@ -248,7 +248,8 @@ class FileNotPresent(B2SimpleError):
 
 
 class UnusableFileName(B2SimpleError):
-    """Raise when a filename doesn't meet the rules.
+    """
+    Raise when a filename doesn't meet the rules.
 
     Could possibly use InvalidUploadSource, but this is intended for the filename on the
     server, which could differ.  https://www.backblaze.com/b2/docs/files.html.
