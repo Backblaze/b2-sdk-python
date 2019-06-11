@@ -56,7 +56,7 @@ class AbstractAccountInfo(object):
     @abstractmethod
     def clear(self):
         """
-        Removes all stored information
+        Removes all stored information.
         """
 
     @abstractmethod
@@ -105,7 +105,7 @@ class AbstractAccountInfo(object):
     @abstractmethod
     def get_account_id(self):
         """
-        Returns account ID or raises MissingAccountData exception
+        Returns account ID or raises MissingAccountData exception.
 
         :rtype: str
         """
@@ -113,7 +113,7 @@ class AbstractAccountInfo(object):
     @abstractmethod
     def get_application_key_id(self):
         """
-        Returns the application key ID used to authenticate
+        Returns the application key ID used to authenticate.
 
         :rtype: str
         """
@@ -121,7 +121,7 @@ class AbstractAccountInfo(object):
     @version_utils.rename_method(get_application_key_id, '0.1.5', '0.2.0')
     def get_account_id_or_app_key_id(self):
         """
-        Returns the application key ID used to authenticate
+        Returns the application key ID used to authenticate.
 
         :rtype: str
 
@@ -133,7 +133,7 @@ class AbstractAccountInfo(object):
     @abstractmethod
     def get_account_auth_token(self):
         """
-        Returns account_auth_token or raises MissingAccountData exception
+        Returns account_auth_token or raises MissingAccountData exception.
 
         :rtype: str
         """
@@ -141,7 +141,7 @@ class AbstractAccountInfo(object):
     @abstractmethod
     def get_api_url(self):
         """
-        Returns api_url or raises MissingAccountData exception
+        Returns api_url or raises MissingAccountData exception.
 
         :rtype: str
         """
@@ -149,7 +149,7 @@ class AbstractAccountInfo(object):
     @abstractmethod
     def get_application_key(self):
         """
-        Returns application_key or raises MissingAccountData exception
+        Returns application_key or raises MissingAccountData exception.
 
         :rtype: str
         """
@@ -157,7 +157,7 @@ class AbstractAccountInfo(object):
     @abstractmethod
     def get_download_url(self):
         """
-        Returns download_url or raises MissingAccountData exception
+        Returns download_url or raises MissingAccountData exception.
 
         :rtype: str
         """
@@ -165,7 +165,7 @@ class AbstractAccountInfo(object):
     @abstractmethod
     def get_realm(self):
         """
-        Returns realm or raises MissingAccountData exception
+        Returns realm or raises MissingAccountData exception.
 
         :rtype: str
         """

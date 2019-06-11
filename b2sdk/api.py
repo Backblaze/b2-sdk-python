@@ -124,7 +124,7 @@ class B2Api(object):
     def authorize_automatically(self):
         """
         Performs automatic account authorization, retrieving all account data
-        from account info object passed during initialization
+        from account info object passed during initialization.
         """
         try:
             self.authorize_account(
@@ -139,7 +139,7 @@ class B2Api(object):
     @limit_trace_arguments(only=('self', 'realm'))
     def authorize_account(self, realm, application_key_id, application_key):
         """
-        Performs account authorization
+        Performs account authorization.
 
         :param str realm: a realm to authorize account in (usually just "production")
         :param str application_key_id: :term:`application key ID`
@@ -174,7 +174,7 @@ class B2Api(object):
 
     def get_account_id(self):
         """
-        Returns account ID
+        Returns account ID.
 
         :rtype: str
         """
@@ -186,7 +186,7 @@ class B2Api(object):
         self, name, bucket_type, bucket_info=None, cors_rules=None, lifecycle_rules=None
     ):
         """
-        Creates a bucket
+        Creates a bucket.
 
         :param str name: bucket name
         :param str bucket_type: a bucket type, could be one of the following values: ``"allPublic"``, ``"allPrivate"``
@@ -254,7 +254,7 @@ class B2Api(object):
         """
         Returns the Bucket matching the given bucket_name.
 
-        :param str bucket_name: The name of the bucket to return.
+        :param str bucket_name: the name of the bucket to return
         :return: a Bucket object
         :rtype: b2sdk.v1.Bucket
         :raises b2sdk.v1.exception.NonExistentBucket: if the bucket does not exist in the account
@@ -296,7 +296,7 @@ class B2Api(object):
         one :term:`bucket`, you must specify the bucket name, or the request
         will be unauthorized.
 
-        :param str bucket_name: the name of the one bucket to return.
+        :param str bucket_name: the name of the one bucket to return
         :rtype: list[b2sdk.v1.Bucket]
         """
         # Give a useful warning if the current application key does not
@@ -341,7 +341,7 @@ class B2Api(object):
     # delete/cancel
     def cancel_large_file(self, file_id):
         """
-        Cancels a large file upload
+        Cancels a large file upload.
 
         :param str file_id: a file ID
         :rtype: None
@@ -395,7 +395,7 @@ class B2Api(object):
         name_prefix=None,
     ):
         """
-        Creates a new :term:`application key`
+        Creates a new :term:`application key`.
 
         :param list capabilities: a list of capabilities
         :param str key_name: a name of a key
@@ -421,7 +421,7 @@ class B2Api(object):
 
     def delete_key(self, application_key_id):
         """
-        Deletes :term:`application key`
+        Deletes :term:`application key`.
 
         :param str application_key_id: an :term:`application key ID`
         """
@@ -431,7 +431,7 @@ class B2Api(object):
 
     def list_keys(self, start_application_key_id=None):
         """
-        Lists application keys
+        Lists application keys.
 
         :param str,None start_application_key_id: an :term:`application key ID` to start from or ``None`` to start from the beginning
         """
@@ -444,7 +444,7 @@ class B2Api(object):
     # other
     def get_file_info(self, file_id):
         """
-        Legacy interface which just returns whatever remote API returns
+        Legacy interface which just returns whatever remote API returns.
 
         .. todo::
             get_file_info() should return a File with .delete(), copy(), rename(), read() and so on
@@ -456,7 +456,7 @@ class B2Api(object):
         Checks to see if the allowed field from authorize-account has a bucket restriction.
 
         If it does, does the bucket_name for a given api call match that.
-        If not it raises a :py:exc:`b2sdk.v1.exception.RestrictedBucket` error.
+        If not, it raises a :py:exc:`b2sdk.v1.exception.RestrictedBucket` error.
 
         :param str bucket_name: a bucket name
         :raises b2sdk.v1.exception.RestrictedBucket: if the account is not allowed to use this bucket
