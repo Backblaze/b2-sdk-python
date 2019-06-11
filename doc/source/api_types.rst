@@ -7,7 +7,7 @@ API Types
 .. todo::
    write a few words about imports structured like ``b2sdk.vX.*``
 
-Public Interface
+Public interface
 ================
 
 Public interface consists of **public** members of modules listed in :ref:`Public API <api_public>` section.
