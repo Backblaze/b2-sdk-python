@@ -22,7 +22,7 @@ Those modules will not change in a backwards-incompatible way between non-major 
     b2sdk>=4.5.6,<5.0.0
 
 .. note::
-  ``b2sdk.*._something`` and ``b2sdk.*.*._something``, having a name which begins with an underscore, are NOT considred public interface.
+  ``b2sdk.*._something`` and ``b2sdk.*.*._something``, while having a name beginning with an underscore, are **NOT** considered public interface.
 
 
 .. _internal_interface:
