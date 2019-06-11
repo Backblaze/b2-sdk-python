@@ -18,7 +18,7 @@ I have no recommendation for clearing this up at this moment.
 
 
 2.
-quick_start.rst, lines 30-33:
+doc\source\quick_start.rst, lines 30-33:
 """
     >>> application_key_id = '4a5b6c7d8e9f'  # get credentials from from B2 website
     >>> application_key = '001b8e23c26ff6efb941e237deb182b9599a84bef7'
