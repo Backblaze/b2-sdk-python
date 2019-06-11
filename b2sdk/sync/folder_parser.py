@@ -37,7 +37,7 @@ def parse_sync_folder(folder_name, api):
 
 def _parse_bucket_and_folder(bucket_and_path, api):
     """
-    Turns 'my-bucket/foo' into B2Folder(my-bucket, foo)
+    Turns 'my-bucket/foo' into B2Folder(my-bucket, foo).
     """
     if '//' in bucket_and_path:
         raise CommandError("'//' not allowed in path names")

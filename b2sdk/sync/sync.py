@@ -86,7 +86,7 @@ def make_file_sync_actions(
     sync_type, source_file, dest_file, source_folder, dest_folder, args, now_millis
 ):
     """
-    Yields the sequence of actions needed to sync the two files
+    Yields the sequence of actions needed to sync the two files.
 
     :param sync_type: synchronization type
     :type sync_type: str

@@ -36,7 +36,7 @@ class AbstractAction(object):
 
     def run(self, bucket, reporter, dry_run=False):
         """
-        Main action routine
+        Main action routine.
 
         :param bucket: a Bucket object
         :type bucket: b2sdk.bucket.Bucket
@@ -74,7 +74,7 @@ class AbstractAction(object):
     @abstractmethod
     def do_report(self, bucket, reporter):
         """
-        Report the action performed.
+        Reports the action performed.
 
         :param bucket: a Bucket object
         :type bucket: b2sdk.bucket.Bucket
@@ -84,7 +84,7 @@ class AbstractAction(object):
 
 class B2UploadAction(AbstractAction):
     """
-    File uploading action
+    File uploading action.
     """
 
     def __init__(self, local_full_path, relative_name, b2_file_name, mod_time_millis, size):
@@ -108,7 +108,7 @@ class B2UploadAction(AbstractAction):
 
     def get_bytes(self):
         """
-        Return file size
+        Returns file size.
 
         :rtype: int
         """
@@ -131,7 +131,7 @@ class B2UploadAction(AbstractAction):
 
     def do_report(self, bucket, reporter):
         """
-        Report the uploading action performed.
+        Reports the uploading action performed.
 
         :param bucket: a Bucket object
         :type bucket: b2sdk.bucket.Bucket
@@ -158,7 +158,7 @@ class B2HideAction(AbstractAction):
 
     def get_bytes(self):
         """
-        Return file size
+        Returns file size.
 
         :return: always zero
         :rtype: int
@@ -177,7 +177,7 @@ class B2HideAction(AbstractAction):
 
     def do_report(self, bucket, reporter):
         """
-        Report the hiding action performed.
+        Reports the hiding action performed.
 
         :param bucket: a Bucket object
         :type bucket: b2sdk.bucket.Bucket
@@ -217,7 +217,7 @@ class B2DownloadAction(AbstractAction):
 
     def get_bytes(self):
         """
-        Return file size
+        Returns file size.
 
         :rtype: int
         """
@@ -255,7 +255,7 @@ class B2DownloadAction(AbstractAction):
 
     def do_report(self, bucket, reporter):
         """
-        Report the downloading action performed.
+        Reports the downloading action performed.
 
         :param bucket: a Bucket object
         :type bucket: b2sdk.bucket.Bucket
@@ -289,7 +289,7 @@ class B2DeleteAction(AbstractAction):
 
     def get_bytes(self):
         """
-        Return file size
+        Returns file size.
 
         :return: always zero
         :rtype: int
@@ -308,7 +308,7 @@ class B2DeleteAction(AbstractAction):
 
     def do_report(self, bucket, reporter):
         """
-        Report the deleting action performed.
+        Reports the deleting action performed.
 
         :param bucket: a Bucket object
         :type bucket: b2sdk.bucket.Bucket
@@ -334,7 +334,7 @@ class LocalDeleteAction(AbstractAction):
 
     def get_bytes(self):
         """
-        Return file size
+        Returns file size.
 
         :return: always zero
         :rtype: int
@@ -354,7 +354,7 @@ class LocalDeleteAction(AbstractAction):
 
     def do_report(self, bucket, reporter):
         """
-        Report the deleting of a local file action performed.
+        Reports the deleting of a local file action performed.
 
         :param bucket: a Bucket object
         :type bucket: b2sdk.bucket.Bucket

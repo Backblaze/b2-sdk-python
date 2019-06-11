@@ -23,7 +23,7 @@ class B2Error(Exception):
         Python 2 does not like it when you pass unicode as the message
         in an exception.  We like to use file names in exception messages.
         To avoid problems, if the message has any non-ascii characters in
-        it, they are replaced with backslash-uNNNN
+        it, they are replaced with backslash-uNNNN.
 
         https://pythonhosted.org/kitchen/unicode-frustrations.html#frustration-5-exceptions
         """
@@ -291,7 +291,7 @@ class Unauthorized(B2Error):
 class InvalidAuthToken(Unauthorized):
     """
     Specific type of Unauthorized that means the auth token is invalid.
-    This is not the case where the auth token is valid but does not
+    This is not the case where the auth token is valid, but does not
     allow access.
     """
 

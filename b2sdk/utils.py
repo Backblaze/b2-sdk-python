@@ -136,7 +136,7 @@ def hex_sha1_of_stream(input_stream, content_length):
 
 def hex_sha1_of_bytes(data):
     """
-    Returns the 40-character hex SHA1 checksum of the data
+    Returns the 40-character hex SHA1 checksum of the data.
 
     :param data: an array of bytes
     :type data: bytes
@@ -175,7 +175,7 @@ def validate_b2_file_name(name):
 
 def is_file_readable(local_path, reporter=None):
     """
-    Check if the local file has read permissions
+    Checks if the local file has read permissions.
 
     :param local_path: a file path
     :type local_path: str
@@ -195,7 +195,7 @@ def is_file_readable(local_path, reporter=None):
 
 def fix_windows_path_limit(path):
     """
-    Prefix paths when running on Windows to overcome 260 character path length limit
+    Prefixes paths when running on Windows to overcome 260 character path length limit.
     See https://msdn.microsoft.com/en-us/library/windows/desktop/aa365247(v=vs.85).aspx#maxpath
 
     :param path: a path to prefix
@@ -340,7 +340,7 @@ _CAMELCASE_TO_UNDERSCORE_RE = re.compile('((?<=[a-z0-9])[A-Z]|(?!^)[A-Z](?=[a-z]
 
 def camelcase_to_underscore(input_):
     """
-    Convert camel cased string to string with underscores
+    Converts a camel-cased string to a string with underscores.
 
     :param input_: an input string
     :type input_: str
@@ -352,7 +352,7 @@ def camelcase_to_underscore(input_):
 
 class B2TraceMeta(DefaultTraceMeta):
     """
-    Traces all public method calls, except for ones with names that begin with `get_`
+    Traces all public method calls, except for ones with names that begin with `get_`.
     """
     pass
 
@@ -360,7 +360,7 @@ class B2TraceMeta(DefaultTraceMeta):
 class B2TraceMetaAbstract(DefaultTraceAbstractMeta):
     """
     Default class for tracers, to be set as
-    a metaclass for abstract base classes
+    a metaclass for abstract base classes.
     """
     pass
 

@@ -161,7 +161,7 @@ class DownloadDestBytes(AbstractDownloadDestination):
     @contextmanager
     def capture_bytes_context(self):
         """
-        Remembers the bytes written in self.bytes_written
+        Remembers the bytes written in self.bytes_written.
         """
         # Make a place to store the data written
         bytes_io = six.BytesIO()
@@ -182,7 +182,7 @@ class DownloadDestBytes(AbstractDownloadDestination):
 
 class DownloadDestProgressWrapper(AbstractDownloadDestination):
     """
-    Wraps a DownloadDestination, and reports progress to a ProgressListener.
+    Wraps a DownloadDestination and reports progress to a ProgressListener.
     """
 
     def __init__(self, download_dest, progress_listener):

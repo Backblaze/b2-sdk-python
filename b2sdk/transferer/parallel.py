@@ -71,7 +71,7 @@ class ParallelDownloader(AbstractDownloader):
         Downloads a file from given url using parallel download sessions and stores it in the given download_destination.
 
         :param file: an opened file-like object to write to
-        :param response: The response of the first request made to the cloud service with download intent
+        :param response: the response of the first request made to the cloud service with download intent
         :return:
         """
         remote_range = self._get_remote_range(response, metadata)

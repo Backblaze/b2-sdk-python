@@ -22,7 +22,7 @@ class Range(object):
     @classmethod
     def from_header(cls, raw_range_header):
         """
-        factory method which returns an object constructed from Range http header
+        Factory method which returns an object constructed from Range http header.
 
         raw_range_header example: 'bytes 0-11'
         """
@@ -35,9 +35,9 @@ class Range(object):
     def subrange(self, sub_start, sub_end):
         """
         Returns a range that is part of this range.
-        :param sub_start: Index relative to the start of this range.
+        :param sub_start: index relative to the start of this range.
         :param sub_end: (Inclusive!) index relative to the start of this range.
-        :return: A new Range
+        :return: a new Range
         """
         assert 0 <= sub_start <= sub_end < self.size()
         return self.__class__(self.start + sub_start, self.start + sub_end)

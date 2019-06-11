@@ -17,7 +17,7 @@ from b2sdk.raw_api import ALL_CAPABILITIES
 class B2Session(object):
     """
         A *magic* facade that supplies the correct api_url and account_auth_token
-        to methods of underlying raw_api and reauthorizes if necessary
+        to methods of underlying raw_api and reauthorizes if necessary.
     """
 
     def __init__(self, api, raw_api):

@@ -21,7 +21,7 @@ class B2Api(v1.B2Api):
         Deletes the bucket remotely.
         For legacy reasons it returns whatever server sends in response,
         but API user should not rely on the response: if it doesn't raise
-        an exception, it means that the operation was a success
+        an exception, it means that the operation was a success.
 
         :param b2sdk.v1.Bucket bucket: a :term:`Bucket` to delete
         """

@@ -36,7 +36,7 @@ class SimpleDownloader(AbstractDownloader):
 
         assert actual_size >= 1  # code below does `actual_size - 1`, but it should never reach that part with an empty file
 
-        # now normally bytes_read == metadata.content_length but sometimes there is a timeout
+        # now, normally bytes_read == metadata.content_length, but sometimes there is a timeout
         # or something and the server closes connection, while neither tcp or http have a problem
         # with the truncated output, so we detect it here and try to continue
 

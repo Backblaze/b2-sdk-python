@@ -49,7 +49,7 @@ class LargeFileUploadState(object):
 
     def set_error(self, message):
         """
-        Sets error message.
+        Sets an error message.
 
         :param str message: an error message
         """
@@ -603,7 +603,7 @@ class Bucket(object):
 
     def _find_unfinished_file_if_possible(self, upload_source, file_name, file_info, part_ranges):
         """
-        Find an unfinished file that may be used to resume a large file upload. The
+        Finds an unfinished file that may be used to resume a large file upload. The
         file is found using the filename and comparing the uploaded parts against
         the local file.
 
@@ -729,7 +729,7 @@ class Bucket(object):
 
     def get_download_url(self, filename):
         """
-        Get file download URL
+        Gets file download URL.
 
         :param str filename: a file name
         :rtype: str
@@ -742,7 +742,7 @@ class Bucket(object):
 
     def hide_file(self, file_name):
         """
-        Hide a file
+        Hides a file.
 
         :param str file_name: a file name
         :rtype: b2sdk.v1.FileVersionInfo
@@ -752,7 +752,7 @@ class Bucket(object):
 
     def delete_file_version(self, file_id, file_name):
         """
-        Delete file version
+        Deletes a file version.
 
         :param str file_id: a file ID
         :param str file_name: a file name
@@ -763,7 +763,7 @@ class Bucket(object):
     @disable_trace
     def as_dict(self):  # TODO: refactor with other as_dict()
         """
-        Return bucket representation as a dictionary
+        Returns bucket representation as a dictionary.
 
         :rtype: dict
         """
@@ -790,7 +790,7 @@ class BucketFactory(object):
     @classmethod
     def from_api_response(cls, api, response):
         """
-        Create a Bucket object from API response
+        Creates a Bucket object from API response.
 
         :param b2sdk.v1.B2Api api: API object
         :param requests.Response response: response object

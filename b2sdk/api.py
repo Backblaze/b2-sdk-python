@@ -31,7 +31,7 @@ except ImportError:
 
 def url_for_api(info, api_name):
     """
-    Returns URL for an API endpoint
+    Returns URL for an API endpoint.
 
     :param info: account info
     :param str api_nam:
@@ -174,7 +174,7 @@ class B2Api(object):
 
     def get_account_id(self):
         """
-        Returns account ID.
+        Returns the account ID.
 
         :rtype: str
         """

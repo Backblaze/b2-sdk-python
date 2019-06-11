@@ -239,7 +239,7 @@ class B2RawApi(AbstractRawApi):
 
         :param _: unused (caused by B2Session magic)
         :param account_auth_token_or_none: an optional account auth token to pass in
-        :param url: The full URL to download from
+        :param url: the full URL to download from
         :param range: two-element tuple for http Range header
         :return: b2_http response
         """
@@ -427,8 +427,8 @@ class B2RawApi(AbstractRawApi):
         """
         Replace unprintable chars in string with a hex representation.
 
-        :param string: An arbitrary string, possibly with unprintable characters.
-        :return: The string, with unprintable characters changed to hex (e.g., "\x07")
+        :param string: an arbitrary string, possibly with unprintable characters.
+        :return: the string, with unprintable characters changed to hex (e.g., "\x07")
 
         """
         unprintables_pattern = re.compile(r'[\x00-\x1f]')
@@ -440,12 +440,12 @@ class B2RawApi(AbstractRawApi):
 
     def check_b2_filename(self, filename):
         """
-        Raise an appropriate exception with details if the filename is unusable.
+        Raises an appropriate exception with details if the filename is unusable.
 
         See https://www.backblaze.com/b2/docs/files.html for the rules.
 
-        :param filename: A proposed filename in unicode.
-        :return: None if the filename is usable.
+        :param filename: a proposed filename in unicode
+        :return: None if the filename is usable
         """
         encoded_name = filename.encode('utf-8')
         length_in_bytes = len(encoded_name)
@@ -475,16 +475,16 @@ class B2RawApi(AbstractRawApi):
         file_infos, data_stream
     ):
         """
-        Uploads one small file to b2.
+        Uploads one, small file to b2.
 
-        :param upload_url: The upload_url from b2_authorize_account
-        :param upload_auth_token: The auth token from b2_authorize_account
-        :param file_name: The name of the B2 file
-        :param content_length: Number of bytes in the file.
-        :param content_type: MIME type.
-        :param content_sha1: Hex SHA1 of the contents of the file
-        :param file_infos: Extra file info to upload
-        :param data_stream: A file like object from which the contents of the file can be read.
+        :param upload_url: the upload_url from b2_authorize_account
+        :param upload_auth_token: the auth token from b2_authorize_account
+        :param file_name: the name of the B2 file
+        :param content_length: number of bytes in the file
+        :param content_type: MIME type
+        :param content_sha1: hex SHA1 of the contents of the file
+        :param file_infos: extra file info to upload
+        :param data_stream: a file like object from which the contents of the file can be read
         :return:
         """
         # Raise UnusableFileName if the file_name doesn't meet the rules.
@@ -525,7 +525,7 @@ def test_raw_api():
 
     Prints to stdout if things go wrong.
 
-    :return: 0 on success, non-zero on failure.
+    :return: 0 on success, non-zero on failure
     """
     try:
         raw_api = B2RawApi(B2Http())
@@ -746,7 +746,7 @@ def test_raw_api_helper(raw_api):
     )
     assert first_bucket_revision < updated_bucket['revision']
 
-    # clean up this test
+    # Clean up this test.
     _clean_and_delete_bucket(raw_api, api_url, account_auth_token, account_id, bucket_id)
 
     # Clean up from old tests.  Empty and delete any buckets more than an hour old.

@@ -57,7 +57,7 @@ class AbstractFolder(object):
     @abstractmethod
     def folder_type(self):
         """
-        Returns one of:  'b2', 'local'
+        Returns one of:  'b2', 'local'.
 
         :rtype: str
         """
@@ -96,7 +96,7 @@ class LocalFolder(AbstractFolder):
         """
         Initializes a new folder.
 
-        :param root: Path to the root of the local folder.  Must be unicode.
+        :param root: path to the root of the local folder.  Must be unicode.
         :type root: str
         """
         if not isinstance(root, six.text_type):
@@ -105,7 +105,7 @@ class LocalFolder(AbstractFolder):
 
     def folder_type(self):
         """
-        Return folder type
+        Returns folder type.
 
         :rtype: str
         """
@@ -113,7 +113,7 @@ class LocalFolder(AbstractFolder):
 
     def all_files(self, reporter, policies_manager=DEFAULT_SCAN_MANAGER):
         """
-        Yield all files
+        Yields all files.
 
         :param reporter: a place to report errors
         :param policies_manager: a policy manager object, default is DEFAULT_SCAN_MANAGER
@@ -123,7 +123,7 @@ class LocalFolder(AbstractFolder):
 
     def make_full_path(self, file_name):
         """
-        Convert a file name into an absolute path
+        Converts a file name into an absolute path.
 
         :param file_name: a file name
         :type file_name: str
@@ -157,10 +157,10 @@ class LocalFolder(AbstractFolder):
         """
         Yields a File object for each of the files anywhere under this folder, in the
         order they would appear in B2, unless the path is excluded by policies manager.
-        :param local_dir: The local directory to list files in
-        :param b2_dir: The B2 path of this directory, or '' if at the root.
-        :param reporter: A place to report errors
-        :param policies_manager: A manager for polices scan results
+        :param local_dir: the local directory to list files in
+        :param b2_dir: the B2 path of this directory, or '' if at the root
+        :param reporter: a place to report errors
+        :param policies_manager: a manager for polices scan results
         :return:
         """
         if not isinstance(local_dir, six.text_type):
@@ -275,7 +275,7 @@ class B2Folder(AbstractFolder):
 
     def all_files(self, reporter, policies_manager=DEFAULT_SCAN_MANAGER):
         """
-        Yield all files
+        Yields all files.
 
         :param reporter: a place to report errors
         :param policies_manager: a policies manager object, default is DEFAULT_SCAN_MANAGER
@@ -313,7 +313,7 @@ class B2Folder(AbstractFolder):
 
     def folder_type(self):
         """
-        Return folder type
+        Returns folder type.
 
         :rtype: str
         """
@@ -321,7 +321,7 @@ class B2Folder(AbstractFolder):
 
     def make_full_path(self, file_name):
         """
-        Make an absolute path from a file name
+        Makes an absolute path from a file name.
 
         :param file_name: a file name
         :type file_name: str

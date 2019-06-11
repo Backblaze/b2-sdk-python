@@ -28,7 +28,7 @@ class RegexSet(object):
 
     def matches(self, s):
         """
-        Check whether a string matches any of regular expressions
+        Checks whether a string matches any of regular expressions.
 
         :param s: a string to check
         :type s: str
@@ -110,7 +110,7 @@ class ScanPoliciesManager(object):
         """
         Given the full path of a file, should it be excluded from the scan?
 
-        :param file_path: The path of the file, relative to the root directory
+        :param file_path: the path of the file, relative to the root directory
                           being scanned.
         :type: str
         :return: True if excluded.
@@ -128,7 +128,7 @@ class ScanPoliciesManager(object):
         Given the full path of a directory, should all of the files in it be
         excluded from the scan?
 
-        :param dir_path: The path of the directory, relative to the root directory
+        :param dir_path: the path of the directory, relative to the root directory
                          being scanned.  The path will never end in '/'.
         :type dir_path: str
         :return: True if excluded.

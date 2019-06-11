@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 @six.add_metaclass(ABCMeta)
 class AbstractFileSyncPolicy(object):
     """
-    Abstract policy class
+    Abstract policy class.
     """
     DESTINATION_PREFIX = NotImplemented
     SOURCE_PREFIX = NotImplemented
@@ -70,7 +70,7 @@ class AbstractFileSyncPolicy(object):
     @classmethod
     def files_are_different(cls, source_file, dest_file, args):
         """
-        Compare two files and determine if the the destination file
+        Compares two files and determine if the the destination file
         should be replaced by the source file.
 
         :param source_file: source file object
@@ -144,7 +144,7 @@ class AbstractFileSyncPolicy(object):
 
     def get_all_actions(self):
         """
-        Yield file actions.
+        Yields file actions.
         """
         if self._should_transfer():
             yield self._make_transfer_action()
@@ -157,7 +157,7 @@ class AbstractFileSyncPolicy(object):
 
     def _get_hide_delete_actions(self):
         """
-        subclass policy can override this to hide or delete files
+        Subclass policy can override this to hide or delete files.
         """
         return []
 
@@ -171,7 +171,7 @@ class AbstractFileSyncPolicy(object):
 
 class DownPolicy(AbstractFileSyncPolicy):
     """
-    File is synced down (from the cloud to disk)
+    File is synced down (from the cloud to disk).
     """
     DESTINATION_PREFIX = 'local://'
     SOURCE_PREFIX = 'b2://'
@@ -189,7 +189,7 @@ class DownPolicy(AbstractFileSyncPolicy):
 
 class UpPolicy(AbstractFileSyncPolicy):
     """
-    File is synced up (from disk the cloud)
+    File is synced up (from disk the cloud).
     """
     DESTINATION_PREFIX = 'b2://'
     SOURCE_PREFIX = 'local://'
@@ -206,7 +206,7 @@ class UpPolicy(AbstractFileSyncPolicy):
 
 class UpAndDeletePolicy(UpPolicy):
     """
-    File is synced up (from disk to the cloud) and the delete flag is SET
+    File is synced up (from disk to the cloud) and the delete flag is SET.
     """
 
     def _get_hide_delete_actions(self):
@@ -223,7 +223,7 @@ class UpAndDeletePolicy(UpPolicy):
 
 class UpAndKeepDaysPolicy(UpPolicy):
     """
-    File is synced up (from disk to the cloud) and the keepDays flag is SET
+    File is synced up (from disk to the cloud) and the keepDays flag is SET.
     """
 
     def _get_hide_delete_actions(self):
@@ -238,7 +238,7 @@ class UpAndKeepDaysPolicy(UpPolicy):
 
 class DownAndDeletePolicy(DownPolicy):
     """
-    File is synced down (from the cloud to disk) and the delete flag is SET
+    File is synced down (from the cloud to disk) and the delete flag is SET.
     """
 
     def _get_hide_delete_actions(self):
@@ -252,14 +252,14 @@ class DownAndDeletePolicy(DownPolicy):
 
 class DownAndKeepDaysPolicy(DownPolicy):
     """
-    File is synced down (from the cloud to disk) and the keepDays flag is SET
+    File is synced down (from the cloud to disk) and the keepDays flag is SET.
     """
     pass
 
 
 def make_b2_delete_note(version, index, transferred):
     """
-    Create a note message for delete action
+    Creates a note message for delete action.
 
     :param version: an object which contains file version info
     :param index: file version index

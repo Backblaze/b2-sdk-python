@@ -140,7 +140,7 @@ def _translate_and_retry(fcn, try_count, post_params=None):
 
 class ResponseContextManager(object):
     """
-    Context manager that closes a requests.Response when done.
+    A context manager that closes a requests.Response when done.
     """
 
     def __init__(self, response):
@@ -166,9 +166,9 @@ class HttpCallback(object):
         Raises an exception if this request should not be processed.
         The exception raised must inherit from B2HttpCallbackPreRequestException.
 
-        :param str method: str, One of: 'POST', 'GET', etc.
-        :param str url: The URL that will be used.
-        :param dict headers: The header sent with the request.
+        :param str method: str, one of: 'POST', 'GET', etc.
+        :param str url: the URL that will be used
+        :param dict headers: the header sent with the request
 
         """
 
@@ -181,9 +181,9 @@ class HttpCallback(object):
         The exception raised must inherit from B2HttpCallbackPostRequestException.
 
         :param str method: one of: 'POST', 'GET', etc.
-        :param str url: the URL that will be used.
-        :param dict headers: the header sent with the request.
-        :param response: a response object from the requests library.
+        :param str url: the URL that will be used
+        :param dict headers: the header sent with the request
+        :param response: a response object from the requests library
         """
 
 
@@ -196,9 +196,9 @@ class ClockSkewHook(HttpCallback):
         The Date header contains a string that looks like: "Fri, 16 Dec 2016 20:52:30 GMT".
 
         :param str method: one of: 'POST', 'GET', etc.
-        :param str url: the URL that will be used.
-        :param dict headers: the header sent with the request.
-        :param response: a response object from the requests library.
+        :param str url: the URL that will be used
+        :param dict headers: the header sent with the request
+        :param response: a response object from the requests library
         """
         # Make a string that uses month numbers instead of month names
         server_date_str = response.headers['Date']
@@ -285,7 +285,7 @@ class B2Http(object):
            except B2Error as e:
                ...
 
-        :param str url: URL to call
+        :param str url: a URL to call
         :param dict headers: headers to send.
         :param data: bytes (Python 3) or str (Python 2), or a file-like object, to send
         :return: a dict that is the decoded JSON
@@ -328,7 +328,7 @@ class B2Http(object):
            except B2Error as e:
                ...
 
-        :param str url: URL to call
+        :param str url: a URL to call
         :param dict headers: headers to send.
         :param dict params: a dict that will be converted to JSON
         :return: the decoded JSON document
@@ -356,7 +356,7 @@ class B2Http(object):
             - headers
             - iter_content()
 
-        :param str url: URL to call
+        :param str url: a URL to call
         :param dict headers: headers to send
         :param int try_count: a number or retries
         :return: Context manager that returns an object that supports iter_content()

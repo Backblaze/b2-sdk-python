@@ -605,7 +605,7 @@ class RawSimulator(AbstractRawApi):
 
     def expire_auth_token(self, auth_token):
         """
-        Simulate the auth token expiring.
+        Simulates the auth token expiring.
 
         The next call that tries to use this auth token will get an
         auth_token_expired error.

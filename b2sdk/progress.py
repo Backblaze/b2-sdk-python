@@ -71,20 +71,20 @@ class AbstractProgressListener(object):
 
     def __enter__(self):
         """
-        standard context manager method
+        A standard context manager method.
         """
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         """
-        standard context manager method
+        A standard context manager method.
         """
         self.close()
 
 
 class TqdmProgressListener(AbstractProgressListener):
     """
-    Progress listener based on tqdm library
+    Progress listener based on tqdm library.
     """
 
     def __init__(self, description, *args, **kwargs):
@@ -120,7 +120,7 @@ class TqdmProgressListener(AbstractProgressListener):
 
 class SimpleProgressListener(AbstractProgressListener):
     """
-    Just a simple progress listener which prints info on a console
+    Just a simple progress listener which prints info on a console.
     """
 
     def __init__(self, description, *args, **kwargs):
@@ -189,7 +189,7 @@ class ProgressListenerForTest(AbstractProgressListener):
 
 def make_progress_listener(description, quiet):
     """
-    Returns a progress listener object depending on some conditions
+    Returns a progress listener object depending on some conditions.
 
     :param str description: listener description
     :param bool quiet: if ``True``, do not output anything
@@ -228,7 +228,7 @@ class RangeOfInputStream(object):
 
     def seek(self, pos):
         """
-        Seek to a given position in the stream
+        Seeks to a given position in the stream.
 
         :param int pos: position in the stream
         """
@@ -236,7 +236,7 @@ class RangeOfInputStream(object):
 
     def read(self, size=None):
         """
-        Read data from the stream
+        Reads data from the stream.
 
         :param int size: number of bytes to read
         :return: data read from the stream
@@ -255,7 +255,7 @@ class AbstractStreamWithProgress(object):
     Wraps a file-like object and updates a ProgressListener
     as data is read / written.
     In the abstract class, read and write methods do not update
-    the progress - child classes shall do it
+    the progress - child classes shall do it.
     """
 
     def __init__(self, stream, progress_listener, offset=0):
@@ -279,7 +279,7 @@ class AbstractStreamWithProgress(object):
 
     def seek(self, pos):
         """
-        Seek to a given position in the stream
+        Seeks to a given position in the stream.
 
         :param int pos: position in the stream
         """
@@ -287,7 +287,7 @@ class AbstractStreamWithProgress(object):
 
     def tell(self):
         """
-        Return current stream position
+        Returns current stream position.
 
         :rtype: int
         """
@@ -295,13 +295,13 @@ class AbstractStreamWithProgress(object):
 
     def flush(self):
         """
-        Flush the stream
+        Flushes the stream.
         """
         self.stream.flush()
 
     def read(self, size=None):
         """
-        Read data from the stream
+        Reads data from the stream.
 
         :param int size: number of bytes to read
         :return: data read from the stream
@@ -314,7 +314,7 @@ class AbstractStreamWithProgress(object):
 
     def write(self, data):
         """
-        Write data to the stream
+        Writes data to the stream.
 
         :param data: a data to write to the stream
         """
@@ -327,12 +327,12 @@ class AbstractStreamWithProgress(object):
 
 class ReadingStreamWithProgress(AbstractStreamWithProgress):
     """
-    Wraps a file-like object, updates progress while reading
+    Wraps a file-like object, updates progress while reading.
     """
 
     def read(self, size=None):
         """
-        Read data from the stream
+        Reads data from the stream.
 
         :param int size: number of bytes to read
         :return: data read from the stream
@@ -344,12 +344,12 @@ class ReadingStreamWithProgress(AbstractStreamWithProgress):
 
 class WritingStreamWithProgress(AbstractStreamWithProgress):
     """
-    Wraps a file-like object, updates progress while writing
+    Wraps a file-like object; updates progress while writing.
     """
 
     def write(self, data):
         """
-        Write data to the stream
+        Writes data to the stream.
 
         :param bytes data: data to write to the stream
         """
@@ -360,7 +360,7 @@ class WritingStreamWithProgress(AbstractStreamWithProgress):
 class StreamWithHash(object):
     """
     Wraps a file-like object, calculates SHA1 while reading
-    and appends hash at the end
+    and appends hash at the end.
     """
 
     def __init__(self, stream):
@@ -380,7 +380,7 @@ class StreamWithHash(object):
 
     def seek(self, pos):
         """
-        Seek to a given position in the stream
+        Seeks to a given position in the stream.
 
         :param int pos: position in the stream
         """
@@ -392,7 +392,7 @@ class StreamWithHash(object):
 
     def read(self, size=None):
         """
-        Read data from the stream
+        Reads data from the stream.
 
         :param int size: number of bytes to read
         :return: read data
@@ -425,7 +425,7 @@ class StreamWithHash(object):
 
     def hash_size(self):
         """
-        Calculate size of a hash string
+        Calculates the size of a hash string.
 
         :rtype: int
         """

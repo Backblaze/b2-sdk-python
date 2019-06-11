@@ -32,7 +32,7 @@ class File(object):
 
     def latest_version(self):
         """
-        Return the latest file version
+        Returns the latest file version.
         """
         return self.versions[0]
 
@@ -42,7 +42,7 @@ class File(object):
 
 class FileVersion(object):
     """
-    Holds information about one version of a file:
+    Holds information about one version of a file.
     """
 
     def __init__(self, id_, file_name, mod_time, action, size):
