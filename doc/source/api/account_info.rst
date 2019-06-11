@@ -9,7 +9,7 @@ in order to let :py:class:`b2sdk.v1.B2Api` perform authenticated requests.
 
 There are two usable implementations provided by **b2sdk**:
 
- * :py:class:`b2sdk.v1.InMemoryAccountInfo` - basic implementation with no persistence
+ * :py:class:`b2sdk.v1.InMemoryAccountInfo` - a basic implementation with no persistence
  * :py:class:`b2sdk.v1.SqliteAccountInfo` - for console and GUI applications
 
 They both provide the full :ref:`AccountInfo interface <account_info_interface>`.
