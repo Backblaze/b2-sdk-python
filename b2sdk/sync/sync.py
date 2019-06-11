@@ -40,7 +40,7 @@ def next_or_none(iterator):
 
 def zip_folders(folder_a, folder_b, reporter, policies_manager=DEFAULT_SCAN_MANAGER):
     """
-    An iterator over all of the files in the union of two folders,
+    Iterates over all of the files in the union of two folders,
     matching file names.
 
     Each item is a pair (file_a, file_b) with the corresponding file

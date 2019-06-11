@@ -48,7 +48,7 @@ class SimpleDownloader(AbstractDownloader):
                 metadata,
             ).subrange(bytes_read, actual_size - 1)
             # original response is not closed at this point yet, as another layer is responsible for closing it, so a new socket might be allocated,
-            # but this is a very rare case and so not worth the optimization
+            # but this is a very rare case and so it is not worth the optimization
             logger.debug(
                 're-download attempts remaining: %i, bytes read already: %i. Getting range %s now.',
                 retries_left, bytes_read, new_range

@@ -32,7 +32,7 @@ class SyncReport(object):
        - Step 2/2: compare file lists
        - Step 3/3: transfer files
 
-    This class is THREAD SAFE, so that it can be used from parallel sync threads.
+    This class is THREAD SAFE, so it can be used from parallel sync threads.
     """
 
     # Minimum time between displayed updates

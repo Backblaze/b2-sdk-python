@@ -783,7 +783,7 @@ class Bucket(object):
 
 class BucketFactory(object):
     """
-    This is a factory for creating bucket objects from another kind of objects
+    This is a factory for creating bucket objects from different kind of objects.
     """
     BUCKET_CLASS = staticmethod(Bucket)
 

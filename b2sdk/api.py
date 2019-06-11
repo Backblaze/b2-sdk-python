@@ -455,7 +455,7 @@ class B2Api(object):
         """
         Checks to see if the allowed field from authorize-account has a bucket restriction.
 
-        If it does, does the bucket_name for a given api call match that.
+        If it does, checks if the bucket_name for a given api call matches that.
         If not, it raises a :py:exc:`b2sdk.v1.exception.RestrictedBucket` error.
 
         :param str bucket_name: a bucket name

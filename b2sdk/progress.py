@@ -151,7 +151,7 @@ class SimpleProgressListener(AbstractProgressListener):
 
 class DoNothingProgressListener(AbstractProgressListener):
     """
-    This listener performs no output whatsoever
+    This listener gives no output whatsoever.
     """
 
     def set_total_bytes(self, total_byte_count):

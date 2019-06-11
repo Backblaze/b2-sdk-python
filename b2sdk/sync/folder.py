@@ -65,7 +65,7 @@ class AbstractFolder(object):
     @abstractmethod
     def make_full_path(self, file_name):
         """
-        Only for local folders, returns the full path to the file.
+        Returns the full path to the file; only for local folders.
 
         :param file_name: a file name
         :type file_name: str

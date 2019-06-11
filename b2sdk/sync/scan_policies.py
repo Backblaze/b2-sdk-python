@@ -108,7 +108,7 @@ class ScanPoliciesManager(object):
 
     def should_exclude_file(self, file_path):
         """
-        Given the full path of a file, should it be excluded from the scan?
+        Given the full path of a file, decides if it should be excluded from the scan.
 
         :param file_path: the path of the file, relative to the root directory
                           being scanned.
@@ -125,8 +125,8 @@ class ScanPoliciesManager(object):
 
     def should_exclude_directory(self, dir_path):
         """
-        Given the full path of a directory, should all of the files in it be
-        excluded from the scan?
+        Given the full path of a directory, decides if all of the files in it should be
+        excluded from the scan.
 
         :param dir_path: the path of the directory, relative to the root directory
                          being scanned.  The path will never end in '/'.

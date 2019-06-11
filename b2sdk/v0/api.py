@@ -18,7 +18,7 @@ class B2Api(v1.B2Api):
 
     def delete_bucket(self, bucket):
         """
-        Deletes the bucket remotely.
+        Deletes the chosen bucket.
         For legacy reasons it returns whatever server sends in response,
         but API user should not rely on the response: if it doesn't raise
         an exception, it means that the operation was a success.

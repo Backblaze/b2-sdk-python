@@ -227,7 +227,7 @@ class B2Http(object):
     """
     A wrapper for the requests module. Provides the operations
     needed to access B2, and handles retrying when the returned
-    status is 503 Service Unavailable, 429 Too Many Requests etc
+    status is 503 Service Unavailable, 429 Too Many Requests, etc.
 
     The operations supported are:
        - post_json_return_json

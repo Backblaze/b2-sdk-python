@@ -117,7 +117,7 @@ class PartSimulator(object):
 
 class FileSimulator(object):
     """
-    One of: an unfinished large file, a finished file, or a deletion marker
+    One of three: an unfinished large file, a finished file, or a deletion marker.
     """
 
     def __init__(
