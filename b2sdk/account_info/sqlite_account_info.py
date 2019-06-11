@@ -308,7 +308,7 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
         Returns an application key ID.
         The 'account_id_or_app_key_id' column was not in the original schema, so it may be NULL.
 
-        In addition, this is the only place where we are not renaming account_id_or_app_key_id to application_key_id
+        Nota bene - this is the only place where we are not renaming account_id_or_app_key_id to application_key_id
         because it requires a column change.
 
         application_key_id == account_id_or_app_key_id

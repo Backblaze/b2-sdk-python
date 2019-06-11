@@ -251,7 +251,7 @@ class AbstractAccountInfo(object):
         bucketId is set if bucketName is.
 
         If the bucketId is for a bucket that no longer exists, or the
-        capabilities do not allow listBuckets, then we won't have a bucketName.
+        capabilities do not allow for listBuckets, then we will not have a bucketName.
 
         :param dict allowed: the structure to use for old account info that was saved without 'allowed'
         :rtype: bool

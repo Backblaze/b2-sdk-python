@@ -61,8 +61,8 @@ class B2Api(object):
     buckets and files returned are Python objects with accessor
     methods.
 
-    Also,  keeps a cache of information needed to access the service,
-    such as auth tokens and upload URLs.
+    The class also keeps a cache of information needed to access the
+    service, such as auth tokens and upload URLs.
     """
     BUCKET_FACTORY_CLASS = staticmethod(BucketFactory)
     BUCKET_CLASS = staticmethod(Bucket)
@@ -325,7 +325,7 @@ class B2Api(object):
         Generator that yields a :py:class:`b2sdk.v1.Part` for each of the parts that have been uploaded.
 
         :param str file_id: the ID of the large file that is not finished
-        :param int start_part_number: the first part number to return.  defaults to the first part.
+        :param int start_part_number: the first part number to return; defaults to the first part
         :param int batch_size: the number of parts to fetch at a time from the server
         :rtype: generator
         """

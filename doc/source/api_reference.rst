@@ -1,4 +1,4 @@
-.. hint:: Use :doc:`quick_start` to quickly jump into examples
+.. hint:: Use :doc:`quick_start` to quickly jump to examples
 
 ########################
 API Reference

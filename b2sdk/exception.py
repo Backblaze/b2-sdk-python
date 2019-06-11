@@ -38,7 +38,7 @@ class B2Error(Exception):
     @property
     def prefix(self):
         """
-        nice auto-generated error message prefix
+        Nice, auto-generated error message prefix.
 
         >>> B2SimpleError().prefix
         'Simple error'
@@ -69,7 +69,7 @@ class B2Error(Exception):
 @six.add_metaclass(ABCMeta)
 class B2SimpleError(B2Error):
     """
-    a B2Error with a message prefix
+    A B2Error with a message prefix.
     """
 
     def __str__(self):
