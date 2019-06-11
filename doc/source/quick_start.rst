@@ -106,7 +106,7 @@ Create a bucket
 You can optionally store bucket info, CORS rules and lifecycle rules with the bucket. See :meth:`b2sdk.v1.B2Api.create_bucket`.
 
 
-Remove a bucket
+Delete a bucket
 ===============
 
 .. code-block:: python
