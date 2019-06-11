@@ -158,7 +158,7 @@ class ClockSkew(B2HttpCallbackPostRequestException):
 
     def __init__(self, clock_skew_seconds):
         """
-        :param int clock_skew_seconds: The different: local_clock - server_clock
+        :param int clock_skew_seconds: The difference: local_clock - server_clock
         """
         super(ClockSkew, self).__init__()
         self.clock_skew_seconds = clock_skew_seconds
