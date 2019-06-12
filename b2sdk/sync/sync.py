@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 def next_or_none(iterator):
     """
-    Returns the next item from the iterator, or None if there are no more.
+    Return the next item from the iterator, or None if there are no more.
     """
     try:
         return six.advance_iterator(iterator)
@@ -40,7 +40,7 @@ def next_or_none(iterator):
 
 def zip_folders(folder_a, folder_b, reporter, policies_manager=DEFAULT_SCAN_MANAGER):
     """
-    Iterates over all of the files in the union of two folders,
+    Iterate over all of the files in the union of two folders,
     matching file names.
 
     Each item is a pair (file_a, file_b) with the corresponding file
@@ -86,7 +86,7 @@ def make_file_sync_actions(
     sync_type, source_file, dest_file, source_folder, dest_folder, args, now_millis
 ):
     """
-    Yields the sequence of actions needed to sync the two files.
+    Yield the sequence of actions needed to sync the two files.
 
     :param sync_type: synchronization type
     :type sync_type: str
@@ -114,7 +114,7 @@ def make_folder_sync_actions(
     source_folder, dest_folder, args, now_millis, reporter, policies_manager=DEFAULT_SCAN_MANAGER
 ):
     """
-    Yields a sequence of actions that will sync the destination
+    Yield a sequence of actions that will sync the destination
     folder to the source folder.
 
     :param source_folder: source folder object
@@ -167,7 +167,7 @@ def make_folder_sync_actions(
 
 def count_files(local_folder, reporter):
     """
-    Counts all of the files in a local folder.
+    Count all of the files in a local folder.
 
     :param local_folder: a folder object.
     :type local_folder: b2sdk.sync.folder.AbstractFolder

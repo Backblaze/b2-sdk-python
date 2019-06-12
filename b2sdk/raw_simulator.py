@@ -48,7 +48,7 @@ ALL_CAPABILITES = [
 
 class KeySimulator(object):
     """
-    Holds information about one application key, which can be either
+    Hold information about one application key, which can be either
     a master application key, or one created with create_key().
     """
 
@@ -79,7 +79,7 @@ class KeySimulator(object):
 
     def as_created_key(self):
         """
-        Returns the dict returned by b2_create_key.
+        Return the dict returned by b2_create_key.
 
         This is just like the one for b2_list_keys, but also includes the secret key.
         """
@@ -89,7 +89,7 @@ class KeySimulator(object):
 
     def get_allowed(self):
         """
-        Returns the 'allowed' structure to include in the response from b2_authorize_account.
+        Return the 'allowed' structure to include in the response from b2_authorize_account.
         """
         return dict(
             bucketId=self.bucket_id_or_none,
@@ -153,7 +153,7 @@ class FileSimulator(object):
 
     def sort_key(self):
         """
-        Returns a key that can be used to sort the files in a
+        Return a key that can be used to sort the files in a
         bucket in the order that b2_list_file_versions returns them.
         """
         return (self.name, self.file_id)
@@ -550,7 +550,7 @@ class BucketSimulator(object):
 
 class RawSimulator(AbstractRawApi):
     """
-    Implements the same interface as B2RawApi by simulating all of the
+    Implement the same interface as B2RawApi by simulating all of the
     calls and keeping state in memory.
 
     The intended use for this class is for unit tests that test things
@@ -605,7 +605,7 @@ class RawSimulator(AbstractRawApi):
 
     def expire_auth_token(self, auth_token):
         """
-        Simulates the auth token expiring.
+        Simulate the auth token expiring.
 
         The next call that tries to use this auth token will get an
         auth_token_expired error.
@@ -615,7 +615,7 @@ class RawSimulator(AbstractRawApi):
 
     def create_account(self):
         """
-        Returns (accountId, masterApplicationKey) for a newly created account.
+        Return (accountId, masterApplicationKey) for a newly created account.
         """
         # Pick the IDs for the account and the key
         account_id = 'account-%d' % (self.account_counter,)

@@ -46,7 +46,7 @@ def _print_exception(e, indent=''):
 
 def _translate_errors(fcn, post_params=None):
     """
-    Calls the given function, turning any exception raised into the right
+    Call the given function, turning any exception raised into the right
     kind of B2Error.
 
     :param dict post_params: request parameters
@@ -190,7 +190,7 @@ class HttpCallback(object):
 class ClockSkewHook(HttpCallback):
     def post_request(self, method, url, headers, response):
         """
-        Raises an exception if the clock in the server is too different from the
+        Raise an exception if the clock in the server is too different from the
         clock on the local host.
 
         The Date header contains a string that looks like: "Fri, 16 Dec 2016 20:52:30 GMT".
@@ -266,7 +266,7 @@ class B2Http(object):
 
     def add_callback(self, callback):
         """
-        Adds a callback that inherits from HttpCallback.
+        Add a callback that inherits from HttpCallback.
 
         :param callback: a callback to be added to a chain
         :type callback: callable
@@ -339,7 +339,7 @@ class B2Http(object):
 
     def get_content(self, url, headers, try_count=5):
         """
-        Fetches content from a URL.
+        Fetche content from a URL.
 
         Use like this:
 
@@ -387,7 +387,7 @@ class B2Http(object):
 
 def test_http():
     """
-    Runs a few tests on error diagnosis.
+    Run a few tests on error diagnosis.
 
     This test takes a while to run and is not used in the automated tests
     during building. Run the test by hand to exercise the code. Be sure

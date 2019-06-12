@@ -38,7 +38,7 @@ class BoundedQueueExecutor(object):
 
     def submit(self, fcn, *args, **kwargs):
         """
-        Starts execution of a callable with the given optional and positional arguments
+        Start execution of a callable with the given optional and positional arguments
 
         :param fcn: a callable object
         :type fcn: callable
@@ -64,13 +64,13 @@ class BoundedQueueExecutor(object):
 
     def shutdown(self):
         """
-        Shuts an executor down.
+        Shut an executor down.
         """
         self.executor.shutdown()
 
     def get_num_exceptions(self):
         """
-        Returns a number of exceptions.
+        Return a number of exceptions.
 
         :rtype: int
         """

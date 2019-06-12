@@ -53,14 +53,14 @@ class B2Error(Exception):
 
     def should_retry_http(self):
         """
-        Returns true if this is an error that can cause an HTTP
+        Return true if this is an error that can cause an HTTP
         call to be retried.
         """
         return False
 
     def should_retry_upload(self):
         """
-        Returns true if this is an error that should tell the upload
+        Return true if this is an error that should tell the upload
         code to get a new upload URL and try the upload again.
         """
         return False

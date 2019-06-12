@@ -22,9 +22,9 @@ logger = logging.getLogger(__name__)
 
 class SyncReport(object):
     """
-    Handles reporting progress for syncing.
+    Handle reporting progress for syncing.
 
-    Prints out each file as it is processed, and puts up a sequence
+    Print out each file as it is processed, and puts up a sequence
     of progress bars.
 
     The progress bars are:
@@ -65,7 +65,7 @@ class SyncReport(object):
 
     def close(self):
         """
-        Performs clean up.
+        Perform a clean-up.
         """
         with self.lock:
             if not self.no_progress:
@@ -82,7 +82,7 @@ class SyncReport(object):
 
     def error(self, message):
         """
-        Prints an error, gracefully interleaving it with a progress bar.
+        Print an error, gracefully interleaving it with a progress bar.
 
         :param message: an error message
         :type message: str
@@ -91,7 +91,7 @@ class SyncReport(object):
 
     def print_completion(self, message):
         """
-        Removes the progress bar, prints a message, and puts the progress
+        Remove the progress bar, prints a message, and puts the progress
         bar back.
 
         :param message: an error message
@@ -140,7 +140,7 @@ class SyncReport(object):
 
     def _print_line(self, line, newline):
         """
-        Prints a line to stdout.
+        Print a line to stdout.
 
         :param line: a string without a \r or \n in it.
         :type line: str
@@ -173,7 +173,7 @@ class SyncReport(object):
 
     def update_local(self, delta):
         """
-        Reports that more local files have been found.
+        Report that more local files have been found.
 
         :param delta: number of files found since the last check
         :type delta: int
@@ -192,7 +192,7 @@ class SyncReport(object):
 
     def update_compare(self, delta):
         """
-        Reports that more files have been compared.
+        Report that more files have been compared.
 
         :param delta: number of files compared
         :type delta: int
@@ -203,7 +203,7 @@ class SyncReport(object):
 
     def end_compare(self, total_transfer_files, total_transfer_bytes):
         """
-        Reports that the comparison has been finished.
+        Report that the comparison has been finished.
 
         :param total_transfer_files: total number of transferred files
         :type total_transfer_files: int
@@ -218,7 +218,7 @@ class SyncReport(object):
 
     def update_transfer(self, file_delta, byte_delta):
         """
-        Updates transfer info.
+        Update transfer info.
 
         :param file_delta: number of files transferred
         :type file_delta: int
@@ -232,7 +232,7 @@ class SyncReport(object):
 
     def local_access_error(self, path):
         """
-        Adds a file access error message to the list of warnings.
+        Add a file access error message to the list of warnings.
 
         :param path: file path
         :type path: str
@@ -241,7 +241,7 @@ class SyncReport(object):
 
     def local_permission_error(self, path):
         """
-        Adds a permission error message to the list of warnings.
+        Add a permission error message to the list of warnings.
 
         :param path: file path
         :type path: str
@@ -256,7 +256,7 @@ class SyncReport(object):
 
 class SyncFileReporter(AbstractProgressListener):
     """
-    Listens to the progress for a single file and passes info on to a SyncReporter.
+    Listen to the progress for a single file and pass info on to a SyncReporter.
     """
 
     def __init__(self, reporter, *args, **kwargs):
@@ -269,14 +269,14 @@ class SyncFileReporter(AbstractProgressListener):
 
     def close(self):
         """
-        Performs a clean up.
+        Perform a clean-up.
         """
         # no more bytes are done, but the file is done
         self.reporter.update_transfer(1, 0)
 
     def set_total_bytes(self, total_byte_count):
         """
-        Sets total bytes count.
+        Set total bytes count.
 
         :param total_byte_count: total byte count
         :type total_byte_count: int
@@ -285,7 +285,7 @@ class SyncFileReporter(AbstractProgressListener):
 
     def bytes_completed(self, byte_count):
         """
-        Sets bytes completed count.
+        Set bytes completed count.
 
         :param byte_count: total byte count
         :type byte_count: int
@@ -296,7 +296,7 @@ class SyncFileReporter(AbstractProgressListener):
 
 def sample_sync_report_run():
     """
-    Generates a sample report.
+    Generate a sample report.
     """
     import sys
     sync_report = SyncReport(sys.stdout, False)

@@ -76,13 +76,13 @@ class FileVersionInfo(object):
 
 class FileVersionInfoFactory(object):
     """
-    Constructs :py:class:`b2sdk.v1.FileVersionInfo` objects from various structures.
+    Construct :py:class:`b2sdk.v1.FileVersionInfo` objects from various structures.
     """
 
     @classmethod
     def from_api_response(cls, file_info_dict, force_action=None):
         """
-        Turns this:
+        Turn this:
 
         .. code-block:: python
 

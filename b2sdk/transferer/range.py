@@ -34,7 +34,8 @@ class Range(object):
 
     def subrange(self, sub_start, sub_end):
         """
-        Returns a range that is part of this range.
+        Return a range that is part of this range.
+
         :param sub_start: index relative to the start of this range.
         :param sub_end: (Inclusive!) index relative to the start of this range.
         :return: a new Range

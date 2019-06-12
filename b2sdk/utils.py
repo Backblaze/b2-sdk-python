@@ -28,7 +28,7 @@ except ImportError:
 
 def interruptible_get_result(future):
     """
-    Waits for the result of a future in a way that can be interrupted
+    Wait for the result of a future in a way that can be interrupted
     by a KeyboardInterrupt.
 
     This is not necessary in Python 3, but is needed for Python 2.
@@ -45,7 +45,7 @@ def interruptible_get_result(future):
 
 def b2_url_encode(s):
     """
-    URL-encodes a unicode string to be sent to B2 in an HTTP header.
+    URL-encode a unicode string to be sent to B2 in an HTTP header.
 
     :param s: a unicode string to encode
     :type s: str
@@ -57,7 +57,7 @@ def b2_url_encode(s):
 
 def b2_url_decode(s):
     """
-    Decodes a Unicode string returned from B2 in an HTTP header.
+    Decode a Unicode string returned from B2 in an HTTP header.
 
     :param s: a unicode string to decode
     :type s: str
@@ -74,7 +74,7 @@ def b2_url_decode(s):
 
 def choose_part_ranges(content_length, minimum_part_size):
     """
-    Returns a list of (offset, length) for the parts of a large file.
+    Return a list of (offset, length) for the parts of a large file.
 
     :param content_length: content length value
     :type content_length: int
@@ -111,7 +111,7 @@ def choose_part_ranges(content_length, minimum_part_size):
 
 def hex_sha1_of_stream(input_stream, content_length):
     """
-    Returns the 40-character hex SHA1 checksum of the first content_length
+    Return the 40-character hex SHA1 checksum of the first content_length
     bytes in the input stream.
 
     :param input_stream: stream object, which exposes read() method
@@ -136,7 +136,7 @@ def hex_sha1_of_stream(input_stream, content_length):
 
 def hex_sha1_of_bytes(data):
     """
-    Returns the 40-character hex SHA1 checksum of the data.
+    Return the 40-character hex SHA1 checksum of the data.
 
     :param data: an array of bytes
     :type data: bytes
@@ -147,7 +147,7 @@ def hex_sha1_of_bytes(data):
 
 def validate_b2_file_name(name):
     """
-    Raises a ValueError if the name is not a valid B2 file name.
+    Raise a ValueError if the name is not a valid B2 file name.
 
     :param name: a string to check
     :type name: str
@@ -175,7 +175,7 @@ def validate_b2_file_name(name):
 
 def is_file_readable(local_path, reporter=None):
     """
-    Checks if the local file has read permissions.
+    Check if the local file has read permissions.
 
     :param local_path: a file path
     :type local_path: str
@@ -195,7 +195,7 @@ def is_file_readable(local_path, reporter=None):
 
 def fix_windows_path_limit(path):
     """
-    Prefixes paths when running on Windows to overcome 260 character path length limit.
+    Prefix paths when running on Windows to overcome 260 character path length limit.
     See https://msdn.microsoft.com/en-us/library/windows/desktop/aa365247(v=vs.85).aspx#maxpath
 
     :param path: a path to prefix
@@ -243,7 +243,7 @@ class TempDir(object):
 
     def __enter__(self):
         """
-        Returns the unicode path to the temp dir.
+        Return the unicode path to the temp dir.
         """
         self.dirpath = six.u(tempfile.mkdtemp())
         return self.dirpath
@@ -270,7 +270,7 @@ def _pick_scale_and_suffix(x):
 
 def format_and_scale_number(x, unit):
     """
-    Picks a good scale for representing a number and formats it.
+    Pick a good scale for representing a number and format it.
 
     :param x: a number
     :type x: int
@@ -302,7 +302,7 @@ def format_and_scale_number(x, unit):
 
 def format_and_scale_fraction(numerator, denominator, unit):
     """
-    Picks a good scale for representing a fraction, and formats it.
+    Pick a good scale for representing a fraction, and format it.
 
     :param numerator: a numerator of a fraction
     :type numerator: int
@@ -340,7 +340,7 @@ _CAMELCASE_TO_UNDERSCORE_RE = re.compile('((?<=[a-z0-9])[A-Z]|(?!^)[A-Z](?=[a-z]
 
 def camelcase_to_underscore(input_):
     """
-    Converts a camel-cased string to a string with underscores.
+    Convert a camel-cased string to a string with underscores.
 
     :param input_: an input string
     :type input_: str
@@ -352,7 +352,7 @@ def camelcase_to_underscore(input_):
 
 class B2TraceMeta(DefaultTraceMeta):
     """
-    Traces all public method calls, except for ones with names that begin with `get_`.
+    Trace all public method calls, except for ones with names that begin with `get_`.
     """
     pass
 

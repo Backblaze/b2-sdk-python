@@ -23,7 +23,7 @@ class UnfinishedLargeFile(object):
 
     def __init__(self, file_dict):
         """
-        Initializes from one file returned by ``b2_start_large_file`` or ``b2_list_unfinished_large_files``.
+        Initialize from one file returned by ``b2_start_large_file`` or ``b2_list_unfinished_large_files``.
         """
         self.file_id = file_dict['fileId']
         self.file_name = file_dict['fileName']

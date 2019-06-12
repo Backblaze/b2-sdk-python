@@ -17,7 +17,7 @@ from .abstract import AbstractAccountInfo
 
 class UploadUrlPool(object):
     """
-    For each key (either a bucket id or large file id), holds a pool
+    For each key (either a bucket id or large file id), hold a pool
     of (url, auth_token) pairs.
 
     .. note:
@@ -30,7 +30,7 @@ class UploadUrlPool(object):
 
     def put(self, key, url, auth_token):
         """
-        Adds the url and auth token to the pool for the given key.
+        Add the url and auth token to the pool for the given key.
 
         :param str key: bucket ID or large file ID
         :param str url: bucket or file URL
@@ -42,7 +42,7 @@ class UploadUrlPool(object):
 
     def take(self, key):
         """
-        Returns a (url, auth_token) if one is available, or (None, None) if not.
+        Return a (url, auth_token) if one is available, or (None, None) if not.
 
         :param str key: bucket ID or large file ID
         :rtype: tuple
@@ -56,7 +56,7 @@ class UploadUrlPool(object):
 
     def clear_for_key(self, key):
         """
-        Removes an item from the pool by key.
+        Remove an item from the pool by key.
 
         :param str key: bucket ID or large file ID
         """
@@ -67,7 +67,7 @@ class UploadUrlPool(object):
 
 class UrlPoolAccountInfo(AbstractAccountInfo):
     """
-    Implements part of :py:class:`AbstractAccountInfo` for upload URL pool management
+    Implement part of :py:class:`AbstractAccountInfo` for upload URL pool management
     with a simple, key-value storage, such as :py:class:`b2sdk.v1.UploadUrlPool`.
     """
     # staticmethod is necessary here to avoid the first argument binding to the first argument (like ``partial(fun, arg)``)

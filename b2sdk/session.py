@@ -53,7 +53,7 @@ class B2Session(object):
 
     def _add_app_key_info_to_unauthorized(self, unauthorized):
         """
-        Takes an Unauthorized error and adds information from the application key
+        Take an Unauthorized error and adds information from the application key
         about why it might have failed.
         """
         # What's allowed?

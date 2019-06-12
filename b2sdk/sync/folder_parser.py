@@ -14,7 +14,7 @@ from .folder import B2Folder, LocalFolder
 
 def parse_sync_folder(folder_name, api):
     """
-    Takes either a local path, or a B2 path, and returns a Folder
+    Take either a local path, or a B2 path, and returns a Folder
     object for it.
 
     B2 paths look like: b2://bucketName/path/name. The '//' is optional,
@@ -37,7 +37,7 @@ def parse_sync_folder(folder_name, api):
 
 def _parse_bucket_and_folder(bucket_and_path, api):
     """
-    Turns 'my-bucket/foo' into B2Folder(my-bucket, foo).
+    Turn 'my-bucket/foo' into B2Folder(my-bucket, foo).
     """
     if '//' in bucket_and_path:
         raise CommandError("'//' not allowed in path names")

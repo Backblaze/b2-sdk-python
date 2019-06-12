@@ -55,7 +55,7 @@ class AbstractFileSyncPolicy(object):
 
     def _should_transfer(self):
         """
-        Decides whether to transfer the file from the source to the destination.
+        Decide whether to transfer the file from the source to the destination.
         """
         if self._source_file is None:
             # No source file.  Nothing to transfer.
@@ -70,7 +70,7 @@ class AbstractFileSyncPolicy(object):
     @classmethod
     def files_are_different(cls, source_file, dest_file, args):
         """
-        Compares two files and determine if the the destination file
+        Compare two files and determine if the the destination file
         should be replaced by the source file.
 
         :param source_file: source file object
@@ -144,7 +144,7 @@ class AbstractFileSyncPolicy(object):
 
     def get_all_actions(self):
         """
-        Yields file actions.
+        Yield file actions.
         """
         if self._should_transfer():
             yield self._make_transfer_action()
@@ -167,7 +167,7 @@ class AbstractFileSyncPolicy(object):
     @abstractmethod
     def _make_transfer_action(self):
         """
-        Returns an action representing transfer of file according to the selected policy.
+        Return an action representing transfer of file according to the selected policy.
         """
 
 
@@ -261,7 +261,7 @@ class DownAndKeepDaysPolicy(DownPolicy):
 
 def make_b2_delete_note(version, index, transferred):
     """
-    Creates a note message for delete action.
+    Create a note message for delete action.
 
     :param version: an object which contains file version info
     :param index: file version index
@@ -280,7 +280,7 @@ def make_b2_delete_note(version, index, transferred):
 
 def make_b2_delete_actions(source_file, dest_file, dest_folder, transferred):
     """
-    Creates the actions to delete files stored on B2, which are not present locally.
+    Create the actions to delete files stored on B2, which are not present locally.
 
     :param source_file: source file object
     :type source_file: b2sdk.sync.file.File
@@ -311,7 +311,7 @@ def make_b2_keep_days_actions(
     source_file, dest_file, dest_folder, transferred, keep_days, now_millis
 ):
     """
-    Creates the actions to hide or delete existing versions of a file
+    Create the actions to hide or delete existing versions of a file
     stored in b2.
 
     When keepDays is set, all files that were visible any time from

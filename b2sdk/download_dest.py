@@ -40,7 +40,7 @@ class AbstractDownloadDestination(object):
         range_=None
     ):
         """
-        Returns a context manager that yields a binary file-like object to use for
+        Return a context manager that yields a binary file-like object to use for
         writing the contents of the file.
 
         :param str file_id: the B2 file ID from the headers
@@ -57,7 +57,7 @@ class AbstractDownloadDestination(object):
 
 class DownloadDestLocalFile(AbstractDownloadDestination):
     """
-    Stores a downloaded file into a local file and sets its modification time.
+    Store a downloaded file into a local file and sets its modification time.
     """
     MODE = 'wb+'
 
@@ -112,7 +112,7 @@ class DownloadDestLocalFile(AbstractDownloadDestination):
 
 class PreSeekedDownloadDest(DownloadDestLocalFile):
     """
-    Stores a downloaded file into a local file and sets its modification time.
+    Store a downloaded file into a local file and sets its modification time.
     Does not truncate the target file, seeks to a given offset just after opening
     a descriptor.
     """
@@ -131,7 +131,7 @@ class PreSeekedDownloadDest(DownloadDestLocalFile):
 
 class DownloadDestBytes(AbstractDownloadDestination):
     """
-    Stores a downloaded file into bytes in memory.
+    Store a downloaded file into bytes in memory.
     """
 
     def __init__(self):
@@ -161,7 +161,7 @@ class DownloadDestBytes(AbstractDownloadDestination):
     @contextmanager
     def capture_bytes_context(self):
         """
-        Remembers the bytes written in self.bytes_written.
+        Remember the bytes written in self.bytes_written.
         """
         # Make a place to store the data written
         bytes_io = six.BytesIO()
@@ -182,7 +182,7 @@ class DownloadDestBytes(AbstractDownloadDestination):
 
 class DownloadDestProgressWrapper(AbstractDownloadDestination):
     """
-    Wraps a DownloadDestination and reports progress to a ProgressListener.
+    Wrap a DownloadDestination and report progress to a ProgressListener.
     """
 
     def __init__(self, download_dest, progress_listener):

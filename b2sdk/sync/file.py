@@ -11,7 +11,7 @@
 
 class File(object):
     """
-    Holds information about one file in a folder.
+    Hold information about one file in a folder.
 
     The name is relative to the folder in all cases.
 
@@ -32,7 +32,7 @@ class File(object):
 
     def latest_version(self):
         """
-        Returns the latest file version.
+        Return the latest file version.
         """
         return self.versions[0]
 
@@ -42,7 +42,7 @@ class File(object):
 
 class FileVersion(object):
     """
-    Holds information about one version of a file.
+    Hold information about one version of a file.
     """
 
     def __init__(self, id_, file_name, mod_time, action, size):

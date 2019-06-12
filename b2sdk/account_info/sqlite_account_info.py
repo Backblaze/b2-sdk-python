@@ -30,7 +30,7 @@ B2_ACCOUNT_INFO_DEFAULT_FILE = '~/.b2_account_info'
 
 class SqliteAccountInfo(UrlPoolAccountInfo):
     """
-    Stores account information in an `sqlite3 <https://www.sqlite.org>`_ database which is
+    Store account information in an `sqlite3 <https://www.sqlite.org>`_ database which is
     used to manage concurrent access to the data.
 
     The ``update_done`` table tracks the schema updates that have been
@@ -56,7 +56,7 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
 
     def _validate_database(self, last_upgrade_to_run=None):
         """
-        Makes sure that the database is openable.  Removes the file if it's not.
+        Make sure that the database is openable.  Removes the file if it's not.
         """
         # If there is no file there, that's fine.  It will get created when
         # we connect.
@@ -119,7 +119,7 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
 
     def _create_database(self, last_upgrade_to_run):
         """
-        Makes sure that the database is created and sets the file permissions.
+        Make sure that the database is created and sets the file permissions.
         This should be done before storing any sensitive data in it.
         """
         # Create the tables in the database
@@ -189,7 +189,7 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
 
     def _ensure_update(self, update_number, update_command):
         """
-        Runs the update with the given number if it hasn't been done yet.
+        Run the update with the given number if it hasn't been done yet.
 
         Does the update and stores the number as a single transaction,
         so they will always be in sync.
@@ -305,7 +305,7 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
 
     def get_application_key_id(self):
         """
-        Returns an application key ID.
+        Return an application key ID.
         The 'account_id_or_app_key_id' column was not in the original schema, so it may be NULL.
 
         Nota bene - this is the only place where we are not renaming account_id_or_app_key_id to application_key_id

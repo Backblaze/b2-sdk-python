@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 class LargeFileUploadState(object):
     """
-    Tracks the status of uploading a large file, accepting updates
+    Track the status of uploading a large file, accepting updates
     from the tasks that upload each of the parts.
 
     The aggregated progress is passed on to a ProgressListener that
@@ -49,7 +49,7 @@ class LargeFileUploadState(object):
 
     def set_error(self, message):
         """
-        Sets an error message.
+        Set an error message.
 
         :param str message: an error message
         """
@@ -58,7 +58,7 @@ class LargeFileUploadState(object):
 
     def has_error(self):
         """
-        Checks whether an error occured.
+        Check whether an error occured.
 
         :rtype: bool
         """
@@ -67,7 +67,7 @@ class LargeFileUploadState(object):
 
     def get_error_message(self):
         """
-        Fetches an error message.
+        Fetche an error message.
 
         :return: an error message
         :rtype: str
@@ -78,7 +78,7 @@ class LargeFileUploadState(object):
 
     def update_part_bytes(self, bytes_delta):
         """
-        Updates listener progress info.
+        Update listener progress info.
 
         :param int bytes_delta: number of bytes to increase a progress for
         """
@@ -120,7 +120,7 @@ class PartProgressReporter(AbstractProgressListener):
 @six.add_metaclass(B2TraceMeta)
 class Bucket(object):
     """
-    Provides access to a bucket in B2: listing files, uploading and downloading.
+    Provide access to a bucket in B2: listing files, uploading and downloading.
     """
 
     DEFAULT_CONTENT_TYPE = 'b2/x-auto'
@@ -162,7 +162,7 @@ class Bucket(object):
 
     def get_id(self):
         """
-        Returns bucket ID.
+        Return bucket ID.
 
         :rtype: str
         """
@@ -170,7 +170,7 @@ class Bucket(object):
 
     def set_info(self, new_bucket_info, if_revision_is=None):
         """
-        Updates bucket info.
+        Update bucket info.
 
         :param dict new_bucket_info: new bucket info dictionary
         :param int if_revision_is: revision number, update the info **only if** *revision* equals to *if_revision_is*
@@ -179,7 +179,7 @@ class Bucket(object):
 
     def set_type(self, bucket_type):
         """
-        Updates bucket type.
+        Update bucket type.
 
         :param str bucket_type: a bucket type ("allPublic" or "allPrivate")
         """
@@ -194,7 +194,7 @@ class Bucket(object):
         if_revision_is=None,
     ):
         """
-        Updates various bucket parameters.
+        Update various bucket parameters.
 
         :param str bucket_type: a bucket type
         :param dict bucket_info: an info to store with a bucket
@@ -215,7 +215,7 @@ class Bucket(object):
 
     def cancel_large_file(self, file_id):
         """
-        Cancels a large file transfer.
+        Cancel a large file transfer.
 
         :param str file_id: a file ID
         """
@@ -223,7 +223,7 @@ class Bucket(object):
 
     def download_file_by_id(self, file_id, download_dest, progress_listener=None, range_=None):
         """
-        Downloads a file by ID.
+        Download a file by ID.
 
         .. note::
           download_file_by_id actually belongs in :py:class:`b2sdk.v1.B2Api`, not in :py:class:`b2sdk.v1.Bucket`; we just provide a convenient redirect here
@@ -239,7 +239,7 @@ class Bucket(object):
 
     def download_file_by_name(self, file_name, download_dest, progress_listener=None, range_=None):
         """
-        Downloads a file by name.
+        Download a file by name.
 
         .. seealso::
 
@@ -261,7 +261,7 @@ class Bucket(object):
 
     def get_download_authorization(self, file_name_prefix, valid_duration_in_seconds):
         """
-        Returns an authorization token that is valid only for downloading
+        Return an authorization token that is valid only for downloading
         files from the given bucket.
 
         :param str file_name_prefix: a file name prefix, only files that match it could be downloaded
@@ -274,7 +274,7 @@ class Bucket(object):
 
     def list_parts(self, file_id, start_part_number=None, batch_size=None):
         """
-        Gets a list of all parts that have been uploaded for a given file.
+        Get a list of all parts that have been uploaded for a given file.
 
         :param str file_id: a file ID
         :param int start_part_number: the first part number to return.  defaults to the first part.
@@ -284,7 +284,7 @@ class Bucket(object):
 
     def ls(self, folder_to_list='', show_versions=False, recursive=False, fetch_count=None):
         """
-        Pretends that folders exist and yields the information about the files in a folder.
+        Pretend that folders exist and yields the information about the files in a folder.
 
         B2 has a flat namespace for the files in a bucket, but there is a convention
         of using "/" as if there were folders. This method searches through the
@@ -392,7 +392,7 @@ class Bucket(object):
 
     def start_large_file(self, file_name, content_type=None, file_info=None):
         """
-        Starts a large file transfer.
+        Start a large file transfer.
 
         :param str file_name: a file name
         :param str, None content_type: the MIME type, or ``None`` to accept the default based on file extension of the B2 file name
@@ -412,7 +412,7 @@ class Bucket(object):
         progress_listener=None,
     ):
         """
-        Uploads bytes in memory to a B2 file.
+        Upload bytes in memory to a B2 file.
 
         :param bytes data_bytes: a byte array to upload
         :param str file_name: a file name to upload bytes to
@@ -440,7 +440,7 @@ class Bucket(object):
         progress_listener=None,
     ):
         """
-        Uploads a file on local disk to a B2 file.
+        Upload a file on local disk to a B2 file.
 
         .. seealso::
 
@@ -474,7 +474,7 @@ class Bucket(object):
         progress_listener=None
     ):
         """
-        Uploads a file to B2, retrying as needed.
+        Upload a file to B2, retrying as needed.
 
         The source of the upload is an UploadSource object that can be used to
         open (and re-open) the file. The result of opening should be a binary
@@ -603,7 +603,7 @@ class Bucket(object):
 
     def _find_unfinished_file_if_possible(self, upload_source, file_name, file_info, part_ranges):
         """
-        Finds an unfinished file that may be used to resume a large file upload. The
+        Find an unfinished file that may be used to resume a large file upload.  The
         file is found using the filename and comparing the uploaded parts against
         the local file.
 
@@ -703,8 +703,8 @@ class Bucket(object):
 
     def _get_upload_data(self):
         """
-        Takes ownership of an upload URL / auth token for the bucket and
-        returns it.
+        Take ownership of an upload URL / auth token for the bucket and
+        return it.
         """
         account_info = self.api.account_info
         upload_url, upload_auth_token = account_info.take_bucket_upload_url(self.id_)
@@ -716,8 +716,8 @@ class Bucket(object):
 
     def _get_upload_part_data(self, file_id):
         """
-        Makes sure that we have an upload URL and auth token for the given bucket and
-        returns it.
+        Make sure that we have an upload URL and auth token for the given bucket and
+        return it.
         """
         account_info = self.api.account_info
         upload_url, upload_auth_token = account_info.take_large_file_upload_url(file_id)
@@ -729,7 +729,7 @@ class Bucket(object):
 
     def get_download_url(self, filename):
         """
-        Gets file download URL.
+        Get file download URL.
 
         :param str filename: a file name
         :rtype: str
@@ -742,7 +742,7 @@ class Bucket(object):
 
     def hide_file(self, file_name):
         """
-        Hides a file.
+        Hide a file.
 
         :param str file_name: a file name
         :rtype: b2sdk.v1.FileVersionInfo
@@ -752,7 +752,7 @@ class Bucket(object):
 
     def delete_file_version(self, file_id, file_name):
         """
-        Deletes a file version.
+        Delete a file version.
 
         :param str file_id: a file ID
         :param str file_name: a file name
@@ -763,7 +763,7 @@ class Bucket(object):
     @disable_trace
     def as_dict(self):  # TODO: refactor with other as_dict()
         """
-        Returns bucket representation as a dictionary.
+        Return bucket representation as a dictionary.
 
         :rtype: dict
         """
@@ -790,7 +790,7 @@ class BucketFactory(object):
     @classmethod
     def from_api_response(cls, api, response):
         """
-        Creates a Bucket object from API response.
+        Create a Bucket object from API response.
 
         :param b2sdk.v1.B2Api api: API object
         :param requests.Response response: response object
@@ -801,7 +801,7 @@ class BucketFactory(object):
     @classmethod
     def from_api_bucket_dict(cls, api, bucket_dict):
         """
-        Turns a dictionary, like this:
+        Turn a dictionary, like this:
 
         .. code-block:: python
 

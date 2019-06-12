@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 class RegexSet(object):
     """
-    Holds a (possibly empty) set of regular expressions, and knows how to check
+    Hold a (possibly empty) set of regular expressions, and knows how to check
     whether a string matches any of them.
     """
 
@@ -28,7 +28,7 @@ class RegexSet(object):
 
     def matches(self, s):
         """
-        Checks whether a string matches any of regular expressions.
+        Check whether a string matches any of regular expressions.
 
         :param s: a string to check
         :type s: str
@@ -108,7 +108,7 @@ class ScanPoliciesManager(object):
 
     def should_exclude_file(self, file_path):
         """
-        Given the full path of a file, decides if it should be excluded from the scan.
+        Given the full path of a file, decide if it should be excluded from the scan.
 
         :param file_path: the path of the file, relative to the root directory
                           being scanned.
@@ -125,7 +125,7 @@ class ScanPoliciesManager(object):
 
     def should_exclude_directory(self, dir_path):
         """
-        Given the full path of a directory, decides if all of the files in it should be
+        Given the full path of a directory, decide if all of the files in it should be
         excluded from the scan.
 
         :param dir_path: the path of the directory, relative to the root directory

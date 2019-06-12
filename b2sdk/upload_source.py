@@ -27,7 +27,7 @@ class AbstractUploadSource(object):
     @abstractmethod
     def get_content_length(self):
         """
-        Returns the number of bytes of data in the file.
+        Return the number of bytes of data in the file.
         """
 
     @abstractmethod
@@ -39,7 +39,7 @@ class AbstractUploadSource(object):
     @abstractmethod
     def open(self):
         """
-        Returns a binary file-like object from which the
+        Return a binary file-like object from which the
         data can be read.
         :return:
         """

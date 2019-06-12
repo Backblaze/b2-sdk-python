@@ -14,7 +14,7 @@ from .policy import UpAndDeletePolicy, UpAndKeepDaysPolicy, UpPolicy
 
 class SyncPolicyManager(object):
     """
-    Policy manager; implements a logic to get a correct policy class
+    Policy manager; implement a logic to get a correct policy class
     and create a policy object based on various parameters.
     """
 
@@ -25,7 +25,7 @@ class SyncPolicyManager(object):
         self, sync_type, source_file, source_folder, dest_file, dest_folder, now_millis, args
     ):
         """
-        Returns a policy object.
+        Return a policy object.
 
         :param sync_type: synchronization type
         :type sync_type: str
@@ -47,7 +47,7 @@ class SyncPolicyManager(object):
 
     def get_policy_class(self, sync_type, args):
         """
-        Gets policy class by a given sync type.
+        Get policy class by a given sync type.
 
         :param sync_type: synchronization type
         :type sync_type: str

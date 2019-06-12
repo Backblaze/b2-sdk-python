@@ -46,7 +46,8 @@ class AbstractDownloader(object):
     @classmethod
     def _get_remote_range(cls, response, metadata):
         """
-        Gets a range from response or original request (as appropriate).
+        Get a range from response or original request (as appropriate).
+
         :param response: requests.Response of initial request
         :param metadata: metadata dict of the target file
         :return: a range object
@@ -59,7 +60,7 @@ class AbstractDownloader(object):
     @abstractmethod
     def is_suitable(self, metadata, progress_listener):
         """
-        Analyzes metadata (possibly against options passed earlier to constructor
+        Analyze metadata (possibly against options passed earlier to constructor
         to find out whether the given download request should be handled by this downloader).
         """
         pass

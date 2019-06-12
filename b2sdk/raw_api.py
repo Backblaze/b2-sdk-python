@@ -126,7 +126,7 @@ class AbstractRawApi(object):
 
 class B2RawApi(AbstractRawApi):
     """
-    Provides access to the B2 web APIs, exactly as they are provided by b2.
+    Provide access to the B2 web APIs, exactly as they are provided by b2.
 
     Requires that you provide all necessary URLs and auth tokens for each call.
 
@@ -236,7 +236,7 @@ class B2RawApi(AbstractRawApi):
 
     def download_file_from_url(self, _, account_auth_token_or_none, url, range_=None):
         """
-        Issues a streaming request for download of a file, potentially authorized.
+        Issue a streaming request for download of a file, potentially authorized.
 
         :param _: unused (caused by B2Session magic)
         :param account_auth_token_or_none: an optional account auth token to pass in
@@ -441,7 +441,7 @@ class B2RawApi(AbstractRawApi):
 
     def check_b2_filename(self, filename):
         """
-        Raises an appropriate exception with details if the filename is unusable.
+        Raise an appropriate exception with details if the filename is unusable.
 
         See https://www.backblaze.com/b2/docs/files.html for the rules.
 
@@ -476,7 +476,7 @@ class B2RawApi(AbstractRawApi):
         file_infos, data_stream
     ):
         """
-        Uploads one, small file to b2.
+        Upload one, small file to b2.
 
         :param upload_url: the upload_url from b2_authorize_account
         :param upload_auth_token: the auth token from b2_authorize_account
@@ -517,7 +517,7 @@ class B2RawApi(AbstractRawApi):
 
 def test_raw_api():
     """
-    Exercises the code in B2RawApi by making each call once, just
+    Exercise the code in B2RawApi by making each call once, just
     to make sure the parameters are passed in, and the result is
     passed back.
 
