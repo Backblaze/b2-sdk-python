@@ -239,7 +239,7 @@ class LocalFolder(AbstractFolder):
         Decides what to do with a name returned from os.listdir()
         that isn't unicode. We think that this only happens when
         the file name can't be decoded using the file system
-        encoding. Just in case that's not true, we'll allow all-ascii
+        encoding.  Just in case that's not true, we'll allow all-ascii
         names.
         """
         # if it's all ascii, allow it

@@ -291,8 +291,8 @@ class B2Api(object):
         Call ``b2_list_buckets`` and return a list of buckets.
 
         When no bucket name is specified, returns *all* of the buckets
-        in the account. When a bucket name is given, returns just that
-        bucket. When authorized with an :term:`application key` restricted to
+        in the account.  When a bucket name is given, returns just that
+        bucket.  When authorized with an :term:`application key` restricted to
         one :term:`bucket`, you must specify the bucket name, or the request
         will be unauthorized.
 

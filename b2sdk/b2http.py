@@ -155,7 +155,7 @@ class ResponseContextManager(object):
 
 class HttpCallback(object):
     """
-    A callback object that does nothing. Overrides pre_request
+    A callback object that does nothing.  Overrides pre_request
     and/or post_request as desired.
     """
 
@@ -225,7 +225,7 @@ class ClockSkewHook(HttpCallback):
 
 class B2Http(object):
     """
-    A wrapper for the requests module. Provides the operations
+    A wrapper for the requests module.  Provides the operations
     needed to access B2, and handles retrying when the returned
     status is 503 Service Unavailable, 429 Too Many Requests, etc.
 
@@ -235,7 +235,7 @@ class B2Http(object):
        - get_content
 
     The methods that return JSON either return a Python dict or
-    raise a subclass of B2Error. They can be used like this:
+    raise a subclass of B2Error.  They can be used like this:
 
     .. code-block:: python
 
@@ -390,7 +390,7 @@ def test_http():
     Run a few tests on error diagnosis.
 
     This test takes a while to run and is not used in the automated tests
-    during building. Run the test by hand to exercise the code. Be sure
+    during building.  Run the test by hand to exercise the code.  Be sure
     to run in both Python 2 and Python 3.
     """
 

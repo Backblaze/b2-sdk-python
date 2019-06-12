@@ -176,7 +176,7 @@ class ClockSkew(B2HttpCallbackPostRequestException):
 
 class CommandError(B2Error):
     """
-    b2 command error (user caused). Accepts exactly one argument: message.
+    b2 command error (user caused).  Accepts exactly one argument: message.
 
     We expect users of shell scripts will parse our ``__str__`` output.
     """

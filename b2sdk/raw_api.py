@@ -136,12 +136,12 @@ class B2RawApi(AbstractRawApi):
         https://www.backblaze.com/b2/docs/
 
     This class is intended to be a super-simple, very thin layer on top
-    of the HTTP calls. It can be mocked-out for testing higher layers.
+    of the HTTP calls.  It can be mocked-out for testing higher layers.
     And this class can be tested by exercising each call just once,
     which is relatively quick.
 
     All public methods of this class except authorize_account shall accept
-    api_url and account_info as first two positional arguments. This is needed
+    api_url and account_info as first two positional arguments.  This is needed
     for B2Session magic.
     """
 
@@ -545,7 +545,7 @@ def test_raw_api_helper(raw_api):
     This uses a Backblaze account that is just for this test.
     The account uses the free level of service, which should
     be enough to run this test a reasonable number of times
-    each day. If somebody abuses the account for other things,
+    each day.  If somebody abuses the account for other things,
     this test will break and we'll have to do something about
     it.
     """

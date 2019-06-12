@@ -40,7 +40,7 @@ class RegexSet(object):
 def convert_dir_regex_to_dir_prefix_regex(dir_regex):
     """
     The patterns used to match directory names (and file names) are allowed
-    to match a prefix of the name. This 'feature' was unintentional, but is
+    to match a prefix of the name.  This 'feature' was unintentional, but is
     being retained for compatibility.
 
     This means that a regex that matches a directory name can't be used directly

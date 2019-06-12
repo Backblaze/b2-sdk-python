@@ -44,7 +44,7 @@ def zip_folders(folder_a, folder_b, reporter, policies_manager=DEFAULT_SCAN_MANA
     matching file names.
 
     Each item is a pair (file_a, file_b) with the corresponding file
-    in both folders. Either file (but not both) will be None if the
+    in both folders.  Either file (but not both) will be None if the
     file is in only one folder.
 
     :param folder_a: first folder object.

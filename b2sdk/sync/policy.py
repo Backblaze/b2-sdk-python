@@ -315,9 +315,9 @@ def make_b2_keep_days_actions(
     stored in b2.
 
     When keepDays is set, all files that were visible any time from
-    keepDays ago until now must be kept. If versions were uploaded 5
+    keepDays ago until now must be kept.  If versions were uploaded 5
     days ago, 15 days ago, and 25 days ago, and the keepDays is 10,
-    only the 25-day old version can be deleted. The 15 day-old version
+    only the 25-day old version can be deleted.  The 15 day-old version
     was visible 10 days ago.
 
     :param source_file: source file object

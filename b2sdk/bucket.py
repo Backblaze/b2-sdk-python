@@ -93,7 +93,7 @@ class PartProgressReporter(AbstractProgressListener):
     gives the information to a :py:class:`b2sdk.bucket.LargeFileUploadState`.
 
     Accepts absolute bytes_completed from the uploader, and reports
-    deltas to the :py:class:`b2sdk.bucket.LargeFileUploadState`. The bytes_completed for the
+    deltas to the :py:class:`b2sdk.bucket.LargeFileUploadState`.  The bytes_completed for the
     part will drop back to 0 on a retry, which will result in a
     negative delta.
     """
@@ -287,7 +287,7 @@ class Bucket(object):
         Pretend that folders exist and yields the information about the files in a folder.
 
         B2 has a flat namespace for the files in a bucket, but there is a convention
-        of using "/" as if there were folders. This method searches through the
+        of using "/" as if there were folders.  This method searches through the
         flat namespace to find the files and "folders" that live within a given
         folder.
 
@@ -477,7 +477,7 @@ class Bucket(object):
         Upload a file to B2, retrying as needed.
 
         The source of the upload is an UploadSource object that can be used to
-        open (and re-open) the file. The result of opening should be a binary
+        open (and re-open) the file.  The result of opening should be a binary
         file whose read() method returns bytes.
 
         :param b2sdk.v1.UploadSource upload_source: an object that opens the source of the upload

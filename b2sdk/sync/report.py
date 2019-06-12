@@ -184,7 +184,7 @@ class SyncReport(object):
 
     def end_local(self):
         """
-        Local file count is done. Can proceed to step 2.
+        Local file count is done.  Can proceed to step 2.
         """
         with self.lock:
             self.local_done = True
