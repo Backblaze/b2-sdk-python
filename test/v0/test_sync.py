@@ -340,14 +340,14 @@ class TestParseSyncFolder(TestBase):
 
     def test_local(self):
         if platform.system() == 'Windows':
-            expected = 'LocalFolder(C:\\foo)'
+            expected = 'LocalFolder(\\\\?\\C:\\foo)'
         else:
             expected = 'LocalFolder(/foo)'
         self._check_one(expected, '/foo')
 
     def test_local_trailing_slash(self):
         if platform.system() == 'Windows':
-            expected = 'LocalFolder(C:\\foo)'
+            expected = 'LocalFolder(\\\\?\\C:\\foo)'
         else:
             expected = 'LocalFolder(/foo)'
         self._check_one(expected, '/foo/')
