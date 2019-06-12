@@ -640,8 +640,8 @@ class RawSimulator(AbstractRawApi):
 
     def set_upload_errors(self, errors):
         """
-        Stores a sequence of exceptions to raise on upload. Each one will
-        be raised in turn, until they are all gone. Then the next upload
+        Store a sequence of exceptions to raise on upload.  Each one will
+        be raised in turn, until they are all gone.  Then the next upload
         will succeed.
         """
         assert len(self.upload_errors) == 0

@@ -194,8 +194,8 @@ def sync_folders(
     allow_empty_source=False
 ):
     """
-    Syncs two folders. Always ensures that every file in the
-    source is also in the destination. Deletes any file versions
+    Sync two folders.  Always ensures that every file in the
+    source is also in the destination.  Deletes any file versions
     in the destination older than history_days.
 
     :param source_folder: source folder object

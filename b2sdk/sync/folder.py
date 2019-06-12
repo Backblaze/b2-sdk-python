@@ -236,8 +236,8 @@ class LocalFolder(AbstractFolder):
 
     def _handle_non_unicode_file_name(self, name):
         """
-        Decides what to do with a name returned from os.listdir()
-        that isn't unicode. We think that this only happens when
+        Decide what to do with a name returned from os.listdir()
+        that isn't unicode.  We think that this only happens when
         the file name can't be decoded using the file system
         encoding.  Just in case that's not true, we'll allow all-ascii
         names.

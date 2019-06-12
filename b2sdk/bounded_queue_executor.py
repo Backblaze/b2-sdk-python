@@ -13,8 +13,8 @@ import threading
 
 class BoundedQueueExecutor(object):
     """
-    Wraps a concurrent.futures.Executor and limits the number of requests that
-    can be queued at once. Requests to submit() tasks block until
+    Wrap a concurrent.futures.Executor and limits the number of requests that
+    can be queued at once.  Requests to submit() tasks block until
     there is room in the queue.
 
     The number of available slots in the queue is tracked with a

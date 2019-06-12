@@ -52,8 +52,8 @@ class AbstractProgressListener(object):
     @abstractmethod
     def bytes_completed(self, byte_count):
         """
-        Reports that the given number of bytes have been transferred
-        so far. This is not a delta, it is the total number of bytes
+        Report the given number of bytes that have been transferred
+        so far.  This is not a delta, it is the total number of bytes
         transferred so far.
 
         :param int byte_count: number of bytes have been transferred

@@ -277,7 +277,7 @@ class AbstractAccountInfo(object):
         application_key_id,
     ):
         """
-        Actually stores the auth data. Can assume that 'allowed' is present and valid.
+        Actually store the auth data.  Can assume that 'allowed' is present and valid.
 
         All of the information returned by ``b2_authorize_account`` is saved, because all of it is
         needed at some point.

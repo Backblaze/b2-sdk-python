@@ -539,7 +539,7 @@ def test_raw_api():
 
 def test_raw_api_helper(raw_api):
     """
-    Tries each of the calls to the raw api. Raises an
+    Try each of the calls to the raw api.  Raise an
     exception if anything goes wrong.
 
     This uses a Backblaze account that is just for this test.
