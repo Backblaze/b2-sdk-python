@@ -16,6 +16,7 @@ import threading
 import time
 import unittest
 
+from nose import SkipTest
 import six
 
 from .test_base import TestBase
@@ -75,6 +76,10 @@ class TestLocalFolder(TestSync):
 
     @classmethod
     def _create_files(cls, root_dir, relative_paths):
+        if platform.system() == 'Windows':
+            raise SkipTest(
+                'on Windows there are some environment issues with test directory creation'
+            )
         for relative_path in relative_paths:
             full_path = os.path.join(root_dir, relative_path)
             write_file(full_path, b'')
