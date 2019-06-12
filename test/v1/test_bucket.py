@@ -313,6 +313,8 @@ class TestUpload(TestCaseWithBucket):
                 self.bucket.upload_local_file(path, 'file1')
 
     def test_upload_dead_symlink(self):
+        if platform.system() == 'Windows':
+            raise SkipTest('no os.symlink() on Windows')
         with TempDir() as d:
             path = os.path.join(d, 'file1')
             os.symlink('non-existing', path)
