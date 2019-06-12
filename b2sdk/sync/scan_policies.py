@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 class RegexSet(object):
     """
-    Hold a (possibly empty) set of regular expressions, and knows how to check
+    Hold a (possibly empty) set of regular expressions and know how to check
     whether a string matches any of them.
     """
 
