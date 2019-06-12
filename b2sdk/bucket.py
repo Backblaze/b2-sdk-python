@@ -814,7 +814,7 @@ class BucketFactory(object):
                "revision": 1
            }
 
-        into a Bucket object
+        into a Bucket object.
 
         :param b2sdk.v1.B2Api api: API lient
         :param dict bucket_dict: a dictionary with bucket properties

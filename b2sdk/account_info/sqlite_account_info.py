@@ -210,7 +210,7 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
 
     def clear(self):
         """
-        Remove all info about accounts and buckets
+        Remove all info about accounts and buckets.
         """
         with self._get_connection() as conn:
             conn.execute('DELETE FROM account;')
@@ -265,7 +265,7 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
         realm,
     ):
         """
-        Set authentication data for tests
+        Set authentication data for tests.
 
         :param str account_id: an account ID
         :param str auth_token: an authentication token
