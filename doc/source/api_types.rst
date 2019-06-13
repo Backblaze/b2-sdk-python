@@ -5,7 +5,7 @@ API
 .. _interface_versions:
 
 Interface versions
-================
+==================
 
 You might notice that the import structure provided in the documentation looks a little odd: ``from b2sdk.v1 import ...``.
 The ``.v1`` part is used to keep the interface fluid without risk of breaking applications that use the old signatures.
