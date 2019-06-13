@@ -1,15 +1,3 @@
-3.
-b2sdk\account_info\sqlite_account_info.py, lines 104-105:
-"""
-        # Remove the corrupted file and create a new database
-        raise CorruptAccountInfo(self.filename)
-"""
-Is removing corrupted (_how badly_?) corrupted databases a regular
-practice? I would opt for a raise exception, creation of a new one
-and running some internal or external tool to see if it could be
-recovered, instead of deleting it wholesale.
-
-
 4.
 I cannot find these in code, but some of the elements of .. toctree:: in doc\source\api_reference.rst - lines 44-66 - do not have any titles (the fact that some of the others have them non-descriptive or non-helpful is another matter entirely).
     api/internal/utils                      - b2sdk.utils
@@ -43,31 +31,3 @@ while in the docs it looks like this:
 REALM_URLS = {'dev': 'http://api.backblazeb2.xyz:8180', 'production': 'https://api.backblazeb2.com', 'staging':
 'https://api.backblaze.net'}
 """
-
-
-6.
-https://b2-sdk-python.readthedocs.io/en/master/api/account_info.html#b2sdk.v1.AbstractAccountInfo._abc_impl
-... what is this, exactly?
-
-
-7.
-Bulleted lists get squashed and their readability and usefulness is lost. E.g.:
-b2sdk\api.py, lines 55-58:
-"""
-    - re-acquires authorization tokens when they expire
-    - retrying uploads when an upload URL is busy
-    - breaking large files into parts
-    - emulating a directory structure (B2 buckets are flat)
-"""
-at
-    https://b2-sdk-python.readthedocs.io/en/master/api/api.html#b2-api-client
-are displayed as
-"""
-                                    - re-acquires authorization tokens
- when they expire - retrying uploads when an upload URL is busy - breaking large files into parts
- - emulating a directory structure (B2 buckets are flat)
-"""
-
-
-#The same for:
-#b2sdk\b2http.py, lines 233-235  # I haven't encountered it as displayed in docs yet, but I provide it in this list so if a fix requires formatting, a pointer to it will survive

@@ -33,8 +33,7 @@ def _print_exception(e, indent=''):
     """
     Used for debugging to print out nested exception structures.
 
-    :param indent: message prefix
-    :type indent: str
+    :param str indent: message prefix
     """
     print(indent + 'EXCEPTION', repr(e))
     print(indent + 'CLASS', type(e))
@@ -230,9 +229,10 @@ class B2Http(object):
     status is 503 Service Unavailable, 429 Too Many Requests, etc.
 
     The operations supported are:
-       - post_json_return_json
-       - post_content_return_json
-       - get_content
+
+    - post_json_return_json
+    - post_content_return_json
+    - get_content
 
     The methods that return JSON either return a Python dict or
     raise a subclass of B2Error.  They can be used like this:

@@ -52,6 +52,7 @@ class B2Api(object):
     While :class:`b2sdk.v1.B2RawApi` provides direct access to the B2 web APIs, this
     class handles several things that simplify the task of uploading
     and downloading files:
+
     - re-acquires authorization tokens when they expire
     - retrying uploads when an upload URL is busy
     - breaking large files into parts
