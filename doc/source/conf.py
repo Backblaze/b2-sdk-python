@@ -97,7 +97,7 @@ exclude_patterns = []
 pygments_style = 'sphinx'
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
-todo_include_todos = False
+todo_include_todos = os.environ.get('B2_SPHINX_TODO', False) and True
 
 # -- Options for HTML output ----------------------------------------------
 
