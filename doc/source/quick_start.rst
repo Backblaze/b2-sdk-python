@@ -4,34 +4,21 @@
 Quick Start Guide
 ########################
 
-*********************
-Initialize API
-*********************
+***********************
+Prepare b2sdk
+***********************
 
 .. code-block:: python
 
     >>> from b2sdk.v1 import *
-
-    >>> info = InMemoryAccountInfo()  # to store credentials, tokens and cache in memory OR
-    >>> info = SqliteAccountInfo()  # to store credentials, tokens and cache in ~/.b2_account_info
+    >>> info = InMemoryAccountInfo()
     >>> b2_api = B2Api(info)
-
-To find out more about API object initialization, see :meth:`b2sdk.v1.B2Api.__init__`.
-
-.. hint:: See :doc:`api/account_info` section to find out which *AccountInfo* implementation is best for your application.
-
-
-*********************
-Account authorization
-*********************
-
-.. code-block:: python
-
-    >>> application_key_id = '4a5b6c7d8e9f'  # get credentials from from B2 website
+    >>> application_key_id = '4a5b6c7d8e9f'
     >>> application_key = '001b8e23c26ff6efb941e237deb182b9599a84bef7'
     >>> b2_api.authorize_account("production", application_key_id, application_key)
 
-To find out more about account authorization, see :meth:`b2sdk.v1.B2Api.authorize_account`
+.. tip::
+   Get credentials from B2 website
 
 
 ***************
@@ -106,7 +93,7 @@ Create a bucket
 You can optionally store bucket info, CORS rules and lifecycle rules with the bucket. See :meth:`b2sdk.v1.B2Api.create_bucket`.
 
 
-Remove a bucket
+Delete a bucket
 ===============
 
 .. code-block:: python
@@ -269,7 +256,7 @@ For more information see :meth:`b2sdk.v1.Bucket.ls`.
    use ls in the examples above, ``list_file_names`` and ``list_file_versions`` are legacy/discouraged, we shouldn't be promoting them
 
 
-Get file meta information
+Get file metadata
 =========================
 
 .. code-block:: python

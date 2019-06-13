@@ -25,7 +25,7 @@ class AbstractVersionDecorator(object):
 
     def __init__(self, changed_version, cutoff_version=None, reason=''):
         """
-        changed_version, cutoff_version and current_version are version strings
+        Changed_version, cutoff_version and current_version are version strings.
         """
 
         current_version = VERSION  # TODO autodetect by going up the qualname tree and trying getattr(part, '__version__')
@@ -58,7 +58,9 @@ class AbstractVersionDecorator(object):
 
     @abstractmethod
     def __call__(self, func):
-        """ the actual implementation of decorator """
+        """
+        The actual implementation of decorator.
+        """
 
 
 class AbstractDeprecator(AbstractVersionDecorator):
@@ -79,7 +81,7 @@ class AbstractDeprecator(AbstractVersionDecorator):
 
 class rename_argument(AbstractDeprecator):
     """
-    Changes the argument name to new one if old one is used, warns about deprecation in docs and through a warning
+    Change the argument name to new one if old one is used, warns about deprecation in docs and through a warning.
 
     >>> @rename_argument('aaa', 'bbb', '0.1.0', '0.2.0')
     >>> def easy(bbb):
@@ -134,7 +136,7 @@ class rename_argument(AbstractDeprecator):
 
 class rename_function(AbstractDeprecator):
     """
-    Warns about deprecation in docs and through a DeprecationWarning when used. Use it to decorate a proxy function, like this:
+    Warn about deprecation in docs and through a DeprecationWarning when used.  Use it to decorate a proxy function, like this:
 
     >>> def new(foobar):
     >>>     return foobar ** 2

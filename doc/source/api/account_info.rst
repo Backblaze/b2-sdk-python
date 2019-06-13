@@ -9,10 +9,10 @@ in order to let :py:class:`b2sdk.v1.B2Api` perform authenticated requests.
 
 There are two usable implementations provided by **b2sdk**:
 
- * :py:class:`b2sdk.v1.InMemoryAccountInfo` - basic implementation with no persistence
+ * :py:class:`b2sdk.v1.InMemoryAccountInfo` - a basic implementation with no persistence
  * :py:class:`b2sdk.v1.SqliteAccountInfo` - for console and GUI applications
 
-and both provide the full :ref:`AccountInfo interface <account_info_interface>`.
+They both provide the full :ref:`AccountInfo interface <account_info_interface>`.
 
 .. note::
    Backup applications and many server-side applications should :ref:`implement their own <my_account_info>` *AccountInfo*, backed by the metadata/configuration database of the application.
@@ -34,9 +34,9 @@ InMemoryAccountInfo
 
    .. hint::
 
-      Usage of this class is appropriate for secure Web applications, which do not wish to persist any user data.
+      Usage of this class is appropriate for secure Web applications which do not wish to persist any user data.
 
-   Using this class for applications such as CLI, GUI or backup is discouraged, as ``InMemoryAccountInfo`` does not write down the authorization token persistently, which will force the application to retrieve a new one on every command/click/backup start. This would be slow. Furthermore an important property of *AccountInfo* is caching the ``bucket_name:bucket_id`` mapping and in case of ``InMemoryAccountInfo`` the cache will be flushed between executions of the program.
+   Using this class for applications such as CLI, GUI or backup is discouraged, as ``InMemoryAccountInfo`` does not write down the authorization token persistently. That would be slow, as it would force the application to retrieve a new one on every command/click/backup start. Furthermore - an important property of *AccountInfo* is caching the ``bucket_name:bucket_id`` mapping; in case of ``InMemoryAccountInfo`` the cache will be flushed between executions of the program.
 
    .. method:: __init__()
 
@@ -61,9 +61,9 @@ SqliteAccountInfo
 
    .. hint::
 
-      Usage of this class is appropriate for interactive applications installed on the users machine (so CLI and GUI applications).
+      Usage of this class is appropriate for interactive applications installed on a user's machine (i.e.: CLI and GUI applications).
 
-      Usage of this class **might** be appropriate for non-interactive applications installed on the users machine, such as backup applications. An alternative approach that needs to be considered, is to store the *AccountInfo* data alongside the configuration of the rest of the application.
+      Usage of this class **might** be appropriate for non-interactive applications installed on the user's machine, such as backup applications. An alternative approach that should be considered is to store the *AccountInfo* data alongside the configuration of the rest of the application.
 
 
 .. _my_account_info:

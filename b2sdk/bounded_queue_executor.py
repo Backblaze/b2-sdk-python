@@ -13,7 +13,7 @@ import threading
 
 class BoundedQueueExecutor(object):
     """
-    Wraps a concurrent.futures.Executor and limits the number of requests that
+    Wrap a concurrent.futures.Executor and limits the number of requests that
     can be queued at once.  Requests to submit() tasks block until
     there is room in the queue.
 
@@ -64,13 +64,13 @@ class BoundedQueueExecutor(object):
 
     def shutdown(self):
         """
-        Shutdown an executor
+        Shut an executor down.
         """
         self.executor.shutdown()
 
     def get_num_exceptions(self):
         """
-        Return a number of exceptions
+        Return a number of exceptions.
 
         :rtype: int
         """

@@ -13,7 +13,7 @@ from ..exception import B2Error
 
 class EnvironmentEncodingError(B2Error):
     """
-    Raised when a file name can not be decoded with system encoding
+    Raised when a file name can not be decoded with system encoding.
     """
 
     def __init__(self, filename, encoding):

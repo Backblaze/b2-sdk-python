@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 @six.add_metaclass(ABCMeta)
 class AbstractFileSyncPolicy(object):
     """
-    Abstract policy class
+    Abstract policy class.
     """
     DESTINATION_PREFIX = NotImplemented
     SOURCE_PREFIX = NotImplemented
@@ -55,7 +55,7 @@ class AbstractFileSyncPolicy(object):
 
     def _should_transfer(self):
         """
-        Decides whether to transfer the file from the source to the destination.
+        Decide whether to transfer the file from the source to the destination.
         """
         if self._source_file is None:
             # No source file.  Nothing to transfer.
@@ -157,7 +157,7 @@ class AbstractFileSyncPolicy(object):
 
     def _get_hide_delete_actions(self):
         """
-        subclass policy can override this to hide or delete files
+        Subclass policy can override this to hide or delete files.
         """
         return []
 
@@ -166,12 +166,14 @@ class AbstractFileSyncPolicy(object):
 
     @abstractmethod
     def _make_transfer_action(self):
-        """ return an action representing transfer of file according to the selected policy """
+        """
+        Return an action representing transfer of file according to the selected policy.
+        """
 
 
 class DownPolicy(AbstractFileSyncPolicy):
     """
-    File is synced down (from the cloud to disk)
+    File is synced down (from the cloud to disk).
     """
     DESTINATION_PREFIX = 'local://'
     SOURCE_PREFIX = 'b2://'
@@ -189,7 +191,7 @@ class DownPolicy(AbstractFileSyncPolicy):
 
 class UpPolicy(AbstractFileSyncPolicy):
     """
-    File is synced up (from disk the cloud)
+    File is synced up (from disk the cloud).
     """
     DESTINATION_PREFIX = 'b2://'
     SOURCE_PREFIX = 'local://'
@@ -206,7 +208,7 @@ class UpPolicy(AbstractFileSyncPolicy):
 
 class UpAndDeletePolicy(UpPolicy):
     """
-    File is synced up (from disk to the cloud) and the delete flag is SET
+    File is synced up (from disk to the cloud) and the delete flag is SET.
     """
 
     def _get_hide_delete_actions(self):
@@ -223,7 +225,7 @@ class UpAndDeletePolicy(UpPolicy):
 
 class UpAndKeepDaysPolicy(UpPolicy):
     """
-    File is synced up (from disk to the cloud) and the keepDays flag is SET
+    File is synced up (from disk to the cloud) and the keepDays flag is SET.
     """
 
     def _get_hide_delete_actions(self):
@@ -238,7 +240,7 @@ class UpAndKeepDaysPolicy(UpPolicy):
 
 class DownAndDeletePolicy(DownPolicy):
     """
-    File is synced down (from the cloud to disk) and the delete flag is SET
+    File is synced down (from the cloud to disk) and the delete flag is SET.
     """
 
     def _get_hide_delete_actions(self):
@@ -252,14 +254,14 @@ class DownAndDeletePolicy(DownPolicy):
 
 class DownAndKeepDaysPolicy(DownPolicy):
     """
-    File is synced down (from the cloud to disk) and the keepDays flag is SET
+    File is synced down (from the cloud to disk) and the keepDays flag is SET.
     """
     pass
 
 
 def make_b2_delete_note(version, index, transferred):
     """
-    Create a note message for delete action
+    Create a note message for delete action.
 
     :param version: an object which contains file version info
     :param index: file version index
@@ -278,7 +280,7 @@ def make_b2_delete_note(version, index, transferred):
 
 def make_b2_delete_actions(source_file, dest_file, dest_folder, transferred):
     """
-    Creates the actions to delete files stored on B2, which are not present locally.
+    Create the actions to delete files stored on B2, which are not present locally.
 
     :param source_file: source file object
     :type source_file: b2sdk.sync.file.File
@@ -309,7 +311,7 @@ def make_b2_keep_days_actions(
     source_file, dest_file, dest_folder, transferred, keep_days, now_millis
 ):
     """
-    Creates the actions to hide or delete existing versions of a file
+    Create the actions to hide or delete existing versions of a file
     stored in b2.
 
     When keepDays is set, all files that were visible any time from
@@ -342,10 +344,10 @@ def make_b2_keep_days_actions(
         age_days = (now_millis - version.mod_time) / ONE_DAY_IN_MS
 
         # Mostly, the versions are ordered by time, newest first,
-        # BUT NOT ALWAYS.  The mod time we have is the src_last_modified_millis
+        # BUT NOT ALWAYS. The mod time we have is the src_last_modified_millis
         # from the file info (if present), or the upload start time
-        # (if not present).  The user-specified src_last_modified_millis
-        # may not be in order.  Because of that, we no longer
+        # (if not present). The user-specified src_last_modified_millis
+        # may not be in order. Because of that, we no longer
         # assert that age_days is non-decreasing.
         #
         # Note that if there is an out-of-order date that is old enough
@@ -357,7 +359,7 @@ def make_b2_keep_days_actions(
         if version_index == 0 and source_file is None and version.action == 'upload':
             yield B2HideAction(dest_file.name, dest_folder.make_full_path(dest_file.name))
 
-        # Can we start deleting?  Once we start deleting, all older
+        # Can we start deleting? Once we start deleting, all older
         # versions will also be deleted.
         if version.action == 'hide':
             if keep_days < age_days:

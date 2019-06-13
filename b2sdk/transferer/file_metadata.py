@@ -10,7 +10,9 @@
 
 
 class FileMetadata(object):
-    """ holds information about a file which is being downloaded """
+    """
+    Hold information about a file which is being downloaded.
+    """
     __slots__ = (
         'file_id',
         'file_name',

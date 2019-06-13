@@ -97,7 +97,7 @@ exclude_patterns = []
 pygments_style = 'sphinx'
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
-todo_include_todos = False
+todo_include_todos = os.environ.get('B2_SPHINX_TODO', False) and True
 
 # -- Options for HTML output ----------------------------------------------
 
@@ -126,7 +126,7 @@ html_theme_options = {
 
 autodoc_default_options = {
     'member-order': 'bysource',
-    'exclude-members': '__weakref__, _abc_cache, _abc_negative_cache, _abc_negative_cache_version, _abc_registry',
+    'exclude-members': '__weakref__, _abc_cache, _abc_negative_cache, _abc_negative_cache_version, _abc_registry, _abc_impl',
     'members': True,
     'undoc-members': True,
 }  # yapf: disable

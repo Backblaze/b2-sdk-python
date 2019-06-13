@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 def next_or_none(iterator):
     """
-    Returns the next item from the iterator, or None if there are no more.
+    Return the next item from the iterator, or None if there are no more.
     """
     try:
         return six.advance_iterator(iterator)
@@ -40,7 +40,7 @@ def next_or_none(iterator):
 
 def zip_folders(folder_a, folder_b, reporter, policies_manager=DEFAULT_SCAN_MANAGER):
     """
-    An iterator over all of the files in the union of two folders,
+    Iterate over all of the files in the union of two folders,
     matching file names.
 
     Each item is a pair (file_a, file_b) with the corresponding file
@@ -86,7 +86,7 @@ def make_file_sync_actions(
     sync_type, source_file, dest_file, source_folder, dest_folder, args, now_millis
 ):
     """
-    Yields the sequence of actions needed to sync the two files
+    Yield the sequence of actions needed to sync the two files.
 
     :param sync_type: synchronization type
     :type sync_type: str
@@ -114,7 +114,7 @@ def make_folder_sync_actions(
     source_folder, dest_folder, args, now_millis, reporter, policies_manager=DEFAULT_SCAN_MANAGER
 ):
     """
-    Yields a sequence of actions that will sync the destination
+    Yield a sequence of actions that will sync the destination
     folder to the source folder.
 
     :param source_folder: source folder object
@@ -167,7 +167,7 @@ def make_folder_sync_actions(
 
 def count_files(local_folder, reporter):
     """
-    Counts all of the files in a local folder.
+    Count all of the files in a local folder.
 
     :param local_folder: a folder object.
     :type local_folder: b2sdk.sync.folder.AbstractFolder
@@ -194,7 +194,7 @@ def sync_folders(
     allow_empty_source=False
 ):
     """
-    Syncs two folders.  Always ensures that every file in the
+    Sync two folders.  Always ensures that every file in the
     source is also in the destination.  Deletes any file versions
     in the destination older than history_days.
 
@@ -227,9 +227,9 @@ def sync_folders(
     # Make a reporter to report progress.
     with SyncReport(stdout, no_progress) as reporter:
 
-        # Make an executor to count files and run all of the actions.  This is
-        # not the same as the executor in the API object, which is used for
-        # uploads.  The tasks in this executor wait for uploads.  Putting them
+        # Make an executor to count files and run all of the actions. This is
+        # not the same as the executor in the API object which is used for
+        # uploads. The tasks in this executor wait for uploads. Putting them
         # in the same thread pool could lead to deadlock.
         #
         # We use an executor with a bounded queue to avoid using up lots of memory
@@ -238,7 +238,7 @@ def sync_folders(
         queue_limit = max_workers + 1000
         sync_executor = BoundedQueueExecutor(unbounded_executor, queue_limit=queue_limit)
 
-        # First, start the thread that counts the local files.  That's the operation
+        # First, start the thread that counts the local files. That's the operation
         # that should be fastest, and it provides scale for the progress reporting.
         local_folder = None
         if source_folder.folder_type() == 'local':

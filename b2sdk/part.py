@@ -22,7 +22,7 @@ class PartFactory(object):
 
 class Part(object):
     """
-    A structure which represents a *part* of a large file upload
+    A structure which represents a *part* of a large file upload.
 
     :ivar str ~.file_id: ``fileId``
     :ivar int ~.part_number: part number, starting with 1

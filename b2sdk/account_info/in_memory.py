@@ -16,7 +16,7 @@ from functools import wraps
 
 def _raise_missing_if_result_is_none(function):
     """
-    Raise MissingAccountData if function's result is None
+    Raise MissingAccountData if function's result is None.
     """
 
     @wraps(function)
@@ -33,7 +33,7 @@ def _raise_missing_if_result_is_none(function):
 
 class InMemoryAccountInfo(UrlPoolAccountInfo):
     """
-    *AccountInfo* which keeps all data in memory
+    *AccountInfo* which keeps all data in memory.
     """
 
     def __init__(self, *args, **kwargs):

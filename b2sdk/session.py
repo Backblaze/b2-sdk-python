@@ -17,7 +17,7 @@ from b2sdk.raw_api import ALL_CAPABILITIES
 class B2Session(object):
     """
         A *magic* facade that supplies the correct api_url and account_auth_token
-        to methods of underlying raw_api and reauthorizes if necessary
+        to methods of underlying raw_api and reauthorizes if necessary.
     """
 
     def __init__(self, api, raw_api):
@@ -53,7 +53,7 @@ class B2Session(object):
 
     def _add_app_key_info_to_unauthorized(self, unauthorized):
         """
-        Takes an Unauthorized error and adds information from the application key
+        Take an Unauthorized error and adds information from the application key
         about why it might have failed.
         """
         # What's allowed?

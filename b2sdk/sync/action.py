@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 class AbstractAction(object):
     """
     An action to take, such as uploading, downloading, or deleting
-    a file.  Multi-threaded tasks create a sequence of Actions, which
+    a file.  Multi-threaded tasks create a sequence of Actions which
     are then run by a pool of threads.
 
     An action can depend on other actions completing.  An example of
@@ -36,7 +36,7 @@ class AbstractAction(object):
 
     def run(self, bucket, reporter, dry_run=False):
         """
-        Main action routine
+        Main action routine.
 
         :param bucket: a Bucket object
         :type bucket: b2sdk.bucket.Bucket
@@ -56,7 +56,7 @@ class AbstractAction(object):
     @abstractmethod
     def get_bytes(self):
         """
-        Returns the number of bytes to transfer for this action.
+        Return the number of bytes to transfer for this action.
 
         :rtype: int
         """
@@ -64,7 +64,7 @@ class AbstractAction(object):
     @abstractmethod
     def do_action(self, bucket, reporter):
         """
-        Performs the action, returning only after the action is completed.
+        Perform the action, returning only after the action is completed.
 
         :param bucket: a Bucket object
         :type bucket: b2sdk.bucket.Bucket
@@ -84,7 +84,7 @@ class AbstractAction(object):
 
 class B2UploadAction(AbstractAction):
     """
-    File uploading action
+    File uploading action.
     """
 
     def __init__(self, local_full_path, relative_name, b2_file_name, mod_time_millis, size):
@@ -108,7 +108,7 @@ class B2UploadAction(AbstractAction):
 
     def get_bytes(self):
         """
-        Return file size
+        Return file size.
 
         :rtype: int
         """
@@ -116,7 +116,7 @@ class B2UploadAction(AbstractAction):
 
     def do_action(self, bucket, reporter):
         """
-        Performs the uploading action, returning only after the action is completed.
+        Perform the uploading action, returning only after the action is completed.
 
         :param bucket: a Bucket object
         :type bucket: b2sdk.bucket.Bucket
@@ -158,7 +158,7 @@ class B2HideAction(AbstractAction):
 
     def get_bytes(self):
         """
-        Return file size
+        Return file size.
 
         :return: always zero
         :rtype: int
@@ -167,7 +167,7 @@ class B2HideAction(AbstractAction):
 
     def do_action(self, bucket, reporter):
         """
-        Performs the hiding action, returning only after the action is completed.
+        Perform the hiding action, returning only after the action is completed.
 
         :param bucket: a Bucket object
         :type bucket: b2sdk.bucket.Bucket
@@ -217,7 +217,7 @@ class B2DownloadAction(AbstractAction):
 
     def get_bytes(self):
         """
-        Return file size
+        Return file size.
 
         :rtype: int
         """
@@ -225,7 +225,7 @@ class B2DownloadAction(AbstractAction):
 
     def do_action(self, bucket, reporter):
         """
-        Performs the downloading action, returning only after the action is completed.
+        Perform the downloading action, returning only after the action is completed.
 
         :param bucket: a Bucket object
         :type bucket: b2sdk.bucket.Bucket
@@ -289,7 +289,7 @@ class B2DeleteAction(AbstractAction):
 
     def get_bytes(self):
         """
-        Return file size
+        Return file size.
 
         :return: always zero
         :rtype: int
@@ -298,7 +298,7 @@ class B2DeleteAction(AbstractAction):
 
     def do_action(self, bucket, reporter):
         """
-        Performs the deleting action, returning only after the action is completed.
+        Perform the deleting action, returning only after the action is completed.
 
         :param bucket: a Bucket object
         :type bucket: b2sdk.bucket.Bucket
@@ -334,7 +334,7 @@ class LocalDeleteAction(AbstractAction):
 
     def get_bytes(self):
         """
-        Return file size
+        Return file size.
 
         :return: always zero
         :rtype: int
@@ -343,7 +343,7 @@ class LocalDeleteAction(AbstractAction):
 
     def do_action(self, bucket, reporter):
         """
-        Performs the deleting of a local file action,
+        Perform the deleting of a local file action,
         returning only after the action is completed.
 
         :param bucket: a Bucket object

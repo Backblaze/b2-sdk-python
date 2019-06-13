@@ -22,7 +22,9 @@ from .simple import SimpleDownloader
 
 @six.add_metaclass(B2TraceMetaAbstract)
 class Transferer(object):
-    """ Handles complex actions around downloads and uploads to free raw_api from that responsibility """
+    """
+    Handle complex actions around downloads and uploads to free raw_api from that responsibility.
+    """
 
     # how many chunks to break a downloaded file into
     DEFAULT_MAX_STREAMS = 8

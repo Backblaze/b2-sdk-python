@@ -18,10 +18,25 @@ In the tutorial we will use :py:class:`b2sdk.v1.InMemoryAccountInfo`:
     >>> info = InMemoryAccountInfo()  # store credentials, tokens and cache in memory
 
 
-With the ``info`` object in hand, we can now proceed to creating a ``B2Api`` object.
+With the ``info`` object in hand, we can now proceed to create a ``B2Api`` object.
 
 .. note::
    :ref:`AccountInfo` section provides guidance for choosing the correct ``AccountInfo`` class for your application.
+
+*********************
+Account authorization
+*********************
+
+.. code-block:: python
+
+    >>> application_key_id = '4a5b6c7d8e9f'
+    >>> application_key = '001b8e23c26ff6efb941e237deb182b9599a84bef7'
+    >>> b2_api.authorize_account("production", application_key_id, application_key)
+
+.. tip::
+   Get credentials from B2 website
+
+To find out more about account authorization, see :meth:`b2sdk.v1.B2Api.authorize_account`
 
 
 ***************************
@@ -29,19 +44,6 @@ B2Api
 ***************************
 
 *B2Api* allows for account-level operations on a B2 account.
-
-Initializing B2Api
-========================
-
-.. code-block:: python
-
-    >>> from b2sdk.v1 import B2Api
-    >>> api = B2Api(info)
-
-To find out more about API object initialization, see :meth:`b2sdk.v1.B2Api.__init__`.
-
-.. todo::
-   show how to perform account authorization
 
 Typical B2Api operations
 ========================
@@ -62,6 +64,10 @@ Typical B2Api operations
    download_file_by_id
    list_parts
    cancel_large_file
+   `
+.. code-block:: python
+
+    >>> b2_api = B2Api(info)
 
 to find out more, see :class:`b2sdk.v1.B2Api`.
 
@@ -73,13 +79,13 @@ The most practical operation on ``B2Api`` object is :meth:`b2sdk.v1.B2Api.get_bu
 Bucket
 ***************************
 
-Initializing Bucket
+Initializing a Bucket
 ========================
 
 Retrieve an existing Bucket
 ---------------------------
 
-To get a Bucket object for an existing B2 Bucket:
+To get a ``Bucket`` object for an existing B2 Bucket:
 
 .. code-block:: python
 
@@ -133,6 +139,6 @@ To find out more, see :class:`b2sdk.v1.Bucket`.
 Summary
 ***************************
 
-You now know how to use *AccountInfo*, *B2Api* and *Bucket* objects.
+You now know how to use ``AccountInfo``, ``B2Api`` and ``Bucket`` objects.
 
 To see examples of some of the methods presented above, visit the :ref:`quick start guide <quick_start>` section.

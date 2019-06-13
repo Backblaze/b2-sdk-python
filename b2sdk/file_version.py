@@ -13,7 +13,7 @@ import datetime
 
 class FileVersionInfo(object):
     """
-    A structure which represents a version of a file (in B2 cloud)
+    A structure which represents a version of a file (in B2 cloud).
 
     :ivar str ~.id\_: ``fileId``
     :ivar str ~.file_name: full file name (with path)
@@ -75,12 +75,14 @@ class FileVersionInfo(object):
 
 
 class FileVersionInfoFactory(object):
-    """ constructs :py:class:`b2sdk.v1.FileVersionInfo` objects from various structures """
+    """
+    Construct :py:class:`b2sdk.v1.FileVersionInfo` objects from various structures.
+    """
 
     @classmethod
     def from_api_response(cls, file_info_dict, force_action=None):
         """
-        turns this:
+        Turn this:
 
         .. code-block:: python
 
@@ -107,7 +109,7 @@ class FileVersionInfoFactory(object):
                "fileName": "randomdata"
            }
 
-        into a :py:class:`b2sdk.v1.FileVersionInfo` object
+        into a :py:class:`b2sdk.v1.FileVersionInfo` object.
 
         """
         assert file_info_dict.get('action') is None or force_action is None, \
@@ -148,7 +150,7 @@ class FileIdAndName(object):
     """
     A structure which represents a B2 cloud file with just `file_name` and `fileId` attributes.
 
-    Used to return data from calls to :py:meth:`b2sdk.v1.Bucket.delete_file_version`
+    Used to return data from calls to :py:meth:`b2sdk.v1.Bucket.delete_file_version`.
 
     :ivar str ~.file_id: ``fileId``
     :ivar str ~.file_name: full file name (with path)

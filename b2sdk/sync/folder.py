@@ -38,7 +38,7 @@ class AbstractFolder(object):
     @abstractmethod
     def all_files(self, reporter, policies_manager):
         """
-        Returns an iterator over all of the files in the folder, in
+        Return an iterator over all of the files in the folder, in
         the order that B2 uses.
 
         It also performs filtering using policies manager.
@@ -57,7 +57,7 @@ class AbstractFolder(object):
     @abstractmethod
     def folder_type(self):
         """
-        Returns one of:  'b2', 'local'
+        Return one of:  'b2', 'local'.
 
         :rtype: str
         """
@@ -65,7 +65,7 @@ class AbstractFolder(object):
     @abstractmethod
     def make_full_path(self, file_name):
         """
-        Only for local folders, returns the full path to the file.
+        Return the full path to the file; only for local folders.
 
         :param file_name: a file name
         :type file_name: str
@@ -94,9 +94,9 @@ class LocalFolder(AbstractFolder):
 
     def __init__(self, root):
         """
-        Initializes a new folder.
+        Initialize a new folder.
 
-        :param root: Path to the root of the local folder.  Must be unicode.
+        :param root: path to the root of the local folder.  Must be unicode.
         :type root: str
         """
         if not isinstance(root, six.text_type):
@@ -105,7 +105,7 @@ class LocalFolder(AbstractFolder):
 
     def folder_type(self):
         """
-        Return folder type
+        Return folder type.
 
         :rtype: str
         """
@@ -113,7 +113,7 @@ class LocalFolder(AbstractFolder):
 
     def all_files(self, reporter, policies_manager=DEFAULT_SCAN_MANAGER):
         """
-        Yield all files
+        Yield all files.
 
         :param reporter: a place to report errors
         :param policies_manager: a policy manager object, default is DEFAULT_SCAN_MANAGER
@@ -123,7 +123,7 @@ class LocalFolder(AbstractFolder):
 
     def make_full_path(self, file_name):
         """
-        Convert a file name into an absolute path
+        Convert a file name into an absolute path.
 
         :param file_name: a file name
         :type file_name: str
@@ -132,7 +132,7 @@ class LocalFolder(AbstractFolder):
 
     def ensure_present(self):
         """
-        Makes sure that the directory exists.
+        Make sure that the directory exists.
         """
         if not os.path.exists(self.root):
             try:
@@ -144,7 +144,7 @@ class LocalFolder(AbstractFolder):
 
     def ensure_non_empty(self):
         """
-        Makes sure that the directory exists and is non-empty.
+        Make sure that the directory exists and is non-empty.
         """
         self.ensure_present()
 
@@ -155,12 +155,13 @@ class LocalFolder(AbstractFolder):
 
     def _walk_relative_paths(self, local_dir, b2_dir, reporter, policies_manager):
         """
-        Yields a File object for each of the files anywhere under this folder, in the
+        Yield a File object for each of the files anywhere under this folder, in the
         order they would appear in B2, unless the path is excluded by policies manager.
-        :param local_dir: The local directory to list files in
-        :param b2_dir: The B2 path of this directory, or '' if at the root.
-        :param reporter: A place to report errors
-        :param policies_manager: A manager for polices scan results
+
+        :param local_dir: the local directory to list files in
+        :param b2_dir: the B2 path of this directory, or '' if at the root
+        :param reporter: a place to report errors
+        :param policies_manager: a manager for polices scan results
         :return:
         """
         if not isinstance(local_dir, six.text_type):
@@ -275,7 +276,7 @@ class B2Folder(AbstractFolder):
 
     def all_files(self, reporter, policies_manager=DEFAULT_SCAN_MANAGER):
         """
-        Yield all files
+        Yield all files.
 
         :param reporter: a place to report errors
         :param policies_manager: a policies manager object, default is DEFAULT_SCAN_MANAGER
@@ -313,7 +314,7 @@ class B2Folder(AbstractFolder):
 
     def folder_type(self):
         """
-        Return folder type
+        Return folder type.
 
         :rtype: str
         """
@@ -321,7 +322,7 @@ class B2Folder(AbstractFolder):
 
     def make_full_path(self, file_name):
         """
-        Make an absolute path from a file name
+        Make an absolute path from a file name.
 
         :param file_name: a file name
         :type file_name: str

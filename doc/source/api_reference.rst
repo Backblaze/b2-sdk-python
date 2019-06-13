@@ -1,4 +1,4 @@
-.. hint:: Use :doc:`quick_start` to quickly jump into examples
+.. hint:: Use :doc:`quick_start` to quickly jump to examples
 
 ########################
 API Reference
@@ -11,7 +11,7 @@ Interface types
 
 
 .. tip::
-   Proper :ref:`pinning of versions <semantic_versioning>` ensures the stability of your application.
+   :ref:`Pinning versions <semantic_versioning>` properly ensures the stability of your application.
 
 
 .. _api_public:

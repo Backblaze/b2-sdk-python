@@ -68,10 +68,10 @@ class ParallelDownloader(AbstractDownloader):
         session,
     ):
         """
-        Downloads a file from given url using parallel download sessions and stores it in the given download_destination.
+        Download a file from given url using parallel download sessions and stores it in the given download_destination.
 
         :param file: an opened file-like object to write to
-        :param response: The response of the first request made to the cloud service with download intent
+        :param response: the response of the first request made to the cloud service with download intent
         :return:
         """
         remote_range = self._get_remote_range(response, metadata)
@@ -288,7 +288,7 @@ class NonHashingDownloaderThread(AbstractDownloaderThread):
 
 class PartToDownload(object):
     """
-    Holds the range of a file to download, and the range of the
+    Hold the range of a file to download, and the range of the
     local file where it should be stored.
     """
 
@@ -302,7 +302,7 @@ class PartToDownload(object):
 
 def gen_parts(cloud_range, local_range, part_count):
     """
-    Generates a sequence of PartToDownload to download a large file as
+    Generate a sequence of PartToDownload to download a large file as
     a collection of parts.
     """
     assert cloud_range.size() == local_range.size(), (cloud_range.size(), local_range.size())

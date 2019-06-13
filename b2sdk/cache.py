@@ -39,7 +39,9 @@ class AbstractCache(object):
 
 
 class DummyCache(AbstractCache):
-    """ Cache that does nothing """
+    """
+    A cache that does nothing.
+    """
 
     def get_bucket_id_or_none_from_bucket_name(self, name):
         return None
@@ -55,7 +57,9 @@ class DummyCache(AbstractCache):
 
 
 class InMemoryCache(AbstractCache):
-    """ Cache that stores the information in memory """
+    """
+    A cache that stores the information in memory.
+    """
 
     def __init__(self):
         self.name_id_map = {}
@@ -75,7 +79,9 @@ class InMemoryCache(AbstractCache):
 
 
 class AuthInfoCache(AbstractCache):
-    """ Cache that stores data persistently in StoredAccountInfo """
+    """
+    A cache that stores data persistently in StoredAccountInfo.
+    """
 
     def __init__(self, info):
         self.info = info

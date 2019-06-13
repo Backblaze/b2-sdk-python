@@ -126,7 +126,7 @@ class AbstractRawApi(object):
 
 class B2RawApi(AbstractRawApi):
     """
-    Provides access to the B2 web APIs, exactly as they are provided by b2.
+    Provide access to the B2 web APIs, exactly as they are provided by b2.
 
     Requires that you provide all necessary URLs and auth tokens for each call.
 
@@ -141,7 +141,7 @@ class B2RawApi(AbstractRawApi):
     which is relatively quick.
 
     All public methods of this class except authorize_account shall accept
-    api_url and account_info as first two positional arguments. This is needed
+    api_url and account_info as first two positional arguments.  This is needed
     for B2Session magic.
     """
 
@@ -150,11 +150,12 @@ class B2RawApi(AbstractRawApi):
 
     def _post_json(self, base_url, api_name, auth, **params):
         """
-        Helper method for calling an API with the given auth and params.
-        :param base_url: Something like "https://api001.backblazeb2.com/"
-        :param auth: Passed in Authorization header.
-        :param api_name: Example: "b2_create_bucket"
-        :param args: The rest of the parameters are passed to b2.
+        A helper method for calling an API with the given auth and params.
+
+        :param base_url: something like "https://api001.backblazeb2.com/"
+        :param auth: passed in Authorization header
+        :param api_name: example: "b2_create_bucket"
+        :param args: the rest of the parameters are passed to b2
         :return:
         """
         url = '%s/b2api/%s/%s' % (base_url, API_VERSION, api_name)
@@ -235,11 +236,11 @@ class B2RawApi(AbstractRawApi):
 
     def download_file_from_url(self, _, account_auth_token_or_none, url, range_=None):
         """
-        Issues a streaming request for download of a file, potentially authorized.
+        Issue a streaming request for download of a file, potentially authorized.
 
         :param _: unused (caused by B2Session magic)
         :param account_auth_token_or_none: an optional account auth token to pass in
-        :param url: The full URL to download from
+        :param url: the full URL to download from
         :param range: two-element tuple for http Range header
         :return: b2_http response
         """
@@ -427,8 +428,8 @@ class B2RawApi(AbstractRawApi):
         """
         Replace unprintable chars in string with a hex representation.
 
-        :param string: An arbitrary string, possibly with unprintable characters.
-        :return: The string, with unprintable characters changed to hex (e.g., "\x07")
+        :param string: an arbitrary string, possibly with unprintable characters.
+        :return: the string, with unprintable characters changed to hex (e.g., "\x07")
 
         """
         unprintables_pattern = re.compile(r'[\x00-\x1f]')
@@ -444,8 +445,8 @@ class B2RawApi(AbstractRawApi):
 
         See https://www.backblaze.com/b2/docs/files.html for the rules.
 
-        :param filename: A proposed filename in unicode.
-        :return: None if the filename is usable.
+        :param filename: a proposed filename in unicode
+        :return: None if the filename is usable
         """
         encoded_name = filename.encode('utf-8')
         length_in_bytes = len(encoded_name)
@@ -475,16 +476,16 @@ class B2RawApi(AbstractRawApi):
         file_infos, data_stream
     ):
         """
-        Uploads one small file to b2.
+        Upload one, small file to b2.
 
-        :param upload_url: The upload_url from b2_authorize_account
-        :param upload_auth_token: The auth token from b2_authorize_account
-        :param file_name: The name of the B2 file
-        :param content_length: Number of bytes in the file.
-        :param content_type: MIME type.
-        :param content_sha1: Hex SHA1 of the contents of the file
-        :param file_infos: Extra file info to upload
-        :param data_stream: A file like object from which the contents of the file can be read.
+        :param upload_url: the upload_url from b2_authorize_account
+        :param upload_auth_token: the auth token from b2_authorize_account
+        :param file_name: the name of the B2 file
+        :param content_length: number of bytes in the file
+        :param content_type: MIME type
+        :param content_sha1: hex SHA1 of the contents of the file
+        :param file_infos: extra file info to upload
+        :param data_stream: a file like object from which the contents of the file can be read
         :return:
         """
         # Raise UnusableFileName if the file_name doesn't meet the rules.
@@ -516,7 +517,7 @@ class B2RawApi(AbstractRawApi):
 
 def test_raw_api():
     """
-    Exercises the code in B2RawApi by making each call once, just
+    Exercise the code in B2RawApi by making each call once, just
     to make sure the parameters are passed in, and the result is
     passed back.
 
@@ -525,7 +526,7 @@ def test_raw_api():
 
     Prints to stdout if things go wrong.
 
-    :return: 0 on success, non-zero on failure.
+    :return: 0 on success, non-zero on failure
     """
     try:
         raw_api = B2RawApi(B2Http())
@@ -538,8 +539,8 @@ def test_raw_api():
 
 def test_raw_api_helper(raw_api):
     """
-    Tries each of the calls to the raw api.  Raises an
-    except if anything goes wrong.
+    Try each of the calls to the raw api.  Raise an
+    exception if anything goes wrong.
 
     This uses a Backblaze account that is just for this test.
     The account uses the free level of service, which should
@@ -746,10 +747,10 @@ def test_raw_api_helper(raw_api):
     )
     assert first_bucket_revision < updated_bucket['revision']
 
-    # clean up this test
+    # Clean up this test.
     _clean_and_delete_bucket(raw_api, api_url, account_auth_token, account_id, bucket_id)
 
-    # Clean up from old tests.  Empty and delete any buckets more than an hour old.
+    # Clean up from old tests. Empty and delete any buckets more than an hour old.
     for bucket_dict in bucket_list_dict['buckets']:
         bucket_id = bucket_dict['bucketId']
         bucket_name = bucket_dict['bucketName']
@@ -759,7 +760,7 @@ def test_raw_api_helper(raw_api):
 
 
 def _clean_and_delete_bucket(raw_api, api_url, account_auth_token, account_id, bucket_id):
-    # Delete the files.  This test never creates more than a few files,
+    # Delete the files. This test never creates more than a few files,
     # so one call to list_file_versions should get them all.
     versions_dict = raw_api.list_file_versions(api_url, account_auth_token, bucket_id)
     for version_dict in versions_dict['files']:

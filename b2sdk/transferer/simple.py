@@ -36,7 +36,7 @@ class SimpleDownloader(AbstractDownloader):
 
         assert actual_size >= 1  # code below does `actual_size - 1`, but it should never reach that part with an empty file
 
-        # now normally bytes_read == metadata.content_length but sometimes there is a timeout
+        # now, normally bytes_read == metadata.content_length, but sometimes there is a timeout
         # or something and the server closes connection, while neither tcp or http have a problem
         # with the truncated output, so we detect it here and try to continue
 
@@ -48,7 +48,7 @@ class SimpleDownloader(AbstractDownloader):
                 metadata,
             ).subrange(bytes_read, actual_size - 1)
             # original response is not closed at this point yet, as another layer is responsible for closing it, so a new socket might be allocated,
-            # but this is a very rare case and so not worth the optimization
+            # but this is a very rare case and so it is not worth the optimization
             logger.debug(
                 're-download attempts remaining: %i, bytes read already: %i. Getting range %s now.',
                 retries_left, bytes_read, new_range

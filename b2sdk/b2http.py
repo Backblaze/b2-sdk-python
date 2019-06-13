@@ -33,8 +33,7 @@ def _print_exception(e, indent=''):
     """
     Used for debugging to print out nested exception structures.
 
-    :param indent: message prefix
-    :type indent: str
+    :param str indent: message prefix
     """
     print(indent + 'EXCEPTION', repr(e))
     print(indent + 'CLASS', type(e))
@@ -46,7 +45,7 @@ def _print_exception(e, indent=''):
 
 def _translate_errors(fcn, post_params=None):
     """
-    Calls the given function, turning any exception raised into the right
+    Call the given function, turning any exception raised into the right
     kind of B2Error.
 
     :param dict post_params: request parameters
@@ -140,7 +139,7 @@ def _translate_and_retry(fcn, try_count, post_params=None):
 
 class ResponseContextManager(object):
     """
-    Context manager that closes a requests.Response when done.
+    A context manager that closes a requests.Response when done.
     """
 
     def __init__(self, response):
@@ -155,7 +154,7 @@ class ResponseContextManager(object):
 
 class HttpCallback(object):
     """
-    A callback object that does nothing.  Override pre_request
+    A callback object that does nothing.  Overrides pre_request
     and/or post_request as desired.
     """
 
@@ -166,9 +165,9 @@ class HttpCallback(object):
         Raises an exception if this request should not be processed.
         The exception raised must inherit from B2HttpCallbackPreRequestException.
 
-        :param str method: str, One of: 'POST', 'GET', etc.
-        :param str url: The URL that will be used.
-        :param dict headers: The header sent with the request.
+        :param str method: str, one of: 'POST', 'GET', etc.
+        :param str url: the URL that will be used
+        :param dict headers: the header sent with the request
 
         """
 
@@ -181,24 +180,24 @@ class HttpCallback(object):
         The exception raised must inherit from B2HttpCallbackPostRequestException.
 
         :param str method: one of: 'POST', 'GET', etc.
-        :param str url: the URL that will be used.
-        :param dict headers: the header sent with the request.
-        :param response: a response object from the requests library.
+        :param str url: the URL that will be used
+        :param dict headers: the header sent with the request
+        :param response: a response object from the requests library
         """
 
 
 class ClockSkewHook(HttpCallback):
     def post_request(self, method, url, headers, response):
         """
-        Raises an exception if the clock in the server is too different from the
+        Raise an exception if the clock in the server is too different from the
         clock on the local host.
 
         The Date header contains a string that looks like: "Fri, 16 Dec 2016 20:52:30 GMT".
 
         :param str method: one of: 'POST', 'GET', etc.
-        :param str url: the URL that will be used.
-        :param dict headers: the header sent with the request.
-        :param response: a response object from the requests library.
+        :param str url: the URL that will be used
+        :param dict headers: the header sent with the request
+        :param response: a response object from the requests library
         """
         # Make a string that uses month numbers instead of month names
         server_date_str = response.headers['Date']
@@ -227,14 +226,15 @@ class B2Http(object):
     """
     A wrapper for the requests module.  Provides the operations
     needed to access B2, and handles retrying when the returned
-    status is 503 Service Unavailable, 429 Too Many Requests etc
+    status is 503 Service Unavailable, 429 Too Many Requests, etc.
 
     The operations supported are:
-       - post_json_return_json
-       - post_content_return_json
-       - get_content
 
-    The methods that return JSON either return a Python dict  or
+    - post_json_return_json
+    - post_content_return_json
+    - get_content
+
+    The methods that return JSON either return a Python dict or
     raise a subclass of B2Error.  They can be used like this:
 
     .. code-block:: python
@@ -266,7 +266,7 @@ class B2Http(object):
 
     def add_callback(self, callback):
         """
-        Adds a callback that inherits from HttpCallback.
+        Add a callback that inherits from HttpCallback.
 
         :param callback: a callback to be added to a chain
         :type callback: callable
@@ -285,7 +285,7 @@ class B2Http(object):
            except B2Error as e:
                ...
 
-        :param str url: URL to call
+        :param str url: a URL to call
         :param dict headers: headers to send.
         :param data: bytes (Python 3) or str (Python 2), or a file-like object, to send
         :return: a dict that is the decoded JSON
@@ -328,7 +328,7 @@ class B2Http(object):
            except B2Error as e:
                ...
 
-        :param str url: URL to call
+        :param str url: a URL to call
         :param dict headers: headers to send.
         :param dict params: a dict that will be converted to JSON
         :return: the decoded JSON document
@@ -339,7 +339,7 @@ class B2Http(object):
 
     def get_content(self, url, headers, try_count=5):
         """
-        Fetches content from a URL.
+        Fetche content from a URL.
 
         Use like this:
 
@@ -356,7 +356,7 @@ class B2Http(object):
             - headers
             - iter_content()
 
-        :param str url: URL to call
+        :param str url: a URL to call
         :param dict headers: headers to send
         :param int try_count: a number or retries
         :return: Context manager that returns an object that supports iter_content()
@@ -387,9 +387,9 @@ class B2Http(object):
 
 def test_http():
     """
-    Runs a few tests on error diagnosis.
+    Run a few tests on error diagnosis.
 
-    This test takes a while to run, and is not used in the automated tests
+    This test takes a while to run and is not used in the automated tests
     during building.  Run the test by hand to exercise the code.  Be sure
     to run in both Python 2 and Python 3.
     """

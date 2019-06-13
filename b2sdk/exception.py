@@ -23,7 +23,7 @@ class B2Error(Exception):
         Python 2 does not like it when you pass unicode as the message
         in an exception.  We like to use file names in exception messages.
         To avoid problems, if the message has any non-ascii characters in
-        it, they are replaced with backslash-uNNNN
+        it, they are replaced with backslash-uNNNN.
 
         https://pythonhosted.org/kitchen/unicode-frustrations.html#frustration-5-exceptions
         """
@@ -38,7 +38,7 @@ class B2Error(Exception):
     @property
     def prefix(self):
         """
-        nice auto-generated error message prefix
+        Nice, auto-generated error message prefix.
 
         >>> B2SimpleError().prefix
         'Simple error'
@@ -53,14 +53,14 @@ class B2Error(Exception):
 
     def should_retry_http(self):
         """
-        Returns true if this is an error that can cause an HTTP
+        Return true if this is an error that can cause an HTTP
         call to be retried.
         """
         return False
 
     def should_retry_upload(self):
         """
-        Returns true if this is an error that should tell the upload
+        Return true if this is an error that should tell the upload
         code to get a new upload URL and try the upload again.
         """
         return False
@@ -69,7 +69,7 @@ class B2Error(Exception):
 @six.add_metaclass(ABCMeta)
 class B2SimpleError(B2Error):
     """
-    a B2Error with a message prefix
+    A B2Error with a message prefix.
     """
 
     def __str__(self):
@@ -158,7 +158,7 @@ class ClockSkew(B2HttpCallbackPostRequestException):
 
     def __init__(self, clock_skew_seconds):
         """
-        :param int clock_skew_seconds: The different: local_clock - server_clock
+        :param int clock_skew_seconds: The difference: local_clock - server_clock
         """
         super(ClockSkew, self).__init__()
         self.clock_skew_seconds = clock_skew_seconds
@@ -176,7 +176,7 @@ class ClockSkew(B2HttpCallbackPostRequestException):
 
 class CommandError(B2Error):
     """
-    b2 command error (user caused). Accepts exactly one argument: message.
+    b2 command error (user caused).  Accepts exactly one argument: message.
 
     We expect users of shell scripts will parse our ``__str__`` output.
     """
@@ -248,7 +248,8 @@ class FileNotPresent(B2SimpleError):
 
 
 class UnusableFileName(B2SimpleError):
-    """Raise when a filename doesn't meet the rules.
+    """
+    Raise when a filename doesn't meet the rules.
 
     Could possibly use InvalidUploadSource, but this is intended for the filename on the
     server, which could differ.  https://www.backblaze.com/b2/docs/files.html.
@@ -291,7 +292,7 @@ class Unauthorized(B2Error):
 class InvalidAuthToken(Unauthorized):
     """
     Specific type of Unauthorized that means the auth token is invalid.
-    This is not the case where the auth token is valid but does not
+    This is not the case where the auth token is valid, but does not
     allow access.
     """
 

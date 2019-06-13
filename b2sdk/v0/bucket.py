@@ -14,13 +14,13 @@ from b2sdk import v1
 class Bucket(v1.Bucket):
     def list_file_names(self, start_filename=None, max_entries=None):
         """
-        legacy interface which just returns whatever remote API returns
+        Legacy interface which just returns whatever remote API returns.
         """
         return self.api.session.list_file_names(self.id_, start_filename, max_entries)
 
     def list_file_versions(self, start_filename=None, start_file_id=None, max_entries=None):
         """
-        legacy interface which just returns whatever remote API returns
+        Legacy interface which just returns whatever remote API returns.
         """
         return self.api.session.list_file_versions(
             self.id_, start_filename, start_file_id, max_entries

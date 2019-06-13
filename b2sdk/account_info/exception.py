@@ -18,14 +18,14 @@ from ..exception import B2Error
 @six.add_metaclass(ABCMeta)
 class AccountInfoError(B2Error):
     """
-    Base class for all account info errors
+    Base class for all account info errors.
     """
     pass
 
 
 class CorruptAccountInfo(AccountInfoError):
     """
-    Raised when an account info file is corrupted
+    Raised when an account info file is corrupted.
     """
 
     def __init__(self, file_name):
@@ -44,7 +44,7 @@ class CorruptAccountInfo(AccountInfoError):
 
 class MissingAccountData(AccountInfoError):
     """
-    Raised when there is no account info data available
+    Raised when there is no account info data available.
     """
 
     def __init__(self, key):
