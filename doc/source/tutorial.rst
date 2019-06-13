@@ -23,25 +23,27 @@ With the ``info`` object in hand, we can now proceed to create a ``B2Api`` objec
 .. note::
    :ref:`AccountInfo` section provides guidance for choosing the correct ``AccountInfo`` class for your application.
 
+*********************
+Account authorization
+*********************
+
+.. code-block:: python
+
+    >>> application_key_id = '4a5b6c7d8e9f'
+    >>> application_key = '001b8e23c26ff6efb941e237deb182b9599a84bef7'
+    >>> b2_api.authorize_account("production", application_key_id, application_key)
+
+.. tip::
+   Get credentials from B2 website
+
+To find out more about account authorization, see :meth:`b2sdk.v1.B2Api.authorize_account`
+
 
 ***************************
 B2Api
 ***************************
 
 *B2Api* allows for account-level operations on a B2 account.
-
-Initializing B2Api
-========================
-
-.. code-block:: python
-
-    >>> from b2sdk.v1 import B2Api
-    >>> api = B2Api(info)
-
-To find out more about API object initialization, see :meth:`b2sdk.v1.B2Api.__init__`.
-
-.. todo::
-   show how to perform account authorization
 
 Typical B2Api operations
 ========================
@@ -62,6 +64,10 @@ Typical B2Api operations
    download_file_by_id
    list_parts
    cancel_large_file
+   `
+.. code-block:: python
+
+    >>> b2_api = B2Api(info)
 
 to find out more, see :class:`b2sdk.v1.B2Api`.
 

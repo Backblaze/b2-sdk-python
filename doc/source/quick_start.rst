@@ -5,66 +5,20 @@ Quick Start Guide
 ########################
 
 ***********************
-Import b2sdk
+Prepare b2sdk
 ***********************
 
 .. code-block:: python
 
     >>> from b2sdk.v1 import *
-
-To find out more about the non-standard import look, see :ref:`interface versions <interface_versions>`.
-
-***********************
-Initialize AccountInfo
-***********************
-
-.. hint:: See :doc:`api/account_info` section to find out which *AccountInfo* implementation is best for your application.
-
-
-InMemoryAccountInfo
-===================
-
-To store credentials, tokens and cache in memory:
-
-.. code-block:: python
-
     >>> info = InMemoryAccountInfo()
-
-
-SqliteAccountInfo
-===================
-
-To store credentials, tokens and cache in ``~/.b2_account_info``
-
-.. code-block:: python
-
-    >>> info = SqliteAccountInfo()
-
-
-*********************
-Initialize API
-*********************
-
-.. code-block:: python
-
     >>> b2_api = B2Api(info)
-
-To find out more about API object initialization, see :meth:`b2sdk.v1.B2Api.__init__`.
-
-*********************
-Account authorization
-*********************
-
-.. code-block:: python
-
     >>> application_key_id = '4a5b6c7d8e9f'
     >>> application_key = '001b8e23c26ff6efb941e237deb182b9599a84bef7'
     >>> b2_api.authorize_account("production", application_key_id, application_key)
 
 .. tip::
    Get credentials from B2 website
-
-To find out more about account authorization, see :meth:`b2sdk.v1.B2Api.authorize_account`
 
 
 ***************
