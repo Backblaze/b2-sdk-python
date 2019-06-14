@@ -441,12 +441,18 @@ class FakeArgs(object):
         self.excludeAllSymlinks = excludeAllSymlinks
 
     def get_synchronizer(self, policies_manager=DEFAULT_SCAN_MANAGER):
-        return Synchronizer(False, 1, policies_manager=policies_manager, dry_run=self.dryRun,
-                            allow_empty_source=self.allowEmptySource, newer_file_mode=self.newer_file_mode,
-                            keep_days_or_delete=self.keep_days_or_delete,
-                            keep_days=self.keep_days,
-                            compare_version_mode=self.compare_version_mode,
-                            compare_threshold=self.compare_threshold,)
+        return Synchronizer(
+            False,
+            1,
+            policies_manager=policies_manager,
+            dry_run=self.dryRun,
+            allow_empty_source=self.allowEmptySource,
+            newer_file_mode=self.newer_file_mode,
+            keep_days_or_delete=self.keep_days_or_delete,
+            keep_days=self.keep_days,
+            compare_version_mode=self.compare_version_mode,
+            compare_threshold=self.compare_threshold,
+        )
 
 
 def b2_file(name, mod_times, size=10):
@@ -533,7 +539,13 @@ class TestExclusions(TestSync):
             'b2_upload(/dir/d/d.txt, folder/d/d.txt, 100)',
             'b2_upload(/dir/e/e.incl, folder/e/e.incl, 100)',
         ]
-        self._check_folder_sync(expected_actions, FakeArgs(keep_days_or_delete=Synchronizer.DELETE_MODE, excludeRegex=["b\\.txt"],),)
+        self._check_folder_sync(
+            expected_actions,
+            FakeArgs(
+                keep_days_or_delete=Synchronizer.DELETE_MODE,
+                excludeRegex=["b\\.txt"],
+            ),
+        )
 
     def test_file_exclusions_inclusions_with_delete(self):
         expected_actions = [
@@ -544,7 +556,11 @@ class TestExclusions(TestSync):
             'b2_upload(/dir/e/e.incl, folder/e/e.incl, 100)',
             'b2_upload(/dir/b.txt.incl, folder/b.txt.incl, 100)',
         ]
-        fakeargs = FakeArgs(keep_days_or_delete=Synchronizer.DELETE_MODE, excludeRegex=["b\\.txt"], includeRegex=[".*\\.incl"])
+        fakeargs = FakeArgs(
+            keep_days_or_delete=Synchronizer.DELETE_MODE,
+            excludeRegex=["b\\.txt"],
+            includeRegex=[".*\\.incl"]
+        )
         self._check_folder_sync(expected_actions, fakeargs)
 
 
@@ -590,12 +606,22 @@ class TestMakeSyncActions(TestSync):
     def test_dir_not_there_b2_keepdays(self):  # reproduces issue 220
         src_file = b2_file('directory/a.txt', [100])
         actions = ['b2_upload(/dir/directory/a.txt, folder/directory/a.txt, 100)']
-        self._check_local_to_b2(src_file, None, FakeArgs(keep_days_or_delete=Synchronizer.KEEP_DAYS_MODE, keep_days=1), actions,)
+        self._check_local_to_b2(
+            src_file,
+            None,
+            FakeArgs(keep_days_or_delete=Synchronizer.KEEP_DAYS_MODE, keep_days=1),
+            actions,
+        )
 
     def test_dir_not_there_b2_delete(self):  # reproduces issue 218
         src_file = b2_file('directory/a.txt', [100])
         actions = ['b2_upload(/dir/directory/a.txt, folder/directory/a.txt, 100)']
-        self._check_local_to_b2(src_file, None, FakeArgs(keep_days_or_delete=Synchronizer.DELETE_MODE), actions,)
+        self._check_local_to_b2(
+            src_file,
+            None,
+            FakeArgs(keep_days_or_delete=Synchronizer.DELETE_MODE),
+            actions,
+        )
 
     def test_not_there_local(self):
         src_file = b2_file('a.txt', [100])
@@ -615,12 +641,22 @@ class TestMakeSyncActions(TestSync):
     def test_delete_b2(self):
         dst_file = b2_file('a.txt', [100])
         actions = ['b2_delete(folder/a.txt, id_a_100, )']
-        self._check_local_to_b2(None, dst_file, FakeArgs(keep_days_or_delete=Synchronizer.DELETE_MODE), actions,)
+        self._check_local_to_b2(
+            None,
+            dst_file,
+            FakeArgs(keep_days_or_delete=Synchronizer.DELETE_MODE),
+            actions,
+        )
 
     def test_delete_large_b2(self):
         dst_file = b2_file('a.txt', [100])
         actions = ['b2_delete(folder/a.txt, id_a_100, )']
-        self._check_local_to_b2(None, dst_file, FakeArgs(keep_days_or_delete=Synchronizer.DELETE_MODE), actions,)
+        self._check_local_to_b2(
+            None,
+            dst_file,
+            FakeArgs(keep_days_or_delete=Synchronizer.DELETE_MODE),
+            actions,
+        )
 
     def test_delete_b2_multiple_versions(self):
         dst_file = b2_file('a.txt', [100, 200])
@@ -628,21 +664,36 @@ class TestMakeSyncActions(TestSync):
             'b2_delete(folder/a.txt, id_a_100, )',
             'b2_delete(folder/a.txt, id_a_200, (old version))'
         ]
-        self._check_local_to_b2(None, dst_file, FakeArgs(keep_days_or_delete=Synchronizer.DELETE_MODE), actions,)
+        self._check_local_to_b2(
+            None,
+            dst_file,
+            FakeArgs(keep_days_or_delete=Synchronizer.DELETE_MODE),
+            actions,
+        )
 
     def test_delete_hide_b2_multiple_versions(self):
         dst_file = b2_file('a.txt', [TODAY, TODAY - 2 * DAY, TODAY - 4 * DAY])
         actions = [
             'b2_hide(folder/a.txt)', 'b2_delete(folder/a.txt, id_a_8294400000, (old version))'
         ]
-        self._check_local_to_b2(None, dst_file, FakeArgs(keep_days_or_delete=Synchronizer.KEEP_DAYS_MODE, keep_days=1), actions,)
+        self._check_local_to_b2(
+            None,
+            dst_file,
+            FakeArgs(keep_days_or_delete=Synchronizer.KEEP_DAYS_MODE, keep_days=1),
+            actions,
+        )
 
     def test_delete_hide_b2_multiple_versions_old(self):
         dst_file = b2_file('a.txt', [TODAY - 1 * DAY, TODAY - 3 * DAY, TODAY - 5 * DAY])
         actions = [
             'b2_hide(folder/a.txt)', 'b2_delete(folder/a.txt, id_a_8208000000, (old version))'
         ]
-        self._check_local_to_b2(None, dst_file, FakeArgs(keep_days_or_delete=Synchronizer.KEEP_DAYS_MODE, keep_days=2), actions,)
+        self._check_local_to_b2(
+            None,
+            dst_file,
+            FakeArgs(keep_days_or_delete=Synchronizer.KEEP_DAYS_MODE, keep_days=2),
+            actions,
+        )
 
     def test_already_hidden_multiple_versions_keep(self):
         dst_file = b2_file('a.txt', [-TODAY, TODAY - 2 * DAY, TODAY - 4 * DAY])
@@ -651,19 +702,34 @@ class TestMakeSyncActions(TestSync):
     def test_already_hidden_multiple_versions_keep_days(self):
         dst_file = b2_file('a.txt', [-TODAY, TODAY - 2 * DAY, TODAY - 4 * DAY])
         actions = ['b2_delete(folder/a.txt, id_a_8294400000, (old version))']
-        self._check_local_to_b2(None, dst_file, FakeArgs(keep_days_or_delete=Synchronizer.KEEP_DAYS_MODE, keep_days=1), actions,)
+        self._check_local_to_b2(
+            None,
+            dst_file,
+            FakeArgs(keep_days_or_delete=Synchronizer.KEEP_DAYS_MODE, keep_days=1),
+            actions,
+        )
 
     def test_already_hidden_multiple_versions_keep_days_one_old(self):
         # The 6-day-old file should be preserved, because it was visible
         # 5 days ago.
         dst_file = b2_file('a.txt', [-(TODAY - 2 * DAY), TODAY - 4 * DAY, TODAY - 6 * DAY])
         actions = []
-        self._check_local_to_b2(None, dst_file, FakeArgs(keep_days_or_delete=Synchronizer.KEEP_DAYS_MODE, keep_days=5), actions,)
+        self._check_local_to_b2(
+            None,
+            dst_file,
+            FakeArgs(keep_days_or_delete=Synchronizer.KEEP_DAYS_MODE, keep_days=5),
+            actions,
+        )
 
     def test_already_hidden_multiple_versions_keep_days_two_old(self):
         dst_file = b2_file('a.txt', [-(TODAY - 2 * DAY), TODAY - 4 * DAY, TODAY - 6 * DAY])
         actions = ['b2_delete(folder/a.txt, id_a_8121600000, (old version))']
-        self._check_local_to_b2(None, dst_file, FakeArgs(keep_days_or_delete=Synchronizer.KEEP_DAYS_MODE, keep_days=2), actions,)
+        self._check_local_to_b2(
+            None,
+            dst_file,
+            FakeArgs(keep_days_or_delete=Synchronizer.KEEP_DAYS_MODE, keep_days=2),
+            actions,
+        )
 
     def test_already_hidden_multiple_versions_keep_days_delete_hide_marker(self):
         dst_file = b2_file('a.txt', [-(TODAY - 2 * DAY), TODAY - 4 * DAY, TODAY - 6 * DAY])
@@ -672,7 +738,12 @@ class TestMakeSyncActions(TestSync):
             'b2_delete(folder/a.txt, id_a_8294400000, (old version))',
             'b2_delete(folder/a.txt, id_a_8121600000, (old version))'
         ]
-        self._check_local_to_b2(None, dst_file, FakeArgs(keep_days_or_delete=Synchronizer.KEEP_DAYS_MODE, keep_days=1), actions,)
+        self._check_local_to_b2(
+            None,
+            dst_file,
+            FakeArgs(keep_days_or_delete=Synchronizer.KEEP_DAYS_MODE, keep_days=1),
+            actions,
+        )
 
     def test_already_hidden_multiple_versions_keep_days_old_delete(self):
         dst_file = b2_file('a.txt', [-TODAY + 2 * DAY, TODAY - 4 * DAY])
@@ -680,7 +751,12 @@ class TestMakeSyncActions(TestSync):
             'b2_delete(folder/a.txt, id_a_8467200000, (hide marker))',
             'b2_delete(folder/a.txt, id_a_8294400000, (old version))'
         ]
-        self._check_local_to_b2(None, dst_file, FakeArgs(keep_days_or_delete=Synchronizer.KEEP_DAYS_MODE, keep_days=1), actions,)
+        self._check_local_to_b2(
+            None,
+            dst_file,
+            FakeArgs(keep_days_or_delete=Synchronizer.KEEP_DAYS_MODE, keep_days=1),
+            actions,
+        )
 
     def test_already_hidden_multiple_versions_delete(self):
         dst_file = b2_file('a.txt', [-TODAY, TODAY - 2 * DAY, TODAY - 4 * DAY])
@@ -689,11 +765,21 @@ class TestMakeSyncActions(TestSync):
             'b2_delete(folder/a.txt, id_a_8467200000, (old version))',
             'b2_delete(folder/a.txt, id_a_8294400000, (old version))'
         ]
-        self._check_local_to_b2(None, dst_file, FakeArgs(keep_days_or_delete=Synchronizer.DELETE_MODE), actions,)
+        self._check_local_to_b2(
+            None,
+            dst_file,
+            FakeArgs(keep_days_or_delete=Synchronizer.DELETE_MODE),
+            actions,
+        )
 
     def test_delete_local(self):
         dst_file = local_file('a.txt', [100])
-        self._check_b2_to_local(None, dst_file, FakeArgs(keep_days_or_delete=Synchronizer.DELETE_MODE), ['local_delete(/dir/a.txt)'],)
+        self._check_b2_to_local(
+            None,
+            dst_file,
+            FakeArgs(keep_days_or_delete=Synchronizer.DELETE_MODE),
+            ['local_delete(/dir/a.txt)'],
+        )
 
     # src same as dst
 
@@ -716,18 +802,33 @@ class TestMakeSyncActions(TestSync):
         src_file = local_file('a.txt', [TODAY - 3 * DAY])
         dst_file = b2_file('a.txt', [TODAY - 3 * DAY, TODAY - 4 * DAY])
         actions = ['b2_delete(folder/a.txt, id_a_8294400000, (old version))']
-        self._check_local_to_b2(src_file, dst_file, FakeArgs(keep_days_or_delete=Synchronizer.KEEP_DAYS_MODE, keep_days=1), actions,)
+        self._check_local_to_b2(
+            src_file,
+            dst_file,
+            FakeArgs(keep_days_or_delete=Synchronizer.KEEP_DAYS_MODE, keep_days=1),
+            actions,
+        )
 
     def test_keep_days_no_change_with_old_file(self):
         src_file = local_file('a.txt', [TODAY - 3 * DAY])
         dst_file = b2_file('a.txt', [TODAY - 3 * DAY])
-        self._check_local_to_b2(src_file, dst_file, FakeArgs(keep_days_or_delete=Synchronizer.KEEP_DAYS_MODE, keep_days=1), [],)
+        self._check_local_to_b2(
+            src_file,
+            dst_file,
+            FakeArgs(keep_days_or_delete=Synchronizer.KEEP_DAYS_MODE, keep_days=1),
+            [],
+        )
 
     def test_same_delete_old_versions(self):
         src_file = local_file('a.txt', [TODAY])
         dst_file = b2_file('a.txt', [TODAY, TODAY - 3 * DAY])
         actions = ['b2_delete(folder/a.txt, id_a_8380800000, (old version))']
-        self._check_local_to_b2(src_file, dst_file, FakeArgs(keep_days_or_delete=Synchronizer.DELETE_MODE), actions,)
+        self._check_local_to_b2(
+            src_file,
+            dst_file,
+            FakeArgs(keep_days_or_delete=Synchronizer.DELETE_MODE),
+            actions,
+        )
 
     # src newer than dst
 
@@ -744,7 +845,12 @@ class TestMakeSyncActions(TestSync):
             'b2_upload(/dir/a.txt, folder/a.txt, 8640000000)',
             'b2_delete(folder/a.txt, id_a_8208000000, (old version))'
         ]
-        self._check_local_to_b2(src_file, dst_file, FakeArgs(keep_days_or_delete=Synchronizer.KEEP_DAYS_MODE, keep_days=2), actions,)
+        self._check_local_to_b2(
+            src_file,
+            dst_file,
+            FakeArgs(keep_days_or_delete=Synchronizer.KEEP_DAYS_MODE, keep_days=2),
+            actions,
+        )
 
     def test_newer_b2_delete_old_versions(self):
         src_file = local_file('a.txt', [TODAY])
@@ -754,13 +860,23 @@ class TestMakeSyncActions(TestSync):
             'b2_delete(folder/a.txt, id_a_8553600000, (old version))',
             'b2_delete(folder/a.txt, id_a_8380800000, (old version))'
         ]  # yapf disable
-        self._check_local_to_b2(src_file, dst_file, FakeArgs(keep_days_or_delete=Synchronizer.DELETE_MODE), actions,)
+        self._check_local_to_b2(
+            src_file,
+            dst_file,
+            FakeArgs(keep_days_or_delete=Synchronizer.DELETE_MODE),
+            actions,
+        )
 
     def test_newer_local(self):
         src_file = b2_file('a.txt', [200])
         dst_file = local_file('a.txt', [100])
         actions = ['b2_download(folder/a.txt, id_a_200, /dir/a.txt, 200)']
-        self._check_b2_to_local(src_file, dst_file, FakeArgs(keep_days_or_delete=Synchronizer.DELETE_MODE), actions,)
+        self._check_b2_to_local(
+            src_file,
+            dst_file,
+            FakeArgs(keep_days_or_delete=Synchronizer.DELETE_MODE),
+            actions,
+        )
 
     # src older than dst
 
@@ -779,18 +895,31 @@ class TestMakeSyncActions(TestSync):
     def test_older_b2_skip(self):
         src_file = local_file('a.txt', [100])
         dst_file = b2_file('a.txt', [200])
-        self._check_local_to_b2(src_file, dst_file, FakeArgs(newer_file_mode=AbstractFileSyncPolicy.NEWER_FILE_SKIP), [],)
+        self._check_local_to_b2(
+            src_file,
+            dst_file,
+            FakeArgs(newer_file_mode=AbstractFileSyncPolicy.NEWER_FILE_SKIP),
+            [],
+        )
 
     def test_older_b2_replace(self):
         src_file = local_file('a.txt', [100])
         dst_file = b2_file('a.txt', [200])
         actions = ['b2_upload(/dir/a.txt, folder/a.txt, 100)']
-        self._check_local_to_b2(src_file, dst_file, FakeArgs(newer_file_mode=AbstractFileSyncPolicy.NEWER_FILE_REPLACE), actions,)
+        self._check_local_to_b2(
+            src_file,
+            dst_file,
+            FakeArgs(newer_file_mode=AbstractFileSyncPolicy.NEWER_FILE_REPLACE),
+            actions,
+        )
 
     def test_older_b2_replace_delete(self):
         src_file = local_file('a.txt', [100])
         dst_file = b2_file('a.txt', [200])
-        args = FakeArgs(newer_file_mode=AbstractFileSyncPolicy.NEWER_FILE_REPLACE, keep_days_or_delete=Synchronizer.DELETE_MODE,)
+        args = FakeArgs(
+            newer_file_mode=AbstractFileSyncPolicy.NEWER_FILE_REPLACE,
+            keep_days_or_delete=Synchronizer.DELETE_MODE,
+        )
         actions = [
             'b2_upload(/dir/a.txt, folder/a.txt, 100)',
             'b2_delete(folder/a.txt, id_a_200, (old version))'
@@ -812,41 +941,74 @@ class TestMakeSyncActions(TestSync):
     def test_older_local_skip(self):
         src_file = b2_file('a.txt', [100])
         dst_file = local_file('a.txt', [200])
-        self._check_b2_to_local(src_file, dst_file, FakeArgs(newer_file_mode=AbstractFileSyncPolicy.NEWER_FILE_SKIP), [],)
+        self._check_b2_to_local(
+            src_file,
+            dst_file,
+            FakeArgs(newer_file_mode=AbstractFileSyncPolicy.NEWER_FILE_SKIP),
+            [],
+        )
 
     def test_older_local_replace(self):
         src_file = b2_file('a.txt', [100])
         dst_file = local_file('a.txt', [200])
         actions = ['b2_download(folder/a.txt, id_a_100, /dir/a.txt, 100)']
-        self._check_b2_to_local(src_file, dst_file, FakeArgs(newer_file_mode=AbstractFileSyncPolicy.NEWER_FILE_REPLACE), actions,)
+        self._check_b2_to_local(
+            src_file,
+            dst_file,
+            FakeArgs(newer_file_mode=AbstractFileSyncPolicy.NEWER_FILE_REPLACE),
+            actions,
+        )
 
     # compareVersions option
 
     def test_compare_b2_none_newer(self):
         src_file = local_file('a.txt', [200])
         dst_file = b2_file('a.txt', [100])
-        self._check_local_to_b2(src_file, dst_file, FakeArgs(compare_version_mode=AbstractFileSyncPolicy.COMPARE_VERSION_NONE), [],)
+        self._check_local_to_b2(
+            src_file,
+            dst_file,
+            FakeArgs(compare_version_mode=AbstractFileSyncPolicy.COMPARE_VERSION_NONE),
+            [],
+        )
 
     def test_compare_b2_none_older(self):
         src_file = local_file('a.txt', [100])
         dst_file = b2_file('a.txt', [200])
-        self._check_local_to_b2(src_file, dst_file, FakeArgs(compare_version_mode=AbstractFileSyncPolicy.COMPARE_VERSION_NONE), [],)
+        self._check_local_to_b2(
+            src_file,
+            dst_file,
+            FakeArgs(compare_version_mode=AbstractFileSyncPolicy.COMPARE_VERSION_NONE),
+            [],
+        )
 
     def test_compare_b2_size_equal(self):
         src_file = local_file('a.txt', [200], size=10)
         dst_file = b2_file('a.txt', [100], size=10)
-        self._check_local_to_b2(src_file, dst_file, FakeArgs(compare_version_mode=AbstractFileSyncPolicy.COMPARE_VERSION_SIZE), [],)
+        self._check_local_to_b2(
+            src_file,
+            dst_file,
+            FakeArgs(compare_version_mode=AbstractFileSyncPolicy.COMPARE_VERSION_SIZE),
+            [],
+        )
 
     def test_compare_b2_size_not_equal(self):
         src_file = local_file('a.txt', [200], size=11)
         dst_file = b2_file('a.txt', [100], size=10)
         actions = ['b2_upload(/dir/a.txt, folder/a.txt, 200)']
-        self._check_local_to_b2(src_file, dst_file, FakeArgs(compare_version_mode=AbstractFileSyncPolicy.COMPARE_VERSION_SIZE), actions,)
+        self._check_local_to_b2(
+            src_file,
+            dst_file,
+            FakeArgs(compare_version_mode=AbstractFileSyncPolicy.COMPARE_VERSION_SIZE),
+            actions,
+        )
 
     def test_compare_b2_size_not_equal_delete(self):
         src_file = local_file('a.txt', [200], size=11)
         dst_file = b2_file('a.txt', [100], size=10)
-        args = FakeArgs(compare_version_mode=AbstractFileSyncPolicy.COMPARE_VERSION_SIZE, keep_days_or_delete=Synchronizer.DELETE_MODE,)
+        args = FakeArgs(
+            compare_version_mode=AbstractFileSyncPolicy.COMPARE_VERSION_SIZE,
+            keep_days_or_delete=Synchronizer.DELETE_MODE,
+        )
         actions = [
             'b2_upload(/dir/a.txt, folder/a.txt, 200)',
             'b2_delete(folder/a.txt, id_a_100, (old version))'
@@ -872,7 +1034,14 @@ class TestMakeSyncActions(TestSync):
         src_folder = FakeFolder(src_type, [src_file] if src_file else [])
         dst_folder = FakeFolder(dst_type, [dst_file] if dst_file else [])
         synchronizer = fakeargs.get_synchronizer()
-        actions = list(synchronizer.make_folder_sync_actions(src_folder, dst_folder, TODAY, self.reporter,))
+        actions = list(
+            synchronizer.make_folder_sync_actions(
+                src_folder,
+                dst_folder,
+                TODAY,
+                self.reporter,
+            )
+        )
         action_strs = [str(a) for a in actions]
         if expected_actions != action_strs:
             print('Expected:')
