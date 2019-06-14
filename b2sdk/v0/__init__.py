@@ -12,3 +12,5 @@ from b2sdk.v1 import *
 from b2sdk.v0.api import B2Api
 from b2sdk.v0.bucket import Bucket
 from b2sdk.v0.bucket import BucketFactory
+from .sync import make_folder_sync_actions
+from .sync import sync_folders

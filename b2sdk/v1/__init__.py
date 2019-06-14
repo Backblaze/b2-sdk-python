@@ -37,6 +37,7 @@ from b2sdk.version_utils import rename_argument, rename_function
 # utils
 
 from b2sdk.utils import b2_url_encode, b2_url_decode, choose_part_ranges, format_and_scale_fraction, format_and_scale_number, hex_sha1_of_stream, hex_sha1_of_bytes, TempDir
+from b2sdk.utils import trace_call
 
 # data classes
 
@@ -127,13 +128,12 @@ from b2sdk.sync.policy import UpAndKeepDaysPolicy
 from b2sdk.sync.policy import UpPolicy
 from b2sdk.sync.policy import make_b2_keep_days_actions
 from b2sdk.sync.policy_manager import SyncPolicyManager
+from b2sdk.sync.policy_manager import POLICY_MANAGER
 from b2sdk.sync.report import SyncFileReporter
 from b2sdk.sync.report import SyncReport
 from b2sdk.sync.scan_policies import DEFAULT_SCAN_MANAGER
 from b2sdk.sync.scan_policies import RegexSet
 from b2sdk.sync.scan_policies import ScanPoliciesManager
-from b2sdk.sync.sync import make_folder_sync_actions
-from b2sdk.sync.sync import sync_folders
 from b2sdk.sync.sync import Synchronizer
 from b2sdk.sync.sync import zip_folders
 
