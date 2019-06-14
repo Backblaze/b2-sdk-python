@@ -30,7 +30,7 @@ from .deps import BoundedQueueExecutor, zip_folders
 from .deps import parse_sync_folder
 from .deps import TempDir
 from .deps import Synchronizer
-from .deps import InvalidArgument, IncompleteSync
+from .deps import InvalidArgument
 
 try:
     from unittest.mock import MagicMock
