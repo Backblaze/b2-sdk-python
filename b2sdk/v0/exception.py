@@ -8,6 +8,8 @@
 #
 ######################################################################
 
+B2Error = None  # calm down, pyflakes
+
 from b2sdk.v1.exception import *
 
 
