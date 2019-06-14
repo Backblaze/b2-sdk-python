@@ -41,10 +41,7 @@ def next_or_none(iterator):
         return None
 
 
-def zip_folders(folder_a,
-                folder_b,
-                reporter,
-                policies_manager=DEFAULT_SCAN_MANAGER):
+def zip_folders(folder_a, folder_b, reporter, policies_manager=DEFAULT_SCAN_MANAGER):
     """
     Iterate over all of the files in the union of two folders,
     matching file names.
@@ -104,12 +101,12 @@ def count_files(local_folder, reporter):
 
 
 def get_synchronizer_from_args(
-        args,
-        no_progress,
-        max_workers,
-        policies_manager=DEFAULT_SCAN_MANAGER,
-        dry_run=False,
-        allow_empty_source=False,
+    args,
+    no_progress,
+    max_workers,
+    policies_manager=DEFAULT_SCAN_MANAGER,
+    dry_run=False,
+    allow_empty_source=False,
 ):
     if args.replaceNewer and args.skipNewer:
         raise CommandError('--skipNewer and --replaceNewer are incompatible')
@@ -160,12 +157,12 @@ def get_synchronizer_from_args(
 
 
 def make_folder_sync_actions(
-        source_folder,
-        dest_folder,
-        args,
-        now_millis,
-        reporter,
-        policies_manager=DEFAULT_SCAN_MANAGER,
+    source_folder,
+    dest_folder,
+    args,
+    now_millis,
+    reporter,
+    policies_manager=DEFAULT_SCAN_MANAGER,
 ):
     """
     This is deprecated. Use the new Synchronizer class.
@@ -206,16 +203,16 @@ def make_folder_sync_actions(
 
 @trace_call(logger)
 def sync_folders(
-        source_folder,
-        dest_folder,
-        args,
-        now_millis,
-        stdout,
-        no_progress,
-        max_workers,
-        policies_manager=DEFAULT_SCAN_MANAGER,
-        dry_run=False,
-        allow_empty_source=False,
+    source_folder,
+    dest_folder,
+    args,
+    now_millis,
+    stdout,
+    no_progress,
+    max_workers,
+    policies_manager=DEFAULT_SCAN_MANAGER,
+    dry_run=False,
+    allow_empty_source=False,
 ):
     """
     This is deprecated. Use the new Synchronizer class.
@@ -252,8 +249,7 @@ def sync_folders(
     # Make a reporter to report progress.
     with SyncReport(stdout, no_progress) as reporter:
         try:
-            synchronizer.sync_folders(source_folder, dest_folder, now_millis,
-                                      reporter)
+            synchronizer.sync_folders(source_folder, dest_folder, now_millis, reporter)
         except InvalidArgument as e:
             raise CommandError('--%s %s' % (e.field_name, e.message))
         except DestFileNewer as e:
@@ -269,17 +265,17 @@ class Synchronizer(object):
     KEEP_OR_DELETE_MODES = [DELETE_MODE, KEEP_DAYS_MODE]
 
     def __init__(
-            self,
-            no_progress,
-            max_workers,
-            policies_manager=DEFAULT_SCAN_MANAGER,
-            dry_run=False,
-            allow_empty_source=False,
-            newer_file_mode=None,
-            keep_days_or_delete=None,
-            compare_version_mode=None,
-            compare_threshold=None,
-            keep_days=None,
+        self,
+        no_progress,
+        max_workers,
+        policies_manager=DEFAULT_SCAN_MANAGER,
+        dry_run=False,
+        allow_empty_source=False,
+        newer_file_mode=None,
+        keep_days_or_delete=None,
+        compare_version_mode=None,
+        compare_threshold=None,
+        keep_days=None,
     ):
         """
         Initialize synchronizer class and validate arguments
@@ -318,8 +314,7 @@ class Synchronizer(object):
 
     def _validate(self):
         if self.compare_threshold < 0:
-            raise InvalidArgument('compare_threshold',
-                                  'must be a positive integer')
+            raise InvalidArgument('compare_threshold', 'must be a positive integer')
 
         if self.newer_file_mode and self.newer_file_mode not in AbstractFileSyncPolicy.NEWER_FILE_MODES:
             raise InvalidArgument(
@@ -336,15 +331,13 @@ class Synchronizer(object):
         if self.keep_days_or_delete == self.KEEP_DAYS_MODE and self.keep_days is None:
             raise InvalidArgument(
                 'keep_days',
-                'is required when keep_days_or_delete is %s' %
-                self.KEEP_DAYS_MODE,
+                'is required when keep_days_or_delete is %s' % self.KEEP_DAYS_MODE,
             )
 
         if self.compare_version_mode and self.compare_version_mode not in AbstractFileSyncPolicy.COMPARE_VERSION_MODES:
             raise InvalidArgument(
                 'compare_version_mode',
-                'must be one of :%s' %
-                AbstractFileSyncPolicy.COMPARE_VERSION_MODES,
+                'must be one of :%s' % AbstractFileSyncPolicy.COMPARE_VERSION_MODES,
             )
 
     def sync_folders(self, source_folder, dest_folder, now_millis, reporter):
@@ -364,8 +357,7 @@ class Synchronizer(object):
         if dest_folder.folder_type() == 'local' and not self.dry_run:
             dest_folder.ensure_present()
 
-        if source_folder.folder_type(
-        ) == 'local' and not self.allow_empty_source:
+        if source_folder.folder_type() == 'local' and not self.allow_empty_source:
             source_folder.ensure_non_empty()
 
         # Make an executor to count files and run all of the actions. This is
@@ -375,11 +367,9 @@ class Synchronizer(object):
         #
         # We use an executor with a bounded queue to avoid using up lots of memory
         # when syncing lots of files.
-        unbounded_executor = futures.ThreadPoolExecutor(
-            max_workers=self.max_workers)
+        unbounded_executor = futures.ThreadPoolExecutor(max_workers=self.max_workers)
         queue_limit = self.max_workers + 1000
-        sync_executor = BoundedQueueExecutor(
-            unbounded_executor, queue_limit=queue_limit)
+        sync_executor = BoundedQueueExecutor(unbounded_executor, queue_limit=queue_limit)
 
         # First, start the thread that counts the local files. That's the operation
         # that should be fastest, and it provides scale for the progress reporting.
@@ -403,9 +393,9 @@ class Synchronizer(object):
             raise ValueError('neither folder is a b2 folder')
         total_files = 0
         total_bytes = 0
-        for action in self.make_folder_sync_actions(source_folder, dest_folder,
-                                                    now_millis, reporter,
-                                                    self.policies_manager):
+        for action in self.make_folder_sync_actions(
+            source_folder, dest_folder, now_millis, reporter, self.policies_manager
+        ):
             logging.debug('scheduling action %s on bucket %s', action, bucket)
             sync_executor.submit(action.run, bucket, reporter, self.dry_run)
             total_files += 1
@@ -438,17 +428,14 @@ class Synchronizer(object):
         :param reporter: reporter object
         :param policies_manager: policies manager object
         """
-        if self.keep_days_or_delete == self.KEEP_DAYS_MODE and dest_folder.folder_type(
-        ) == 'local':
-            raise InvalidArgument('keep_days_or_delete',
-                                  'cannot be used for local files')
+        if self.keep_days_or_delete == self.KEEP_DAYS_MODE and dest_folder.folder_type() == 'local':
+            raise InvalidArgument('keep_days_or_delete', 'cannot be used for local files')
 
         source_type = source_folder.folder_type()
         dest_type = dest_folder.folder_type()
         sync_type = '%s-to-%s' % (source_type, dest_type)
         if (source_type, dest_type) not in [('b2', 'local'), ('local', 'b2')]:
-            raise NotImplementedError(
-                "Sync support only local-to-b2 and b2-to-local")
+            raise NotImplementedError("Sync support only local-to-b2 and b2-to-local")
 
         for source_file, dest_file in zip_folders(
             source_folder,
@@ -457,12 +444,9 @@ class Synchronizer(object):
             policies_manager,
         ):
             if source_file is None:
-                logger.debug('determined that %s is not present on source',
-                             dest_file)
+                logger.debug('determined that %s is not present on source', dest_file)
             elif dest_file is None:
-                logger.debug(
-                    'determined that %s is not present on destination',
-                    source_file)
+                logger.debug('determined that %s is not present on destination', source_file)
 
             if source_folder.folder_type() == 'local':
                 if source_file is not None:
@@ -471,19 +455,19 @@ class Synchronizer(object):
                 if dest_file is not None:
                     reporter.update_compare(1)
 
-            for action in self.make_file_sync_actions(sync_type, source_file,
-                                                      dest_file, source_folder,
-                                                      dest_folder, now_millis):
+            for action in self.make_file_sync_actions(
+                sync_type, source_file, dest_file, source_folder, dest_folder, now_millis
+            ):
                 yield action
 
     def make_file_sync_actions(
-            self,
-            sync_type,
-            source_file,
-            dest_file,
-            source_folder,
-            dest_folder,
-            now_millis,
+        self,
+        sync_type,
+        source_file,
+        dest_file,
+        source_folder,
+        dest_folder,
+        now_millis,
     ):
         """
         Yields the sequence of actions needed to sync the two files
@@ -513,6 +497,9 @@ class Synchronizer(object):
             now_millis,
             delete,
             keep_days,
+            self.newer_file_mode,
+            self.compare_threshold,
+            self.compare_version_mode,
         )
         for action in policy.get_all_actions():
             yield action
