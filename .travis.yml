@@ -43,16 +43,15 @@ matrix:
       dist: xenial
       sudo: true
 
-    - python: 3.7
+    - python: 3
       os: osx
       language: generic
       env:
-        - OS_X_PYTHON_VERSION=python3.7
+        - OS_X_PYTHON_VERSION=python3
         - HOMEBREW_NO_INSTALL_CLEANUP=1
         - HOMEBREW_NO_ANALYTICS=1
       addons:
         homebrew:
-          update: true
           packages: python3
 
     # jython
