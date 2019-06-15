@@ -61,7 +61,7 @@ Synchronization
 
 .. tip:: Sync is the preferred way of getting data into and out of B2 cloud, because it can achieve *highest performance* due to parallelization of scanning and data transfer operations.
 
-    To learn more about sync, see `Sync <sync.html>`_.
+    To learn more about sync, see :ref:`sync`.
 
 
 **************

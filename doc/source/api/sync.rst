@@ -21,3 +21,7 @@ the backup window to a minimum.
 
 .. todo::
    practically the whole sync documentation is missing
+
+.. autoclass:: b2sdk.v1.Synchronizer()
+   :special-members: __init__
+   :members:

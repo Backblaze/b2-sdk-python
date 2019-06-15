@@ -38,22 +38,14 @@ class SyncPolicyManager(object):
         """
         Return a policy object.
 
-        :param sync_type: synchronization type
-        :type sync_type: str
-        :param source_file: source file name
-        :type source_file: str
-        :param source_folder: a source folder path
-        :type source_folder: str
-        :param dest_file: destination file name
-        :type dest_file: str
-        :param dest_folder: a destination folder path
-        :type dest_folder: str
-        :param now_millis: current time in milliseconds
-        :type now_millis: int
-        :param delete: delete policy
-        :type delete: bool
-        :param keep_days: keep for days policy
-        :type keep_days: int
+        :param str sync_type: synchronization type
+        :param str source_file: source file name
+        :param str source_folder: a source folder path
+        :param str dest_file: destination file name
+        :param str dest_folder: a destination folder path
+        :param int now_millis: current time in milliseconds
+        :param bool delete: delete policy
+        :param int keep_days: keep for days policy
         :return: a policy object
         """
         policy_class = self.get_policy_class(sync_type, delete, keep_days)
@@ -73,8 +65,7 @@ class SyncPolicyManager(object):
         """
         Get policy class by a given sync type.
 
-        :param sync_type: synchronization type
-        :type sync_type: str
+        :param str sync_type: synchronization type
         :param args: an object which holds command line arguments
         :return: a policy class
         """
