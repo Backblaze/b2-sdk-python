@@ -118,17 +118,12 @@ class Synchronizer(object):
         """
         Initialize synchronizer class and validate arguments
 
-        :param no_progress: if True, do not show progress
-        :type no_progress: bool
-        :param max_workers: max number of workers
-        :type max_workers: int
+        :param bool no_progress: if True, do not show progress
+        :param int max_workers: max number of workers
         :param policies_manager: policies manager object
-        :param dry_run:
-        :type dry_run: bool
-        :param allow_empty_source: if True, do not check whether source folder is empty
-        :type allow_empty_source: bool
-        :param newer_file_mode: one of 101 (Skip) or 102 (Replace), can be None
-        :type newer_file_mode: int
+        :param bool dry_run: test mode, does not actually transfer/delete when enabled
+        :param bool allow_empty_source: if True, do not check whether source folder is empty
+        :param newer_file_mode: one of :py:attr:`b2sdk.v1.AbstractFileSyncPolicy.NEWER_FILE_SKIP` or :py:attr:`b2sdk.v1.AbstractFileSyncPolicy.NEWER_FILE_REPLACE`, can be None
         :param keep_days_or_delete: one of 301 (Delete policy), 302 (keep for days policy), can be None
         :type keep_days_or_delete: int
         :param compare_version_mode: one of 201 (Modification time), 202 (Size), 203 (none), default is 201
@@ -188,8 +183,7 @@ class Synchronizer(object):
         :type source_folder: b2sdk.sync.folder.AbstractFolder
         :param dest_folder: destination folder object
         :type dest_folder: b2sdk.sync.folder.AbstractFolder
-        :param now_millis: current time in milliseconds
-        :type now_millis: int
+        :param int now_millis: current time in milliseconds
         """
         # For downloads, make sure that the target directory is there.
         if dest_folder.folder_type() == 'local' and not self.dry_run:
@@ -258,11 +252,10 @@ class Synchronizer(object):
         folder to the source folder.
 
         :param source_folder: source folder object
-        :type source_folder: b2sdk.sync.folder.AbstractFolder
+        :type source_folder: b2sdk.v1.AbstractFolder
         :param dest_folder: destination folder object
-        :type dest_folder: b2sdk.sync.folder.AbstractFolder
-        :param now_millis: current time in milliseconds
-        :type now_millis: int
+        :type dest_folder: b2sdk.v1.AbstractFolder
+        :param int now_millis: current time in milliseconds
         :param reporter: reporter object
         :param policies_manager: policies manager object
         """
@@ -294,7 +287,12 @@ class Synchronizer(object):
                     reporter.update_compare(1)
 
             for action in self.make_file_sync_actions(
-                sync_type, source_file, dest_file, source_folder, dest_folder, now_millis
+                sync_type,
+                source_file,
+                dest_file,
+                source_folder,
+                dest_folder,
+                now_millis,
             ):
                 yield action
 
@@ -310,18 +308,16 @@ class Synchronizer(object):
         """
         Yields the sequence of actions needed to sync the two files
 
-        :param sync_type: synchronization type
-        :type sync_type: str
+        :param str sync_type: synchronization type
         :param source_file: source file object
-        :type source_folder: b2sdk.sync.folder.AbstractFolder
+        :type source_folder: b2sdk.v1.AbstractFolder
         :param dest_file: destination file object
-        :type dest_file: b2sdk.sync.file.File
+        :type dest_file: b2sdk.v1.File
         :param source_folder: a source folder object
-        :type source_folder: b2sdk.sync.folder.AbstractFolder
+        :type source_folder: b2sdk.v1.AbstractFolder
         :param dest_folder: a destination folder object
-        :type dest_folder: b2sdk.sync.folder.AbstractFolder
-        :param now_millis: current time in milliseconds
-        :type now_millis: int
+        :type dest_folder: b2sdk.v1.AbstractFolder
+        :param int now_millis: current time in milliseconds
         """
         delete = self.keep_days_or_delete == self.DELETE_MODE
         keep_days = self.keep_days
@@ -339,5 +335,4 @@ class Synchronizer(object):
             self.compare_threshold,
             self.compare_version_mode,
         )
-        for action in policy.get_all_actions():
-            yield action
+        return policy.get_all_actions()

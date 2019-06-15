@@ -64,7 +64,7 @@ Typical B2Api operations
    download_file_by_id
    list_parts
    cancel_large_file
-   `
+
 .. code-block:: python
 
     >>> b2_api = B2Api(info)
