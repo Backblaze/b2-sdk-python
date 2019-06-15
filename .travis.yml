@@ -54,12 +54,6 @@ matrix:
         homebrew:
           packages: python3
 
-    # jython
-    # It looks like Jython has a similar TLS problem to the Mac:
-    #   An HTTPS request has been made, but the SNI (Subject Name Indication) extension to TLS is not available on this platform.
-#    - python: 2.7
-#      env: JYTHON=true
-
     # pypy
     - python: pypy
       env: PYPY_VERSION=pypy-4.0.1
@@ -89,10 +83,6 @@ cache:
     - $HOME/.eggs
     # custom pypy versions
     - $HOME/.pyenv
-    # jython
-    - $HOME/.virtualenvs/jython
-    - $HOME/jython
-    - $HOME/jython-pip
     # OS X
     - $HOME/.virtualenvs/osx-python3
     #- /usr/local/Cellar/python3
@@ -112,67 +102,6 @@ before_install:
             source "$HOME/.virtualenvs/osx-$OS_X_PYTHON_VERSION/bin/activate"
         else
             echo skip
-        fi
-  - |
-        # get jython
-        if [ -n "$JYTHON" ]; then
-            # When the system python changes version, the symlink to it inside jython
-            # breaks, and jython stops working.  If that happens, remove the installed
-            # version and start over.
-            if [ -d "$HOME/jython" ]; then
-                if "$HOME/jython/bin/jython" --version; then
-                    echo jython version works
-                else
-                    echo jython is broken.  removing it.
-                    rm -rf "$HOME/jython"
-                fi
-            fi
-
-            # Install jython if it's not there.
-            if [ ! -d "$HOME/jython" ]; then
-                travis_retry wget http://search.maven.org/remotecontent?filepath=org/python/jython-installer/2.7.1b3/jython-installer-2.7.1b3.jar -O jython-installer-2.7.1b3.jar
-                java -jar jython-installer-2.7.1b3.jar --silent --directory "$HOME/jython"
-            else
-                echo skip install jython
-            fi
-
-            # install a custom version of pip, as standard pip doesn't work on jython (https://github.com/jythontools/pip/commits/develop)
-            if [ ! -d "$HOME/jython-pip" ]; then
-                mkdir ~/jython-pip
-            else
-                echo skip mkdir jython-pip
-            fi
-            if [ ! -f ~/jython-pip/pip-7.1.2-py2.py3-none-any.whl ]; then
-                travis_retry wget https://pypi.python.org/packages/py2.py3/p/pip/pip-7.1.2-py2.py3-none-any.whl -O ~/jython-pip/pip-7.1.2-py2.py3-none-any.whl
-            else
-                echo skip download pip
-            fi
-
-            # The virtualenv is another place where the cache can hold broken symlinks.
-            # If the virtualenv doesn't work, remove it.
-            export JAVA_OPTS="-Xms128m -Xmx1024m"
-            if [ -f "$HOME/.virtualenvs/jython/bin/activate" ]; then
-                source "$HOME/.virtualenvs/jython/bin/activate"
-                if python --version; then
-                    echo jython virtualenv works
-                else
-                    echo jython virtualenv broken.  removing it.
-                    rm -rf "$HOME/.virtualenvs/jython"
-                fi
-                deactivate
-            fi
-
-            # create jython virtualenv
-            if [ ! -f "$HOME/.virtualenvs/jython/bin/activate" ]; then
-                virtualenv --system-site-packages --extra-search-dir="$HOME/jython-pip" -p "$HOME/jython/bin/jython" "$HOME/.virtualenvs/jython"
-            else
-                echo skip virtualenv
-            fi
-
-            # Activate the virtualenv
-            source "$HOME/.virtualenvs/jython/bin/activate"
-        else
-            echo skip setting up jython
         fi
   - |
         # upgrade pypy (to a version that works with Cryptography 1.0)
@@ -226,8 +155,6 @@ install:
 
 before_script:
   - pip freeze
-  # Before runing the test case, we need to make jython run some code as in first run it can put something on stdout
-  - if [ -n "$JYTHON" ]; then python -c "print ''"; else echo skip; fi
 
 script:
   - |
