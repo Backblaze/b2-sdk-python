@@ -60,6 +60,18 @@ matrix:
 #      language: generic
 #      env: OS_X_PYTHON_VERSION=python3
 
+    - python: 3.7
+      os: osx
+      language: generic
+      env:
+        - OS_X_PYTHON_VERSION=python3.7
+        - HOMEBREW_NO_INSTALL_CLEANUP=1
+        - HOMEBREW_NO_ANALYTICS=1
+      addons:
+        homebrew:
+          update: true
+          packages: python3
+
     # jython
     # It looks like Jython has a similar TLS problem to the Mac:
     #   An HTTPS request has been made, but the SNI (Subject Name Indication) extension to TLS is not available on this platform.
@@ -111,24 +123,7 @@ before_install:
   - |
         # install python on OS X
         if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
-            if [ -n 'ALWAYS TRUE!' -o ! -d "/usr/local/Cellar/$OS_X_PYTHON_VERSION" ]; then
-                # unfortunately caching /usr/local/Cellar/$OS_X_PYTHON_VERSION is not enough.
-                # brew does some kind of side effect which registers the binary in the system
-                # or something. The resulting error error is:
-                #
-                # dyld: Library not loaded: @executable_path/../.Python
-                #
-                # Due to lack of information on the web as well as the lack of appropriate
-                # environment it is very hard to debug out how to properly cache the python
-                # installation on OS X.
-                #
-                # Therefore caching is temporarily disabled until someone figures it out.
-                # Typically brew update and installation of python takes 3 to 4 minutes.
-                travis_retry brew update
-                travis_retry brew install "$OS_X_PYTHON_VERSION"
-            else
-                echo 'skip install'
-            fi
+            pip3 install virtualenv
             if [ ! -e "$HOME/.virtualenvs/osx-$OS_X_PYTHON_VERSION/bin/activate" ]; then
                 virtualenv -p "$OS_X_PYTHON_VERSION" "$HOME/.virtualenvs/osx-$OS_X_PYTHON_VERSION"
             else
