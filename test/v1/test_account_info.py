@@ -21,12 +21,8 @@ import six
 
 from .test_base import TestBase
 
-from .deps import AbstractAccountInfo, InMemoryAccountInfo, UploadUrlPool
+from .deps import AbstractAccountInfo, InMemoryAccountInfo, UploadUrlPool, SqliteAccountInfo
 from .deps_exception import CorruptAccountInfo, MissingAccountData
-
-if not platform.system().lower().startswith('java'):
-    # in Jython 2.7.1b3 there is no sqlite3
-    from .deps import SqliteAccountInfo
 
 try:
     import unittest.mock as mock
@@ -216,9 +212,6 @@ class TestSqliteAccountInfo(AccountInfoBase, TestBase):
         ).name
 
     def setUp(self):
-        if platform.system().lower().startswith('java'):
-            # in Jython 2.7.1b3 there is no sqlite3
-            raise SkipTest()
         try:
             os.unlink(self.db_path)
         except OSError:
