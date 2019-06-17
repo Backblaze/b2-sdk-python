@@ -145,13 +145,13 @@ class Synchronizer(object):
         if self.compare_threshold < 0:
             raise InvalidArgument('compare_threshold', 'must be a positive integer')
 
-        if self.newer_file_mode not in NewerFileSyncMode:
+        if not isinstance(self.newer_file_mode, NewerFileSyncMode):
             raise InvalidArgument(
                 'newer_file_mode',
                 'must be one of :%s' % NewerFileSyncMode.__members__,
             )
 
-        if self.keep_days_or_delete not in KeepOrDeleteMode:
+        if not isinstance(self.keep_days_or_delete, KeepOrDeleteMode):
             raise InvalidArgument(
                 'keep_days_or_delete',
                 'must be one of :%s' % KeepOrDeleteMode.__members__,
@@ -163,7 +163,9 @@ class Synchronizer(object):
                 'is required when keep_days_or_delete is %s' % KeepOrDeleteMode.KEEP_BEFORE_DELETE,
             )
 
-        if self.compare_version_mode and self.compare_version_mode not in CompareVersionMode:
+        if self.compare_version_mode and not isinstance(
+            self.compare_version_mode, CompareVersionMode
+        ):
             raise InvalidArgument(
                 'compare_version_mode',
                 'must be one of :%s' % CompareVersionMode.__members__,
