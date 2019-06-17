@@ -47,7 +47,6 @@ class Synchronizer(SynchronizerV1):
 
 def get_synchronizer_from_args(
     args,
-    no_progress,
     max_workers,
     policies_manager=DEFAULT_SCAN_MANAGER,
     dry_run=False,
@@ -86,7 +85,6 @@ def get_synchronizer_from_args(
         keep_days_or_delete = KeepOrDeleteMode.NO_DELETE
 
     return Synchronizer(
-        no_progress,
         max_workers,
         policies_manager=policies_manager,
         dry_run=dry_run,
@@ -124,13 +122,11 @@ def make_folder_sync_actions(
     """
     synchronizer = get_synchronizer_from_args(
         args,
-        False,
         1,
         policies_manager=policies_manager,
         dry_run=False,
         allow_empty_source=False,
     )
-    logger.debug("args: %s", args.compareVersions)
     try:
         return synchronizer.make_folder_sync_actions(
             source_folder,
@@ -182,7 +178,6 @@ def sync_folders(
     """
     synchronizer = get_synchronizer_from_args(
         args,
-        no_progress,
         max_workers,
         policies_manager=policies_manager,
         dry_run=dry_run,

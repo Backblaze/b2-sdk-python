@@ -443,7 +443,6 @@ class FakeArgs(object):
 
     def get_synchronizer(self, policies_manager=DEFAULT_SCAN_MANAGER):
         return Synchronizer(
-            False,
             1,
             policies_manager=policies_manager,
             dry_run=self.dryRun,

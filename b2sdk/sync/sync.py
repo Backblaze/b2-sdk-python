@@ -107,7 +107,6 @@ class KeepOrDeleteMode(Enum):
 class Synchronizer(object):
     def __init__(
         self,
-        no_progress,
         max_workers,
         policies_manager=DEFAULT_SCAN_MANAGER,
         dry_run=False,
@@ -121,7 +120,6 @@ class Synchronizer(object):
         """
         Initialize synchronizer class and validate arguments
 
-        :param bool no_progress: if True, do not show progress
         :param int max_workers: max number of workers
         :param policies_manager: policies manager object
         :param bool dry_run: test mode, does not actually transfer/delete when enabled
@@ -142,7 +140,6 @@ class Synchronizer(object):
         self.allow_empty_source = allow_empty_source
         self.policies_manager = policies_manager
         self.max_workers = max_workers
-        self.no_progress = no_progress
         self._validate()
 
     def _validate(self):
@@ -184,6 +181,7 @@ class Synchronizer(object):
         :param dest_folder: destination folder object
         :type dest_folder: b2sdk.sync.folder.AbstractFolder
         :param int now_millis: current time in milliseconds
+        :param b2sdk.sync.report.SyncReport, None reporter:
         """
         # For downloads, make sure that the target directory is there.
         if dest_folder.folder_type() == 'local' and not self.dry_run:

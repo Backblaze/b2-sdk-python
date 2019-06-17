@@ -25,13 +25,11 @@ Prepare b2sdk
 Synchronization
 ***************
 
-.. todo::
-   sync examples need to be redone with the new interface
-
 .. code-block:: python
 
-    >>> from b2sdk.sync.scan_policies import ScanPoliciesManager
-    >>> from b2sdk.sync import parse_sync_folder, sync_folders
+    >>> from b2sdk.v1 import ScanPoliciesManager
+    >>> from b2sdk.v1 import parse_sync_folder
+    >>> from b2sdk.v1 import Synchronizer
     >>> import time
     >>> import sys
 
@@ -43,18 +41,21 @@ Synchronization
 
     >>> policies_manager = ScanPoliciesManager(exclude_all_symlinks=True)
 
-    >>> sync_folders(
-            source_folder=source,
-            dest_folder=destination,
-            args=args,
-            now_millis=int(round(time.time() * 1000)),
-            stdout=sys.stdout,
-            no_progress=False,
+    >>> synchronizer = Synchronizer(
             max_workers=10,
             policies_manager=policies_manager,
             dry_run=False,
             allow_empty_source=True,
         )
+
+    >>> no_progress = False
+    >>> with SyncReport(sys.stdout, no_progress) as reporter:
+            synchronizer.sync_folders(
+                source_folder=source,
+                dest_folder=destination,
+                now_millis=int(round(time.time() * 1000)),
+                reporter=reporter,
+            )
     upload some.pdf
     upload som2.pdf
 
