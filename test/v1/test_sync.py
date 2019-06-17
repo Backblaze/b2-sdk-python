@@ -409,7 +409,7 @@ class FakeArgs(object):
 
     def __init__(
         self,
-        newer_file_mode=NewerFileSyncMode.DO_NOTHING,
+        newer_file_mode=NewerFileSyncMode.RAISE_ERROR,
         keep_days_or_delete=KeepOrDeleteMode.NO_DELETE,
         compare_version_mode=CompareVersionMode.MODTIME,
         compare_threshold=None,

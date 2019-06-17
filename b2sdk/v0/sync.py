@@ -59,7 +59,7 @@ def get_synchronizer_from_args(
     elif args.skipNewer:
         newer_file_mode = NewerFileSyncMode.SKIP
     else:
-        newer_file_mode = NewerFileSyncMode.DO_NOTHING
+        newer_file_mode = NewerFileSyncMode.RAISE_ERROR
 
     if args.delete and (args.keepDays is not None):
         raise CommandError('--delete and --keepDays are incompatible')

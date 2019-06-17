@@ -111,7 +111,7 @@ class Synchronizer(object):
         policies_manager=DEFAULT_SCAN_MANAGER,
         dry_run=False,
         allow_empty_source=False,
-        newer_file_mode=NewerFileSyncMode.DO_NOTHING,
+        newer_file_mode=NewerFileSyncMode.RAISE_ERROR,
         keep_days_or_delete=KeepOrDeleteMode.NO_DELETE,
         compare_version_mode=CompareVersionMode.MODTIME,
         compare_threshold=None,
@@ -254,7 +254,7 @@ class Synchronizer(object):
         :param dest_folder: destination folder object
         :type dest_folder: b2sdk.v1.AbstractFolder
         :param int now_millis: current time in milliseconds
-        :param reporter: reporter object
+        :param b2sdk.v1.SyncReport reporter: reporter object
         :param policies_manager: policies manager object
         """
         if self.keep_days_or_delete == KeepOrDeleteMode.KEEP_BEFORE_DELETE and dest_folder.folder_type(

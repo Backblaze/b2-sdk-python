@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 class NewerFileSyncMode(Enum):
     SKIP = 101
     REPLACE = 102
-    DO_NOTHING = 103
+    RAISE_ERROR = 103
 
 
 class CompareVersionMode(Enum):
@@ -112,7 +112,7 @@ class AbstractFileSyncPolicy(object):
         dest_file,
         compare_threshold=None,
         compare_version_mode=CompareVersionMode.MODTIME,
-        newer_file_mode=NewerFileSyncMode.DO_NOTHING,
+        newer_file_mode=NewerFileSyncMode.RAISE_ERROR,
     ):
         """
         Compare two files and determine if the the destination file
