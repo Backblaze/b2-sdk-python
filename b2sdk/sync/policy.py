@@ -72,7 +72,8 @@ class AbstractFileSyncPolicy(object):
         :type newer_file_mode: b2sdk.sync.policy.NEWER_FILE_MODES
         :param compare_threshold: when comparing with size or time for sync
         :type compare_threshold: int
-        :param compare_version_mode: b2sdk.sync.policy.COMPARE_VERSION_MODES
+        :param compare_version_mode: how to compare source and destination files
+        :type compare_version_mode: b2sdk.sync.policy.COMPARE_VERSION_MODES
         """
         self._source_file = source_file
         self._source_folder = source_folder
@@ -130,7 +131,6 @@ class AbstractFileSyncPolicy(object):
         :param newer_file_mode: Enum
         :type b2sdk.v1.NewerFileSyncMode
         """
-
         # Optionally set a compare threshold for fuzzy comparison
         compare_threshold = compare_threshold or 0
 

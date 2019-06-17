@@ -19,6 +19,8 @@ import unittest
 from nose import SkipTest
 import six
 
+from enum import Enum
+
 from .test_base import TestBase
 
 from .deps_exception import DestFileNewer
@@ -564,6 +566,10 @@ class TestExclusions(TestSync):
         self._check_folder_sync(expected_actions, fakeargs)
 
 
+class IllegalEnum(Enum):
+    ILLEGAL = 5100
+
+
 class TestMakeSyncActions(TestSync):
     def test_illegal_b2_to_b2(self):
         b2_folder = FakeFolder('b2', [])
@@ -581,11 +587,21 @@ class TestMakeSyncActions(TestSync):
 
     def test_illegal_newer_file_mode(self):
         with self.assertRaises(InvalidArgument):
-            self._check_local_to_b2(None, None, FakeArgs(newer_file_mode=110), [])
+            self._check_local_to_b2(
+                None,
+                None,
+                FakeArgs(newer_file_mode=IllegalEnum.ILLEGAL),
+                [],
+            )
 
     def test_illegal_delete_and_keep_days(self):
         with self.assertRaises(InvalidArgument):
-            self._check_local_to_b2(None, None, FakeArgs(keep_days_or_delete=310), [])
+            self._check_local_to_b2(
+                None,
+                None,
+                FakeArgs(keep_days_or_delete=IllegalEnum.ILLEGAL),
+                [],
+            )
 
     # src: absent, dst: absent
 

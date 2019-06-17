@@ -129,7 +129,6 @@ class Synchronizer(object):
         :param b2sdk.v1.CompareVersionMode compare_version_mode: how to compare the source and destination files to find new ones
         :param int compare_threshold: should be greater than 0, default is 0
         :param int keep_days: if keep_days_or_delete is `b2sdk.v1.KeepOrDeleteMode.KEEP_BEFORE_DELETE`, then this should be greater than 0
-        :return b2sdk.v1.Synchronizer object
         """
         self.newer_file_mode = newer_file_mode
         self.keep_days_or_delete = keep_days_or_delete
