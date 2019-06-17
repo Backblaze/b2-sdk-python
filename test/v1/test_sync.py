@@ -25,7 +25,8 @@ from .deps_exception import DestFileNewer
 from .deps import FileVersionInfo
 from .deps import AbstractFolder, B2Folder, LocalFolder
 from .deps import File, FileVersion
-from .deps import ScanPoliciesManager, DEFAULT_SCAN_MANAGER, AbstractFileSyncPolicy
+from .deps import ScanPoliciesManager, DEFAULT_SCAN_MANAGER
+from .deps import KeepOrDeleteMode, NewerFileSyncMode, CompareVersionMode
 from .deps import BoundedQueueExecutor, zip_folders
 from .deps import parse_sync_folder
 from .deps import TempDir
@@ -408,9 +409,9 @@ class FakeArgs(object):
 
     def __init__(
         self,
-        newer_file_mode=None,
-        keep_days_or_delete=None,
-        compare_version_mode=None,
+        newer_file_mode=NewerFileSyncMode.DO_NOTHING,
+        keep_days_or_delete=KeepOrDeleteMode.NO_DELETE,
+        compare_version_mode=CompareVersionMode.MODTIME,
         compare_threshold=None,
         keep_days=None,
         excludeRegex=None,
@@ -542,7 +543,7 @@ class TestExclusions(TestSync):
         self._check_folder_sync(
             expected_actions,
             FakeArgs(
-                keep_days_or_delete=Synchronizer.DELETE_MODE,
+                keep_days_or_delete=KeepOrDeleteMode.DELETE,
                 excludeRegex=["b\\.txt"],
             ),
         )
@@ -557,7 +558,7 @@ class TestExclusions(TestSync):
             'b2_upload(/dir/b.txt.incl, folder/b.txt.incl, 100)',
         ]
         fakeargs = FakeArgs(
-            keep_days_or_delete=Synchronizer.DELETE_MODE,
+            keep_days_or_delete=KeepOrDeleteMode.DELETE,
             excludeRegex=["b\\.txt"],
             includeRegex=[".*\\.incl"]
         )
@@ -609,7 +610,7 @@ class TestMakeSyncActions(TestSync):
         self._check_local_to_b2(
             src_file,
             None,
-            FakeArgs(keep_days_or_delete=Synchronizer.KEEP_DAYS_MODE, keep_days=1),
+            FakeArgs(keep_days_or_delete=KeepOrDeleteMode.KEEP_BEFORE_DELETE, keep_days=1),
             actions,
         )
 
@@ -619,7 +620,7 @@ class TestMakeSyncActions(TestSync):
         self._check_local_to_b2(
             src_file,
             None,
-            FakeArgs(keep_days_or_delete=Synchronizer.DELETE_MODE),
+            FakeArgs(keep_days_or_delete=KeepOrDeleteMode.DELETE),
             actions,
         )
 
@@ -644,7 +645,7 @@ class TestMakeSyncActions(TestSync):
         self._check_local_to_b2(
             None,
             dst_file,
-            FakeArgs(keep_days_or_delete=Synchronizer.DELETE_MODE),
+            FakeArgs(keep_days_or_delete=KeepOrDeleteMode.DELETE),
             actions,
         )
 
@@ -654,7 +655,7 @@ class TestMakeSyncActions(TestSync):
         self._check_local_to_b2(
             None,
             dst_file,
-            FakeArgs(keep_days_or_delete=Synchronizer.DELETE_MODE),
+            FakeArgs(keep_days_or_delete=KeepOrDeleteMode.DELETE),
             actions,
         )
 
@@ -667,7 +668,7 @@ class TestMakeSyncActions(TestSync):
         self._check_local_to_b2(
             None,
             dst_file,
-            FakeArgs(keep_days_or_delete=Synchronizer.DELETE_MODE),
+            FakeArgs(keep_days_or_delete=KeepOrDeleteMode.DELETE),
             actions,
         )
 
@@ -679,7 +680,7 @@ class TestMakeSyncActions(TestSync):
         self._check_local_to_b2(
             None,
             dst_file,
-            FakeArgs(keep_days_or_delete=Synchronizer.KEEP_DAYS_MODE, keep_days=1),
+            FakeArgs(keep_days_or_delete=KeepOrDeleteMode.KEEP_BEFORE_DELETE, keep_days=1),
             actions,
         )
 
@@ -691,7 +692,7 @@ class TestMakeSyncActions(TestSync):
         self._check_local_to_b2(
             None,
             dst_file,
-            FakeArgs(keep_days_or_delete=Synchronizer.KEEP_DAYS_MODE, keep_days=2),
+            FakeArgs(keep_days_or_delete=KeepOrDeleteMode.KEEP_BEFORE_DELETE, keep_days=2),
             actions,
         )
 
@@ -705,7 +706,7 @@ class TestMakeSyncActions(TestSync):
         self._check_local_to_b2(
             None,
             dst_file,
-            FakeArgs(keep_days_or_delete=Synchronizer.KEEP_DAYS_MODE, keep_days=1),
+            FakeArgs(keep_days_or_delete=KeepOrDeleteMode.KEEP_BEFORE_DELETE, keep_days=1),
             actions,
         )
 
@@ -717,7 +718,7 @@ class TestMakeSyncActions(TestSync):
         self._check_local_to_b2(
             None,
             dst_file,
-            FakeArgs(keep_days_or_delete=Synchronizer.KEEP_DAYS_MODE, keep_days=5),
+            FakeArgs(keep_days_or_delete=KeepOrDeleteMode.KEEP_BEFORE_DELETE, keep_days=5),
             actions,
         )
 
@@ -727,7 +728,7 @@ class TestMakeSyncActions(TestSync):
         self._check_local_to_b2(
             None,
             dst_file,
-            FakeArgs(keep_days_or_delete=Synchronizer.KEEP_DAYS_MODE, keep_days=2),
+            FakeArgs(keep_days_or_delete=KeepOrDeleteMode.KEEP_BEFORE_DELETE, keep_days=2),
             actions,
         )
 
@@ -741,7 +742,7 @@ class TestMakeSyncActions(TestSync):
         self._check_local_to_b2(
             None,
             dst_file,
-            FakeArgs(keep_days_or_delete=Synchronizer.KEEP_DAYS_MODE, keep_days=1),
+            FakeArgs(keep_days_or_delete=KeepOrDeleteMode.KEEP_BEFORE_DELETE, keep_days=1),
             actions,
         )
 
@@ -754,7 +755,7 @@ class TestMakeSyncActions(TestSync):
         self._check_local_to_b2(
             None,
             dst_file,
-            FakeArgs(keep_days_or_delete=Synchronizer.KEEP_DAYS_MODE, keep_days=1),
+            FakeArgs(keep_days_or_delete=KeepOrDeleteMode.KEEP_BEFORE_DELETE, keep_days=1),
             actions,
         )
 
@@ -768,7 +769,7 @@ class TestMakeSyncActions(TestSync):
         self._check_local_to_b2(
             None,
             dst_file,
-            FakeArgs(keep_days_or_delete=Synchronizer.DELETE_MODE),
+            FakeArgs(keep_days_or_delete=KeepOrDeleteMode.DELETE),
             actions,
         )
 
@@ -777,7 +778,7 @@ class TestMakeSyncActions(TestSync):
         self._check_b2_to_local(
             None,
             dst_file,
-            FakeArgs(keep_days_or_delete=Synchronizer.DELETE_MODE),
+            FakeArgs(keep_days_or_delete=KeepOrDeleteMode.DELETE),
             ['local_delete(/dir/a.txt)'],
         )
 
@@ -805,7 +806,7 @@ class TestMakeSyncActions(TestSync):
         self._check_local_to_b2(
             src_file,
             dst_file,
-            FakeArgs(keep_days_or_delete=Synchronizer.KEEP_DAYS_MODE, keep_days=1),
+            FakeArgs(keep_days_or_delete=KeepOrDeleteMode.KEEP_BEFORE_DELETE, keep_days=1),
             actions,
         )
 
@@ -815,7 +816,7 @@ class TestMakeSyncActions(TestSync):
         self._check_local_to_b2(
             src_file,
             dst_file,
-            FakeArgs(keep_days_or_delete=Synchronizer.KEEP_DAYS_MODE, keep_days=1),
+            FakeArgs(keep_days_or_delete=KeepOrDeleteMode.KEEP_BEFORE_DELETE, keep_days=1),
             [],
         )
 
@@ -826,7 +827,7 @@ class TestMakeSyncActions(TestSync):
         self._check_local_to_b2(
             src_file,
             dst_file,
-            FakeArgs(keep_days_or_delete=Synchronizer.DELETE_MODE),
+            FakeArgs(keep_days_or_delete=KeepOrDeleteMode.DELETE),
             actions,
         )
 
@@ -848,7 +849,7 @@ class TestMakeSyncActions(TestSync):
         self._check_local_to_b2(
             src_file,
             dst_file,
-            FakeArgs(keep_days_or_delete=Synchronizer.KEEP_DAYS_MODE, keep_days=2),
+            FakeArgs(keep_days_or_delete=KeepOrDeleteMode.KEEP_BEFORE_DELETE, keep_days=2),
             actions,
         )
 
@@ -863,7 +864,7 @@ class TestMakeSyncActions(TestSync):
         self._check_local_to_b2(
             src_file,
             dst_file,
-            FakeArgs(keep_days_or_delete=Synchronizer.DELETE_MODE),
+            FakeArgs(keep_days_or_delete=KeepOrDeleteMode.DELETE),
             actions,
         )
 
@@ -874,7 +875,7 @@ class TestMakeSyncActions(TestSync):
         self._check_b2_to_local(
             src_file,
             dst_file,
-            FakeArgs(keep_days_or_delete=Synchronizer.DELETE_MODE),
+            FakeArgs(keep_days_or_delete=KeepOrDeleteMode.DELETE),
             actions,
         )
 
@@ -898,7 +899,7 @@ class TestMakeSyncActions(TestSync):
         self._check_local_to_b2(
             src_file,
             dst_file,
-            FakeArgs(newer_file_mode=AbstractFileSyncPolicy.NEWER_FILE_SKIP),
+            FakeArgs(newer_file_mode=NewerFileSyncMode.SKIP),
             [],
         )
 
@@ -909,7 +910,7 @@ class TestMakeSyncActions(TestSync):
         self._check_local_to_b2(
             src_file,
             dst_file,
-            FakeArgs(newer_file_mode=AbstractFileSyncPolicy.NEWER_FILE_REPLACE),
+            FakeArgs(newer_file_mode=NewerFileSyncMode.REPLACE),
             actions,
         )
 
@@ -917,8 +918,8 @@ class TestMakeSyncActions(TestSync):
         src_file = local_file('a.txt', [100])
         dst_file = b2_file('a.txt', [200])
         args = FakeArgs(
-            newer_file_mode=AbstractFileSyncPolicy.NEWER_FILE_REPLACE,
-            keep_days_or_delete=Synchronizer.DELETE_MODE,
+            newer_file_mode=NewerFileSyncMode.REPLACE,
+            keep_days_or_delete=KeepOrDeleteMode.DELETE,
         )
         actions = [
             'b2_upload(/dir/a.txt, folder/a.txt, 100)',
@@ -944,7 +945,7 @@ class TestMakeSyncActions(TestSync):
         self._check_b2_to_local(
             src_file,
             dst_file,
-            FakeArgs(newer_file_mode=AbstractFileSyncPolicy.NEWER_FILE_SKIP),
+            FakeArgs(newer_file_mode=NewerFileSyncMode.SKIP),
             [],
         )
 
@@ -955,7 +956,7 @@ class TestMakeSyncActions(TestSync):
         self._check_b2_to_local(
             src_file,
             dst_file,
-            FakeArgs(newer_file_mode=AbstractFileSyncPolicy.NEWER_FILE_REPLACE),
+            FakeArgs(newer_file_mode=NewerFileSyncMode.REPLACE),
             actions,
         )
 
@@ -967,7 +968,7 @@ class TestMakeSyncActions(TestSync):
         self._check_local_to_b2(
             src_file,
             dst_file,
-            FakeArgs(compare_version_mode=AbstractFileSyncPolicy.COMPARE_VERSION_NONE),
+            FakeArgs(compare_version_mode=CompareVersionMode.NONE),
             [],
         )
 
@@ -977,7 +978,7 @@ class TestMakeSyncActions(TestSync):
         self._check_local_to_b2(
             src_file,
             dst_file,
-            FakeArgs(compare_version_mode=AbstractFileSyncPolicy.COMPARE_VERSION_NONE),
+            FakeArgs(compare_version_mode=CompareVersionMode.NONE),
             [],
         )
 
@@ -987,7 +988,7 @@ class TestMakeSyncActions(TestSync):
         self._check_local_to_b2(
             src_file,
             dst_file,
-            FakeArgs(compare_version_mode=AbstractFileSyncPolicy.COMPARE_VERSION_SIZE),
+            FakeArgs(compare_version_mode=CompareVersionMode.SIZE),
             [],
         )
 
@@ -998,7 +999,7 @@ class TestMakeSyncActions(TestSync):
         self._check_local_to_b2(
             src_file,
             dst_file,
-            FakeArgs(compare_version_mode=AbstractFileSyncPolicy.COMPARE_VERSION_SIZE),
+            FakeArgs(compare_version_mode=CompareVersionMode.SIZE),
             actions,
         )
 
@@ -1006,8 +1007,8 @@ class TestMakeSyncActions(TestSync):
         src_file = local_file('a.txt', [200], size=11)
         dst_file = b2_file('a.txt', [100], size=10)
         args = FakeArgs(
-            compare_version_mode=AbstractFileSyncPolicy.COMPARE_VERSION_SIZE,
-            keep_days_or_delete=Synchronizer.DELETE_MODE,
+            compare_version_mode=CompareVersionMode.SIZE,
+            keep_days_or_delete=KeepOrDeleteMode.DELETE,
         )
         actions = [
             'b2_upload(/dir/a.txt, folder/a.txt, 200)',

@@ -15,7 +15,8 @@ from b2sdk.v1.exception import DestFileNewer as DestFileNewerV1
 from b2sdk.v1 import trace_call
 from .exception import DestFileNewer
 from b2sdk.v1.exception import InvalidArgument, IncompleteSync
-from b2sdk.v1 import AbstractFileSyncPolicy
+from b2sdk.v1 import NewerFileSyncMode, CompareVersionMode
+from b2sdk.v1 import KeepOrDeleteMode
 from b2sdk.v1 import DEFAULT_SCAN_MANAGER
 from b2sdk.v1 import SyncReport
 from b2sdk.v1 import Synchronizer as SynchronizerV1
@@ -55,33 +56,34 @@ def get_synchronizer_from_args(
     if args.replaceNewer and args.skipNewer:
         raise CommandError('--skipNewer and --replaceNewer are incompatible')
     elif args.replaceNewer:
-        newer_file_mode = AbstractFileSyncPolicy.NEWER_FILE_REPLACE
+        newer_file_mode = NewerFileSyncMode.REPLACE
     elif args.skipNewer:
-        newer_file_mode = AbstractFileSyncPolicy.NEWER_FILE_SKIP
+        newer_file_mode = NewerFileSyncMode.SKIP
     else:
-        newer_file_mode = None
+        newer_file_mode = NewerFileSyncMode.DO_NOTHING
 
     if args.delete and (args.keepDays is not None):
         raise CommandError('--delete and --keepDays are incompatible')
 
     if args.compareVersions == 'none':
-        compare_version_mode = AbstractFileSyncPolicy.COMPARE_VERSION_NONE
+        compare_version_mode = CompareVersionMode.NONE
     elif args.compareVersions == 'modTime':
-        compare_version_mode = AbstractFileSyncPolicy.COMPARE_VERSION_MODTIME
+        compare_version_mode = CompareVersionMode.MODTIME
     elif args.compareVersions == 'size':
-        compare_version_mode = AbstractFileSyncPolicy.COMPARE_VERSION_SIZE
+        compare_version_mode = CompareVersionMode.SIZE
     else:
-        compare_version_mode = args.compareVersions
+        compare_version_mode = CompareVersionMode.MODTIME
     compare_threshold = args.compareThreshold
 
-    keep_days_or_delete = None
     keep_days = None
 
     if args.delete:
-        keep_days_or_delete = Synchronizer.DELETE_MODE
+        keep_days_or_delete = KeepOrDeleteMode.DELETE
     elif args.keepDays:
-        keep_days_or_delete = Synchronizer.KEEP_DAYS_MODE
+        keep_days_or_delete = KeepOrDeleteMode.KEEP_BEFORE_DELETE
         keep_days = args.keepDays
+    else:
+        keep_days_or_delete = KeepOrDeleteMode.NO_DELETE
 
     return Synchronizer(
         no_progress,
@@ -128,6 +130,7 @@ def make_folder_sync_actions(
         dry_run=False,
         allow_empty_source=False,
     )
+    logger.debug("args: %s", args.compareVersions)
     try:
         return synchronizer.make_folder_sync_actions(
             source_folder,

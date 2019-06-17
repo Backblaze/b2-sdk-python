@@ -9,16 +9,30 @@
 ######################################################################
 
 from abc import ABCMeta, abstractmethod
+from enum import Enum
 
 import six
 import logging
 
-from ..exception import CommandError, DestFileNewer
+from ..exception import DestFileNewer
 from .action import LocalDeleteAction, B2DeleteAction, B2DownloadAction, B2HideAction, B2UploadAction
+from .exception import InvalidArgument
 
 ONE_DAY_IN_MS = 24 * 60 * 60 * 1000
 
 logger = logging.getLogger(__name__)
+
+
+class NewerFileSyncMode(Enum):
+    SKIP = 101
+    REPLACE = 102
+    DO_NOTHING = 103
+
+
+class CompareVersionMode(Enum):
+    MODTIME = 201
+    SIZE = 202
+    NONE = 203
 
 
 @six.add_metaclass(ABCMeta)
@@ -28,17 +42,6 @@ class AbstractFileSyncPolicy(object):
     """
     DESTINATION_PREFIX = NotImplemented
     SOURCE_PREFIX = NotImplemented
-
-    NEWER_FILE_SKIP = 101
-    NEWER_FILE_REPLACE = 102
-
-    NEWER_FILE_MODES = [NEWER_FILE_REPLACE, NEWER_FILE_SKIP]
-
-    COMPARE_VERSION_MODTIME = 201
-    COMPARE_VERSION_SIZE = 202
-    COMPARE_VERSION_NONE = 203
-
-    COMPARE_VERSION_MODES = [COMPARE_VERSION_MODTIME, COMPARE_VERSION_SIZE, COMPARE_VERSION_NONE]
 
     def __init__(
         self,
@@ -50,7 +53,7 @@ class AbstractFileSyncPolicy(object):
         keep_days,
         newer_file_mode,
         compare_threshold,
-        compare_version_mode=COMPARE_VERSION_MODTIME,
+        compare_version_mode=CompareVersionMode.MODTIME,
     ):
         """
         :param source_file: source file object
@@ -63,6 +66,13 @@ class AbstractFileSyncPolicy(object):
         :type dest_folder: b2sdk.sync.folder.AbstractFolder
         :param now_millis: current time in milliseconds
         :type now_millis: int
+        :param keep_days: days to keep before delete
+        :type keep_days: int
+        :param newer_file_mode: setting which determines handling for destination files newer than on the source
+        :type newer_file_mode: b2sdk.sync.policy.NEWER_FILE_MODES
+        :param compare_threshold: when comparing with size or time for sync
+        :type compare_threshold: int
+        :param compare_version_mode: b2sdk.sync.policy.COMPARE_VERSION_MODES
         """
         self._source_file = source_file
         self._source_folder = source_folder
@@ -101,8 +111,8 @@ class AbstractFileSyncPolicy(object):
         source_file,
         dest_file,
         compare_threshold=None,
-        compare_version_mode=None,
-        newer_file_mode=None,
+        compare_version_mode=CompareVersionMode.MODTIME,
+        newer_file_mode=NewerFileSyncMode.DO_NOTHING,
     ):
         """
         Compare two files and determine if the the destination file
@@ -112,22 +122,24 @@ class AbstractFileSyncPolicy(object):
         :type source_file: b2sdk.sync.file.File
         :param dest_file: destination file object
         :type dest_file: b2sdk.sync.file.File
-        :param args: an object which holds command line arguments
         :rtype: bool
+        :param compare_threshold: compare threshold when comparing by time or size
+        :type int
+        :param compare_version_mode: Enum
+        :type b2sdk.v1.CompareVersionMode
+        :param newer_file_mode: Enum
+        :type b2sdk.v1.NewerFileSyncMode
         """
-
-        # Compare using modification time by default
-        compare_version_mode = compare_version_mode or cls.COMPARE_VERSION_MODTIME
 
         # Optionally set a compare threshold for fuzzy comparison
         compare_threshold = compare_threshold or 0
 
         # Compare using file name only
-        if compare_version_mode == cls.COMPARE_VERSION_NONE:
+        if compare_version_mode == CompareVersionMode.NONE:
             return False
 
         # Compare using modification time
-        elif compare_version_mode == cls.COMPARE_VERSION_MODTIME:
+        elif compare_version_mode == CompareVersionMode.MODTIME:
             # Get the modification time of the latest versions
             source_mod_time = source_file.latest_version().mod_time
             dest_mod_time = dest_file.latest_version().mod_time
@@ -151,9 +163,9 @@ class AbstractFileSyncPolicy(object):
 
                 # Source is older
                 elif source_mod_time < dest_mod_time:
-                    if newer_file_mode == cls.NEWER_FILE_REPLACE:
+                    if newer_file_mode == NewerFileSyncMode.REPLACE:
                         return True
-                    elif newer_file_mode == cls.NEWER_FILE_SKIP:
+                    elif newer_file_mode == NewerFileSyncMode.SKIP:
                         return False
                     else:
                         raise DestFileNewer(
@@ -161,7 +173,7 @@ class AbstractFileSyncPolicy(object):
                         )
 
         # Compare using file size
-        elif compare_version_mode == cls.COMPARE_VERSION_SIZE:
+        elif compare_version_mode == CompareVersionMode.SIZE:
             # Get file size of the latest versions
             source_size = source_file.latest_version().size
             dest_size = dest_file.latest_version().size
@@ -181,7 +193,7 @@ class AbstractFileSyncPolicy(object):
             # Replace if size difference is over threshold
             return compare_threshold_exceeded
         else:
-            raise CommandError('Invalid option for --compareVersions')
+            raise InvalidArgument('Invalid option for --compareVersions')
 
     def get_all_actions(self):
         """

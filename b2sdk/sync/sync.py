@@ -13,9 +13,11 @@ from __future__ import division
 import logging
 import six
 
+from enum import Enum
+
 from ..bounded_queue_executor import BoundedQueueExecutor
 from .exception import InvalidArgument, IncompleteSync
-from .policy import AbstractFileSyncPolicy
+from .policy import CompareVersionMode, NewerFileSyncMode
 from .policy_manager import POLICY_MANAGER
 from .scan_policies import DEFAULT_SCAN_MANAGER
 
@@ -96,12 +98,13 @@ def count_files(local_folder, reporter):
     reporter.end_local()
 
 
+class KeepOrDeleteMode(Enum):
+    DELETE = 301
+    KEEP_BEFORE_DELETE = 302
+    NO_DELETE = 303
+
+
 class Synchronizer(object):
-    DELETE_MODE = 301
-    KEEP_DAYS_MODE = 302
-
-    KEEP_OR_DELETE_MODES = [DELETE_MODE, KEEP_DAYS_MODE]
-
     def __init__(
         self,
         no_progress,
@@ -109,9 +112,9 @@ class Synchronizer(object):
         policies_manager=DEFAULT_SCAN_MANAGER,
         dry_run=False,
         allow_empty_source=False,
-        newer_file_mode=None,
-        keep_days_or_delete=None,
-        compare_version_mode=None,
+        newer_file_mode=NewerFileSyncMode.DO_NOTHING,
+        keep_days_or_delete=KeepOrDeleteMode.NO_DELETE,
+        compare_version_mode=CompareVersionMode.MODTIME,
         compare_threshold=None,
         keep_days=None,
     ):
@@ -123,20 +126,17 @@ class Synchronizer(object):
         :param policies_manager: policies manager object
         :param bool dry_run: test mode, does not actually transfer/delete when enabled
         :param bool allow_empty_source: if True, do not check whether source folder is empty
-        :param newer_file_mode: one of :py:attr:`b2sdk.v1.AbstractFileSyncPolicy.NEWER_FILE_SKIP` or :py:attr:`b2sdk.v1.AbstractFileSyncPolicy.NEWER_FILE_REPLACE`, can be None
-        :param keep_days_or_delete: one of 301 (Delete policy), 302 (keep for days policy), can be None
-        :type keep_days_or_delete: int
-        :param compare_version_mode: one of 201 (Modification time), 202 (Size), 203 (none), default is 201
-        :type compare_version_mode: int
-        :param compare_threshold: should be greater than 0, default is 0
-        :type compare_threshold: int
-        :param keep_days: if keep_days_or_delete is 302, then this should be greater than 0
-        :type keep_days: int
+        :param b2sdk.v1.NewerFileSyncMode newer_file_mode: setting which determines handling for destination files newer than on the source
+        :param b2sdk.v1.KeepOrDeleteMode keep_days_or_delete: setting which determines if we should delete or not delete or keep for `keep_days`
+        :param b2sdk.v1.CompareVersionMode compare_version_mode: how to compare the source and destination files to find new ones
+        :param int compare_threshold: should be greater than 0, default is 0
+        :param int keep_days: if keep_days_or_delete is `b2sdk.v1.KeepOrDeleteMode.KEEP_BEFORE_DELETE`, then this should be greater than 0
+        :return b2sdk.v1.Synchronizer object
         """
         self.newer_file_mode = newer_file_mode
         self.keep_days_or_delete = keep_days_or_delete
         self.keep_days = keep_days
-        self.compare_version_mode = compare_version_mode or AbstractFileSyncPolicy.COMPARE_VERSION_MODTIME
+        self.compare_version_mode = compare_version_mode
         self.compare_threshold = compare_threshold or 0
         self.dry_run = dry_run
         self.allow_empty_source = allow_empty_source
@@ -149,28 +149,28 @@ class Synchronizer(object):
         if self.compare_threshold < 0:
             raise InvalidArgument('compare_threshold', 'must be a positive integer')
 
-        if self.newer_file_mode and self.newer_file_mode not in AbstractFileSyncPolicy.NEWER_FILE_MODES:
+        if self.newer_file_mode not in NewerFileSyncMode:
             raise InvalidArgument(
                 'newer_file_mode',
-                'must be one of :%s' % AbstractFileSyncPolicy.NEWER_FILE_MODES,
+                'must be one of :%s' % NewerFileSyncMode.__members__,
             )
 
-        if self.keep_days_or_delete and self.keep_days_or_delete not in self.KEEP_OR_DELETE_MODES:
+        if self.keep_days_or_delete not in KeepOrDeleteMode:
             raise InvalidArgument(
                 'keep_days_or_delete',
-                'must be one of :%s' % self.KEEP_OR_DELETE_MODES,
+                'must be one of :%s' % KeepOrDeleteMode.__members__,
             )
 
-        if self.keep_days_or_delete == self.KEEP_DAYS_MODE and self.keep_days is None:
+        if self.keep_days_or_delete == KeepOrDeleteMode.KEEP_BEFORE_DELETE and self.keep_days is None:
             raise InvalidArgument(
                 'keep_days',
-                'is required when keep_days_or_delete is %s' % self.KEEP_DAYS_MODE,
+                'is required when keep_days_or_delete is %s' % KeepOrDeleteMode.KEEP_BEFORE_DELETE,
             )
 
-        if self.compare_version_mode and self.compare_version_mode not in AbstractFileSyncPolicy.COMPARE_VERSION_MODES:
+        if self.compare_version_mode and self.compare_version_mode not in CompareVersionMode:
             raise InvalidArgument(
                 'compare_version_mode',
-                'must be one of :%s' % AbstractFileSyncPolicy.COMPARE_VERSION_MODES,
+                'must be one of :%s' % CompareVersionMode.__members__,
             )
 
     def sync_folders(self, source_folder, dest_folder, now_millis, reporter):
@@ -259,7 +259,8 @@ class Synchronizer(object):
         :param reporter: reporter object
         :param policies_manager: policies manager object
         """
-        if self.keep_days_or_delete == self.KEEP_DAYS_MODE and dest_folder.folder_type() == 'local':
+        if self.keep_days_or_delete == KeepOrDeleteMode.KEEP_BEFORE_DELETE and dest_folder.folder_type(
+        ) == 'local':
             raise InvalidArgument('keep_days_or_delete', 'cannot be used for local files')
 
         source_type = source_folder.folder_type()
@@ -310,7 +311,7 @@ class Synchronizer(object):
 
         :param str sync_type: synchronization type
         :param source_file: source file object
-        :type source_folder: b2sdk.v1.AbstractFolder
+        :type source_file: b2sdk.v1.File
         :param dest_file: destination file object
         :type dest_file: b2sdk.v1.File
         :param source_folder: a source folder object
@@ -319,7 +320,7 @@ class Synchronizer(object):
         :type dest_folder: b2sdk.v1.AbstractFolder
         :param int now_millis: current time in milliseconds
         """
-        delete = self.keep_days_or_delete == self.DELETE_MODE
+        delete = self.keep_days_or_delete == KeepOrDeleteMode.DELETE
         keep_days = self.keep_days
 
         policy = POLICY_MANAGER.get_policy(

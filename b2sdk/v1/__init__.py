@@ -120,6 +120,8 @@ from b2sdk.sync.folder import B2Folder
 from b2sdk.sync.folder import LocalFolder
 from b2sdk.sync.folder_parser import parse_sync_folder
 from b2sdk.sync.policy import AbstractFileSyncPolicy
+from b2sdk.sync.policy import CompareVersionMode
+from b2sdk.sync.policy import NewerFileSyncMode
 from b2sdk.sync.policy import DownAndDeletePolicy
 from b2sdk.sync.policy import DownAndKeepDaysPolicy
 from b2sdk.sync.policy import DownPolicy
@@ -134,6 +136,7 @@ from b2sdk.sync.report import SyncReport
 from b2sdk.sync.scan_policies import DEFAULT_SCAN_MANAGER
 from b2sdk.sync.scan_policies import RegexSet
 from b2sdk.sync.scan_policies import ScanPoliciesManager
+from b2sdk.sync.sync import KeepOrDeleteMode
 from b2sdk.sync.sync import Synchronizer
 from b2sdk.sync.sync import zip_folders
 
