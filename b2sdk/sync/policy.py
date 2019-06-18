@@ -193,7 +193,7 @@ class AbstractFileSyncPolicy(object):
             # Replace if size difference is over threshold
             return compare_threshold_exceeded
         else:
-            raise InvalidArgument('Invalid option for --compareVersions')
+            raise InvalidArgument('compare_version_mode', 'is invalid option')
 
     def get_all_actions(self):
         """

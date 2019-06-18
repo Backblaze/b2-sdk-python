@@ -25,6 +25,9 @@ logger = logging.getLogger(__name__)
 
 
 class Synchronizer(SynchronizerV1):
+    """
+    This is wrapper for newer version and will return the v0 style exceptions
+    """
     def __init__(self, *args, **kwargs):
         try:
             super(Synchronizer, self).__init__(*args, **kwargs)
@@ -41,6 +44,8 @@ class Synchronizer(SynchronizerV1):
     def sync_folders(self, *args, **kwargs):
         try:
             super(Synchronizer, self).sync_folders(*args, **kwargs)
+        except InvalidArgument as e:
+            raise CommandError('--%s %s' % (e.field_name, e.message))
         except IncompleteSync as e:
             raise CommandError(e.message)
 
@@ -70,8 +75,10 @@ def get_synchronizer_from_args(
         compare_version_mode = CompareVersionMode.MODTIME
     elif args.compareVersions == 'size':
         compare_version_mode = CompareVersionMode.SIZE
-    else:
+    elif args.compareVersions is None:
         compare_version_mode = CompareVersionMode.MODTIME
+    else:
+        raise CommandError('Invalid option for --compareVersions')
     compare_threshold = args.compareThreshold
 
     keep_days = None
