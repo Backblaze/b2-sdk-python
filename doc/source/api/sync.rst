@@ -62,6 +62,9 @@ Following are the important optional arguments that can be provided while initia
             keep_days_or_delete=KeepOrDeleteMode.KEEP_BEFORE_DELETE,
             keep_days=10,
         )
+    # I have a file (hello.txt) which is present in destination but not on source (my local),
+    #  so it will be deleted and since we our mode is to keep the delete file, it will be
+    #  hidden for 10 days in bucket.
 
     >>> no_progress = False
     >>> with SyncReport(sys.stdout, no_progress) as reporter:
@@ -71,8 +74,103 @@ Following are the important optional arguments that can be provided while initia
                 now_millis=int(round(time.time() * 1000)),
                 reporter=reporter,
             )
-    upload some.pdf
-    upload som2.pdf
+    upload f1.txt
+    delete hello.txt (old version)
+    hide   hello.txt
+
+    # I changed f1.txt and added 1 byte. Since our compare_threshold is 10, it will not do anything.
+    >>> with SyncReport(sys.stdout, no_progress) as reporter:
+            synchronizer.sync_folders(
+                source_folder=source,
+                dest_folder=destination,
+                now_millis=int(round(time.time() * 1000)),
+                reporter=reporter,
+            )
+
+    # I changed f1.txt and added more than 10 bytes.
+    #  Since our compare_threshold is 10, it will replace the file at destination folder.
+    >>> with SyncReport(sys.stdout, no_progress) as reporter:
+            synchronizer.sync_folders(
+                source_folder=source,
+                dest_folder=destination,
+                now_millis=int(round(time.time() * 1000)),
+                reporter=reporter,
+            )
+    upload f1.txt
+
+    # Let's just delete the file and not keep - keep_days_or_delete = DELETE
+    #  You can avoid passing keep_days argument in this case because it will be ignored anyways
+    >>> synchronizer = Synchronizer(
+            max_workers=10,
+            policies_manager=policies_manager,
+            dry_run=False,
+            allow_empty_source=True,
+            compare_version_mode=CompareVersionMode.SIZE,
+            compare_threshold=10,
+            newer_file_mode=NewerFileSyncMode.REPLACE,
+            keep_days_or_delete=KeepOrDeleteMode.DELETE,
+        )
+
+    >>> with SyncReport(sys.stdout, no_progress) as reporter:
+        synchronizer.sync_folders(
+            source_folder=source,
+            dest_folder=destination,
+            now_millis=int(round(time.time() * 1000)),
+            reporter=reporter,
+        )
+    delete f1.txt
+    delete f1.txt (old version)
+    delete hello.txt (old version)
+    upload f2.txt
+    delete hello.txt (hide marker)
+
+    # As you can see, it deleted f1.txt and it's older versions (no hide this time)
+    #  and deleted hello.txt also because now we don't want the file anymore.
+    #  also, we added another file f2.txt which gets uploaded.
+
+    # Now we changed newer_file_mode to SKIP and compare_version_mode to MODTIME.
+    #  also uploaded a new version of f2.txt to bucket using B2 web.
+    >>> synchronizer = Synchronizer(
+            max_workers=10,
+            policies_manager=policies_manager,
+            dry_run=False,
+            allow_empty_source=True,
+            compare_version_mode=CompareVersionMode.MODTIME,
+            compare_threshold=10,
+            newer_file_mode=NewerFileSyncMode.SKIP,
+            keep_days_or_delete=KeepOrDeleteMode.DELETE,
+        )
+    >>> with SyncReport(sys.stdout, no_progress) as reporter:
+        synchronizer.sync_folders(
+            source_folder=source,
+            dest_folder=destination,
+            now_millis=int(round(time.time() * 1000)),
+            reporter=reporter,
+        )
+    # As expected, nothing happened, it found a file that was older at source
+    #  but did not do anything because we skipped.
+
+    # Now we changed newer_file_mode again to REPLACE and
+    #  also uploaded a new version of f2.txt to bucket using B2 web.
+    >>> synchronizer = Synchronizer(
+            max_workers=10,
+            policies_manager=policies_manager,
+            dry_run=False,
+            allow_empty_source=True,
+            compare_version_mode=CompareVersionMode.MODTIME,
+            compare_threshold=10,
+            newer_file_mode=NewerFileSyncMode.REPLACE,
+            keep_days_or_delete=KeepOrDeleteMode.DELETE,
+        )
+    >>> with SyncReport(sys.stdout, no_progress) as reporter:
+        synchronizer.sync_folders(
+            source_folder=source,
+            dest_folder=destination,
+            now_millis=int(round(time.time() * 1000)),
+            reporter=reporter,
+        )
+    delete f2.txt (old version)
+    upload f2.txt
 
 
 .. autoclass:: b2sdk.v1.Synchronizer()
