@@ -123,6 +123,16 @@ class AbstractRawApi(object):
     def get_download_url_by_name(self, download_url, account_auth_token, bucket_name, file_name):
         return download_url + '/file/' + bucket_name + '/' + b2_url_encode(file_name)
 
+    @abstractmethod
+    def copy_file(
+        self,
+        api_url,
+        account_auth_token,
+        source_file_id,
+        new_file_name,
+    ):
+        pass
+
 
 class B2RawApi(AbstractRawApi):
     """
@@ -514,6 +524,21 @@ class B2RawApi(AbstractRawApi):
 
         return self.b2_http.post_content_return_json(upload_url, headers, data_stream)
 
+    def copy_file(
+        self,
+        api_url,
+        account_auth_token,
+        source_file_id,
+        new_file_name,
+    ):
+        return self._post_json(
+            api_url,
+            'b2_copy_file',
+            account_auth_token,
+            sourceFileId=source_file_id,
+            fileName=new_file_name,
+        )
+
 
 def test_raw_api():
     """
@@ -682,6 +707,11 @@ def test_raw_api_helper(raw_api):
         api_url, account_auth_token, bucket_id, start_file_name=file_name, max_file_count=5
     )
     assert [file_name] == [f_dict['fileName'] for f_dict in list_names_dict['files']]
+
+    # b2_copy_file
+    print('b2_copy_file')
+    copy_file_name = 'test_copy.txt'
+    raw_api.copy_file(api_url, account_auth_token, file_id, copy_file_name)
 
     # b2_hide_file
     print('b2_hide_file')

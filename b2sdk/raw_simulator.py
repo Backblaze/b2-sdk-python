@@ -11,6 +11,7 @@
 import collections
 import re
 import time
+import copy
 
 import six
 from six.moves import range
@@ -829,6 +830,28 @@ class RawSimulator(AbstractRawApi):
         self._assert_account_auth(api_url, account_auth_token, bucket.account_id, 'writeFiles')
         response = bucket.hide_file(file_name)
         self.file_id_to_bucket_id[response['fileId']] = bucket_id
+        return response
+
+    def copy_file(self, api_url, account_auth_token, file_id, new_file_name):
+        bucket_id = self.file_id_to_bucket_id[file_id]
+        bucket = self._get_bucket_by_id(bucket_id)
+        file_sim = bucket.file_id_to_file[file_id]
+        copy_file_sim = copy.deepcopy(file_sim)
+        copy_file_sim.upload_timestamp = six.next(self.upload_timestamp_counter)
+        copy_file_sim.action = 'copy'
+
+        response = dict(
+            contentType=file_sim.content_type,
+            contentSha1=file_sim.content_sha1,
+            bucketId=bucket_id,
+            contentLength=file_sim.content_length,
+            fileName=new_file_name,
+            action="copy",
+            fileInfo=file_sim.file_info,
+            fileId=bucket._next_file_id(),
+            uploadTimestamp=file_sim.upload_timestamp,
+            accountId=bucket.account_id,
+        )
         return response
 
     def list_buckets(
