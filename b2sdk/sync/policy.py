@@ -124,7 +124,7 @@ class AbstractFileSyncPolicy(object):
         :param dest_file: destination file object
         :type dest_file: b2sdk.sync.file.File
         :param compare_threshold: compare threshold when comparing by time or size
-        :type int
+        :type compare_threshold: int
         :param compare_version_mode: Enum
         :type b2sdk.v1.CompareVersionMode
         :param newer_file_mode: Enum
