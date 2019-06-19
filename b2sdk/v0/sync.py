@@ -28,6 +28,7 @@ class Synchronizer(SynchronizerV1):
     """
     This is wrapper for newer version and will return the v0 style exceptions
     """
+
     def __init__(self, *args, **kwargs):
         try:
             super(Synchronizer, self).__init__(*args, **kwargs)
