@@ -103,7 +103,7 @@ Delete a bucket
     >>> bucket = b2_api.get_bucket_by_name(bucket_name)
     >>> b2_api.delete_bucket(bucket)
 
-    # If there will be some error in deleting bucket it will be shown otherwise it is successful
+returns `None` if successful, raises an exception in case of error.
 
 Update bucket info
 ==================
@@ -222,14 +222,34 @@ List files
 
     >>> bucket_name = 'example-mybucket-b2'
     >>> bucket = b2_api.get_bucket_by_name(bucket_name)
-    >>> for file_info, folder_name in bucket.ls(folder_to_list='', show_versions=False):
+    >>> for file_info, folder_name in bucket.ls(show_versions=False):
     >>>     print(file_info.file_name, file_info.upload_timestamp, folder_name)
     f2.txt 1560927489000 None
     som2.pdf 1554296578000 None
     some.pdf 1554296579000 None
+    test-folder/.bzEmpty 1561005295000 test-folder/
+
+    # Recursive
+    >>> bucket_name = 'example-mybucket-b2'
+    >>> bucket = b2_api.get_bucket_by_name(bucket_name)
+    >>> for file_info, folder_name in bucket.ls(show_versions=False, recursive=True):
+    >>>     print(file_info.file_name, file_info.upload_timestamp, folder_name)
+    f2.txt 1560927489000 None
+    som2.pdf 1554296578000 None
+    some.pdf 1554296579000 None
+    test-folder/.bzEmpty 1561005295000 test-folder/
+    test-folder/folder_file.txt 1561005349000 None
+
+    # Within folder
+    >>> bucket_name = 'example-mybucket-b2'
+    >>> bucket = b2_api.get_bucket_by_name(bucket_name)
+    >>> for file_info, folder_name in bucket.ls(folder_to_list='test-folder', show_versions=False):
+    >>>     print(file_info.file_name, file_info.upload_timestamp, folder_name)
+    test-folder/.bzEmpty 1561005295000 None
+    test-folder/folder_file.txt 1561005349000 None
 
     # list file versions
-    >>> for file_info, folder_name in bucket.ls(folder_to_list='', show_versions=True):
+    >>> for file_info, folder_name in bucket.ls(show_versions=True):
     >>>     print(file_info.file_name, file_info.upload_timestamp, folder_name)
     f2.txt 1560927489000 None
     f2.txt 1560849524000 None
