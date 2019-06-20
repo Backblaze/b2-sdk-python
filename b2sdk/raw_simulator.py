@@ -435,7 +435,7 @@ class BucketSimulator(object):
         data_bytes = file_sim.data_bytes
 
         if bytes_range is not None:
-            if bytes_range[1] >= len(file_sim.data_bytes):  # requested too much
+            if bytes_range[0] > len(file_sim.data_bytes) or bytes_range[1] < 0 :  # requested too much
                 raise UnsatisfiedRange()
             else:
                 data_bytes = data_bytes[bytes_range[0]:bytes_range[1]]

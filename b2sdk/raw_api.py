@@ -550,7 +550,9 @@ class B2RawApi(AbstractRawApi):
 
         kwargs = {}
         if bytes_range is not None:
-            kwargs['range'] = bytes_range
+            range_dict = {}
+            _add_range_header(range_dict, bytes_range)
+            kwargs['range'] = range_dict['Range']
         if metadata_directive is not None:
             kwargs['metadataDirective'] = metadata_directive
         if content_type is not None:
