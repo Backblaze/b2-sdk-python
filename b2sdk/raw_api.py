@@ -130,6 +130,10 @@ class AbstractRawApi(object):
         account_auth_token,
         source_file_id,
         new_file_name,
+        bytes_range=None,
+        metadata_directive=None,
+        content_type=None,
+        file_info=None,
     ):
         pass
 
@@ -535,15 +539,6 @@ class B2RawApi(AbstractRawApi):
         content_type=None,
         file_info=None,
     ):
-        kwargs = {}
-        if bytes_range is not None:
-            kwargs['range'] = bytes_range
-        if metadata_directive is not None:
-            kwargs['metadataDirective'] = metadata_directive
-        if content_type is not None:
-            kwargs['contentType'] = content_type
-        if file_info is not None:
-            kwargs['fileInfo'] = file_info
         if metadata_directive == 'COPY' and (content_type is not None or file_info is not None):
             raise InvalidMetadataDirective(
                 'content_type and file_info should be None when metadata_directive is COPY'
@@ -553,13 +548,23 @@ class B2RawApi(AbstractRawApi):
                 'content_type cannot be None when metadata_directive is REPLACE'
             )
 
+        kwargs = {}
+        if bytes_range is not None:
+            kwargs['range'] = bytes_range
+        if metadata_directive is not None:
+            kwargs['metadataDirective'] = metadata_directive
+        if content_type is not None:
+            kwargs['contentType'] = content_type
+        if file_info is not None:
+            kwargs['fileInfo'] = file_info
+
         return self._post_json(
             api_url,
             'b2_copy_file',
             account_auth_token,
             sourceFileId=source_file_id,
             fileName=new_file_name,
-            **kwargs,
+            **kwargs
         )
 
 

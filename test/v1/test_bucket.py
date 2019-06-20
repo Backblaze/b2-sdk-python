@@ -22,10 +22,11 @@ from .deps_exception import (
     AlreadyFailed,
     B2Error,
     InvalidAuthToken,
+    InvalidMetadataDirective,
     InvalidRange,
     InvalidUploadSource,
     MaxRetriesExceeded,
-    InvalidMetadataDirective,
+    UnsatisfiedRange,
 )
 from .deps import B2Api
 from .deps import LargeFileUploadState
@@ -353,6 +354,23 @@ class TestCopyFile(TestCaseWithBucket):
             for (info, folder) in self.bucket.ls(show_versions=True)
         ]
         self.assertEqual(expected, actual)
+
+    def test_copy_with_unsatisfied_range(self):
+        file_id = self._make_file()
+        try:
+            self.bucket.copy_file(
+                file_id,
+                'hello_new.txt',
+                bytes_range=(5, 15),
+            )
+            self.fail('should have raised UnsatisfiedRange')
+        except UnsatisfiedRange as e:
+            self.assertEqual(
+                'The range in the request is outside the size of the file',
+                str(e),
+            )
+        expected = [('hello.txt', 11, 'upload', None)]
+        self.assertBucketContents(expected, '', show_versions=True)
 
     def _make_file(self):
         data = six.b('hello world')

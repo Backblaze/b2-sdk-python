@@ -24,10 +24,11 @@ from .exception import (
     DuplicateBucketName,
     FileNotPresent,
     InvalidAuthToken,
+    InvalidMetadataDirective,
     MissingPart,
     NonExistentBucket,
     Unauthorized,
-    InvalidMetadataDirective,
+    UnsatisfiedRange,
 )
 from .raw_api import AbstractRawApi, HEX_DIGITS_AT_END
 from .utils import b2_url_decode, b2_url_encode
@@ -435,7 +436,7 @@ class BucketSimulator(object):
 
         if bytes_range is not None:
             if bytes_range[1] >= len(file_sim.data_bytes):  # requested too much
-                raise 416
+                raise UnsatisfiedRange()
             else:
                 data_bytes = data_bytes[bytes_range[0]:bytes_range[1]]
 

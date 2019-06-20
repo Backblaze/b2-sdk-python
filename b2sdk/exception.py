@@ -411,6 +411,11 @@ class UnrecognizedBucketType(B2Error):
     pass
 
 
+class UnsatisfiedRange(B2Error):
+    def __str__(self):
+        return "The range in the request is outside the size of the file"
+
+
 def interpret_b2_error(status, code, message, response_headers, post_params=None):
     post_params = post_params or {}
     if status == 400 and code == "already_hidden":
@@ -441,6 +446,8 @@ def interpret_b2_error(status, code, message, response_headers, post_params=None
         return StorageCapExceeded()
     elif status == 409:
         return Conflict()
+    elif status == 416 and code == "range_not_satisfiable":
+        return UnsatisfiedRange()
     elif status == 429:
         return TooManyRequests(retry_after_seconds=response_headers.get('retry-after'))
     elif 500 <= status < 600:

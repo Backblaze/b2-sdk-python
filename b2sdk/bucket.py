@@ -759,6 +759,16 @@ class Bucket(object):
         content_type=None,
         file_info=None,
     ):
+        """
+        Creates a new file by copying from an existing file.
+
+        :param str file_id: file ID of existing file
+        :param str new_file_name: file name of the new file
+        :param tuple[int, int], None bytes_range: start and end offsets
+        :param str, None metadata_directive: `'COPY'` or `'REPLACE'`, default is `'COPY'`
+        :param str, None content_type: content_type for the new file if `'REPLACE'`, default will copy the content_type of old file
+        :param dict, None file_info: file_info for the new file if `'REPLACE'`, default will copy the file_info of old file
+        """
         return self.api.session.copy_file(
             file_id,
             new_file_name,
