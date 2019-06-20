@@ -361,7 +361,7 @@ class TestCopyFile(TestCaseWithBucket):
             self.bucket.copy_file(
                 file_id,
                 'hello_new.txt',
-                bytes_range=(5, 15),
+                bytes_range=(12, 15),
             )
             self.fail('should have raised UnsatisfiedRange')
         except UnsatisfiedRange as e:
