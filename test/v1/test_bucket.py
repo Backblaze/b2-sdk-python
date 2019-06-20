@@ -18,7 +18,15 @@ import six
 
 from .test_base import TestBase
 
-from .deps_exception import AlreadyFailed, B2Error, InvalidAuthToken, InvalidRange, InvalidUploadSource, MaxRetriesExceeded
+from .deps_exception import (
+    AlreadyFailed,
+    B2Error,
+    InvalidAuthToken,
+    InvalidRange,
+    InvalidUploadSource,
+    MaxRetriesExceeded,
+    InvalidMetadataDirective,
+)
 from .deps import B2Api
 from .deps import LargeFileUploadState
 from .deps import DownloadDestBytes, PreSeekedDownloadDest
@@ -278,6 +286,77 @@ class TestLs(TestCaseWithBucket):
 
         expected = [('hello.txt', 15, 'upload', None)]
         self.assertBucketContents(expected, '', show_versions=True)
+
+
+class TestCopyFile(TestCaseWithBucket):
+    def test_copy_without_optional_params(self):
+        file_id = self._make_file()
+        self.bucket.copy_file(file_id, 'hello_new.txt')
+        expected = [('hello.txt', 11, 'upload', None), ('hello_new.txt', 11, 'copy', None)]
+        self.assertBucketContents(expected, '', show_versions=True)
+
+    def test_copy_with_range(self):
+        file_id = self._make_file()
+        self.bucket.copy_file(file_id, 'hello_new.txt', bytes_range=(3, 9))
+        expected = [('hello.txt', 11, 'upload', None), ('hello_new.txt', 6, 'copy', None)]
+        self.assertBucketContents(expected, '', show_versions=True)
+
+    def test_copy_with_invalid_metadata(self):
+        file_id = self._make_file()
+        try:
+            self.bucket.copy_file(
+                file_id,
+                'hello_new.txt',
+                metadata_directive='COPY',
+                content_type='application/octet-stream',
+            )
+            self.fail('should have raised InvalidMetadataDirective')
+        except InvalidMetadataDirective as e:
+            self.assertEqual(
+                'content_type and file_info should be None when metadata_directive is COPY',
+                str(e),
+            )
+        expected = [('hello.txt', 11, 'upload', None)]
+        self.assertBucketContents(expected, '', show_versions=True)
+
+    def test_copy_with_invalid_metadata_replace(self):
+        file_id = self._make_file()
+        try:
+            self.bucket.copy_file(
+                file_id,
+                'hello_new.txt',
+                metadata_directive='REPLACE',
+            )
+            self.fail('should have raised InvalidMetadataDirective')
+        except InvalidMetadataDirective as e:
+            self.assertEqual(
+                'content_type cannot be None when metadata_directive is REPLACE',
+                str(e),
+            )
+        expected = [('hello.txt', 11, 'upload', None)]
+        self.assertBucketContents(expected, '', show_versions=True)
+
+    def test_copy_with_replace_metadata(self):
+        file_id = self._make_file()
+        self.bucket.copy_file(
+            file_id,
+            'hello_new.txt',
+            metadata_directive='REPLACE',
+            content_type='text/plain',
+        )
+        expected = [
+            ('hello.txt', 11, 'upload', 'b2/x-auto', None),
+            ('hello_new.txt', 11, 'copy', 'text/plain', None),
+        ]
+        actual = [
+            (info.file_name, info.size, info.action, info.content_type, folder)
+            for (info, folder) in self.bucket.ls(show_versions=True)
+        ]
+        self.assertEqual(expected, actual)
+
+    def _make_file(self):
+        data = six.b('hello world')
+        return self.bucket.upload_bytes(data, 'hello.txt').id_
 
 
 class TestUpload(TestCaseWithBucket):

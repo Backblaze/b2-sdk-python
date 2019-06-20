@@ -257,6 +257,10 @@ class UnusableFileName(B2SimpleError):
     pass
 
 
+class InvalidMetadataDirective(B2Error):
+    pass
+
+
 class InvalidRange(B2Error):
     def __init__(self, content_length, range_):
         super(InvalidRange, self).__init__()

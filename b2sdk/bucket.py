@@ -750,6 +750,24 @@ class Bucket(object):
         response = self.api.session.hide_file(self.id_, file_name)
         return FileVersionInfoFactory.from_api_response(response)
 
+    def copy_file(
+        self,
+        file_id,
+        new_file_name,
+        bytes_range=None,
+        metadata_directive=None,
+        content_type=None,
+        file_info=None,
+    ):
+        return self.api.session.copy_file(
+            file_id,
+            new_file_name,
+            bytes_range,
+            metadata_directive,
+            content_type,
+            file_info,
+        )
+
     def delete_file_version(self, file_id, file_name):
         """
         Delete a file version.

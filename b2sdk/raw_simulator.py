@@ -11,7 +11,6 @@
 import collections
 import re
 import time
-import copy
 
 import six
 from six.moves import range
@@ -28,6 +27,7 @@ from .exception import (
     MissingPart,
     NonExistentBucket,
     Unauthorized,
+    InvalidMetadataDirective,
 )
 from .raw_api import AbstractRawApi, HEX_DIGITS_AT_END
 from .utils import b2_url_decode, b2_url_encode
@@ -409,6 +409,49 @@ class BucketSimulator(object):
         self.file_id_to_file[file_id] = file_sim
         self.file_name_and_id_to_file[file_sim.sort_key()] = file_sim
         return file_sim.as_list_files_dict()
+
+    def copy_file(
+        self,
+        file_id,
+        new_file_name,
+        bytes_range=None,
+        metadata_directive=None,
+        content_type=None,
+        file_info=None,
+    ):
+        if metadata_directive == 'COPY' and (content_type is not None or file_info is not None):
+            raise InvalidMetadataDirective(
+                'content_type and file_info should be None when metadata_directive is COPY'
+            )
+        elif metadata_directive == 'REPLACE' and content_type is None:
+            raise InvalidMetadataDirective(
+                'content_type cannot be None when metadata_directive is REPLACE'
+            )
+
+        file_sim = self.file_id_to_file[file_id]
+        new_file_id = self._next_file_id()
+
+        data_bytes = file_sim.data_bytes
+
+        if bytes_range is not None:
+            if bytes_range[1] >= len(file_sim.data_bytes):  # requested too much
+                raise 416
+            else:
+                data_bytes = data_bytes[bytes_range[0]:bytes_range[1]]
+
+        copy_file_sim = self.FILE_SIMULATOR_CLASS(
+            self.account_id, self.bucket_id, new_file_id, 'copy', new_file_name,
+            file_sim.content_type, file_sim.content_sha1, file_sim.file_info, data_bytes,
+            six.next(self.upload_timestamp_counter)
+        )
+
+        if metadata_directive == 'REPLACE':
+            copy_file_sim.content_type = content_type
+            copy_file_sim.file_info = file_info or file_sim.file_info
+
+        self.file_id_to_file[new_file_id] = copy_file_sim
+        self.file_name_and_id_to_file[copy_file_sim.sort_key()] = copy_file_sim
+        return copy_file_sim.as_upload_result()
 
     def list_file_names(self, start_file_name=None, max_file_count=None):
         start_file_name = start_file_name or ''
@@ -832,25 +875,27 @@ class RawSimulator(AbstractRawApi):
         self.file_id_to_bucket_id[response['fileId']] = bucket_id
         return response
 
-    def copy_file(self, api_url, account_auth_token, file_id, new_file_name):
+    def copy_file(
+        self,
+        api_url,
+        account_auth_token,
+        file_id,
+        new_file_name,
+        bytes_range=None,
+        metadata_directive=None,
+        content_type=None,
+        file_info=None,
+    ):
         bucket_id = self.file_id_to_bucket_id[file_id]
         bucket = self._get_bucket_by_id(bucket_id)
-        file_sim = bucket.file_id_to_file[file_id]
-        copy_file_sim = copy.deepcopy(file_sim)
-        copy_file_sim.upload_timestamp = six.next(self.upload_timestamp_counter)
-        copy_file_sim.action = 'copy'
-
-        response = dict(
-            contentType=file_sim.content_type,
-            contentSha1=file_sim.content_sha1,
-            bucketId=bucket_id,
-            contentLength=file_sim.content_length,
-            fileName=new_file_name,
-            action="copy",
-            fileInfo=file_sim.file_info,
-            fileId=bucket._next_file_id(),
-            uploadTimestamp=file_sim.upload_timestamp,
-            accountId=bucket.account_id,
+        self._assert_account_auth(api_url, account_auth_token, bucket.account_id, 'writeFiles')
+        response = bucket.copy_file(
+            file_id,
+            new_file_name,
+            bytes_range,
+            metadata_directive,
+            content_type,
+            file_info,
         )
         return response
 
