@@ -168,17 +168,14 @@ By id
 .. code-block:: python
 
     >>> from b2sdk.v1 import DownloadDestLocalFile
-    >>> from b2sdk.v1 import SimpleProgressListener
+    >>> from b2sdk.v1 import DoNothingProgressListener
 
     >>> local_file_path = '/home/user1/b2_example/new2.pdf'
     >>> file_id = '4_z5485a1682662eb3e60980d10_f1195145f42952533_d20190403_m130258_c002_v0001111_t0002'
     >>> download_dest = DownloadDestLocalFile(local_file_path)
-    >>> progress_listener = SimpleProgressListener('simple')
+    >>> progress_listener = DoNothingProgressListener()
 
     >>> b2_api.download_file_by_id(file_id, download_dest, progress_listener)
-    simple
-         100%
-        DONE.
     {'fileId': '4_z5485a1682662eb3e60980d10_f1195145f42952533_d20190403_m130258_c002_v0001111_t0002',
      'fileName': 'som2.pdf',
      'contentType': 'application/pdf',
