@@ -761,6 +761,7 @@ class Bucket(object):
     ):
         """
         Creates a new file by copying from an existing file.
+        # TODO: metadata_directive will be Enum when enum34 PR is merged.
 
         :param str file_id: file ID of existing file
         :param str new_file_name: file name of the new file

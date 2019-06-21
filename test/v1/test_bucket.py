@@ -26,7 +26,7 @@ from .deps_exception import (
     InvalidRange,
     InvalidUploadSource,
     MaxRetriesExceeded,
-    UnsatisfiedRange,
+    UnsatisfiableRange,
 )
 from .deps import B2Api
 from .deps import LargeFileUploadState
@@ -363,8 +363,8 @@ class TestCopyFile(TestCaseWithBucket):
                 'hello_new.txt',
                 bytes_range=(12, 15),
             )
-            self.fail('should have raised UnsatisfiedRange')
-        except UnsatisfiedRange as e:
+            self.fail('should have raised UnsatisfiableRange')
+        except UnsatisfiableRange as e:
             self.assertEqual(
                 'The range in the request is outside the size of the file',
                 str(e),

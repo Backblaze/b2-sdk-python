@@ -57,7 +57,7 @@ from b2sdk.exception import UnexpectedCloudBehaviour
 from b2sdk.exception import UnknownError
 from b2sdk.exception import UnknownHost
 from b2sdk.exception import UnrecognizedBucketType
-from b2sdk.exception import UnsatisfiedRange
+from b2sdk.exception import UnsatisfiableRange
 from b2sdk.exception import UnusableFileName
 from b2sdk.exception import interpret_b2_error
 from b2sdk.sync.exception import EnvironmentEncodingError
@@ -117,7 +117,7 @@ __all__ = (
     'UnknownError',
     'UnknownHost',
     'UnrecognizedBucketType',
-    'UnsatisfiedRange',
+    'UnsatisfiableRange',
     'UnusableFileName',
     'interpret_b2_error',
 )
