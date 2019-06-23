@@ -13,7 +13,7 @@ from __future__ import division
 import logging
 import six
 
-from enum import Enum
+from enum import Enum, unique
 
 from ..bounded_queue_executor import BoundedQueueExecutor
 from .exception import InvalidArgument, IncompleteSync
@@ -98,6 +98,7 @@ def count_files(local_folder, reporter):
     reporter.end_local()
 
 
+@unique
 class KeepOrDeleteMode(Enum):
     DELETE = 301
     KEEP_BEFORE_DELETE = 302
@@ -145,13 +146,13 @@ class Synchronizer(object):
         if self.compare_threshold < 0:
             raise InvalidArgument('compare_threshold', 'must be a positive integer')
 
-        if not isinstance(self.newer_file_mode, NewerFileSyncMode):
+        if self.newer_file_mode not in tuple(NewerFileSyncMode):
             raise InvalidArgument(
                 'newer_file_mode',
                 'must be one of :%s' % NewerFileSyncMode.__members__,
             )
 
-        if not isinstance(self.keep_days_or_delete, KeepOrDeleteMode):
+        if self.keep_days_or_delete not in tuple(KeepOrDeleteMode):
             raise InvalidArgument(
                 'keep_days_or_delete',
                 'must be one of :%s' % KeepOrDeleteMode.__members__,
@@ -163,9 +164,7 @@ class Synchronizer(object):
                 'is required when keep_days_or_delete is %s' % KeepOrDeleteMode.KEEP_BEFORE_DELETE,
             )
 
-        if self.compare_version_mode and not isinstance(
-            self.compare_version_mode, CompareVersionMode
-        ):
+        if self.compare_version_mode not in tuple(CompareVersionMode):
             raise InvalidArgument(
                 'compare_version_mode',
                 'must be one of :%s' % CompareVersionMode.__members__,

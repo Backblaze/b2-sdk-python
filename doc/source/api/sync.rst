@@ -18,21 +18,17 @@ The **high performance** of sync is credited to parallelization of:
 Synchronizer spawns threads to perform the operations listed above in parallel to shorten
 the backup window to a minimum.
 
-
-.. todo::
-   practically the whole sync documentation is missing
-
 Sync Options
 ============
 
 Following are the important optional arguments that can be provided while initializing `Synchronizer` class.
 
 
-* ``compare_version_mode``: When comparing the source and destination files for finding whether to replace them or not, `compare_version_mode` can be passed to specify the mode of comparision. For possible values see :class:`b2sdk.v1.CompareVersionMode`. Default value is :meth:`b2sdk.v1.CompareVersionMode.MODTIME`
+* ``compare_version_mode``: When comparing the source and destination files for finding whether to replace them or not, `compare_version_mode` can be passed to specify the mode of comparision. For possible values see :class:`b2sdk.v1.CompareVersionMode`. Default value is :py:attr:`b2sdk.v1.CompareVersionMode.MODTIME`
 * ``compare_threshold``: It's the minimum size/modification time difference between source and destination files before we assume that it is new and replace.
 * ``newer_file_mode``: To identify whether to skip or replace if source is older. For possible values see :class:`b2sdk.v1.NewerFileSyncMode`. If you don't specify this the sync will raise :class:`b2sdk.v1.exception.DestFileNewer` in case any of the source file is older than destination.
 * ``keep_days_or_delete``: specify policy to keep or delete older files. For possible values see :class:`b2sdk.v1.KeepOrDeleteMode`. Default is `DO_NOTHING`.
-* ``keep_days``: if `keep_days_or_delete` is KEEP_BEFORE_DELETE then this specify for how many days should we keep.
+* ``keep_days``: if `keep_days_or_delete` is :py:attr:`b2sdk.v1.CompareVersionMode.KEEP_BEFORE_DELETE` then this specify for how many days should we keep.
 
 .. code-block:: python
 
@@ -62,9 +58,12 @@ Following are the important optional arguments that can be provided while initia
             keep_days_or_delete=KeepOrDeleteMode.KEEP_BEFORE_DELETE,
             keep_days=10,
         )
-    # I have a file (hello.txt) which is present in destination but not on source (my local),
-    #  so it will be deleted and since we our mode is to keep the delete file, it will be
-    #  hidden for 10 days in bucket.
+
+We have a file (hello.txt) which is present in destination but not on source (my local),
+so it will be deleted and since our mode is to keep the delete file,
+it will be hidden for 10 days in bucket.
+
+.. code-block:: python
 
     >>> no_progress = False
     >>> with SyncReport(sys.stdout, no_progress) as reporter:
@@ -78,7 +77,10 @@ Following are the important optional arguments that can be provided while initia
     delete hello.txt (old version)
     hide   hello.txt
 
-    # I changed f1.txt and added 1 byte. Since our compare_threshold is 10, it will not do anything.
+We changed f1.txt and added 1 byte. Since our compare_threshold is 10, it will not do anything.
+
+.. code-block:: python
+
     >>> with SyncReport(sys.stdout, no_progress) as reporter:
             synchronizer.sync_folders(
                 source_folder=source,
@@ -87,8 +89,11 @@ Following are the important optional arguments that can be provided while initia
                 reporter=reporter,
             )
 
-    # I changed f1.txt and added more than 10 bytes.
-    #  Since our compare_threshold is 10, it will replace the file at destination folder.
+We changed f1.txt and added more than 10 bytes.
+Since our compare_threshold is 10, it will replace the file at destination folder.
+
+.. code-block:: python
+
     >>> with SyncReport(sys.stdout, no_progress) as reporter:
             synchronizer.sync_folders(
                 source_folder=source,
@@ -98,8 +103,11 @@ Following are the important optional arguments that can be provided while initia
             )
     upload f1.txt
 
-    # Let's just delete the file and not keep - keep_days_or_delete = DELETE
-    #  You can avoid passing keep_days argument in this case because it will be ignored anyways
+Let's just delete the file and not keep - keep_days_or_delete = DELETE
+You can avoid passing keep_days argument in this case because it will be ignored anyways
+
+.. code-block:: python
+
     >>> synchronizer = Synchronizer(
             max_workers=10,
             policies_manager=policies_manager,
@@ -124,12 +132,15 @@ Following are the important optional arguments that can be provided while initia
     upload f2.txt
     delete hello.txt (hide marker)
 
-    # As you can see, it deleted f1.txt and it's older versions (no hide this time)
-    #  and deleted hello.txt also because now we don't want the file anymore.
-    #  also, we added another file f2.txt which gets uploaded.
+As you can see, it deleted f1.txt and it's older versions (no hide this time)
+and deleted hello.txt also because now we don't want the file anymore.
+also, we added another file f2.txt which gets uploaded.
 
-    # Now we changed newer_file_mode to SKIP and compare_version_mode to MODTIME.
-    #  also uploaded a new version of f2.txt to bucket using B2 web.
+Now we changed newer_file_mode to SKIP and compare_version_mode to MODTIME.
+also uploaded a new version of f2.txt to bucket using B2 web.
+
+.. code-block:: python
+
     >>> synchronizer = Synchronizer(
             max_workers=10,
             policies_manager=policies_manager,
@@ -147,11 +158,15 @@ Following are the important optional arguments that can be provided while initia
             now_millis=int(round(time.time() * 1000)),
             reporter=reporter,
         )
-    # As expected, nothing happened, it found a file that was older at source
-    #  but did not do anything because we skipped.
 
-    # Now we changed newer_file_mode again to REPLACE and
-    #  also uploaded a new version of f2.txt to bucket using B2 web.
+As expected, nothing happened, it found a file that was older at source
+but did not do anything because we skipped.
+
+Now we changed newer_file_mode again to REPLACE and
+also uploaded a new version of f2.txt to bucket using B2 web.
+
+.. code-block:: python
+
     >>> synchronizer = Synchronizer(
             max_workers=10,
             policies_manager=policies_manager,

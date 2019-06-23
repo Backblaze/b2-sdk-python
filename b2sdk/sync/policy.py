@@ -9,7 +9,7 @@
 ######################################################################
 
 from abc import ABCMeta, abstractmethod
-from enum import Enum
+from enum import Enum, unique
 
 import six
 import logging
@@ -23,12 +23,14 @@ ONE_DAY_IN_MS = 24 * 60 * 60 * 1000
 logger = logging.getLogger(__name__)
 
 
+@unique
 class NewerFileSyncMode(Enum):
     SKIP = 101
     REPLACE = 102
     RAISE_ERROR = 103
 
 
+@unique
 class CompareVersionMode(Enum):
     MODTIME = 201
     SIZE = 202
@@ -356,7 +358,7 @@ def make_b2_keep_days_actions(
 
     :param b2sdk.v1.File source_file: source file object
     :param b2sdk.v1.File dest_file: destination file object
-    :param b2sdk.v1er.AbstractFolder dest_folder: destination folder object
+    :param b2sdk.v1.AbstractFolder dest_folder: destination folder object
     :param bool transferred: if True, file has been transferred, False otherwise
     :param int keep_days: how many days to keep a file
     :param int now_millis: current time in milliseconds
