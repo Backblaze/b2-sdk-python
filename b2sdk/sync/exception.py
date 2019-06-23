@@ -20,8 +20,7 @@ class EnvironmentEncodingError(B2Error):
         """
         :param filename: an encoded file name
         :type filename: str, bytes
-        :param encoding: file name encoding
-        :type encoding: str
+        :param str encoding: file name encoding
         """
         super(EnvironmentEncodingError, self).__init__()
         self.filename = filename
@@ -44,10 +43,8 @@ class InvalidArgument(B2Error):
 
     def __init__(self, field_name, message):
         """
-
-        :param field_name:
-        :param message:
-        :return:
+        :param field_name: name of the function argument
+        :param message: brief explanation of misconfiguration
         """
         super(InvalidArgument, self).__init__()
         self.field_name = field_name

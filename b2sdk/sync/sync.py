@@ -48,10 +48,8 @@ def zip_folders(folder_a, folder_b, reporter, policies_manager=DEFAULT_SCAN_MANA
     in both folders.  Either file (but not both) will be None if the
     file is in only one folder.
 
-    :param folder_a: first folder object.
-    :type folder_a: b2sdk.sync.folder.AbstractFolder
-    :param folder_b: second folder object.
-    :type folder_b: b2sdk.sync.folder.AbstractFolder
+    :param b2sdk.sync.folder.AbstractFolder folder_a: first folder object.
+    :param b2sdk.sync.folder.AbstractFolder folder_b: second folder object.
     :param reporter: reporter object
     :param policies_manager: policies manager object
     :return: yields two element tuples
@@ -87,8 +85,7 @@ def count_files(local_folder, reporter):
     """
     Count all of the files in a local folder.
 
-    :param local_folder: a folder object.
-    :type local_folder: b2sdk.sync.folder.AbstractFolder
+    :param b2sdk.sync.folder.AbstractFolder local_folder: a folder object.
     :param reporter: reporter object
     """
     # Don't pass in a reporter to all_files.  Broken symlinks will be reported
@@ -176,12 +173,10 @@ class Synchronizer(object):
         source is also in the destination.  Deletes any file versions
         in the destination older than history_days.
 
-        :param source_folder: source folder object
-        :type source_folder: b2sdk.sync.folder.AbstractFolder
-        :param dest_folder: destination folder object
-        :type dest_folder: b2sdk.sync.folder.AbstractFolder
+        :param b2sdk.sync.folder.AbstractFolder source_folder: source folder object
+        :param b2sdk.sync.folder.AbstractFolder dest_folder: destination folder object
         :param int now_millis: current time in milliseconds
-        :param b2sdk.sync.report.SyncReport, None reporter:
+        :param b2sdk.sync.report.SyncReport, None reporter: progress reporter
         """
         # For downloads, make sure that the target directory is there.
         if dest_folder.folder_type() == 'local' and not self.dry_run:
@@ -249,10 +244,8 @@ class Synchronizer(object):
         Yield a sequence of actions that will sync the destination
         folder to the source folder.
 
-        :param source_folder: source folder object
-        :type source_folder: b2sdk.v1.AbstractFolder
-        :param dest_folder: destination folder object
-        :type dest_folder: b2sdk.v1.AbstractFolder
+        :param b2sdk.v1.AbstractFolder source_folder: source folder object
+        :param b2sdk.v1.AbstractFolder dest_folder: destination folder object
         :param int now_millis: current time in milliseconds
         :param b2sdk.v1.SyncReport reporter: reporter object
         :param policies_manager: policies manager object
@@ -308,14 +301,10 @@ class Synchronizer(object):
         Yields the sequence of actions needed to sync the two files
 
         :param str sync_type: synchronization type
-        :param source_file: source file object
-        :type source_file: b2sdk.v1.File
-        :param dest_file: destination file object
-        :type dest_file: b2sdk.v1.File
-        :param source_folder: a source folder object
-        :type source_folder: b2sdk.v1.AbstractFolder
-        :param dest_folder: a destination folder object
-        :type dest_folder: b2sdk.v1.AbstractFolder
+        :param b2sdk.v1.File source_file: source file object
+        :param b2sdk.v1.File dest_file: destination file object
+        :param b2sdk.v1.AbstractFolder source_folder: a source folder object
+        :param b2sdk.v1.AbstractFolder dest_folder: a destination folder object
         :param int now_millis: current time in milliseconds
         """
         delete = self.keep_days_or_delete == KeepOrDeleteMode.DELETE
