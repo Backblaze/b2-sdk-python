@@ -41,17 +41,17 @@ class InvalidArgument(B2Error):
     Raised when one or more arguments are invalid
     """
 
-    def __init__(self, field_name, message):
+    def __init__(self, parameter_name, message):
         """
-        :param field_name: name of the function argument
+        :param parameter_name: name of the function argument
         :param message: brief explanation of misconfiguration
         """
         super(InvalidArgument, self).__init__()
-        self.field_name = field_name
+        self.parameter_name = parameter_name
         self.message = message
 
     def __str__(self):
-        return "%s %s" % (self.field_name, self.message)
+        return "%s %s" % (self.parameter_name, self.message)
 
 
 class IncompleteSync(B2SimpleError):

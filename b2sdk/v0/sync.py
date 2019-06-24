@@ -33,7 +33,7 @@ class Synchronizer(SynchronizerV1):
         try:
             super(Synchronizer, self).__init__(*args, **kwargs)
         except InvalidArgument as e:
-            raise CommandError('--%s %s' % (e.field_name, e.message))
+            raise CommandError('--%s %s' % (e.parameter_name, e.message))
 
     def make_file_sync_actions(self, *args, **kwargs):
         try:
@@ -46,7 +46,7 @@ class Synchronizer(SynchronizerV1):
         try:
             super(Synchronizer, self).sync_folders(*args, **kwargs)
         except InvalidArgument as e:
-            raise CommandError('--%s %s' % (e.field_name, e.message))
+            raise CommandError('--%s %s' % (e.parameter_name, e.message))
         except IncompleteSync as e:
             raise CommandError(e.message)
 
@@ -144,7 +144,7 @@ def make_folder_sync_actions(
             policies_manager=policies_manager,
         )
     except InvalidArgument as e:
-        raise CommandError('--%s %s' % (e.field_name, e.message))
+        raise CommandError('--%s %s' % (e.parameter_name, e.message))
 
 
 @trace_call(logger)

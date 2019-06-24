@@ -25,7 +25,7 @@ Following are the important optional arguments that can be provided while initia
 
 
 * ``compare_version_mode``: When comparing the source and destination files for finding whether to replace them or not, `compare_version_mode` can be passed to specify the mode of comparision. For possible values see :class:`b2sdk.v1.CompareVersionMode`. Default value is :py:attr:`b2sdk.v1.CompareVersionMode.MODTIME`
-* ``compare_threshold``: It's the minimum size/modification time difference between source and destination files before we assume that it is new and replace.
+* ``compare_threshold``: It's the minimum size (in bytes)/modification time (in seconds) difference between source and destination files before we assume that it is new and replace.
 * ``newer_file_mode``: To identify whether to skip or replace if source is older. For possible values see :class:`b2sdk.v1.NewerFileSyncMode`. If you don't specify this the sync will raise :class:`b2sdk.v1.exception.DestFileNewer` in case any of the source file is older than destination.
 * ``keep_days_or_delete``: specify policy to keep or delete older files. For possible values see :class:`b2sdk.v1.KeepOrDeleteMode`. Default is `DO_NOTHING`.
 * ``keep_days``: if `keep_days_or_delete` is :py:attr:`b2sdk.v1.CompareVersionMode.KEEP_BEFORE_DELETE` then this specify for how many days should we keep.
@@ -114,7 +114,7 @@ You can avoid passing keep_days argument in this case because it will be ignored
             dry_run=False,
             allow_empty_source=True,
             compare_version_mode=CompareVersionMode.SIZE,
-            compare_threshold=10,
+            compare_threshold=10,  # in bytes
             newer_file_mode=NewerFileSyncMode.REPLACE,
             keep_days_or_delete=KeepOrDeleteMode.DELETE,
         )
@@ -147,7 +147,7 @@ also uploaded a new version of f2.txt to bucket using B2 web.
             dry_run=False,
             allow_empty_source=True,
             compare_version_mode=CompareVersionMode.MODTIME,
-            compare_threshold=10,
+            compare_threshold=10,  # in seconds
             newer_file_mode=NewerFileSyncMode.SKIP,
             keep_days_or_delete=KeepOrDeleteMode.DELETE,
         )
