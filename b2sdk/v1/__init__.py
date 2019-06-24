@@ -37,6 +37,7 @@ from b2sdk.version_utils import rename_argument, rename_function
 # utils
 
 from b2sdk.utils import b2_url_encode, b2_url_decode, choose_part_ranges, format_and_scale_fraction, format_and_scale_number, hex_sha1_of_stream, hex_sha1_of_bytes, TempDir
+from b2sdk.utils import trace_call
 
 # data classes
 
@@ -110,6 +111,8 @@ from b2sdk.sync.action import B2HideAction
 from b2sdk.sync.action import B2UploadAction
 from b2sdk.sync.action import LocalDeleteAction
 from b2sdk.sync.exception import EnvironmentEncodingError
+from b2sdk.sync.exception import IncompleteSync
+from b2sdk.sync.exception import InvalidArgument
 from b2sdk.sync.file import File
 from b2sdk.sync.file import FileVersion
 from b2sdk.sync.folder import AbstractFolder
@@ -117,6 +120,8 @@ from b2sdk.sync.folder import B2Folder
 from b2sdk.sync.folder import LocalFolder
 from b2sdk.sync.folder_parser import parse_sync_folder
 from b2sdk.sync.policy import AbstractFileSyncPolicy
+from b2sdk.sync.policy import CompareVersionMode
+from b2sdk.sync.policy import NewerFileSyncMode
 from b2sdk.sync.policy import DownAndDeletePolicy
 from b2sdk.sync.policy import DownAndKeepDaysPolicy
 from b2sdk.sync.policy import DownPolicy
@@ -125,12 +130,14 @@ from b2sdk.sync.policy import UpAndKeepDaysPolicy
 from b2sdk.sync.policy import UpPolicy
 from b2sdk.sync.policy import make_b2_keep_days_actions
 from b2sdk.sync.policy_manager import SyncPolicyManager
+from b2sdk.sync.policy_manager import POLICY_MANAGER
 from b2sdk.sync.report import SyncFileReporter
 from b2sdk.sync.report import SyncReport
 from b2sdk.sync.scan_policies import DEFAULT_SCAN_MANAGER
 from b2sdk.sync.scan_policies import RegexSet
 from b2sdk.sync.scan_policies import ScanPoliciesManager
-from b2sdk.sync.sync import make_folder_sync_actions
+from b2sdk.sync.sync import KeepOrDeleteMode
+from b2sdk.sync.sync import Synchronizer
 from b2sdk.sync.sync import zip_folders
 
 # other

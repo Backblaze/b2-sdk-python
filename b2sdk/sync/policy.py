@@ -9,16 +9,32 @@
 ######################################################################
 
 from abc import ABCMeta, abstractmethod
+from enum import Enum, unique
 
 import six
 import logging
 
-from ..exception import CommandError, DestFileNewer
+from ..exception import DestFileNewer
 from .action import LocalDeleteAction, B2DeleteAction, B2DownloadAction, B2HideAction, B2UploadAction
+from .exception import InvalidArgument
 
 ONE_DAY_IN_MS = 24 * 60 * 60 * 1000
 
 logger = logging.getLogger(__name__)
+
+
+@unique
+class NewerFileSyncMode(Enum):
+    SKIP = 101
+    REPLACE = 102
+    RAISE_ERROR = 103
+
+
+@unique
+class CompareVersionMode(Enum):
+    MODTIME = 201
+    SIZE = 202
+    NONE = 203
 
 
 @six.add_metaclass(ABCMeta)
@@ -29,26 +45,36 @@ class AbstractFileSyncPolicy(object):
     DESTINATION_PREFIX = NotImplemented
     SOURCE_PREFIX = NotImplemented
 
-    def __init__(self, source_file, source_folder, dest_file, dest_folder, now_millis, args):
+    def __init__(
+        self,
+        source_file,
+        source_folder,
+        dest_file,
+        dest_folder,
+        now_millis,
+        keep_days,
+        newer_file_mode,
+        compare_threshold,
+        compare_version_mode=CompareVersionMode.MODTIME,
+    ):
         """
-        :param source_file: source file object
-        :type source_file: b2sdk.sync.file.File
-        :param source_folder: source folder object
-        :type source_folder: b2sdk.sync.folder.AbstractFolder
-        :param dest_file: destination file object
-        :type dest_file: b2sdk.sync.file.File
-        :param dest_folder: destination folder object
-        :type dest_folder: b2sdk.sync.folder.AbstractFolder
-        :param now_millis: current time in milliseconds
-        :type now_millis: int
-        :param args: an object which holds command line arguments
+        :param b2sdk.v1.File source_file: source file object
+        :param b2sdk.v1.AbstractFolder source_folder: source folder object
+        :param b2sdk.v1.File dest_file: destination file object
+        :param b2sdk.v1.AbstractFolder dest_folder: destination folder object
+        :param int now_millis: current time in milliseconds
+        :param int keep_days: days to keep before delete
+        :param b2sdk.v1.NEWER_FILE_MODES newer_file_mode: setting which determines handling for destination files newer than on the source
+        :param int compare_threshold: when comparing with size or time for sync
+        :param b2sdk.v1.COMPARE_VERSION_MODES compare_version_mode: how to compare source and destination files
         """
         self._source_file = source_file
         self._source_folder = source_folder
         self._dest_file = dest_file
-        self._delete = args.delete
-        self._keepDays = args.keepDays
-        self._args = args
+        self._keep_days = keep_days
+        self._newer_file_mode = newer_file_mode
+        self._compare_version_mode = compare_version_mode
+        self._compare_threshold = compare_threshold
         self._dest_folder = dest_folder
         self._now_millis = now_millis
         self._transferred = False
@@ -65,46 +91,56 @@ class AbstractFileSyncPolicy(object):
             return True
         else:
             # Both exist.  Transfer only if the two are different.
-            return self.files_are_different(self._source_file, self._dest_file, self._args)
+            return self.files_are_different(
+                self._source_file,
+                self._dest_file,
+                self._compare_threshold,
+                self._compare_version_mode,
+                self._newer_file_mode,
+            )
 
     @classmethod
-    def files_are_different(cls, source_file, dest_file, args):
+    def files_are_different(
+        cls,
+        source_file,
+        dest_file,
+        compare_threshold=None,
+        compare_version_mode=CompareVersionMode.MODTIME,
+        newer_file_mode=NewerFileSyncMode.RAISE_ERROR,
+    ):
         """
         Compare two files and determine if the the destination file
         should be replaced by the source file.
 
-        :param source_file: source file object
-        :type source_file: b2sdk.sync.file.File
-        :param dest_file: destination file object
-        :type dest_file: b2sdk.sync.file.File
-        :param args: an object which holds command line arguments
-        :rtype: bool
+        :param b2sdk.v1.File source_file: source file object
+        :param b2sdk.v1.File dest_file: destination file object
+        :param int compare_threshold: compare threshold when comparing by time or size
+        :param b2sdk.v1.CompareVersionMode compare_version_mode: source file version comparator method
+        :param b2sdk.v1.NewerFileSyncMode newer_file_mode: newer destination handling method
         """
-
-        # Compare using modification time by default
-        compareVersions = args.compareVersions or 'modTime'
-
         # Optionally set a compare threshold for fuzzy comparison
-        compareThreshold = args.compareThreshold or 0
-        if compareThreshold < 0:
-            raise CommandError('Invalid option for --compareThreshold (must be a positive integer')
+        compare_threshold = compare_threshold or 0
 
         # Compare using file name only
-        if compareVersions == 'none':
+        if compare_version_mode == CompareVersionMode.NONE:
             return False
 
         # Compare using modification time
-        elif compareVersions == 'modTime':
+        elif compare_version_mode == CompareVersionMode.MODTIME:
             # Get the modification time of the latest versions
             source_mod_time = source_file.latest_version().mod_time
             dest_mod_time = dest_file.latest_version().mod_time
             diff_mod_time = abs(source_mod_time - dest_mod_time)
-            compare_threshold_exceeded = diff_mod_time > compareThreshold
+            compare_threshold_exceeded = diff_mod_time > compare_threshold
 
             logger.debug(
                 'File %s: source time %s, dest time %s, diff %s, threshold %s, diff > threshold %s',
-                source_file.name, source_mod_time, dest_mod_time, diff_mod_time, compareThreshold,
-                compare_threshold_exceeded
+                source_file.name,
+                source_mod_time,
+                dest_mod_time,
+                diff_mod_time,
+                compare_threshold,
+                compare_threshold_exceeded,
             )
 
             if compare_threshold_exceeded:
@@ -114,9 +150,9 @@ class AbstractFileSyncPolicy(object):
 
                 # Source is older
                 elif source_mod_time < dest_mod_time:
-                    if args.replaceNewer:
+                    if newer_file_mode == NewerFileSyncMode.REPLACE:
                         return True
-                    elif args.skipNewer:
+                    elif newer_file_mode == NewerFileSyncMode.SKIP:
                         return False
                     else:
                         raise DestFileNewer(
@@ -124,23 +160,27 @@ class AbstractFileSyncPolicy(object):
                         )
 
         # Compare using file size
-        elif compareVersions == 'size':
+        elif compare_version_mode == CompareVersionMode.SIZE:
             # Get file size of the latest versions
             source_size = source_file.latest_version().size
             dest_size = dest_file.latest_version().size
             diff_size = abs(source_size - dest_size)
-            compare_threshold_exceeded = diff_size > compareThreshold
+            compare_threshold_exceeded = diff_size > compare_threshold
 
             logger.debug(
                 'File %s: source size %s, dest size %s, diff %s, threshold %s, diff > threshold %s',
-                source_file.name, source_size, dest_size, diff_size, compareThreshold,
-                compare_threshold_exceeded
+                source_file.name,
+                source_size,
+                dest_size,
+                diff_size,
+                compare_threshold,
+                compare_threshold_exceeded,
             )
 
             # Replace if size difference is over threshold
             return compare_threshold_exceeded
         else:
-            raise CommandError('Invalid option for --compareVersions')
+            raise InvalidArgument('compare_version_mode', 'is invalid option')
 
     def get_all_actions(self):
         """
@@ -232,8 +272,12 @@ class UpAndKeepDaysPolicy(UpPolicy):
         for action in super(UpAndKeepDaysPolicy, self)._get_hide_delete_actions():
             yield action
         for action in make_b2_keep_days_actions(
-            self._source_file, self._dest_file, self._dest_folder, self._transferred,
-            self._keepDays, self._now_millis
+            self._source_file,
+            self._dest_file,
+            self._dest_folder,
+            self._transferred,
+            self._keep_days,
+            self._now_millis,
         ):
             yield action
 
@@ -263,12 +307,9 @@ def make_b2_delete_note(version, index, transferred):
     """
     Create a note message for delete action.
 
-    :param version: an object which contains file version info
-    :param index: file version index
-    :type index: int
-    :param transferred: if True, file has been transferred,
-                        False otherwise
-    :type transferred: bool
+    :param b2sdk.v1.FileVersionInfo version: an object which contains file version info
+    :param int index: file version index
+    :param bool transferred: if True, file has been transferred, False otherwise
     """
     note = ''
     if version.action == 'hide':
@@ -282,15 +323,10 @@ def make_b2_delete_actions(source_file, dest_file, dest_folder, transferred):
     """
     Create the actions to delete files stored on B2, which are not present locally.
 
-    :param source_file: source file object
-    :type source_file: b2sdk.sync.file.File
-    :param dest_file: destination file object
-    :type dest_file: b2sdk.sync.file.File
-    :param dest_folder: destination folder
-    :type dest_folder: b2sdk.sync.folder.AbstractFolder
-    :param transferred: if True, file has been transferred,
-                        False otherwise
-    :type transferred: bool
+    :param b2sdk.v1.File source_file: source file object
+    :param b2sdk.v1.File dest_file: destination file object
+    :param b2sdk.v1.AbstractFolder dest_folder: destination folder
+    :param bool transferred: if True, file has been transferred, False otherwise
     """
     if dest_file is None:
         # B2 does not really store folders, so there is no need to hide
@@ -320,19 +356,12 @@ def make_b2_keep_days_actions(
     only the 25-day old version can be deleted.  The 15 day-old version
     was visible 10 days ago.
 
-    :param source_file: source file object
-    :type source_file: b2sdk.sync.file.File
-    :param dest_file: destination file object
-    :type dest_file: b2sdk.sync.file.File
-    :param dest_folder: destination folder object
-    :type dest_folder: b2sdk.sync.folder.AbstractFolder
-    :param transferred: if True, file has been transferred,
-                        False otherwise
-    :type transferred: bool
-    :param keep_days: how many days to keep a file
-    :type keep_days: int
-    :param now_millis: current time in milliseconds
-    :type now_millis: int
+    :param b2sdk.v1.File source_file: source file object
+    :param b2sdk.v1.File dest_file: destination file object
+    :param b2sdk.v1.AbstractFolder dest_folder: destination folder object
+    :param bool transferred: if True, file has been transferred, False otherwise
+    :param int keep_days: how many days to keep a file
+    :param int now_millis: current time in milliseconds
     """
     deleting = False
     if dest_file is None:

@@ -8,7 +8,7 @@
 #
 ######################################################################
 
-from ..exception import B2Error
+from ..exception import B2Error, B2SimpleError
 
 
 class EnvironmentEncodingError(B2Error):
@@ -20,8 +20,7 @@ class EnvironmentEncodingError(B2Error):
         """
         :param filename: an encoded file name
         :type filename: str, bytes
-        :param encoding: file name encoding
-        :type encoding: str
+        :param str encoding: file name encoding
         """
         super(EnvironmentEncodingError, self).__init__()
         self.filename = filename
@@ -35,3 +34,25 @@ export LANG=en_US.UTF-8""" % (
             self.filename,
             self.encoding,
         )
+
+
+class InvalidArgument(B2Error):
+    """
+    Raised when one or more arguments are invalid
+    """
+
+    def __init__(self, parameter_name, message):
+        """
+        :param parameter_name: name of the function argument
+        :param message: brief explanation of misconfiguration
+        """
+        super(InvalidArgument, self).__init__()
+        self.parameter_name = parameter_name
+        self.message = message
+
+    def __str__(self):
+        return "%s %s" % (self.parameter_name, self.message)
+
+
+class IncompleteSync(B2SimpleError):
+    pass

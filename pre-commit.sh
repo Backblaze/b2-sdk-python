@@ -127,7 +127,7 @@ header Pyflakes
 for d in b2sdk test *.py
 do
     # pyflakes does not ignore lines tagged with  # noqa
-    output="$(pyflakes "$d" | egrep -v "(b2sdk/v[0-9]+/(__init__|exception)\.py|test/v[0-9]+/deps(_exception)?.py):[0-9]+: ('from b2sdk.v[0-9]+(\.exception)? import \*' used; unable to detect undefined names|'b2sdk\..*' imported but unused)")"
+    output="$(pyflakes "$d" | egrep -v "(b2sdk/v[0-9]+/(__init__|exception)\.py|test/v[0-9]+/deps(_exception)?.py):[0-9]+: ('from b2sdk.v[0-9]+(\.exception)? import \*' used; unable to detect undefined names|'(b2sdk\..*|\..*)' imported but unused)")"
 
     if [ -z "$output" ]
     then

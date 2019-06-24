@@ -59,6 +59,8 @@ from b2sdk.exception import UnrecognizedBucketType
 from b2sdk.exception import UnusableFileName
 from b2sdk.exception import interpret_b2_error
 from b2sdk.sync.exception import EnvironmentEncodingError
+from b2sdk.sync.exception import IncompleteSync
+from b2sdk.sync.exception import InvalidArgument
 
 __all__ = (
     'AccountInfoError',
@@ -89,6 +91,8 @@ __all__ = (
     'FileAlreadyHidden',
     'FileNameNotAllowed',
     'FileNotPresent',
+    'IncompleteSync',
+    'InvalidArgument',
     'InvalidAuthToken',
     'InvalidRange',
     'InvalidUploadSource',

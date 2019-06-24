@@ -22,53 +22,76 @@ class SyncPolicyManager(object):
         self.policies = {}  # dict<,>
 
     def get_policy(
-        self, sync_type, source_file, source_folder, dest_file, dest_folder, now_millis, args
+        self,
+        sync_type,
+        source_file,
+        source_folder,
+        dest_file,
+        dest_folder,
+        now_millis,
+        delete,
+        keep_days,
+        newer_file_mode,
+        compare_threshold,
+        compare_version_mode,
     ):
         """
         Return a policy object.
 
-        :param sync_type: synchronization type
-        :type sync_type: str
-        :param source_file: source file name
-        :type source_file: str
-        :param source_folder: a source folder path
-        :type source_folder: str
-        :param dest_file: destination file name
-        :type dest_file: str
-        :param dest_folder: a destination folder path
-        :type dest_folder: str
-        :param now_millis: current time in milliseconds
-        :type now_millis: int
-        :param args: an object which holds command line arguments
+        :param str sync_type: synchronization type
+        :param str source_file: source file name
+        :param str source_folder: a source folder path
+        :param str dest_file: destination file name
+        :param str dest_folder: a destination folder path
+        :param int now_millis: current time in milliseconds
+        :param bool delete: delete policy
+        :param int keep_days: keep for days policy
+        :param b2sdk.v1.NewerFileSyncMode newer_file_mode: setting which determines handling for destination files newer than on the source
+        :param int compare_threshold: difference between file modification time or file size
+        :param b2sdk.v1.CompareVersionMode compare_version_mode: setting which determines how to compare source and destination files
         :return: a policy object
         """
-        policy_class = self.get_policy_class(sync_type, args)
-        return policy_class(source_file, source_folder, dest_file, dest_folder, now_millis, args)
+        policy_class = self.get_policy_class(sync_type, delete, keep_days)
+        return policy_class(
+            source_file,
+            source_folder,
+            dest_file,
+            dest_folder,
+            now_millis,
+            keep_days,
+            newer_file_mode,
+            compare_threshold,
+            compare_version_mode,
+        )
 
-    def get_policy_class(self, sync_type, args):
+    def get_policy_class(self, sync_type, delete, keep_days):
         """
         Get policy class by a given sync type.
 
-        :param sync_type: synchronization type
-        :type sync_type: str
-        :param args: an object which holds command line arguments
+        :param str sync_type: synchronization type
+        :param bool delete: if True, delete files and update from source
+        :param int keep_days: keep for `keep_days` before delete
         :return: a policy class
         """
         if sync_type == 'local-to-b2':
-            if args.delete:
+            if delete:
                 return UpAndDeletePolicy
-            elif args.keepDays:
+            elif keep_days:
                 return UpAndKeepDaysPolicy
             else:
                 return UpPolicy
         elif sync_type == 'b2-to-local':
-            if args.delete:
+            if delete:
                 return DownAndDeletePolicy
-            elif args.keepDays:
+            elif keep_days:
                 return DownAndKeepDaysPolicy
             else:
                 return DownPolicy
-        assert False, 'invalid sync type: %s, args: %s' % (sync_type, str(args))
+        assert False, 'invalid sync type: %s, keep_days: %s, delete: %s' % (
+            sync_type,
+            keep_days,
+            delete,
+        )
 
 
 POLICY_MANAGER = SyncPolicyManager()
