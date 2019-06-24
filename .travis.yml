@@ -48,8 +48,8 @@ matrix:
       language: generic
       env:
         - OS_X_PYTHON_VERSION=python3
-        - HOMEBREW_NO_INSTALL_CLEANUP=1
-        - HOMEBREW_NO_ANALYTICS=1
+      before_cache:
+        - rm -f "$HOME/Library/Caches/pip/log/debug.log"
       addons:
         homebrew:
           packages: python3
@@ -85,7 +85,8 @@ cache:
     - $HOME/.pyenv
     # OS X
     - $HOME/.virtualenvs/osx-python3
-    #- /usr/local/Cellar/python3
+    - $HOME/Library/Caches/pip
+    # other
     - $HOME/plantuml.jar
 before_install:
   - uname -a
@@ -93,7 +94,7 @@ before_install:
   - |
         # install python on OS X
         if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
-            pip3 install virtualenv
+            travis_retry pip3 install virtualenv
             if [ ! -e "$HOME/.virtualenvs/osx-$OS_X_PYTHON_VERSION/bin/activate" ]; then
                 virtualenv -p "$OS_X_PYTHON_VERSION" "$HOME/.virtualenvs/osx-$OS_X_PYTHON_VERSION"
             else
@@ -128,16 +129,16 @@ before_install:
   - |
         # upgrade setuptools if it's too old to support PEP 508
         # PEP 508 support is needed for python version dependent dependencies in requirements.txt/setup.py (e.g. futures)
-        pip install "setuptools>=20.2"
+        travis_retry pip install "setuptools>=20.2"
 
 install:
-  - pip install -r requirements.txt
-  - pip install -r requirements-setup.txt
-  - pip install -r requirements-test.txt
+  - travis_retry pip install -r requirements.txt
+  - travis_retry pip install -r requirements-setup.txt
+  - travis_retry pip install -r requirements-test.txt
   - |
         if [ "$MODE" == 'doc' ]; then
           sudo apt-get install graphviz
-          pip install -r requirements-doc.txt
+          travis_retry pip install -r requirements-doc.txt
 
           # install plantuml without sudo
           travis_retry wget http://sourceforge.net/projects/plantuml/files/plantuml.1.2019.3.jar/downloadA -O ~/plantuml.jar
