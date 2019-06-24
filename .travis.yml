@@ -85,7 +85,7 @@ cache:
     - $HOME/.pyenv
     # OS X
     - $HOME/.virtualenvs/osx-python3
-    - $HOME/Library/Caches/pip
+    # - $HOME/Library/Caches/pip # slows build down?
     # other
     - $HOME/plantuml.jar
 before_install:
