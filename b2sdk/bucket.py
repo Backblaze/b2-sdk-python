@@ -299,7 +299,7 @@ class Bucket(object):
         :param bool show_versions: when ``True`` returns info about all versions of a file,
                               when ``False``, just returns info about the most recent versions
         :param bool recursive: if ``True``, list folders recursively
-        :param int, None fetch_count: how many entries to return or ``None`` to use the default. Acceptable values: 1 - 1000
+        :param int,None fetch_count: how many entries to return or ``None`` to use the default. Acceptable values: 1 - 1000
         :rtype: generator[tuple[b2sdk.v1.FileVersionInfo, str]]
         :returns: generator of (file_version_info, folder_name) tuples
         """
@@ -375,8 +375,8 @@ class Bucket(object):
         A generator that yields an :py:class:`b2sdk.v1.UnfinishedLargeFile` for each
         unfinished large file in the bucket, starting at the given file.
 
-        :param str, None start_file_id: a file ID to start from or None to start from the beginning
-        :param int, None batch_size: max file count
+        :param str,None start_file_id: a file ID to start from or None to start from the beginning
+        :param int,None batch_size: max file count
         :rtype: generator[b2sdk.v1.UnfinishedLargeFile]
         """
         batch_size = batch_size or 100
@@ -395,8 +395,8 @@ class Bucket(object):
         Start a large file transfer.
 
         :param str file_name: a file name
-        :param str, None content_type: the MIME type, or ``None`` to accept the default based on file extension of the B2 file name
-        :param dict, None file_infos: a file info to store with the file or ``None`` to not store anything
+        :param str,None content_type: the MIME type, or ``None`` to accept the default based on file extension of the B2 file name
+        :param dict,None file_infos: a file info to store with the file or ``None`` to not store anything
         """
         return UnfinishedLargeFile(
             self.api.session.start_large_file(self.id_, file_name, content_type, file_info)
@@ -416,9 +416,9 @@ class Bucket(object):
 
         :param bytes data_bytes: a byte array to upload
         :param str file_name: a file name to upload bytes to
-        :param str, None content_type: the MIME type, or ``None`` to accept the default based on file extension of the B2 file name
-        :param dict, None file_infos: a file info to store with the file or ``None`` to not store anything
-        :param b2sdk.v1.AbstractProgressListener, None progress_listener: a progress listener object to use, or ``None`` to not track progress
+        :param str,None content_type: the MIME type, or ``None`` to accept the default based on file extension of the B2 file name
+        :param dict,None file_infos: a file info to store with the file or ``None`` to not store anything
+        :param b2sdk.v1.AbstractProgressListener,None progress_listener: a progress listener object to use, or ``None`` to not track progress
         """
         upload_source = UploadSourceBytes(data_bytes)
         return self.upload(
@@ -448,11 +448,11 @@ class Bucket(object):
 
         :param str local_file: a path to a file on local disk
         :param str file_name: a file name of the new B2 file
-        :param str, None content_type: the MIME type, or ``None`` to accept the default based on file extension of the B2 file name
-        :param dict, None file_infos: a file info to store with the file or ``None`` to not store anything
-        :param str, None sha1_sum: file SHA1 hash or ``None`` to compute it automatically
+        :param str,None content_type: the MIME type, or ``None`` to accept the default based on file extension of the B2 file name
+        :param dict,None file_infos: a file info to store with the file or ``None`` to not store anything
+        :param str,None sha1_sum: file SHA1 hash or ``None`` to compute it automatically
         :param int min_part_size: a minimum size of a part
-        :param b2sdk.v1.AbstractProgressListener, None progress_listener: a progress listener object to use, or ``None`` to not report progress
+        :param b2sdk.v1.AbstractProgressListener,None progress_listener: a progress listener object to use, or ``None`` to not report progress
         """
         upload_source = UploadSourceLocalFile(local_path=local_file, content_sha1=sha1_sum)
         return self.upload(
@@ -482,14 +482,16 @@ class Bucket(object):
 
         :param b2sdk.v1.UploadSource upload_source: an object that opens the source of the upload
         :param str file_name: the file name of the new B2 file
-        :param str, None content_type: the MIME type, or ``None`` to accept the default based on file extension of the B2 file name
-        :param dict, None file_infos: a file info to store with the file or ``None`` to not store anything
-        :param int, None min_part_size: the smallest part size to use or ``None`` to determine automatically
-        :param b2sdk.v1.AbstractProgressListener, None progress_listener: a progress listener object to use, or ``None`` to not report progress
+        :param str,None content_type: the MIME type, or ``None`` to accept the default based on file extension of the B2 file name
+        :param dict,None file_infos: a file info to store with the file or ``None`` to not store anything
+        :param int,None min_part_size: the smallest part size to use or ``None`` to determine automatically
+        :param b2sdk.v1.AbstractProgressListener,None progress_listener: a progress listener object to use, or ``None`` to not report progress
 
         The function `opener` should return a file-like object, and it
         must be possible to call it more than once in case the upload
         is retried.
+        
+        Note: In case of recursive, folder_name is returned only for first file in the folder.
         """
 
         validate_b2_file_name(file_name)

@@ -237,6 +237,11 @@ List files
     test-folder/.bzEmpty 1561005295000 test-folder/
     test-folder/folder_file.txt 1561005349000 None
 
+Note: The files are returned recursively and in order so all files in a folder are printed one after another.
+The folder_name is returned only for the first file in the folder.
+
+.. code-block:: python
+
     # Within folder
     >>> bucket_name = 'example-mybucket-b2'
     >>> bucket = b2_api.get_bucket_by_name(bucket_name)
