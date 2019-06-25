@@ -134,6 +134,7 @@ class AbstractRawApi(object):
         metadata_directive=None,
         content_type=None,
         file_info=None,
+        destination_bucket_id=None,
     ):
         pass
 
@@ -538,6 +539,7 @@ class B2RawApi(AbstractRawApi):
         metadata_directive=None,
         content_type=None,
         file_info=None,
+        destination_bucket_id=None,
     ):
         if metadata_directive == 'COPY' and (content_type is not None or file_info is not None):
             raise InvalidMetadataDirective(
@@ -559,6 +561,8 @@ class B2RawApi(AbstractRawApi):
             kwargs['contentType'] = content_type
         if file_info is not None:
             kwargs['fileInfo'] = file_info
+        if destination_bucket_id is not None:
+            kwargs['destinationBucketId'] = destination_bucket_id
 
         return self._post_json(
             api_url,

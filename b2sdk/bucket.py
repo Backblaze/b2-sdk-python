@@ -758,6 +758,7 @@ class Bucket(object):
         metadata_directive=None,
         content_type=None,
         file_info=None,
+        destination_bucket_id=None,
     ):
         """
         Creates a new file by copying from an existing file.
@@ -769,6 +770,7 @@ class Bucket(object):
         :param str, None metadata_directive: `'COPY'` or `'REPLACE'`, default is `'COPY'`
         :param str, None content_type: content_type for the new file if `'REPLACE'`, default will copy the content_type of old file
         :param dict, None file_info: file_info for the new file if `'REPLACE'`, default will copy the file_info of old file
+        :param str, None destination_bucket_id: bucket id of destination, default is same bucket
         """
         return self.api.session.copy_file(
             file_id,
@@ -777,6 +779,7 @@ class Bucket(object):
             metadata_directive,
             content_type,
             file_info,
+            destination_bucket_id,
         )
 
     def delete_file_version(self, file_id, file_name):
