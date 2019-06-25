@@ -32,6 +32,7 @@ from .deps import B2Api
 from .deps import LargeFileUploadState
 from .deps import DownloadDestBytes, PreSeekedDownloadDest
 from .deps import FileVersionInfo
+from .deps import MetadataDirectiveMode
 from .deps import Part
 from .deps import AbstractProgressListener
 from .deps import StubAccountInfo, RawSimulator, BucketSimulator, FakeResponse
@@ -308,7 +309,7 @@ class TestCopyFile(TestCaseWithBucket):
             self.bucket.copy_file(
                 file_id,
                 'hello_new.txt',
-                metadata_directive='COPY',
+                metadata_directive=MetadataDirectiveMode.COPY,
                 content_type='application/octet-stream',
             )
             self.fail('should have raised InvalidMetadataDirective')
@@ -326,7 +327,7 @@ class TestCopyFile(TestCaseWithBucket):
             self.bucket.copy_file(
                 file_id,
                 'hello_new.txt',
-                metadata_directive='REPLACE',
+                metadata_directive=MetadataDirectiveMode.REPLACE,
             )
             self.fail('should have raised InvalidMetadataDirective')
         except InvalidMetadataDirective as e:
@@ -342,7 +343,7 @@ class TestCopyFile(TestCaseWithBucket):
         self.bucket.copy_file(
             file_id,
             'hello_new.txt',
-            metadata_directive='REPLACE',
+            metadata_directive=MetadataDirectiveMode.REPLACE,
             content_type='text/plain',
         )
         expected = [

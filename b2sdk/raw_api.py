@@ -18,6 +18,7 @@ import sys
 import time
 import traceback
 from abc import ABCMeta, abstractmethod
+from enum import Enum, unique
 
 import six
 
@@ -48,6 +49,12 @@ HEX_DIGITS_AT_END = 'hex_digits_at_end'
 
 # API version number to use when calling the service
 API_VERSION = 'v2'
+
+
+@unique
+class MetadataDirectiveMode(Enum):
+    COPY = 401
+    REPLACE = 402
 
 
 @six.add_metaclass(ABCMeta)
@@ -541,22 +548,26 @@ class B2RawApi(AbstractRawApi):
         file_info=None,
         destination_bucket_id=None,
     ):
-        if metadata_directive == 'COPY' and (content_type is not None or file_info is not None):
-            raise InvalidMetadataDirective(
-                'content_type and file_info should be None when metadata_directive is COPY'
-            )
-        elif metadata_directive == 'REPLACE' and content_type is None:
-            raise InvalidMetadataDirective(
-                'content_type cannot be None when metadata_directive is REPLACE'
-            )
-
         kwargs = {}
         if bytes_range is not None:
             range_dict = {}
             _add_range_header(range_dict, bytes_range)
             kwargs['range'] = range_dict['Range']
+
         if metadata_directive is not None:
-            kwargs['metadataDirective'] = metadata_directive
+            assert metadata_directive in tuple(MetadataDirectiveMode)
+            if metadata_directive is MetadataDirectiveMode.COPY and (
+                content_type is not None or file_info is not None
+            ):
+                raise InvalidMetadataDirective(
+                    'content_type and file_info should be None when metadata_directive is COPY'
+                )
+            elif metadata_directive is MetadataDirectiveMode.REPLACE and content_type is None:
+                raise InvalidMetadataDirective(
+                    'content_type cannot be None when metadata_directive is REPLACE'
+                )
+            kwargs['metadataDirective'] = metadata_directive.name
+
         if content_type is not None:
             kwargs['contentType'] = content_type
         if file_info is not None:

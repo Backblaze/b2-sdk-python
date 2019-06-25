@@ -30,7 +30,7 @@ from .exception import (
     Unauthorized,
     UnsatisfiableRange,
 )
-from .raw_api import AbstractRawApi, HEX_DIGITS_AT_END
+from .raw_api import AbstractRawApi, HEX_DIGITS_AT_END, MetadataDirectiveMode
 from .utils import b2_url_decode, b2_url_encode
 
 ALL_CAPABILITES = [
@@ -421,14 +421,18 @@ class BucketSimulator(object):
         file_info=None,
         destination_bucket_id=None,
     ):
-        if metadata_directive == 'COPY' and (content_type is not None or file_info is not None):
-            raise InvalidMetadataDirective(
-                'content_type and file_info should be None when metadata_directive is COPY'
-            )
-        elif metadata_directive == 'REPLACE' and content_type is None:
-            raise InvalidMetadataDirective(
-                'content_type cannot be None when metadata_directive is REPLACE'
-            )
+        if metadata_directive is not None:
+            assert metadata_directive in tuple(MetadataDirectiveMode)
+            if metadata_directive is MetadataDirectiveMode.COPY and (
+                content_type is not None or file_info is not None
+            ):
+                raise InvalidMetadataDirective(
+                    'content_type and file_info should be None when metadata_directive is COPY'
+                )
+            elif metadata_directive is MetadataDirectiveMode.REPLACE and content_type is None:
+                raise InvalidMetadataDirective(
+                    'content_type cannot be None when metadata_directive is REPLACE'
+                )
 
         file_sim = self.file_id_to_file[file_id]
         new_file_id = self._next_file_id()
@@ -442,13 +446,14 @@ class BucketSimulator(object):
             else:
                 data_bytes = data_bytes[bytes_range[0]:bytes_range[1]]
 
+        destination_bucket_id = destination_bucket_id or self.bucket_id
         copy_file_sim = self.FILE_SIMULATOR_CLASS(
-            self.account_id, self.bucket_id, new_file_id, 'copy', new_file_name,
+            self.account_id, destination_bucket_id, new_file_id, 'copy', new_file_name,
             file_sim.content_type, file_sim.content_sha1, file_sim.file_info, data_bytes,
             six.next(self.upload_timestamp_counter)
         )
 
-        if metadata_directive == 'REPLACE':
+        if metadata_directive is MetadataDirectiveMode.REPLACE:
             copy_file_sim.content_type = content_type
             copy_file_sim.file_info = file_info or file_sim.file_info
 
