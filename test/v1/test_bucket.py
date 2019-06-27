@@ -374,23 +374,25 @@ class TestCopyFile(TestCaseWithBucket):
         self.assertBucketContents(expected, '', show_versions=True)
 
     def test_copy_with_different_bucket(self):
-        file_id = self._make_file()
-        dest_bucket = self.api.create_bucket('dest-bucket', 'allPublic')
-        self.bucket.copy_file(file_id, 'hello_new.txt', destination_bucket_id=dest_bucket.get_id())
-        expected = [('hello.txt', 11, 'upload', None)]
-        self.assertBucketContents(expected, '', show_versions=True)
-        expected = [
-            ('hello_new.txt', 11, 'copy', None),
-        ]
-        actual = [
-            (info.file_name, info.size, info.action, folder)
-            for (info, folder) in dest_bucket.ls(show_versions=True)
-        ]
-        self.assertEqual(expected, actual)
+        source_bucket = self.api.create_bucket('source-bucket', 'allPublic')
+        file_id = self._make_file(source_bucket)
+        self.bucket.copy_file(file_id, 'hello_new.txt')
 
-    def _make_file(self):
+        def ls(bucket):
+            return [
+                (info.file_name, info.size, info.action, folder)
+                for (info, folder) in bucket.ls(show_versions=True)
+            ]
+
+        expected = [('hello.txt', 11, 'upload', None)]
+        self.assertEqual(expected, ls(source_bucket))
+        expected = [('hello_new.txt', 11, 'copy', None)]
+        self.assertBucketContents(expected, '', show_versions=True)
+
+    def _make_file(self, bucket=None):
         data = six.b('hello world')
-        return self.bucket.upload_bytes(data, 'hello.txt').id_
+        actual_bucket = bucket or self.bucket
+        return actual_bucket.upload_bytes(data, 'hello.txt').id_
 
 
 class TestUpload(TestCaseWithBucket):

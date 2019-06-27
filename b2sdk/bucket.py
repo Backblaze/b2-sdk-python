@@ -761,15 +761,14 @@ class Bucket(object):
         destination_bucket_id=None,
     ):
         """
-        Creates a new file by copying from an existing file.
+        Creates a new file in this bucket by (server-side) copying from an existing file.
 
         :param str file_id: file ID of existing file
         :param str new_file_name: file name of the new file
-        :param tuple[int, int],None bytes_range: start and end offsets
-        :param b2sdk.v1.MetadataDirectiveMode,None metadata_directive: default is `b2sdk.v1.MetadataDirectiveMode.COPY`
-        :param str,None content_type: content_type for the new file if `b2sdk.v1.MetadataDirectiveMode.REPLACE`, default will copy the content_type of old file
-        :param dict,None file_info: file_info for the new file if `b2sdk.v1.MetadataDirectiveMode.REPLACE`, default will copy the file_info of old file
-        :param str,None destination_bucket_id: bucket id of destination, default is same bucket
+        :param tuple[int,int],None bytes_range: start and end offsets, default is the entire file
+        :param b2sdk.v1.MetadataDirectiveMode,None metadata_directive: default is :py:attr:`b2sdk.v1.MetadataDirectiveMode.COPY`
+        :param str,None content_type: content_type for the new file if metadata_directive is set to :py:attr:`b2sdk.v1.MetadataDirectiveMode.REPLACE`, default will copy the content_type of old file
+        :param dict,None file_info: file_info for the new file if metadata_directive is set to :py:attr:`b2sdk.v1.MetadataDirectiveMode.REPLACE`, default will copy the file_info of old file
         """
         return self.api.session.copy_file(
             file_id,
@@ -778,7 +777,7 @@ class Bucket(object):
             metadata_directive,
             content_type,
             file_info,
-            destination_bucket_id,
+            self.id_,
         )
 
     def delete_file_version(self, file_id, file_name):
