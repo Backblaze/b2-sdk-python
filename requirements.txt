@@ -5,3 +5,4 @@ setuptools
 six>=1.10
 tqdm>=4.5.0
 futures>=3.0.5; python_version < '3.2'
+enum34>=1.1.6; python_version < '3.4'
