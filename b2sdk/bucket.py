@@ -302,6 +302,9 @@ class Bucket(object):
         :param int,None fetch_count: how many entries to return or ``None`` to use the default. Acceptable values: 1 - 1000
         :rtype: generator[tuple[b2sdk.v1.FileVersionInfo, str]]
         :returns: generator of (file_version_info, folder_name) tuples
+
+        .. note::
+            In case of `recursive=True`, folder_name is returned only for first file in the folder.
         """
         # Every file returned must have a name that starts with the
         # folder name and a "/".
@@ -490,8 +493,6 @@ class Bucket(object):
         The function `opener` should return a file-like object, and it
         must be possible to call it more than once in case the upload
         is retried.
-        
-        Note: In case of recursive, folder_name is returned only for first file in the folder.
         """
 
         validate_b2_file_name(file_name)
