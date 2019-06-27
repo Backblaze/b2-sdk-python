@@ -53,8 +53,9 @@ API_VERSION = 'v2'
 
 @unique
 class MetadataDirectiveMode(Enum):
-    COPY = 401
-    REPLACE = 402
+    """ Mode of handling metadata when copying a file """
+    COPY = 401  #: copy metadata from the source file
+    REPLACE = 402  #: ignore the source file metadata and set it to provided values
 
 
 @six.add_metaclass(ABCMeta)
