@@ -24,11 +24,13 @@ from .exception import (
     DuplicateBucketName,
     FileNotPresent,
     InvalidAuthToken,
+    InvalidMetadataDirective,
     MissingPart,
     NonExistentBucket,
     Unauthorized,
+    UnsatisfiableRange,
 )
-from .raw_api import AbstractRawApi, HEX_DIGITS_AT_END
+from .raw_api import AbstractRawApi, HEX_DIGITS_AT_END, MetadataDirectiveMode
 from .utils import b2_url_decode, b2_url_encode
 
 ALL_CAPABILITES = [
@@ -408,6 +410,54 @@ class BucketSimulator(object):
         self.file_id_to_file[file_id] = file_sim
         self.file_name_and_id_to_file[file_sim.sort_key()] = file_sim
         return file_sim.as_list_files_dict()
+
+    def copy_file(
+        self,
+        file_id,
+        new_file_name,
+        bytes_range=None,
+        metadata_directive=None,
+        content_type=None,
+        file_info=None,
+        destination_bucket_id=None,
+    ):
+        if metadata_directive is not None:
+            assert metadata_directive in tuple(MetadataDirectiveMode)
+            if metadata_directive is MetadataDirectiveMode.COPY and (
+                content_type is not None or file_info is not None
+            ):
+                raise InvalidMetadataDirective(
+                    'content_type and file_info should be None when metadata_directive is COPY'
+                )
+            elif metadata_directive is MetadataDirectiveMode.REPLACE and content_type is None:
+                raise InvalidMetadataDirective(
+                    'content_type cannot be None when metadata_directive is REPLACE'
+                )
+
+        file_sim = self.file_id_to_file[file_id]
+        new_file_id = self._next_file_id()
+
+        data_bytes = file_sim.data_bytes
+
+        if bytes_range is not None:
+            if bytes_range[0] >= len(file_sim.data_bytes
+                                    ) or bytes_range[1] <= 0:  # requested too much
+                raise UnsatisfiableRange()
+            else:
+                data_bytes = data_bytes[bytes_range[0]:bytes_range[1]]
+
+        destination_bucket_id = destination_bucket_id or self.bucket_id
+        copy_file_sim = self.FILE_SIMULATOR_CLASS(
+            self.account_id, destination_bucket_id, new_file_id, 'copy', new_file_name,
+            file_sim.content_type, file_sim.content_sha1, file_sim.file_info, data_bytes,
+            six.next(self.upload_timestamp_counter)
+        )
+
+        if metadata_directive is MetadataDirectiveMode.REPLACE:
+            copy_file_sim.content_type = content_type
+            copy_file_sim.file_info = file_info or file_sim.file_info
+
+        return copy_file_sim
 
     def list_file_names(self, start_file_name=None, max_file_count=None):
         start_file_name = start_file_name or ''
@@ -830,6 +880,42 @@ class RawSimulator(AbstractRawApi):
         response = bucket.hide_file(file_name)
         self.file_id_to_bucket_id[response['fileId']] = bucket_id
         return response
+
+    def copy_file(
+        self,
+        api_url,
+        account_auth_token,
+        source_file_id,
+        new_file_name,
+        bytes_range=None,
+        metadata_directive=None,
+        content_type=None,
+        file_info=None,
+        destination_bucket_id=None,
+    ):
+        bucket_id = self.file_id_to_bucket_id[source_file_id]
+        bucket = self._get_bucket_by_id(bucket_id)
+        self._assert_account_auth(api_url, account_auth_token, bucket.account_id, 'writeFiles')
+        copy_file_sim = bucket.copy_file(
+            source_file_id,
+            new_file_name,
+            bytes_range,
+            metadata_directive,
+            content_type,
+            file_info,
+            destination_bucket_id,
+        )
+
+        if destination_bucket_id:
+            # TODO: Handle and raise proper exception after server docs get updated
+            dest_bucket = self.bucket_id_to_bucket[destination_bucket_id]
+            assert dest_bucket.account_id == bucket.account_id
+        else:
+            dest_bucket = bucket
+
+        dest_bucket.file_id_to_file[copy_file_sim.file_id] = copy_file_sim
+        dest_bucket.file_name_and_id_to_file[copy_file_sim.sort_key()] = copy_file_sim
+        return copy_file_sim.as_upload_result()
 
     def list_buckets(
         self, api_url, account_auth_token, account_id, bucket_id=None, bucket_name=None

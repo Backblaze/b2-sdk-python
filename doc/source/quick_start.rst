@@ -276,6 +276,45 @@ Get file meta information
      'uploadTimestamp': 1554361150000}
 
 
+Copy file
+=========
+
+.. code-block:: python
+
+    >>> file_id = '4_z5485a1682662eb3e60980d10_f118df9ba2c5131e8_d20190619_m065809_c002_v0001126_t0040'
+    >>> bucket.copy_file(file_id, 'f2_copy.txt')
+    {'accountId': '451862be08d0',
+     'action': 'copy',
+     'bucketId': '5485a1682662eb3e60980d10',
+     'contentLength': 124,
+     'contentSha1': '737637702a0e41dda8b7be79c8db1d369c6eef4a',
+     'contentType': 'text/plain',
+     'fileId': '4_z5485a1682662eb3e60980d10_f1022e2320daf707f_d20190620_m122848_c002_v0001123_t0020',
+     'fileInfo': {'src_last_modified_millis': '1560848707000'},
+     'fileName': 'f2_copy.txt',
+     'uploadTimestamp': 1561033728000}
+
+
+If you want to copy just the part of the file, then you can specify the bytes_range as a tuple.
+
+.. code-block:: python
+
+    >>> file_id = '4_z5485a1682662eb3e60980d10_f118df9ba2c5131e8_d20190619_m065809_c002_v0001126_t0040'
+    >>> bucket.copy_file(file_id, 'f2_copy.txt', bytes_range=(8,15))
+    {'accountId': '451862be08d0',
+     'action': 'copy',
+     'bucketId': '5485a1682662eb3e60980d10',
+     'contentLength': 8,
+     'contentSha1': '274713be564aecaae8de362acb68658b576d0b40',
+     'contentType': 'text/plain',
+     'fileId': '4_z5485a1682662eb3e60980d10_f114b0c11b6b6e39e_d20190620_m122007_c002_v0001123_t0004',
+     'fileInfo': {'src_last_modified_millis': '1560848707000'},
+     'fileName': 'f2_copy.txt',
+     'uploadTimestamp': 1561033207000}
+
+For more information see :meth:`b2sdk.v1.Bucket.copy_file`.
+
+
 Delete file
 ===========
 

@@ -831,6 +831,37 @@ class Bucket(object):
         response = self.api.session.hide_file(self.id_, file_name)
         return FileVersionInfoFactory.from_api_response(response)
 
+    def copy_file(
+        self,
+        file_id,
+        new_file_name,
+        bytes_range=None,
+        metadata_directive=None,
+        content_type=None,
+        file_info=None,
+        destination_bucket_id=None,
+    ):
+        """
+        Creates a new file by copying from an existing file.
+
+        :param str file_id: file ID of existing file
+        :param str new_file_name: file name of the new file
+        :param tuple[int, int],None bytes_range: start and end offsets
+        :param b2sdk.v1.MetadataDirectiveMode,None metadata_directive: default is `b2sdk.v1.MetadataDirectiveMode.COPY`
+        :param str,None content_type: content_type for the new file if `b2sdk.v1.MetadataDirectiveMode.REPLACE`, default will copy the content_type of old file
+        :param dict,None file_info: file_info for the new file if `b2sdk.v1.MetadataDirectiveMode.REPLACE`, default will copy the file_info of old file
+        :param str,None destination_bucket_id: bucket id of destination, default is same bucket
+        """
+        return self.api.session.copy_file(
+            file_id,
+            new_file_name,
+            bytes_range,
+            metadata_directive,
+            content_type,
+            file_info,
+            destination_bucket_id,
+        )
+
     def delete_file_version(self, file_id, file_name):
         """
         Delete file version

@@ -251,6 +251,10 @@ class UnusableFileName(B2SimpleError):
     pass
 
 
+class InvalidMetadataDirective(B2Error):
+    pass
+
+
 class InvalidRange(B2Error):
     def __init__(self, content_length, range_):
         super(InvalidRange, self).__init__()
@@ -397,6 +401,11 @@ class UnrecognizedBucketType(B2Error):
     pass
 
 
+class UnsatisfiableRange(B2Error):
+    def __str__(self):
+        return "The range in the request is outside the size of the file"
+
+
 def interpret_b2_error(status, code, message, post_params=None):
     post_params = post_params or {}
     if status == 400 and code == "already_hidden":
@@ -430,6 +439,8 @@ def interpret_b2_error(status, code, message, post_params=None):
         return StorageCapExceeded()
     elif status == 409:
         return Conflict()
+    elif status == 416 and code == "range_not_satisfiable":
+        return UnsatisfiableRange()
     elif status == 429:
         return TooManyRequests()
     elif 500 <= status and status < 600:
