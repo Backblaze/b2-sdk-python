@@ -885,7 +885,7 @@ class RawSimulator(AbstractRawApi):
         self,
         api_url,
         account_auth_token,
-        file_id,
+        source_file_id,
         new_file_name,
         bytes_range=None,
         metadata_directive=None,
@@ -893,11 +893,11 @@ class RawSimulator(AbstractRawApi):
         file_info=None,
         destination_bucket_id=None,
     ):
-        bucket_id = self.file_id_to_bucket_id[file_id]
+        bucket_id = self.file_id_to_bucket_id[source_file_id]
         bucket = self._get_bucket_by_id(bucket_id)
         self._assert_account_auth(api_url, account_auth_token, bucket.account_id, 'writeFiles')
         copy_file_sim = bucket.copy_file(
-            file_id,
+            source_file_id,
             new_file_name,
             bytes_range,
             metadata_directive,
