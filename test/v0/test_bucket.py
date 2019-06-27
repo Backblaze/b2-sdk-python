@@ -18,11 +18,21 @@ import six
 
 from .test_base import TestBase
 
-from .deps_exception import AlreadyFailed, B2Error, InvalidAuthToken, InvalidRange, InvalidUploadSource, MaxRetriesExceeded
+from .deps_exception import (
+    AlreadyFailed,
+    B2Error,
+    InvalidAuthToken,
+    InvalidMetadataDirective,
+    InvalidRange,
+    InvalidUploadSource,
+    MaxRetriesExceeded,
+    UnsatisfiableRange,
+)
 from .deps import B2Api
 from .deps import LargeFileUploadState
 from .deps import DownloadDestBytes, PreSeekedDownloadDest
 from .deps import FileVersionInfo
+from .deps import MetadataDirectiveMode
 from .deps import Part
 from .deps import AbstractProgressListener
 from .deps import StubAccountInfo, RawSimulator, BucketSimulator, FakeResponse
@@ -281,6 +291,111 @@ class TestLs(TestCaseWithBucket):
 
         expected = [('hello.txt', 15, 'upload', None)]
         self.assertBucketContents(expected, '', show_versions=True)
+
+
+class TestCopyFile(TestCaseWithBucket):
+    def test_copy_without_optional_params(self):
+        file_id = self._make_file()
+        self.bucket.copy_file(file_id, 'hello_new.txt')
+        expected = [('hello.txt', 11, 'upload', None), ('hello_new.txt', 11, 'copy', None)]
+        self.assertBucketContents(expected, '', show_versions=True)
+
+    def test_copy_with_range(self):
+        file_id = self._make_file()
+        self.bucket.copy_file(file_id, 'hello_new.txt', bytes_range=(3, 9))
+        expected = [('hello.txt', 11, 'upload', None), ('hello_new.txt', 6, 'copy', None)]
+        self.assertBucketContents(expected, '', show_versions=True)
+
+    def test_copy_with_invalid_metadata(self):
+        file_id = self._make_file()
+        try:
+            self.bucket.copy_file(
+                file_id,
+                'hello_new.txt',
+                metadata_directive=MetadataDirectiveMode.COPY,
+                content_type='application/octet-stream',
+            )
+            self.fail('should have raised InvalidMetadataDirective')
+        except InvalidMetadataDirective as e:
+            self.assertEqual(
+                'content_type and file_info should be None when metadata_directive is COPY',
+                str(e),
+            )
+        expected = [('hello.txt', 11, 'upload', None)]
+        self.assertBucketContents(expected, '', show_versions=True)
+
+    def test_copy_with_invalid_metadata_replace(self):
+        file_id = self._make_file()
+        try:
+            self.bucket.copy_file(
+                file_id,
+                'hello_new.txt',
+                metadata_directive=MetadataDirectiveMode.REPLACE,
+            )
+            self.fail('should have raised InvalidMetadataDirective')
+        except InvalidMetadataDirective as e:
+            self.assertEqual(
+                'content_type cannot be None when metadata_directive is REPLACE',
+                str(e),
+            )
+        expected = [('hello.txt', 11, 'upload', None)]
+        self.assertBucketContents(expected, '', show_versions=True)
+
+    def test_copy_with_replace_metadata(self):
+        file_id = self._make_file()
+        self.bucket.copy_file(
+            file_id,
+            'hello_new.txt',
+            metadata_directive=MetadataDirectiveMode.REPLACE,
+            content_type='text/plain',
+        )
+        expected = [
+            ('hello.txt', 11, 'upload', 'b2/x-auto', None),
+            ('hello_new.txt', 11, 'copy', 'text/plain', None),
+        ]
+        actual = [
+            (info.file_name, info.size, info.action, info.content_type, folder)
+            for (info, folder) in self.bucket.ls(show_versions=True)
+        ]
+        self.assertEqual(expected, actual)
+
+    def test_copy_with_unsatisfied_range(self):
+        file_id = self._make_file()
+        try:
+            self.bucket.copy_file(
+                file_id,
+                'hello_new.txt',
+                bytes_range=(12, 15),
+            )
+            self.fail('should have raised UnsatisfiableRange')
+        except UnsatisfiableRange as e:
+            self.assertEqual(
+                'The range in the request is outside the size of the file',
+                str(e),
+            )
+        expected = [('hello.txt', 11, 'upload', None)]
+        self.assertBucketContents(expected, '', show_versions=True)
+
+    def test_copy_with_different_bucket(self):
+        source_bucket = self.api.create_bucket('source-bucket', 'allPublic')
+        file_id = self._make_file(source_bucket)
+        self.bucket.copy_file(file_id, 'hello_new.txt')
+
+        def ls(bucket):
+            return [
+                (info.file_name, info.size, info.action, folder)
+                for (info, folder) in bucket.ls(show_versions=True)
+            ]
+
+        expected = [('hello.txt', 11, 'upload', None)]
+        self.assertEqual(expected, ls(source_bucket))
+        expected = [('hello_new.txt', 11, 'copy', None)]
+        self.assertBucketContents(expected, '', show_versions=True)
+
+    def _make_file(self, bucket=None):
+        data = six.b('hello world')
+        actual_bucket = bucket or self.bucket
+        return actual_bucket.upload_bytes(data, 'hello.txt').id_
 
 
 class TestUpload(TestCaseWithBucket):
