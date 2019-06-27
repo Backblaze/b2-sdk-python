@@ -28,6 +28,7 @@ Public API
    api/exception
    api/bucket
    api/data_classes
+   api/enums
    api/progress
    api/sync
 
