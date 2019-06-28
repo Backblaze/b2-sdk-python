@@ -765,7 +765,7 @@ class Bucket(object):
 
         :param str file_id: file ID of existing file
         :param str new_file_name: file name of the new file
-        :param tuple[int,int],None bytes_range: start and end offsets, default is the entire file
+        :param tuple[int,int],None bytes_range: start and end offsets (**inclusive!**), default is the entire file
         :param b2sdk.v1.MetadataDirectiveMode,None metadata_directive: default is :py:attr:`b2sdk.v1.MetadataDirectiveMode.COPY`
         :param str,None content_type: content_type for the new file if metadata_directive is set to :py:attr:`b2sdk.v1.MetadataDirectiveMode.REPLACE`, default will copy the content_type of old file
         :param dict,None file_info: file_info for the new file if metadata_directive is set to :py:attr:`b2sdk.v1.MetadataDirectiveMode.REPLACE`, default will copy the file_info of old file
