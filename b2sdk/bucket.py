@@ -758,7 +758,6 @@ class Bucket(object):
         metadata_directive=None,
         content_type=None,
         file_info=None,
-        destination_bucket_id=None,
     ):
         """
         Creates a new file in this bucket by (server-side) copying from an existing file.

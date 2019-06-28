@@ -33,9 +33,11 @@ b2sdk>=0.0.0,<1.0.0
 
 # Release History
 
-## 0.1.9 (not released yet)
+## 0.1.10 (Not released yet)
 
 Changes:
+
+* Removed a parameter (which did nothing, really) from `b2sdk.v1.Bucket.copy_file` signature
 
 
 ## 0.1.8 (2019-06-28)
