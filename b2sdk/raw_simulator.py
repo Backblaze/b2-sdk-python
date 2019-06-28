@@ -459,7 +459,9 @@ class BucketSimulator(object):
 
         return copy_file_sim
 
-    def list_file_names(self, start_file_name=None, max_file_count=None):
+    def list_file_names(self, start_file_name=None, max_file_count=None, prefix=None):
+        assert prefix is None or start_file_name is None or start_file_name.startswith(prefix
+                                                                                      ), locals()
         start_file_name = start_file_name or ''
         max_file_count = max_file_count or 100
         result_files = []
@@ -468,6 +470,8 @@ class BucketSimulator(object):
         for key in sorted(six.iterkeys(self.file_name_and_id_to_file)):
             (file_name, file_id) = key
             if start_file_name <= file_name and file_name != prev_file_name:
+                if prefix is not None and not file_name.startswith(prefix):
+                    break
                 prev_file_name = file_name
                 file_sim = self.file_name_and_id_to_file[key]
                 if file_sim.is_visible():
@@ -477,7 +481,15 @@ class BucketSimulator(object):
                         break
         return dict(files=result_files, nextFileName=next_file_name)
 
-    def list_file_versions(self, start_file_name=None, start_file_id=None, max_file_count=None):
+    def list_file_versions(
+        self,
+        start_file_name=None,
+        start_file_id=None,
+        max_file_count=None,
+        prefix=None,
+    ):
+        assert prefix is None or start_file_name is None or start_file_name.startswith(prefix
+                                                                                      ), locals()
         start_file_name = start_file_name or ''
         start_file_id = start_file_id or ''
         max_file_count = max_file_count or 100
@@ -489,6 +501,8 @@ class BucketSimulator(object):
             if (start_file_name <
                 file_name) or (start_file_name == file_name and start_file_id <= file_id):
                 file_sim = self.file_name_and_id_to_file[key]
+                if prefix is not None and not file_name.startswith(prefix):
+                    break
                 result_files.append(file_sim.as_list_files_dict())
                 if len(result_files) == max_file_count:
                     next_file_name = file_sim.name
@@ -952,7 +966,13 @@ class RawSimulator(AbstractRawApi):
         )
 
     def list_file_names(
-        self, api_url, account_auth, bucket_id, start_file_name=None, max_file_count=None
+        self,
+        api_url,
+        account_auth,
+        bucket_id,
+        start_file_name=None,
+        max_file_count=None,
+        prefix=None,
     ):
         bucket = self._get_bucket_by_id(bucket_id)
         self._assert_account_auth(
@@ -961,8 +981,9 @@ class RawSimulator(AbstractRawApi):
             bucket.account_id,
             'listFiles',
             bucket_id=bucket_id,
+            file_name=prefix,
         )
-        return bucket.list_file_names(start_file_name, max_file_count)
+        return bucket.list_file_names(start_file_name, max_file_count, prefix)
 
     def list_file_versions(
         self,
@@ -971,7 +992,8 @@ class RawSimulator(AbstractRawApi):
         bucket_id,
         start_file_name=None,
         start_file_id=None,
-        max_file_count=None
+        max_file_count=None,
+        prefix=None,
     ):
         bucket = self._get_bucket_by_id(bucket_id)
         self._assert_account_auth(
@@ -980,8 +1002,9 @@ class RawSimulator(AbstractRawApi):
             bucket.account_id,
             'listFiles',
             bucket_id=bucket_id,
+            file_name=prefix,
         )
-        return bucket.list_file_versions(start_file_name, start_file_id, max_file_count)
+        return bucket.list_file_versions(start_file_name, start_file_id, max_file_count, prefix)
 
     def list_keys(
         self,

@@ -376,10 +376,10 @@ class Bucket(object):
         while True:
             if show_versions:
                 response = session.list_file_versions(
-                    self.id_, start_file_name, start_file_id, fetch_count
+                    self.id_, start_file_name, start_file_id, fetch_count, prefix
                 )
             else:
-                response = session.list_file_names(self.id_, start_file_name, fetch_count)
+                response = session.list_file_names(self.id_, start_file_name, fetch_count, prefix)
             for entry in response['files']:
                 file_version_info = FileVersionInfoFactory.from_api_response(entry)
                 if not file_version_info.file_name.startswith(prefix):
@@ -422,14 +422,16 @@ class Bucket(object):
                     prefix + current_dir[:-1] + '0',
                 )
 
-    def list_file_names(self, start_filename=None, max_entries=None):
+    def list_file_names(self, start_filename=None, max_entries=None, prefix=None):
         """ legacy interface which just returns whatever remote API returns """
-        return self.api.session.list_file_names(self.id_, start_filename, max_entries)
+        return self.api.session.list_file_names(self.id_, start_filename, max_entries, prefix)
 
-    def list_file_versions(self, start_filename=None, start_file_id=None, max_entries=None):
+    def list_file_versions(
+        self, start_filename=None, start_file_id=None, max_entries=None, prefix=None
+    ):
         """ legacy interface which just returns whatever remote API returns """
         return self.api.session.list_file_versions(
-            self.id_, start_filename, start_file_id, max_entries
+            self.id_, start_filename, start_file_id, max_entries, prefix
         )
 
     def list_unfinished_large_files(self, start_file_id=None, batch_size=None):
