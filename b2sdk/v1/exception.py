@@ -37,6 +37,7 @@ from b2sdk.exception import FileAlreadyHidden
 from b2sdk.exception import FileNameNotAllowed
 from b2sdk.exception import FileNotPresent
 from b2sdk.exception import InvalidAuthToken
+from b2sdk.exception import InvalidMetadataDirective
 from b2sdk.exception import InvalidRange
 from b2sdk.exception import InvalidUploadSource
 from b2sdk.exception import MaxFileSizeExceeded
@@ -56,6 +57,7 @@ from b2sdk.exception import UnexpectedCloudBehaviour
 from b2sdk.exception import UnknownError
 from b2sdk.exception import UnknownHost
 from b2sdk.exception import UnrecognizedBucketType
+from b2sdk.exception import UnsatisfiableRange
 from b2sdk.exception import UnusableFileName
 from b2sdk.exception import interpret_b2_error
 from b2sdk.sync.exception import EnvironmentEncodingError
@@ -94,6 +96,7 @@ __all__ = (
     'IncompleteSync',
     'InvalidArgument',
     'InvalidAuthToken',
+    'InvalidMetadataDirective',
     'InvalidRange',
     'InvalidUploadSource',
     'MaxFileSizeExceeded',
@@ -114,6 +117,7 @@ __all__ = (
     'UnknownError',
     'UnknownHost',
     'UnrecognizedBucketType',
+    'UnsatisfiableRange',
     'UnusableFileName',
     'interpret_b2_error',
 )

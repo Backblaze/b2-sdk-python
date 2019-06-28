@@ -67,6 +67,7 @@ from b2sdk.raw_simulator import RawSimulator
 
 from b2sdk.raw_api import AbstractRawApi
 from b2sdk.raw_api import B2RawApi
+from b2sdk.raw_api import MetadataDirectiveMode
 
 # progress
 

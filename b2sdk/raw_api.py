@@ -18,11 +18,12 @@ import sys
 import time
 import traceback
 from abc import ABCMeta, abstractmethod
+from enum import Enum, unique
 
 import six
 
 from .b2http import B2Http
-from .exception import UnusableFileName
+from .exception import UnusableFileName, InvalidMetadataDirective
 from .utils import b2_url_encode, hex_sha1_of_stream
 
 # All possible capabilities
@@ -48,6 +49,12 @@ HEX_DIGITS_AT_END = 'hex_digits_at_end'
 
 # API version number to use when calling the service
 API_VERSION = 'v2'
+
+
+@unique
+class MetadataDirectiveMode(Enum):
+    COPY = 401
+    REPLACE = 402
 
 
 @six.add_metaclass(ABCMeta)
@@ -122,6 +129,21 @@ class AbstractRawApi(object):
 
     def get_download_url_by_name(self, download_url, account_auth_token, bucket_name, file_name):
         return download_url + '/file/' + bucket_name + '/' + b2_url_encode(file_name)
+
+    @abstractmethod
+    def copy_file(
+        self,
+        api_url,
+        account_auth_token,
+        source_file_id,
+        new_file_name,
+        bytes_range=None,
+        metadata_directive=None,
+        content_type=None,
+        file_info=None,
+        destination_bucket_id=None,
+    ):
+        pass
 
 
 class B2RawApi(AbstractRawApi):
@@ -514,6 +536,54 @@ class B2RawApi(AbstractRawApi):
 
         return self.b2_http.post_content_return_json(upload_url, headers, data_stream)
 
+    def copy_file(
+        self,
+        api_url,
+        account_auth_token,
+        source_file_id,
+        new_file_name,
+        bytes_range=None,
+        metadata_directive=None,
+        content_type=None,
+        file_info=None,
+        destination_bucket_id=None,
+    ):
+        kwargs = {}
+        if bytes_range is not None:
+            range_dict = {}
+            _add_range_header(range_dict, bytes_range)
+            kwargs['range'] = range_dict['Range']
+
+        if metadata_directive is not None:
+            assert metadata_directive in tuple(MetadataDirectiveMode)
+            if metadata_directive is MetadataDirectiveMode.COPY and (
+                content_type is not None or file_info is not None
+            ):
+                raise InvalidMetadataDirective(
+                    'content_type and file_info should be None when metadata_directive is COPY'
+                )
+            elif metadata_directive is MetadataDirectiveMode.REPLACE and content_type is None:
+                raise InvalidMetadataDirective(
+                    'content_type cannot be None when metadata_directive is REPLACE'
+                )
+            kwargs['metadataDirective'] = metadata_directive.name
+
+        if content_type is not None:
+            kwargs['contentType'] = content_type
+        if file_info is not None:
+            kwargs['fileInfo'] = file_info
+        if destination_bucket_id is not None:
+            kwargs['destinationBucketId'] = destination_bucket_id
+
+        return self._post_json(
+            api_url,
+            'b2_copy_file',
+            account_auth_token,
+            sourceFileId=source_file_id,
+            fileName=new_file_name,
+            **kwargs
+        )
+
 
 def test_raw_api():
     """
@@ -682,6 +752,11 @@ def test_raw_api_helper(raw_api):
         api_url, account_auth_token, bucket_id, start_file_name=file_name, max_file_count=5
     )
     assert [file_name] == [f_dict['fileName'] for f_dict in list_names_dict['files']]
+
+    # b2_copy_file
+    print('b2_copy_file')
+    copy_file_name = 'test_copy.txt'
+    raw_api.copy_file(api_url, account_auth_token, file_id, copy_file_name)
 
     # b2_hide_file
     print('b2_hide_file')
