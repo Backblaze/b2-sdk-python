@@ -324,10 +324,10 @@ class Bucket(object):
         while True:
             if show_versions:
                 response = session.list_file_versions(
-                    self.id_, start_file_name, start_file_id, fetch_count
+                    self.id_, start_file_name, start_file_id, fetch_count, prefix
                 )
             else:
-                response = session.list_file_names(self.id_, start_file_name, fetch_count)
+                response = session.list_file_names(self.id_, start_file_name, fetch_count, prefix)
             for entry in response['files']:
                 file_version_info = FileVersionInfoFactory.from_api_response(entry)
                 if not file_version_info.file_name.startswith(prefix):
