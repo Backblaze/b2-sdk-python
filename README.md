@@ -37,7 +37,7 @@ b2sdk>=0.0.0,<1.0.0
 
 Changes:
 
-* Removed a parameter (which did nothing, really) from `b2sdk.v1.Bucket.copy_file` signature
+* Remove a parameter (which did nothing, really) from `b2sdk.v1.Bucket.copy_file` signature
 
 
 ## 0.1.8 (2019-06-28)
@@ -45,6 +45,7 @@ Changes:
 Changes:
 
 * Add support for b2_copy_file
+* Add support for `prefix` parameter on ls-like calls
 
 
 ## 0.1.6 (2019-04-24)
