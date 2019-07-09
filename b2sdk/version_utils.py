@@ -39,6 +39,17 @@ class AbstractVersionDecorator(object):
             cutoff_version
         )  #: version in which the decorator (and something?) shall be removed
 
+    @classmethod
+    def _parse_if_not_none(cls, version):
+        if version is None:
+            return None
+        return parse_version(version)
+
+    @abstractmethod
+    def __call__(self, func):
+        """
+        The actual implementation of decorator. Needs self.source to be set before it's called.
+        """
         if self.cutoff_version is not None:
             assert self.changed_version < self.cutoff_version, '%s decorator is set to start renaming %s %r starting at version %s and finishing in %s. It needs to start at a lower version and finish at a higher version.' % (
                 self.__class__.__name__,
@@ -55,24 +66,17 @@ class AbstractVersionDecorator(object):
                 self.cutoff_version,
             )
 
-    @classmethod
-    def _parse_if_not_none(cls, version):
-        if version is None:
-            return None
-        return parse_version(version)
-
-    @abstractmethod
-    def __call__(self, func):
-        """
-        The actual implementation of decorator.
-        """
-
 
 class AbstractDeprecator(AbstractVersionDecorator):
     ALTERNATIVE_DECORATOR = NotImplemented
 
     def __init__(self, target, *args, **kwargs):
+        self.target = target
         super(AbstractDeprecator, self).__init__(*args, **kwargs)
+
+    @abstractmethod
+    def __call__(self, func):
+        super(AbstractDeprecator, self).__call__(func)
         assert self.changed_version <= self.current_version, '%s decorator indicates that the replacement of %s %r should take place in the future version %s, while the current version is %s. It looks like should be _discouraged_ at this point and not _deprecated_ yet. Consider using %r decorator instead.' % (
             self.__class__.__name__,
             self.WHAT,
@@ -81,7 +85,6 @@ class AbstractDeprecator(AbstractVersionDecorator):
             self.cutoff_version,
             self.ALTERNATIVE_DECORATOR,
         )
-        self.target = target
 
 
 class rename_argument(AbstractDeprecator):
@@ -105,6 +108,8 @@ class rename_argument(AbstractDeprecator):
         super(rename_argument, self).__init__(*args, **kwargs)
 
     def __call__(self, func):
+        super(rename_argument, self).__call__(func)
+
         @wraps(func)
         def wrapper(*args, **kwargs):
             message = '%r is not an argument of the decorated function so it cannot be remapped to from a deprecated parameter name' % (
@@ -163,6 +168,9 @@ class rename_function(AbstractDeprecator):
         super(rename_function, self).__init__(target, *args, **kwargs)
 
     def __call__(self, func):
+        self.source = func.__name__
+        super(rename_function, self).__call__(func)
+
         @wraps(func)
         def wrapper(*args, **kwargs):
             warnings.warn(
