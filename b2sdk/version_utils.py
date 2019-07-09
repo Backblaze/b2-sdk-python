@@ -29,11 +29,16 @@ class AbstractVersionDecorator(object):
         """
 
         current_version = VERSION  # TODO autodetect by going up the qualname tree and trying getattr(part, '__version__')
-        self.current_version = parse_version(current_version)
+        self.current_version = parse_version(current_version)  #: current version
         self.reason = reason
 
-        self.changed_version = parse_version(changed_version)
-        self.cutoff_version = self._parse_if_not_none(cutoff_version)
+        self.changed_version = parse_version(
+            changed_version
+        )  #: version in which the decorator was added
+        self.cutoff_version = self._parse_if_not_none(
+            cutoff_version
+        )  #: version in which the decorator (and something?) shall be removed
+
         if self.cutoff_version is not None:
             assert self.changed_version < self.cutoff_version, '%s decorator is set to start renaming %s %r starting at version %s and finishing in %s. It needs to start at a lower version and finish at a higher version.' % (
                 self.__class__.__name__,
