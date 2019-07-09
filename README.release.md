@@ -5,6 +5,7 @@
 - Bump the version number to an even number in `b2sdk/version.py`.
 - Update the release history in README.md by changing "not released yet" to the current date for this release.
 - Run full tests (currently: `pre-commit.sh`)
+  - You will need B2 account credentials in ~/.b2_auth to run all tests.
 - Build docs locally (currently: `python setup.py develop; (cd doc; ./regenerate.sh) && echo ok`)
 - Commit and push to GitHub, then wait for build to complete successfully.
 - Tag in git and push tag to origin.  (Version tags look like "v0.4.6".)
