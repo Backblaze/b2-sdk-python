@@ -23,12 +23,12 @@ from b2sdk.version import VERSION
 class AbstractVersionDecorator(object):
     WHAT = NotImplemented  # 'function', 'method', 'class' etc
 
-    def __init__(self, changed_version, cutoff_version=None, reason=''):
+    def __init__(self, changed_version, cutoff_version=None, reason='', current_version=None):
         """
         Changed_version, cutoff_version and current_version are version strings.
         """
-
-        current_version = VERSION  # TODO autodetect by going up the qualname tree and trying getattr(part, '__version__')
+        if current_version is None:  # this is for tests only
+            current_version = VERSION  # TODO autodetect by going up the qualname tree and trying getattr(part, '__version__')
         self.current_version = parse_version(current_version)  #: current version
         self.reason = reason
 
