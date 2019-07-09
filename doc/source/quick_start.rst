@@ -102,15 +102,8 @@ Delete a bucket
     >>> bucket_name = 'example-mybucket-b2-to-delete'
     >>> bucket = b2_api.get_bucket_by_name(bucket_name)
     >>> b2_api.delete_bucket(bucket)
-    {'accountId': '451862be08d0',
-     'bucketId': '346501784642eb3e60980d10',
-     'bucketInfo': {},
-     'bucketName': 'example-mybucket-b2-to-delete',
-     'bucketType': 'allPublic',
-     'corsRules': [],
-     'lifecycleRules': [],
-     'revision': 3}
 
+returns `None` if successful, raises an exception in case of error.
 
 Update bucket info
 ==================
@@ -175,10 +168,13 @@ By id
 .. code-block:: python
 
     >>> from b2sdk.v1 import DownloadDestLocalFile
+    >>> from b2sdk.v1 import DoNothingProgressListener
 
     >>> local_file_path = '/home/user1/b2_example/new2.pdf'
     >>> file_id = '4_z5485a1682662eb3e60980d10_f1195145f42952533_d20190403_m130258_c002_v0001111_t0002'
     >>> download_dest = DownloadDestLocalFile(local_file_path)
+    >>> progress_listener = DoNothingProgressListener()
+
     >>> b2_api.download_file_by_id(file_id, download_dest, progress_listener)
     {'fileId': '4_z5485a1682662eb3e60980d10_f1195145f42952533_d20190403_m130258_c002_v0001111_t0002',
      'fileName': 'som2.pdf',
@@ -223,38 +219,46 @@ List files
 
     >>> bucket_name = 'example-mybucket-b2'
     >>> bucket = b2_api.get_bucket_by_name(bucket_name)
-    >>> max_to_show = 1  # max files to show, default=100, optional parameter
-    >>> start_file_name = 'som'  # default is '', optional parameter
-    >>> bucket.list_file_names(start_file_name, max_to_show)
-    {'files': [{'accountId': '451862be08d0',
-       'action': 'upload',
-       'bucketId': '5485a1682662eb3e60980d10',
-       'contentLength': 1870579,
-       'contentSha1': 'd821849a70922e87c2b0786c0be7266b89d87df0',
-       'contentType': 'application/pdf',
-       'fileId': '4_z5485a1682662eb3e60980d10_f1195145f42952533_d20190403_m130258_c002_v0001111_t0002',
-       'fileInfo': {'src_last_modified_millis': '1550988084299'},
-       'fileName': 'som2.pdf',
-       'uploadTimestamp': 1554296578000}],
-     'nextFileName': 'som2.pdf '}
+    >>> for file_info, folder_name in bucket.ls(show_versions=False):
+    >>>     print(file_info.file_name, file_info.upload_timestamp, folder_name)
+    f2.txt 1560927489000 None
+    som2.pdf 1554296578000 None
+    some.pdf 1554296579000 None
+    test-folder/.bzEmpty 1561005295000 test-folder/
+
+    # Recursive
+    >>> bucket_name = 'example-mybucket-b2'
+    >>> bucket = b2_api.get_bucket_by_name(bucket_name)
+    >>> for file_info, folder_name in bucket.ls(show_versions=False, recursive=True):
+    >>>     print(file_info.file_name, file_info.upload_timestamp, folder_name)
+    f2.txt 1560927489000 None
+    som2.pdf 1554296578000 None
+    some.pdf 1554296579000 None
+    test-folder/.bzEmpty 1561005295000 test-folder/
+    test-folder/folder_file.txt 1561005349000 None
+
+Note: The files are returned recursively and in order so all files in a folder are printed one after another.
+The folder_name is returned only for the first file in the folder.
+
+.. code-block:: python
+
+    # Within folder
+    >>> bucket_name = 'example-mybucket-b2'
+    >>> bucket = b2_api.get_bucket_by_name(bucket_name)
+    >>> for file_info, folder_name in bucket.ls(folder_to_list='test-folder', show_versions=False):
+    >>>     print(file_info.file_name, file_info.upload_timestamp, folder_name)
+    test-folder/.bzEmpty 1561005295000 None
+    test-folder/folder_file.txt 1561005349000 None
 
     # list file versions
-    >>> bucket.list_file_versions()
-    {'files': [{'accountId': '451862be08d0',
-       'action': 'upload',
-       'bucketId': '5485a1682662eb3e60980d10',
-       'contentLength': 1870579,
-       'contentSha1': 'd821849a70922e87c2b0786c0be7266b89d87df0',
-       'contentType': 'application/pdf',
-       'fileId': '4_z5485a1682662eb3e60980d10_f1195145f42952533_d20190403_m130258_c002_v0001111_t0002',
-       'fileInfo': {'src_last_modified_millis': '1550988084299'},
-       'fileName': 'som2.pdf',
-       'uploadTimestamp': 1554296578000}
+    >>> for file_info, folder_name in bucket.ls(show_versions=True):
+    >>>     print(file_info.file_name, file_info.upload_timestamp, folder_name)
+    f2.txt 1560927489000 None
+    f2.txt 1560849524000 None
+    som2.pdf 1554296578000 None
+    some.pdf 1554296579000 None
 
 For more information see :meth:`b2sdk.v1.Bucket.ls`.
-
-.. todo::
-   use ls in the examples above, ``list_file_names`` and ``list_file_versions`` are legacy/discouraged, we shouldn't be promoting them
 
 
 Get file metadata
@@ -322,6 +326,9 @@ Delete file
 
     >>> file_id = '4_z5485a1682662eb3e60980d10_f113f963288e711a6_d20190404_m065910_c002_v0001095_t0044'
     >>> file_info = b2_api.delete_file_version(file_id, 'dummy_new.pdf')
+    >>> print(file_info)
+    {'file_id': '4_z5485a1682662eb3e60980d10_f113f963288e711a6_d20190404_m065910_c002_v0001095_t0044',
+     'file_name': 'dummy_new.pdf'}
 
 
 Cancel large file uploads

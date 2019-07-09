@@ -176,7 +176,7 @@ class Synchronizer(object):
         :param b2sdk.sync.folder.AbstractFolder source_folder: source folder object
         :param b2sdk.sync.folder.AbstractFolder dest_folder: destination folder object
         :param int now_millis: current time in milliseconds
-        :param b2sdk.sync.report.SyncReport, None reporter: progress reporter
+        :param b2sdk.sync.report.SyncReport,None reporter: progress reporter
         """
         # For downloads, make sure that the target directory is there.
         if dest_folder.folder_type() == 'local' and not self.dry_run:
