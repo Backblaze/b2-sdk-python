@@ -227,7 +227,7 @@ class AbstractAccountInfo(object):
         :param str application_key_id: application key ID
 
         .. versionchanged:: 0.1.5
-           `account_id_or_app_key_id` renamed to `get_application_key_id`
+           `account_id_or_app_key_id` renamed to `application_key_id`
         """
         if allowed is None:
             allowed = self.DEFAULT_ALLOWED
