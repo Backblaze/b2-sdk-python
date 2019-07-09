@@ -12,13 +12,14 @@ import warnings
 
 from .test_base import TestBase
 
-from .deps import VERSION
 from .deps import rename_argument, rename_function
 
 
 class TestRenameArgument(TestBase):
+    VERSION = '0.1.10'
+
     def test_warning(self):
-        @rename_argument('aaa', 'bbb', '0.1.0', '0.2.0')
+        @rename_argument('aaa', 'bbb', '0.1.0', '0.2.0', current_version=self.VERSION)
         def easy(bbb):
             """ easy docstring """
             return bbb
@@ -48,10 +49,10 @@ class TestRenameArgument(TestBase):
             AssertionError,
             msg=
             "rename_argument decorator is still used in version %s when old argument name 'aaa' was scheduled to be dropped in 0.1.2. It is time to remove the mapping."
-            % (VERSION,),
+            % (self.VERSION,),
         ):
 
-            @rename_argument('aaa', 'bbb', '0.1.0', '0.1.2')
+            @rename_argument('aaa', 'bbb', '0.1.0', '0.1.2', current_version=self.VERSION)
             def late(bbb):
                 return bbb
 
@@ -64,7 +65,7 @@ class TestRenameArgument(TestBase):
             "rename_argument decorator indicates that the replacement of argument 'aaa' should take place in the future version 0.2.0, while the current version is 0.2.2. It looks like should be _discouraged_ at this point and not _deprecated_ yet. Consider using 'discourage_argument' decorator instead."
         ):
 
-            @rename_argument('aaa', 'bbb', '0.2.0', '0.2.2')
+            @rename_argument('aaa', 'bbb', '0.2.0', '0.2.2', current_version=self.VERSION)
             def early(bbb):
                 return bbb
 
@@ -77,7 +78,7 @@ class TestRenameArgument(TestBase):
             "rename_argument decorator is set to start renaming argument 'aaa' starting at version 0.2.2 and finishing in 0.2.0. It needs to start at a lower version and finish at a higher version."
         ):
 
-            @rename_argument('aaa', 'bbb', '0.2.2', '0.2.0')
+            @rename_argument('aaa', 'bbb', '0.2.2', '0.2.0', current_version=self.VERSION)
             def backwards(bbb):
                 return bbb
 
@@ -85,13 +86,15 @@ class TestRenameArgument(TestBase):
 
 
 class TestRenameFunction(TestBase):
+    VERSION = '0.1.10'
+
     def test_rename_function(self):
         def new(bbb):
             return bbb
 
         for i in ('new', new):
 
-            @rename_function(i, '0.1.0', '0.2.0')
+            @rename_function(i, '0.1.0', '0.2.0', current_version=self.VERSION)
             def old(bbb):
                 return bbb
 
