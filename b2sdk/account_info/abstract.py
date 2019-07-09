@@ -12,7 +12,6 @@ from abc import abstractmethod
 
 import six
 
-from b2sdk import version_utils
 from b2sdk.raw_api import ALL_CAPABILITIES
 from b2sdk.utils import B2TraceMetaAbstract, limit_trace_arguments
 
@@ -118,18 +117,6 @@ class AbstractAccountInfo(object):
         :rtype: str
         """
 
-    @version_utils.rename_method(get_application_key_id, '0.1.5', '0.2.0')
-    def get_account_id_or_app_key_id(self):
-        """
-        Return the application key ID used to authenticate.
-
-        :rtype: str
-
-        .. deprecated:: 0.1.6
-           Use :func:`get_application_key_id` instead.
-        """
-        return self.get_application_key_id()
-
     @abstractmethod
     def get_account_auth_token(self):
         """
@@ -189,12 +176,6 @@ class AbstractAccountInfo(object):
         :rtype: dict
         """
 
-    @version_utils.rename_argument(
-        'account_id_or_app_key_id',
-        'application_key_id',
-        '0.1.5',
-        '0.2.0',
-    )
     @limit_trace_arguments(only=['self', 'api_url', 'download_url', 'minimum_part_size', 'realm'])
     def set_auth_data(
         self,

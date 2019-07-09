@@ -9,6 +9,7 @@
 ######################################################################
 
 from b2sdk.v1 import *
+from b2sdk.v0.account_info import AbstractAccountInfo, InMemoryAccountInfo, UrlPoolAccountInfo, SqliteAccountInfo
 from b2sdk.v0.api import B2Api
 from b2sdk.v0.bucket import Bucket
 from b2sdk.v0.bucket import BucketFactory
