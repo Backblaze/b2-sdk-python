@@ -113,7 +113,7 @@ class rename_argument(AbstractDeprecator):
         @wraps(func)
         def wrapper(*args, **kwargs):
             message = '%r is not an argument of the decorated function so it cannot be remapped to from a deprecated parameter name' % (
-                self.source,
+                self.target,
             )
             if six.PY2:
                 signature = inspect.getargspec(func)
