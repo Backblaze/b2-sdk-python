@@ -33,11 +33,11 @@ b2sdk>=0.0.0,<1.0.0
 
 # Release History
 
-## 1.0.0 (not released yet)
+## 1.0.0-rc1 (not released yet)
 
 Changes:
 
-* Deprecate some transitional method names to version 0 in preparation for v1.0.0.
+* Deprecate some transitional method names to v0 in preparation for v1.0.0.
 
 ## 0.1.10 (2019-07-09)
 
