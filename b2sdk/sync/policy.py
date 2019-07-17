@@ -25,9 +25,10 @@ logger = logging.getLogger(__name__)
 
 @unique
 class NewerFileSyncMode(Enum):
-    SKIP = 101
-    REPLACE = 102
-    RAISE_ERROR = 103
+    """ Mode of handling files newer on destination than on source """
+    SKIP = 101  #: skip syncing such file
+    REPLACE = 102  #: replace the file on the destination with the (older) file on source
+    RAISE_ERROR = 103  #: raise a non-transient error, failing the sync operation
 
 
 @unique
