@@ -97,9 +97,10 @@ def count_files(local_folder, reporter):
 
 @unique
 class KeepOrDeleteMode(Enum):
-    DELETE = 301
-    KEEP_BEFORE_DELETE = 302
-    NO_DELETE = 303
+    """ Mode of dealing with old versions of files on the destination """
+    DELETE = 301  #: delete the old version as soon as the new one has been uploaded
+    KEEP_BEFORE_DELETE = 302  #: keep the old versions of the file for a configurable number of days before deleting them, always keeping the newest version
+    NO_DELETE = 303  #: keep old versions of the file, do not delete anything
 
 
 class Synchronizer(object):
