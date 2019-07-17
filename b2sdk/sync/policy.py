@@ -33,9 +33,10 @@ class NewerFileSyncMode(Enum):
 
 @unique
 class CompareVersionMode(Enum):
-    MODTIME = 201
-    SIZE = 202
-    NONE = 203
+    """ Mode of comparing versions of files to determine what should be synced and what shouldn't """
+    MODTIME = 201  #: use file modification time on source filesystem
+    SIZE = 202  #: compare using file size
+    NONE = 203  #: compare using file name only
 
 
 @six.add_metaclass(ABCMeta)
