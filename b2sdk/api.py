@@ -75,13 +75,34 @@ class B2Api(object):
         :param account_info: an instance of :class:`~b2sdk.account_info.upload_url_pool.UrlPoolAccountInfo`,
                              or any custom class derived from
                              :class:`~b2sdk.account_info.abstract.AbstractAccountInfo`
+
+                     NOT REQUIRED
+                     DEFAULT VALUE: None
+
+                     The account_info object is responsible for holding account related information
+                     between API calls. If one is provided, we will attempt to use that first.
+                     Otherwise one will be built using Sql lite called SqliteAccountInfo()
+
         :param cache: an instance of the one of the following classes:
                       :class:`~b2sdk.cache.DummyCache`, :class:`~b2sdk.cache.InMemoryCache`,
                       :class:`~b2sdk.cache.AuthInfoCache`,
                       or any custom class derived from :class:`~b2sdk.cache.AbstractCache`
+
+                      NOT REQUIRED
+                      DEFAULT VALUE: None
+
+                      Interacts with the account_info object for managing data that we need for API calls
+                      and attempts to cache the data for future access.
+
         :param raw_api: an instance of one of the following classes:
                         :class:`~b2sdk.raw_api.B2RawApi`, :class:`~b2sdk.raw_simulator.RawSimulator`,
                         or any custom class derived from :class:`~b2sdk.raw_api.AbstractRawApi`
+
+                        NOT REQUIRED
+                        DEFAULT VALUE: None
+
+                        The HTTP layer that makes well-formed request to the B2 API.
+
         :param int max_upload_workers: a number of upload threads, default is 10
         """
         self.raw_api = raw_api or B2RawApi(B2Http())
