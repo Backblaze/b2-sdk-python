@@ -33,6 +33,12 @@ b2sdk>=0.0.0,<1.0.0
 
 # Release History
 
+## 1.0.2 (not released yet)
+
+Changes:
+
+* ???
+
 ## 1.0.0 (2019-10-03)
 
 Changes:
