@@ -8,6 +8,7 @@
   - You will need B2 account credentials in ~/.b2_auth to run all tests.
 - Build docs locally (currently: `python setup.py develop; (cd doc; ./regenerate.sh) && echo ok`)
 - Commit and push to GitHub, then wait for build to complete successfully.
+  - No need to make a branch. Push straight to `master`.
 - Tag in git and push tag to origin.  (Version tags look like "v0.4.6".)
     - `git tag vx.x.x`
     - `git push origin vx.x.x`
@@ -17,7 +18,7 @@
   - `twine upload dist/*`
 - Install using pip and verify that it gets the correct version.
 - Update for dev
-  - Bump the version number
+  - Bump the version number to an odd number (for example: 1.0.2 -> 1.0.3)
   - Add a "not released yet" section in the release history, like: 0.8.4 (not released yet)
   - check in
 - Push to GitHub again.
