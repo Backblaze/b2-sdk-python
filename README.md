@@ -33,11 +33,11 @@ b2sdk>=0.0.0,<1.0.0
 
 # Release History
 
-## 1.0.2 (not released yet)
+## 1.0.2 (2019-10-15)
 
 Changes:
 
-* ???
+* Remove upper version limit for arrow dependency
 
 ## 1.0.0 (2019-10-03)
 
