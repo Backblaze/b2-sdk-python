@@ -93,7 +93,13 @@ class AbstractRawApi(object):
 
     @abstractmethod
     def list_unfinished_large_files(
-        self, api_url, account_auth_token, bucket_id, start_file_id=None, max_file_count=None
+        self,
+        api_url,
+        account_auth_token,
+        bucket_id,
+        start_file_id=None,
+        max_file_count=None,
+        prefix=None,
     ):
         pass
 
@@ -396,7 +402,13 @@ class B2RawApi(AbstractRawApi):
         )
 
     def list_unfinished_large_files(
-        self, api_url, account_auth_token, bucket_id, start_file_id=None, max_file_count=None
+        self,
+        api_url,
+        account_auth_token,
+        bucket_id,
+        start_file_id=None,
+        max_file_count=None,
+        prefix=None,
     ):
         return self._post_json(
             api_url,
@@ -404,7 +416,8 @@ class B2RawApi(AbstractRawApi):
             account_auth_token,
             bucketId=bucket_id,
             startFileId=start_file_id,
-            maxFileCount=max_file_count
+            maxFileCount=max_file_count,
+            namePrefix=prefix,
         )
 
     def start_large_file(
