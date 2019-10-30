@@ -46,6 +46,7 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
             B2_ACCOUNT_INFO_ENV_VAR, B2_ACCOUNT_INFO_DEFAULT_FILE
         )
         self.filename = file_name or os.path.expanduser(user_account_info_path)
+        logger.debug('%s file path to use: %s', self.__class__.__name__, self.filename)
         self._validate_database()
         with self._get_connection() as conn:
             self._create_tables(conn, last_upgrade_to_run)
