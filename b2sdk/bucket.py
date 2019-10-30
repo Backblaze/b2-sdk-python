@@ -679,7 +679,7 @@ class Bucket(object):
                     return response
             except B2Error as e:
                 exception_list.append(e)
-                self.api.account_info.clear_bucket_upload_data(self.id_)
+                self.api.account_info.clear_large_file_upload_urls(file_id)
 
         large_file_upload_state.set_error(str(exception_list[-1]))
         raise MaxRetriesExceeded(self.MAX_UPLOAD_ATTEMPTS, exception_list)
