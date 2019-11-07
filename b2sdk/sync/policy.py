@@ -25,16 +25,18 @@ logger = logging.getLogger(__name__)
 
 @unique
 class NewerFileSyncMode(Enum):
-    SKIP = 101
-    REPLACE = 102
-    RAISE_ERROR = 103
+    """ Mode of handling files newer on destination than on source """
+    SKIP = 101  #: skip syncing such file
+    REPLACE = 102  #: replace the file on the destination with the (older) file on source
+    RAISE_ERROR = 103  #: raise a non-transient error, failing the sync operation
 
 
 @unique
 class CompareVersionMode(Enum):
-    MODTIME = 201
-    SIZE = 202
-    NONE = 203
+    """ Mode of comparing versions of files to determine what should be synced and what shouldn't """
+    MODTIME = 201  #: use file modification time on source filesystem
+    SIZE = 202  #: compare using file size
+    NONE = 203  #: compare using file name only
 
 
 @six.add_metaclass(ABCMeta)
