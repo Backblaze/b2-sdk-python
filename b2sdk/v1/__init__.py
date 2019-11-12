@@ -25,6 +25,7 @@ from b2sdk.raw_api import ALL_CAPABILITIES
 from b2sdk.account_info.abstract import AbstractAccountInfo
 from b2sdk.account_info.in_memory import InMemoryAccountInfo
 from b2sdk.account_info.sqlite_account_info import SqliteAccountInfo
+from b2sdk.account_info.sqlite_account_info import B2_ACCOUNT_INFO_ENV_VAR, B2_ACCOUNT_INFO_DEFAULT_FILE
 from b2sdk.account_info.stub import StubAccountInfo
 from b2sdk.account_info.upload_url_pool import UploadUrlPool
 from b2sdk.account_info.upload_url_pool import UrlPoolAccountInfo
@@ -36,7 +37,7 @@ from b2sdk.version_utils import rename_argument, rename_function
 
 # utils
 
-from b2sdk.utils import b2_url_encode, b2_url_decode, choose_part_ranges, format_and_scale_fraction, format_and_scale_number, hex_sha1_of_stream, hex_sha1_of_bytes, TempDir
+from b2sdk.utils import b2_url_encode, b2_url_decode, choose_part_ranges, fix_windows_path_limit, format_and_scale_fraction, format_and_scale_number, hex_sha1_of_stream, hex_sha1_of_bytes, TempDir
 from b2sdk.utils import trace_call
 
 # data classes
@@ -53,6 +54,7 @@ from b2sdk.progress import DoNothingProgressListener
 from b2sdk.progress import ProgressListenerForTest
 from b2sdk.progress import SimpleProgressListener
 from b2sdk.progress import TqdmProgressListener
+from b2sdk.progress import make_progress_listener
 
 # raw_simulator
 
