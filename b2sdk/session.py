@@ -11,7 +11,7 @@
 import functools
 
 from b2sdk.exception import (InvalidAuthToken, Unauthorized)
-from b2sdk.raw_api import ALL_CAPABILITIES
+from b2sdk.raw_api import ALL_CAPABILITIES, TokenType
 
 
 class B2Session(object):
@@ -30,13 +30,22 @@ class B2Session(object):
         @functools.wraps(f)
         def wrapper(*args, **kwargs):
             auth_failure_encountered = False
+            # A *magic* that will identify and generate the correct type of Url and token based on the decorator on the B2RawApi method.
+            token_type = getattr(f, 'token_type', TokenType.API)
             # download_by_name uses different URLs
             url_factory = kwargs.pop('url_factory', self._api.account_info.get_api_url)
             while 1:
-                api_url = url_factory()
-                account_auth_token = self._api.account_info.get_account_auth_token()
                 try:
-                    return f(api_url, account_auth_token, *args, **kwargs)
+                    if token_type == TokenType.API:
+                        api_url = url_factory()
+                        account_auth_token = self._api.account_info.get_account_auth_token()
+                        return f(api_url, account_auth_token, *args, **kwargs)
+                    elif token_type == TokenType.UPLOAD_SMALL:
+                        return self._upload_small(f, *args, **kwargs)
+                    elif token_type == TokenType.UPLOAD_PART:
+                        return self._upload_part(f, *args, **kwargs)
+                    else:
+                        assert False, 'token type is not supported'
                 except InvalidAuthToken:
                     if not auth_failure_encountered:
                         auth_failure_encountered = True
@@ -80,3 +89,41 @@ class B2Session(object):
         new_message += ' for application key ' + ', '.join(key_messages)
 
         return Unauthorized(new_message, unauthorized.code)
+
+    def _get_upload_data(self, bucket_id):
+        """
+        Take ownership of an upload URL / auth token for the bucket and
+        return it.
+        """
+        account_info = self._api.account_info
+        upload_url, upload_auth_token = account_info.take_bucket_upload_url(bucket_id)
+        if None not in (upload_url, upload_auth_token):
+            return upload_url, upload_auth_token
+
+        response = self.get_upload_url(bucket_id)
+        return response['uploadUrl'], response['authorizationToken']
+
+    def _get_upload_part_data(self, file_id):
+        """
+        Make sure that we have an upload URL and auth token for the given bucket and
+        return it.
+        """
+        account_info = self._api.account_info
+        upload_url, upload_auth_token = account_info.take_large_file_upload_url(file_id)
+        if None not in (upload_url, upload_auth_token):
+            return upload_url, upload_auth_token
+
+        response = self.get_upload_part_url(file_id)
+        return response['uploadUrl'], response['authorizationToken']
+
+    def _upload_small(self, f, bucket_id, file_id, *args, **kwargs):
+        upload_url, upload_auth_token = self._get_upload_data(bucket_id)
+        response = f(upload_url, upload_auth_token, *args, **kwargs)
+        self._api.account_info.put_bucket_upload_url(bucket_id, upload_url, upload_auth_token)
+        return response
+
+    def _upload_part(self, f, bucket_id, file_id, *args, **kwargs):
+        upload_url, upload_auth_token = self._get_upload_part_data(file_id)
+        response = f(upload_url, upload_auth_token, *args, **kwargs)
+        self._api.account_info.put_large_file_upload_url(file_id, upload_url, upload_auth_token)
+        return response

@@ -30,7 +30,7 @@ from .exception import (
     Unauthorized,
     UnsatisfiableRange,
 )
-from .raw_api import AbstractRawApi, HEX_DIGITS_AT_END, MetadataDirectiveMode
+from .raw_api import AbstractRawApi, HEX_DIGITS_AT_END, MetadataDirectiveMode, set_token_type, TokenType
 from .utils import b2_url_decode, b2_url_encode
 
 ALL_CAPABILITES = [
@@ -1065,6 +1065,7 @@ class RawSimulator(AbstractRawApi):
             if_revision_is=if_revision_is
         )
 
+    @set_token_type(TokenType.UPLOAD_SMALL)
     def upload_file(
         self, upload_url, upload_auth_token, file_name, content_length, content_type, content_sha1,
         file_infos, data_stream
@@ -1085,6 +1086,7 @@ class RawSimulator(AbstractRawApi):
         self.file_id_to_bucket_id[file_id] = bucket_id
         return response
 
+    @set_token_type(TokenType.UPLOAD_PART)
     def upload_part(
         self, upload_url, upload_auth_token, part_number, content_length, sha1_sum, input_stream
     ):
