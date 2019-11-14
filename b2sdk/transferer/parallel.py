@@ -77,20 +77,27 @@ class ParallelDownloader(AbstractDownloader):
         remote_range = self._get_remote_range(response, metadata)
         actual_size = remote_range.size()
         start_file_position = file.tell()
-        parts_to_download = gen_parts(
-            remote_range,
-            Range(start_file_position, start_file_position + actual_size - 1),
-            part_count=self._get_number_of_streams(metadata.content_length),
+        parts_to_download = list(
+            gen_parts(
+                remote_range,
+                Range(start_file_position, start_file_position + actual_size - 1),
+                part_count=self._get_number_of_streams(metadata.content_length),
+            )
         )
 
-        first_part = next(parts_to_download)
+        first_part = parts_to_download[0]
 
         hasher = hashlib.sha1()
 
-        with WriterThread(file) as writer:
+        with WriterThread(file, max_queue_depth=len(parts_to_download) * 2) as writer:
             self._get_parts(
-                response, session, writer, hasher, first_part, parts_to_download,
-                self._get_chunk_size(actual_size)
+                response,
+                session,
+                writer,
+                hasher,
+                first_part,
+                parts_to_download[1:],
+                self._get_chunk_size(actual_size),
             )
         bytes_written = writer.total
 
@@ -151,9 +158,32 @@ class ParallelDownloader(AbstractDownloader):
 
 
 class WriterThread(threading.Thread):
-    def __init__(self, file):
+    """
+    A thread responsible for keeping a queue of data chunks to write to a file-like object and for actually writing them down.
+    Since a single thread is responsible for synchronization of the writes, we avoid a lot of issues between userspace and kernelspace
+    that would normally require flushing buffers between the switches of the writer. That would kill performance and not synchronizing
+    would cause data corruption (probably we'd end up with a file with unexpected blocks of zeros preceding the range of the writer
+    that comes second and writes further into the file).
+
+    The object of this class is also responsible for backpressure: if items are added to the queue faster than they can be written
+    (see GCP VMs with standard PD storage with faster CPU and network than local storage,
+    https://github.com/Backblaze/B2_Command_Line_Tool/issues/595), then ``obj.queue.put(item)`` will block, slowing down the producer.
+
+    The recommended minimum value of ``max_queue_depth`` is equal to the amount of producer threads, so that if all producers
+    submit a part at the exact same time (right after network issue, for example, or just after starting the read), they can continue
+    their work without blocking. The writer should be able to store at least one data chunk before a new one is retrieved, but
+    it is not guaranteed.
+
+    Therefore, the recommended value of ``max_queue_depth`` is higher - a double of the amount of producers, so that spikes on either
+    end (many producers submit at the same time / consumer has a latency spike) can be accommodated without sacrificing performance.
+
+    Please note that a size of the chunk and the queue depth impact the memory footprint. In a default setting as of writing this,
+    that might be 10 downloads, 8 producers, 1MB buffers, 2 buffers each = 8*2*10 = 160 MB (+ python buffers, operating system etc).
+    """
+
+    def __init__(self, file, max_queue_depth):
         self.file = file
-        self.queue = queue.Queue()
+        self.queue = queue.Queue(max_queue_depth)
         self.total = 0
         super(WriterThread, self).__init__()
 
