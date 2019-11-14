@@ -13,6 +13,12 @@ Glossary
     application key
       The secret associated with an :term:`application key ID`, used to authenticate with the server. Looks like this: ``N2Zug0evLcHDlh_L0Z0AJhiGGdY`` or ``0a1bce5ea463a7e4b090ef5bd6bd82b851928ab2c6`` or ``K0014pbwo1zxcIVMnqSNTfWHReU/O3s``
 
+    b2sdk version
+      Looks like this: ``v1.0.0`` or ``1.0.0`` and makes version numbers meaningful. See :ref:`Pinning versions <semantic_versioning>` for more details.
+
+    b2sdk interface version
+      Looks like this: ``v2`` or ``b2sdk.v2`` and makes maintaining backward compatibility much easier. See :ref:`interface versions <interface_versions>` for more details.
+
     master application key
       This is the first key you have access to, it is available on the B2 web application. This key has all capabilities, access to all buckets, and has no file prefix restrictions or expiration. The :term:`application key ID` of the master key is the same as the :term:`account ID`.
 
