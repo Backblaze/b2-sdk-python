@@ -205,6 +205,18 @@ class TestListUnfinished(TestCaseWithBucket):
             [file1, file2, file3], list(self.bucket.list_unfinished_large_files(batch_size=1))
         )
 
+    def test_prefix(self):
+        self.bucket.start_large_file('fileA', 'text/plain', {})
+        file2 = self.bucket.start_large_file('fileAB', 'text/plain', {})
+        file3 = self.bucket.start_large_file('fileABC', 'text/plain', {})
+        self.assertEqual(
+            [file2, file3],
+            list(self.bucket.list_unfinished_large_files(
+                batch_size=1,
+                prefix='fileAB',
+            ),),
+        )
+
     def _make_file(self, file_id, file_name):
         return self.bucket.start_large_file(file_name, 'text/plain', {})
 

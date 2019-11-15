@@ -514,12 +514,13 @@ class BucketSimulator(object):
         file_sim = self.file_id_to_file[file_id]
         return file_sim.list_parts(start_part_number, max_part_count)
 
-    def list_unfinished_large_files(self, start_file_id=None, max_file_count=None):
+    def list_unfinished_large_files(self, start_file_id=None, max_file_count=None, prefix=None):
         start_file_id = start_file_id or self.FIRST_FILE_ID
         max_file_count = max_file_count or 100
         all_unfinished_ids = set(
             k for (k, v) in six.iteritems(self.file_id_to_file)
-            if v.action == 'start' and k <= start_file_id
+            if v.action == 'start' and k <= start_file_id and
+            (prefix is None or v.name.startswith(prefix))
         )
         ids_in_order = sorted(all_unfinished_ids, reverse=True)
         file_dict_list = [
@@ -1025,13 +1026,21 @@ class RawSimulator(AbstractRawApi):
         return bucket.list_parts(file_id, start_part_number, max_part_count)
 
     def list_unfinished_large_files(
-        self, api_url, account_auth, bucket_id, start_file_id=None, max_file_count=None
+        self,
+        api_url,
+        account_auth,
+        bucket_id,
+        start_file_id=None,
+        max_file_count=None,
+        prefix=None
     ):
         bucket = self._get_bucket_by_id(bucket_id)
-        self._assert_account_auth(api_url, account_auth, bucket.account_id, 'listFiles')
+        self._assert_account_auth(
+            api_url, account_auth, bucket.account_id, 'listFiles', file_name=prefix
+        )
         start_file_id = start_file_id or ''
         max_file_count = max_file_count or 100
-        return bucket.list_unfinished_large_files(start_file_id, max_file_count)
+        return bucket.list_unfinished_large_files(start_file_id, max_file_count, prefix)
 
     def start_large_file(
         self, api_url, account_auth_token, bucket_id, file_name, content_type, file_info

@@ -373,19 +373,20 @@ class Bucket(object):
                     prefix + current_dir[:-1] + '0',
                 )
 
-    def list_unfinished_large_files(self, start_file_id=None, batch_size=None):
+    def list_unfinished_large_files(self, start_file_id=None, batch_size=None, prefix=None):
         """
         A generator that yields an :py:class:`b2sdk.v1.UnfinishedLargeFile` for each
-        unfinished large file in the bucket, starting at the given file.
+        unfinished large file in the bucket, starting at the given file, filtering by prefix.
 
         :param str,None start_file_id: a file ID to start from or None to start from the beginning
         :param int,None batch_size: max file count
+        :param str,None prefix: file name prefix filter
         :rtype: generator[b2sdk.v1.UnfinishedLargeFile]
         """
         batch_size = batch_size or 100
         while True:
             batch = self.api.session.list_unfinished_large_files(
-                self.id_, start_file_id, batch_size
+                self.id_, start_file_id, batch_size, prefix
             )
             for file_dict in batch['files']:
                 yield UnfinishedLargeFile(file_dict)
