@@ -72,26 +72,23 @@ class B2Api(object):
         """
         Initialize the API using the given account info.
 
-        :param account_info: an instance of :class:`~b2sdk.account_info.upload_url_pool.UrlPoolAccountInfo`,
-                             or any custom class derived from
-                             :class:`~b2sdk.account_info.abstract.AbstractAccountInfo`
-
-                     To learn more about Account Info objects, see here
-                     :class:`~b2sdk.account_info.sqlite.SqliteAccountInfo`
+        :param account_info: an instance of :class:`~b2sdk.v1.UrlPoolAccountInfo`,
+                      or any custom class derived from
+                      :class:`~b2sdk.v1.AbstractAccountInfo`
+                      To learn more about Account Info objects, see here
+                      :class:`~b2sdk.v1.SqliteAccountInfo`
 
         :param cache: an instance of the one of the following classes:
                       :class:`~b2sdk.cache.DummyCache`, :class:`~b2sdk.cache.InMemoryCache`,
                       :class:`~b2sdk.cache.AuthInfoCache`,
                       or any custom class derived from :class:`~b2sdk.cache.AbstractCache`
-
-                      is used by B2Api to cache the mapping between bucket name and bucket ids.
+                      It is used by B2Api to cache the mapping between bucket name and bucket ids.
                       default is :class:`~b2sdk.cache.DummyCache`
 
         :param raw_api: an instance of one of the following classes:
                         :class:`~b2sdk.raw_api.B2RawApi`, :class:`~b2sdk.raw_simulator.RawSimulator`,
                         or any custom class derived from :class:`~b2sdk.raw_api.AbstractRawApi`
-
-                        makes network-less unit testing simple by using :class:`~b2sdk.raw_simulator.RawSimulator`,
+                        It makes network-less unit testing simple by using :class:`~b2sdk.raw_simulator.RawSimulator`,
                         in tests and :class:`~b2sdk.raw_api.B2RawApi` in production.
                         default is :class:`~b2sdk.raw_api.B2RawApi`
 
