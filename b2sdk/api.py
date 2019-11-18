@@ -76,32 +76,24 @@ class B2Api(object):
                              or any custom class derived from
                              :class:`~b2sdk.account_info.abstract.AbstractAccountInfo`
 
-                     NOT REQUIRED
-                     DEFAULT VALUE: None
-
-                     The account_info object is responsible for holding account related information
-                     between API calls. If one is provided, we will attempt to use that first.
-                     Otherwise one will be built using Sql lite called SqliteAccountInfo()
+                     To learn more about Account Info objects, see here
+                     :class:`~b2sdk.account_info.sqlite.SqliteAccountInfo`
 
         :param cache: an instance of the one of the following classes:
                       :class:`~b2sdk.cache.DummyCache`, :class:`~b2sdk.cache.InMemoryCache`,
                       :class:`~b2sdk.cache.AuthInfoCache`,
                       or any custom class derived from :class:`~b2sdk.cache.AbstractCache`
 
-                      NOT REQUIRED
-                      DEFAULT VALUE: None
-
-                      Interacts with the account_info object for managing data that we need for API calls
-                      and attempts to cache the data for future access.
+                      is used by B2Api to cache the mapping between bucket name and bucket ids.
+                      default is :class:`~b2sdk.cache.DummyCache`
 
         :param raw_api: an instance of one of the following classes:
                         :class:`~b2sdk.raw_api.B2RawApi`, :class:`~b2sdk.raw_simulator.RawSimulator`,
                         or any custom class derived from :class:`~b2sdk.raw_api.AbstractRawApi`
 
-                        NOT REQUIRED
-                        DEFAULT VALUE: None
-
-                        The HTTP layer that makes well-formed request to the B2 API.
+                        makes network-less unit testing simple by using :class:`~b2sdk.raw_simulator.RawSimulator`,
+                        in tests and :class:`~b2sdk.raw_api.B2RawApi` in production.
+                        default is :class:`~b2sdk.raw_api.B2RawApi`
 
         :param int max_upload_workers: a number of upload threads, default is 10
         """
