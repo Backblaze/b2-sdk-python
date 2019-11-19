@@ -65,4 +65,5 @@ Internal API
    api/internal/transferer/simple
    api/internal/transferer/transferer
    api/internal/upload_source
+   api/internal/raw_simulator
 
