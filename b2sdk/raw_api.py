@@ -60,8 +60,8 @@ class TokenType(Enum):
 
 def set_token_type(token_type):
     """
-    This is a decorator to identify the type of token to be used in session.
-    When the raw_api is used through B2Session, it will be used to identify the type of url and token to be used.
+    This is a decorator to identify the type of token that must be passed into a function.
+    When the raw_api is used through B2Session, it will be used to identify the type of url and token to be passed.
 
     :param token_type: TokenType enum
     :return:
@@ -72,6 +72,17 @@ def set_token_type(token_type):
         return func
 
     return inner
+
+
+def get_token_type(func):
+    """
+    This will return the token type that must be passed into the input raw_api function.
+    The default value is TokenType.API.
+
+    :param func: raw_api function to be called
+    :return: token type
+    """
+    return getattr(func, 'token_type', TokenType.API)
 
 
 @unique

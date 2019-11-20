@@ -11,7 +11,7 @@
 import functools
 
 from b2sdk.exception import (InvalidAuthToken, Unauthorized)
-from b2sdk.raw_api import ALL_CAPABILITIES, TokenType
+from b2sdk.raw_api import ALL_CAPABILITIES, get_token_type, TokenType
 
 
 class B2Session(object):
@@ -31,7 +31,7 @@ class B2Session(object):
         def wrapper(*args, **kwargs):
             auth_failure_encountered = False
             # A *magic* that will identify and generate the correct type of Url and token based on the decorator on the B2RawApi method.
-            token_type = getattr(f, 'token_type', TokenType.API)
+            token_type = get_token_type(f)
             # download_by_name uses different URLs
             url_factory = kwargs.pop('url_factory', self._api.account_info.get_api_url)
             while 1:
