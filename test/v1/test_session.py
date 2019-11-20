@@ -13,6 +13,7 @@ from .test_base import TestBase
 from .deps_exception import InvalidAuthToken, Unauthorized
 from .deps import ALL_CAPABILITIES
 from .deps import B2Session
+from .deps import TokenType
 
 try:
     import unittest.mock as mock
@@ -30,6 +31,7 @@ class TestB2Session(TestBase):
 
         self.raw_api = mock.MagicMock()
         self.raw_api.do_it.__name__ = 'do_it'
+        self.raw_api.do_it.token_type = TokenType.API
         self.raw_api.do_it.side_effect = ['ok']
 
         self.session = B2Session(self.api, self.raw_api)

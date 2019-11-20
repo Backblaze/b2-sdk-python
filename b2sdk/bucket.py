@@ -522,31 +522,22 @@ class Bucket(object):
         self, upload_source, file_name, content_type, file_info, progress_listener
     ):
         content_length = upload_source.get_content_length()
-        upload_url = None
         exception_info_list = []
         progress_listener.set_total_bytes(content_length)
         with progress_listener:
             for _ in six.moves.xrange(self.MAX_UPLOAD_ATTEMPTS):
-                # refresh upload data in every attempt to work around a "busy storage pod"
-                upload_url, upload_auth_token = self._get_upload_data()
-
                 try:
                     with upload_source.open() as file:
                         input_stream = ReadingStreamWithProgress(file, progress_listener)
                         hashing_stream = StreamWithHash(input_stream)
                         length_with_hash = content_length + hashing_stream.hash_size()
-                        response = self.api.raw_api.upload_file(
-                            upload_url, upload_auth_token, file_name, length_with_hash,
-                            content_type, HEX_DIGITS_AT_END, file_info, hashing_stream
+                        response = self.api.session.upload_file(
+                            self.id_, None, file_name, length_with_hash, content_type,
+                            HEX_DIGITS_AT_END, file_info, hashing_stream
                         )
                         assert hashing_stream.hash == response['contentSha1']
-                        self.api.account_info.put_bucket_upload_url(
-                            self.id_, upload_url, upload_auth_token
-                        )
                         return FileVersionInfoFactory.from_api_response(response)
-
                 except B2Error as e:
-                    logger.exception('error when uploading, upload_url was %s', upload_url)
                     if not e.should_retry_upload():
                         raise
                     exception_info_list.append(e)
@@ -665,13 +656,9 @@ class Bucket(object):
         # Set up a progress listener
         part_progress_listener = PartProgressReporter(large_file_upload_state)
 
-        upload_url = None
         # Retry the upload as needed
         exception_list = []
         for _ in six.moves.xrange(self.MAX_UPLOAD_ATTEMPTS):
-            # refresh upload data in every attempt to work around a "busy storage pod"
-            upload_url, upload_auth_token = self._get_upload_part_data(file_id)
-
             # if another part has already had an error there's no point in
             # uploading this part
             if large_file_upload_state.has_error():
@@ -685,51 +672,18 @@ class Bucket(object):
                     input_stream = ReadingStreamWithProgress(range_stream, part_progress_listener)
                     hashing_stream = StreamWithHash(input_stream)
                     length_with_hash = content_length + hashing_stream.hash_size()
-                    response = self.api.raw_api.upload_part(
-                        upload_url, upload_auth_token, part_number, length_with_hash,
-                        HEX_DIGITS_AT_END, hashing_stream
+                    response = self.api.session.upload_part(
+                        self.id_, file_id, part_number, length_with_hash, HEX_DIGITS_AT_END,
+                        hashing_stream
                     )
                     assert hashing_stream.hash == response['contentSha1']
-                    self.api.account_info.put_large_file_upload_url(
-                        file_id, upload_url, upload_auth_token
-                    )
                     return response
-
             except B2Error as e:
-                logger.exception('error when uploading, upload_url was %s', upload_url)
-                if not e.should_retry_upload():
-                    raise
                 exception_list.append(e)
                 self.api.account_info.clear_bucket_upload_data(self.id_)
 
         large_file_upload_state.set_error(str(exception_list[-1]))
         raise MaxRetriesExceeded(self.MAX_UPLOAD_ATTEMPTS, exception_list)
-
-    def _get_upload_data(self):
-        """
-        Take ownership of an upload URL / auth token for the bucket and
-        return it.
-        """
-        account_info = self.api.account_info
-        upload_url, upload_auth_token = account_info.take_bucket_upload_url(self.id_)
-        if None not in (upload_url, upload_auth_token):
-            return upload_url, upload_auth_token
-
-        response = self.api.session.get_upload_url(self.id_)
-        return response['uploadUrl'], response['authorizationToken']
-
-    def _get_upload_part_data(self, file_id):
-        """
-        Make sure that we have an upload URL and auth token for the given bucket and
-        return it.
-        """
-        account_info = self.api.account_info
-        upload_url, upload_auth_token = account_info.take_large_file_upload_url(file_id)
-        if None not in (upload_url, upload_auth_token):
-            return upload_url, upload_auth_token
-
-        response = self.api.session.get_upload_part_url(file_id)
-        return (response['uploadUrl'], response['authorizationToken'])
 
     def get_download_url(self, filename):
         """

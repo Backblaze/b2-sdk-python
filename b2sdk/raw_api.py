@@ -52,6 +52,40 @@ API_VERSION = 'v2'
 
 
 @unique
+class TokenType(Enum):
+    API = 'api'
+    UPLOAD_PART = 'upload_part'
+    UPLOAD_SMALL = 'upload_small'
+
+
+def set_token_type(token_type):
+    """
+    This is a decorator to identify the type of token that must be passed into a function.
+    When the raw_api is used through B2Session, it will be used to identify the type of url and token to be passed.
+
+    :param token_type: TokenType enum
+    :return:
+    """
+
+    def inner(func, *args, **kwargs):
+        func.token_type = token_type
+        return func
+
+    return inner
+
+
+def get_token_type(func):
+    """
+    This will return the token type that must be passed into the input raw_api function.
+    The default value is TokenType.API.
+
+    :param func: raw_api function to be called
+    :return: token type
+    """
+    return getattr(func, 'token_type', TokenType.API)
+
+
+@unique
 class MetadataDirectiveMode(Enum):
     """ Mode of handling metadata when copying a file """
     COPY = 401  #: copy metadata from the source file
@@ -516,6 +550,7 @@ class B2RawApi(AbstractRawApi):
         if long_segment > 250:
             raise UnusableFileName("Filename segment too long (maximum 250 bytes in utf-8).")
 
+    @set_token_type(TokenType.UPLOAD_SMALL)
     def upload_file(
         self, upload_url, upload_auth_token, file_name, content_length, content_type, content_sha1,
         file_infos, data_stream
@@ -547,6 +582,7 @@ class B2RawApi(AbstractRawApi):
 
         return self.b2_http.post_content_return_json(upload_url, headers, data_stream)
 
+    @set_token_type(TokenType.UPLOAD_PART)
     def upload_part(
         self, upload_url, upload_auth_token, part_number, content_length, content_sha1, data_stream
     ):
