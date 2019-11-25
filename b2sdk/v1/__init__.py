@@ -37,7 +37,18 @@ from b2sdk.version_utils import rename_argument, rename_function
 
 # utils
 
-from b2sdk.utils import b2_url_encode, b2_url_decode, choose_part_ranges, fix_windows_path_limit, format_and_scale_fraction, format_and_scale_number, hex_sha1_of_stream, hex_sha1_of_bytes, TempDir
+from b2sdk.utils import (
+    b2_url_encode,
+    b2_url_decode,
+    choose_part_ranges,
+    fix_windows_path_limit,
+    format_and_scale_fraction,
+    format_and_scale_number,
+    hex_sha1_of_stream,
+    hex_sha1_of_bytes,
+    TempDir,
+)
+
 from b2sdk.utils import trace_call
 
 # data classes
