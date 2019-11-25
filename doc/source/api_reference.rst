@@ -31,6 +31,7 @@ Public API
    api/enums
    api/progress
    api/sync
+   api/utils
 
 .. _api_internal:
 

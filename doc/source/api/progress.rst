@@ -23,3 +23,6 @@ Progress reporters
 
 .. autoclass:: b2sdk.v1.ProgressListenerForTest
    :no-members:
+
+.. autofunction:: b2sdk.v1.make_progress_listener
+
