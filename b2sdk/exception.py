@@ -11,9 +11,14 @@
 from abc import ABCMeta
 
 import json
+import re
 import six
 
 from .utils import camelcase_to_underscore
+
+UPLOAD_TOKEN_USED_CONCURRENTLY_ERROR_MESSAGE_RE = re.compile(
+    r'^more than one upload using auth token (?P<token>[^)]+)$'
+)
 
 
 @six.add_metaclass(ABCMeta)
@@ -416,6 +421,15 @@ class UnsatisfiableRange(B2Error):
         return "The range in the request is outside the size of the file"
 
 
+class UploadTokenUsedConcurrently(B2Error):
+    def __init__(self, token):
+        super(UploadTokenUsedConcurrently, self).__init__()
+        self.token = token
+
+    def __str__(self):
+        return "More than one concurrent upload using auth token %s" % (self.token,)
+
+
 def interpret_b2_error(status, code, message, response_headers, post_params=None):
     post_params = post_params or {}
     if status == 400 and code == "already_hidden":
@@ -438,6 +452,11 @@ def interpret_b2_error(status, code, message, response_headers, post_params=None
         return MissingPart(post_params.get('fileId'))
     elif status == 400 and code == "part_sha1_mismatch":
         return PartSha1Mismatch(post_params.get('fileId'))
+    elif status == 400 and code == "bad_request":
+        matcher = UPLOAD_TOKEN_USED_CONCURRENTLY_ERROR_MESSAGE_RE.match(message)
+        if matcher is not None:
+            token = matcher.group('token')
+            return UploadTokenUsedConcurrently(token)
     elif status == 401 and code in ("bad_auth_token", "expired_auth_token"):
         return InvalidAuthToken(message, code)
     elif status == 401:

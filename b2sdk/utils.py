@@ -366,6 +366,24 @@ class B2TraceMetaAbstract(DefaultTraceAbstractMeta):
     pass
 
 
+class ConcurrentUsedAuthTokenGuard(object):
+    def __init__(self, lock, token):
+        self.lock = lock
+        self.token = token
+
+    def __enter__(self):
+        if not self.lock.acquire(False):
+            from b2sdk.exception import UploadTokenUsedConcurrently
+            raise UploadTokenUsedConcurrently(self.token)
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        try:
+            self.lock.release()
+        except RuntimeError:
+            # guard against releasing a non-acquired lock
+            pass
+
+
 assert disable_trace
 assert limit_trace_arguments
 assert trace_call
