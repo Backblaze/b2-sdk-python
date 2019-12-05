@@ -317,7 +317,8 @@ class BucketSimulator(object):
         bucket_type,
         bucket_info=None,
         cors_rules=None,
-        lifecycle_rules=None
+        lifecycle_rules=None,
+        options_set=None
     ):
         assert bucket_type in ['allPrivate', 'allPublic']
         self.account_id = account_id
@@ -327,6 +328,7 @@ class BucketSimulator(object):
         self.bucket_info = bucket_info or {}
         self.cors_rules = cors_rules or []
         self.lifecycle_rules = lifecycle_rules or []
+        self.options_set = options_set or set()
         self.revision = 1
         self.upload_url_counter = iter(range(200))
         # File IDs count down, so that the most recent will come first when they are sorted.
@@ -345,6 +347,7 @@ class BucketSimulator(object):
             bucketInfo=self.bucket_info,
             corsRules=self.cors_rules,
             lifecycleRules=self.lifecycle_rules,
+            options=self.options_set,
             revision=self.revision,
         )
 
