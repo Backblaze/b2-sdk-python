@@ -367,6 +367,15 @@ class B2TraceMetaAbstract(DefaultTraceAbstractMeta):
 
 
 class ConcurrentUsedAuthTokenGuard(object):
+    """
+    Context manager preventing two tokens being used simultaneously.
+    Throws UploadTokenUsedConcurrently when unable to acquire a lock
+    Sample usage:
+
+    with ConcurrentUsedAuthTokenGuard(lock_for_token, token):
+        # code that uses the token exclusively
+    """
+
     def __init__(self, lock, token):
         self.lock = lock
         self.token = token
