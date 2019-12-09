@@ -4,6 +4,9 @@ Glossary
 
 .. glossary::
 
+    absoluteMinimumPartSize
+      The smallest large file part size, as indicated during authorization process by the server (in 2019 it used to be ``5MB``, but the server can set it dynamincally)
+
     account ID
       An identifier of the B2 account (not login). Looks like this: ``4ba5845d7aaf``.
 

@@ -280,8 +280,8 @@ Get file metadata
      'uploadTimestamp': 1554361150000}
 
 
-Copy file
-=========
+Copy (small) file
+=================
 
 .. code-block:: python
 
@@ -299,7 +299,7 @@ Copy file
      'uploadTimestamp': 1561033728000}
 
 
-If you want to copy just the part of the file, then you can specify the bytes_range as a tuple.
+If you want to copy just the part of the file, then you can specify the bytes_range as a tuple:
 
 .. code-block:: python
 
@@ -315,6 +315,11 @@ If you want to copy just the part of the file, then you can specify the bytes_ra
      'fileInfo': {'src_last_modified_millis': '1560848707000'},
      'fileName': 'f2_copy.txt',
      'uploadTimestamp': 1561033207000}
+
+Providing the size of the file in `bytes_range` parameter improves efficiency for large files. Please note that `bytes_range` is inclusive, so in order to copy a file if size TODO the parameter is `(0, TODO)` 
+
+.. todo:
+    fill TODO above
 
 For more information see :meth:`b2sdk.v1.Bucket.copy_file`.
 
@@ -339,3 +344,179 @@ Cancel large file uploads
     >>> bucket = b2_api.get_bucket_by_name(bucket_name)
     >>> for file_version in bucket.list_unfinished_large_files():
             bucket.cancel_large_file(file_version.file_id)
+
+
+**************
+Advanced Usage
+**************
+
+Concatenate files
+=================
+
+:meth:`b2sdk.v1.Bucket.concatenate` accepts an iterable which *can contain only non-overlapping ranges*. It can be used to glue remote files together, back-to-back, into a new file.
+
+
+Concatenate files (of known size)
+---------------------------------
+
+.. code-block:: python
+
+    >>> bucket = b2_api.get_bucket_by_name(bucket_name)
+    >>> input_sources = [
+    ...     RemoteFileUploadSource('4_z5485a1682662eb3e60980d10_f113f963288e711a6_d20190404_m065910_c002_v0001095_t0044', offset=100, offset_end=200),
+    ...     LocalUploadSource('my_local_path/to_file.txt'),
+    ...     RemoteFileUploadSource('4_z5485a1682662eb3e60980d10_f1022e2320daf707f_d20190620_m122848_c002_v0001123_t0020', length=2123456789),
+    ... ]
+    >>> file_info = {'how': 'good-file'}
+    >>> bucket.concatenate(input_sources, remote_name, file_info)
+    >>> bucket.upload_local_file(
+            local_file=local_file_path,
+            file_name=b2_file_name,
+            file_infos=file_info,
+        )
+    <b2sdk.file_version.FileVersionInfo at 0x7fc8cd560551>
+
+This method does not allow for checksum verification. If you need that and some ranges overlap, :meth:`b2sdk.v1.Bucket.create_file` may be for you.
+
+For more information about ``concatenate`` please see :meth:`b2sdk.v1.Bucket.concatenate` and :class:`b2sdk.v1.RemoteUploadSource`.
+
+
+Concatenate files (of unknown size)
+-----------------------------------
+
+Currently it is not supported by **b2sdk**.
+
+
+Update a file efficiently
+====================================
+
+:meth:`b2sdk.v1.Bucket.create_file` accepts an iterable which *can contain overlapping ranges*.
+
+Append to the end of a file
+---------------------------
+
+The assumption here is that the file has been appended to since it was last uploaded to. This assumption is verified by **b2sdk** when possible by recalculating checksums of the overlapping ranges.
+
+.. code-block:: python
+
+    >>> bucket = b2_api.get_bucket_by_name(bucket_name)
+    >>> input_sources = [
+    ...     WriteIntent(
+    ...         data=RemoteFileUploadSource(
+    ...             '4_z5485a1682662eb3e60980d10_f113f963288e711a6_d20190404_m065910_c002_v0001095_t0044',
+    ...             offset=0,
+    ...             length=5000000,
+    ...         ),
+    ...         destination_start=0,
+    ...         destination_end=50000000,
+    ...     ),
+    ...     WriteIntent(
+    ...         data=LocalFileUploadSource('my_local_path/to_file.txt'),
+    ...         destination_start=0,
+    ...         destination_end=60000000,
+    ...     ),
+    ... ]
+    >>> file_info = {'how': 'good-file'}
+    >>> bucket.create_file(input_sources, remote_name, file_info)
+    <b2sdk.file_version.FileVersionInfo at 0x7fc8cd560552>
+
+`LocalUploadSource` has the size determined automatically in this case. This is more efficient than :meth:`b2sdk.v1.Bucket.concatenate`, 
+as it can use the overlapping ranges when a remote part is smaller than :term:`absoluteMinimumPartSize` to prevent downloading a range.
+
+For more information see :meth:`b2sdk.v1.Bucket.create_file`.
+
+
+Change the middle of the remote file
+------------------------------------
+
+.. code-block:: python
+
+    >>> bucket = b2_api.get_bucket_by_name(bucket_name)
+    >>> input_sources = [
+    ...     WriteIntent(
+    ...         RemoteUploadSource('4_z5485a1682662eb3e60980d10_f113f963288e711a6_d20190404_m065910_c002_v0001095_t0044', offset=0, length=500),
+    ...         destination_start=0,
+    ...         destination_end=4000000,
+    ...     ),
+    ...     WriteIntent(
+    ...         LocalFileUploadSource('my_local_path/to_file.txt'),
+    ...         destination_start=4000000,
+    ...         destination_end=4001024,
+    ...     ),
+    ...     WriteIntent(
+    ...         RemoteUploadSource('4_z5485a1682662eb3e60980d10_f113f963288e711a6_d20190404_m065910_c002_v0001095_t0044', offset=4001024, offset_end=123456789),
+    ...         destination_start=4001024,
+    ...         destination_end=123456789,
+    ...     ),
+    ... ]
+    >>> file_info = {'how': 'good-file'}
+    >>> bucket.create_file(input_sources, remote_name, file_info)
+    <b2sdk.file_version.FileVersionInfo at 0x7fc8cd560552>
+
+`LocalUploadSource` has the size determined automatically in this case. This is more efficient than :meth:`b2sdk.v1.Bucket.concatenate`, 
+as it can use the overlapping ranges when a remote part is smaller than :term:`absoluteMinimumPartSize` to prevent downloading a range.
+
+For more information see :meth:`b2sdk.v1.Bucket.create_file`.
+
+
+Synthetize a file from local and remote parts
+=============================================
+
+This is useful for advanced usage patterns such as:
+ - *synthetic backup*
+ - *reverse synthetic backup*
+ - mostly-server-side cutting and gluing uncompressed media files such as `wav` and `avi` with rewriting of file headers
+ - various deduplicated backup scenarios
+
+Please note that :meth:`b2sdk.v1.Bucket.create_file` accepts **an ordered iterable** which *can contain overlapping ranges*, so the operation does not need to be planned ahead, but can be streamed, which supports very large output objects.
+
+Scenarios such as below are then possible:
+
+.. code-block::
+
+    A          C       D           G
+    |          |       |           |
+    | cloud-AC |       | cloud-DG  |
+    |          |       |           |
+    v          v       v           v
+    ############       #############
+    ^                              ^
+    |                              |
+    +---- desired file A-G --------+
+    |                              |
+    |                              |
+    |    ######################### |
+    |    ^                       ^ |
+    |    |                       | |
+    |    |      local file-BF    | |
+    |    |                       | |
+    A    B     C       D       E F G
+
+.. code-block:: python
+
+    >>> bucket = b2_api.get_bucket_by_name(bucket_name)
+    >>> def generate_input():
+    ...     yield WriteIntent(
+    ...         RemoteUploadSource('4_z5485a1682662eb3e60980d10_f113f963288e711a6_d20190404_m065910_c002_v0001095_t0044', offset=0, offset_end=offsetC),
+    ...         destination_start=0,
+    ...         destination_end=offsetC,
+    ...     ),
+    ...     yield WriteIntent(
+    ...         LocalFileUploadSource('my_local_path/to_file.txt'),
+    ...         destination_start=offsetB,
+    ...         destination_end=offsetF,
+    ...     ),
+    ...     yield WriteIntent(
+    ...         RemoteUploadSource('4_z5485a1682662eb3e60980d10_f113f963288e711a6_d20190404_m065910_c002_v0001095_t0044', offset=0, offset_end=offsetG-offsetD),
+    ...         destination_start=offsetD,
+    ...         destination_end=offsetG,
+    ...     ),
+    ...
+    >>> file_info = {'how': 'good-file'}
+    >>> bucket.create_file(generate_input(), remote_name, file_info)
+    <b2sdk.file_version.FileVersionInfo at 0x7fc8cd560552>
+
+
+In such case, if the sizes allow for it (there would be no parts smaller than :term:`absoluteMinimumPartSize`), the only uploaded part will be `C-D`. 
+Otherwise, more data will be uploaded, but the data transfer will be reduced as much as it can be using a fairly simple algorithm (as cost of finding a perfect solution is NP-hard in some cases).
+For more information see :meth:`b2sdk.v1.Bucket.create_file`.
