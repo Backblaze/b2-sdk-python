@@ -38,6 +38,7 @@ class TestApi(TestBase):
             'bucketInfo': {},
             'corsRules': [],
             'lifecycleRules': [],
+            'options': set(),
             'revision': 1,
         }
         assert delete_output == expected, delete_output

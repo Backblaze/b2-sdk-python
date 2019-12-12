@@ -138,6 +138,7 @@ class Bucket(object):
         lifecycle_rules=None,
         revision=None,
         bucket_dict=None,
+        options_set=None
     ):
         """
         :param b2sdk.v1.B2Api api: an API object
@@ -149,6 +150,7 @@ class Bucket(object):
         :param dict lifecycle_rules: lifecycle rules to store with a bucket
         :param int revision: a bucket revision number
         :param dict bucket_dict: a dictionary which contains bucket parameters
+        :param set options_set: set of bucket options strings
         """
         self.api = api
         self.id_ = id_
@@ -159,6 +161,7 @@ class Bucket(object):
         self.lifecycle_rules = lifecycle_rules or []
         self.revision = revision
         self.bucket_dict = bucket_dict or {}
+        self.options_set = options_set or set()
 
     def get_id(self):
         """
@@ -798,6 +801,7 @@ class BucketFactory(object):
                "bucketName": "zsdfrtsazsdfafr",
                "accountId": "4aa9865d6f00",
                "bucketInfo": {},
+               "options": [],
                "revision": 1
            }
 
@@ -815,9 +819,10 @@ class BucketFactory(object):
         cors_rules = bucket_dict['corsRules']
         lifecycle_rules = bucket_dict['lifecycleRules']
         revision = bucket_dict['revision']
+        options = set(bucket_dict['options'])
         if type_ is None:
             raise UnrecognizedBucketType(bucket_dict['bucketType'])
         return cls.BUCKET_CLASS(
             api, bucket_id, bucket_name, type_, bucket_info, cors_rules, lifecycle_rules, revision,
-            bucket_dict
+            bucket_dict, options
         )
