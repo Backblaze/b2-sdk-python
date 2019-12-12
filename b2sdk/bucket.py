@@ -253,11 +253,7 @@ class Bucket(object):
         :param b2sdk.v1.AbstractProgressListener, None progress_listener: a progress listener object to use, or ``None`` to not track progress
         :param tuple[int, int] range_: two integer values, start and end offsets
         """
-        url = self.api.session.get_download_url_by_name(
-            self.name,
-            file_name,
-            url_factory=self.api.account_info.get_download_url,
-        )
+        url = self.api.session.get_download_url_by_name(self.name, file_name)
         return self.api.transferer.download_file_from_url(
             url, download_dest, progress_listener, range_
         )
@@ -535,8 +531,8 @@ class Bucket(object):
                         hashing_stream = StreamWithHash(input_stream)
                         length_with_hash = content_length + hashing_stream.hash_size()
                         response = self.api.session.upload_file(
-                            self.id_, None, file_name, length_with_hash, content_type,
-                            HEX_DIGITS_AT_END, file_info, hashing_stream
+                            self.id_, file_name, length_with_hash, content_type, HEX_DIGITS_AT_END,
+                            file_info, hashing_stream
                         )
                         assert hashing_stream.hash == response['contentSha1']
                         return FileVersionInfoFactory.from_api_response(response)
@@ -676,8 +672,7 @@ class Bucket(object):
                     hashing_stream = StreamWithHash(input_stream)
                     length_with_hash = content_length + hashing_stream.hash_size()
                     response = self.api.session.upload_part(
-                        self.id_, file_id, part_number, length_with_hash, HEX_DIGITS_AT_END,
-                        hashing_stream
+                        file_id, part_number, length_with_hash, HEX_DIGITS_AT_END, hashing_stream
                     )
                     assert hashing_stream.hash == response['contentSha1']
                     return response

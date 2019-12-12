@@ -8,57 +8,381 @@
 #
 ######################################################################
 
-import functools
+from enum import Enum, unique
 
+from b2sdk.account_info.sqlite_account_info import SqliteAccountInfo
+from b2sdk.account_info.exception import MissingAccountData
+from b2sdk.b2http import B2Http
+from b2sdk.cache import AuthInfoCache, DummyCache
 from b2sdk.exception import (InvalidAuthToken, Unauthorized)
-from b2sdk.raw_api import ALL_CAPABILITIES, get_token_type, TokenType
+from b2sdk.raw_api import ALL_CAPABILITIES, B2RawApi
+
+
+@unique
+class TokenType(Enum):
+    API = 'api'
+    API_TOKEN_ONLY = 'api_token_only'
+    UPLOAD_PART = 'upload_part'
+    UPLOAD_SMALL = 'upload_small'
 
 
 class B2Session(object):
     """
-        A *magic* facade that supplies the correct api_url and account_auth_token
+        A facade that supplies the correct api_url and account_auth_token
         to methods of underlying raw_api and reauthorizes if necessary.
     """
 
-    def __init__(self, api, raw_api):
-        self._api = api  # for reauthorization
-        self.raw_api = raw_api
+    def __init__(self, account_info=None, cache=None, raw_api=None):
+        """
+        Initialize Session using given account info.
 
-    def __getattr__(self, name):
-        f = getattr(self.raw_api, name)
+        :param account_info: an instance of :class:`~b2sdk.v1.UrlPoolAccountInfo`,
+                      or any custom class derived from
+                      :class:`~b2sdk.v1.AbstractAccountInfo`
+                      To learn more about Account Info objects, see here
+                      :class:`~b2sdk.v1.SqliteAccountInfo`
 
-        @functools.wraps(f)
-        def wrapper(*args, **kwargs):
-            auth_failure_encountered = False
-            # A *magic* that will identify and generate the correct type of Url and token based on the decorator on the B2RawApi method.
-            token_type = get_token_type(f)
-            # download_by_name uses different URLs
-            url_factory = kwargs.pop('url_factory', self._api.account_info.get_api_url)
-            while 1:
-                try:
-                    if token_type == TokenType.API:
-                        api_url = url_factory()
-                        account_auth_token = self._api.account_info.get_account_auth_token()
-                        return f(api_url, account_auth_token, *args, **kwargs)
-                    elif token_type == TokenType.UPLOAD_SMALL:
-                        return self._upload_small(f, *args, **kwargs)
-                    elif token_type == TokenType.UPLOAD_PART:
-                        return self._upload_part(f, *args, **kwargs)
-                    else:
-                        assert False, 'token type is not supported'
-                except InvalidAuthToken:
-                    if not auth_failure_encountered:
-                        auth_failure_encountered = True
-                        reauthorization_success = self._api.authorize_automatically()
-                        if reauthorization_success:
-                            continue
-                        # TODO: exception chaining could be added here
-                        #       to help debug reauthorization failures
-                    raise
-                except Unauthorized as e:
-                    raise self._add_app_key_info_to_unauthorized(e)
+        :param cache: an instance of the one of the following classes:
+                      :class:`~b2sdk.cache.DummyCache`, :class:`~b2sdk.cache.InMemoryCache`,
+                      :class:`~b2sdk.cache.AuthInfoCache`,
+                      or any custom class derived from :class:`~b2sdk.cache.AbstractCache`
+                      It is used by B2Api to cache the mapping between bucket name and bucket ids.
+                      default is :class:`~b2sdk.cache.DummyCache`
 
-        return wrapper
+        :param raw_api: an instance of one of the following classes:
+                        :class:`~b2sdk.raw_api.B2RawApi`, :class:`~b2sdk.raw_simulator.RawSimulator`,
+                        or any custom class derived from :class:`~b2sdk.raw_api.AbstractRawApi`
+                        It makes network-less unit testing simple by using :class:`~b2sdk.raw_simulator.RawSimulator`,
+                        in tests and :class:`~b2sdk.raw_api.B2RawApi` in production.
+                        default is :class:`~b2sdk.raw_api.B2RawApi`
+        """
+
+        self.raw_api = raw_api or B2RawApi(B2Http())
+        if account_info is None:
+            account_info = SqliteAccountInfo()
+            if cache is None:
+                cache = AuthInfoCache(account_info)
+        if cache is None:
+            cache = DummyCache()
+
+        self.account_info = account_info
+        self.cache = cache
+
+    def authorize_automatically(self):
+        """
+        Perform automatic account authorization, retrieving all account data
+        from account info object passed during initialization.
+        """
+        try:
+            self.authorize_account(
+                self.account_info.get_realm(),
+                self.account_info.get_application_key_id(),
+                self.account_info.get_application_key(),
+            )
+        except MissingAccountData:
+            return False
+        return True
+
+    def authorize_account(self, realm, application_key_id, application_key):
+        """
+        Perform account authorization.
+
+        :param str realm: a realm to authorize account in (usually just "production")
+        :param str application_key_id: :term:`application key ID`
+        :param str application_key: user's :term:`application key`
+        """
+        # Clean up any previous account info if it was for a different account.
+        try:
+            old_account_id = self.account_info.get_account_id()
+            old_realm = self.account_info.get_realm()
+            if application_key_id != old_account_id or realm != old_realm:
+                self.cache.clear()
+        except MissingAccountData:
+            self.cache.clear()
+
+        # Authorize
+        realm_url = self.account_info.REALM_URLS[realm]
+        response = self.raw_api.authorize_account(realm_url, application_key_id, application_key)
+        allowed = response['allowed']
+
+        # Store the auth data
+        self.account_info.set_auth_data(
+            response['accountId'],
+            response['authorizationToken'],
+            response['apiUrl'],
+            response['downloadUrl'],
+            response['recommendedPartSize'],
+            application_key,
+            realm,
+            allowed,
+            application_key_id,
+        )
+
+    def cancel_large_file(self, file_id):
+        return self._wrap_default_token('cancel_large_file', file_id)
+
+    def create_bucket(
+        self,
+        account_id,
+        bucket_name,
+        bucket_type,
+        bucket_info=None,
+        cors_rules=None,
+        lifecycle_rules=None
+    ):
+        return self._wrap_default_token(
+            'create_bucket',
+            account_id,
+            bucket_name,
+            bucket_type,
+            bucket_info=bucket_info,
+            cors_rules=cors_rules,
+            lifecycle_rules=lifecycle_rules,
+        )
+
+    def create_key(
+        self, account_id, capabilities, key_name, valid_duration_seconds, bucket_id, name_prefix
+    ):
+        return self._wrap_default_token(
+            'create_key',
+            account_id,
+            capabilities,
+            key_name,
+            valid_duration_seconds,
+            bucket_id,
+            name_prefix,
+        )
+
+    def delete_key(self, application_key_id):
+        return self._wrap_default_token('delete_key', application_key_id)
+
+    def delete_bucket(self, account_id, bucket_id):
+        return self._wrap_default_token('delete_bucket', account_id, bucket_id)
+
+    def delete_file_version(self, file_id, file_name):
+        return self._wrap_default_token('delete_file_version', file_id, file_name)
+
+    def download_file_from_url(self, url, range_=None):
+        return self._wrap_token(
+            'download_file_from_url', TokenType.API_TOKEN_ONLY, url, range_=range_
+        )
+
+    def finish_large_file(self, file_id, part_sha1_array):
+        return self._wrap_default_token('finish_large_file', file_id, part_sha1_array)
+
+    def get_download_authorization(self, bucket_id, file_name_prefix, valid_duration_in_seconds):
+        return self._wrap_default_token(
+            'get_download_authorization', bucket_id, file_name_prefix, valid_duration_in_seconds
+        )
+
+    def get_file_info(self, file_id):
+        return self._wrap_default_token('get_file_info', file_id)
+
+    def get_upload_url(self, bucket_id):
+        return self._wrap_default_token('get_upload_url', bucket_id)
+
+    def get_upload_part_url(self, file_id):
+        return self._wrap_default_token('get_upload_part_url', file_id)
+
+    def hide_file(self, bucket_id, file_name):
+        return self._wrap_default_token('hide_file', bucket_id, file_name)
+
+    def list_buckets(self, account_id, bucket_id=None, bucket_name=None):
+        return self._wrap_default_token(
+            'list_buckets',
+            account_id,
+            bucket_id=bucket_id,
+            bucket_name=bucket_name,
+        )
+
+    def list_file_names(
+        self,
+        bucket_id,
+        start_file_name=None,
+        max_file_count=None,
+        prefix=None,
+    ):
+        return self._wrap_default_token(
+            'list_file_names',
+            bucket_id,
+            start_file_name=start_file_name,
+            max_file_count=max_file_count,
+            prefix=prefix,
+        )
+
+    def list_file_versions(
+        self,
+        bucket_id,
+        start_file_name=None,
+        start_file_id=None,
+        max_file_count=None,
+        prefix=None,
+    ):
+        return self._wrap_default_token(
+            'list_file_versions',
+            bucket_id,
+            start_file_name=start_file_name,
+            start_file_id=start_file_id,
+            max_file_count=max_file_count,
+            prefix=prefix,
+        )
+
+    def list_keys(self, account_id, max_key_count=None, start_application_key_id=None):
+        return self._wrap_default_token(
+            'list_keys',
+            account_id,
+            max_key_count=max_key_count,
+            start_application_key_id=start_application_key_id,
+        )
+
+    def list_parts(self, file_id, start_part_number, max_part_count):
+        return self._wrap_default_token('list_parts', file_id, start_part_number, max_part_count)
+
+    def list_unfinished_large_files(
+        self,
+        bucket_id,
+        start_file_id=None,
+        max_file_count=None,
+        prefix=None,
+    ):
+        return self._wrap_default_token(
+            'list_unfinished_large_files',
+            bucket_id,
+            start_file_id=start_file_id,
+            max_file_count=max_file_count,
+            prefix=prefix,
+        )
+
+    def start_large_file(self, bucket_id, file_name, content_type, file_info):
+        return self._wrap_default_token(
+            'start_large_file', bucket_id, file_name, content_type, file_info
+        )
+
+    def update_bucket(
+        self,
+        account_id,
+        bucket_id,
+        bucket_type=None,
+        bucket_info=None,
+        cors_rules=None,
+        lifecycle_rules=None,
+        if_revision_is=None,
+    ):
+        return self._wrap_default_token(
+            'update_bucket',
+            account_id,
+            bucket_id,
+            bucket_type=bucket_type,
+            bucket_info=bucket_info,
+            cors_rules=cors_rules,
+            lifecycle_rules=lifecycle_rules,
+            if_revision_is=if_revision_is,
+        )
+
+    def upload_file(
+        self, bucket_id, file_name, content_length, content_type, content_sha1, file_infos,
+        data_stream
+    ):
+        return self._wrap_token(
+            'upload_file',
+            TokenType.UPLOAD_SMALL,
+            bucket_id,
+            file_name,
+            content_length,
+            content_type,
+            content_sha1,
+            file_infos,
+            data_stream,
+        )
+
+    def upload_part(self, file_id, part_number, content_length, sha1_sum, input_stream):
+        return self._wrap_token(
+            'upload_part',
+            TokenType.UPLOAD_PART,
+            file_id,
+            part_number,
+            content_length,
+            sha1_sum,
+            input_stream,
+        )
+
+    def get_download_url_by_id(self, file_id):
+        return self.raw_api.get_download_url_by_id(self.account_info.get_download_url(), file_id)
+
+    def get_download_url_by_name(self, bucket_name, file_name):
+        return self.raw_api.get_download_url_by_name(
+            self.account_info.get_download_url(), bucket_name, file_name
+        )
+
+    def copy_file(
+        self,
+        source_file_id,
+        new_file_name,
+        bytes_range=None,
+        metadata_directive=None,
+        content_type=None,
+        file_info=None,
+        destination_bucket_id=None,
+    ):
+        return self._wrap_default_token(
+            'copy_file',
+            source_file_id,
+            new_file_name,
+            bytes_range=bytes_range,
+            metadata_directive=metadata_directive,
+            content_type=content_type,
+            file_info=file_info,
+            destination_bucket_id=destination_bucket_id,
+        )
+
+    def _wrap_default_token(self, raw_api_name, *args, **kwargs):
+        return self._wrap_token(raw_api_name, TokenType.API, *args, **kwargs)
+
+    def _wrap_token(self, raw_api_name, token_type, *args, **kwargs):
+        raw_api_method = getattr(self.raw_api, raw_api_name)
+
+        def api_token_callback():
+            api_url = self.account_info.get_api_url()
+            account_auth_token = self.account_info.get_account_auth_token()
+            return raw_api_method(api_url, account_auth_token, *args, **kwargs)
+
+        def api_token_only_callback():
+            account_auth_token = self.account_info.get_account_auth_token()
+            return raw_api_method(account_auth_token, *args, **kwargs)
+
+        def upload_small_token_callback():
+            return self._upload_small(raw_api_method, *args, **kwargs)
+
+        def upload_part_token_callback():
+            return self._upload_part(raw_api_method, *args, **kwargs)
+
+        if token_type == TokenType.API:
+            callback = api_token_callback
+        elif token_type == TokenType.API_TOKEN_ONLY:
+            callback = api_token_only_callback
+        elif token_type == TokenType.UPLOAD_SMALL:
+            callback = upload_small_token_callback
+        elif token_type == TokenType.UPLOAD_PART:
+            callback = upload_part_token_callback
+
+        return self._reauthorization_loop(callback)
+
+    def _reauthorization_loop(self, callback):
+        auth_failure_encountered = False
+        while 1:
+            try:
+                return callback()
+            except InvalidAuthToken:
+                if not auth_failure_encountered:
+                    auth_failure_encountered = True
+                    reauthorization_success = self.authorize_automatically()
+                    if reauthorization_success:
+                        continue
+                    # TODO: exception chaining could be added here
+                    #       to help debug reauthorization failures
+                raise
+            except Unauthorized as e:
+                raise self._add_app_key_info_to_unauthorized(e)
 
     def _add_app_key_info_to_unauthorized(self, unauthorized):
         """
@@ -66,7 +390,7 @@ class B2Session(object):
         about why it might have failed.
         """
         # What's allowed?
-        allowed = self._api.account_info.get_allowed()
+        allowed = self.account_info.get_allowed()
         capabilities = allowed['capabilities']
         bucket_name = allowed['bucketName']
         name_prefix = allowed['namePrefix']
@@ -95,7 +419,7 @@ class B2Session(object):
         Take ownership of an upload URL / auth token for the bucket and
         return it.
         """
-        account_info = self._api.account_info
+        account_info = self.account_info
         upload_url, upload_auth_token = account_info.take_bucket_upload_url(bucket_id)
         if None not in (upload_url, upload_auth_token):
             return upload_url, upload_auth_token
@@ -108,7 +432,7 @@ class B2Session(object):
         Make sure that we have an upload URL and auth token for the given bucket and
         return it.
         """
-        account_info = self._api.account_info
+        account_info = self.account_info
         upload_url, upload_auth_token = account_info.take_large_file_upload_url(file_id)
         if None not in (upload_url, upload_auth_token):
             return upload_url, upload_auth_token
@@ -116,14 +440,14 @@ class B2Session(object):
         response = self.get_upload_part_url(file_id)
         return response['uploadUrl'], response['authorizationToken']
 
-    def _upload_small(self, f, bucket_id, file_id, *args, **kwargs):
+    def _upload_small(self, f, bucket_id, *args, **kwargs):
         upload_url, upload_auth_token = self._get_upload_data(bucket_id)
         response = f(upload_url, upload_auth_token, *args, **kwargs)
-        self._api.account_info.put_bucket_upload_url(bucket_id, upload_url, upload_auth_token)
+        self.account_info.put_bucket_upload_url(bucket_id, upload_url, upload_auth_token)
         return response
 
-    def _upload_part(self, f, bucket_id, file_id, *args, **kwargs):
+    def _upload_part(self, f, file_id, *args, **kwargs):
         upload_url, upload_auth_token = self._get_upload_part_data(file_id)
         response = f(upload_url, upload_auth_token, *args, **kwargs)
-        self._api.account_info.put_large_file_upload_url(file_id, upload_url, upload_auth_token)
+        self.account_info.put_large_file_upload_url(file_id, upload_url, upload_auth_token)
         return response
