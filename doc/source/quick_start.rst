@@ -343,7 +343,9 @@ Advanced Usage
 Concatenate files
 =================
 
-:meth:`b2sdk.v1.Bucket.concatenate` accepts an iterable of upload sources (either local or remote). It can be used to glue remote files together, back-to-back, into a new file. To support automatic continuation, :meth:`b2sdk.v1.Bucket.concatenate` creates plan before it starts to copy/upload anything. :meth:`b2sdk.v1.Bucket.concatenate_stream` can be used to process large input iterator.
+:meth:`b2sdk.v1.Bucket.concatenate` accepts an iterable of upload sources (either local or remote). It can be used to glue remote files together, back-to-back, into a new file. To support automatic continuation, :meth:`b2sdk.v1.Bucket.concatenate` creates a plan before it starts to copy/upload anything, saving the hash of that plan in file_info for increased reliability.
+
+:meth:`b2sdk.v1.Bucket.concatenate_stream` can be used to process a large input iterator with limited continuation reliability - it does not create and validate a plan before starting the transfer.
 
 Concatenate files of known size
 ---------------------------------
