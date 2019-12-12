@@ -8,6 +8,7 @@
 #
 ######################################################################
 
+from functools import partial
 from enum import Enum, unique
 
 from b2sdk.account_info.sqlite_account_info import SqliteAccountInfo
@@ -67,6 +68,12 @@ class B2Session(object):
 
         self.account_info = account_info
         self.cache = cache
+        self._token_callbacks = {
+            TokenType.API: self._api_token_callback,
+            TokenType.API_TOKEN_ONLY: self._api_token_only_callback,
+            TokenType.UPLOAD_SMALL: self._upload_small,
+            TokenType.UPLOAD_PART: self._upload_part,
+        }
 
     def authorize_automatically(self):
         """
@@ -119,7 +126,7 @@ class B2Session(object):
         )
 
     def cancel_large_file(self, file_id):
-        return self._wrap_default_token('cancel_large_file', file_id)
+        return self._wrap_default_token(self.raw_api.cancel_large_file, file_id)
 
     def create_bucket(
         self,
@@ -131,7 +138,7 @@ class B2Session(object):
         lifecycle_rules=None
     ):
         return self._wrap_default_token(
-            'create_bucket',
+            self.raw_api.create_bucket,
             account_id,
             bucket_name,
             bucket_type,
@@ -144,7 +151,7 @@ class B2Session(object):
         self, account_id, capabilities, key_name, valid_duration_seconds, bucket_id, name_prefix
     ):
         return self._wrap_default_token(
-            'create_key',
+            self.raw_api.create_key,
             account_id,
             capabilities,
             key_name,
@@ -154,42 +161,42 @@ class B2Session(object):
         )
 
     def delete_key(self, application_key_id):
-        return self._wrap_default_token('delete_key', application_key_id)
+        return self._wrap_default_token(self.raw_api.delete_key, application_key_id)
 
     def delete_bucket(self, account_id, bucket_id):
-        return self._wrap_default_token('delete_bucket', account_id, bucket_id)
+        return self._wrap_default_token(self.raw_api.delete_bucket, account_id, bucket_id)
 
     def delete_file_version(self, file_id, file_name):
-        return self._wrap_default_token('delete_file_version', file_id, file_name)
+        return self._wrap_default_token(self.raw_api.delete_file_version, file_id, file_name)
 
     def download_file_from_url(self, url, range_=None):
         return self._wrap_token(
-            'download_file_from_url', TokenType.API_TOKEN_ONLY, url, range_=range_
+            self.raw_api.download_file_from_url, TokenType.API_TOKEN_ONLY, url, range_=range_
         )
 
     def finish_large_file(self, file_id, part_sha1_array):
-        return self._wrap_default_token('finish_large_file', file_id, part_sha1_array)
+        return self._wrap_default_token(self.raw_api.finish_large_file, file_id, part_sha1_array)
 
     def get_download_authorization(self, bucket_id, file_name_prefix, valid_duration_in_seconds):
         return self._wrap_default_token(
-            'get_download_authorization', bucket_id, file_name_prefix, valid_duration_in_seconds
+            self.raw_api.get_download_authorization, bucket_id, file_name_prefix, valid_duration_in_seconds
         )
 
     def get_file_info(self, file_id):
-        return self._wrap_default_token('get_file_info', file_id)
+        return self._wrap_default_token(self.raw_api.get_file_info, file_id)
 
     def get_upload_url(self, bucket_id):
-        return self._wrap_default_token('get_upload_url', bucket_id)
+        return self._wrap_default_token(self.raw_api.get_upload_url, bucket_id)
 
     def get_upload_part_url(self, file_id):
-        return self._wrap_default_token('get_upload_part_url', file_id)
+        return self._wrap_default_token(self.raw_api.get_upload_part_url, file_id)
 
     def hide_file(self, bucket_id, file_name):
-        return self._wrap_default_token('hide_file', bucket_id, file_name)
+        return self._wrap_default_token(self.raw_api.hide_file, bucket_id, file_name)
 
     def list_buckets(self, account_id, bucket_id=None, bucket_name=None):
         return self._wrap_default_token(
-            'list_buckets',
+            self.raw_api.list_buckets,
             account_id,
             bucket_id=bucket_id,
             bucket_name=bucket_name,
@@ -203,7 +210,7 @@ class B2Session(object):
         prefix=None,
     ):
         return self._wrap_default_token(
-            'list_file_names',
+            self.raw_api.list_file_names,
             bucket_id,
             start_file_name=start_file_name,
             max_file_count=max_file_count,
@@ -219,7 +226,7 @@ class B2Session(object):
         prefix=None,
     ):
         return self._wrap_default_token(
-            'list_file_versions',
+            self.raw_api.list_file_versions,
             bucket_id,
             start_file_name=start_file_name,
             start_file_id=start_file_id,
@@ -229,14 +236,14 @@ class B2Session(object):
 
     def list_keys(self, account_id, max_key_count=None, start_application_key_id=None):
         return self._wrap_default_token(
-            'list_keys',
+            self.raw_api.list_keys,
             account_id,
             max_key_count=max_key_count,
             start_application_key_id=start_application_key_id,
         )
 
     def list_parts(self, file_id, start_part_number, max_part_count):
-        return self._wrap_default_token('list_parts', file_id, start_part_number, max_part_count)
+        return self._wrap_default_token(self.raw_api.list_parts, file_id, start_part_number, max_part_count)
 
     def list_unfinished_large_files(
         self,
@@ -246,7 +253,7 @@ class B2Session(object):
         prefix=None,
     ):
         return self._wrap_default_token(
-            'list_unfinished_large_files',
+            self.raw_api.list_unfinished_large_files,
             bucket_id,
             start_file_id=start_file_id,
             max_file_count=max_file_count,
@@ -255,7 +262,7 @@ class B2Session(object):
 
     def start_large_file(self, bucket_id, file_name, content_type, file_info):
         return self._wrap_default_token(
-            'start_large_file', bucket_id, file_name, content_type, file_info
+            self.raw_api.start_large_file, bucket_id, file_name, content_type, file_info
         )
 
     def update_bucket(
@@ -269,7 +276,7 @@ class B2Session(object):
         if_revision_is=None,
     ):
         return self._wrap_default_token(
-            'update_bucket',
+            self.raw_api.update_bucket,
             account_id,
             bucket_id,
             bucket_type=bucket_type,
@@ -284,7 +291,7 @@ class B2Session(object):
         data_stream
     ):
         return self._wrap_token(
-            'upload_file',
+            self.raw_api.upload_file,
             TokenType.UPLOAD_SMALL,
             bucket_id,
             file_name,
@@ -297,7 +304,7 @@ class B2Session(object):
 
     def upload_part(self, file_id, part_number, content_length, sha1_sum, input_stream):
         return self._wrap_token(
-            'upload_part',
+            self.raw_api.upload_part,
             TokenType.UPLOAD_PART,
             file_id,
             part_number,
@@ -325,7 +332,7 @@ class B2Session(object):
         destination_bucket_id=None,
     ):
         return self._wrap_default_token(
-            'copy_file',
+            self.raw_api.copy_file,
             source_file_id,
             new_file_name,
             bytes_range=bytes_range,
@@ -335,37 +342,23 @@ class B2Session(object):
             destination_bucket_id=destination_bucket_id,
         )
 
-    def _wrap_default_token(self, raw_api_name, *args, **kwargs):
-        return self._wrap_token(raw_api_name, TokenType.API, *args, **kwargs)
+    def _wrap_default_token(self, raw_api_method, *args, **kwargs):
+        return self._wrap_token(raw_api_method, TokenType.API, *args, **kwargs)
 
-    def _wrap_token(self, raw_api_name, token_type, *args, **kwargs):
-        raw_api_method = getattr(self.raw_api, raw_api_name)
+    def _wrap_token(self, raw_api_method, token_type, *args, **kwargs):
+        callback = self._token_callbacks[token_type]
+        partial_callback = partial(callback, raw_api_method, *args, **kwargs)
 
-        def api_token_callback():
-            api_url = self.account_info.get_api_url()
-            account_auth_token = self.account_info.get_account_auth_token()
-            return raw_api_method(api_url, account_auth_token, *args, **kwargs)
+        return self._reauthorization_loop(partial_callback)
 
-        def api_token_only_callback():
-            account_auth_token = self.account_info.get_account_auth_token()
-            return raw_api_method(account_auth_token, *args, **kwargs)
+    def _api_token_callback(self, raw_api_method, *args, **kwargs):
+        api_url = self.account_info.get_api_url()
+        account_auth_token = self.account_info.get_account_auth_token()
+        return raw_api_method(api_url, account_auth_token, *args, **kwargs)
 
-        def upload_small_token_callback():
-            return self._upload_small(raw_api_method, *args, **kwargs)
-
-        def upload_part_token_callback():
-            return self._upload_part(raw_api_method, *args, **kwargs)
-
-        if token_type == TokenType.API:
-            callback = api_token_callback
-        elif token_type == TokenType.API_TOKEN_ONLY:
-            callback = api_token_only_callback
-        elif token_type == TokenType.UPLOAD_SMALL:
-            callback = upload_small_token_callback
-        elif token_type == TokenType.UPLOAD_PART:
-            callback = upload_part_token_callback
-
-        return self._reauthorization_loop(callback)
+    def _api_token_only_callback(self, raw_api_method, *args, **kwargs):
+        account_auth_token = self.account_info.get_account_auth_token()
+        return raw_api_method(account_auth_token, *args, **kwargs)
 
     def _reauthorization_loop(self, callback):
         auth_failure_encountered = False
@@ -378,8 +371,6 @@ class B2Session(object):
                     reauthorization_success = self.authorize_automatically()
                     if reauthorization_success:
                         continue
-                    # TODO: exception chaining could be added here
-                    #       to help debug reauthorization failures
                 raise
             except Unauthorized as e:
                 raise self._add_app_key_info_to_unauthorized(e)
