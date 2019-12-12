@@ -299,7 +299,7 @@ Note that :meth:`b2sdk.v1.Bucket.copy_file` is deprecated. Please switch to  :me
      'fileName': 'f2_copy.txt',
      'uploadTimestamp': 1561033728000}
 
-If the content length is not provided, then if file is larger than server small file limit, copy would not success and error would raise. If length is provided, then file may be splitted on parts and be copied as a large file. Maximum copy part size can be set by ``max_copy_part_size`` - if not set it will default to server maximum part size. If ``max_copy_part_size`` lower than :term:`absoluteMinimumPartSize` file would be copied in single request - this may be used to force copy in single request large file that fits in server small file limit.
+If the ``content length`` is not provided and the file is larger than 5GB, ``copy`` would not succeed and error would be raised. If length is provided, then the file may be copied as a large file. Maximum copy part size can be set by ``max_copy_part_size`` - if not set, it will default to 5GB. If ``max_copy_part_size`` is lower than :term:`absoluteMinimumPartSize`, file would be copied in single request - this may be used to force copy in single request large file that fits in server small file limit.
 
 If you want to copy just the part of the file, then you can specify the offset and content length:
 
