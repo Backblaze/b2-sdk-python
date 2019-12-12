@@ -179,7 +179,8 @@ class B2Session(object):
 
     def get_download_authorization(self, bucket_id, file_name_prefix, valid_duration_in_seconds):
         return self._wrap_default_token(
-            self.raw_api.get_download_authorization, bucket_id, file_name_prefix, valid_duration_in_seconds
+            self.raw_api.get_download_authorization, bucket_id, file_name_prefix,
+            valid_duration_in_seconds
         )
 
     def get_file_info(self, file_id):
@@ -243,7 +244,9 @@ class B2Session(object):
         )
 
     def list_parts(self, file_id, start_part_number, max_part_count):
-        return self._wrap_default_token(self.raw_api.list_parts, file_id, start_part_number, max_part_count)
+        return self._wrap_default_token(
+            self.raw_api.list_parts, file_id, start_part_number, max_part_count
+        )
 
     def list_unfinished_large_files(
         self,
