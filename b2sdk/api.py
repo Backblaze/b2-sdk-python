@@ -109,6 +109,11 @@ class B2Api(object):
 
     @property
     def raw_api(self):
+        """
+        .. warning::
+            :class:`~b2sdk.raw_api.B2RawApi` attribute is deprecated.
+            :class:`~b2sdk.session.B2Session` expose all :class:`~b2sdk.raw_api.B2RawApi` methods now."""
+        # TODO: add deprecation warning
         return self.session.raw_api
 
     def set_thread_pool_size(self, max_workers):
