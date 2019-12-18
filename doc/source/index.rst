@@ -45,6 +45,7 @@ Documentation index
    install
    tutorial
    quick_start
+   advanced
    glossary
    api_types
    api_reference
