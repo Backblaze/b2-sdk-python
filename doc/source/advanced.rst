@@ -222,15 +222,15 @@ Scenarios such as below are then possible:
     ...     yield WriteIntent(
     ...         RemoteUploadSource('4_z5485a1682662eb3e60980d10_f113f963288e711a6_d20190404_m065910_c002_v0001095_t0044', offset=0, length=lengthC),
     ...         destination_offset=0,
-    ...     ),
+    ...     )
     ...     yield WriteIntent(
     ...         LocalFileUploadSource('my_local_path/to_file.txt'), # length = offsetF - offsetB
     ...         destination_offset=offsetB,
-    ...     ),
+    ...     )
     ...     yield WriteIntent(
     ...         RemoteUploadSource('4_z5485a1682662eb3e60980d10_f113f963288e711a6_d20190404_m065910_c002_v0001095_t0044', offset=0, length=offsetG-offsetD),
     ...         destination_offset=offsetD,
-    ...     ),
+    ...     )
     ...
     >>> file_info = {'how': 'good-file'}
     >>> bucket.create_file(generate_input(), remote_name, file_info)
