@@ -41,3 +41,12 @@ logging.getLogger(__name__).addHandler(NullHandler())
 import b2sdk.version
 __version__ = b2sdk.version.VERSION
 assert __version__  # PEP-0396
+
+# https://github.com/crsmithdev/arrow/issues/612 - To get rid of the ArrowParseWarning messages in 0.14.3 onward.
+try:
+    from arrow.factory import ArrowParseWarning
+except ImportError:
+    pass
+else:
+    import warnings
+    warnings.simplefilter("ignore", ArrowParseWarning)
