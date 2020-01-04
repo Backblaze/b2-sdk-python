@@ -35,7 +35,7 @@ b2sdk>=0.0.0,<1.0.0
 
 ## 1.0.4 (not release yet)
 
-* ???
+* Make sync treat hidden files as deleted
 
 ## 1.0.2 (2019-10-15)
 
