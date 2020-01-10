@@ -32,6 +32,7 @@ Public API
    api/progress
    api/sync
    api/utils
+   api/download_dest
 
 .. _api_internal:
 
