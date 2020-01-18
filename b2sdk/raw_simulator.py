@@ -9,6 +9,7 @@
 ######################################################################
 
 import collections
+import random
 import re
 import time
 import threading
@@ -402,7 +403,7 @@ class BucketSimulator(object):
         return dict(bucketId=self.bucket_id, uploadUrl=upload_url, authorizationToken=upload_url)
 
     def get_upload_part_url(self, file_id):
-        upload_url = 'https://upload.example.com/part/%s' % (file_id,)
+        upload_url = 'https://upload.example.com/part/%s/%d' % (file_id, random.randint(1, 10**9))
         return dict(bucketId=self.bucket_id, uploadUrl=upload_url, authorizationToken=upload_url)
 
     def hide_file(self, file_name):
