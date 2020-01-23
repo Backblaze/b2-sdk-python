@@ -10,6 +10,8 @@ python:
   - 3.4
   - 3.5
   - 3.6
+  - 3.7
+  - 3.8
   # stock versions of pypy provided by Travis CI don't work with cryptography 1.0
   #- pypy
   #- pypy3
@@ -32,11 +34,6 @@ matrix:
       env: MODE=SCA
     - python: 3.5
       env: MODE=SCA
-
-    # Enable 3.7 without globally enabling sudo and xenial for other build jobs
-    - python: 3.7
-      dist: xenial
-      sudo: true
 
     # Enable nightly without globally enabling sudo and xenial for other build jobs
     # disabled because nosetests is not supported on 3.9. We'll move to pytest.
