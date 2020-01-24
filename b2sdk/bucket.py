@@ -138,6 +138,7 @@ class Bucket(object):
         lifecycle_rules=None,
         revision=None,
         bucket_dict=None,
+        options_set=None
     ):
         """
         :param b2sdk.v1.B2Api api: an API object
@@ -149,6 +150,7 @@ class Bucket(object):
         :param dict lifecycle_rules: lifecycle rules to store with a bucket
         :param int revision: a bucket revision number
         :param dict bucket_dict: a dictionary which contains bucket parameters
+        :param set options_set: set of bucket options strings
         """
         self.api = api
         self.id_ = id_
@@ -159,6 +161,7 @@ class Bucket(object):
         self.lifecycle_rules = lifecycle_rules or []
         self.revision = revision
         self.bucket_dict = bucket_dict or {}
+        self.options_set = options_set or set()
 
     def get_id(self):
         """
@@ -250,11 +253,7 @@ class Bucket(object):
         :param b2sdk.v1.AbstractProgressListener, None progress_listener: a progress listener object to use, or ``None`` to not track progress
         :param tuple[int, int] range_: two integer values, start and end offsets
         """
-        url = self.api.session.get_download_url_by_name(
-            self.name,
-            file_name,
-            url_factory=self.api.account_info.get_download_url,
-        )
+        url = self.api.session.get_download_url_by_name(self.name, file_name)
         return self.api.transferer.download_file_from_url(
             url, download_dest, progress_listener, range_
         )
@@ -532,8 +531,8 @@ class Bucket(object):
                         hashing_stream = StreamWithHash(input_stream)
                         length_with_hash = content_length + hashing_stream.hash_size()
                         response = self.api.session.upload_file(
-                            self.id_, None, file_name, length_with_hash, content_type,
-                            HEX_DIGITS_AT_END, file_info, hashing_stream
+                            self.id_, file_name, length_with_hash, content_type, HEX_DIGITS_AT_END,
+                            file_info, hashing_stream
                         )
                         assert hashing_stream.hash == response['contentSha1']
                         return FileVersionInfoFactory.from_api_response(response)
@@ -673,8 +672,7 @@ class Bucket(object):
                     hashing_stream = StreamWithHash(input_stream)
                     length_with_hash = content_length + hashing_stream.hash_size()
                     response = self.api.session.upload_part(
-                        self.id_, file_id, part_number, length_with_hash, HEX_DIGITS_AT_END,
-                        hashing_stream
+                        file_id, part_number, length_with_hash, HEX_DIGITS_AT_END, hashing_stream
                     )
                     assert hashing_stream.hash == response['contentSha1']
                     return response
@@ -798,6 +796,7 @@ class BucketFactory(object):
                "bucketName": "zsdfrtsazsdfafr",
                "accountId": "4aa9865d6f00",
                "bucketInfo": {},
+               "options": [],
                "revision": 1
            }
 
@@ -815,9 +814,10 @@ class BucketFactory(object):
         cors_rules = bucket_dict['corsRules']
         lifecycle_rules = bucket_dict['lifecycleRules']
         revision = bucket_dict['revision']
+        options = set(bucket_dict['options'])
         if type_ is None:
             raise UnrecognizedBucketType(bucket_dict['bucketType'])
         return cls.BUCKET_CLASS(
             api, bucket_id, bucket_name, type_, bucket_info, cors_rules, lifecycle_rules, revision,
-            bucket_dict
+            bucket_dict, options
         )

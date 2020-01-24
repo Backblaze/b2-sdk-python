@@ -94,19 +94,26 @@ class B2Api(object):
 
         :param int max_upload_workers: a number of upload threads, default is 10
         """
-        self.raw_api = raw_api or B2RawApi(B2Http())
-        if account_info is None:
-            account_info = SqliteAccountInfo()
-            if cache is None:
-                cache = AuthInfoCache(account_info)
-        self.session = B2Session(self, self.raw_api)
+        self.session = B2Session(account_info=account_info, cache=cache, raw_api=raw_api)
         self.transferer = Transferer(self.session, account_info)
-        self.account_info = account_info
-        if cache is None:
-            cache = DummyCache()
-        self.cache = cache
         self.upload_executor = None
         self.max_workers = max_upload_workers
+
+    @property
+    def account_info(self):
+        return self.session.account_info
+
+    @property
+    def cache(self):
+        return self.session.cache
+
+    @property
+    def raw_api(self):
+        """
+        .. warning::
+            :class:`~b2sdk.raw_api.B2RawApi` attribute is deprecated.
+            :class:`~b2sdk.session.B2Session` expose all :class:`~b2sdk.raw_api.B2RawApi` methods now."""
+        return self.session.raw_api
 
     def set_thread_pool_size(self, max_workers):
         """
@@ -137,15 +144,7 @@ class B2Api(object):
         Perform automatic account authorization, retrieving all account data
         from account info object passed during initialization.
         """
-        try:
-            self.authorize_account(
-                self.account_info.get_realm(),
-                self.account_info.get_application_key_id(),
-                self.account_info.get_application_key(),
-            )
-        except MissingAccountData:
-            return False
-        return True
+        return self.session.authorize_automatically()
 
     @limit_trace_arguments(only=('self', 'realm'))
     def authorize_account(self, realm, application_key_id, application_key):
@@ -156,32 +155,7 @@ class B2Api(object):
         :param str application_key_id: :term:`application key ID`
         :param str application_key: user's :term:`application key`
         """
-        # Clean up any previous account info if it was for a different account.
-        try:
-            old_account_id = self.account_info.get_account_id()
-            old_realm = self.account_info.get_realm()
-            if application_key_id != old_account_id or realm != old_realm:
-                self.cache.clear()
-        except MissingAccountData:
-            self.cache.clear()
-
-        # Authorize
-        realm_url = self.account_info.REALM_URLS[realm]
-        response = self.raw_api.authorize_account(realm_url, application_key_id, application_key)
-        allowed = response['allowed']
-
-        # Store the auth data
-        self.account_info.set_auth_data(
-            response['accountId'],
-            response['authorizationToken'],
-            response['apiUrl'],
-            response['downloadUrl'],
-            response['recommendedPartSize'],
-            application_key,
-            realm,
-            allowed,
-            application_key_id,
-        )
+        self.session.authorize_account(realm, application_key_id, application_key)
 
     def get_account_id(self):
         """
@@ -245,10 +219,7 @@ class B2Api(object):
         position, and the second one is the end position in the file
         :return: context manager that returns an object that supports iter_content()
         """
-        url = self.session.get_download_url_by_id(
-            file_id,
-            url_factory=self.account_info.get_download_url,
-        )
+        url = self.session.get_download_url_by_id(file_id)
         return self.transferer.download_file_from_url(url, download_dest, progress_listener, range_)
 
     def get_bucket_by_id(self, bucket_id):
