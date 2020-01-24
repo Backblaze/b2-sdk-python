@@ -48,7 +48,7 @@ class Synchronizer(SynchronizerV1):
         except InvalidArgument as e:
             raise CommandError('--%s %s' % (e.parameter_name, e.message))
         except IncompleteSync as e:
-            raise CommandError(e.message)
+            raise CommandError(str(e))
 
 
 def get_synchronizer_from_args(

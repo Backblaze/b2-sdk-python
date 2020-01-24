@@ -85,7 +85,7 @@ class AbstractFileSyncPolicy(object):
         """
         Decide whether to transfer the file from the source to the destination.
         """
-        if self._source_file is None:
+        if self._source_file is None or self._source_file.latest_version().action == 'hide':
             # No source file.  Nothing to transfer.
             return False
         elif self._dest_file is None:
@@ -292,7 +292,9 @@ class DownAndDeletePolicy(DownPolicy):
     def _get_hide_delete_actions(self):
         for action in super(DownAndDeletePolicy, self)._get_hide_delete_actions():
             yield action
-        if self._dest_file is not None and self._source_file is None:
+        if self._dest_file is not None and (
+            self._source_file is None or self._source_file.latest_version().action == 'hide'
+        ):
             # Local files have either 0 or 1 versions.  If the file is there,
             # it must have exactly 1 version.
             yield LocalDeleteAction(self._dest_file.name, self._dest_file.versions[0].id_)
