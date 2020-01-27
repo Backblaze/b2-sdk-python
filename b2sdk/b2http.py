@@ -12,6 +12,7 @@ from __future__ import print_function
 
 import arrow
 import logging
+import io
 import json
 import socket
 
@@ -121,6 +122,7 @@ def _translate_and_retry(fcn, try_count, post_params=None):
         try:
             return _translate_errors(fcn, post_params)
         except B2Error as e:
+            print('********* HTTP ERROR ***************', e)
             if not e.should_retry_http():
                 raise
             if e.retry_after_seconds is not None:
@@ -334,7 +336,7 @@ class B2Http(object):
         :return: the decoded JSON document
         :rtype: dict
         """
-        data = six.BytesIO(six.b(json.dumps(params)))
+        data = io.BytesIO(six.b(json.dumps(params)))
         return self.post_content_return_json(url, headers, data, try_count, params)
 
     def get_content(self, url, headers, try_count=5):
@@ -435,7 +437,7 @@ def test_http():
     # Broken pipe
     print('TEST: broken pipe')
     try:
-        data = six.BytesIO(six.b(chr(0)) * 10000000)
+        data = io.BytesIO(six.b(chr(0)) * 10000000)
         b2_http.post_content_return_json('https://api.backblazeb2.com/bad_url', {}, data)
         assert False, 'should have failed with broken pipe'
     except BrokenPipe:

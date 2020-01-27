@@ -345,6 +345,21 @@ class B2Session(object):
             destination_bucket_id=destination_bucket_id,
         )
 
+    def copy_part(
+        self,
+        source_file_id,
+        large_file_id,
+        part_number,
+        bytes_range=None,
+    ):
+        return self._wrap_default_token(
+            self.raw_api.copy_part,
+            source_file_id,
+            large_file_id,
+            part_number,
+            bytes_range=bytes_range
+        )
+
     def _wrap_default_token(self, raw_api_method, *args, **kwargs):
         return self._wrap_token(raw_api_method, TokenType.API, *args, **kwargs)
 

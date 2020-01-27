@@ -14,7 +14,7 @@ from abc import abstractmethod
 
 import six
 
-from ..utils import B2TraceMetaAbstract
+from b2sdk.utils import B2TraceMetaAbstract
 
 from .range import Range
 

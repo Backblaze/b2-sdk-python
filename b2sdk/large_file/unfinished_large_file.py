@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: b2sdk/unfinished_large_file.py
+# File: b2sdk/large_file/unfinished_large_file.py
 #
 # Copyright 2019 Backblaze Inc. All Rights Reserved.
 #

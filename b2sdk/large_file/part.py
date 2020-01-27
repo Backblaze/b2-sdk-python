@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: b2sdk/part.py
+# File: b2sdk/large_file/part.py
 #
 # Copyright 2019 Backblaze Inc. All Rights Reserved.
 #

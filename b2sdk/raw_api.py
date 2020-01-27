@@ -11,6 +11,7 @@
 from __future__ import print_function
 
 import base64
+import io
 import os
 import random
 import re
@@ -84,6 +85,18 @@ class AbstractRawApi(object):
         content_type=None,
         file_info=None,
         destination_bucket_id=None,
+    ):
+        pass
+
+    @abstractmethod
+    def copy_part(
+        self,
+        api_url,
+        account_auth_token,
+        source_file_id,
+        large_file_id,
+        part_number,
+        bytes_range=None,
     ):
         pass
 
@@ -703,6 +716,30 @@ class B2RawApi(AbstractRawApi):
             **kwargs
         )
 
+    def copy_part(
+        self,
+        api_url,
+        account_auth_token,
+        source_file_id,
+        large_file_id,
+        part_number,
+        bytes_range=None,
+    ):
+        kwargs = {}
+        if bytes_range is not None:
+            range_dict = {}
+            _add_range_header(range_dict, bytes_range)
+            kwargs['range'] = range_dict['Range']
+        return self._post_json(
+            api_url,
+            'b2_copy_part',
+            account_auth_token,
+            sourceFileId=source_file_id,
+            largeFileId=large_file_id,
+            partNumber=part_number,
+            **kwargs,
+        )
+
 
 def test_raw_api():
     """
@@ -805,7 +842,7 @@ def test_raw_api_helper(raw_api):
     print('b2_upload_file')
     file_name = 'test.txt'
     file_contents = six.b('hello world')
-    file_sha1 = hex_sha1_of_stream(six.BytesIO(file_contents), len(file_contents))
+    file_sha1 = hex_sha1_of_stream(io.BytesIO(file_contents), len(file_contents))
     file_dict = raw_api.upload_file(
         upload_url,
         upload_auth_token,
@@ -814,7 +851,7 @@ def test_raw_api_helper(raw_api):
         'text/plain',
         file_sha1,
         {'color': 'blue'},
-        six.BytesIO(file_contents),
+        io.BytesIO(file_contents),
     )
     file_id = file_dict['fileId']
 
@@ -903,10 +940,10 @@ def test_raw_api_helper(raw_api):
     # b2_upload_part
     print('b2_upload_part')
     part_contents = six.b('hello part')
-    part_sha1 = hex_sha1_of_stream(six.BytesIO(part_contents), len(part_contents))
+    part_sha1 = hex_sha1_of_stream(io.BytesIO(part_contents), len(part_contents))
     raw_api.upload_part(
         upload_part_url, upload_path_auth, 1, len(part_contents), part_sha1,
-        six.BytesIO(part_contents)
+        io.BytesIO(part_contents)
     )
 
     # b2_list_parts

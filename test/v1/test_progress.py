@@ -19,7 +19,7 @@ from .deps import hex_sha1_of_bytes
 class TestHashingStream(TestBase):
     def setUp(self):
         self.data = b'01234567'
-        self.stream = StreamWithHash(six.BytesIO(self.data))
+        self.stream = StreamWithHash(six.BytesIO(self.data), len(self.data))
         self.hash = hex_sha1_of_bytes(self.data)
         self.expected = self.data + self.hash.encode()
 

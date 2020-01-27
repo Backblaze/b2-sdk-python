@@ -9,6 +9,7 @@
 ######################################################################
 
 import collections
+import io
 import re
 import time
 
@@ -30,6 +31,7 @@ from .exception import (
     Unauthorized,
     UnsatisfiableRange,
 )
+from .stream.hashing import StreamWithHash
 from .raw_api import AbstractRawApi, HEX_DIGITS_AT_END, MetadataDirectiveMode
 from .utils import b2_url_decode, b2_url_encode
 
@@ -46,6 +48,18 @@ ALL_CAPABILITES = [
     'writeFiles',
     'deleteFiles',
 ]
+
+
+def get_bytes_range(data_bytes, bytes_range):
+    if bytes_range is not None:
+        if (bytes_range[0] >  bytes_range[1]
+                or bytes_range[1] < 0
+                or bytes_range[1] > len(data_bytes)):
+            raise UnsatisfiableRange()
+        else:
+            return data_bytes[bytes_range[0]:bytes_range[1]]
+    else:
+        return data_bytes
 
 
 class KeySimulator(object):
@@ -440,14 +454,7 @@ class BucketSimulator(object):
         file_sim = self.file_id_to_file[file_id]
         new_file_id = self._next_file_id()
 
-        data_bytes = file_sim.data_bytes
-
-        if bytes_range is not None:
-            if bytes_range[0] >= len(file_sim.data_bytes
-                                    ) or bytes_range[1] <= 0:  # requested too much
-                raise UnsatisfiableRange()
-            else:
-                data_bytes = data_bytes[bytes_range[0]:bytes_range[1]]
+        data_bytes = get_bytes_range(file_sim.data_bytes, bytes_range)
 
         destination_bucket_id = destination_bucket_id or self.bucket_id
         copy_file_sim = self.FILE_SIMULATOR_CLASS(
@@ -934,6 +941,31 @@ class RawSimulator(AbstractRawApi):
         dest_bucket.file_id_to_file[copy_file_sim.file_id] = copy_file_sim
         dest_bucket.file_name_and_id_to_file[copy_file_sim.sort_key()] = copy_file_sim
         return copy_file_sim.as_upload_result()
+
+    def copy_part(
+        self,
+        api_url,
+        account_auth_token,
+        source_file_id,
+        large_file_id,
+        part_number,
+        bytes_range=None,
+    ):
+        src_bucket_id = self.file_id_to_bucket_id[source_file_id]
+        src_bucket = self._get_bucket_by_id(src_bucket_id)
+        dest_bucket_id = self.file_id_to_bucket_id[large_file_id]
+        dest_bucket = self._get_bucket_by_id(dest_bucket_id)
+
+        self._assert_account_auth(api_url, account_auth_token, dest_bucket.account_id, 'writeFiles')
+
+        file_sim = src_bucket.file_id_to_file[source_file_id]
+        data_bytes = get_bytes_range(file_sim.data_bytes, bytes_range)
+
+        data_stream = StreamWithHash(io.BytesIO(data_bytes), len(data_bytes))
+        content_length = len(data_stream)
+        sha1_sum = HEX_DIGITS_AT_END
+
+        return dest_bucket.upload_part(large_file_id, part_number, content_length, sha1_sum, data_stream)
 
     def list_buckets(
         self, api_url, account_auth_token, account_id, bucket_id=None, bucket_name=None

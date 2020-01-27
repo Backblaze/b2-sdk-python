@@ -26,7 +26,7 @@ class Range(object):
 
         raw_range_header example: 'bytes 0-11'
         """
-        offsets = tuple(int(i) for i in raw_range_header.replace('bytes ', '').split('-'))
+        offsets = tuple(int(i) for i in raw_range_header.replace('bytes=', '').split('-'))
         return cls(*offsets)
 
     def size(self):

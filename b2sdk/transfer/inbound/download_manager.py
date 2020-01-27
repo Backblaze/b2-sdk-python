@@ -1,29 +1,29 @@
-######################################################################
-#
-# File: b2sdk/transferer/transferer.py
-#
-# Copyright 2019 Backblaze Inc. All Rights Reserved.
-#
-# License https://www.backblaze.com/using_b2_code.html
-#
-######################################################################
-
+import logging
 import six
 
-from ..download_dest import DownloadDestProgressWrapper
-from ..exception import ChecksumMismatch, UnexpectedCloudBehaviour, TruncatedOutput, InvalidRange
-from ..progress import DoNothingProgressListener
-from ..raw_api import SRC_LAST_MODIFIED_MILLIS
-from ..utils import B2TraceMetaAbstract
+from b2sdk.download_dest import DownloadDestProgressWrapper
+from b2sdk.progress import DoNothingProgressListener
+
+from b2sdk.exception import (
+    ChecksumMismatch,
+    InvalidRange,
+    TruncatedOutput,
+    UnexpectedCloudBehaviour,
+)
+from b2sdk.raw_api import SRC_LAST_MODIFIED_MILLIS
+from b2sdk.utils import B2TraceMetaAbstract
+
+from .downloader.parallel import ParallelDownloader
+from .downloader.simple import SimpleDownloader
 from .file_metadata import FileMetadata
-from .parallel import ParallelDownloader
-from .simple import SimpleDownloader
+
+logger = logging.getLogger(__name__)
 
 
 @six.add_metaclass(B2TraceMetaAbstract)
-class Transferer(object):
+class DownloadManager(object):
     """
-    Handle complex actions around downloads and uploads to free raw_api from that responsibility.
+    Handle complex actions around downloads to free raw_api from that responsibility.
     """
 
     # how many chunks to break a downloaded file into
@@ -36,15 +36,16 @@ class Transferer(object):
     MIN_CHUNK_SIZE = 8192  # ~1MB file will show ~1% progress increment
     MAX_CHUNK_SIZE = 1024**2
 
-    def __init__(self, session, account_info):
+    def __init__(self, session):
         """
-        :param max_streams: limit on a number of streams to use when downloading in multiple parts
-        :param min_part_size: the smallest part size for which a stream will be run
-                              when downloading in multiple parts
-        """
-        self.session = session
-        self.account_info = account_info
+        Initialize the DownloadManager using the given session.
 
+        :param session: an instance of :class:`~b2sdk.v1.B2Session`,
+                      or any custom class derived from
+                      :class:`~b2sdk.v1.B2Session`
+        """
+
+        self.session = session
         self.strategies = [
             ParallelDownloader(
                 max_streams=self.DEFAULT_MAX_STREAMS,
@@ -52,7 +53,7 @@ class Transferer(object):
                 min_chunk_size=self.MIN_CHUNK_SIZE,
                 max_chunk_size=self.MAX_CHUNK_SIZE,
             ),
-            #IOTDownloader(),  # TODO: curl -s httpbin.org/get | tee /dev/stderr 2>ble | sha1sum | cut -c -40
+            # IOTDownloader(),  # TODO: curl -s httpbin.org/get | tee /dev/stderr 2>ble | sha1sum | cut -c -40
             SimpleDownloader(
                 min_chunk_size=self.MIN_CHUNK_SIZE,
                 max_chunk_size=self.MAX_CHUNK_SIZE,
@@ -74,7 +75,10 @@ class Transferer(object):
         """
         progress_listener = progress_listener or DoNothingProgressListener()
         download_dest = DownloadDestProgressWrapper(download_dest, progress_listener)
-        with self.session.download_file_from_url(url, range_=range_) as response:
+        with self.session.download_file_from_url(
+            url,
+            range_=range_,
+        ) as response:
             metadata = FileMetadata.from_response(response)
             if range_ is not None:
                 if 'Content-Range' not in response.headers:
@@ -119,8 +123,7 @@ class Transferer(object):
             if bytes_read != metadata.content_length:
                 raise TruncatedOutput(bytes_read, metadata.content_length)
 
-            if metadata.content_sha1 != 'none' and \
-                actual_sha1 != metadata.content_sha1:  # no yapf
+            if metadata.content_sha1 != 'none' and actual_sha1 != metadata.content_sha1:
                 raise ChecksumMismatch(
                     checksum_type='sha1',
                     expected=metadata.content_length,

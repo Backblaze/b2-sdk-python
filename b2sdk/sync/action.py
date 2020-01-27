@@ -15,9 +15,11 @@ import os
 import six
 
 from ..download_dest import DownloadDestLocalFile
-from ..upload_source import UploadSourceLocalFile
 from ..raw_api import SRC_LAST_MODIFIED_MILLIS
 from .report import SyncFileReporter
+
+from b2sdk.transfer.outbound.upload_source import UploadSourceLocalFile
+
 
 logger = logging.getLogger(__name__)
 

@@ -156,15 +156,18 @@ class TestListParts(TestCaseWithBucket):
         content_sha1 = hex_sha1_of_bytes(content)
         large_file_upload_state = mock.MagicMock()
         large_file_upload_state.has_error.return_value = False
-        self.bucket._upload_part(
-            file1.file_id, 1, (0, 11), UploadSourceBytes(content), large_file_upload_state
-        )
-        self.bucket._upload_part(
-            file1.file_id, 2, (0, 11), UploadSourceBytes(content), large_file_upload_state
-        )
-        self.bucket._upload_part(
-            file1.file_id, 3, (0, 11), UploadSourceBytes(content), large_file_upload_state
-        )
+        self.api.services.upload_manager.upload_part(
+            self.bucket_id, file1.file_id, UploadSourceBytes(content), 1,
+            large_file_upload_state
+        ).result()
+        self.api.services.upload_manager.upload_part(
+            self.bucket_id, file1.file_id, UploadSourceBytes(content), 2,
+            large_file_upload_state
+        ).result()
+        self.api.services.upload_manager.upload_part(
+            self.bucket_id, file1.file_id, UploadSourceBytes(content), 3,
+            large_file_upload_state
+        ).result()
         expected_parts = [
             Part('9999', 1, 11, content_sha1),
             Part('9999', 2, 11, content_sha1),
@@ -181,9 +184,10 @@ class TestUploadPart(TestCaseWithBucket):
         large_file_upload_state = LargeFileUploadState(file_progress_listener)
         large_file_upload_state.set_error('test error')
         try:
-            self.bucket._upload_part(
-                file1.file_id, 1, (0, 11), UploadSourceBytes(content), large_file_upload_state
-            )
+            self.api.services.upload_manager.upload_part(
+                self.bucket_id, file1.file_id,
+                UploadSourceBytes(content), 1, large_file_upload_state
+            ).result()
             self.fail('should have thrown')
         except AlreadyFailed:
             pass
@@ -736,13 +740,13 @@ class TestDownloadDefault(DownloadTests, EmptyFileDownloadScenarioMixin, TestCas
 class TestDownloadSimple(DownloadTests, EmptyFileDownloadScenarioMixin, TestCaseWithBucket):
     def setUp(self):
         super(TestDownloadSimple, self).setUp()
-        self.bucket.api.transferer.strategies = [SimpleDownloader(force_chunk_size=20,)]
+        self.bucket.api.services.download_manager.strategies = [SimpleDownloader(force_chunk_size=20,)]
 
 
 class TestDownloadParallel(DownloadTests, TestCaseWithBucket):
     def setUp(self):
         super(TestDownloadParallel, self).setUp()
-        self.bucket.api.transferer.strategies = [
+        self.bucket.api.services.download_manager.strategies = [
             ParallelDownloader(
                 force_chunk_size=2,
                 max_streams=999,
@@ -783,13 +787,13 @@ class TestCaseWithTruncatedDownloadBucket(TestCaseWithBucket):
 class TestTruncatedDownloadSimple(DownloadTests, TestCaseWithTruncatedDownloadBucket):
     def setUp(self):
         super(TestTruncatedDownloadSimple, self).setUp()
-        self.bucket.api.transferer.strategies = [SimpleDownloader(force_chunk_size=20,)]
+        self.bucket.api.services.download_manager.strategies = [SimpleDownloader(force_chunk_size=20,)]
 
 
 class TestTruncatedDownloadParallel(DownloadTests, TestCaseWithTruncatedDownloadBucket):
     def setUp(self):
         super(TestTruncatedDownloadParallel, self).setUp()
-        self.bucket.api.transferer.strategies = [
+        self.bucket.api.services.download_manager.strategies = [
             ParallelDownloader(
                 force_chunk_size=3,
                 max_streams=2,
