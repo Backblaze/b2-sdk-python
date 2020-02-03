@@ -18,7 +18,7 @@ Prepare b2sdk
     >>> b2_api.authorize_account("production", application_key_id, application_key)
 
 .. tip::
-   Get credentials from B2 website
+   Get your `keyID` and generate the `application key` itself `here <https://secure.backblaze.com/app_keys.htm>`_
 
 
 ***************
@@ -103,7 +103,7 @@ Delete a bucket
     >>> bucket = b2_api.get_bucket_by_name(bucket_name)
     >>> b2_api.delete_bucket(bucket)
 
-returns `None` if successful, raises an exception in case of error.
+See :meth:`b2sdk.v1.B2Api.delete_bucket` for more information.
 
 Update bucket info
 ==================

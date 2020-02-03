@@ -293,6 +293,7 @@ class B2Api(object):
 
         :param b2sdk.v1.Bucket bucket: a :term:`Bucket` to delete
         :rtype: None
+        :raises b2sdk.v1.exception.NonExistentBucket: if the bucket does not exist in the account
         """
         account_id = self.account_info.get_account_id()
         self.session.delete_bucket(account_id, bucket.id_)
