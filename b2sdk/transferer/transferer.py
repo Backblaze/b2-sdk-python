@@ -74,11 +74,7 @@ class Transferer(object):
         """
         progress_listener = progress_listener or DoNothingProgressListener()
         download_dest = DownloadDestProgressWrapper(download_dest, progress_listener)
-        with self.session.download_file_from_url(
-            url,
-            url_factory=self.account_info.get_download_url,
-            range_=range_,
-        ) as response:
+        with self.session.download_file_from_url(url, range_=range_) as response:
             metadata = FileMetadata.from_response(response)
             if range_ is not None:
                 if 'Content-Range' not in response.headers:

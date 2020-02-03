@@ -52,40 +52,6 @@ API_VERSION = 'v2'
 
 
 @unique
-class TokenType(Enum):
-    API = 'api'
-    UPLOAD_PART = 'upload_part'
-    UPLOAD_SMALL = 'upload_small'
-
-
-def set_token_type(token_type):
-    """
-    This is a decorator to identify the type of token that must be passed into a function.
-    When the raw_api is used through B2Session, it will be used to identify the type of url and token to be passed.
-
-    :param token_type: TokenType enum
-    :return:
-    """
-
-    def inner(func, *args, **kwargs):
-        func.token_type = token_type
-        return func
-
-    return inner
-
-
-def get_token_type(func):
-    """
-    This will return the token type that must be passed into the input raw_api function.
-    The default value is TokenType.API.
-
-    :param func: raw_api function to be called
-    :return: token type
-    """
-    return getattr(func, 'token_type', TokenType.API)
-
-
-@unique
 class MetadataDirectiveMode(Enum):
     """ Mode of handling metadata when copying a file """
     COPY = 401  #: copy metadata from the source file
@@ -99,7 +65,55 @@ class AbstractRawApi(object):
     """
 
     @abstractmethod
+    def authorize_account(self, realm_url, application_key_id, application_key):
+        pass
+
+    @abstractmethod
     def cancel_large_file(self, api_url, account_auth_token, file_id):
+        pass
+
+    @abstractmethod
+    def copy_file(
+        self,
+        api_url,
+        account_auth_token,
+        source_file_id,
+        new_file_name,
+        bytes_range=None,
+        metadata_directive=None,
+        content_type=None,
+        file_info=None,
+        destination_bucket_id=None,
+    ):
+        pass
+
+    @abstractmethod
+    def create_bucket(
+        self,
+        api_url,
+        account_auth_token,
+        account_id,
+        bucket_name,
+        bucket_type,
+        bucket_info=None,
+        cors_rules=None,
+        lifecycle_rules=None
+    ):
+        pass
+
+    @abstractmethod
+    def create_key(
+        self, api_url, account_auth_token, account_id, capabilities, key_name,
+        valid_duration_seconds, bucket_id, name_prefix
+    ):
+        pass
+
+    @abstractmethod
+    def download_file_from_url(self, account_auth_token_or_none, url, range_=None):
+        pass
+
+    @abstractmethod
+    def delete_key(self, api_url, account_auth_token, application_key_id):
         pass
 
     @abstractmethod
@@ -115,11 +129,72 @@ class AbstractRawApi(object):
         pass
 
     @abstractmethod
+    def get_download_authorization(
+        self, api_url, account_auth_token, bucket_id, file_name_prefix, valid_duration_in_seconds
+    ):
+        pass
+
+    @abstractmethod
+    def get_file_info(self, api_url, account_auth_token, file_id):
+        pass
+
+    @abstractmethod
+    def get_upload_url(self, api_url, account_auth_token, bucket_id):
+        pass
+
+    @abstractmethod
     def get_upload_part_url(self, api_url, account_auth_token, file_id):
         pass
 
     @abstractmethod
     def hide_file(self, api_url, account_auth_token, bucket_id, file_name):
+        pass
+
+    @abstractmethod
+    def list_buckets(
+        self,
+        api_url,
+        account_auth_token,
+        account_id,
+        bucket_id=None,
+        bucket_name=None,
+    ):
+        pass
+
+    @abstractmethod
+    def list_file_names(
+        self,
+        api_url,
+        account_auth_token,
+        bucket_id,
+        start_file_name=None,
+        max_file_count=None,
+        prefix=None,
+    ):
+        pass
+
+    @abstractmethod
+    def list_file_versions(
+        self,
+        api_url,
+        account_auth_token,
+        bucket_id,
+        start_file_name=None,
+        start_file_id=None,
+        max_file_count=None,
+        prefix=None,
+    ):
+        pass
+
+    @abstractmethod
+    def list_keys(
+        self,
+        api_url,
+        account_auth_token,
+        account_id,
+        max_key_count=None,
+        start_application_key_id=None
+    ):
         pass
 
     @abstractmethod
@@ -160,31 +235,23 @@ class AbstractRawApi(object):
         pass
 
     @abstractmethod
+    def upload_file(
+        self, upload_url, upload_auth_token, file_name, content_length, content_type, content_sha1,
+        file_infos, data_stream
+    ):
+        pass
+
+    @abstractmethod
     def upload_part(
         self, upload_url, upload_auth_token, part_number, content_length, sha1_sum, input_stream
     ):
         pass
 
-    def get_download_url_by_id(self, download_url, account_auth_token, file_id):
+    def get_download_url_by_id(self, download_url, file_id):
         return '%s/b2api/%s/b2_download_file_by_id?fileId=%s' % (download_url, API_VERSION, file_id)
 
-    def get_download_url_by_name(self, download_url, account_auth_token, bucket_name, file_name):
+    def get_download_url_by_name(self, download_url, bucket_name, file_name):
         return download_url + '/file/' + bucket_name + '/' + b2_url_encode(file_name)
-
-    @abstractmethod
-    def copy_file(
-        self,
-        api_url,
-        account_auth_token,
-        source_file_id,
-        new_file_name,
-        bytes_range=None,
-        metadata_directive=None,
-        content_type=None,
-        file_info=None,
-        destination_bucket_id=None,
-    ):
-        pass
 
 
 class B2RawApi(AbstractRawApi):
@@ -202,10 +269,6 @@ class B2RawApi(AbstractRawApi):
     of the HTTP calls.  It can be mocked-out for testing higher layers.
     And this class can be tested by exercising each call just once,
     which is relatively quick.
-
-    All public methods of this class except authorize_account shall accept
-    api_url and account_info as first two positional arguments.  This is needed
-    for B2Session magic.
     """
 
     def __init__(self, b2_http):
@@ -297,11 +360,10 @@ class B2RawApi(AbstractRawApi):
             applicationKeyId=application_key_id,
         )
 
-    def download_file_from_url(self, _, account_auth_token_or_none, url, range_=None):
+    def download_file_from_url(self, account_auth_token_or_none, url, range_=None):
         """
         Issue a streaming request for download of a file, potentially authorized.
 
-        :param _: unused (caused by B2Session magic)
         :param account_auth_token_or_none: an optional account auth token to pass in
         :param url: the full URL to download from
         :param range: two-element tuple for http Range header
@@ -550,7 +612,6 @@ class B2RawApi(AbstractRawApi):
         if long_segment > 250:
             raise UnusableFileName("Filename segment too long (maximum 250 bytes in utf-8).")
 
-    @set_token_type(TokenType.UPLOAD_SMALL)
     def upload_file(
         self, upload_url, upload_auth_token, file_name, content_length, content_type, content_sha1,
         file_infos, data_stream
@@ -582,7 +643,6 @@ class B2RawApi(AbstractRawApi):
 
         return self.b2_http.post_content_return_json(upload_url, headers, data_stream)
 
-    @set_token_type(TokenType.UPLOAD_PART)
     def upload_part(
         self, upload_url, upload_auth_token, part_number, content_length, content_sha1, data_stream
     ):
@@ -760,29 +820,29 @@ def test_raw_api_helper(raw_api):
 
     # b2_download_file_by_id with auth
     print('b2_download_file_by_id (auth)')
-    url = raw_api.get_download_url_by_id(download_url, None, file_id)
-    with raw_api.download_file_from_url(None, account_auth_token, url) as response:
+    url = raw_api.get_download_url_by_id(download_url, file_id)
+    with raw_api.download_file_from_url(account_auth_token, url) as response:
         data = next(response.iter_content(chunk_size=len(file_contents)))
         assert data == file_contents, data
 
     # b2_download_file_by_id no auth
     print('b2_download_file_by_id (no auth)')
-    url = raw_api.get_download_url_by_id(download_url, None, file_id)
-    with raw_api.download_file_from_url(None, None, url) as response:
+    url = raw_api.get_download_url_by_id(download_url, file_id)
+    with raw_api.download_file_from_url(None, url) as response:
         data = next(response.iter_content(chunk_size=len(file_contents)))
         assert data == file_contents, data
 
     # b2_download_file_by_name with auth
     print('b2_download_file_by_name (auth)')
-    url = raw_api.get_download_url_by_name(download_url, None, bucket_name, file_name)
-    with raw_api.download_file_from_url(None, account_auth_token, url) as response:
+    url = raw_api.get_download_url_by_name(download_url, bucket_name, file_name)
+    with raw_api.download_file_from_url(account_auth_token, url) as response:
         data = next(response.iter_content(chunk_size=len(file_contents)))
         assert data == file_contents, data
 
     # b2_download_file_by_name no auth
     print('b2_download_file_by_name (no auth)')
-    url = raw_api.get_download_url_by_name(download_url, None, bucket_name, file_name)
-    with raw_api.download_file_from_url(None, None, url) as response:
+    url = raw_api.get_download_url_by_name(download_url, bucket_name, file_name)
+    with raw_api.download_file_from_url(None, url) as response:
         data = next(response.iter_content(chunk_size=len(file_contents)))
         assert data == file_contents, data
 
@@ -795,8 +855,8 @@ def test_raw_api_helper(raw_api):
 
     # b2_download_file_by_name with download auth
     print('b2_download_file_by_name (download auth)')
-    url = raw_api.get_download_url_by_name(download_url, None, bucket_name, file_name)
-    with raw_api.download_file_from_url(None, download_auth_token, url) as response:
+    url = raw_api.get_download_url_by_name(download_url, bucket_name, file_name)
+    with raw_api.download_file_from_url(download_auth_token, url) as response:
         data = next(response.iter_content(chunk_size=len(file_contents)))
         assert data == file_contents, data
 
