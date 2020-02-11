@@ -108,8 +108,9 @@ class BadJson(B2SimpleError):
     prefix = 'Bad request'
 
 
-class BadUploadUrl(TransientErrorMixin, B2SimpleError):
-    pass
+class BadUploadUrl(B2SimpleError):
+    def should_retry_upload(self):
+        return True
 
 
 class BrokenPipe(B2Error):
