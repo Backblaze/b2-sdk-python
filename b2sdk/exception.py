@@ -210,6 +210,12 @@ class B2RequestTimeout(TransientErrorMixin, B2SimpleError):
     pass
 
 
+class B2RequestTimeoutDuringUpload(B2RequestTimeout):
+    # if a timeout is hit during upload, it is not guaranteed that the the server has released the upload token lock already, so we'll use a new token
+    def should_retry_http(self):
+        return False
+
+
 class DestFileNewer(B2Error):
     def __init__(self, dest_file, source_file, dest_prefix, source_prefix):
         super(DestFileNewer, self).__init__()
