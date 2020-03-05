@@ -16,7 +16,8 @@ from .exception import (
     AlreadyFailed, B2Error, MaxFileSizeExceeded, MaxRetriesExceeded, UnrecognizedBucketType
 )
 from .file_version import FileVersionInfoFactory
-from .progress import DoNothingProgressListener, AbstractProgressListener, RangeOfInputStream, ReadingStreamWithProgress, StreamWithHash
+from .progress import DoNothingProgressListener, AbstractProgressListener
+from .stream import RangeOfInputStream, ReadingStreamWithProgress, StreamWithHash
 from .unfinished_large_file import UnfinishedLargeFile
 from .upload_source import UploadSourceBytes, UploadSourceLocalFile
 from .utils import b2_url_encode, choose_part_ranges, hex_sha1_of_stream, interruptible_get_result, validate_b2_file_name
