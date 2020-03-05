@@ -88,6 +88,18 @@ class AbstractRawApi(object):
         pass
 
     @abstractmethod
+    def copy_part(
+        self,
+        api_url,
+        account_auth_token,
+        source_file_id,
+        large_file_id,
+        part_number,
+        bytes_range=None,
+    ):
+        pass
+
+    @abstractmethod
     def create_bucket(
         self,
         api_url,
@@ -701,6 +713,30 @@ class B2RawApi(AbstractRawApi):
             sourceFileId=source_file_id,
             fileName=new_file_name,
             **kwargs
+        )
+
+    def copy_part(
+        self,
+        api_url,
+        account_auth_token,
+        source_file_id,
+        large_file_id,
+        part_number,
+        bytes_range=None,
+    ):
+        kwargs = {}
+        if bytes_range is not None:
+            range_dict = {}
+            _add_range_header(range_dict, bytes_range)
+            kwargs['range'] = range_dict['Range']
+        return self._post_json(
+            api_url,
+            'b2_copy_part',
+            account_auth_token,
+            sourceFileId=source_file_id,
+            largeFileId=large_file_id,
+            partNumber=part_number,
+            **kwargs,
         )
 
 
