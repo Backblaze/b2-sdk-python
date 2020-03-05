@@ -1,7 +1,7 @@
 import io
 
 
-class ReadOnlyMixin(object):
+class ReadOnlyStreamMixin(object):
     def writeable(self):
         return False
 
