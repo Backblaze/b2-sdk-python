@@ -5,7 +5,7 @@ class BaseStreamWrapper(io.IOBase):
     """
     Base wrapper for a file-like object.
 
-    It does not implement public constructor so subclass have to define `stream` attribute
+    It does not implement public constructor so subclasses have to define `stream` attribute
     """
 
     stream = NotImplemented
