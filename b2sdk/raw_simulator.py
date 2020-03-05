@@ -53,7 +53,7 @@ ALL_CAPABILITES = [
 def get_bytes_range(data_bytes, bytes_range):
     if bytes_range is not None:
         if (bytes_range[0] >  bytes_range[1]
-                or bytes_range[1] < 0
+                or bytes_range[0] < 0
                 or bytes_range[1] > len(data_bytes)):
             raise UnsatisfiableRange()
         else:
