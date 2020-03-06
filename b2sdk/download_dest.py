@@ -15,7 +15,7 @@ from contextlib import contextmanager
 import six
 
 from .utils import B2TraceMetaAbstract, limit_trace_arguments
-from .progress import WritingStreamWithProgress
+from .stream import WritingStreamWithProgress
 
 
 @six.add_metaclass(B2TraceMetaAbstract)
