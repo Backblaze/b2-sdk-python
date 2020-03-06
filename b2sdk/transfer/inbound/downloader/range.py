@@ -24,7 +24,7 @@ class Range(object):
         """
         Factory method which returns an object constructed from Range http header.
 
-        raw_range_header example: 'bytes 0-11'
+        raw_range_header example: 'bytes=0-11'
         """
         offsets = tuple(int(i) for i in raw_range_header.replace('bytes=', '').split('-'))
         return cls(*offsets)
