@@ -737,7 +737,7 @@ class B2RawApi(AbstractRawApi):
             sourceFileId=source_file_id,
             largeFileId=large_file_id,
             partNumber=part_number,
-            **kwargs,
+            **kwargs
         )
 
 

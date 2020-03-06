@@ -1,3 +1,13 @@
+######################################################################
+#
+# File: b2sdk/stream/range.py
+#
+# Copyright 2020 Backblaze Inc. All Rights Reserved.
+#
+# License https://www.backblaze.com/using_b2_code.html
+#
+######################################################################
+
 import io
 
 from b2sdk.stream.wrapper import StreamWithLengthWrapper

@@ -33,6 +33,7 @@ from .exception import (
 )
 from .stream.hashing import StreamWithHash
 from .raw_api import AbstractRawApi, HEX_DIGITS_AT_END, MetadataDirectiveMode
+from .stream.hashing import StreamWithHash
 from .utils import b2_url_decode, b2_url_encode
 
 ALL_CAPABILITES = [
@@ -51,15 +52,16 @@ ALL_CAPABILITES = [
 
 
 def get_bytes_range(data_bytes, bytes_range):
-    if bytes_range is not None:
-        if (bytes_range[0] >  bytes_range[1]
-                or bytes_range[0] < 0
-                or bytes_range[1] > len(data_bytes)):
-            raise UnsatisfiableRange()
-        else:
-            return data_bytes[bytes_range[0]:bytes_range[1]]
-    else:
+    """ Slice bytes array using bytes range """
+    if bytes_range is None:
         return data_bytes
+    if bytes_range[0] > bytes_range[1]:
+        raise UnsatisfiableRange()
+    if bytes_range[0] < 0:
+        raise UnsatisfiableRange()
+    if bytes_range[1] > len(data_bytes):
+        raise UnsatisfiableRange()
+    return data_bytes[bytes_range[0]:bytes_range[1]]
 
 
 class KeySimulator(object):

@@ -83,10 +83,10 @@ from b2sdk.raw_api import MetadataDirectiveMode
 # stream
 
 from b2sdk.stream.progress import AbstractStreamWithProgress
-from b2sdk.stream.progress import ReadingStreamWithProgress
-from b2sdk.stream.progress import WritingStreamWithProgress
-from b2sdk.stream.range import RangeOfInputStream
-from b2sdk.stream.hashing import StreamWithHash
+from b2sdk.stream import RangeOfInputStream
+from b2sdk.stream import ReadingStreamWithProgress
+from b2sdk.stream import StreamWithHash
+from b2sdk.stream import WritingStreamWithProgress
 
 # source / destination
 
