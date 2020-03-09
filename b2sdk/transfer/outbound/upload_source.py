@@ -124,10 +124,10 @@ class UploadSourceLocalFileRange(UploadSourceLocalFile):
 
 
 class UploadSourceStream(AbstractUploadSource):
-    def __init__(self, stream_opener, stream_length=None):
+    def __init__(self, stream_opener, stream_length=None, stream_sha1=None):
         self.stream_opener = stream_opener
         self._content_length = stream_length
-        self._content_sha1 = None
+        self._content_sha1 = stream_sha1
 
     def __repr__(self):
         return ('<{classname} stream_opener={stream_opener} content_length={content_length} '
@@ -159,8 +159,12 @@ class UploadSourceStream(AbstractUploadSource):
 
 
 class UploadSourceStreamRange(UploadSourceStream):
-    def __init__(self, stream_opener, offset, stream_length):
-        super(UploadSourceStreamRange, self).__init__(stream_opener, stream_length=stream_length)
+    def __init__(self, stream_opener, offset, stream_length, stream_sha1=None):
+        super(UploadSourceStreamRange, self).__init__(
+            stream_opener,
+            stream_length=stream_length,
+            stream_sha1=stream_sha1,
+        )
         self._offset = offset
 
     def __repr__(self):

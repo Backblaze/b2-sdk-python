@@ -12,10 +12,10 @@ import hashlib
 import io
 
 from b2sdk.stream.wrapper import StreamWithLengthWrapper
-from b2sdk.stream.base import ReadOnlyMixin
+from b2sdk.stream.base import ReadOnlyStreamMixin
 
 
-class StreamWithHash(ReadOnlyMixin, StreamWithLengthWrapper):
+class StreamWithHash(ReadOnlyStreamMixin, StreamWithLengthWrapper):
     """
     Wrap a file-like object, calculates SHA1 while reading
     and appends hash at the end.

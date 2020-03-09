@@ -11,10 +11,10 @@
 import io
 
 from b2sdk.stream.wrapper import StreamWithLengthWrapper
-from b2sdk.stream.base import ReadOnlyMixin
+from b2sdk.stream.base import ReadOnlyStreamMixin
 
 
-class RangeOfInputStream(ReadOnlyMixin, StreamWithLengthWrapper):
+class RangeOfInputStream(ReadOnlyStreamMixin, StreamWithLengthWrapper):
     """
     Wrap a file-like object (read only) and read the selected
     range of the file.

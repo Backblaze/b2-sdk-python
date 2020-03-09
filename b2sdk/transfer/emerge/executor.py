@@ -178,7 +178,7 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
                         # so we want to skip this large file because it is broken
                         finished_parts = None
                         break
-                    if emerge_part.is_hashable() and emerge_part.get_sha1(self) != part.content_sha1:
+                    if emerge_part.is_hashable() and emerge_part.get_sha1() != part.content_sha1:
                         continue  # auto-healing - `plan_id` matches but part.sha1 doesn't - so we reupload
                     finished_parts[part.part_number] = part
                 if finished_parts is None:
@@ -215,7 +215,7 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
 
                     # Compare hash
                     assert emerge_part.is_hashable()
-                    sha1_sum = emerge_part.get_sha1(self)
+                    sha1_sum = emerge_part.get_sha1()
                     if sha1_sum != part.content_sha1:
                         files_match = False
                         break
@@ -251,8 +251,9 @@ class SmallFileEmergeExecutionStepFactory(BaseExecutionStepFactory):
     def create_copy_execution_step(self, copy_range):
         return CopyFileExecutionStep(self.emerge_execution, copy_range)
 
-    def create_upload_execution_step(self, stream_opener, stream_length=None):
-        return UploadFileExecutionStep(self.emerge_execution, stream_opener, stream_length)
+    def create_upload_execution_step(self, stream_opener, stream_length=None, stream_sha1=None):
+        return UploadFileExecutionStep(self.emerge_execution, stream_opener,
+                                       stream_length=stream_length, stream_sha1=stream_sha1)
 
 
 class LargeFileEmergeExecutionStepFactory(BaseExecutionStepFactory):
@@ -268,10 +269,11 @@ class LargeFileEmergeExecutionStepFactory(BaseExecutionStepFactory):
         return CopyPartExecutionStep(self.emerge_execution, copy_range, self.part_number,
                                      self.large_file_id, self.large_file_upload_state)
 
-    def create_upload_execution_step(self, stream_opener, stream_length=None):
+    def create_upload_execution_step(self, stream_opener, stream_length=None, stream_sha1=None):
         return UploadPartExecutionStep(self.emerge_execution, stream_opener, self.part_number,
                                        self.large_file_id, self.large_file_upload_state,
-                                       stream_length=stream_length)
+                                       stream_length=stream_length, stream_sha1=stream_sha1,
+                                       finished_parts=self.finished_parts)
 
 
 class BaseExecutionStep(object):
@@ -321,13 +323,18 @@ class CopyPartExecutionStep(BaseExecutionStep):
 
 
 class UploadFileExecutionStep(BaseExecutionStep):
-    def __init__(self, emerge_execution, stream_opener, stream_length=None):
+    def __init__(self, emerge_execution, stream_opener, stream_length=None, stream_sha1=None):
         self.emerge_execution = emerge_execution
         self.stream_opener = stream_opener
         self.stream_length = stream_length
+        self.stream_sha1 = stream_sha1
 
     def execute(self):
-        upload_source = UploadSourceStream(self.stream_opener, stream_length=self.stream_length)
+        upload_source = UploadSourceStream(
+            self.stream_opener,
+            stream_length=self.stream_length,
+            stream_sha1=self.stream_sha1,
+        )
         execution = self.emerge_execution
         return execution.services.upload_manager.upload_file(
             execution.bucket_id,
@@ -341,10 +348,12 @@ class UploadFileExecutionStep(BaseExecutionStep):
 
 class UploadPartExecutionStep(BaseExecutionStep):
     def __init__(self, emerge_execution, stream_opener, part_number, large_file_id,
-                 large_file_upload_state, stream_length=None, finished_parts=None):
+                 large_file_upload_state, stream_length=None, stream_sha1=None,
+                 finished_parts=None):
         self.emerge_execution = emerge_execution
         self.stream_opener = stream_opener
         self.stream_length = stream_length
+        self.stream_sha1 = stream_sha1
         self.part_number = part_number
         self.large_file_id = large_file_id
         self.large_file_upload_state = large_file_upload_state
@@ -352,7 +361,11 @@ class UploadPartExecutionStep(BaseExecutionStep):
 
     def execute(self):
         execution = self.emerge_execution
-        upload_source = UploadSourceStream(self.stream_opener, stream_length=self.stream_length)
+        upload_source = UploadSourceStream(
+            self.stream_opener,
+            stream_length=self.stream_length,
+            stream_sha1=self.stream_sha1,
+        )
         return execution.services.upload_manager.upload_part(
             execution.bucket_id,
             self.large_file_id,

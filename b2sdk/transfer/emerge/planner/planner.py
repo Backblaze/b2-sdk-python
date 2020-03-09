@@ -454,5 +454,5 @@ class EmergePart(object):
     def is_hashable(self):
         return self.part_definition.is_hashable()
 
-    def get_sha1(self, emerge_execution):
-        return self.part_definition.get_sha1(emerge_execution)
+    def get_sha1(self):
+        return self.part_definition.get_sha1()

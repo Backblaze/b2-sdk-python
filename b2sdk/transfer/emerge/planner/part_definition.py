@@ -19,7 +19,7 @@ class BaseEmergePartDefinition(object):
     def is_hashable(self):
         return False
 
-    def get_sha1(self, emerge_execution):
+    def get_sha1(self):
         return None
 
 
@@ -43,19 +43,23 @@ class UploadEmergePartDefinition(BaseEmergePartDefinition):
         return self.length
 
     def get_part_id(self):
-        return self.upload_source.get_source_id()
+        return self.get_sha1()
 
     def is_hashable(self):
         return True
 
-    def get_sha1(self, emerge_execution):
+    def get_sha1(self):
         if self._sha1 is None:
             with self._get_stream() as stream:
                 self._sha1, _ = hex_sha1_of_unlimited_stream(stream)
         return self._sha1
 
     def get_execution_step(self, execution_step_factory):
-        return execution_step_factory.create_upload_execution_step(self._get_stream, stream_length=self.length)
+        return execution_step_factory.create_upload_execution_step(
+            self._get_stream,
+            stream_length=self.length,
+            stream_sha1=self.get_sha1(),
+        )
 
     def _get_stream(self):
         fp = self.upload_source.open()
@@ -78,25 +82,32 @@ class UploadSubpartsEmergePartDefinition(BaseEmergePartDefinition):
         return sum(subpart.length for subpart in self.upload_subparts)
 
     def get_part_id(self):
-        return tuple(subpart.get_subpart_id() for subpart in self.upload_subparts)
+        if self.is_hashable():
+            return self.get_sha1()
+        else:
+            return tuple(subpart.get_subpart_id() for subpart in self.upload_subparts)
 
     def is_hashable(self):
         return self._is_hashable
 
-    def get_sha1(self, emerge_execution):
+    def get_sha1(self):
         if self._sha1 is None and self.is_hashable():
-            with self._get_stream(emerge_execution) as stream:
+            with self._get_stream() as stream:
                 self._sha1, _ = hex_sha1_of_unlimited_stream(stream)
         return self._sha1
 
     def get_execution_step(self, execution_step_factory):
         return execution_step_factory.create_upload_execution_step(
-            partial(self._get_stream, execution_step_factory.emerge_execution),
+            partial(self._get_stream, emerge_execution=execution_step_factory.emerge_execution),
             stream_length=self.get_length(),
+            stream_sha1=self.get_sha1(),
         )
 
-    def _get_stream(self, emerge_execution):
-        return ChainedStream([subpart.get_stream_opener(emerge_execution) for subpart in self.upload_subparts])
+    def _get_stream(self, emerge_execution=None):
+        return ChainedStream([
+            subpart.get_stream_opener(emerge_execution=emerge_execution)
+            for subpart in self.upload_subparts
+        ])
 
 
 class CopyEmergePartDefinition(BaseEmergePartDefinition):

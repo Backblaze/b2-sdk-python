@@ -4,6 +4,7 @@ from functools import partial
 
 from b2sdk.download_dest import DownloadDestBytes
 from b2sdk.stream.range import wrap_with_range
+from b2sdk.utils import hex_sha1_of_unlimited_stream
 
 
 class BaseUploadSubpart(object):
@@ -22,9 +23,9 @@ class BaseUploadSubpart(object):
         )
 
     def get_subpart_id(self):
-        return (self.outbound_source.get_source_id(), self.relative_offset, self.length)
+        raise NotImplementedError()
 
-    def get_stream_opener(self, emerge_execution):
+    def get_stream_opener(self, emerge_execution=None):
         raise NotImplementedError()
 
     def is_hashable(self):
@@ -36,7 +37,12 @@ class RemoteSourceUploadSubpart(BaseUploadSubpart):
         super(RemoteSourceUploadSubpart, self).__init__(outbound_source, relative_offset, length)
         self._download_buffer_cache = None
 
-    def get_stream_opener(self, emerge_execution):
+    def get_subpart_id(self):
+        return (self.outbound_source.get_source_id(), self.relative_offset, self.length)
+
+    def get_stream_opener(self, emerge_execution=None):
+        if emerge_execution is None:
+            raise RuntimeError('Cannot open remote source without emerge execution instance.')
         return partial(self._get_download_stream, emerge_execution)
 
     def _get_download_stream(self, emerge_execution):
@@ -55,9 +61,11 @@ class RemoteSourceUploadSubpart(BaseUploadSubpart):
 
 class LocalSourceUploadSubpart(BaseUploadSubpart):
     def get_subpart_id(self):
-        return (self.outbound_source.get_source_id(), self.relative_offset, self.length)
+        with self._get_stream() as stream:
+            sha1, _ = hex_sha1_of_unlimited_stream(stream)
+            return sha1
 
-    def get_stream_opener(self, emerge_execution):
+    def get_stream_opener(self, emerge_execution=None):
         return self._get_stream
 
     def _get_stream(self):

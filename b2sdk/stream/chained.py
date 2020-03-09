@@ -1,9 +1,9 @@
 import io
 
-from b2sdk.stream.base import ReadOnlyMixin
+from b2sdk.stream.base import ReadOnlyStreamMixin
 
 
-class ChainedStream(ReadOnlyMixin, io.IOBase):
+class ChainedStream(ReadOnlyStreamMixin, io.IOBase):
     def __init__(self, stream_openers):
         stream_openers = list(stream_openers)
         if len(stream_openers) == 0:
