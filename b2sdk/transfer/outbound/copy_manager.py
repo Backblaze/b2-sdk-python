@@ -7,12 +7,10 @@ from b2sdk.file_version import FileVersionInfoFactory
 from b2sdk.raw_api import MetadataDirectiveMode
 from b2sdk.utils import B2TraceMetaAbstract
 
-
 try:
     import concurrent.futures as futures
 except ImportError:
     import futures
-
 
 logger = logging.getLogger(__name__)
 
@@ -67,12 +65,7 @@ class CopyManager(object):
         return self.copy_executor
 
     def copy_file(
-        self,
-        copy_source,
-        file_name,
-        content_type=None,
-        file_info=None,
-        destination_bucket_id=None
+        self, copy_source, file_name, content_type=None, file_info=None, destination_bucket_id=None
     ):
         # Run small copies in the same thread pool as large file copies,
         # so that they share resources during a sync.
@@ -86,7 +79,12 @@ class CopyManager(object):
         )
 
     def copy_part(
-        self, large_file_id, part_copy_source, part_number, large_file_upload_state, finished_parts=None
+        self,
+        large_file_id,
+        part_copy_source,
+        part_number,
+        large_file_upload_state,
+        finished_parts=None
     ):
         return self.get_thread_pool().submit(
             self._copy_part,
@@ -98,7 +96,12 @@ class CopyManager(object):
         )
 
     def _copy_part(
-        self, large_file_id, part_copy_source, part_number, large_file_upload_state, finished_parts=None
+        self,
+        large_file_id,
+        part_copy_source,
+        part_number,
+        large_file_upload_state,
+        finished_parts=None
     ):
         """
         Copy a file part to started large file.

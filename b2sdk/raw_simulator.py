@@ -967,7 +967,9 @@ class RawSimulator(AbstractRawApi):
         content_length = len(data_stream)
         sha1_sum = HEX_DIGITS_AT_END
 
-        return dest_bucket.upload_part(large_file_id, part_number, content_length, sha1_sum, data_stream)
+        return dest_bucket.upload_part(
+            large_file_id, part_number, content_length, sha1_sum, data_stream
+        )
 
     def list_buckets(
         self, api_url, account_auth_token, account_id, bucket_id=None, bucket_name=None

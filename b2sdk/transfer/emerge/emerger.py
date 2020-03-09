@@ -31,8 +31,15 @@ class Emerger(object):
         self.emerge_executor = EmergeExecutor(session, services)
 
     def emerge(
-        self, bucket_id, write_intents, file_name, content_type, file_info,
-        progress_listener, planner=None, continue_large_file_id=None,
+        self,
+        bucket_id,
+        write_intents,
+        file_name,
+        content_type,
+        file_info,
+        progress_listener,
+        planner=None,
+        continue_large_file_id=None,
     ):
         """
         Emerge (store multiple sources) of write intents list.
@@ -48,13 +55,25 @@ class Emerger(object):
         planner = planner or self.get_default_emerge_planner()
         emerge_plan = planner.get_emerge_plan(write_intents)
         return self.emerge_executor.execute_emerge_plan(
-            emerge_plan, bucket_id, file_name, content_type, file_info, progress_listener,
+            emerge_plan,
+            bucket_id,
+            file_name,
+            content_type,
+            file_info,
+            progress_listener,
             continue_large_file_id=continue_large_file_id,
         )
 
     def emerge_stream(
-        self, bucket_id, write_intent_iterator, file_name, content_type, file_info,
-        progress_listener, planner=None, continue_large_file_id=None,
+        self,
+        bucket_id,
+        write_intent_iterator,
+        file_name,
+        content_type,
+        file_info,
+        progress_listener,
+        planner=None,
+        continue_large_file_id=None,
     ):
         """
         Emerge (store multiple sources) of write intents iterator.
@@ -70,7 +89,12 @@ class Emerger(object):
         planner = planner or self.get_default_emerge_planner()
         emerge_plan = planner.get_streaming_emerge_plan(write_intent_iterator)
         return self.emerge_executor.execute_emerge_plan(
-            emerge_plan, bucket_id, file_name, content_type, file_info, progress_listener,
+            emerge_plan,
+            bucket_id,
+            file_name,
+            content_type,
+            file_info,
+            progress_listener,
             continue_large_file_id=continue_large_file_id,
         )
 

@@ -19,13 +19,20 @@ GIGABYTE = 1000 * MEGABYTE
 
 
 class EmergePlanner(object):
-    def __init__(self, min_part_size=5 * MEGABYTE, recommended_part_size=100 * MEGABYTE, max_part_size=5 * GIGABYTE):
+    def __init__(
+        self,
+        min_part_size=5 * MEGABYTE,
+        recommended_part_size=100 * MEGABYTE,
+        max_part_size=5 * GIGABYTE
+    ):
         self.min_part_size = min(min_part_size, recommended_part_size, max_part_size)
         self.recommended_part_size = min(recommended_part_size, max_part_size)
         self.max_part_size = max_part_size
 
     @classmethod
-    def from_account_info(cls, account_info, min_part_size=None, recommended_part_size=None, max_part_size=None):
+    def from_account_info(
+        cls, account_info, min_part_size=None, recommended_part_size=None, max_part_size=None
+    ):
         # TODO: add support for getting `min_part_size` and `max_part_size` from account info
         if recommended_part_size is None:
             # TODO: change `get_minimum_part_size` to correct name
@@ -47,9 +54,7 @@ class EmergePlanner(object):
     def _get_emerge_plan(self, write_intent_iterator, plan_class):
         return plan_class(
             self._get_emerge_parts(
-                self._select_intent_fragments(
-                    self._validatation_iterator(write_intent_iterator)
-                )
+                self._select_intent_fragments(self._validatation_iterator(write_intent_iterator))
             )
         )
 
@@ -146,7 +151,9 @@ class EmergePlanner(object):
                 part_count += 1
             base_part_size = int(fragment_length / part_count)
             size_reminder = fragment_length % part_count
-            part_sizes = [base_part_size + (1 if i < size_reminder else 0) for i in range(part_count)]
+            part_sizes = [
+                base_part_size + (1 if i < size_reminder else 0) for i in range(part_count)
+            ]
 
         copy_source = copy_intent.outbound_source
         relative_offset = start_offset - copy_intent.destination_offset
@@ -202,7 +209,9 @@ class EmergePlanner(object):
             else:
                 incoming_offset = incoming_intent.destination_offset
 
-            upload_intents = list(upload_intents_state.state_update(last_sent_offset, incoming_offset))
+            upload_intents = list(
+                upload_intents_state.state_update(last_sent_offset, incoming_offset)
+            )
             copy_intents = list(copy_intents_state.state_update(last_sent_offset, incoming_offset))
 
             intent_fragments = self._merge_intent_fragments(
@@ -308,17 +317,20 @@ class IntentsState(object):
             # intent iterator is drained and this state is empty
             return
 
-        if (self._current_intent is None and
-                self._next_intent is not None and
-                (self._next_intent.destination_offset != effective_incoming_offset or
-                 incoming_offset is None)):
+        if (
+            self._current_intent is None and self._next_intent is not None and (
+                self._next_intent.destination_offset != effective_incoming_offset or
+                incoming_offset is None
+            )
+        ):
             self._set_current_intent(self._next_intent, last_sent_offset)
             self._set_next_intent(None)
 
         # current and next can be both not None at this point only if they overlap
-        if (self._current_intent is not None
-                and self._next_intent is not None
-                and effective_incoming_offset > self._current_intent_end):
+        if (
+            self._current_intent is not None and self._next_intent is not None and
+            effective_incoming_offset > self._current_intent_end
+        ):
             # incoming intent does not overlap with current intent
             # so we switch to next because we are sure that we will have to use it anyway
             # (of course other overriding (eg. "copy" over "upload") state can have
@@ -329,7 +341,9 @@ class IntentsState(object):
                 self._set_current_intent(self._next_intent, last_sent_offset)
                 self._set_next_intent(None)
             else:
-                remaining_len = self.protected_intent_length - (last_sent_offset - self._current_intent_start)
+                remaining_len = self.protected_intent_length - (
+                    last_sent_offset - self._current_intent_start
+                )
                 if remaining_len > 0:
                     last_sent_offset += remaining_len
                     if not self._can_be_protected(last_sent_offset, self._next_intent_end):

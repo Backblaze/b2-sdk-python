@@ -47,7 +47,8 @@ class UploadSourceBytes(AbstractUploadSource):
     def __repr__(self):
         return '<{classname} data={data} id={id}>'.format(
             classname=self.__class__.__name__,
-            data=str(self.data_bytes[:20]) + '...' if len(self.data_bytes) > 20 else self.data_bytes,
+            data=str(self.data_bytes[:20]) +
+            '...' if len(self.data_bytes) > 20 else self.data_bytes,
             id=id(self),
         )
 
@@ -70,8 +71,10 @@ class UploadSourceLocalFile(AbstractUploadSource):
         self.content_sha1 = content_sha1
 
     def __repr__(self):
-        return ('<{classname} local_path={local_path} content_length={content_length} '
-                'content_sha1={content_sha1} id={id}>').format(
+        return (
+            '<{classname} local_path={local_path} content_length={content_length} '
+            'content_sha1={content_sha1} id={id}>'
+        ).format(
             classname=self.__class__.__name__,
             local_path=self.local_path,
             content_length=self.content_length,
@@ -108,8 +111,10 @@ class UploadSourceLocalFileRange(UploadSourceLocalFile):
             self.content_length = length
 
     def __repr__(self):
-        return ('<{classname} local_path={local_path} offset={offset} '
-                'content_length={content_length} content_sha1={content_sha1} id={id}>').format(
+        return (
+            '<{classname} local_path={local_path} offset={offset} '
+            'content_length={content_length} content_sha1={content_sha1} id={id}>'
+        ).format(
             classname=self.__class__.__name__,
             local_path=self.local_path,
             offset=self.offset,
@@ -130,8 +135,10 @@ class UploadSourceStream(AbstractUploadSource):
         self._content_sha1 = stream_sha1
 
     def __repr__(self):
-        return ('<{classname} stream_opener={stream_opener} content_length={content_length} '
-                'content_sha1={content_sha1} id={id}>').format(
+        return (
+            '<{classname} stream_opener={stream_opener} content_length={content_length} '
+            'content_sha1={content_sha1} id={id}>'
+        ).format(
             classname=self.__class__.__name__,
             stream_opener=repr(self.stream_opener),
             content_length=self._content_length,
@@ -168,8 +175,10 @@ class UploadSourceStreamRange(UploadSourceStream):
         self._offset = offset
 
     def __repr__(self):
-        return ('<{classname} stream_opener={stream_opener} offset={offset} '
-                'content_length={content_length} content_sha1={content_sha1} id={id}>').format(
+        return (
+            '<{classname} stream_opener={stream_opener} offset={offset} '
+            'content_length={content_length} content_sha1={content_sha1} id={id}>'
+        ).format(
             classname=self.__class__.__name__,
             stream_opener=repr(self.stream_opener),
             offset=self._offset,
@@ -179,4 +188,6 @@ class UploadSourceStreamRange(UploadSourceStream):
         )
 
     def open(self):
-        return RangeOfInputStream(super(UploadSourceStreamRange, self).open(), self._offset, self._content_length)
+        return RangeOfInputStream(
+            super(UploadSourceStreamRange, self).open(), self._offset, self._content_length
+        )

@@ -20,7 +20,6 @@ from .report import SyncFileReporter
 
 from b2sdk.transfer.outbound.upload_source import UploadSourceLocalFile
 
-
 logger = logging.getLogger(__name__)
 
 

@@ -23,7 +23,6 @@ from b2sdk.transfer.emerge.planner.planner import EmergePlanner
 from b2sdk.transfer.emerge.write_intent import WriteIntent
 from b2sdk.transfer.emerge.executor import AUTO_CONTENT_TYPE
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -466,8 +465,7 @@ class Bucket(object):
 
         if recomended_part_size is not None:
             planner = EmergePlanner.from_account_info(
-                self.api.session.account_info,
-                recomended_part_size=recomended_part_size
+                self.api.session.account_info, recomended_part_size=recomended_part_size
             )
         else:
             planner = None

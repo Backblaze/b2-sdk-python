@@ -4,14 +4,21 @@ from b2sdk.transfer.outbound.upload_source import AbstractUploadSource
 
 class WriteIntent(object):
     def __init__(self, outbound_source, destination_offset=0):
-        if not (isinstance(outbound_source, CopySource) or isinstance(outbound_source, AbstractUploadSource)):
-            raise ValueError('Outbound source have to be instance of either of `CopySource` or `AbstractUploadSource`')
+        if not (
+            isinstance(outbound_source, CopySource) or
+            isinstance(outbound_source, AbstractUploadSource)
+        ):
+            raise ValueError(
+                'Outbound source have to be instance of either of `CopySource` or `AbstractUploadSource`'
+            )
         self.outbound_source = outbound_source
         self.destination_offset = destination_offset
 
     def __repr__(self):
-        return ('<{classname} outbound_source={outbound_source} '
-                'destination_offset={destination_offset} id={id}>').format(
+        return (
+            '<{classname} outbound_source={outbound_source} '
+            'destination_offset={destination_offset} id={id}>'
+        ).format(
             classname=self.__class__.__name__,
             outbound_source=repr(self.outbound_source),
             destination_offset=self.destination_offset,

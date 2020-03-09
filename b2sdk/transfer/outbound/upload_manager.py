@@ -71,7 +71,9 @@ class UploadManager(object):
             self.upload_executor = futures.ThreadPoolExecutor(max_workers=self.max_workers)
         return self.upload_executor
 
-    def upload_file(self, bucket_id, upload_source, file_name, content_type, file_info, progress_listener):
+    def upload_file(
+        self, bucket_id, upload_source, file_name, content_type, file_info, progress_listener
+    ):
         f = self.get_thread_pool().submit(
             self._upload_small_file,
             bucket_id,
@@ -84,7 +86,13 @@ class UploadManager(object):
         return f
 
     def upload_part(
-        self, bucket_id, file_id, part_upload_source, part_number, large_file_upload_state, finished_parts=None
+        self,
+        bucket_id,
+        file_id,
+        part_upload_source,
+        part_number,
+        large_file_upload_state,
+        finished_parts=None
     ):
         f = self.get_thread_pool().submit(
             self._upload_part,
@@ -98,7 +106,13 @@ class UploadManager(object):
         return f
 
     def _upload_part(
-        self, bucket_id, file_id, part_upload_source, part_number, large_file_upload_state, finished_parts=None
+        self,
+        bucket_id,
+        file_id,
+        part_upload_source,
+        part_number,
+        large_file_upload_state,
+        finished_parts=None
     ):
         """
         Upload a file part to started large file.
@@ -134,11 +148,13 @@ class UploadManager(object):
             try:
                 with part_upload_source.open() as part_stream:
                     input_stream = ReadingStreamWithProgress(part_stream, part_progress_listener)
-                    hashing_stream = StreamWithHash(input_stream, part_upload_source.get_content_length())
+                    hashing_stream = StreamWithHash(
+                        input_stream, part_upload_source.get_content_length()
+                    )
                     # it is important that `len()` works on `hashing_stream`
                     response = self.session.upload_part(
-                        file_id, part_number, hashing_stream.length,
-                        HEX_DIGITS_AT_END, hashing_stream
+                        file_id, part_number, hashing_stream.length, HEX_DIGITS_AT_END,
+                        hashing_stream
                     )
                     assert hashing_stream.hash == response['contentSha1']
                     return response
@@ -166,8 +182,8 @@ class UploadManager(object):
                         hashing_stream = StreamWithHash(input_stream, content_length)
                         # it is important that `len()` works on `hashing_stream`
                         response = self.session.upload_file(
-                            bucket_id, file_name, hashing_stream.length, content_type, HEX_DIGITS_AT_END,
-                            file_info, hashing_stream
+                            bucket_id, file_name, hashing_stream.length, content_type,
+                            HEX_DIGITS_AT_END, file_info, hashing_stream
                         )
                         assert hashing_stream.hash == response['contentSha1']
                         return FileVersionInfoFactory.from_api_response(response)

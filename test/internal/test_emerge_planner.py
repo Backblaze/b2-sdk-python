@@ -84,6 +84,8 @@ class TestEmergePlanner(TestBase):
             max_part_size=self.max_size,
         )
 
+    # yapf: disable
+
     def test_part_sizes(self):
         self.assertGreater(self.min_size, 0)
         self.assertGreater(self.recommended_size, self.min_size)
@@ -531,6 +533,8 @@ class TestEmergePlanner(TestBase):
             [WriteIntent(source_upload)],
             [part(source_upload)],
         )
+
+    # yapf: enable
 
     def verify_emerge_plan_for_write_intents(self, write_intents, expected_part_defs):
         emerge_plan = self.planner.get_emerge_plan(write_intents)

@@ -44,12 +44,8 @@ class Services(object):
     def __init__(self, session, max_upload_workers=10, max_copy_workers=10):
         self.large_file = LargeFileServices(session)
         self.download_manager = DownloadManager(session)
-        self.upload_manager = UploadManager(
-            session, self, max_upload_workers=max_upload_workers
-        )
-        self.copy_manager = CopyManager(
-            session, self, max_copy_workers=max_copy_workers
-        )
+        self.upload_manager = UploadManager(session, self, max_upload_workers=max_upload_workers)
+        self.copy_manager = CopyManager(session, self, max_copy_workers=max_copy_workers)
         self.emerger = Emerger(session, self)
 
 

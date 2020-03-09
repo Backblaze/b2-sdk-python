@@ -196,4 +196,3 @@ def make_progress_listener(description, quiet):
         return TqdmProgressListener(description)
     else:
         return SimpleProgressListener(description)
-

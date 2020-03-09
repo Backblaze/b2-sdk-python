@@ -51,7 +51,9 @@ class LargeFileServices(object):
 
     def get_unfinished_large_file(self, bucket_id, large_file_id, prefix=None):
         result = list(
-            self.list_unfinished_large_files(bucket_id, start_file_id=large_file_id, batch_size=1, prefix=prefix)
+            self.list_unfinished_large_files(
+                bucket_id, start_file_id=large_file_id, batch_size=1, prefix=prefix
+            )
         )
         if not result:
             return None

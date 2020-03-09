@@ -31,8 +31,10 @@ class UploadEmergePartDefinition(BaseEmergePartDefinition):
         self._sha1 = None
 
     def __repr__(self):
-        return ('<{classname} upload_source={upload_source} relative_offset={relative_offset} '
-                'length={length}>').format(
+        return (
+            '<{classname} upload_source={upload_source} relative_offset={relative_offset} '
+            'length={length}>'
+        ).format(
             classname=self.__class__.__name__,
             upload_source=repr(self.upload_source),
             relative_offset=self.relative_offset,
@@ -63,7 +65,9 @@ class UploadEmergePartDefinition(BaseEmergePartDefinition):
 
     def _get_stream(self):
         fp = self.upload_source.open()
-        return wrap_with_range(fp, self.upload_source.get_content_length(), self.relative_offset, self.length)
+        return wrap_with_range(
+            fp, self.upload_source.get_content_length(), self.relative_offset, self.length
+        )
 
 
 class UploadSubpartsEmergePartDefinition(BaseEmergePartDefinition):
@@ -104,10 +108,12 @@ class UploadSubpartsEmergePartDefinition(BaseEmergePartDefinition):
         )
 
     def _get_stream(self, emerge_execution=None):
-        return ChainedStream([
-            subpart.get_stream_opener(emerge_execution=emerge_execution)
-            for subpart in self.upload_subparts
-        ])
+        return ChainedStream(
+            [
+                subpart.get_stream_opener(emerge_execution=emerge_execution)
+                for subpart in self.upload_subparts
+            ]
+        )
 
 
 class CopyEmergePartDefinition(BaseEmergePartDefinition):
@@ -117,8 +123,10 @@ class CopyEmergePartDefinition(BaseEmergePartDefinition):
         self.length = length
 
     def __repr__(self):
-        return ('<{classname} copy_source={copy_source} relative_offset={relative_offset} '
-                'length={length}>').format(
+        return (
+            '<{classname} copy_source={copy_source} relative_offset={relative_offset} '
+            'length={length}>'
+        ).format(
             classname=self.__class__.__name__,
             copy_source=repr(self.copy_source),
             relative_offset=self.relative_offset,

@@ -14,8 +14,10 @@ class BaseUploadSubpart(object):
         self.length = length
 
     def __repr__(self):
-        return ('<{classname} outbound_source={outbound_source} relative_offset={relative_offset} '
-                'length={length}>').format(
+        return (
+            '<{classname} outbound_source={outbound_source} relative_offset={relative_offset} '
+            'length={length}>'
+        ).format(
             classname=self.__class__.__name__,
             outbound_source=repr(self.outbound_source),
             relative_offset=self.relative_offset,
@@ -55,7 +57,9 @@ class RemoteSourceUploadSubpart(BaseUploadSubpart):
         absolute_offset = self.outbound_source.offset + self.relative_offset
         download_dest = DownloadDestBytes()
         range_ = (absolute_offset, absolute_offset + self.length - 1)
-        emerge_execution.services.download_manager.download_file_from_url(url, download_dest, range_=range_)
+        emerge_execution.services.download_manager.download_file_from_url(
+            url, download_dest, range_=range_
+        )
         return download_dest.get_bytes_written()
 
 
@@ -70,7 +74,9 @@ class LocalSourceUploadSubpart(BaseUploadSubpart):
 
     def _get_stream(self):
         fp = self.outbound_source.open()
-        return wrap_with_range(fp, self.outbound_source.get_content_length(), self.relative_offset, self.length)
+        return wrap_with_range(
+            fp, self.outbound_source.get_content_length(), self.relative_offset, self.length
+        )
 
     def is_hashable(self):
         return True
