@@ -1,3 +1,13 @@
+######################################################################
+#
+# File: b2sdk/transfer/outbound/copy_source.py
+#
+# Copyright 2020 Backblaze Inc. All Rights Reserved.
+#
+# License https://www.backblaze.com/using_b2_code.html
+#
+######################################################################
+
 from b2sdk.transfer.outbound.outbound_source import OutboundTransferSource
 
 
@@ -21,6 +31,12 @@ class CopySource(OutboundTransferSource):
     def get_content_length(self):
         return self.length
 
+    def is_upload(self):
+        return False
+
+    def is_copy(self):
+        return True
+
     def get_bytes_range(self):
         if self.length is None:
             if self.offset > 0:
@@ -30,8 +46,8 @@ class CopySource(OutboundTransferSource):
 
         return (self.offset, self.offset + self.length - 1)
 
-    def get_copy_source_range(self, relative_offset, length):
-        if self.length is not None and length + relative_offset > self.length:
+    def get_copy_source_range(self, relative_offset, range_length):
+        if self.length is not None and range_length + relative_offset > self.length:
             raise ValueError('Range length overflow source length')
         range_offset = self.offset + relative_offset
-        return self.__class__(self.file_id, range_offset, length)
+        return self.__class__(self.file_id, range_offset, range_length)

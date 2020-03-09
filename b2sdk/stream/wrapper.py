@@ -1,14 +1,26 @@
+######################################################################
+#
+# File: b2sdk/stream/wrapper.py
+#
+# Copyright 2020 Backblaze Inc. All Rights Reserved.
+#
+# License https://www.backblaze.com/using_b2_code.html
+#
+######################################################################
+
 import io
 
 
-class BaseStreamWrapper(io.IOBase):
+class StreamWrapper(io.IOBase):
     """
-    Base wrapper for a file-like object.
-
-    It does not implement public constructor so subclasses have to define `stream` attribute
+    Wrapper for a file-like object.
     """
 
-    stream = NotImplemented
+    def __init__(self, stream):
+        """
+        :param stream: the stream to read from or write to
+        """
+        self.stream = stream
 
     def seekable(self):
         return self.stream.seekable()
@@ -18,6 +30,8 @@ class BaseStreamWrapper(io.IOBase):
         Seek to a given position in the stream.
 
         :param int pos: position in the stream
+        :return: new absolute position
+        :rtype: int
         """
         return self.stream.seek(pos, whence)
 
@@ -48,7 +62,10 @@ class BaseStreamWrapper(io.IOBase):
         :param int size: number of bytes to read
         :return: data read from the stream
         """
-        return self.stream.read(size)
+        if size is not None:
+            return self.stream.read(size)
+        else:
+            return self.stream.read()
 
     def writable(self):
         return self.stream.writable()
@@ -62,24 +79,20 @@ class BaseStreamWrapper(io.IOBase):
         return self.stream.write(data)
 
     def close(self):
-        super(BaseStreamWrapper, self).close()
+        super(StreamWrapper, self).close()
         self.stream.close()
 
 
-class StreamWrapper(BaseStreamWrapper):
+class StreamWithLengthWrapper(StreamWrapper):
     """
-    Basic wrapper for a file-like object.
+    Wrapper for a file-like object that supports `__len__` interface
     """
 
-    def __init__(self, stream):
+    def __init__(self, stream, length=None):
         """
         :param stream: the stream to read from or write to
+        :param int length: length of the stream
         """
-        self.stream = stream
-
-
-class StreamWithLengthWrapper(StreamWrapper):
-    def __init__(self, stream, length):
         super(StreamWithLengthWrapper, self).__init__(stream)
         self.length = length
 

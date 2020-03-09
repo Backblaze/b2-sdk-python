@@ -1,8 +1,8 @@
 ######################################################################
 #
-# File: b2sdk/upload_source.py
+# File: b2sdk/transfer/outbound/upload_source.py
 #
-# Copyright 2019 Backblaze Inc. All Rights Reserved.
+# Copyright 2020 Backblaze Inc. All Rights Reserved.
 #
 # License https://www.backblaze.com/using_b2_code.html
 #
@@ -38,6 +38,12 @@ class AbstractUploadSource(OutboundTransferSource):
         data can be read.
         :return:
         """
+
+    def is_upload(self):
+        return True
+
+    def is_copy(self):
+        return False
 
 
 class UploadSourceBytes(AbstractUploadSource):

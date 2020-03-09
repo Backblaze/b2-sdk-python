@@ -1,3 +1,13 @@
+######################################################################
+#
+# File: b2sdk/transfer/inbound/download_manager.py
+#
+# Copyright 2020 Backblaze Inc. All Rights Reserved.
+#
+# License https://www.backblaze.com/using_b2_code.html
+#
+######################################################################
+
 import logging
 import six
 
@@ -36,16 +46,14 @@ class DownloadManager(object):
     MIN_CHUNK_SIZE = 8192  # ~1MB file will show ~1% progress increment
     MAX_CHUNK_SIZE = 1024**2
 
-    def __init__(self, session):
+    def __init__(self, services):
         """
-        Initialize the DownloadManager using the given session.
+        Initialize the DownloadManager using the given services object.
 
-        :param session: an instance of :class:`~b2sdk.v1.B2Session`,
-                      or any custom class derived from
-                      :class:`~b2sdk.v1.B2Session`
+        :param b2sdk.v1.Services services:
         """
 
-        self.session = session
+        self.services = services
         self.strategies = [
             ParallelDownloader(
                 max_streams=self.DEFAULT_MAX_STREAMS,
@@ -75,7 +83,7 @@ class DownloadManager(object):
         """
         progress_listener = progress_listener or DoNothingProgressListener()
         download_dest = DownloadDestProgressWrapper(download_dest, progress_listener)
-        with self.session.download_file_from_url(
+        with self.services.session.download_file_from_url(
             url,
             range_=range_,
         ) as response:
@@ -107,7 +115,7 @@ class DownloadManager(object):
                 for strategy in self.strategies:
                     if strategy.is_suitable(metadata, progress_listener):
                         bytes_read, actual_sha1 = strategy.download(
-                            file, response, metadata, self.session
+                            file, response, metadata, self.services.session
                         )
                         break
                 else:

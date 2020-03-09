@@ -1,3 +1,13 @@
+######################################################################
+#
+# File: b2sdk/transfer/outbound/large_file_upload_state.py
+#
+# Copyright 2020 Backblaze Inc. All Rights Reserved.
+#
+# License https://www.backblaze.com/using_b2_code.html
+#
+######################################################################
+
 import threading
 
 

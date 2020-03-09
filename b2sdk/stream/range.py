@@ -35,16 +35,22 @@ class RangeOfInputStream(ReadOnlyStreamMixin, StreamWithLengthWrapper):
         """
         Seek to a given position in the stream.
 
-        :param int pos: position in the stream
+        :param int pos: position in the stream relative to steam offset
+        :return: new position relative to stream offset
+        :rtype: int
         """
         if whence != 0:
-            # TODO: maybe support other possible values...
             raise io.UnsupportedOperation('only SEEK_SET is supported')
         abs_pos = super(RangeOfInputStream, self).seek(self.offset + pos)
         self.relative_pos = abs_pos - self.offset
-        return self.relative_pos
+        return self.tell()
 
     def tell(self):
+        """
+        Return current stream position relative to offset.
+
+        :rtype: int
+        """
         return self.relative_pos
 
     def read(self, size=None):
@@ -53,6 +59,7 @@ class RangeOfInputStream(ReadOnlyStreamMixin, StreamWithLengthWrapper):
 
         :param int size: number of bytes to read
         :return: data read from the stream
+        :rtype: bytes
         """
         remaining = max(0, self.length - self.relative_pos)
         if size is None:

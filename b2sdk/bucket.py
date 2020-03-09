@@ -19,7 +19,6 @@ from .utils import B2TraceMeta, disable_trace, limit_trace_arguments
 
 from b2sdk.transfer.outbound.copy_source import CopySource
 from b2sdk.transfer.outbound.upload_source import UploadSourceBytes, UploadSourceLocalFile
-from b2sdk.transfer.emerge.planner.planner import EmergePlanner
 from b2sdk.transfer.emerge.write_intent import WriteIntent
 from b2sdk.transfer.emerge.executor import AUTO_CONTENT_TYPE
 
@@ -32,7 +31,6 @@ class Bucket(object):
     Provide access to a bucket in B2: listing files, uploading and downloading.
     """
 
-    # TODO: can be deprecated
     DEFAULT_CONTENT_TYPE = AUTO_CONTENT_TYPE
 
     def __init__(
@@ -283,7 +281,7 @@ class Bucket(object):
     def list_unfinished_large_files(self, start_file_id=None, batch_size=None, prefix=None):
         """
         A generator that yields an :py:class:`b2sdk.v1.UnfinishedLargeFile` for each
-        unfinished large file in the bucket, starting at the given file.
+        unfinished large file in the bucket, starting at the given file, filtering by prefix.
 
         :param str,None start_file_id: a file ID to start from or None to start from the beginning
         :param int,None batch_size: max file count
@@ -406,7 +404,7 @@ class Bucket(object):
             file_info=file_info,
             progress_listener=progress_listener,
             # FIXME: Bucket.upload documents wrong logic
-            recomended_part_size=min_part_size,
+            recommended_upload_part_size=min_part_size,
         )
 
     def create_file(
@@ -416,9 +414,30 @@ class Bucket(object):
         content_type=None,
         file_info=None,
         progress_listener=None,
-        recomended_part_size=None,
+        recommended_upload_part_size=None,
         continue_large_file_id=None,
     ):
+        """
+        Creates a new file in this bucket using an iterable (list, tuple etc) of remote or local sources.
+
+        Source ranges can overlap and remote sources will be prioritized over local sources (when possible).
+        For more information and usage examples please see :ref:`Advanced usage patterns <AdvancedUsagePatterns>`.
+
+        :param list[b2sdk.v1.WriteIntent] write_intents: list of write intents (remote or local sources)
+        :param str new_file_name: file name of the new file
+        :param str,None content_type: content_type for the new file, if ``None`` content_type would be
+                        automatically determined or it may be copied if it resolves
+                        as single part remote source copy
+        :param dict,None file_info: file_info for the new file, if ``None`` it will be set to empty dict
+                        or it may be copied if it resolves as single part remote source copy
+        :param b2sdk.v1.AbstractProgressListener,None progress_listener: a progress listener object to use,
+                        or ``None`` to not report progress
+        :param int,None recommended_upload_part_size: the recommended part size to use for uploading local sources
+                        or ``None`` to determine automatically, but remote sources would be copied with
+                        maximum possible part size
+        :param str,None continue_large_file_id: large file id that should be selected to resume file creation
+                        for multipart upload/copy, ``None`` for automatic search for this id
+        """
         return self._create_file(
             self.api.services.emerger.emerge,
             write_intents,
@@ -427,6 +446,7 @@ class Bucket(object):
             file_info=file_info,
             progress_listener=progress_listener,
             continue_large_file_id=continue_large_file_id,
+            recommended_upload_part_size=recommended_upload_part_size,
         )
 
     def create_file_stream(
@@ -436,9 +456,32 @@ class Bucket(object):
         content_type=None,
         file_info=None,
         progress_listener=None,
-        recomended_part_size=None,
+        recommended_upload_part_size=None,
         continue_large_file_id=None,
     ):
+        """
+        Creates a new file in this bucket using a stream of multiple remote or local sources.
+
+        Source ranges can overlap and remote sources will be prioritized over local sources (when possible).
+        For more information and usage examples please see :ref:`Advanced usage patterns <AdvancedUsagePatterns>`.
+
+        :param iterator[b2sdk.v1.WriteIntent] write_intents_iterator: iterator of write intents which
+                        are sorted ascending by ``destination_offset``
+        :param str new_file_name: file name of the new file
+        :param str,None content_type: content_type for the new file, if ``None`` content_type would be
+                        automatically determined or it may be copied if it resolves
+                        as single part remote source copy
+        :param dict,None file_info: file_info for the new file, if ``None`` it will be set to empty dict
+                        or it may be copied if it resolves as single part remote source copy
+        :param b2sdk.v1.AbstractProgressListener,None progress_listener: a progress listener object to use,
+                        or ``None`` to not report progress
+        :param int,None recommended_upload_part_size: the recommended part size to use for uploading local sources
+                        or ``None`` to determine automatically, but remote sources would be copied with
+                        maximum possible part size
+        :param str,None continue_large_file_id: large file id that should be selected to resume file creation
+                        for multipart upload/copy, if ``None`` in multipart case it would always start a new
+                        large file
+        """
         return self._create_file(
             self.api.services.emerger.emerge_stream,
             write_intents_iterator,
@@ -447,6 +490,7 @@ class Bucket(object):
             file_info=file_info,
             progress_listener=progress_listener,
             continue_large_file_id=continue_large_file_id,
+            recommended_upload_part_size=recommended_upload_part_size,
         )
 
     def _create_file(
@@ -457,18 +501,12 @@ class Bucket(object):
         content_type=None,
         file_info=None,
         progress_listener=None,
-        recomended_part_size=None,
+        recommended_upload_part_size=None,
         continue_large_file_id=None,
     ):
         validate_b2_file_name(file_name)
         progress_listener = progress_listener or DoNothingProgressListener()
 
-        if recomended_part_size is not None:
-            planner = EmergePlanner.from_account_info(
-                self.api.session.account_info, recomended_part_size=recomended_part_size
-            )
-        else:
-            planner = None
         return emerger_method(
             self.id_,
             write_intents_iterable,
@@ -476,7 +514,7 @@ class Bucket(object):
             content_type,
             file_info,
             progress_listener,
-            planner=planner,
+            recommended_upload_part_size=recommended_upload_part_size,
             continue_large_file_id=continue_large_file_id,
         )
 
@@ -487,16 +525,34 @@ class Bucket(object):
         content_type=None,
         file_info=None,
         progress_listener=None,
-        recomended_part_size=None,
+        recommended_upload_part_size=None,
         continue_large_file_id=None,
     ):
+        """
+        Creates a new file in this bucket by concatenating multiple remote or local sources.
+
+        :param list[b2sdk.v1.OutboundTransferSource] outbound_sources: list of outbound sources (remote or local)
+        :param str new_file_name: file name of the new file
+        :param str,None content_type: content_type for the new file, if ``None`` content_type would be
+                        automatically determined from file name or it may be copied if it resolves
+                        as single part remote source copy
+        :param dict,None file_info: file_info for the new file, if ``None`` it will be set to empty dict
+                        or it may be copied if it resolves as single part remote source copy
+        :param b2sdk.v1.AbstractProgressListener,None progress_listener: a progress listener object to use,
+                        or ``None`` to not report progress
+        :param int,None recommended_upload_part_size: the recommended part size to use for uploading local sources
+                        or ``None`` to determine automatically, but remote sources would be copied with
+                        maximum possible part size
+        :param str,None continue_large_file_id: large file id that should be selected to resume file creation
+                        for multipart upload/copy, ``None`` for automatic search for this id
+        """
         return self.create_file(
             WriteIntent.wrap_sources_iterator(outbound_sources),
             file_name,
             content_type=content_type,
             file_info=file_info,
             progress_listener=progress_listener,
-            recomended_part_size=recomended_part_size,
+            recommended_upload_part_size=recommended_upload_part_size,
             continue_large_file_id=continue_large_file_id,
         )
 
@@ -507,16 +563,35 @@ class Bucket(object):
         content_type=None,
         file_info=None,
         progress_listener=None,
-        recomended_part_size=None,
+        recommended_upload_part_size=None,
         continue_large_file_id=None,
     ):
+        """
+        Creates a new file in this bucket by concatenating stream of multiple remote or local sources.
+
+        :param iterator[b2sdk.v1.OutboundTransferSource] outbound_sources_iterator: iterator of outbound sources
+        :param str new_file_name: file name of the new file
+        :param str,None content_type: content_type for the new file, if ``None`` content_type would be
+                        automatically determined or it may be copied if it resolves
+                        as single part remote source copy
+        :param dict,None file_info: file_info for the new file, if ``None`` it will be set to empty dict
+                        or it may be copied if it resolves as single part remote source copy
+        :param b2sdk.v1.AbstractProgressListener,None progress_listener: a progress listener object to use,
+                        or ``None`` to not report progress
+        :param int,None recommended_upload_part_size: the recommended part size to use for uploading local sources
+                        or ``None`` to determine automatically, but remote sources would be copied with
+                        maximum possible part size
+        :param str,None continue_large_file_id: large file id that should be selected to resume file creation
+                        for multipart upload/copy, if ``None`` in multipart case it would always start a new
+                        large file
+        """
         return self.create_file_stream(
             WriteIntent.wrap_sources_iterator(outbound_sources_iterator),
             file_name,
             content_type=content_type,
             file_info=file_info,
             progress_listener=progress_listener,
-            recomended_part_size=recomended_part_size,
+            recommended_upload_part_size=recommended_upload_part_size,
             continue_large_file_id=continue_large_file_id,
         )
 
@@ -553,6 +628,24 @@ class Bucket(object):
         length=None,
         progress_listener=None
     ):
+        """
+        Creates a new file in this bucket by (server-side) copying from an existing file.
+
+        :param str file_id: file ID of existing file to copy from
+        :param str new_file_name: file name of the new file
+        :param str,None content_type: content_type for the new file, if ``None`` and ``b2_copy_file`` will be used
+                        content_type will be copied from source file - otherwise content_type would be
+                        automatically determined
+        :param dict,None file_info: file_info for the new file, if ``None`` will and ``b2_copy_file`` will be used
+                        file_info will be copied from source file - otherwise it will be set to empty dict
+        :param int offset: offset of exisiting file that copy should start from
+        :param int,None length: number of bytes to copy, if ``None`` then ``offset`` have to be ``0`` and it will
+                        use ``b2_copy_file`` without ``range`` parameter so it may fail if file is too large.
+                        For large files length have to be specified to use ``b2_copy_part`` instead.
+        :param b2sdk.v1.AbstractProgressListener,None progress_listener: a progress listener object to use
+                        for multipart copy, or ``None`` to not report progress
+        """
+
         copy_source = CopySource(file_id, offset=offset, length=length)
         if length is None:
             # TODO: it feels like this should be checked on lower level - eg. RawApi
@@ -563,6 +656,7 @@ class Bucket(object):
                 content_type=content_type,
                 file_info=file_info,
                 destination_bucket_id=self.id_,
+                progress_listener=progress_listener,
             ).result()
         else:
             return self.create_file(

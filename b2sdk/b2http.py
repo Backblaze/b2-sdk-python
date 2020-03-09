@@ -122,9 +122,9 @@ def _translate_and_retry(fcn, try_count, post_params=None):
         try:
             return _translate_errors(fcn, post_params)
         except B2Error as e:
-            print('********* HTTP ERROR ***************', e)
             if not e.should_retry_http():
                 raise
+            logger.debug(str(e), exc_info=True)
             if e.retry_after_seconds is not None:
                 sleep_duration = e.retry_after_seconds
                 sleep_reason = 'server asked us to'

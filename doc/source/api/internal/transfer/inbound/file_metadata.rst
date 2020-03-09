@@ -1,7 +1,7 @@
-:mod:`b2sdk.upload_source`
+:mod:`b2sdk.transfer.inbound.file_metadata`
 ===========================================
 
-.. automodule:: b2sdk.upload_source
+.. automodule:: b2sdk.transfer.inbound.file_metadata
     :members:
     :undoc-members:
     :show-inheritance:

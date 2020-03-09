@@ -33,7 +33,6 @@ from .exception import (
 )
 from .stream.hashing import StreamWithHash
 from .raw_api import AbstractRawApi, HEX_DIGITS_AT_END, MetadataDirectiveMode
-from .stream.hashing import StreamWithHash
 from .utils import b2_url_decode, b2_url_encode
 
 ALL_CAPABILITES = [

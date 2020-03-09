@@ -96,9 +96,16 @@ from b2sdk.download_dest import DownloadDestLocalFile
 from b2sdk.download_dest import DownloadDestProgressWrapper
 from b2sdk.download_dest import PreSeekedDownloadDest
 
+from b2sdk.transfer.outbound.outbound_source import OutboundTransferSource
+from b2sdk.transfer.outbound.copy_source import CopySource
 from b2sdk.transfer.outbound.upload_source import AbstractUploadSource
 from b2sdk.transfer.outbound.upload_source import UploadSourceBytes
 from b2sdk.transfer.outbound.upload_source import UploadSourceLocalFile
+from b2sdk.transfer.outbound.upload_source import UploadSourceLocalFileRange
+from b2sdk.transfer.outbound.upload_source import UploadSourceStream
+from b2sdk.transfer.outbound.upload_source import UploadSourceStreamRange
+
+from b2sdk.transfer.emerge.write_intent import WriteIntent
 
 # trasfer
 

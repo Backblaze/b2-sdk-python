@@ -1,3 +1,13 @@
+######################################################################
+#
+# File: b2sdk/transfer/emerge/emerger.py
+#
+# Copyright 2020 Backblaze Inc. All Rights Reserved.
+#
+# License https://www.backblaze.com/using_b2_code.html
+#
+######################################################################
+
 import logging
 
 import six
@@ -16,19 +26,20 @@ class Emerger(object):
     Handle complex actions around multi source copy/uploads.
 
     This class can be used to build advanced copy workflows like incremental upload.
+
+    It creates a emerge plan and pass it to emerge executor - all complex logic
+    is actually implemented in :class:`b2sdk.transfer.emerge.planner.planner.EmergePlanner`
+    and :class:`b2sdk.transfer.emerge.executor.EmergeExecutor`
     """
 
-    def __init__(self, session, services):
-        """
-        Initialize the Emerger using the given session and transfer managers.
+    DEFAULT_STREAMING_MAX_QUEUE_SIZE = 100
 
-        :param session: an instance of :class:`~b2sdk.v1.B2Session`,
-                      or any custom class derived from
-                      :class:`~b2sdk.v1.B2Session`
-        :param services: an instace of :class:`~b2sdk.v1.Services`
+    def __init__(self, services):
         """
-        self.session = session
-        self.emerge_executor = EmergeExecutor(session, services)
+        :param b2sdk.v1.Services services:
+        """
+        self.services = services
+        self.emerge_executor = EmergeExecutor(services)
 
     def emerge(
         self,
@@ -38,21 +49,22 @@ class Emerger(object):
         content_type,
         file_info,
         progress_listener,
-        planner=None,
+        recommended_upload_part_size=None,
         continue_large_file_id=None,
     ):
         """
-        Emerge (store multiple sources) of write intents list.
+        Create a new file (object in the cloud, really) from an iterable (list, tuple etc) of write intents.
 
-        :param  str bucket_id: a bucket ID
-        :param write_intents: list of :class:`~b2sdk.v1.WriteIntent`
+        :param str bucket_id: a bucket ID
+        :param write_intents: write intents to process to create a file
+        :type write_intents: List[b2sdk.v1.WriteIntent]
         :param str file_name: the file name of the new B2 file
         :param str,None content_type: the MIME type or ``None`` to determine automatically
         :param dict,None file_info: a file info to store with the file or ``None`` to not store anything
         :param b2sdk.v1.AbstractProgressListener progress_listener: a progress listener object to use
 
         """
-        planner = planner or self.get_default_emerge_planner()
+        planner = self.get_emerge_planner(recommended_upload_part_size=recommended_upload_part_size)
         emerge_plan = planner.get_emerge_plan(write_intents)
         return self.emerge_executor.execute_emerge_plan(
             emerge_plan,
@@ -72,13 +84,14 @@ class Emerger(object):
         content_type,
         file_info,
         progress_listener,
-        planner=None,
+        recommended_upload_part_size=None,
         continue_large_file_id=None,
+        max_queue_size=DEFAULT_STREAMING_MAX_QUEUE_SIZE,
     ):
         """
-        Emerge (store multiple sources) of write intents iterator.
+        Create a new file (object in the cloud, really) from a stream of write intents.
 
-        :param  str bucket_id: a bucket ID
+        :param str bucket_id: a bucket ID
         :param write_intents: iterator of :class:`~b2sdk.v1.WriteIntent`
         :param str file_name: the file name of the new B2 file
         :param str,None content_type: the MIME type or ``None`` to determine automatically
@@ -86,7 +99,7 @@ class Emerger(object):
         :param b2sdk.v1.AbstractProgressListener progress_listener: a progress listener object to use
 
         """
-        planner = planner or self.get_default_emerge_planner()
+        planner = self.get_emerge_planner(recommended_upload_part_size=recommended_upload_part_size)
         emerge_plan = planner.get_streaming_emerge_plan(write_intent_iterator)
         return self.emerge_executor.execute_emerge_plan(
             emerge_plan,
@@ -96,7 +109,11 @@ class Emerger(object):
             file_info,
             progress_listener,
             continue_large_file_id=continue_large_file_id,
+            max_queue_size=max_queue_size,
         )
 
-    def get_default_emerge_planner(self):
-        return EmergePlanner.from_account_info(self.session.account_info)
+    def get_emerge_planner(self, recommended_upload_part_size=None):
+        return EmergePlanner.from_account_info(
+            self.services.session.account_info,
+            recommended_upload_part_size=recommended_upload_part_size,
+        )

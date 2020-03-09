@@ -41,12 +41,22 @@ def url_for_api(info, api_name):
 
 
 class Services(object):
+    """ Gathers objects that provide high level logic over raw api usage. """
+
     def __init__(self, session, max_upload_workers=10, max_copy_workers=10):
-        self.large_file = LargeFileServices(session)
-        self.download_manager = DownloadManager(session)
-        self.upload_manager = UploadManager(session, self, max_upload_workers=max_upload_workers)
-        self.copy_manager = CopyManager(session, self, max_copy_workers=max_copy_workers)
-        self.emerger = Emerger(session, self)
+        """
+        Initialize Services object using given session.
+
+        :param b2sdk.v1.Session session:
+        :param int max_upload_workers: a number of upload threads
+        :param int max_copy_workers: a number of copy threads
+        """
+        self.session = session
+        self.large_file = LargeFileServices(self)
+        self.download_manager = DownloadManager(self)
+        self.upload_manager = UploadManager(self, max_upload_workers=max_upload_workers)
+        self.copy_manager = CopyManager(self, max_copy_workers=max_copy_workers)
+        self.emerger = Emerger(self)
 
 
 @six.add_metaclass(B2TraceMeta)

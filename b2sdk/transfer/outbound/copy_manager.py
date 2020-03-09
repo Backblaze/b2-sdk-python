@@ -1,3 +1,13 @@
+######################################################################
+#
+# File: b2sdk/transfer/outbound/copy_manager.py
+#
+# Copyright 2020 Backblaze Inc. All Rights Reserved.
+#
+# License https://www.backblaze.com/using_b2_code.html
+#
+######################################################################
+
 import logging
 import six
 
@@ -23,17 +33,11 @@ class CopyManager(object):
 
     MAX_LARGE_FILE_SIZE = 10 * 1000 * 1000 * 1000 * 1000  # 10 TB
 
-    def __init__(self, session, services, max_copy_workers=10):
+    def __init__(self, services, max_copy_workers=10):
         """
-        Initialize the CopyManager using the given session.
-
-        :param session: an instance of :class:`~b2sdk.v1.B2Session`,
-                      or any custom class derived from
-                      :class:`~b2sdk.v1.B2Session`
-        :param services: an instace of :class:`~b2sdk.v1.Services`
-        :param int max_copy_workers: a number of copy threads, default is 10
+        :param b2sdk.v1.Services services:
+        :param int max_copy_workers: a number of copy threads
         """
-        self.session = session
         self.services = services
 
         self.copy_executor = None
@@ -41,14 +45,14 @@ class CopyManager(object):
 
     @property
     def account_info(self):
-        return self.session.account_info
+        return self.services.session.account_info
 
     def set_thread_pool_size(self, max_workers):
         """
         Set the size of the thread pool to use for uploads and downloads.
 
         Must be called before any work starts, or the thread pool will get
-        the default size of 1.
+        the default size.
 
         :param int max_workers: maximum allowed number of workers in a pool
         """
@@ -65,7 +69,13 @@ class CopyManager(object):
         return self.copy_executor
 
     def copy_file(
-        self, copy_source, file_name, content_type=None, file_info=None, destination_bucket_id=None
+        self,
+        copy_source,
+        file_name,
+        content_type=None,
+        file_info=None,
+        destination_bucket_id=None,
+        progress_listener=None,
     ):
         # Run small copies in the same thread pool as large file copies,
         # so that they share resources during a sync.
@@ -76,6 +86,7 @@ class CopyManager(object):
             content_type=content_type,
             file_info=file_info,
             destination_bucket_id=destination_bucket_id,
+            progress_listener=progress_listener,
         )
 
     def copy_part(
@@ -129,7 +140,7 @@ class CopyManager(object):
         if large_file_upload_state.has_error():
             raise AlreadyFailed(large_file_upload_state.get_error_message())
 
-        response = self.session.copy_part(
+        response = self.services.session.copy_part(
             part_copy_source.file_id,
             large_file_id,
             part_number,
@@ -139,11 +150,16 @@ class CopyManager(object):
         return response
 
     def _copy_small_file(
-        self, copy_source, file_name, content_type=None, file_info=None, destination_bucket_id=None
+        self,
+        copy_source,
+        file_name,
+        content_type=None,
+        file_info=None,
+        destination_bucket_id=None,
+        progress_listener=None,
     ):
-        # no progress report - because there is nothing to report
-        if copy_source.content_length is None and copy_source.offset is not None:
-            raise NotImplementedError('copy offset of unknown length is not supported yet')
+        if progress_listener is not None:
+            progress_listener.set_total_bytes(copy_source.get_content_length() or 0)
 
         bytes_range = copy_source.get_bytes_range()
 
@@ -156,7 +172,7 @@ class CopyManager(object):
                 raise ValueError('File info can be not set only when content type is not set')
             metadata_directive = MetadataDirectiveMode.REPLACE
 
-        response = self.session.copy_file(
+        response = self.services.session.copy_file(
             copy_source.file_id,
             file_name,
             bytes_range=bytes_range,
@@ -165,4 +181,7 @@ class CopyManager(object):
             file_info=file_info,
             destination_bucket_id=destination_bucket_id
         )
-        return FileVersionInfoFactory.from_api_response(response)
+        file_info = FileVersionInfoFactory.from_api_response(response)
+        if progress_listener is not None:
+            progress_listener.bytes_completed(file_info.size)
+        return file_info

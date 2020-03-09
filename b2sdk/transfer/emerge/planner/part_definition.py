@@ -1,4 +1,17 @@
+######################################################################
+#
+# File: b2sdk/transfer/emerge/planner/part_definition.py
+#
+# Copyright 2020 Backblaze Inc. All Rights Reserved.
+#
+# License https://www.backblaze.com/using_b2_code.html
+#
+######################################################################
+
+from abc import ABCMeta, abstractmethod
 from functools import partial
+
+import six
 
 from b2sdk.stream.chained import ChainedStream
 from b2sdk.stream.range import wrap_with_range
@@ -6,15 +19,19 @@ from b2sdk.stream.range import wrap_with_range
 from b2sdk.utils import hex_sha1_of_unlimited_stream
 
 
+@six.add_metaclass(ABCMeta)
 class BaseEmergePartDefinition(object):
+    @abstractmethod
     def get_length(self):
-        raise NotImplementedError()
+        pass
 
+    @abstractmethod
     def get_part_id(self):
-        raise NotImplementedError()
+        pass
 
+    @abstractmethod
     def get_execution_step(self, executor, execution_step_factory):
-        raise NotImplementedError()
+        pass
 
     def is_hashable(self):
         return False
@@ -137,7 +154,7 @@ class CopyEmergePartDefinition(BaseEmergePartDefinition):
         return self.length
 
     def get_part_id(self):
-        return (self.copy_source.get_source_id(), self.relative_offset, self.length)
+        return (self.copy_source.file_id, self.relative_offset, self.length)
 
     def get_execution_step(self, execution_step_factory):
         return execution_step_factory.create_copy_execution_step(

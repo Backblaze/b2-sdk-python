@@ -40,6 +40,22 @@ class CopySource(OrigCopySource):
 
 
 def part(source_or_def_list, *offset_len):
+    """ Helper for building emerge parts from outbound sources defs. Makes planner tests easier to read.
+
+    Possible "def" structures:
+
+        ``outbound_source`` - will build correct emerge part using type introspection with
+                              ``0`` for ``offset`` and ``outbound_source.get_content_length()`` for ``length``
+
+        ``outbound_source, offset, length`` - same as above, but given ``offset`` and ``length``
+
+        ``[outbound_source_def,...]``` - will build emerge part using ``UploadSubpartsEmergePartDefinition``
+                                         and type introspection for upload subparts; ``outbound_source_def`` is
+                                         similar to above, either outbound source or tuple with source, offset, length
+    Please notice that ``part([copy_source])`` is a single "small copy" - first download then upload, and
+    ``part(copy_source) is "regular copy" - ``length`` is not verified here
+
+    """
     if isinstance(source_or_def_list, list):
         assert not offset_len
         subparts = []
@@ -80,7 +96,7 @@ class TestEmergePlanner(TestBase):
         self.max_size = 5 * GIGABYTE
         self.planner = EmergePlanner(
             min_part_size=self.min_size,
-            recommended_part_size=self.recommended_size,
+            recommended_upload_part_size=self.recommended_size,
             max_part_size=self.max_size,
         )
 
@@ -88,8 +104,8 @@ class TestEmergePlanner(TestBase):
 
     def test_part_sizes(self):
         self.assertGreater(self.min_size, 0)
-        self.assertGreater(self.recommended_size, self.min_size)
-        self.assertGreater(self.max_size, self.recommended_size)
+        self.assertGreaterEqual(self.recommended_size, self.min_size)
+        self.assertGreaterEqual(self.max_size, self.recommended_size)
 
     def test_simple_concatenate(self):
         sources = [
@@ -123,9 +139,9 @@ class TestEmergePlanner(TestBase):
     def test_single_multipart_upload(self):
         self.assertGreater(self.recommended_size, 2 * self.min_size)
 
-        reminder = 2 * self.min_size
-        source = UploadSource(self.recommended_size * 5 + reminder)
-        expected_part_sizes = [self.recommended_size] * 5 + [reminder]
+        remainder = 2 * self.min_size
+        source = UploadSource(self.recommended_size * 5 + remainder)
+        expected_part_sizes = [self.recommended_size] * 5 + [remainder]
 
         self.verify_emerge_plan_for_write_intents(
             [WriteIntent(source)],
@@ -140,16 +156,16 @@ class TestEmergePlanner(TestBase):
             self.split_source_to_part_defs(source, [self.max_size] * 5)
         )
 
-    def test_single_multipart_copy_reminder(self):
+    def test_single_multipart_copy_remainder(self):
         self.assertGreaterEqual(self.min_size, 2)
 
         source = CopySource(5 * self.max_size + int(self.min_size / 2))
         expected_part_count = 7
         base_part_size = int(source.get_content_length() / expected_part_count)
-        size_reminder = source.get_content_length() % expected_part_count
+        size_remainder = source.get_content_length() % expected_part_count
         expected_part_sizes = (
-            [base_part_size + 1] * size_reminder +
-            [base_part_size] * (expected_part_count - size_reminder)
+            [base_part_size + 1] * size_remainder +
+            [base_part_size] * (expected_part_count - size_remainder)
         )
 
         self.verify_emerge_plan_for_write_intents(
@@ -308,6 +324,12 @@ class TestEmergePlanner(TestBase):
         )
 
     def test_local_stairs_overlap(self):
+        """
+        intent 0 ####
+        intent 1  ####
+        intent 2   ####
+        intent 3    ####
+        """
         self.assertEqual(self.recommended_size % 4, 0)
 
         shift = int(self.recommended_size / 4)
@@ -318,6 +340,11 @@ class TestEmergePlanner(TestBase):
         ]
 
         three_quarters = int(3 * self.recommended_size / 4)
+        #      1234567
+        # su1: ****
+        # su2:  XXXX
+        # su3:   XXXX
+        # su4:    X***
         self.verify_emerge_plan_for_write_intents(
             write_intents,
             [
@@ -379,6 +406,7 @@ class TestEmergePlanner(TestBase):
         )
 
     def test_local_small_copy_overlap(self):
+        self.assertGreater(self.recommended_size, self.min_size * 3 - 3)
         source_upload = UploadSource(self.recommended_size)
         small_size = self.min_size - 1
         source_copy1 = CopySource(small_size)
@@ -396,7 +424,7 @@ class TestEmergePlanner(TestBase):
             [part(source_upload)],
         )
 
-    def test_overlap_cause_small_copy_reminder_2_intent_case(self):
+    def test_overlap_cause_small_copy_remainder_2_intent_case(self):
         self.assertGreater(self.min_size, 2 * MEGABYTE)
         copy_size = self.min_size + MEGABYTE
         copy_overlap_offset = copy_size - 2 * MEGABYTE
@@ -422,7 +450,7 @@ class TestEmergePlanner(TestBase):
             ],
         )
 
-    def test_overlap_cause_small_copy_reminder_3_intent_case(self):
+    def test_overlap_cause_small_copy_remainder_3_intent_case(self):
         self.assertGreater(self.min_size, MEGABYTE)
         copy_size = self.min_size + MEGABYTE
         copy_overlap_offset = copy_size - 2 * MEGABYTE
@@ -482,7 +510,7 @@ class TestEmergePlanner(TestBase):
             ],
         )
 
-    def test_overlap_copy_and_small_copy_reminder_and_upload(self):
+    def test_overlap_copy_and_small_copy_remainder_and_upload(self):
         self.assertGreater(self.min_size, 2 * MEGABYTE)
         self.assertGreater(self.recommended_size, self.min_size + MEGABYTE)
 
@@ -524,7 +552,12 @@ class TestEmergePlanner(TestBase):
             WriteIntent(source_copy2, destination_offset=self.recommended_size + 3 * MEGABYTE),
         ]
 
-        with self.assertRaises(ValueError, 'Cannot emerge file with holes'):
+        hole_msg = ('Cannot emerge file with holes. '
+                    'Found hole range: ({}, {})'.format(
+                        write_intents[2].destination_end_offset,
+                        write_intents[1].destination_offset,
+                    ))
+        with self.assertRaises(ValueError, hole_msg):
             self.planner.get_emerge_plan(write_intents)
 
     def test_empty_upload(self):

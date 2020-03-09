@@ -32,6 +32,8 @@ Public API
    api/progress
    api/sync
    api/utils
+   api/transfer/emerge/write_intent
+   api/transfer/outbound/outbound_source
 
 .. _api_internal:
 
@@ -50,6 +52,11 @@ Internal API
    api/internal/utils
    api/internal/cache
    api/internal/download_dest
+   api/internal/stream/chained
+   api/internal/stream/hashing
+   api/internal/stream/progress
+   api/internal/stream/range
+   api/internal/stream/wrapper
    api/internal/sync/action
    api/internal/sync/exception
    api/internal/sync/file
@@ -59,12 +66,11 @@ Internal API
    api/internal/sync/policy_manager
    api/internal/sync/scan_policies
    api/internal/sync/sync
-   api/internal/transferer/abstract
-   api/internal/transferer/file_metadata
-   api/internal/transferer/parallel
-   api/internal/transferer/range
-   api/internal/transferer/simple
-   api/internal/transferer/transferer
-   api/internal/upload_source
+   api/internal/transfer/inbound/downloader/abstract
+   api/internal/transfer/inbound/downloader/parallel
+   api/internal/transfer/inbound/downloader/range
+   api/internal/transfer/inbound/downloader/simple
+   api/internal/transfer/inbound/download_manager
+   api/internal/transfer/inbound/file_metadata
+   api/internal/transfer/outbound/upload_source
    api/internal/raw_simulator
-

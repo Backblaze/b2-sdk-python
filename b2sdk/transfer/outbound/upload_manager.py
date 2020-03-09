@@ -1,3 +1,13 @@
+######################################################################
+#
+# File: b2sdk/transfer/outbound/upload_manager.py
+#
+# Copyright 2020 Backblaze Inc. All Rights Reserved.
+#
+# License https://www.backblaze.com/using_b2_code.html
+#
+######################################################################
+
 import logging
 import six
 
@@ -30,17 +40,11 @@ class UploadManager(object):
 
     MAX_UPLOAD_ATTEMPTS = 5
 
-    def __init__(self, session, services, max_upload_workers=10):
+    def __init__(self, services, max_upload_workers=10):
         """
-        Initialize the CopyManager using the given session.
-
-        :param session: an instance of :class:`~b2sdk.v1.B2Session`,
-                      or any custom class derived from
-                      :class:`~b2sdk.v1.B2Session`
-        :param services: an instace of :class:`~b2sdk.v1.Services`
-        :param int max_upload_workers: a number of upload threads, default is 10
+        :param b2sdk.v1.Services services:
+        :param int max_upload_workers: a number of upload threads
         """
-        self.session = session
         self.services = services
 
         self.upload_executor = None
@@ -48,14 +52,14 @@ class UploadManager(object):
 
     @property
     def account_info(self):
-        return self.session.account_info
+        return self.services.session.account_info
 
     def set_thread_pool_size(self, max_workers):
         """
         Set the size of the thread pool to use for uploads and downloads.
 
         Must be called before any work starts, or the thread pool will get
-        the default size of 1.
+        the default size.
 
         :param int max_workers: maximum allowed number of workers in a pool
         """
@@ -72,7 +76,13 @@ class UploadManager(object):
         return self.upload_executor
 
     def upload_file(
-        self, bucket_id, upload_source, file_name, content_type, file_info, progress_listener
+        self,
+        bucket_id,
+        upload_source,
+        file_name,
+        content_type,
+        file_info,
+        progress_listener,
     ):
         f = self.get_thread_pool().submit(
             self._upload_small_file,
@@ -92,7 +102,7 @@ class UploadManager(object):
         part_upload_source,
         part_number,
         large_file_upload_state,
-        finished_parts=None
+        finished_parts=None,
     ):
         f = self.get_thread_pool().submit(
             self._upload_part,
@@ -149,10 +159,10 @@ class UploadManager(object):
                 with part_upload_source.open() as part_stream:
                     input_stream = ReadingStreamWithProgress(part_stream, part_progress_listener)
                     hashing_stream = StreamWithHash(
-                        input_stream, part_upload_source.get_content_length()
+                        input_stream, stream_length=part_upload_source.get_content_length()
                     )
                     # it is important that `len()` works on `hashing_stream`
-                    response = self.session.upload_part(
+                    response = self.services.session.upload_part(
                         file_id, part_number, hashing_stream.length, HEX_DIGITS_AT_END,
                         hashing_stream
                     )
@@ -179,9 +189,9 @@ class UploadManager(object):
                 try:
                     with upload_source.open() as file:
                         input_stream = ReadingStreamWithProgress(file, progress_listener)
-                        hashing_stream = StreamWithHash(input_stream, content_length)
+                        hashing_stream = StreamWithHash(input_stream, stream_length=content_length)
                         # it is important that `len()` works on `hashing_stream`
-                        response = self.session.upload_file(
+                        response = self.services.session.upload_file(
                             bucket_id, file_name, hashing_stream.length, content_type,
                             HEX_DIGITS_AT_END, file_info, hashing_stream
                         )

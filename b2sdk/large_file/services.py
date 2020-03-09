@@ -1,11 +1,21 @@
+######################################################################
+#
+# File: b2sdk/large_file/services.py
+#
+# Copyright 2020 Backblaze Inc. All Rights Reserved.
+#
+# License https://www.backblaze.com/using_b2_code.html
+#
+######################################################################
+
 from b2sdk.file_version import FileVersionInfoFactory
 from b2sdk.large_file.part import PartFactory
 from b2sdk.large_file.unfinished_large_file import UnfinishedLargeFile
 
 
 class LargeFileServices(object):
-    def __init__(self, session):
-        self.session = session
+    def __init__(self, services):
+        self.services = services
 
     def list_parts(self, file_id, start_part_number=None, batch_size=None):
         """
@@ -18,7 +28,7 @@ class LargeFileServices(object):
         """
         batch_size = batch_size or 100
         while True:
-            response = self.session.list_parts(file_id, start_part_number, batch_size)
+            response = self.services.session.list_parts(file_id, start_part_number, batch_size)
             for part_dict in response['parts']:
                 yield PartFactory.from_list_parts_dict(part_dict)
             start_part_number = response.get('nextPartNumber')
@@ -30,7 +40,7 @@ class LargeFileServices(object):
     ):
         """
         A generator that yields an :py:class:`b2sdk.v1.UnfinishedLargeFile` for each
-        unfinished large file in the bucket, starting at the given file.
+        unfinished large file in the bucket, starting at the given file, filtering by prefix.
 
         :param str bucket_id: bucket id
         :param str,None start_file_id: a file ID to start from or None to start from the beginning
@@ -40,7 +50,7 @@ class LargeFileServices(object):
         """
         batch_size = batch_size or 100
         while True:
-            batch = self.session.list_unfinished_large_files(
+            batch = self.services.session.list_unfinished_large_files(
                 bucket_id, start_file_id, batch_size, prefix
             )
             for file_dict in batch['files']:
@@ -73,7 +83,7 @@ class LargeFileServices(object):
         :param dict,None file_infos: a file info to store with the file or ``None`` to not store anything
         """
         return UnfinishedLargeFile(
-            self.session.start_large_file(bucket_id, file_name, content_type, file_info)
+            self.services.session.start_large_file(bucket_id, file_name, content_type, file_info)
         )
 
     # delete/cancel
@@ -84,5 +94,5 @@ class LargeFileServices(object):
         :param str file_id: a file ID
         :rtype: None
         """
-        response = self.session.cancel_large_file(file_id)
+        response = self.services.session.cancel_large_file(file_id)
         return FileVersionInfoFactory.from_cancel_large_file_response(response)

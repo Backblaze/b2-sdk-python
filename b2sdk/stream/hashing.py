@@ -21,12 +21,15 @@ class StreamWithHash(ReadOnlyStreamMixin, StreamWithLengthWrapper):
     and appends hash at the end.
     """
 
-    def __init__(self, stream, stream_length):
+    def __init__(self, stream, stream_length=None):
         """
         :param stream: the stream to read from
         """
         self.digest = self.get_digest()
-        super(StreamWithHash, self).__init__(stream, stream_length + self.digest.digest_size * 2)
+        total_length = None
+        if stream_length is not None:
+            total_length = stream_length + self.digest.digest_size * 2
+        super(StreamWithHash, self).__init__(stream, length=total_length)
         self.hash = None
         self.hash_read = 0
 

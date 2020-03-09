@@ -1,12 +1,27 @@
+######################################################################
+#
+# File: b2sdk/transfer/emerge/planner/upload_subpart.py
+#
+# Copyright 2020 Backblaze Inc. All Rights Reserved.
+#
+# License https://www.backblaze.com/using_b2_code.html
+#
+######################################################################
+
 import io
 
+from abc import ABCMeta, abstractmethod
 from functools import partial
 
+import six
+
 from b2sdk.download_dest import DownloadDestBytes
+from b2sdk.stream.chained import StreamOpener
 from b2sdk.stream.range import wrap_with_range
 from b2sdk.utils import hex_sha1_of_unlimited_stream
 
 
+@six.add_metaclass(ABCMeta)
 class BaseUploadSubpart(object):
     def __init__(self, outbound_source, relative_offset, length):
         self.outbound_source = outbound_source
@@ -24,33 +39,30 @@ class BaseUploadSubpart(object):
             length=self.length,
         )
 
+    @abstractmethod
     def get_subpart_id(self):
-        raise NotImplementedError()
+        pass
 
+    @abstractmethod
     def get_stream_opener(self, emerge_execution=None):
-        raise NotImplementedError()
+        pass
 
     def is_hashable(self):
         return False
 
 
 class RemoteSourceUploadSubpart(BaseUploadSubpart):
-    def __init__(self, outbound_source, relative_offset, length):
-        super(RemoteSourceUploadSubpart, self).__init__(outbound_source, relative_offset, length)
+    def __init__(self, *args, **kwargs):
+        super(RemoteSourceUploadSubpart, self).__init__(*args, **kwargs)
         self._download_buffer_cache = None
 
     def get_subpart_id(self):
-        return (self.outbound_source.get_source_id(), self.relative_offset, self.length)
+        return (self.outbound_source.file_id, self.relative_offset, self.length)
 
     def get_stream_opener(self, emerge_execution=None):
         if emerge_execution is None:
             raise RuntimeError('Cannot open remote source without emerge execution instance.')
-        return partial(self._get_download_stream, emerge_execution)
-
-    def _get_download_stream(self, emerge_execution):
-        if self._download_buffer_cache is None:
-            self._download_buffer_cache = self._download(emerge_execution)
-        return io.BytesIO(self._download_buffer_cache)
+        return CachedBytesStreamOpener(partial(self._download, emerge_execution))
 
     def _download(self, emerge_execution):
         url = emerge_execution.session.get_download_url_by_id(self.outbound_source.file_id)
@@ -80,3 +92,17 @@ class LocalSourceUploadSubpart(BaseUploadSubpart):
 
     def is_hashable(self):
         return True
+
+
+class CachedBytesStreamOpener(StreamOpener):
+    def __init__(self, bytes_data_callback):
+        self.bytes_data_callback = bytes_data_callback
+        self._bytes_data_cache = None
+
+    def __call__(self):
+        if self._bytes_data_cache is None:
+            self._bytes_data_cache = self.bytes_data_callback()
+        return io.BytesIO(self._bytes_data_cache)
+
+    def cleanup(self):
+        self._bytes_data_cache = None

@@ -1,3 +1,19 @@
+######################################################################
+#
+# File: b2sdk/transfer/emerge/executor.py
+#
+# Copyright 2020 Backblaze Inc. All Rights Reserved.
+#
+# License https://www.backblaze.com/using_b2_code.html
+#
+######################################################################
+
+import threading
+
+from abc import ABCMeta, abstractmethod
+
+import six
+
 from b2sdk.exception import MaxFileSizeExceeded
 from b2sdk.file_version import FileVersionInfoFactory
 from b2sdk.transfer.outbound.large_file_upload_state import LargeFileUploadState
@@ -8,8 +24,7 @@ AUTO_CONTENT_TYPE = 'b2/x-auto'
 
 
 class EmergeExecutor(object):
-    def __init__(self, session, services):
-        self.session = session
+    def __init__(self, services):
         self.services = services
 
     def execute_emerge_plan(
@@ -20,11 +35,11 @@ class EmergeExecutor(object):
         content_type,
         file_info,
         progress_listener,
-        continue_large_file_id=None
+        continue_large_file_id=None,
+        max_queue_size=None,
     ):
         if emerge_plan.is_large_file():
             execution = LargeFileEmergeExecution(
-                self.session,
                 self.services,
                 bucket_id,
                 file_name,
@@ -32,12 +47,12 @@ class EmergeExecutor(object):
                 file_info,
                 progress_listener,
                 continue_large_file_id=continue_large_file_id,
+                max_queue_size=max_queue_size,
             )
         else:
             if continue_large_file_id is not None:
                 raise ValueError('Cannot resume emerging single part plan.')
             execution = SmallFileEmergeExecution(
-                self.session,
                 self.services,
                 bucket_id,
                 file_name,
@@ -48,13 +63,11 @@ class EmergeExecutor(object):
         return execution.execute_plan(emerge_plan)
 
 
+@six.add_metaclass(ABCMeta)
 class BaseEmergeExecution(object):
     DEFAULT_CONTENT_TYPE = AUTO_CONTENT_TYPE
 
-    def __init__(
-        self, session, services, bucket_id, file_name, content_type, file_info, progress_listener
-    ):
-        self.session = session
+    def __init__(self, services, bucket_id, file_name, content_type, file_info, progress_listener):
         self.services = services
         self.bucket_id = bucket_id
         self.file_name = file_name
@@ -62,8 +75,9 @@ class BaseEmergeExecution(object):
         self.file_info = file_info
         self.progress_listener = progress_listener
 
+    @abstractmethod
     def execute_plan(self, emerge_plan):
-        raise NotImplementedError()
+        pass
 
 
 class SmallFileEmergeExecution(BaseEmergeExecution):
@@ -73,7 +87,8 @@ class SmallFileEmergeExecution(BaseEmergeExecution):
         emerge_part = emerge_parts[0]
         execution_step_factory = SmallFileEmergeExecutionStepFactory(self, emerge_part)
         execution_step = execution_step_factory.get_execution_step()
-        return execution_step.execute().result()
+        future = execution_step.execute()
+        return future.result()
 
 
 class LargeFileEmergeExecution(BaseEmergeExecution):
@@ -81,24 +96,28 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
 
     def __init__(
         self,
-        session,
         services,
         bucket_id,
         file_name,
         content_type,
         file_info,
         progress_listener,
-        continue_large_file_id=None
+        continue_large_file_id=None,
+        max_queue_size=None,
     ):
         super(LargeFileEmergeExecution, self).__init__(
-            session, services, bucket_id, file_name, content_type, file_info, progress_listener
+            services, bucket_id, file_name, content_type, file_info, progress_listener
         )
         self.continue_large_file_id = continue_large_file_id
+        self.max_queue_size = max_queue_size
+        self._semaphore = None
+        if self.max_queue_size is not None:
+            self._semaphore = threading.Semaphore(self.max_queue_size)
 
     def execute_plan(self, emerge_plan):
         total_length = emerge_plan.get_total_length()
 
-        if total_length is not None and self.MAX_LARGE_FILE_SIZE < total_length:
+        if total_length is not None and total_length > self.MAX_LARGE_FILE_SIZE:
             raise MaxFileSizeExceeded(total_length, self.MAX_LARGE_FILE_SIZE)
 
         plan_id = emerge_plan.get_plan_id()
@@ -145,7 +164,8 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
                     finished_parts=finished_parts,
                 )
                 execution_step = execution_step_factory.get_execution_step()
-                part_futures.append(execution_step.execute())
+                future = self._execute_step(execution_step)
+                part_futures.append(future)
 
             # Collect the sha1 checksums of the parts as the uploads finish.
             # If any of them raised an exception, that same exception will
@@ -153,13 +173,28 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
             part_sha1_array = [interruptible_get_result(f)['contentSha1'] for f in part_futures]
 
         # Finish the large file
-        response = self.session.finish_large_file(file_id, part_sha1_array)
+        response = self.services.session.finish_large_file(file_id, part_sha1_array)
         return FileVersionInfoFactory.from_api_response(response)
+
+    def _execute_step(self, execution_step):
+        semaphore = self._semaphore
+        if semaphore is None:
+            return execution_step.execute()
+        else:
+            semaphore.acquire()
+            try:
+                future = execution_step.execute()
+            except:
+                semaphore.release()
+                raise
+            else:
+                future.add_done_callback(lambda f: semaphore.release())
+            return future
 
     def _get_unfinished_file_and_parts(
         self, bucket_id, file_name, file_info, continue_large_file_id, emerge_parts_dict=None
     ):
-        if 'listFiles' not in self.session.account_info.get_allowed()['capabilities']:
+        if 'listFiles' not in self.services.session.account_info.get_allowed()['capabilities']:
             return None, {}
 
         unfinished_file = None
@@ -265,16 +300,19 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
         return None, {}
 
 
+@six.add_metaclass(ABCMeta)
 class BaseExecutionStepFactory(object):
     def __init__(self, emerge_execution, emerge_part):
         self.emerge_execution = emerge_execution
         self.emerge_part = emerge_part
 
+    @abstractmethod
     def create_copy_execution_step(self, copy_range):
-        raise NotImplementedError()
+        pass
 
+    @abstractmethod
     def create_upload_execution_step(self, stream_opener):
-        raise NotImplementedError()
+        pass
 
     def get_execution_step(self):
         return self.emerge_part.get_execution_step(self)
@@ -311,8 +349,11 @@ class LargeFileEmergeExecutionStepFactory(BaseExecutionStepFactory):
 
     def create_copy_execution_step(self, copy_range):
         return CopyPartExecutionStep(
-            self.emerge_execution, copy_range, self.part_number, self.large_file_id,
-            self.large_file_upload_state
+            self.emerge_execution,
+            copy_range,
+            self.part_number,
+            self.large_file_id,
+            self.large_file_upload_state,
         )
 
     def create_upload_execution_step(self, stream_opener, stream_length=None, stream_sha1=None):
@@ -328,9 +369,11 @@ class LargeFileEmergeExecutionStepFactory(BaseExecutionStepFactory):
         )
 
 
+@six.add_metaclass(ABCMeta)
 class BaseExecutionStep(object):
+    @abstractmethod
     def execute(self):
-        raise NotImplementedError()
+        pass
 
 
 class CopyFileExecutionStep(BaseExecutionStep):
@@ -351,6 +394,7 @@ class CopyFileExecutionStep(BaseExecutionStep):
             content_type=execution.content_type,
             file_info=file_info,
             destination_bucket_id=execution.bucket_id,
+            progress_listener=execution.progress_listener,
         )
 
 
