@@ -21,6 +21,7 @@ class StreamWrapper(io.IOBase):
         :param stream: the stream to read from or write to
         """
         self.stream = stream
+        super(StreamWrapper, self).__init__()
 
     def seekable(self):
         return self.stream.seekable()

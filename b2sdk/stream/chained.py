@@ -40,6 +40,7 @@ class ChainedStream(ReadOnlyStreamMixin, io.IOBase):
         self._stream_openers_iterator = iter(self.stream_openers)
         self._current_stream = None
         self._pos = 0
+        super(ChainedStream, self).__init__()
 
     @property
     def stream(self):
