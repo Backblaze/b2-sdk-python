@@ -14,13 +14,12 @@ import six
 from .exception import UnrecognizedBucketType
 from .file_version import FileVersionInfoFactory
 from .progress import DoNothingProgressListener
-from .utils import b2_url_encode, validate_b2_file_name
+from .transfer.emerge.executor import AUTO_CONTENT_TYPE
+from .transfer.emerge.write_intent import WriteIntent
+from .transfer.outbound.copy_source import CopySource
+from .transfer.outbound.upload_source import UploadSourceBytes, UploadSourceLocalFile
 from .utils import B2TraceMeta, disable_trace, limit_trace_arguments
-
-from b2sdk.transfer.outbound.copy_source import CopySource
-from b2sdk.transfer.outbound.upload_source import UploadSourceBytes, UploadSourceLocalFile
-from b2sdk.transfer.emerge.write_intent import WriteIntent
-from b2sdk.transfer.emerge.executor import AUTO_CONTENT_TYPE
+from .utils import b2_url_encode, validate_b2_file_name
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +43,7 @@ class Bucket(object):
         lifecycle_rules=None,
         revision=None,
         bucket_dict=None,
-        options_set=None
+        options_set=None,
     ):
         """
         :param b2sdk.v1.B2Api api: an API object

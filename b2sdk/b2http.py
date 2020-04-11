@@ -10,12 +10,12 @@
 
 from __future__ import print_function
 
-import arrow
-import logging
 import io
 import json
+import logging
 import socket
 
+import arrow
 import requests
 import six
 import time
