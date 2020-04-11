@@ -434,6 +434,7 @@ class IntentsState(object):
         self._next_intent = None
         self._last_sent_offset = 0
         self._incoming_offset = None
+        self._current_intent_start = None
         self._current_intent_end = None
         self._next_intent_end = None
 

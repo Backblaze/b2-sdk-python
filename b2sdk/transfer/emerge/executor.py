@@ -311,7 +311,7 @@ class BaseExecutionStepFactory(object):
         pass
 
     @abstractmethod
-    def create_upload_execution_step(self, stream_opener):
+    def create_upload_execution_step(self, stream_opener, stream_length=None, stream_sha1=None):
         pass
 
     def get_execution_step(self):

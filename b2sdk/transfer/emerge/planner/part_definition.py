@@ -30,7 +30,7 @@ class BaseEmergePartDefinition(object):
         pass
 
     @abstractmethod
-    def get_execution_step(self, executor, execution_step_factory):
+    def get_execution_step(self, execution_step_factory):
         pass
 
     def is_hashable(self):
