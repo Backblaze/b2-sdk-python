@@ -601,7 +601,7 @@ class B2RawApi(AbstractRawApi):
         :param filename: a proposed filename in unicode
         :return: None if the filename is usable
         """
-        encoded_name = filename.encode('utf-8')
+        encoded_name = filename.encode('utf-8', 'surrogateescape')
         length_in_bytes = len(encoded_name)
         if length_in_bytes < 1:
             raise UnusableFileName("Filename must be at least 1 character.")
@@ -620,7 +620,7 @@ class B2RawApi(AbstractRawApi):
             raise UnusableFileName("Filename may not start or end with '/'.")
         if '//' in filename:
             raise UnusableFileName("Filename may not contain \"//\".")
-        long_segment = max([len(segment.encode('utf-8')) for segment in filename.split('/')])
+        long_segment = max([len(segment.encode('utf-8', 'surrogateescape')) for segment in filename.split('/')])
         if long_segment > 250:
             raise UnusableFileName("Filename segment too long (maximum 250 bytes in utf-8).")
 

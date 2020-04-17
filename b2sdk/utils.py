@@ -52,7 +52,7 @@ def b2_url_encode(s):
     :return: URL-encoded string
     :rtype: str
     """
-    return six.moves.urllib.parse.quote(s.encode('utf-8'))
+    return six.moves.urllib.parse.quote(s.encode('utf-8', 'surrogateescape'))
 
 
 def b2_url_decode(s):
@@ -154,7 +154,7 @@ def validate_b2_file_name(name):
     """
     if not isinstance(name, six.string_types):
         raise ValueError('file name must be a string, not bytes')
-    name_utf8 = name.encode('utf-8')
+    name_utf8 = name.encode('utf-8', 'surrogateescape')
     if len(name_utf8) < 1:
         raise ValueError('file name too short (0 utf-8 bytes)')
     if 1000 < len(name_utf8):
