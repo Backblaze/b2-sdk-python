@@ -34,6 +34,7 @@ Public API
    api/utils
    api/transfer/emerge/write_intent
    api/transfer/outbound/outbound_source
+   api/download_dest
 
 .. _api_internal:
 

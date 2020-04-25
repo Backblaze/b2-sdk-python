@@ -137,7 +137,12 @@ class Bucket(object):
           download_file_by_id actually belongs in :py:class:`b2sdk.v1.B2Api`, not in :py:class:`b2sdk.v1.Bucket`; we just provide a convenient redirect here
 
         :param str file_id: a file ID
-        :param str download_dest: a local file path
+        :param download_dest: an instance of the one of the following classes: \
+        :class:`~b2sdk.v1.DownloadDestLocalFile`,\
+        :class:`~b2sdk.v1.DownloadDestBytes`,\
+        :class:`~b2sdk.v1.DownloadDestProgressWrapper`,\
+        :class:`~b2sdk.v1.PreSeekedDownloadDest`,\
+        or any sub class of :class:`~b2sdk.v1.AbstractDownloadDestination`
         :param b2sdk.v1.AbstractProgressListener, None progress_listener: a progress listener object to use, or ``None`` to not report progress
         :param tuple[int, int] range_: two integer values, start and end offsets
         """
@@ -154,7 +159,12 @@ class Bucket(object):
             :ref:`Synchronizer <sync>`, a *high-performance* utility that synchronizes a local folder with a Bucket.
 
         :param str file_id: a file ID
-        :param str download_dest: a local file path
+        :param download_dest: an instance of the one of the following classes: \
+        :class:`~b2sdk.v1.DownloadDestLocalFile`,\
+        :class:`~b2sdk.v1.DownloadDestBytes`,\
+        :class:`~b2sdk.v1.DownloadDestProgressWrapper`,\
+        :class:`~b2sdk.v1.PreSeekedDownloadDest`,\
+        or any sub class of :class:`~b2sdk.v1.AbstractDownloadDestination`
         :param b2sdk.v1.AbstractProgressListener, None progress_listener: a progress listener object to use, or ``None`` to not track progress
         :param tuple[int, int] range_: two integer values, start and end offsets
         """

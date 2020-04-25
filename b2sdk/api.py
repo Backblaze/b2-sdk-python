@@ -207,7 +207,12 @@ class B2Api(object):
         Download a file with the given ID.
 
         :param str file_id: a file ID
-        :param str download_dest: a local file path
+        :param download_dest: an instance of the one of the following classes: \
+        :class:`~b2sdk.v1.DownloadDestLocalFile`,\
+        :class:`~b2sdk.v1.DownloadDestBytes`,\
+        :class:`~b2sdk.v1.DownloadDestProgressWrapper`,\
+        :class:`~b2sdk.v1.PreSeekedDownloadDest`,\
+        or any sub class of :class:`~b2sdk.v1.AbstractDownloadDestination`
         :param progress_listener: an instance of the one of the following classes: \
         :class:`~b2sdk.v1.PartProgressReporter`,\
         :class:`~b2sdk.v1.TqdmProgressListener`,\
