@@ -305,7 +305,12 @@ class B2Http(object):
             self._run_post_request_hooks('POST', url, headers, response)
             return response
 
-        response = _translate_and_retry(do_post, try_count, post_params)
+        try:
+            response = _translate_and_retry(do_post, try_count, post_params)
+        except B2RequestTimeout:
+            # this forces a token refresh, which is necessary if request is still alive
+            # on the server but has terminated for some reason on the client. See #79
+            raise B2RequestTimeoutDuringUpload()
 
         # Decode the JSON that came back.  If we've gotten this far,
         # we know we have a status of 200 OK.  In this case, the body
