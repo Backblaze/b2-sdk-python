@@ -33,6 +33,7 @@ GIGABYTE = 1000 * MEGABYTE
 
 class UploadBuffer(object):
     """ data container used by EmergePlanner for temporary storage of write intents """
+
     def __init__(self, start_offset, buff=None):
         self._start_offset = start_offset
         self._buff = buff or []
