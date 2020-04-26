@@ -196,6 +196,35 @@ class Bucket(object):
         """
         return self.api.list_parts(file_id, start_part_number, batch_size)
 
+    def list_file_versions(self, file_name, fetch_count=None):
+        """
+        Lists all of the versions for a single file.
+
+        :param str file_name: the name of the file to list.
+        :param int,None fetch_count: how many entries to list per API call or ``None`` to use the default. Acceptable values: 1 - 10000
+        :rtype: generator[b2sdk.v1.FileVersionInfo]
+        """
+        if fetch_count is not None and fetch_count <= 0:
+            # fetch_count equal to 0 means "use API default", which we don't want to support here
+            raise ValueError("unsupported fetch_count value")
+        start_file_id = None
+        session = self.api.session
+        while 1:
+            response = session.list_file_versions(
+                self.id_, file_name, start_file_id, fetch_count, file_name
+            )
+
+            for entry in response['files']:
+                file_version_info = FileVersionInfoFactory.from_api_response(entry)
+                if file_version_info.file_name != file_name:
+                    # All versions for the requested file name have been listed.
+                    return
+                yield file_version_info
+            if response['nextFileName'] != file_name:
+                # Unless there are more files with the same name we can stop here.
+                return
+            start_file_id = response['nextFileId']
+
     def ls(self, folder_to_list='', show_versions=False, recursive=False, fetch_count=None):
         """
         Pretend that folders exist and yields the information about the files in a folder.
