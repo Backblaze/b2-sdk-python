@@ -12,7 +12,6 @@ from abc import ABCMeta, abstractmethod
 import six
 import sys
 import time
-import hashlib
 
 # tqdm doesn't work on 2.6 with at least some encodings
 # on sys.stderr.  See: https://github.com/Backblaze/B2_Command_Line_Tool/issues/272
@@ -59,7 +58,6 @@ class AbstractProgressListener(object):
         :param int byte_count: number of bytes have been transferred
         """
 
-    @abstractmethod
     def close(self):
         """
         Must be called when you're done with the listener.
@@ -159,9 +157,6 @@ class DoNothingProgressListener(AbstractProgressListener):
 
     def bytes_completed(self, byte_count):
         pass
-
-    def close(self):
-        super(DoNothingProgressListener, self).close()
 
 
 class ProgressListenerForTest(AbstractProgressListener):

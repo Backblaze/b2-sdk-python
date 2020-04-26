@@ -10,112 +10,18 @@
 
 import logging
 import six
-import threading
 
-from .exception import (
-    AlreadyFailed, B2Error, MaxFileSizeExceeded, MaxRetriesExceeded, UnrecognizedBucketType
-)
+from .exception import UnrecognizedBucketType
 from .file_version import FileVersionInfoFactory
-from .progress import DoNothingProgressListener, AbstractProgressListener
-from .stream import RangeOfInputStream, ReadingStreamWithProgress, StreamWithHash
-from .unfinished_large_file import UnfinishedLargeFile
-from .upload_source import UploadSourceBytes, UploadSourceLocalFile
-from .utils import b2_url_encode, choose_part_ranges, hex_sha1_of_stream, interruptible_get_result, validate_b2_file_name
+from .progress import DoNothingProgressListener
+from .transfer.emerge.executor import AUTO_CONTENT_TYPE
+from .transfer.emerge.write_intent import WriteIntent
+from .transfer.outbound.copy_source import CopySource
+from .transfer.outbound.upload_source import UploadSourceBytes, UploadSourceLocalFile
 from .utils import B2TraceMeta, disable_trace, limit_trace_arguments
-from .raw_api import HEX_DIGITS_AT_END
+from .utils import b2_url_encode, validate_b2_file_name
 
 logger = logging.getLogger(__name__)
-
-
-class LargeFileUploadState(object):
-    """
-    Track the status of uploading a large file, accepting updates
-    from the tasks that upload each of the parts.
-
-    The aggregated progress is passed on to a ProgressListener that
-    reports the progress for the file as a whole.
-
-    This class is THREAD SAFE.
-    """
-
-    def __init__(self, file_progress_listener):
-        """
-        :param b2sdk.v1.AbstractProgressListener file_progress_listener: a progress listener object to use. Use :py:class:`b2sdk.v1.DoNothingProgressListener` to disable.
-        """
-        self.lock = threading.RLock()
-        self.error_message = None
-        self.file_progress_listener = file_progress_listener
-        self.part_number_to_part_state = {}
-        self.bytes_completed = 0
-
-    def set_error(self, message):
-        """
-        Set an error message.
-
-        :param str message: an error message
-        """
-        with self.lock:
-            self.error_message = message
-
-    def has_error(self):
-        """
-        Check whether an error occured.
-
-        :rtype: bool
-        """
-        with self.lock:
-            return self.error_message is not None
-
-    def get_error_message(self):
-        """
-        Fetche an error message.
-
-        :return: an error message
-        :rtype: str
-        """
-        with self.lock:
-            assert self.has_error()
-            return self.error_message
-
-    def update_part_bytes(self, bytes_delta):
-        """
-        Update listener progress info.
-
-        :param int bytes_delta: number of bytes to increase a progress for
-        """
-        with self.lock:
-            self.bytes_completed += bytes_delta
-            self.file_progress_listener.bytes_completed(self.bytes_completed)
-
-
-class PartProgressReporter(AbstractProgressListener):
-    """
-    An adapter that listens to the progress of upload a part and
-    gives the information to a :py:class:`b2sdk.bucket.LargeFileUploadState`.
-
-    Accepts absolute bytes_completed from the uploader, and reports
-    deltas to the :py:class:`b2sdk.bucket.LargeFileUploadState`.  The bytes_completed for the
-    part will drop back to 0 on a retry, which will result in a
-    negative delta.
-    """
-
-    def __init__(self, large_file_upload_state, *args, **kwargs):
-        """
-        :param b2sdk.bucket.LargeFileUploadState large_file_upload_state: object to relay the progress to
-        """
-        super(PartProgressReporter, self).__init__(*args, **kwargs)
-        self.large_file_upload_state = large_file_upload_state
-        self.prev_byte_count = 0
-
-    def bytes_completed(self, byte_count):
-        self.large_file_upload_state.update_part_bytes(byte_count - self.prev_byte_count)
-        self.prev_byte_count = byte_count
-
-    def close(self):
-        pass
-
-    def set_total_bytes(self, total_byte_count):
-        pass
 
 
 @six.add_metaclass(B2TraceMeta)
@@ -124,9 +30,7 @@ class Bucket(object):
     Provide access to a bucket in B2: listing files, uploading and downloading.
     """
 
-    DEFAULT_CONTENT_TYPE = 'b2/x-auto'
-    MAX_UPLOAD_ATTEMPTS = 5
-    MAX_LARGE_FILE_SIZE = 10 * 1000 * 1000 * 1000 * 1000  # 10 TB
+    DEFAULT_CONTENT_TYPE = AUTO_CONTENT_TYPE
 
     def __init__(
         self,
@@ -139,7 +43,7 @@ class Bucket(object):
         lifecycle_rules=None,
         revision=None,
         bucket_dict=None,
-        options_set=None
+        options_set=None,
     ):
         """
         :param b2sdk.v1.B2Api api: an API object
@@ -265,7 +169,7 @@ class Bucket(object):
         :param tuple[int, int] range_: two integer values, start and end offsets
         """
         url = self.api.session.get_download_url_by_name(self.name, file_name)
-        return self.api.transferer.download_file_from_url(
+        return self.api.services.download_manager.download_file_from_url(
             url, download_dest, progress_listener, range_
         )
 
@@ -393,16 +297,12 @@ class Bucket(object):
         :param str,None prefix: file name prefix filter
         :rtype: generator[b2sdk.v1.UnfinishedLargeFile]
         """
-        batch_size = batch_size or 100
-        while True:
-            batch = self.api.session.list_unfinished_large_files(
-                self.id_, start_file_id, batch_size, prefix
-            )
-            for file_dict in batch['files']:
-                yield UnfinishedLargeFile(file_dict)
-            start_file_id = batch.get('nextFileId')
-            if start_file_id is None:
-                break
+        return self.api.services.large_file.list_unfinished_large_files(
+            self.id_,
+            start_file_id=start_file_id,
+            batch_size=batch_size,
+            prefix=prefix,
+        )
 
     def start_large_file(self, file_name, content_type=None, file_info=None):
         """
@@ -412,8 +312,9 @@ class Bucket(object):
         :param str,None content_type: the MIME type, or ``None`` to accept the default based on file extension of the B2 file name
         :param dict,None file_infos: a file info to store with the file or ``None`` to not store anything
         """
-        return UnfinishedLargeFile(
-            self.api.session.start_large_file(self.id_, file_name, content_type, file_info)
+        validate_b2_file_name(file_name)
+        return self.api.services.large_file.start_large_file(
+            self.id_, file_name, content_type=content_type, file_info=file_info
         )
 
     @limit_trace_arguments(skip=('data_bytes',))
@@ -458,7 +359,7 @@ class Bucket(object):
 
         .. seealso::
 
-            :ref:`Synchronizer <sync>`, a *high-performance* utility that synchronizes a local folder with a :term:`Bucket`.
+            :ref:`Synchronizer <sync>`, a *high-performance* utility that synchronizes a local folder with a :term:`bucket`.
 
         :param str local_file: a path to a file on local disk
         :param str file_name: a file name of the new B2 file
@@ -505,194 +406,203 @@ class Bucket(object):
         must be possible to call it more than once in case the upload
         is retried.
         """
-
-        validate_b2_file_name(file_name)
-        file_info = file_info or {}
-        content_type = content_type or self.DEFAULT_CONTENT_TYPE
-        progress_listener = progress_listener or DoNothingProgressListener()
-
-        # We don't upload any large files unless all of the parts can be at least
-        # the minimum part size.
-        min_part_size = max(min_part_size or 0, self.api.account_info.get_minimum_part_size())
-        min_large_file_size = min_part_size * 2
-        if upload_source.get_content_length() < min_large_file_size:
-            # Run small uploads in the same thread pool as large file uploads,
-            # so that they share resources during a sync.
-            f = self.api.get_thread_pool().submit(
-                self._upload_small_file, upload_source, file_name, content_type, file_info,
-                progress_listener
-            )
-            return f.result()
-        else:
-            return self._upload_large_file(
-                upload_source, file_name, content_type, file_info, progress_listener
-            )
-
-    def _upload_small_file(
-        self, upload_source, file_name, content_type, file_info, progress_listener
-    ):
-        content_length = upload_source.get_content_length()
-        exception_info_list = []
-        progress_listener.set_total_bytes(content_length)
-        with progress_listener:
-            for _ in six.moves.xrange(self.MAX_UPLOAD_ATTEMPTS):
-                try:
-                    with upload_source.open() as file:
-                        input_stream = ReadingStreamWithProgress(file, progress_listener)
-                        hashing_stream = StreamWithHash(input_stream)
-                        length_with_hash = content_length + hashing_stream.hash_size()
-                        response = self.api.session.upload_file(
-                            self.id_, file_name, length_with_hash, content_type, HEX_DIGITS_AT_END,
-                            file_info, hashing_stream
-                        )
-                        assert hashing_stream.hash == response['contentSha1']
-                        return FileVersionInfoFactory.from_api_response(response)
-                except B2Error as e:
-                    if not e.should_retry_upload():
-                        raise
-                    exception_info_list.append(e)
-                    self.api.account_info.clear_bucket_upload_data(self.id_)
-
-        raise MaxRetriesExceeded(self.MAX_UPLOAD_ATTEMPTS, exception_info_list)
-
-    def _upload_large_file(
-        self, upload_source, file_name, content_type, file_info, progress_listener
-    ):
-        content_length = upload_source.get_content_length()
-        if self.MAX_LARGE_FILE_SIZE < content_length:
-            raise MaxFileSizeExceeded(content_length, self.MAX_LARGE_FILE_SIZE)
-        minimum_part_size = self.api.account_info.get_minimum_part_size()
-
-        # Set up the progress reporting for the parts
-        progress_listener.set_total_bytes(content_length)
-
-        # Select the part boundaries
-        part_ranges = choose_part_ranges(content_length, minimum_part_size)
-
-        # Check for unfinished files with same name
-        unfinished_file, finished_parts = self._find_unfinished_file_if_possible(
-            upload_source,
+        return self.create_file(
+            [WriteIntent(upload_source)],
             file_name,
-            file_info,
-            part_ranges,
+            content_type=content_type,
+            file_info=file_info,
+            progress_listener=progress_listener,
+            # FIXME: Bucket.upload documents wrong logic
+            recommended_upload_part_size=min_part_size,
         )
 
-        # Tell B2 we're going to upload a file if necessary
-        if unfinished_file is None:
-            unfinished_file = self.start_large_file(file_name, content_type, file_info)
-        file_id = unfinished_file.file_id
-
-        with progress_listener:
-            large_file_upload_state = LargeFileUploadState(progress_listener)
-            # Tell the executor to upload each of the parts
-            part_futures = [
-                self.api.get_thread_pool().submit(
-                    self._upload_part,
-                    file_id,
-                    part_index + 1,  # part number
-                    part_range,
-                    upload_source,
-                    large_file_upload_state,
-                    finished_parts
-                ) for (part_index, part_range) in enumerate(part_ranges)
-            ]
-
-            # Collect the sha1 checksums of the parts as the uploads finish.
-            # If any of them raised an exception, that same exception will
-            # be raised here by result()
-            part_sha1_array = [interruptible_get_result(f)['contentSha1'] for f in part_futures]
-
-        # Finish the large file
-        response = self.api.session.finish_large_file(file_id, part_sha1_array)
-        return FileVersionInfoFactory.from_api_response(response)
-
-    def _find_unfinished_file_if_possible(self, upload_source, file_name, file_info, part_ranges):
-        """
-        Find an unfinished file that may be used to resume a large file upload.  The
-        file is found using the filename and comparing the uploaded parts against
-        the local file.
-
-        This is only possible if the application key being used allows ``listFiles`` access.
-        """
-        if 'listFiles' in self.api.account_info.get_allowed()['capabilities']:
-            for file_ in self.list_unfinished_large_files():
-                if file_.file_name == file_name and file_.file_info == file_info:
-                    files_match = True
-                    finished_parts = {}
-                    for part in self.list_parts(file_.file_id):
-                        # Compare part sizes
-                        offset, part_length = part_ranges[part.part_number - 1]
-                        if part_length != part.content_length:
-                            files_match = False
-                            break
-
-                        # Compare hash
-                        with upload_source.open() as f:
-                            f.seek(offset)
-                            sha1_sum = hex_sha1_of_stream(f, part_length)
-                        if sha1_sum != part.content_sha1:
-                            files_match = False
-                            break
-
-                        # Save part
-                        finished_parts[part.part_number] = part
-
-                    # Skip not matching files or unfinished files with no uploaded parts
-                    if not files_match or not finished_parts:
-                        continue
-
-                    # Return first matched file
-                    return file_, finished_parts
-        return None, {}
-
-    def _upload_part(
+    def create_file(
         self,
-        file_id,
-        part_number,
-        part_range,
-        upload_source,
-        large_file_upload_state,
-        finished_parts=None
+        write_intents,
+        file_name,
+        content_type=None,
+        file_info=None,
+        progress_listener=None,
+        recommended_upload_part_size=None,
+        continue_large_file_id=None,
     ):
-        # Check if this part was uploaded before
-        if finished_parts is not None and part_number in finished_parts:
-            # Report this part finished
-            part = finished_parts[part_number]
-            large_file_upload_state.update_part_bytes(part.content_length)
+        """
+        Creates a new file in this bucket using an iterable (list, tuple etc) of remote or local sources.
 
-            # Return SHA1 hash
-            return {'contentSha1': part.content_sha1}
+        Source ranges can overlap and remote sources will be prioritized over local sources (when possible).
+        For more information and usage examples please see :ref:`Advanced usage patterns <AdvancedUsagePatterns>`.
 
-        # Set up a progress listener
-        part_progress_listener = PartProgressReporter(large_file_upload_state)
+        :param list[b2sdk.v1.WriteIntent] write_intents: list of write intents (remote or local sources)
+        :param str new_file_name: file name of the new file
+        :param str,None content_type: content_type for the new file, if ``None`` content_type would be
+                        automatically determined or it may be copied if it resolves
+                        as single part remote source copy
+        :param dict,None file_info: file_info for the new file, if ``None`` it will be set to empty dict
+                        or it may be copied if it resolves as single part remote source copy
+        :param b2sdk.v1.AbstractProgressListener,None progress_listener: a progress listener object to use,
+                        or ``None`` to not report progress
+        :param int,None recommended_upload_part_size: the recommended part size to use for uploading local sources
+                        or ``None`` to determine automatically, but remote sources would be copied with
+                        maximum possible part size
+        :param str,None continue_large_file_id: large file id that should be selected to resume file creation
+                        for multipart upload/copy, ``None`` for automatic search for this id
+        """
+        return self._create_file(
+            self.api.services.emerger.emerge,
+            write_intents,
+            file_name,
+            content_type=content_type,
+            file_info=file_info,
+            progress_listener=progress_listener,
+            continue_large_file_id=continue_large_file_id,
+            recommended_upload_part_size=recommended_upload_part_size,
+        )
 
-        # Retry the upload as needed
-        exception_list = []
-        for _ in six.moves.xrange(self.MAX_UPLOAD_ATTEMPTS):
-            # if another part has already had an error there's no point in
-            # uploading this part
-            if large_file_upload_state.has_error():
-                raise AlreadyFailed(large_file_upload_state.get_error_message())
+    def create_file_stream(
+        self,
+        write_intents_iterator,
+        file_name,
+        content_type=None,
+        file_info=None,
+        progress_listener=None,
+        recommended_upload_part_size=None,
+        continue_large_file_id=None,
+    ):
+        """
+        Creates a new file in this bucket using a stream of multiple remote or local sources.
 
-            try:
-                with upload_source.open() as file:
-                    offset, content_length = part_range
-                    file.seek(offset)
-                    range_stream = RangeOfInputStream(file, offset, content_length)
-                    input_stream = ReadingStreamWithProgress(range_stream, part_progress_listener)
-                    hashing_stream = StreamWithHash(input_stream)
-                    length_with_hash = content_length + hashing_stream.hash_size()
-                    response = self.api.session.upload_part(
-                        file_id, part_number, length_with_hash, HEX_DIGITS_AT_END, hashing_stream
-                    )
-                    assert hashing_stream.hash == response['contentSha1']
-                    return response
-            except B2Error as e:
-                exception_list.append(e)
-                self.api.account_info.clear_bucket_upload_data(self.id_)
+        Source ranges can overlap and remote sources will be prioritized over local sources (when possible).
+        For more information and usage examples please see :ref:`Advanced usage patterns <AdvancedUsagePatterns>`.
 
-        large_file_upload_state.set_error(str(exception_list[-1]))
-        raise MaxRetriesExceeded(self.MAX_UPLOAD_ATTEMPTS, exception_list)
+        :param iterator[b2sdk.v1.WriteIntent] write_intents_iterator: iterator of write intents which
+                        are sorted ascending by ``destination_offset``
+        :param str new_file_name: file name of the new file
+        :param str,None content_type: content_type for the new file, if ``None`` content_type would be
+                        automatically determined or it may be copied if it resolves
+                        as single part remote source copy
+        :param dict,None file_info: file_info for the new file, if ``None`` it will be set to empty dict
+                        or it may be copied if it resolves as single part remote source copy
+        :param b2sdk.v1.AbstractProgressListener,None progress_listener: a progress listener object to use,
+                        or ``None`` to not report progress
+        :param int,None recommended_upload_part_size: the recommended part size to use for uploading local sources
+                        or ``None`` to determine automatically, but remote sources would be copied with
+                        maximum possible part size
+        :param str,None continue_large_file_id: large file id that should be selected to resume file creation
+                        for multipart upload/copy, if ``None`` in multipart case it would always start a new
+                        large file
+        """
+        return self._create_file(
+            self.api.services.emerger.emerge_stream,
+            write_intents_iterator,
+            file_name,
+            content_type=content_type,
+            file_info=file_info,
+            progress_listener=progress_listener,
+            continue_large_file_id=continue_large_file_id,
+            recommended_upload_part_size=recommended_upload_part_size,
+        )
+
+    def _create_file(
+        self,
+        emerger_method,
+        write_intents_iterable,
+        file_name,
+        content_type=None,
+        file_info=None,
+        progress_listener=None,
+        recommended_upload_part_size=None,
+        continue_large_file_id=None,
+    ):
+        validate_b2_file_name(file_name)
+        progress_listener = progress_listener or DoNothingProgressListener()
+
+        return emerger_method(
+            self.id_,
+            write_intents_iterable,
+            file_name,
+            content_type,
+            file_info,
+            progress_listener,
+            recommended_upload_part_size=recommended_upload_part_size,
+            continue_large_file_id=continue_large_file_id,
+        )
+
+    def concatenate(
+        self,
+        outbound_sources,
+        file_name,
+        content_type=None,
+        file_info=None,
+        progress_listener=None,
+        recommended_upload_part_size=None,
+        continue_large_file_id=None,
+    ):
+        """
+        Creates a new file in this bucket by concatenating multiple remote or local sources.
+
+        :param list[b2sdk.v1.OutboundTransferSource] outbound_sources: list of outbound sources (remote or local)
+        :param str new_file_name: file name of the new file
+        :param str,None content_type: content_type for the new file, if ``None`` content_type would be
+                        automatically determined from file name or it may be copied if it resolves
+                        as single part remote source copy
+        :param dict,None file_info: file_info for the new file, if ``None`` it will be set to empty dict
+                        or it may be copied if it resolves as single part remote source copy
+        :param b2sdk.v1.AbstractProgressListener,None progress_listener: a progress listener object to use,
+                        or ``None`` to not report progress
+        :param int,None recommended_upload_part_size: the recommended part size to use for uploading local sources
+                        or ``None`` to determine automatically, but remote sources would be copied with
+                        maximum possible part size
+        :param str,None continue_large_file_id: large file id that should be selected to resume file creation
+                        for multipart upload/copy, ``None`` for automatic search for this id
+        """
+        return self.create_file(
+            WriteIntent.wrap_sources_iterator(outbound_sources),
+            file_name,
+            content_type=content_type,
+            file_info=file_info,
+            progress_listener=progress_listener,
+            recommended_upload_part_size=recommended_upload_part_size,
+            continue_large_file_id=continue_large_file_id,
+        )
+
+    def concatenate_stream(
+        self,
+        outbound_sources_iterator,
+        file_name,
+        content_type=None,
+        file_info=None,
+        progress_listener=None,
+        recommended_upload_part_size=None,
+        continue_large_file_id=None,
+    ):
+        """
+        Creates a new file in this bucket by concatenating stream of multiple remote or local sources.
+
+        :param iterator[b2sdk.v1.OutboundTransferSource] outbound_sources_iterator: iterator of outbound sources
+        :param str new_file_name: file name of the new file
+        :param str,None content_type: content_type for the new file, if ``None`` content_type would be
+                        automatically determined or it may be copied if it resolves
+                        as single part remote source copy
+        :param dict,None file_info: file_info for the new file, if ``None`` it will be set to empty dict
+                        or it may be copied if it resolves as single part remote source copy
+        :param b2sdk.v1.AbstractProgressListener,None progress_listener: a progress listener object to use,
+                        or ``None`` to not report progress
+        :param int,None recommended_upload_part_size: the recommended part size to use for uploading local sources
+                        or ``None`` to determine automatically, but remote sources would be copied with
+                        maximum possible part size
+        :param str,None continue_large_file_id: large file id that should be selected to resume file creation
+                        for multipart upload/copy, if ``None`` in multipart case it would always start a new
+                        large file
+        """
+        return self.create_file_stream(
+            WriteIntent.wrap_sources_iterator(outbound_sources_iterator),
+            file_name,
+            content_type=content_type,
+            file_info=file_info,
+            progress_listener=progress_listener,
+            recommended_upload_part_size=recommended_upload_part_size,
+            continue_large_file_id=continue_large_file_id,
+        )
 
     def get_download_url(self, filename):
         """
@@ -717,6 +627,56 @@ class Bucket(object):
         response = self.api.session.hide_file(self.id_, file_name)
         return FileVersionInfoFactory.from_api_response(response)
 
+    def copy(
+        self,
+        file_id,
+        new_file_name,
+        content_type=None,
+        file_info=None,
+        offset=0,
+        length=None,
+        progress_listener=None
+    ):
+        """
+        Creates a new file in this bucket by (server-side) copying from an existing file.
+
+        :param str file_id: file ID of existing file to copy from
+        :param str new_file_name: file name of the new file
+        :param str,None content_type: content_type for the new file, if ``None`` and ``b2_copy_file`` will be used
+                        content_type will be copied from source file - otherwise content_type would be
+                        automatically determined
+        :param dict,None file_info: file_info for the new file, if ``None`` will and ``b2_copy_file`` will be used
+                        file_info will be copied from source file - otherwise it will be set to empty dict
+        :param int offset: offset of exisiting file that copy should start from
+        :param int,None length: number of bytes to copy, if ``None`` then ``offset`` have to be ``0`` and it will
+                        use ``b2_copy_file`` without ``range`` parameter so it may fail if file is too large.
+                        For large files length have to be specified to use ``b2_copy_part`` instead.
+        :param b2sdk.v1.AbstractProgressListener,None progress_listener: a progress listener object to use
+                        for multipart copy, or ``None`` to not report progress
+        """
+
+        copy_source = CopySource(file_id, offset=offset, length=length)
+        if length is None:
+            # TODO: it feels like this should be checked on lower level - eg. RawApi
+            validate_b2_file_name(new_file_name)
+            return self.api.services.upload_manager.copy_file(
+                copy_source,
+                new_file_name,
+                content_type=content_type,
+                file_info=file_info,
+                destination_bucket_id=self.id_,
+                progress_listener=progress_listener,
+            ).result()
+        else:
+            return self.create_file(
+                [WriteIntent(copy_source)],
+                new_file_name,
+                content_type=content_type,
+                file_info=file_info,
+                progress_listener=progress_listener,
+            )
+
+    # FIXME: this shold be deprecated
     def copy_file(
         self,
         file_id,

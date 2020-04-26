@@ -8,15 +8,15 @@
 #
 ######################################################################
 
-from abc import (ABCMeta, abstractmethod)
+from abc import ABCMeta, abstractmethod
 
 import logging
 import os
 import six
 
 from ..download_dest import DownloadDestLocalFile
-from ..upload_source import UploadSourceLocalFile
 from ..raw_api import SRC_LAST_MODIFIED_MILLIS
+from ..transfer.outbound.upload_source import UploadSourceLocalFile
 from .report import SyncFileReporter
 
 logger = logging.getLogger(__name__)

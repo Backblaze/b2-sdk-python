@@ -9,40 +9,42 @@
 ######################################################################
 
 import hashlib
+import io
+
+from b2sdk.stream.wrapper import StreamWithLengthWrapper
+from b2sdk.stream.base import ReadOnlyStreamMixin
 
 
-class StreamWithHash(object):
+class StreamWithHash(ReadOnlyStreamMixin, StreamWithLengthWrapper):
     """
     Wrap a file-like object, calculates SHA1 while reading
     and appends hash at the end.
     """
 
-    def __init__(self, stream):
+    def __init__(self, stream, stream_length=None):
         """
         :param stream: the stream to read from
         """
-        self.stream = stream
-        self.digest = hashlib.sha1()
+        self.digest = self.get_digest()
+        total_length = None
+        if stream_length is not None:
+            total_length = stream_length + self.digest.digest_size * 2
+        super(StreamWithHash, self).__init__(stream, length=total_length)
         self.hash = None
         self.hash_read = 0
 
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        return self.stream.__exit__(exc_type, exc_val, exc_tb)
-
-    def seek(self, pos):
+    def seek(self, pos, whence=0):
         """
         Seek to a given position in the stream.
 
         :param int pos: position in the stream
         """
-        assert pos == 0
-        self.stream.seek(0)
-        self.digest = hashlib.sha1()
+        if pos != 0 or whence != 0:
+            raise io.UnsupportedOperation('Stream with hash can only be seeked to beginning')
+        self.digest = self.get_digest()
         self.hash = None
         self.hash_read = 0
+        return super(StreamWithHash, self).seek(0)
 
     def read(self, size=None):
         """
@@ -54,12 +56,7 @@ class StreamWithHash(object):
         """
         data = b''
         if self.hash is None:
-            # Read some bytes from stream
-            if size is None:
-                data = self.stream.read()
-            else:
-                data = self.stream.read(size)
-
+            data = super(StreamWithHash, self).read(size)
             # Update hash
             self.digest.update(data)
 
@@ -74,13 +71,8 @@ class StreamWithHash(object):
             size = size or len(self.hash)
             data += str.encode(self.hash[self.hash_read:self.hash_read + size])
             self.hash_read += size
-
         return data
 
-    def hash_size(self):
-        """
-        Calculate the size of a hash string.
-
-        :rtype: int
-        """
-        return self.digest.digest_size * 2
+    @classmethod
+    def get_digest(cls):
+        return hashlib.sha1()

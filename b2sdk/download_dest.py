@@ -8,14 +8,16 @@
 #
 ######################################################################
 
+import io
 import os
 from abc import abstractmethod
 from contextlib import contextmanager
 
 import six
 
+from b2sdk.stream.progress import WritingStreamWithProgress
+
 from .utils import B2TraceMetaAbstract, limit_trace_arguments
-from .stream import WritingStreamWithProgress
 
 
 @six.add_metaclass(B2TraceMetaAbstract)
@@ -164,7 +166,7 @@ class DownloadDestBytes(AbstractDownloadDestination):
         Remember the bytes written in self.bytes_written.
         """
         # Make a place to store the data written
-        bytes_io = six.BytesIO()
+        bytes_io = io.BytesIO()
 
         # Let the caller write it
         yield bytes_io
