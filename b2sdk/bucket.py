@@ -359,7 +359,7 @@ class Bucket(object):
 
         .. seealso::
 
-            :ref:`Synchronizer <sync>`, a *high-performance* utility that synchronizes a local folder with a :term:`Bucket`.
+            :ref:`Synchronizer <sync>`, a *high-performance* utility that synchronizes a local folder with a :term:`bucket`.
 
         :param str local_file: a path to a file on local disk
         :param str file_name: a file name of the new B2 file
