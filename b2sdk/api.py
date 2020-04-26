@@ -270,7 +270,7 @@ class B2Api(object):
         """
         Delete a chosen bucket.
 
-        :param b2sdk.v1.Bucket bucket: a :term:`Bucket` to delete
+        :param b2sdk.v1.Bucket bucket: a :term:`bucket` to delete
         :rtype: None
         """
         account_id = self.account_info.get_account_id()
