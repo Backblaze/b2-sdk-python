@@ -510,8 +510,10 @@ class BucketSimulator(object):
         next_file_id = None
         for key in sorted(six.iterkeys(self.file_name_and_id_to_file)):
             (file_name, file_id) = key
-            if (start_file_name <
-                file_name) or (start_file_name == file_name and start_file_id <= file_id):
+            if (start_file_name < file_name) or (
+                start_file_name == file_name and
+                (start_file_id == '' or int(start_file_id) <= int(file_id))
+            ):
                 file_sim = self.file_name_and_id_to_file[key]
                 if prefix is not None and not file_name.startswith(prefix):
                     break
