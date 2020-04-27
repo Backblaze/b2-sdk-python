@@ -553,6 +553,18 @@ class TestUpload(TestCaseWithBucket):
         self._check_file_contents('file1', data)
         self.assertEqual("600: 200 400 600 closed", progress_listener.get_history())
 
+    def test_upload_large_file_with_restricted_api_key(self):
+        self.simulator.key_id_to_key[self.account_id].name_prefix_or_none = 'path/to'
+        part_size = self.simulator.MIN_PART_SIZE
+        data = self._make_data(part_size * 3)
+        progress_listener = StubProgressListener()
+        file_info = self.bucket.upload_bytes(
+            data, 'path/to/file1', progress_listener=progress_listener
+        )
+        self.assertEqual(len(data), file_info.size)
+        self._check_file_contents('path/to/file1', data)
+        self.assertEqual("600: 200 400 600 closed", progress_listener.get_history())
+
     def _start_large_file(self, file_name, file_info=None):
         if file_info is None:
             file_info = {}
