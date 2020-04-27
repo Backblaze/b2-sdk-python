@@ -207,11 +207,12 @@ class Bucket(object):
         if fetch_count is not None and fetch_count <= 0:
             # fetch_count equal to 0 means "use API default", which we don't want to support here
             raise ValueError("unsupported fetch_count value")
+        start_file_name = file_name
         start_file_id = None
         session = self.api.session
         while 1:
             response = session.list_file_versions(
-                self.id_, file_name, start_file_id, fetch_count, file_name
+                self.id_, start_file_name, start_file_id, fetch_count, file_name
             )
 
             for entry in response['files']:
@@ -220,10 +221,10 @@ class Bucket(object):
                     # All versions for the requested file name have been listed.
                     return
                 yield file_version_info
-            if response['nextFileName'] != file_name:
-                # Unless there are more files with the same name we can stop here.
-                return
+            start_file_name = response['nextFileName']
             start_file_id = response['nextFileId']
+            if start_file_name is None:
+                return
 
     def ls(self, folder_to_list='', show_versions=False, recursive=False, fetch_count=None):
         """

@@ -357,17 +357,17 @@ class TestListVersions(TestCaseWithBucket):
         ]
         self.assertEqual(expected, actual)
 
-    # def test_no_second_response(self):
-    #     data = six.b('hello world')
-    #     file_id = self.bucket.upload_bytes(data, 'a/b').id_
-    #     self.bucket.upload_bytes(data, 'a/b/c')
+    def test_all_versions_in_response(self):
+        data = six.b('hello world')
+        file_id = self.bucket.upload_bytes(data, 'a/b').id_
+        self.bucket.upload_bytes(data, 'a/b/c')
 
-    #     expected = [(file_id, 'a/b', 11, 'upload')]
-    #     actual = [
-    #         (info.id_, info.file_name, info.size, info.action)
-    #         for info in self.bucket.list_file_versions('a/b', fetch_count=1)
-    #     ]
-    #     self.assertEqual(expected, actual)
+        expected = [(file_id, 'a/b', 11, 'upload')]
+        actual = [
+            (info.id_, info.file_name, info.size, info.action)
+            for info in self.bucket.list_file_versions('a/b', fetch_count=1)
+        ]
+        self.assertEqual(expected, actual)
 
     def test_bad_fetch_count(self):
         try:
