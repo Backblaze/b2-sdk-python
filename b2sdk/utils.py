@@ -134,6 +134,24 @@ def hex_sha1_of_stream(input_stream, content_length):
     return digest.hexdigest()
 
 
+def hex_sha1_of_unlimited_stream(input_stream, limit=None):
+    block_size = 1024 * 1024
+    content_length = 0
+    digest = hashlib.sha1()
+    while True:
+        if limit is not None:
+            to_read = min(limit - content_length, block_size)
+        else:
+            to_read = block_size
+        data = input_stream.read(to_read)
+        data_len = len(data)
+        if data_len > 0:
+            digest.update(data)
+            content_length += data_len
+        if data_len < to_read:
+            return digest.hexdigest(), content_length
+
+
 def hex_sha1_of_bytes(data):
     """
     Return the 40-character hex SHA1 checksum of the data.
@@ -215,25 +233,6 @@ def fix_windows_path_limit(path):
             return path
     else:
         return path
-
-
-class BytesIoContextManager(object):
-    """
-    A simple wrapper for a BytesIO that makes it look like
-    a file-like object that can be a context manager.
-    """
-
-    def __init__(self, byte_data):
-        """
-        :param bytes_data: a byte stream
-        """
-        self.byte_data = byte_data
-
-    def __enter__(self):
-        return six.BytesIO(self.byte_data)
-
-    def __exit__(self, type_, value, traceback):
-        return None  # don't hide exception
 
 
 class TempDir(object):

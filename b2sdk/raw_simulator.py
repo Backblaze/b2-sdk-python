@@ -31,8 +31,8 @@ from .exception import (
     Unauthorized,
     UnsatisfiableRange,
 )
-from .raw_api import AbstractRawApi, HEX_DIGITS_AT_END, MetadataDirectiveMode
 from .stream.hashing import StreamWithHash
+from .raw_api import AbstractRawApi, HEX_DIGITS_AT_END, MetadataDirectiveMode
 from .utils import b2_url_decode, b2_url_encode
 
 ALL_CAPABILITES = [
@@ -480,6 +480,7 @@ class BucketSimulator(object):
         prev_file_name = None
         for key in sorted(six.iterkeys(self.file_name_and_id_to_file)):
             (file_name, file_id) = key
+            assert file_id
             if start_file_name <= file_name and file_name != prev_file_name:
                 if prefix is not None and not file_name.startswith(prefix):
                     break
@@ -962,7 +963,7 @@ class RawSimulator(AbstractRawApi):
         file_sim = src_bucket.file_id_to_file[source_file_id]
         data_bytes = get_bytes_range(file_sim.data_bytes, bytes_range)
 
-        data_stream = StreamWithHash(io.BytesIO(data_bytes))
+        data_stream = StreamWithHash(io.BytesIO(data_bytes), len(data_bytes))
         content_length = len(data_stream)
         sha1_sum = HEX_DIGITS_AT_END
 
@@ -1007,7 +1008,7 @@ class RawSimulator(AbstractRawApi):
     def list_file_names(
         self,
         api_url,
-        account_auth,
+        account_auth_token,
         bucket_id,
         start_file_name=None,
         max_file_count=None,
@@ -1016,7 +1017,7 @@ class RawSimulator(AbstractRawApi):
         bucket = self._get_bucket_by_id(bucket_id)
         self._assert_account_auth(
             api_url,
-            account_auth,
+            account_auth_token,
             bucket.account_id,
             'listFiles',
             bucket_id=bucket_id,
@@ -1027,7 +1028,7 @@ class RawSimulator(AbstractRawApi):
     def list_file_versions(
         self,
         api_url,
-        account_auth,
+        account_auth_token,
         bucket_id,
         start_file_name=None,
         start_file_id=None,
@@ -1037,7 +1038,7 @@ class RawSimulator(AbstractRawApi):
         bucket = self._get_bucket_by_id(bucket_id)
         self._assert_account_auth(
             api_url,
-            account_auth,
+            account_auth_token,
             bucket.account_id,
             'listFiles',
             bucket_id=bucket_id,
@@ -1066,7 +1067,7 @@ class RawSimulator(AbstractRawApi):
     def list_unfinished_large_files(
         self,
         api_url,
-        account_auth,
+        account_auth_token,
         bucket_id,
         start_file_id=None,
         max_file_count=None,
@@ -1074,7 +1075,7 @@ class RawSimulator(AbstractRawApi):
     ):
         bucket = self._get_bucket_by_id(bucket_id)
         self._assert_account_auth(
-            api_url, account_auth, bucket.account_id, 'listFiles', file_name=prefix
+            api_url, account_auth_token, bucket.account_id, 'listFiles', file_name=prefix
         )
         start_file_id = start_file_id or ''
         max_file_count = max_file_count or 100

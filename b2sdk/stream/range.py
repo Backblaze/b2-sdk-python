@@ -8,8 +8,13 @@
 #
 ######################################################################
 
+import io
 
-class RangeOfInputStream(object):
+from b2sdk.stream.wrapper import StreamWithLengthWrapper
+from b2sdk.stream.base import ReadOnlyStreamMixin
+
+
+class RangeOfInputStream(ReadOnlyStreamMixin, StreamWithLengthWrapper):
     """
     Wrap a file-like object (read only) and read the selected
     range of the file.
@@ -21,24 +26,32 @@ class RangeOfInputStream(object):
         :param int offset: offset in the stream
         :param int length: max number of bytes to read
         """
-        self.stream = stream
+        super(RangeOfInputStream, self).__init__(stream, length)
         self.offset = offset
-        self.remaining = length
+        self.relative_pos = 0
+        self.stream.seek(self.offset)
 
-    def __enter__(self):
-        self.stream.__enter__()
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        return self.stream.__exit__(exc_type, exc_val, exc_tb)
-
-    def seek(self, pos):
+    def seek(self, pos, whence=0):
         """
         Seek to a given position in the stream.
 
-        :param int pos: position in the stream
+        :param int pos: position in the stream relative to steam offset
+        :return: new position relative to stream offset
+        :rtype: int
         """
-        self.stream.seek(self.offset + pos)
+        if whence != 0:
+            raise io.UnsupportedOperation('only SEEK_SET is supported')
+        abs_pos = super(RangeOfInputStream, self).seek(self.offset + pos)
+        self.relative_pos = abs_pos - self.offset
+        return self.tell()
+
+    def tell(self):
+        """
+        Return current stream position relative to offset.
+
+        :rtype: int
+        """
+        return self.relative_pos
 
     def read(self, size=None):
         """
@@ -46,11 +59,19 @@ class RangeOfInputStream(object):
 
         :param int size: number of bytes to read
         :return: data read from the stream
+        :rtype: bytes
         """
+        remaining = max(0, self.length - self.relative_pos)
         if size is None:
-            to_read = self.remaining
+            to_read = remaining
         else:
-            to_read = min(size, self.remaining)
+            to_read = min(size, remaining)
         data = self.stream.read(to_read)
-        self.remaining -= len(data)
+        self.relative_pos += len(data)
         return data
+
+
+def wrap_with_range(stream, stream_length, range_offset, range_length):
+    if range_offset == 0 and range_length == stream_length:
+        return stream
+    return RangeOfInputStream(stream, range_offset, range_length)
