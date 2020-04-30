@@ -24,7 +24,7 @@ class B2Api(v1.B2Api):
         but API user should not rely on the response: if it doesn't raise
         an exception, it means that the operation was a success.
 
-        :param b2sdk.v1.Bucket bucket: a :term:`Bucket` to delete
+        :param b2sdk.v1.Bucket bucket: a :term:`bucket` to delete
         """
         account_id = self.account_info.get_account_id()
         return self.session.delete_bucket(account_id, bucket.id_)

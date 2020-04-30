@@ -50,7 +50,7 @@ class TestExceptions(TestBase):
         try:
             raise BadUploadUrl('foo')
         except BadUploadUrl as e:
-            assert e.should_retry_http()
+            assert not e.should_retry_http()
             assert e.should_retry_upload()
             assert str(e) == 'Bad upload url: foo', str(e)
 

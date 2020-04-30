@@ -9,6 +9,7 @@
 ######################################################################
 
 import collections
+import io
 import random
 import re
 import time
@@ -34,6 +35,7 @@ from .exception import (
 )
 from .raw_api import AbstractRawApi, HEX_DIGITS_AT_END, MetadataDirectiveMode, set_token_type, TokenType
 from .utils import b2_url_decode, b2_url_encode, ConcurrentUsedAuthTokenGuard
+from .stream.hashing import StreamWithHash
 
 ALL_CAPABILITES = [
     'listKeys',
@@ -48,6 +50,19 @@ ALL_CAPABILITES = [
     'writeFiles',
     'deleteFiles',
 ]
+
+
+def get_bytes_range(data_bytes, bytes_range):
+    """ Slice bytes array using bytes range """
+    if bytes_range is None:
+        return data_bytes
+    if bytes_range[0] > bytes_range[1]:
+        raise UnsatisfiableRange()
+    if bytes_range[0] < 0:
+        raise UnsatisfiableRange()
+    if bytes_range[1] > len(data_bytes):
+        raise UnsatisfiableRange()
+    return data_bytes[bytes_range[0]:bytes_range[1]]
 
 
 class KeySimulator(object):
@@ -442,14 +457,7 @@ class BucketSimulator(object):
         file_sim = self.file_id_to_file[file_id]
         new_file_id = self._next_file_id()
 
-        data_bytes = file_sim.data_bytes
-
-        if bytes_range is not None:
-            if bytes_range[0] >= len(file_sim.data_bytes
-                                    ) or bytes_range[1] <= 0:  # requested too much
-                raise UnsatisfiableRange()
-            else:
-                data_bytes = data_bytes[bytes_range[0]:bytes_range[1]]
+        data_bytes = get_bytes_range(file_sim.data_bytes, bytes_range)
 
         destination_bucket_id = destination_bucket_id or self.bucket_id
         copy_file_sim = self.FILE_SIMULATOR_CLASS(
@@ -474,6 +482,7 @@ class BucketSimulator(object):
         prev_file_name = None
         for key in sorted(six.iterkeys(self.file_name_and_id_to_file)):
             (file_name, file_id) = key
+            assert file_id
             if start_file_name <= file_name and file_name != prev_file_name:
                 if prefix is not None and not file_name.startswith(prefix):
                     break
@@ -832,7 +841,7 @@ class RawSimulator(AbstractRawApi):
         del self.bucket_id_to_bucket[bucket_id]
         return bucket.bucket_dict()
 
-    def download_file_from_url(self, _, account_auth_token_or_none, url, range_=None):
+    def download_file_from_url(self, account_auth_token_or_none, url, range_=None):
         # TODO: check auth token if bucket is not public
         matcher = self.DOWNLOAD_URL_MATCHER.match(url)
         assert matcher is not None, url
@@ -942,6 +951,33 @@ class RawSimulator(AbstractRawApi):
         dest_bucket.file_name_and_id_to_file[copy_file_sim.sort_key()] = copy_file_sim
         return copy_file_sim.as_upload_result()
 
+    def copy_part(
+        self,
+        api_url,
+        account_auth_token,
+        source_file_id,
+        large_file_id,
+        part_number,
+        bytes_range=None,
+    ):
+        src_bucket_id = self.file_id_to_bucket_id[source_file_id]
+        src_bucket = self._get_bucket_by_id(src_bucket_id)
+        dest_bucket_id = self.file_id_to_bucket_id[large_file_id]
+        dest_bucket = self._get_bucket_by_id(dest_bucket_id)
+
+        self._assert_account_auth(api_url, account_auth_token, dest_bucket.account_id, 'writeFiles')
+
+        file_sim = src_bucket.file_id_to_file[source_file_id]
+        data_bytes = get_bytes_range(file_sim.data_bytes, bytes_range)
+
+        data_stream = StreamWithHash(io.BytesIO(data_bytes), len(data_bytes))
+        content_length = len(data_stream)
+        sha1_sum = HEX_DIGITS_AT_END
+
+        return dest_bucket.upload_part(
+            large_file_id, part_number, content_length, sha1_sum, data_stream
+        )
+
     def list_buckets(
         self, api_url, account_auth_token, account_id, bucket_id=None, bucket_name=None
     ):
@@ -979,7 +1015,7 @@ class RawSimulator(AbstractRawApi):
     def list_file_names(
         self,
         api_url,
-        account_auth,
+        account_auth_token,
         bucket_id,
         start_file_name=None,
         max_file_count=None,
@@ -988,7 +1024,7 @@ class RawSimulator(AbstractRawApi):
         bucket = self._get_bucket_by_id(bucket_id)
         self._assert_account_auth(
             api_url,
-            account_auth,
+            account_auth_token,
             bucket.account_id,
             'listFiles',
             bucket_id=bucket_id,
@@ -999,7 +1035,7 @@ class RawSimulator(AbstractRawApi):
     def list_file_versions(
         self,
         api_url,
-        account_auth,
+        account_auth_token,
         bucket_id,
         start_file_name=None,
         start_file_id=None,
@@ -1009,7 +1045,7 @@ class RawSimulator(AbstractRawApi):
         bucket = self._get_bucket_by_id(bucket_id)
         self._assert_account_auth(
             api_url,
-            account_auth,
+            account_auth_token,
             bucket.account_id,
             'listFiles',
             bucket_id=bucket_id,
@@ -1038,7 +1074,7 @@ class RawSimulator(AbstractRawApi):
     def list_unfinished_large_files(
         self,
         api_url,
-        account_auth,
+        account_auth_token,
         bucket_id,
         start_file_id=None,
         max_file_count=None,
@@ -1046,7 +1082,7 @@ class RawSimulator(AbstractRawApi):
     ):
         bucket = self._get_bucket_by_id(bucket_id)
         self._assert_account_auth(
-            api_url, account_auth, bucket.account_id, 'listFiles', file_name=prefix
+            api_url, account_auth_token, bucket.account_id, 'listFiles', file_name=prefix
         )
         start_file_id = start_file_id or ''
         max_file_count = max_file_count or 100
@@ -1084,7 +1120,6 @@ class RawSimulator(AbstractRawApi):
             if_revision_is=if_revision_is
         )
 
-    @set_token_type(TokenType.UPLOAD_SMALL)
     def upload_file(
         self, upload_url, upload_auth_token, file_name, content_length, content_type, content_sha1,
         file_infos, data_stream
@@ -1114,7 +1149,6 @@ class RawSimulator(AbstractRawApi):
             self.file_id_to_bucket_id[file_id] = bucket_id
         return response
 
-    @set_token_type(TokenType.UPLOAD_PART)
     def upload_part(
         self, upload_url, upload_auth_token, part_number, content_length, sha1_sum, input_stream
     ):

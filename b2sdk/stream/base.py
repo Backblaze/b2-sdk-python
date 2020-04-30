@@ -1,0 +1,19 @@
+######################################################################
+#
+# File: b2sdk/stream/base.py
+#
+# Copyright 2020 Backblaze Inc. All Rights Reserved.
+#
+# License https://www.backblaze.com/using_b2_code.html
+#
+######################################################################
+
+import io
+
+
+class ReadOnlyStreamMixin(object):
+    def writeable(self):
+        return False
+
+    def write(self, data):
+        raise io.UnsupportedOperation('Cannot accept a write to a read-only stream')

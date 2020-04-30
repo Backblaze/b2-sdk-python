@@ -279,14 +279,15 @@ Get file metadata
      'fileName': 'dummy_new.pdf',
      'uploadTimestamp': 1554361150000}
 
-
 Copy file
 =========
+
+Please switch to  :meth:`b2sdk.v2.Bucket.copy`.
 
 .. code-block:: python
 
     >>> file_id = '4_z5485a1682662eb3e60980d10_f118df9ba2c5131e8_d20190619_m065809_c002_v0001126_t0040'
-    >>> bucket.copy_file(file_id, 'f2_copy.txt')
+    >>> bucket.copy(file_id, 'f2_copy.txt')
     {'accountId': '451862be08d0',
      'action': 'copy',
      'bucketId': '5485a1682662eb3e60980d10',
@@ -298,25 +299,19 @@ Copy file
      'fileName': 'f2_copy.txt',
      'uploadTimestamp': 1561033728000}
 
+If the ``content length`` is not provided and the file is larger than 5GB, ``copy`` would not succeed and error would be raised. If length is provided, then the file may be copied as a large file. Maximum copy part size can be set by ``max_copy_part_size`` - if not set, it will default to 5GB. If ``max_copy_part_size`` is lower than :term:`absoluteMinimumPartSize`, file would be copied in single request - this may be used to force copy in single request large file that fits in server small file limit.
 
-If you want to copy just the part of the file, then you can specify the bytes_range as a tuple.
+If you want to copy just the part of the file, then you can specify the offset and content length:
 
 .. code-block:: python
 
     >>> file_id = '4_z5485a1682662eb3e60980d10_f118df9ba2c5131e8_d20190619_m065809_c002_v0001126_t0040'
-    >>> bucket.copy_file(file_id, 'f2_copy.txt', bytes_range=(8,15))
-    {'accountId': '451862be08d0',
-     'action': 'copy',
-     'bucketId': '5485a1682662eb3e60980d10',
-     'contentLength': 8,
-     'contentSha1': '274713be564aecaae8de362acb68658b576d0b40',
-     'contentType': 'text/plain',
-     'fileId': '4_z5485a1682662eb3e60980d10_f114b0c11b6b6e39e_d20190620_m122007_c002_v0001123_t0004',
-     'fileInfo': {'src_last_modified_millis': '1560848707000'},
-     'fileName': 'f2_copy.txt',
-     'uploadTimestamp': 1561033207000}
+    >>> bucket.copy(file_id, 'f2_copy.txt', offset=1024, length=2048)
 
-For more information see :meth:`b2sdk.v1.Bucket.copy_file`.
+Note that content length is required for offset values other than zero.
+
+
+For more information see :meth:`b2sdk.v1.Bucket.copy`.
 
 
 Delete file
@@ -339,3 +334,5 @@ Cancel large file uploads
     >>> bucket = b2_api.get_bucket_by_name(bucket_name)
     >>> for file_version in bucket.list_unfinished_large_files():
             bucket.cancel_large_file(file_version.file_id)
+
+

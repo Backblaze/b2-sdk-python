@@ -113,8 +113,9 @@ class BadJson(B2SimpleError):
     prefix = 'Bad request'
 
 
-class BadUploadUrl(TransientErrorMixin, B2SimpleError):
-    pass
+class BadUploadUrl(B2SimpleError):
+    def should_retry_upload(self):
+        return True
 
 
 class BrokenPipe(B2Error):
@@ -212,6 +213,12 @@ class B2ConnectionError(TransientErrorMixin, B2SimpleError):
 
 class B2RequestTimeout(TransientErrorMixin, B2SimpleError):
     pass
+
+
+class B2RequestTimeoutDuringUpload(B2RequestTimeout):
+    # if a timeout is hit during upload, it is not guaranteed that the the server has released the upload token lock already, so we'll use a new token
+    def should_retry_http(self):
+        return False
 
 
 class DestFileNewer(B2Error):

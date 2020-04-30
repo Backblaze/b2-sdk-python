@@ -10,23 +10,19 @@
 
 import six
 
-from .account_info.sqlite_account_info import SqliteAccountInfo
-from .account_info.exception import MissingAccountData
-from .b2http import B2Http
 from .bucket import Bucket, BucketFactory
-from .cache import AuthInfoCache, DummyCache
-from .transferer import Transferer
 from .exception import NonExistentBucket, RestrictedBucket
-from .file_version import FileVersionInfoFactory, FileIdAndName
-from .part import PartFactory
-from .raw_api import API_VERSION, B2RawApi
+from .file_version import FileIdAndName
+from .large_file.services import LargeFileServices
+from .raw_api import API_VERSION
 from .session import B2Session
+from .transfer import (
+    CopyManager,
+    DownloadManager,
+    Emerger,
+    UploadManager,
+)
 from .utils import B2TraceMeta, b2_url_encode, limit_trace_arguments
-
-try:
-    import concurrent.futures as futures
-except ImportError:
-    import futures
 
 
 def url_for_api(info, api_name):
@@ -42,6 +38,25 @@ def url_for_api(info, api_name):
     else:
         base = info.get_api_url()
     return '%s/b2api/%s/%s' % (base, API_VERSION, api_name)
+
+
+class Services(object):
+    """ Gathers objects that provide high level logic over raw api usage. """
+
+    def __init__(self, session, max_upload_workers=10, max_copy_workers=10):
+        """
+        Initialize Services object using given session.
+
+        :param b2sdk.v1.Session session:
+        :param int max_upload_workers: a number of upload threads
+        :param int max_copy_workers: a number of copy threads
+        """
+        self.session = session
+        self.large_file = LargeFileServices(self)
+        self.download_manager = DownloadManager(self)
+        self.upload_manager = UploadManager(self, max_upload_workers=max_upload_workers)
+        self.copy_manager = CopyManager(self, max_copy_workers=max_copy_workers)
+        self.emerger = Emerger(self)
 
 
 @six.add_metaclass(B2TraceMeta)
@@ -68,7 +83,14 @@ class B2Api(object):
     BUCKET_FACTORY_CLASS = staticmethod(BucketFactory)
     BUCKET_CLASS = staticmethod(Bucket)
 
-    def __init__(self, account_info=None, cache=None, raw_api=None, max_upload_workers=10):
+    def __init__(
+        self,
+        account_info=None,
+        cache=None,
+        raw_api=None,
+        max_upload_workers=10,
+        max_copy_workers=10
+    ):
         """
         Initialize the API using the given account info.
 
@@ -93,59 +115,37 @@ class B2Api(object):
                         default is :class:`~b2sdk.raw_api.B2RawApi`
 
         :param int max_upload_workers: a number of upload threads, default is 10
+        :param int max_copy_workers: a number of copy threads, default is 10
         """
-        self.raw_api = raw_api or B2RawApi(B2Http())
-        if account_info is None:
-            account_info = SqliteAccountInfo()
-            if cache is None:
-                cache = AuthInfoCache(account_info)
-        self.session = B2Session(self, self.raw_api)
-        self.transferer = Transferer(self.session, account_info)
-        self.account_info = account_info
-        if cache is None:
-            cache = DummyCache()
-        self.cache = cache
-        self.upload_executor = None
-        self.max_workers = max_upload_workers
+        self.session = B2Session(account_info=account_info, cache=cache, raw_api=raw_api)
+        self.services = Services(
+            self.session,
+            max_upload_workers=max_upload_workers,
+            max_copy_workers=max_copy_workers,
+        )
 
-    def set_thread_pool_size(self, max_workers):
+    @property
+    def account_info(self):
+        return self.session.account_info
+
+    @property
+    def cache(self):
+        return self.session.cache
+
+    @property
+    def raw_api(self):
         """
-        Set the size of the thread pool to use for uploads and downloads.
-
-        Must be called before any work starts, or the thread pool will get
-        the default size of 1.
-
-        .. todo::
-            move set_thread_pool_size and get_thread_pool to transferer
-
-        :param int max_workers: maximum allowed number of workers in a pool
-        """
-        if self.upload_executor is not None:
-            raise Exception('thread pool already created')
-        self.max_workers = max_workers
-
-    def get_thread_pool(self):
-        """
-        Return the thread pool executor to use for uploads and downloads.
-        """
-        if self.upload_executor is None:
-            self.upload_executor = futures.ThreadPoolExecutor(max_workers=self.max_workers)
-        return self.upload_executor
+        .. warning::
+            :class:`~b2sdk.raw_api.B2RawApi` attribute is deprecated.
+            :class:`~b2sdk.session.B2Session` expose all :class:`~b2sdk.raw_api.B2RawApi` methods now."""
+        return self.session.raw_api
 
     def authorize_automatically(self):
         """
         Perform automatic account authorization, retrieving all account data
         from account info object passed during initialization.
         """
-        try:
-            self.authorize_account(
-                self.account_info.get_realm(),
-                self.account_info.get_application_key_id(),
-                self.account_info.get_application_key(),
-            )
-        except MissingAccountData:
-            return False
-        return True
+        return self.session.authorize_automatically()
 
     @limit_trace_arguments(only=('self', 'realm'))
     def authorize_account(self, realm, application_key_id, application_key):
@@ -156,32 +156,7 @@ class B2Api(object):
         :param str application_key_id: :term:`application key ID`
         :param str application_key: user's :term:`application key`
         """
-        # Clean up any previous account info if it was for a different account.
-        try:
-            old_account_id = self.account_info.get_account_id()
-            old_realm = self.account_info.get_realm()
-            if application_key_id != old_account_id or realm != old_realm:
-                self.cache.clear()
-        except MissingAccountData:
-            self.cache.clear()
-
-        # Authorize
-        realm_url = self.account_info.REALM_URLS[realm]
-        response = self.raw_api.authorize_account(realm_url, application_key_id, application_key)
-        allowed = response['allowed']
-
-        # Store the auth data
-        self.account_info.set_auth_data(
-            response['accountId'],
-            response['authorizationToken'],
-            response['apiUrl'],
-            response['downloadUrl'],
-            response['recommendedPartSize'],
-            application_key,
-            realm,
-            allowed,
-            application_key_id,
-        )
+        self.session.authorize_account(realm, application_key_id, application_key)
 
     def get_account_id(self):
         """
@@ -232,7 +207,12 @@ class B2Api(object):
         Download a file with the given ID.
 
         :param str file_id: a file ID
-        :param str download_dest: a local file path
+        :param download_dest: an instance of the one of the following classes: \
+        :class:`~b2sdk.v1.DownloadDestLocalFile`,\
+        :class:`~b2sdk.v1.DownloadDestBytes`,\
+        :class:`~b2sdk.v1.DownloadDestProgressWrapper`,\
+        :class:`~b2sdk.v1.PreSeekedDownloadDest`,\
+        or any sub class of :class:`~b2sdk.v1.AbstractDownloadDestination`
         :param progress_listener: an instance of the one of the following classes: \
         :class:`~b2sdk.v1.PartProgressReporter`,\
         :class:`~b2sdk.v1.TqdmProgressListener`,\
@@ -245,11 +225,10 @@ class B2Api(object):
         position, and the second one is the end position in the file
         :return: context manager that returns an object that supports iter_content()
         """
-        url = self.session.get_download_url_by_id(
-            file_id,
-            url_factory=self.account_info.get_download_url,
+        url = self.session.get_download_url_by_id(file_id)
+        return self.services.download_manager.download_file_from_url(
+            url, download_dest, progress_listener, range_
         )
-        return self.transferer.download_file_from_url(url, download_dest, progress_listener, range_)
 
     def get_bucket_by_id(self, bucket_id):
         """
@@ -291,7 +270,7 @@ class B2Api(object):
         """
         Delete a chosen bucket.
 
-        :param b2sdk.v1.Bucket bucket: a :term:`Bucket` to delete
+        :param b2sdk.v1.Bucket bucket: a :term:`bucket` to delete
         :rtype: None
         """
         account_id = self.account_info.get_account_id()
@@ -340,14 +319,9 @@ class B2Api(object):
         :param int batch_size: the number of parts to fetch at a time from the server
         :rtype: generator
         """
-        batch_size = batch_size or 100
-        while True:
-            response = self.session.list_parts(file_id, start_part_number, batch_size)
-            for part_dict in response['parts']:
-                yield PartFactory.from_list_parts_dict(part_dict)
-            start_part_number = response.get('nextPartNumber')
-            if start_part_number is None:
-                break
+        return self.services.large_file.list_parts(
+            file_id, start_part_number=start_part_number, batch_size=batch_size
+        )
 
     # delete/cancel
     def cancel_large_file(self, file_id):
@@ -357,8 +331,7 @@ class B2Api(object):
         :param str file_id: a file ID
         :rtype: None
         """
-        response = self.session.cancel_large_file(file_id)
-        return FileVersionInfoFactory.from_cancel_large_file_response(response)
+        return self.services.large_file.cancel_large_file(file_id)
 
     def delete_file_version(self, file_id, file_name):
         """

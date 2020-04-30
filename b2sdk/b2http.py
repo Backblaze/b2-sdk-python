@@ -10,11 +10,12 @@
 
 from __future__ import print_function
 
-import arrow
-import logging
+import io
 import json
+import logging
 import socket
 
+import arrow
 import requests
 import six
 import time
@@ -123,6 +124,7 @@ def _translate_and_retry(fcn, try_count, post_params=None):
         except B2Error as e:
             if not e.should_retry_http():
                 raise
+            logger.debug(str(e), exc_info=True)
             if e.retry_after_seconds is not None:
                 sleep_duration = e.retry_after_seconds
                 sleep_reason = 'server asked us to'
@@ -305,7 +307,12 @@ class B2Http(object):
             self._run_post_request_hooks('POST', url, headers, response)
             return response
 
-        response = _translate_and_retry(do_post, try_count, post_params)
+        try:
+            response = _translate_and_retry(do_post, try_count, post_params)
+        except B2RequestTimeout:
+            # this forces a token refresh, which is necessary if request is still alive
+            # on the server but has terminated for some reason on the client. See #79
+            raise B2RequestTimeoutDuringUpload()
 
         # Decode the JSON that came back.  If we've gotten this far,
         # we know we have a status of 200 OK.  In this case, the body
@@ -334,7 +341,7 @@ class B2Http(object):
         :return: the decoded JSON document
         :rtype: dict
         """
-        data = six.BytesIO(six.b(json.dumps(params)))
+        data = io.BytesIO(six.b(json.dumps(params)))
         return self.post_content_return_json(url, headers, data, try_count, params)
 
     def get_content(self, url, headers, try_count=5):
@@ -435,7 +442,7 @@ def test_http():
     # Broken pipe
     print('TEST: broken pipe')
     try:
-        data = six.BytesIO(six.b(chr(0)) * 10000000)
+        data = io.BytesIO(six.b(chr(0)) * 10000000)
         b2_http.post_content_return_json('https://api.backblazeb2.com/bad_url', {}, data)
         assert False, 'should have failed with broken pipe'
     except BrokenPipe:
