@@ -33,7 +33,7 @@ from .exception import (
     Unauthorized,
     UnsatisfiableRange,
 )
-from .raw_api import AbstractRawApi, HEX_DIGITS_AT_END, MetadataDirectiveMode, TokenType
+from .raw_api import AbstractRawApi, HEX_DIGITS_AT_END, MetadataDirectiveMode
 from .utils import b2_url_decode, b2_url_encode, ConcurrentUsedAuthTokenGuard
 from .stream.hashing import StreamWithHash
 
