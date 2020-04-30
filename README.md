@@ -37,6 +37,7 @@ b2sdk>=0.0.0,<1.0.0
 
 * Make sync treat hidden files as deleted
 * Remove arrow warnings caused by https://github.com/crsmithdev/arrow/issues/612
+* Add a `list_file_versions` to buckets.
 
 ## 1.0.2 (2019-10-15)
 

@@ -304,6 +304,81 @@ class TestLs(TestCaseWithBucket):
         self.assertBucketContents(expected, '', show_versions=True)
 
 
+class TestListVersions(TestCaseWithBucket):
+    def test_single_version(self):
+        data = six.b('hello world')
+        a_id = self.bucket.upload_bytes(data, 'a').id_
+        b_id = self.bucket.upload_bytes(data, 'b').id_
+        c_id = self.bucket.upload_bytes(data, 'c').id_
+
+        expected = [(a_id, 'a', 11, 'upload')]
+        actual = [
+            (info.id_, info.file_name, info.size, info.action)
+            for info in self.bucket.list_file_versions('a')
+        ]
+        self.assertEqual(expected, actual)
+
+        expected = [(b_id, 'b', 11, 'upload')]
+        actual = [
+            (info.id_, info.file_name, info.size, info.action)
+            for info in self.bucket.list_file_versions('b')
+        ]
+        self.assertEqual(expected, actual)
+
+        expected = [(c_id, 'c', 11, 'upload')]
+        actual = [
+            (info.id_, info.file_name, info.size, info.action)
+            for info in self.bucket.list_file_versions('c')
+        ]
+        self.assertEqual(expected, actual)
+
+    def test_multiple_version(self):
+        a_id1 = self.bucket.upload_bytes(six.b('first version'), 'a').id_
+        a_id2 = self.bucket.upload_bytes(six.b('second version'), 'a').id_
+        a_id3 = self.bucket.upload_bytes(six.b('last version'), 'a').id_
+
+        expected = [
+            (a_id3, 'a', 12, 'upload'), (a_id2, 'a', 14, 'upload'), (a_id1, 'a', 13, 'upload')
+        ]
+        actual = [
+            (info.id_, info.file_name, info.size, info.action)
+            for info in self.bucket.list_file_versions('a')
+        ]
+        self.assertEqual(expected, actual)
+
+    def test_ignores_subdirectory(self):
+        data = six.b('hello world')
+        file_id = self.bucket.upload_bytes(data, 'a/b').id_
+        self.bucket.upload_bytes(data, 'a/b/c')
+
+        expected = [(file_id, 'a/b', 11, 'upload')]
+        actual = [
+            (info.id_, info.file_name, info.size, info.action)
+            for info in self.bucket.list_file_versions('a/b')
+        ]
+        self.assertEqual(expected, actual)
+
+    def test_all_versions_in_response(self):
+        data = six.b('hello world')
+        file_id = self.bucket.upload_bytes(data, 'a/b').id_
+        self.bucket.upload_bytes(data, 'a/b/c')
+
+        expected = [(file_id, 'a/b', 11, 'upload')]
+        actual = [
+            (info.id_, info.file_name, info.size, info.action)
+            for info in self.bucket.list_file_versions('a/b', fetch_count=1)
+        ]
+        self.assertEqual(expected, actual)
+
+    def test_bad_fetch_count(self):
+        try:
+            # Convert to a list to cause the generator to execute.
+            list(self.bucket.list_file_versions('a', fetch_count=0))
+            self.fail('should have raised ValueError')
+        except ValueError as e:
+            self.assertEqual('unsupported fetch_count value', str(e))
+
+
 class TestCopyFile(TestCaseWithBucket):
     def test_copy_without_optional_params(self):
         file_id = self._make_file()
