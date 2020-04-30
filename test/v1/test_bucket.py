@@ -21,6 +21,7 @@ from .test_base import TestBase
 from .deps_exception import (
     AlreadyFailed,
     B2Error,
+    B2RequestTimeoutDuringUpload,
     InvalidAuthToken,
     InvalidMetadataDirective,
     InvalidRange,
@@ -448,6 +449,11 @@ class TestUpload(TestCaseWithBucket):
 
     def test_upload_one_retryable_error(self):
         self.simulator.set_upload_errors([CanRetry(True)])
+        data = six.b('hello world')
+        self.bucket.upload_bytes(data, 'file1')
+
+    def test_upload_timeout(self):
+        self.simulator.set_upload_errors([B2RequestTimeoutDuringUpload()])
         data = six.b('hello world')
         self.bucket.upload_bytes(data, 'file1')
 

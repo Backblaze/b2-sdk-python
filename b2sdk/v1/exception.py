@@ -18,6 +18,7 @@ from b2sdk.exception import B2HttpCallbackException
 from b2sdk.exception import B2HttpCallbackPostRequestException
 from b2sdk.exception import B2HttpCallbackPreRequestException
 from b2sdk.exception import B2RequestTimeout
+from b2sdk.exception import B2RequestTimeoutDuringUpload
 from b2sdk.exception import B2SimpleError
 from b2sdk.exception import BadDateFormat
 from b2sdk.exception import BadFileInfo
@@ -73,6 +74,7 @@ __all__ = (
     'B2HttpCallbackPostRequestException',
     'B2HttpCallbackPreRequestException',
     'B2RequestTimeout',
+    'B2RequestTimeoutDuringUpload',
     'B2SimpleError',
     'BadDateFormat',
     'BadFileInfo',
