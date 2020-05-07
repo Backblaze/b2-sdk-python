@@ -17,7 +17,7 @@ import six
 
 from b2sdk.stream.progress import WritingStreamWithProgress
 
-from .utils import B2TraceMetaAbstract, limit_trace_arguments
+from .utils import B2TraceMetaAbstract, limit_trace_arguments, set_file_mtime
 
 
 @six.add_metaclass(B2TraceMetaAbstract)
@@ -96,10 +96,11 @@ class DownloadDestLocalFile(AbstractDownloadDestination):
 
             # After it's closed, set the mod time.
             # This is an ugly hack to make the tests work.  I can't think
-            # of any other cases where os.utime might fail.
+            # of any other cases where set_file_mtime might fail.
             if self.local_file_path != os.devnull:
-                mod_time = mod_time_millis / 1000.0
-                os.utime(self.local_file_path, (mod_time, mod_time))
+                # FIXME: Change to rounded=True for v2 to be able to remove
+                #  workaround while setting mtime
+                set_file_mtime(self.local_file_path, mod_time_millis, rounded=False)
 
             # Set the flag that means to leave the downloaded file on disk.
             completed = True

@@ -21,7 +21,7 @@ from .exception import EnvironmentEncodingError, UnSyncableFilename
 from .file import File, FileVersion
 from .scan_policies import DEFAULT_SCAN_MANAGER
 from ..raw_api import SRC_LAST_MODIFIED_MILLIS
-from ..utils import fix_windows_path_limit, is_file_readable
+from ..utils import fix_windows_path_limit, get_file_mtime, is_file_readable
 
 DRIVE_MATCHER = re.compile(r"^([A-Za-z]):([/\\])")
 ABSOLUTE_PATH_MATCHER = re.compile(r"^(/)|^(\\)")
@@ -261,8 +261,9 @@ class LocalFolder(AbstractFolder):
                 # Check that the file still exists and is accessible, since it can take a long time
                 # to iterate through large folders
                 if is_file_readable(local_path, reporter):
-                    file_mod_time = int(os.path.getmtime(local_path) * 1000)
-
+                    # FIXME: Change to rounded=True for v2 to be able to remove
+                    #  workaround while setting mtime
+                    file_mod_time = get_file_mtime(local_path, rounded=False)
                     file_size = os.path.getsize(local_path)
                     version = FileVersion(local_path, b2_path, file_mod_time, 'upload', file_size)
 
