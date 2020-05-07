@@ -5,6 +5,8 @@ This repository contains a client library and a few handy utilities for easy acc
 
 [B2 command-line tool](https://github.com/Backblaze/B2_Command_Line_Tool) is an example of how it can be used to provide command-line access to the B2 service, but there are many possible applications (including FUSE filesystems, storage backend drivers for backup applications etc).
 
+# Documentation
+
 The latest documentation is available on [Read the Docs](https://b2-sdk-python.readthedocs.io).
 
 # Installation
