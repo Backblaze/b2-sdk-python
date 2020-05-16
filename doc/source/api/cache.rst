@@ -1,4 +1,4 @@
-Cache classes
+Cache
 ===============================================
 
 **b2sdk** caches the mapping between bucket name and bucket
@@ -7,13 +7,12 @@ the mapping to call the api.
 
 
 .. autoclass:: b2sdk.v1.AbstractCache
-   :no-members:
 
 .. autoclass:: b2sdk.v1.AuthInfoCache()
-   :no-members:
+   :special-members: __init__
 
 .. autoclass:: b2sdk.v1.DummyCache()
-   :no-members:
+   :special-members: __init__
 
 .. autoclass:: b2sdk.v1.InMemoryCache()
-   :no-members:
+   :special-members: __init__
