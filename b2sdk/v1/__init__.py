@@ -154,6 +154,7 @@ from b2sdk.sync.policy_manager import POLICY_MANAGER
 from b2sdk.sync.report import SyncFileReporter
 from b2sdk.sync.report import SyncReport
 from b2sdk.sync.scan_policies import DEFAULT_SCAN_MANAGER
+from b2sdk.sync.scan_policies import IntegerRange
 from b2sdk.sync.scan_policies import RegexSet
 from b2sdk.sync.scan_policies import ScanPoliciesManager
 from b2sdk.sync.sync import KeepOrDeleteMode
