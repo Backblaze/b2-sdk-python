@@ -19,11 +19,9 @@ Interface types
 Public API
 ========================
 
-.. todo::
-   Public API doc list
-
 .. toctree::
    api/account_info
+   api/cache
    api/api
    api/exception
    api/bucket
@@ -42,9 +40,6 @@ Internal API
 ========================
 
 .. note:: See :ref:`Internal interface <internal_interface>` chapter to learn when and how to safely use the Internal API
-
-.. todo::
-   Private API doc list
 
 .. toctree::
    api/internal/session
