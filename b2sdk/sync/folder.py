@@ -10,6 +10,7 @@
 
 import logging
 import os
+import re
 import six
 import sys
 
@@ -124,12 +125,25 @@ class LocalFolder(AbstractFolder):
 
     def make_full_path(self, file_name):
         """
-        Convert a file name into an absolute path.
+        Convert a file name into an absolute path, ensure it is not outside self.root
 
         :param file_name: a file name
         :type file_name: str
         """
-        return os.path.join(self.root, file_name.replace('/', os.path.sep))
+        # Setup the relative_path starting at self.root
+        relative_path = os.path.relpath(file_name.replace('/', os.path.sep), start=self.root)
+
+        # Convert the relative path to an absolute path
+        full_path = os.path.abspath(relative_path)
+
+        # Get the common prefix between the new full_path and self.root
+        common_prefix = os.path.commonprefix([full_path, self.root])
+
+        # Ensure the new full_path is inside the self.root directory
+        if common_prefix != self.root:
+            raise Exception("illegal file name: '" + full_path + "'")
+
+        return full_path
 
     def ensure_present(self):
         """
@@ -301,6 +315,20 @@ class B2Folder(AbstractFolder):
 
             if policies_manager.should_exclude_file(file_name):
                 continue
+
+            # Do not allow relative paths in file names
+            if (file_name.startswith('..' + os.path.sep) or
+                os.path.sep + '..' + os.path.sep in file_name or
+                file_name.endswith(os.path.sep + '..') or file_name == '..'
+            ):
+                raise Exception(
+                    "sync does not support file names that include relative paths: %s" % file_name
+                )
+            # Do not allow absolute paths in file names
+            if file_name.startswith(os.path.sep) or re.match("[A-Za-z]:" + os.path.sep, file_name):
+                raise Exception(
+                    "sync does not support file names with absolute paths: %s" % file_name
+                )
 
             if current_name != file_name and current_name is not None and current_versions:
                 yield File(current_name, current_versions)
