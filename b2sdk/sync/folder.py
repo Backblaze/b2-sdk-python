@@ -10,6 +10,7 @@
 
 import logging
 import os
+import platform
 import re
 import six
 import sys
@@ -305,6 +306,7 @@ class B2Folder(AbstractFolder):
         """
         current_name = None
         current_versions = []
+        sep = '/' if platform.system() != 'Windows' else '\\\\'
         for (file_version_info, folder_name) in self.bucket.ls(
             self.folder_name, show_versions=True, recursive=True, fetch_count=1000
         ):
@@ -317,15 +319,16 @@ class B2Folder(AbstractFolder):
                 continue
 
             # Do not allow relative paths in file names
-            if (file_name.startswith('..' + os.path.sep) or
-                os.path.sep + '..' + os.path.sep in file_name or
-                file_name.endswith(os.path.sep + '..') or file_name == '..'
+            if (file_name.startswith('../') or
+                '/../' in file_name or
+                file_name.endswith('/..') or
+                file_name == '..'
             ):
                 raise Exception(
                     "sync does not support file names that include relative paths: %s" % file_name
                 )
             # Do not allow absolute paths in file names
-            if file_name.startswith(os.path.sep) or re.match("[A-Za-z]:" + os.path.sep, file_name):
+            if file_name.startswith(sep) or re.match("[A-Za-z]:" + sep, file_name):
                 raise Exception(
                     "sync does not support file names with absolute paths: %s" % file_name
                 )
