@@ -5,6 +5,10 @@ This repository contains a client library and a few handy utilities for easy acc
 
 [B2 command-line tool](https://github.com/Backblaze/B2_Command_Line_Tool) is an example of how it can be used to provide command-line access to the B2 service, but there are many possible applications (including FUSE filesystems, storage backend drivers for backup applications etc).
 
+# Documentation
+
+The latest documentation is available on [Read the Docs](https://b2-sdk-python.readthedocs.io).
+
 # Installation
 
 The sdk can be installed with:
@@ -38,8 +42,9 @@ b2sdk>=0.0.0,<1.0.0
 * Make sync treat hidden files as deleted
 * Remove arrow warnings caused by https://github.com/crsmithdev/arrow/issues/612
 * Add `list_file_versions` method to buckets.
+* Add server-side copy support for large files
+* Add ability to synthesize objects from local and remote sources
 * Add AuthInfoCache, InMemoryCache and AbstractCache to public interface
-* Add Emerger (advanced object-file transfer functionality)
 
 ## 1.0.2 (2019-10-15)
 
