@@ -188,6 +188,14 @@ also uploaded a new version of f2.txt to bucket using B2 web.
     upload f2.txt
 
 
+.. autoclass:: b2sdk.v1.ScanPoliciesManager()
+   :special-members: __init__
+   :members:
+
 .. autoclass:: b2sdk.v1.Synchronizer()
+   :special-members: __init__
+   :members:
+
+.. autoclass:: b2sdk.v1.SyncReport()
    :special-members: __init__
    :members:

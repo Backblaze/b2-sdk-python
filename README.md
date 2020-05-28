@@ -40,6 +40,8 @@ b2sdk>=0.0.0,<1.0.0
 * Add `list_file_versions` method to buckets.
 * Add AuthInfoCache, InMemoryCache and AbstractCache to public interface
 * Add Emerger (advanced object-file transfer functionality)
+* Add ability to filter in ScanPoliciesManager based on modification time
+* Add ScanPoliciesManager and SyncReport to public interface
 
 ## 1.0.2 (2019-10-15)
 

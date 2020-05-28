@@ -76,7 +76,9 @@ class IntegerRange(object):
     def __init__(self, begin, end):
         """
         :param begin: begin position of the range (included)
+        :type begin: int
         :param end: end position of the range (included)
+        :type end: int
         """
         self._begin = begin
         self._end = end
@@ -125,9 +127,9 @@ class ScanPoliciesManager(object):
         :param exclude_all_symlinks: if True, exclude all symlinks
         :type exclude_all_symlinks: bool
         :param exclude_modified_before: optionally exclude file versions modified before (in millis)
-        :type exclude_modified_before: int
+        :type exclude_modified_before: int, optional
         :param exclude_modified_after: optionally exclude file versions modified after (in millis)
-        :type exclude_modified_after: int
+        :type exclude_modified_after: int, optional
         """
         self._exclude_dir_set = RegexSet(exclude_dir_regexes)
         self._exclude_file_because_of_dir_set = RegexSet(
