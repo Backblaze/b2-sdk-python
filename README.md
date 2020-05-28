@@ -37,13 +37,14 @@ b2sdk>=0.0.0,<1.0.0
 
 # Release History
 
-## 1.0.4 (not release yet)
+## 1.1.0 (not released yet)
 
 * Make sync treat hidden files as deleted
 * Remove arrow warnings caused by https://github.com/crsmithdev/arrow/issues/612
-* Add a `list_file_versions` to buckets.
+* Add `list_file_versions` method to buckets.
 * Add server-side copy support for large files
 * Add ability to synthesize objects from local and remote sources
+* Add AuthInfoCache, InMemoryCache and AbstractCache to public interface
 
 ## 1.0.2 (2019-10-15)
 
