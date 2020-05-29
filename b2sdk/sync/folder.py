@@ -233,11 +233,12 @@ class LocalFolder(AbstractFolder):
                 if is_file_readable(local_path, reporter):
                     file_mod_time = int(os.path.getmtime(local_path) * 1000)
 
-                    if policies_manager.should_exclude_file_version(file_mod_time):
-                        continue
-
                     file_size = os.path.getsize(local_path)
                     version = FileVersion(local_path, b2_path, file_mod_time, 'upload', file_size)
+
+                    if policies_manager.should_exclude_file_version(version):
+                        continue
+
                     yield File(b2_path, [version])
 
     @classmethod
@@ -312,14 +313,14 @@ class B2Folder(AbstractFolder):
             assert file_version_info.size is not None
 
             current_name = file_name
-
-            if policies_manager.should_exclude_file_version(mod_time_millis):
-                continue
-
             file_version = FileVersion(
                 file_version_info.id_, file_version_info.file_name, mod_time_millis,
                 file_version_info.action, file_version_info.size
             )
+
+            if policies_manager.should_exclude_file_version(file_version):
+                continue
+
             current_versions.append(file_version)
 
         if current_name is not None and current_versions:

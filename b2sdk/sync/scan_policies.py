@@ -150,6 +150,8 @@ class ScanPoliciesManager(object):
         :return: True if excluded.
         :rtype: bool
         """
+        # TODO: In v2 this should accept `b2sdk.v1.File`.
+        #  It requires some refactoring to be done first.
         exclude_because_of_dir = self._exclude_file_because_of_dir_set.matches(file_path)
         exclude_because_of_file = (
             self._exclude_file_set.matches(file_path) and
@@ -157,17 +159,17 @@ class ScanPoliciesManager(object):
         )
         return exclude_because_of_dir or exclude_because_of_file
 
-    def should_exclude_file_version(self, mod_time_millis):
+    def should_exclude_file_version(self, file_version):
         """
-        Given the modification time of a file or file version,
+        Given the modification time of a file version,
         decide if it should be excluded from the scan.
 
-        :param mod_time_millis: the modification time of the file.
-        :type: int
+        :param file_version: the file version object
+        :type: b2sdk.v1.FileVersion
         :return: True if excluded.
         :rtype: bool
         """
-        return mod_time_millis not in self._include_mod_time_range
+        return file_version.mod_time not in self._include_mod_time_range
 
     def should_exclude_directory(self, dir_path):
         """
@@ -179,6 +181,8 @@ class ScanPoliciesManager(object):
         :type dir_path: str
         :return: True if excluded.
         """
+        # TODO: In v2 this should accept `b2sdk.v1.AbstractFolder`.
+        #  It requires some refactoring to be done first.
         return self._exclude_dir_set.matches(dir_path)
 
 
