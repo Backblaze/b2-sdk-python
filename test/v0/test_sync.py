@@ -84,7 +84,7 @@ class TestFolder(TestSync):
 
         self.root_dir = ''
 
-    def prepare_folder(self):
+    def prepare_folder(self, **kwargs):
         raise NotImplementedError
 
     def all_files(self, policies_manager):
@@ -133,8 +133,8 @@ class TestFolder(TestSync):
             six.u('\u81ea\u7531'),
         ]
         polices_manager = ScanPoliciesManager(
-            exclude_file_regexes=['.*\\.bin'],
-            include_file_regexes=['.*a\\.bin'],
+            exclude_file_regexes=('.*\\.bin',),
+            include_file_regexes=('.*a\\.bin',),
         )
         files = self.all_files(polices_manager)
         self.assert_filtered_files(files, expected_list)
@@ -149,7 +149,7 @@ class TestFolder(TestSync):
             six.u('inner/b.txt'),
             six.u('\u81ea\u7531'),
         ]
-        polices_manager = ScanPoliciesManager(exclude_file_regexes=['.*a'])
+        polices_manager = ScanPoliciesManager(exclude_file_regexes=('.*a',))
         files = self.all_files(polices_manager)
         self.assert_filtered_files(files, expected_list)
 
@@ -161,7 +161,7 @@ class TestFolder(TestSync):
             six.u('\u81ea\u7531'),
         ]
         polices_manager = ScanPoliciesManager(
-            exclude_dir_regexes=['hello', 'more', 'hello0'], exclude_file_regexes=['inner']
+            exclude_dir_regexes=('hello', 'more', 'hello0'), exclude_file_regexes=('inner',)
         )
         files = self.all_files(polices_manager)
         self.assert_filtered_files(files, expected_list)
@@ -173,7 +173,7 @@ class TestFolder(TestSync):
             six.u('hello0'),
             six.u('\u81ea\u7531'),
         ]
-        polices_manager = ScanPoliciesManager(exclude_dir_regexes=['hello$', 'inner'])
+        polices_manager = ScanPoliciesManager(exclude_dir_regexes=('hello$', 'inner'))
         files = self.all_files(polices_manager)
         self.assert_filtered_files(files, expected_list)
 
@@ -188,7 +188,7 @@ class TestFolder(TestSync):
             six.u('inner/b.txt'),
             six.u('\u81ea\u7531'),
         ]
-        polices_manager = ScanPoliciesManager(exclude_dir_regexes=['hello$', 'inner/'])
+        polices_manager = ScanPoliciesManager(exclude_dir_regexes=('hello$', 'inner/'))
         files = self.all_files(polices_manager)
         self.assert_filtered_files(files, expected_list)
 
@@ -207,7 +207,7 @@ class TestFolder(TestSync):
             six.u('inner/more/a.txt'),
             six.u('\u81ea\u7531'),
         ]
-        polices_manager = ScanPoliciesManager(exclude_file_regexes=['hello0'],)
+        polices_manager = ScanPoliciesManager(exclude_file_regexes=('hello0',))
         files = self.all_files(polices_manager)
         self.assert_filtered_files(files, expected_list)
 
@@ -379,6 +379,8 @@ class TestB2Folder(TestFolder):
     def prepare_folder(self, prepare_files=True, use_file_versions_info=False):
         if prepare_files:
             for relative_path in self.NAMES:
+                if platform.system() == 'Windows':
+                    relative_path = relative_path.replace(os.sep, '/')
                 self.prepare_file(relative_path, use_file_versions_info)
 
         return B2Folder('bucket-name', self.root_dir, self.api)
@@ -438,6 +440,15 @@ class TestB2Folder(TestFolder):
                 str(f) for f in folder.all_files(self.reporter, policies_manager=polices_manager)
                 if f.name in ('inner/a.txt', 'inner/b.txt')
             ]
+        )
+
+    def test_exclude_modified_all_versions(self):
+        polices_manager = ScanPoliciesManager(
+            exclude_modified_before=1500, exclude_modified_after=1500
+        )
+        folder = self.prepare_folder(use_file_versions_info=True)
+        self.assertEqual(
+            [], list(folder.all_files(self.reporter, policies_manager=polices_manager))
         )
 
 
