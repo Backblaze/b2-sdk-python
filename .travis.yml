@@ -27,6 +27,7 @@ branches:
 matrix:
   allow_failures:
     - python: pypy3  # https://github.com/pyca/cryptography/issues/2880
+    - python: nightly  # problem with compiling cffi with python 3.10
   include:
     # Source Code Analysis is slow, so we run it just once on Python 2 and once on Python 3
     - python: 2.7
