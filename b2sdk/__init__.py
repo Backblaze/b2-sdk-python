@@ -38,9 +38,11 @@ except ImportError:  # Python 2.6
 
 logging.getLogger(__name__).addHandler(NullHandler())
 
+
 class UrllibWarningFilter(object):
     def filter(self, record):
         return record.msg != "Connection pool is full, discarding connection: %s"
+
 
 logging.getLogger('urllib3.connectionpool').addFilter(UrllibWarningFilter())
 
