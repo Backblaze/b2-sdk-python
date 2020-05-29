@@ -17,8 +17,8 @@ import threading
 import time
 import unittest
 
-from nose import SkipTest
 import six
+from nose import SkipTest
 
 from enum import Enum
 
@@ -69,16 +69,16 @@ class TestFolder(TestSync):
     NAMES = [
         six.u('.dot_file'),
         six.u('hello.'),
-        six.u(os.path.join('hello', 'a', '1')),
-        six.u(os.path.join('hello', 'a', '2')),
-        six.u(os.path.join('hello', 'b')),
+        os.path.join('hello', 'a', '1'),
+        os.path.join('hello', 'a', '2'),
+        os.path.join('hello', 'b'),
         six.u('hello0'),
-        six.u(os.path.join('inner', 'a.bin')),
-        six.u(os.path.join('inner', 'a.txt')),
-        six.u(os.path.join('inner', 'b.bin')),
-        six.u(os.path.join('inner', 'b.txt')),
-        six.u(os.path.join('inner', 'more', 'a.bin')),
-        six.u(os.path.join('inner', 'more', 'a.txt')),
+        os.path.join('inner', 'a.bin'),
+        os.path.join('inner', 'a.txt'),
+        os.path.join('inner', 'b.bin'),
+        os.path.join('inner', 'b.txt'),
+        os.path.join('inner', 'more', 'a.bin'),
+        os.path.join('inner', 'more', 'a.txt'),
         six.u('\u81ea\u7531'),
     ]
 
@@ -87,9 +87,15 @@ class TestFolder(TestSync):
     def setUp(self):
         super(TestFolder, self).setUp()
 
-        self.root_dir = ''
+        self.root_dir = six.u('')
 
-    def prepare_folder(self, **kwargs):
+    def prepare_folder(
+        self,
+        prepare_files=True,
+        broken_symlink=False,
+        invalid_permissions=False,
+        use_file_versions_info=False
+    ):
         raise NotImplementedError
 
     def all_files(self, policies_manager):
@@ -112,13 +118,13 @@ class TestFolder(TestSync):
             six.u('inner/more/a.txt'),
             six.u('\u81ea\u7531'),
         ]
-        polices_manager = ScanPoliciesManager(exclude_file_regexes=['.*\\.bin'])
+        polices_manager = ScanPoliciesManager(exclude_file_regexes=('.*\\.bin',))
         files = self.all_files(polices_manager)
         self.assert_filtered_files(files, expected_list)
 
     def test_exclude_all(self):
         expected_list = []
-        polices_manager = ScanPoliciesManager(exclude_file_regexes=['.*'])
+        polices_manager = ScanPoliciesManager(exclude_file_regexes=('.*',))
         files = self.all_files(polices_manager)
         self.assert_filtered_files(files, expected_list)
 
@@ -277,7 +283,13 @@ class TestLocalFolder(TestFolder):
     def tearDown(self):
         self.temp_dir.__exit__(*sys.exc_info())
 
-    def prepare_folder(self, broken_symlink=False, invalid_permissions=False):
+    def prepare_folder(
+        self,
+        prepare_files=True,
+        broken_symlink=False,
+        invalid_permissions=False,
+        use_file_versions_info=False
+    ):
         assert not (broken_symlink and invalid_permissions)
 
         if platform.system() == 'Windows':
@@ -285,8 +297,9 @@ class TestLocalFolder(TestFolder):
                 'on Windows there are some environment issues with test directory creation'
             )
 
-        for relative_path in self.NAMES:
-            self.prepare_file(relative_path)
+        if prepare_files:
+            for relative_path in self.NAMES:
+                self.prepare_file(relative_path)
 
         if broken_symlink:
             os.symlink(
@@ -340,7 +353,7 @@ class TestB2Folder(TestFolder):
     __test__ = True
 
     FILE_VERSION_INFOS = {
-        six.u(os.path.join('inner', 'a.txt')):
+        os.path.join('inner', 'a.txt'):
             [
                 (
                     FileVersionInfo(
@@ -353,7 +366,7 @@ class TestB2Folder(TestFolder):
                     ), ''
                 )
             ],
-        six.u(os.path.join('inner', 'b.txt')):
+        os.path.join('inner', 'b.txt'):
             [
                 (
                     FileVersionInfo(
@@ -381,11 +394,15 @@ class TestB2Folder(TestFolder):
         self.api = MagicMock()
         self.api.get_bucket_by_name.return_value = self.bucket
 
-    def prepare_folder(self, prepare_files=True, use_file_versions_info=False):
+    def prepare_folder(
+        self,
+        prepare_files=True,
+        broken_symlink=False,
+        invalid_permissions=False,
+        use_file_versions_info=False
+    ):
         if prepare_files:
             for relative_path in self.NAMES:
-                if platform.system() == 'Windows':
-                    relative_path = relative_path.replace(os.sep, '/')
                 self.prepare_file(relative_path, use_file_versions_info)
 
         return B2Folder('bucket-name', self.root_dir, self.api)
@@ -395,6 +412,8 @@ class TestB2Folder(TestFolder):
             self.bucket.ls.return_value.extend(self.FILE_VERSION_INFOS[relative_path])
             return
 
+        if platform.system() == 'Windows':
+            relative_path = relative_path.replace(os.sep, six.u('/'))
         if relative_path in self.MOD_TIMES:
             self.bucket.ls.return_value.append(
                 (
@@ -420,6 +439,7 @@ class TestB2Folder(TestFolder):
     def test_multiple_versions(self):
         # Test two files, to cover the yield within the loop, and the yield without.
         folder = self.prepare_folder(use_file_versions_info=True)
+
         self.assertEqual(
             [
                 "File(inner/a.txt, [FileVersion('a2', 'inner/a.txt', 2000, 'upload'), "
