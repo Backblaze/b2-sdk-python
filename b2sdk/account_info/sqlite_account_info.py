@@ -36,7 +36,11 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
 
     def __init__(self, file_name=None, last_upgrade_to_run=None):
         """
-        If ``file_name`` argument is empty or ``None``, path from ``B2_ACCOUNT_INFO`` environment variable is used. If that is not available, a default of ``~/.b2_account_info`` is used.
+        If ``file_name`` argument is empty or ``None``, the path from
+        ``B2_ACCOUNT_INFO`` environment variable is used.  If that is not
+        available, we check if the default ``~/.b2_account_info`` exists to
+        ensure backwards compatibility, before using ``XDG_CONFIG_HOME``. If
+        ``XDG_CONFIG_HOME`` is not set, we fall back to the default.
 
         :param str file_name: The sqlite file to use; overrides the default.
         :param int last_upgrade_to_run: For testing only, override the auto-update on the db.
