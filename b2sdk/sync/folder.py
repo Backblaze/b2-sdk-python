@@ -17,11 +17,18 @@ import sys
 
 from abc import ABCMeta, abstractmethod
 from b2sdk.exception import CommandError
-from .exception import EnvironmentEncodingError
+from .exception import EnvironmentEncodingError, UnSyncableFilename
 from .file import File, FileVersion
 from .scan_policies import DEFAULT_SCAN_MANAGER
 from ..raw_api import SRC_LAST_MODIFIED_MILLIS
 from ..utils import fix_windows_path_limit, is_file_readable
+
+DRIVE_MATCHER = re.compile(r"^([A-Za-z]):([\\/])")
+ABSOLUTE_PATH_MATCHER = re.compile(r"^(/)|^(\\)")
+RELATIVE_PATH_MATCHER = re.compile(
+    r"^(\.\.[/\\])|^(\.[/\\])|([/\\]\.\.[/\\])|([/\\]\.[/\\])|([/\\]\.\.)$|([/\\]\.)$|^(\.\.)$|" +
+    r"([/\\][/\\])|^(\.)$"
+)
 
 logger = logging.getLogger(__name__)
 
@@ -142,7 +149,7 @@ class LocalFolder(AbstractFolder):
 
         # Ensure the new full_path is inside the self.root directory
         if common_prefix != self.root:
-            raise Exception("illegal file name: '" + full_path + "'")
+            raise UnSyncableFilename("illegal file name", full_path)
 
         return full_path
 
@@ -206,9 +213,9 @@ class LocalFolder(AbstractFolder):
                 name = cls._handle_non_unicode_file_name(name)
 
             if '/' in name:
-                raise Exception(
-                    "sync does not support file names that include '/': %s in dir %s" %
-                    (name, local_dir)
+                raise UnSyncableFilename(
+                    "sync does not support file names that include '/'",
+                    "%s in dir %s" % (name, local_dir)
                 )
 
             local_path = os.path.join(local_dir, name)
@@ -306,7 +313,6 @@ class B2Folder(AbstractFolder):
         """
         current_name = None
         current_versions = []
-        sep = '/' if platform.system() != 'Windows' else '\\\\'
         for (file_version_info, folder_name) in self.bucket.ls(
             self.folder_name, show_versions=True, recursive=True, fetch_count=1000
         ):
@@ -319,18 +325,19 @@ class B2Folder(AbstractFolder):
                 continue
 
             # Do not allow relative paths in file names
-            if (file_name.startswith('../') or
-                '/../' in file_name or
-                file_name.endswith('/..') or
-                file_name == '..'
-            ):
-                raise Exception(
-                    "sync does not support file names that include relative paths: %s" % file_name
+            if RELATIVE_PATH_MATCHER.search(file_name):
+                raise UnSyncableFilename(
+                    "sync does not support file names that include relative paths", file_name
                 )
             # Do not allow absolute paths in file names
-            if file_name.startswith(sep) or re.match("[A-Za-z]:" + sep, file_name):
-                raise Exception(
-                    "sync does not support file names with absolute paths: %s" % file_name
+            if ABSOLUTE_PATH_MATCHER.search(file_name):
+                raise UnSyncableFilename(
+                    "sync does not support file names with absolute paths", file_name
+                )
+            # Do not allow Windows drive letters in file names
+            if DRIVE_MATCHER.search(file_name):
+                raise UnSyncableFilename(
+                    "sync does not support file names with drive letters", file_name
                 )
 
             if current_name != file_name and current_name is not None and current_versions:
