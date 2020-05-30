@@ -45,6 +45,8 @@ b2sdk>=0.0.0,<1.0.0
 * Add server-side copy support for large files
 * Add ability to synthesize objects from local and remote sources
 * Add AuthInfoCache, InMemoryCache and AbstractCache to public interface
+* Add ability to filter in ScanPoliciesManager based on modification time
+* Add ScanPoliciesManager and SyncReport to public interface
 
 ## 1.0.2 (2019-10-15)
 

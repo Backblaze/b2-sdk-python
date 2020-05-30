@@ -67,6 +67,33 @@ def convert_dir_regex_to_dir_prefix_regex(dir_regex):
         return dir_regex + r'.*?/'
 
 
+class IntegerRange(object):
+    """
+    Hold a range of two integers. If the range value is None, it indicates that
+    the value should be treated as -Inf (for begin) or +Inf (for end).
+    """
+
+    def __init__(self, begin, end):
+        """
+        :param begin: begin position of the range (included)
+        :type begin: int
+        :param end: end position of the range (included)
+        :type end: int
+        """
+        self._begin = begin
+        self._end = end
+
+    def __contains__(self, item):
+        ge_begin, le_end = True, True
+
+        if self._begin is not None:
+            ge_begin = item >= self._begin
+        if self._end is not None:
+            le_end = item <= self._end
+
+        return ge_begin and le_end
+
+
 class ScanPoliciesManager(object):
     """
     Policy object used when scanning folders for syncing, used to decide
@@ -74,7 +101,7 @@ class ScanPoliciesManager(object):
 
     Code that scans through files should at least use should_exclude_file()
     to decide whether each file should be included; it will check include/exclude
-    patterns for file names, as well as patterns for excluding directeries.
+    patterns for file names, as well as patterns for excluding directories.
 
     Code that scans may optionally use should_exclude_directory() to test whether
     it can skip a directory completely and not bother listing the files and
@@ -87,6 +114,8 @@ class ScanPoliciesManager(object):
         exclude_file_regexes=tuple(),
         include_file_regexes=tuple(),
         exclude_all_symlinks=False,
+        exclude_modified_before=None,
+        exclude_modified_after=None,
     ):
         """
         :param exclude_dir_regexes: a tuple of regexes to exclude directories
@@ -97,6 +126,10 @@ class ScanPoliciesManager(object):
         :type include_file_regexes: tuple
         :param exclude_all_symlinks: if True, exclude all symlinks
         :type exclude_all_symlinks: bool
+        :param exclude_modified_before: optionally exclude file versions modified before (in millis)
+        :type exclude_modified_before: int, optional
+        :param exclude_modified_after: optionally exclude file versions modified after (in millis)
+        :type exclude_modified_after: int, optional
         """
         self._exclude_dir_set = RegexSet(exclude_dir_regexes)
         self._exclude_file_because_of_dir_set = RegexSet(
@@ -105,6 +138,7 @@ class ScanPoliciesManager(object):
         self._exclude_file_set = RegexSet(exclude_file_regexes)
         self._include_file_set = RegexSet(include_file_regexes)
         self.exclude_all_symlinks = exclude_all_symlinks
+        self._include_mod_time_range = IntegerRange(exclude_modified_before, exclude_modified_after)
 
     def should_exclude_file(self, file_path):
         """
@@ -116,12 +150,26 @@ class ScanPoliciesManager(object):
         :return: True if excluded.
         :rtype: bool
         """
+        # TODO: In v2 this should accept `b2sdk.v1.File`.
+        #  It requires some refactoring to be done first.
         exclude_because_of_dir = self._exclude_file_because_of_dir_set.matches(file_path)
         exclude_because_of_file = (
             self._exclude_file_set.matches(file_path) and
             not self._include_file_set.matches(file_path)
         )
         return exclude_because_of_dir or exclude_because_of_file
+
+    def should_exclude_file_version(self, file_version):
+        """
+        Given the modification time of a file version,
+        decide if it should be excluded from the scan.
+
+        :param file_version: the file version object
+        :type: b2sdk.v1.FileVersion
+        :return: True if excluded.
+        :rtype: bool
+        """
+        return file_version.mod_time not in self._include_mod_time_range
 
     def should_exclude_directory(self, dir_path):
         """
@@ -133,6 +181,8 @@ class ScanPoliciesManager(object):
         :type dir_path: str
         :return: True if excluded.
         """
+        # TODO: In v2 this should accept `b2sdk.v1.AbstractFolder`.
+        #  It requires some refactoring to be done first.
         return self._exclude_dir_set.matches(dir_path)
 
 

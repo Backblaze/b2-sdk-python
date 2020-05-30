@@ -20,6 +20,8 @@ class File(object):
     all of the versions, most recent first.
     """
 
+    __slots__ = ['name', 'versions']
+
     def __init__(self, name, versions):
         """
         :param name: a relative file name
@@ -44,6 +46,8 @@ class FileVersion(object):
     """
     Hold information about one version of a file.
     """
+
+    __slots__ = ['id_', 'name', 'mod_time', 'action', 'size']
 
     def __init__(self, id_, file_name, mod_time, action, size):
         """
