@@ -522,10 +522,16 @@ class TestB2Folder(TestFolder):
             six.u(r'..\\..//..\\\\'),
             six.u(r'.\\a\\..\\b'),
             six.u(r'a\\.\\b'),
-            six.u('Z:/windows/system32/drivers/etc/hosts'),
-            six.u('a:/Users/.default/test'),
-            six.u(r'C:\\Windows\\system32\\drivers\\mstsc.sys'),
         ]
+
+        if platform.system() == "Windows":
+            filenames_to_test.extend(
+                [
+                    six.u('Z:/windows/system32/drivers/etc/hosts'),
+                    six.u('a:/Users/.default/test'),
+                    six.u(r'C:\\Windows\\system32\\drivers\\mstsc.sys'),
+                ]
+            )
 
         for filename in filenames_to_test:
             self.bucket.ls.return_value = [
