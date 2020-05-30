@@ -21,7 +21,7 @@ import six
 
 from .test_base import TestBase
 
-from .deps import AbstractAccountInfo, InMemoryAccountInfo, UploadUrlPool, SqliteAccountInfo
+from .deps import B2_ACCOUNT_INFO_ENV_VAR, AbstractAccountInfo, InMemoryAccountInfo, UploadUrlPool, SqliteAccountInfo
 from .deps_exception import CorruptAccountInfo, MissingAccountData
 
 try:
@@ -292,11 +292,39 @@ class TestSqliteAccountInfo(AccountInfoBase, TestBase):
     def _make_info(self):
         return self._make_sqlite_account_info()
 
-    def _make_sqlite_account_info(self, last_upgrade_to_run=None):
+    def _make_sqlite_account_info(self, env=None, last_upgrade_to_run=None):
         """
-        Returns a new StoredAccountInfo that has just read the data from the file.
+        Returns a new SqliteAccountInfo that has just read the data from the file.
         """
-        return SqliteAccountInfo(file_name=self.db_path, last_upgrade_to_run=None)
+        return SqliteAccountInfo(
+            file_name=self.db_path if not env else None,
+            env=env or {},
+            last_upgrade_to_run=last_upgrade_to_run
+        )
 
     def test_account_info_persistence(self):
         self._test_account_info(check_persistence=True)
+
+    def test_uses_xdg_config_home(self):
+        with tempfile.TemporaryDirectory() as d:
+            account_info = self._make_sqlite_account_info(env={'XDG_CONFIG_HOME': d})
+            expected_path = os.path.abspath(os.path.join(d, 'b2', 'account_info'))
+            actual_path = os.path.abspath(account_info.filename)
+            assert expected_path == actual_path, 'Actual path %s is not equal to $XDG_CONFIG_HOME/b2/account_info'
+            assert os.path.exists(
+                os.path.join(d, 'b2')
+            ), 'Config folder $XDG_CONFIG_HOME/b2 was not created!'
+
+    def test_account_info_env_var_overrides_xdg_config_home(self):
+        with tempfile.TemporaryDirectory() as d:
+            account_info = self._make_sqlite_account_info(
+                env={
+                    'XDG_CONFIG_HOME': d,
+                    B2_ACCOUNT_INFO_ENV_VAR: os.path.join(d, 'b2_account_info')
+                }
+            )
+            expected_path = os.path.abspath(os.path.join(d, 'b2_account_info'))
+            actual_path = os.path.abspath(account_info.filename)
+            assert expected_path == actual_path, 'Actual path {path} is not equal to ${var}'.format(
+                path=actual_path, var=B2_ACCOUNT_INFO_ENV_VAR
+            )
