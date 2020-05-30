@@ -42,9 +42,16 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
         :param int last_upgrade_to_run: For testing only, override the auto-update on the db.
         """
         self.thread_local = threading.local()
-        user_account_info_path = file_name or os.environ.get(
-            B2_ACCOUNT_INFO_ENV_VAR, B2_ACCOUNT_INFO_DEFAULT_FILE
-        )
+        if B2_ACCOUNT_INFO_ENV_VAR in os.environ:
+            user_account_info_path = os.environ[B2_ACCOUNT_INFO_ENV_VAR]
+        elif 'XDG_CONFIG_HOME' in os.environ and not os.path.exists(
+            os.path.expanduser(B2_ACCOUNT_INFO_DEFAULT_FILE)
+        ):
+            user_account_info_path = os.path.join(
+                os.environ['XDG_CONFIG_HOME'], 'b2', 'account_info'
+            )
+        else:
+            user_account_info_path = B2_ACCOUNT_INFO_DEFAULT_FILE
         self.filename = file_name or os.path.expanduser(user_account_info_path)
         logger.debug('%s file path to use: %s', self.__class__.__name__, self.filename)
         self._validate_database()
