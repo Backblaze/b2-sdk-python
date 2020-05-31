@@ -40,6 +40,7 @@ b2sdk>=0.0.0,<1.0.0
 * Add `list_file_versions` method to buckets.
 * Add AuthInfoCache, InMemoryCache and AbstractCache to public interface
 * Add Emerger (advanced object-file transfer functionality)
+* Ignore urllib3 connection pool is full warning
 
 ## 1.0.2 (2019-10-15)
 
