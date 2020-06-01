@@ -16,8 +16,6 @@ from .deps_exception import (
     UnSyncableFilename,
 )
 
-import six
-
 
 class TestExceptions(TestBase):
     def test_environment_encoding_error(self):
