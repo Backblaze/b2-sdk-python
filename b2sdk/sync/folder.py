@@ -23,7 +23,7 @@ from .scan_policies import DEFAULT_SCAN_MANAGER
 from ..raw_api import SRC_LAST_MODIFIED_MILLIS
 from ..utils import fix_windows_path_limit, is_file_readable
 
-DRIVE_MATCHER = re.compile(r"^([A-Za-z]):([\\])")
+DRIVE_MATCHER = re.compile(r"^([A-Za-z]):([/\\])")
 ABSOLUTE_PATH_MATCHER = re.compile(r"^(/)|^(\\)")
 RELATIVE_PATH_MATCHER = re.compile(
     r"^(\.\.[/\\])|^(\.[/\\])|([/\\]\.\.[/\\])|([/\\]\.[/\\])|([/\\]\.\.)$|([/\\]\.)$|^(\.\.)$|" +

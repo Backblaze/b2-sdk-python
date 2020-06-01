@@ -301,6 +301,13 @@ class TestB2Folder(TestSync):
             ], [str(f) for f in self.b2_folder.all_files(self.reporter)]
         )
 
+    # Path names not allowed to be sync'd on Windows
+    NOT_SYNCD_ON_WINDOWS = [
+        six.u('Z:/windows/system32/drivers/etc/hosts'),
+        six.u('a:/Users/.default/test'),
+        six.u(r'C:\Windows\system32\drivers\mstsc.sys'),
+    ]
+
     def test_unsyncable_filenames(self):
         b2_folder = B2Folder('bucket-name', '', self.api)
 
@@ -334,6 +341,7 @@ class TestB2Folder(TestSync):
             six.u('a/../../../../../'),
             six.u('a/b/c/..'),
             six.u(r'\\'),  # backslash filenames
+            six.u(r'\z'),
             six.u(r'..\\'),
             six.u(r'..\..'),
             six.u(r'\..\\'),
@@ -341,7 +349,8 @@ class TestB2Folder(TestSync):
             six.u(r'\\'),
             six.u(r'\\\\'),
             six.u(r'\\\\server\\share\\dir\\file'),
-            six.u(r'\\?\\C\\Drive\\temp'),
+            six.u(r'\\server\share\dir\file'),
+            six.u(r'\\?\C\Drive\temp'),
             six.u(r'.\\//'),
             six.u(r'..\\..//..\\\\'),
             six.u(r'.\\a\\..\\b'),
@@ -349,13 +358,7 @@ class TestB2Folder(TestSync):
         ]
 
         if platform.system() == "Windows":
-            filenames_to_test.extend(
-                [
-                    six.u('Z:/windows/system32/drivers/etc/hosts'),
-                    six.u('a:/Users/.default/test'),
-                    six.u(r'C:\\Windows\\system32\\drivers\\mstsc.sys'),
-                ]
-            )
+            filenames_to_test.extend(self.NOT_SYNCD_ON_WINDOWS)
 
         for filename in filenames_to_test:
             self.bucket.ls.return_value = [
@@ -397,6 +400,10 @@ class TestB2Folder(TestSync):
             six.u(r'mix/and\match/'),
             six.u(r'a\b\c\d'),
         ]
+
+        # filenames not permitted on Windows *should* be allowed on Linux
+        if platform.system() != "Windows":
+            filenames_to_test.extend(self.NOT_SYNCD_ON_WINDOWS)
 
         for filename in filenames_to_test:
             self.bucket.ls.return_value = [
