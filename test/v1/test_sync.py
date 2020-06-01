@@ -12,12 +12,13 @@ from __future__ import print_function
 
 import os
 import platform
+import sys
 import threading
 import time
 import unittest
 
-from nose import SkipTest
 import six
+from nose import SkipTest
 
 from enum import Enum
 
@@ -63,84 +64,47 @@ class TestSync(TestBase):
         self.reporter = MagicMock()
 
 
-class TestLocalFolder(TestSync):
+class TestFolder(TestSync):
+    __test__ = False
+
     NAMES = [
         six.u('.dot_file'),
         six.u('hello.'),
-        six.u(os.path.join('hello', 'a', '1')),
-        six.u(os.path.join('hello', 'a', '2')),
-        six.u(os.path.join('hello', 'b')),
+        os.path.join('hello', 'a', '1'),
+        os.path.join('hello', 'a', '2'),
+        os.path.join('hello', 'b'),
         six.u('hello0'),
-        six.u(os.path.join('inner', 'a.bin')),
-        six.u(os.path.join('inner', 'a.txt')),
-        six.u(os.path.join('inner', 'b.bin')),
-        six.u(os.path.join('inner', 'b.txt')),
-        six.u(os.path.join('inner', 'more', 'a.bin')),
-        six.u(os.path.join('inner', 'more', 'a.txt')),
+        os.path.join('inner', 'a.bin'),
+        os.path.join('inner', 'a.txt'),
+        os.path.join('inner', 'b.bin'),
+        os.path.join('inner', 'b.txt'),
+        os.path.join('inner', 'more', 'a.bin'),
+        os.path.join('inner', 'more', 'a.txt'),
         six.u('\u81ea\u7531'),
     ]
 
-    @classmethod
-    def _create_files(cls, root_dir, relative_paths):
-        if platform.system() == 'Windows':
-            raise SkipTest(
-                'on Windows there are some environment issues with test directory creation'
-            )
-        for relative_path in relative_paths:
-            full_path = os.path.join(root_dir, relative_path)
-            write_file(full_path, b'')
+    MOD_TIMES = {six.u('.dot_file'): TODAY - DAY, six.u('hello.'): TODAY - DAY}
 
-    def _prepare_folder(self, root_dir, broken_symlink=False, invalid_permissions=False):
-        assert not (broken_symlink and invalid_permissions)
-        self._create_files(root_dir, self.NAMES)
-        if broken_symlink:
-            os.symlink(
-                os.path.join(root_dir, 'non_existant_file'), os.path.join(root_dir, 'bad_symlink')
-            )
-        elif invalid_permissions:
-            os.chmod(os.path.join(root_dir, self.NAMES[0]), 0)
-        return LocalFolder(root_dir)
+    def setUp(self):
+        super(TestFolder, self).setUp()
 
-    def test_slash_sorting(self):
-        # '/' should sort between '.' and '0'
-        with TempDir() as tmpdir:
-            folder = self._prepare_folder(tmpdir)
-            self.assertEqual(self.NAMES, list(f.name for f in folder.all_files(self.reporter)))
-            self.reporter.local_access_error.assert_not_called()
+        self.root_dir = six.u('')
 
-    def test_broken_symlink(self):
-        with TempDir() as tmpdir:
-            folder = self._prepare_folder(tmpdir, broken_symlink=True)
-            self.assertEqual(self.NAMES, list(f.name for f in folder.all_files(self.reporter)))
-            self.reporter.local_access_error.assert_called_once_with(
-                os.path.join(tmpdir, 'bad_symlink')
-            )
+    def prepare_folder(
+        self,
+        prepare_files=True,
+        broken_symlink=False,
+        invalid_permissions=False,
+        use_file_versions_info=False
+    ):
+        raise NotImplementedError
 
-    def test_invalid_permissions(self):
-        with TempDir() as tmpdir:
-            folder = self._prepare_folder(tmpdir, invalid_permissions=True)
-            # tests differ depending on the user running them. "root" will
-            # succeed in os.access(path, os.R_OK) even if the permissions of
-            # the file are 0 as implemented on self._prepare_folder().
-            # use-case: running test suite inside a docker container
-            if not os.access(os.path.join(tmpdir, self.NAMES[0]), os.R_OK):
-                self.assertEqual(
-                    self.NAMES[1:], list(f.name for f in folder.all_files(self.reporter))
-                )
-                self.reporter.local_permission_error.assert_called_once_with(
-                    os.path.join(tmpdir, self.NAMES[0])
-                )
-            else:
-                self.assertEqual(self.NAMES, list(f.name for f in folder.all_files(self.reporter)))
+    def all_files(self, policies_manager):
+        return list(self.prepare_folder().all_files(self.reporter, policies_manager))
 
-    def _check_file_filters_results(self, policies_manager, expected_scan_results):
-        with TempDir() as tmpdir:
-            folder = self._prepare_folder(tmpdir)
-            self.assertEqual(
-                expected_scan_results,
-                list(f.name for f in folder.all_files(self.reporter, policies_manager))
-            )
-            self.reporter.local_access_error.assert_not_called()
+    def assert_filtered_files(self, scan_results, expected_scan_results):
+        self.assertEqual(expected_scan_results, list(f.name for f in scan_results))
+        self.reporter.local_access_error.assert_not_called()
 
     def test_exclusions(self):
         expected_list = [
@@ -155,13 +119,15 @@ class TestLocalFolder(TestSync):
             six.u('inner/more/a.txt'),
             six.u('\u81ea\u7531'),
         ]
-        polices_manager = ScanPoliciesManager(exclude_file_regexes=['.*\\.bin'])
-        self._check_file_filters_results(polices_manager, expected_list)
+        polices_manager = ScanPoliciesManager(exclude_file_regexes=('.*\\.bin',))
+        files = self.all_files(polices_manager)
+        self.assert_filtered_files(files, expected_list)
 
     def test_exclude_all(self):
         expected_list = []
-        polices_manager = ScanPoliciesManager(exclude_file_regexes=['.*'])
-        self._check_file_filters_results(polices_manager, expected_list)
+        polices_manager = ScanPoliciesManager(exclude_file_regexes=('.*',))
+        files = self.all_files(polices_manager)
+        self.assert_filtered_files(files, expected_list)
 
     def test_exclusions_inclusions(self):
         expected_list = [
@@ -179,10 +145,11 @@ class TestLocalFolder(TestSync):
             six.u('\u81ea\u7531'),
         ]
         polices_manager = ScanPoliciesManager(
-            exclude_file_regexes=['.*\\.bin'],
-            include_file_regexes=['.*a\\.bin'],
+            exclude_file_regexes=('.*\\.bin',),
+            include_file_regexes=('.*a\\.bin',),
         )
-        self._check_file_filters_results(polices_manager, expected_list)
+        files = self.all_files(polices_manager)
+        self.assert_filtered_files(files, expected_list)
 
     def test_exclude_matches_prefix(self):
         expected_list = [
@@ -194,8 +161,9 @@ class TestLocalFolder(TestSync):
             six.u('inner/b.txt'),
             six.u('\u81ea\u7531'),
         ]
-        polices_manager = ScanPoliciesManager(exclude_file_regexes=['.*a'])
-        self._check_file_filters_results(polices_manager, expected_list)
+        polices_manager = ScanPoliciesManager(exclude_file_regexes=('.*a',))
+        files = self.all_files(polices_manager)
+        self.assert_filtered_files(files, expected_list)
 
     def test_exclude_directory(self):
         expected_list = [
@@ -205,9 +173,10 @@ class TestLocalFolder(TestSync):
             six.u('\u81ea\u7531'),
         ]
         polices_manager = ScanPoliciesManager(
-            exclude_dir_regexes=['hello', 'more', 'hello0'], exclude_file_regexes=['inner']
+            exclude_dir_regexes=('hello', 'more', 'hello0'), exclude_file_regexes=('inner',)
         )
-        self._check_file_filters_results(polices_manager, expected_list)
+        files = self.all_files(polices_manager)
+        self.assert_filtered_files(files, expected_list)
 
     def test_exclude_directory2(self):
         expected_list = [
@@ -216,8 +185,9 @@ class TestLocalFolder(TestSync):
             six.u('hello0'),
             six.u('\u81ea\u7531'),
         ]
-        polices_manager = ScanPoliciesManager(exclude_dir_regexes=['hello$', 'inner'],)
-        self._check_file_filters_results(polices_manager, expected_list)
+        polices_manager = ScanPoliciesManager(exclude_dir_regexes=('hello$', 'inner'))
+        files = self.all_files(polices_manager)
+        self.assert_filtered_files(files, expected_list)
 
     def test_exclude_directory_trailing_slash_does_not_match(self):
         expected_list = [
@@ -230,8 +200,9 @@ class TestLocalFolder(TestSync):
             six.u('inner/b.txt'),
             six.u('\u81ea\u7531'),
         ]
-        polices_manager = ScanPoliciesManager(exclude_dir_regexes=['hello$', 'inner/'],)
-        self._check_file_filters_results(polices_manager, expected_list)
+        polices_manager = ScanPoliciesManager(exclude_dir_regexes=('hello$', 'inner/'))
+        files = self.all_files(polices_manager)
+        self.assert_filtered_files(files, expected_list)
 
     def test_exclusion_with_exact_match(self):
         expected_list = [
@@ -248,57 +219,262 @@ class TestLocalFolder(TestSync):
             six.u('inner/more/a.txt'),
             six.u('\u81ea\u7531'),
         ]
-        polices_manager = ScanPoliciesManager(exclude_file_regexes=['hello0'],)
-        self._check_file_filters_results(polices_manager, expected_list)
+        polices_manager = ScanPoliciesManager(exclude_file_regexes=('hello0',))
+        files = self.all_files(polices_manager)
+        self.assert_filtered_files(files, expected_list)
+
+    def test_exclude_modified_before_in_range(self):
+        expected_list = [
+            six.u('hello/a/1'),
+            six.u('hello/a/2'),
+            six.u('hello/b'),
+            six.u('hello0'),
+            six.u('inner/a.bin'),
+            six.u('inner/a.txt'),
+            six.u('inner/b.bin'),
+            six.u('inner/b.txt'),
+            six.u('inner/more/a.bin'),
+            six.u('inner/more/a.txt'),
+            six.u('\u81ea\u7531'),
+        ]
+        polices_manager = ScanPoliciesManager(exclude_modified_before=TODAY - 100)
+        files = self.all_files(polices_manager)
+        self.assert_filtered_files(files, expected_list)
+
+    def test_exclude_modified_before_exact(self):
+        expected_list = [
+            six.u('hello/a/1'),
+            six.u('hello/a/2'),
+            six.u('hello/b'),
+            six.u('hello0'),
+            six.u('inner/a.bin'),
+            six.u('inner/a.txt'),
+            six.u('inner/b.bin'),
+            six.u('inner/b.txt'),
+            six.u('inner/more/a.bin'),
+            six.u('inner/more/a.txt'),
+            six.u('\u81ea\u7531'),
+        ]
+        polices_manager = ScanPoliciesManager(exclude_modified_before=TODAY)
+        files = self.all_files(polices_manager)
+        self.assert_filtered_files(files, expected_list)
+
+    def test_exclude_modified_after_in_range(self):
+        expected_list = [six.u('.dot_file'), six.u('hello.')]
+        polices_manager = ScanPoliciesManager(exclude_modified_after=TODAY - 100)
+        files = self.all_files(polices_manager)
+        self.assert_filtered_files(files, expected_list)
+
+    def test_exclude_modified_after_exact(self):
+        expected_list = [six.u('.dot_file'), six.u('hello.')]
+        polices_manager = ScanPoliciesManager(exclude_modified_after=TODAY - DAY)
+        files = self.all_files(polices_manager)
+        self.assert_filtered_files(files, expected_list)
 
 
-class TestB2Folder(TestSync):
+class TestLocalFolder(TestFolder):
+    __test__ = True
+
+    def setUp(self):
+        super(TestLocalFolder, self).setUp()
+
+        self.temp_dir = TempDir()
+        self.root_dir = self.temp_dir.__enter__()
+
+    def tearDown(self):
+        self.temp_dir.__exit__(*sys.exc_info())
+
+    def prepare_folder(
+        self,
+        prepare_files=True,
+        broken_symlink=False,
+        invalid_permissions=False,
+        use_file_versions_info=False
+    ):
+        assert not (broken_symlink and invalid_permissions)
+
+        if platform.system() == 'Windows':
+            raise SkipTest(
+                'on Windows there are some environment issues with test directory creation'
+            )
+
+        if prepare_files:
+            for relative_path in self.NAMES:
+                self.prepare_file(relative_path)
+
+        if broken_symlink:
+            os.symlink(
+                os.path.join(self.root_dir, 'non_existant_file'),
+                os.path.join(self.root_dir, 'bad_symlink')
+            )
+        elif invalid_permissions:
+            os.chmod(os.path.join(self.root_dir, self.NAMES[0]), 0)
+
+        return LocalFolder(self.root_dir)
+
+    def prepare_file(self, relative_path):
+        path = os.path.join(self.root_dir, relative_path)
+        write_file(path, b'')
+
+        if relative_path in self.MOD_TIMES:
+            mod_time = int(round(self.MOD_TIMES[relative_path] / 1000))
+        else:
+            mod_time = int(round(TODAY / 1000))
+        os.utime(path, (mod_time, mod_time))
+
+    def test_slash_sorting(self):
+        # '/' should sort between '.' and '0'
+        folder = self.prepare_folder()
+        self.assertEqual(self.NAMES, list(f.name for f in folder.all_files(self.reporter)))
+        self.reporter.local_access_error.assert_not_called()
+
+    def test_broken_symlink(self):
+        folder = self.prepare_folder(broken_symlink=True)
+        self.assertEqual(self.NAMES, list(f.name for f in folder.all_files(self.reporter)))
+        self.reporter.local_access_error.assert_called_once_with(
+            os.path.join(self.root_dir, 'bad_symlink')
+        )
+
+    def test_invalid_permissions(self):
+        folder = self.prepare_folder(invalid_permissions=True)
+        # tests differ depending on the user running them. "root" will
+        # succeed in os.access(path, os.R_OK) even if the permissions of
+        # the file are 0 as implemented on self._prepare_folder().
+        # use-case: running test suite inside a docker container
+        if not os.access(os.path.join(self.root_dir, self.NAMES[0]), os.R_OK):
+            self.assertEqual(self.NAMES[1:], list(f.name for f in folder.all_files(self.reporter)))
+            self.reporter.local_permission_error.assert_called_once_with(
+                os.path.join(self.root_dir, self.NAMES[0])
+            )
+        else:
+            self.assertEqual(self.NAMES, list(f.name for f in folder.all_files(self.reporter)))
+
+
+class TestB2Folder(TestFolder):
+    __test__ = True
+
+    FILE_VERSION_INFOS = {
+        os.path.join('inner', 'a.txt'):
+            [
+                (
+                    FileVersionInfo(
+                        'a2', 'inner/a.txt', 200, 'text/plain', 'sha1', {}, 2000, 'upload'
+                    ), ''
+                ),
+                (
+                    FileVersionInfo(
+                        'a1', 'inner/a.txt', 100, 'text/plain', 'sha1', {}, 1000, 'upload'
+                    ), ''
+                )
+            ],
+        os.path.join('inner', 'b.txt'):
+            [
+                (
+                    FileVersionInfo(
+                        'b2', 'inner/b.txt', 200, 'text/plain', 'sha1', {}, 1999, 'upload'
+                    ), ''
+                ),
+                (
+                    FileVersionInfo(
+                        'bs', 'inner/b.txt', 150, 'text/plain', 'sha1', {}, 1500, 'start'
+                    ), ''
+                ),
+                (
+                    FileVersionInfo(
+                        'b1', 'inner/b.txt', 100, 'text/plain', 'sha1',
+                        {'src_last_modified_millis': 1001}, 6666, 'upload'
+                    ), ''
+                )
+            ]
+    }
+
     def setUp(self):
         super(TestB2Folder, self).setUp()
         self.bucket = MagicMock()
+        self.bucket.ls.return_value = []
         self.api = MagicMock()
         self.api.get_bucket_by_name.return_value = self.bucket
-        self.b2_folder = B2Folder('bucket-name', 'folder', self.api)
+
+    def prepare_folder(
+        self,
+        prepare_files=True,
+        broken_symlink=False,
+        invalid_permissions=False,
+        use_file_versions_info=False
+    ):
+        if prepare_files:
+            for relative_path in self.NAMES:
+                self.prepare_file(relative_path, use_file_versions_info)
+
+        return B2Folder('bucket-name', self.root_dir, self.api)
+
+    def prepare_file(self, relative_path, use_file_versions_info=False):
+        if use_file_versions_info and relative_path in self.FILE_VERSION_INFOS:
+            self.bucket.ls.return_value.extend(self.FILE_VERSION_INFOS[relative_path])
+            return
+
+        if platform.system() == 'Windows':
+            relative_path = relative_path.replace(os.sep, six.u('/'))
+        if relative_path in self.MOD_TIMES:
+            self.bucket.ls.return_value.append(
+                (
+                    FileVersionInfo(
+                        relative_path, relative_path, 100, 'text/plain', 'sha1', {},
+                        self.MOD_TIMES[relative_path], 'upload'
+                    ), self.root_dir
+                )
+            )
+        else:
+            self.bucket.ls.return_value.append(
+                (
+                    FileVersionInfo(
+                        relative_path, relative_path, 100, 'text/plain', 'sha1', {}, TODAY, 'upload'
+                    ), self.root_dir
+                )
+            )
 
     def test_empty(self):
-        self.bucket.ls.return_value = []
-        self.assertEqual([], list(self.b2_folder.all_files(self.reporter)))
+        folder = self.prepare_folder(prepare_files=False)
+        self.assertEqual([], list(folder.all_files(self.reporter)))
 
     def test_multiple_versions(self):
-        # Test two files, to cover the yield within the loop, and
-        # the yield without.
-        self.bucket.ls.return_value = [
-            (
-                FileVersionInfo(
-                    'a2', 'folder/a.txt', 200, 'text/plain', 'sha1', {}, 2000, 'upload'
-                ), 'folder'
-            ),
-            (
-                FileVersionInfo(
-                    'a1', 'folder/a.txt', 100, 'text/plain', 'sha1', {}, 1000, 'upload'
-                ), 'folder'
-            ),
-            (
-                FileVersionInfo(
-                    'b2', 'folder/b.txt', 200, 'text/plain', 'sha1', {}, 2000, 'upload'
-                ), 'folder'
-            ),
-            (
-                FileVersionInfo('bs', 'folder/b.txt', 150, 'text/plain', 'sha1', {}, 1500,
-                                'start'), 'folder'
-            ),
-            (
-                FileVersionInfo(
-                    'b1', 'folder/b.txt', 100, 'text/plain', 'sha1',
-                    {'src_last_modified_millis': 1000}, 6666, 'upload'
-                ), 'folder'
-            ),
-        ]
+        # Test two files, to cover the yield within the loop, and the yield without.
+        folder = self.prepare_folder(use_file_versions_info=True)
+
         self.assertEqual(
             [
-                "File(a.txt, [FileVersion('a2', 'folder/a.txt', 2000, 'upload'), FileVersion('a1', 'folder/a.txt', 1000, 'upload')])",
-                "File(b.txt, [FileVersion('b2', 'folder/b.txt', 2000, 'upload'), FileVersion('b1', 'folder/b.txt', 1000, 'upload')])",
-            ], [str(f) for f in self.b2_folder.all_files(self.reporter)]
+                "File(inner/a.txt, [FileVersion('a2', 'inner/a.txt', 2000, 'upload'), "
+                "FileVersion('a1', 'inner/a.txt', 1000, 'upload')])",
+                "File(inner/b.txt, [FileVersion('b2', 'inner/b.txt', 1999, 'upload'), "
+                "FileVersion('b1', 'inner/b.txt', 1001, 'upload')])",
+            ], [
+                str(f) for f in folder.all_files(self.reporter)
+                if f.name in ('inner/a.txt', 'inner/b.txt')
+            ]
+        )
+
+    def test_exclude_modified_multiple_versions(self):
+        polices_manager = ScanPoliciesManager(
+            exclude_modified_before=1001, exclude_modified_after=1999
+        )
+        folder = self.prepare_folder(use_file_versions_info=True)
+        self.assertEqual(
+            [
+                "File(inner/b.txt, [FileVersion('b2', 'inner/b.txt', 1999, 'upload'), "
+                "FileVersion('b1', 'inner/b.txt', 1001, 'upload')])",
+            ], [
+                str(f) for f in folder.all_files(self.reporter, policies_manager=polices_manager)
+                if f.name in ('inner/a.txt', 'inner/b.txt')
+            ]
+        )
+
+    def test_exclude_modified_all_versions(self):
+        polices_manager = ScanPoliciesManager(
+            exclude_modified_before=1500, exclude_modified_after=1500
+        )
+        folder = self.prepare_folder(use_file_versions_info=True)
+        self.assertEqual(
+            [], list(folder.all_files(self.reporter, policies_manager=polices_manager))
         )
 
     # Path names not allowed to be sync'd on Windows

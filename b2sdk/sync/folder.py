@@ -45,7 +45,7 @@ class AbstractFolder(object):
     """
 
     @abstractmethod
-    def all_files(self, reporter, policies_manager):
+    def all_files(self, reporter, policies_manager=DEFAULT_SCAN_MANAGER):
         """
         Return an iterator over all of the files in the folder, in
         the order that B2 uses.
@@ -74,10 +74,11 @@ class AbstractFolder(object):
     @abstractmethod
     def make_full_path(self, file_name):
         """
-        Return the full path to the file; only for local folders.
+        Return the full path to the file.
 
         :param file_name: a file name
         :type file_name: str
+        :rtype: str
         """
 
 
@@ -175,7 +176,8 @@ class LocalFolder(AbstractFolder):
                 'Directory %s is empty.  Use --allowEmptySource to sync anyway.' % (self.root,)
             )
 
-    def _walk_relative_paths(self, local_dir, b2_dir, reporter, policies_manager):
+    @classmethod
+    def _walk_relative_paths(cls, local_dir, b2_dir, reporter, policies_manager):
         """
         Yield a File object for each of the files anywhere under this folder, in the
         order they would appear in B2, unless the path is excluded by policies manager.
@@ -208,7 +210,7 @@ class LocalFolder(AbstractFolder):
             # If the file name is not valid, based on the file system
             # encoding, then listdir() will return un-decoded str/bytes.
             if not isinstance(name, six.text_type):
-                name = self._handle_non_unicode_file_name(name)
+                name = cls._handle_non_unicode_file_name(name)
 
             if '/' in name:
                 raise UnSyncableFilename(
@@ -243,7 +245,7 @@ class LocalFolder(AbstractFolder):
         # the sort key, is the first thing in the triple.
         for (name, local_path, b2_path) in sorted(names):
             if name.endswith('/'):
-                for subdir_file in self._walk_relative_paths(
+                for subdir_file in cls._walk_relative_paths(
                     local_path, b2_path, reporter, policies_manager
                 ):
                     yield subdir_file
@@ -252,11 +254,17 @@ class LocalFolder(AbstractFolder):
                 # to iterate through large folders
                 if is_file_readable(local_path, reporter):
                     file_mod_time = int(os.path.getmtime(local_path) * 1000)
+
                     file_size = os.path.getsize(local_path)
                     version = FileVersion(local_path, b2_path, file_mod_time, 'upload', file_size)
+
+                    if policies_manager.should_exclude_file_version(version):
+                        continue
+
                     yield File(b2_path, [version])
 
-    def _handle_non_unicode_file_name(self, name):
+    @classmethod
+    def _handle_non_unicode_file_name(cls, name):
         """
         Decide what to do with a name returned from os.listdir()
         that isn't unicode.  We think that this only happens when
@@ -332,7 +340,7 @@ class B2Folder(AbstractFolder):
                     "sync does not support file names with drive letters", file_name
                 )
 
-            if current_name != file_name and current_name is not None:
+            if current_name != file_name and current_name is not None and current_versions:
                 yield File(current_name, current_versions)
                 current_versions = []
             file_info = file_version_info.file_info
@@ -341,13 +349,19 @@ class B2Folder(AbstractFolder):
             else:
                 mod_time_millis = file_version_info.upload_timestamp
             assert file_version_info.size is not None
+
+            current_name = file_name
             file_version = FileVersion(
                 file_version_info.id_, file_version_info.file_name, mod_time_millis,
                 file_version_info.action, file_version_info.size
             )
+
+            if policies_manager.should_exclude_file_version(file_version):
+                continue
+
             current_versions.append(file_version)
-            current_name = file_name
-        if current_name is not None:
+
+        if current_name is not None and current_versions:
             yield File(current_name, current_versions)
 
     def folder_type(self):

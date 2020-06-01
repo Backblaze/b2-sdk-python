@@ -292,6 +292,16 @@ class InvalidUploadSource(B2SimpleError):
     pass
 
 
+class BadRequest(B2Error):
+    def __init__(self, message, code):
+        super(BadRequest, self).__init__()
+        self.message = message
+        self.code = code
+
+    def __str__(self):
+        return '%s (%s)' % (self.message, self.code)
+
+
 class Unauthorized(B2Error):
     def __init__(self, message, code):
         super(Unauthorized, self).__init__()
@@ -464,6 +474,9 @@ def interpret_b2_error(status, code, message, response_headers, post_params=None
         if matcher is not None:
             token = matcher.group('token')
             return UploadTokenUsedConcurrently(token)
+        return BadRequest(message, code)
+    elif status == 400:
+        return BadRequest(message, code)
     elif status == 401 and code in ("bad_auth_token", "expired_auth_token"):
         return InvalidAuthToken(message, code)
     elif status == 401:
@@ -478,5 +491,4 @@ def interpret_b2_error(status, code, message, response_headers, post_params=None
         return TooManyRequests(retry_after_seconds=response_headers.get('retry-after'))
     elif 500 <= status < 600:
         return ServiceError('%d %s %s' % (status, code, message))
-    else:
-        return UnknownError('%d %s %s' % (status, code, message))
+    return UnknownError('%d %s %s' % (status, code, message))
