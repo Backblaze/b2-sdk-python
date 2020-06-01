@@ -36,28 +36,37 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
 
     def __init__(self, file_name=None, env=os.environ, last_upgrade_to_run=None):
         """
-        If ``file_name`` argument is empty or ``None``, the path from
-        ``B2_ACCOUNT_INFO`` environment variable is used.  If that is not
-        available, we check if the default ``~/.b2_account_info`` exists to
-        ensure backwards compatibility, before using ``XDG_CONFIG_HOME``. If
-        ``XDG_CONFIG_HOME`` is not set, we fall back to the default.
+        Initialize SqliteAccountInfo.
+
+        Locations are checked in the following order:
+        * ``B2_ACCOUNT_INFO_ENV_VAR``'s value, if set
+        * ``~/.b2_account_info``, if it exists
+        * ``$XDG_CONFIG_HOME/b2/account_info``, if set
+        * ``~/.b2_account_info``, as default
+
+        If the directory ``$XDG_CONFIG_HOME/b2`` does not exist, it is created.
 
         :param str file_name: The sqlite file to use; overrides the default.
         :param dict env: Override Environment variables. For testing only.
         :param int last_upgrade_to_run: For testing only, override the auto-update on the db.
         """
         self.thread_local = threading.local()
+
         if B2_ACCOUNT_INFO_ENV_VAR in env:
             user_account_info_path = env[B2_ACCOUNT_INFO_ENV_VAR]
-        elif 'XDG_CONFIG_HOME' in env and not os.path.exists(
+        elif os.path.exists(
             os.path.expanduser(B2_ACCOUNT_INFO_DEFAULT_FILE)
         ):
+            user_account_info_path = B2_ACCOUNT_INFO_DEFAULT_FILE
+        elif 'XDG_CONFIG_HOME' in env:
             user_account_info_path = os.path.join(env['XDG_CONFIG_HOME'], 'b2', 'account_info')
             os.makedirs(os.path.join(env['XDG_CONFIG_HOME'], 'b2'), mode=0o755, exist_ok=True)
         else:
             user_account_info_path = B2_ACCOUNT_INFO_DEFAULT_FILE
+
         self.filename = file_name or os.path.expanduser(user_account_info_path)
         logger.debug('%s file path to use: %s', self.__class__.__name__, self.filename)
+
         self._validate_database()
         with self._get_connection() as conn:
             self._create_tables(conn, last_upgrade_to_run)
