@@ -44,4 +44,3 @@ export LANG=en_US.UTF-8""", str(e)
             raise UnSyncableFilename('message', 'filename')
         except UnSyncableFilename as e:
             assert str(e) == 'message: filename', str(e)
-

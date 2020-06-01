@@ -22,10 +22,10 @@ from nose import SkipTest
 
 from enum import Enum
 
-from b2sdk.sync.exception import UnSyncableFilename
 from .test_base import TestBase
 
 from .deps_exception import DestFileNewer
+from .deps_exception import UnSyncableFilename
 from .deps import FileVersionInfo
 from .deps import AbstractFolder, B2Folder, LocalFolder
 from .deps import File, FileVersion
@@ -538,11 +538,7 @@ class TestB2Folder(TestFolder):
 
         for filename in filenames_to_test:
             self.bucket.ls.return_value = [
-                (
-                    FileVersionInfo(
-                        'a1', filename, 1, 'text/plain', 'sha1', {}, 1000, 'upload'
-                    ), ''
-                )
+                (FileVersionInfo('a1', filename, 1, 'text/plain', 'sha1', {}, 1000, 'upload'), '')
             ]
             try:
                 list(b2_folder.all_files(self.reporter))
@@ -583,11 +579,7 @@ class TestB2Folder(TestFolder):
 
         for filename in filenames_to_test:
             self.bucket.ls.return_value = [
-                (
-                    FileVersionInfo(
-                        'a1', filename, 1, 'text/plain', 'sha1', {}, 1000, 'upload'
-                    ), ''
-                )
+                (FileVersionInfo('a1', filename, 1, 'text/plain', 'sha1', {}, 1000, 'upload'), '')
             ]
             list(b2_folder.all_files(self.reporter))
 
