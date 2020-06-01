@@ -38,7 +38,8 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
         """
         Initialize SqliteAccountInfo.
 
-        Locations are checked in the following order:
+        Locations are used in the following order:
+        * ``file_name``, if truthy
         * ``B2_ACCOUNT_INFO_ENV_VAR``'s value, if set
         * ``~/.b2_account_info``, if it exists
         * ``$XDG_CONFIG_HOME/b2/account_info``, if set
@@ -52,7 +53,9 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
         """
         self.thread_local = threading.local()
 
-        if B2_ACCOUNT_INFO_ENV_VAR in env:
+        if file_name:
+            user_account_info_path = file_name
+        elif B2_ACCOUNT_INFO_ENV_VAR in env:
             user_account_info_path = env[B2_ACCOUNT_INFO_ENV_VAR]
         elif os.path.exists(
             os.path.expanduser(B2_ACCOUNT_INFO_DEFAULT_FILE)
@@ -64,7 +67,7 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
         else:
             user_account_info_path = B2_ACCOUNT_INFO_DEFAULT_FILE
 
-        self.filename = file_name or os.path.expanduser(user_account_info_path)
+        self.filename = os.path.expanduser(user_account_info_path)
         logger.debug('%s file path to use: %s', self.__class__.__name__, self.filename)
 
         self._validate_database()
