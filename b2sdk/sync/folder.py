@@ -26,9 +26,17 @@ from ..utils import fix_windows_path_limit, is_file_readable
 DRIVE_MATCHER = re.compile(r"^([A-Za-z]):([/\\])")
 ABSOLUTE_PATH_MATCHER = re.compile(r"^(/)|^(\\)")
 RELATIVE_PATH_MATCHER = re.compile(
-    r"^(\.\.[/\\])|^(\.[/\\])|([/\\]\.\.[/\\])|([/\\]\.[/\\])|([/\\]\.\.)$|([/\\]\.)$|^(\.\.)$|" +
-    r"([/\\][/\\])|^(\.)$"
-)
+                           # "abc" and "xyz" represent anything, including "nothing"
+    r"^(\.\.[/\\])|" +     # ../abc or ..\abc
+    r"^(\.[/\\])|" +       # ./abc or .\abc
+    r"([/\\]\.\.[/\\])|" + # abc/../xyz or abc\..\xyz or abc\../xyz or abc/..\xyz
+    r"([/\\]\.[/\\])|" +   # abc/./xyz or abc\.\xyz or abc\./xyz or abc/.\xyz
+    r"([/\\]\.\.)$|" +     # abc/.. or abc\..
+    r"([/\\]\.)$|" +       # abc/. or abc\. 
+    r"^(\.\.)$|" +         # just ".."
+    r"([/\\][/\\])|" +     # abc\/xyz or abc/\xyz or abc//xyz or abc\\xyz
+    r"^(\.)$"              # just "."
+)  # yapf: disable
 
 logger = logging.getLogger(__name__)
 
