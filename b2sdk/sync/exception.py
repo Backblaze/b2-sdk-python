@@ -56,3 +56,21 @@ class InvalidArgument(B2Error):
 
 class IncompleteSync(B2SimpleError):
     pass
+
+
+class UnSyncableFilename(B2Error):
+    """
+    Raised when a filename is not supported by the sync operation
+    """
+
+    def __init__(self, message, filename):
+        """
+        :param message: brief explanation of why the filename was not supported
+        :param filename: name of the file which is not supported
+        """
+        super(UnSyncableFilename, self).__init__()
+        self.filename = filename
+        self.message = message
+
+    def __str__(self):
+        return "%s: %s" % (self.message, self.filename)

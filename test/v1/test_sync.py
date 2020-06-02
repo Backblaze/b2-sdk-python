@@ -25,6 +25,7 @@ from enum import Enum
 from .test_base import TestBase
 
 from .deps_exception import DestFileNewer
+from .deps_exception import UnSyncableFilename
 from .deps import FileVersionInfo
 from .deps import AbstractFolder, B2Folder, LocalFolder
 from .deps import File, FileVersion
@@ -475,6 +476,112 @@ class TestB2Folder(TestFolder):
         self.assertEqual(
             [], list(folder.all_files(self.reporter, policies_manager=polices_manager))
         )
+
+    # Path names not allowed to be sync'd on Windows
+    NOT_SYNCD_ON_WINDOWS = [
+        six.u('Z:/windows/system32/drivers/etc/hosts'),
+        six.u('a:/Users/.default/test'),
+        six.u(r'C:\Windows\system32\drivers\mstsc.sys'),
+    ]
+
+    def test_unsyncable_filenames(self):
+        b2_folder = B2Folder('bucket-name', '', self.api)
+
+        # Test a list of unsyncable file names
+        filenames_to_test = [
+            six.u('/'),  # absolute root path
+            six.u('//'),
+            six.u('///'),
+            six.u('/..'),
+            six.u('/../'),
+            six.u('/.../'),
+            six.u('/../.'),
+            six.u('/../..'),
+            six.u('/a.txt'),
+            six.u('/folder/a.txt'),
+            six.u('./folder/a.txt'),  # current dir relative path
+            six.u('folder/./a.txt'),
+            six.u('folder/folder/.'),
+            six.u('a//b/'),  # double-slashes
+            six.u('a///b'),
+            six.u('a////b'),
+            six.u('../test'),  # start with parent dir
+            six.u('../../test'),
+            six.u('../../abc/../test'),
+            six.u('../../abc/../test/'),
+            six.u('../../abc/../.test'),
+            six.u('a/b/c/../d'),  # parent dir embedded
+            six.u('a//..//b../..c/'),
+            six.u('..a/b../..c/../d..'),
+            six.u('a/../'),
+            six.u('a/../../../../../'),
+            six.u('a/b/c/..'),
+            six.u(r'\\'),  # backslash filenames
+            six.u(r'\z'),
+            six.u(r'..\\'),
+            six.u(r'..\..'),
+            six.u(r'\..\\'),
+            six.u(r'\\..\\..'),
+            six.u(r'\\'),
+            six.u(r'\\\\'),
+            six.u(r'\\\\server\\share\\dir\\file'),
+            six.u(r'\\server\share\dir\file'),
+            six.u(r'\\?\C\Drive\temp'),
+            six.u(r'.\\//'),
+            six.u(r'..\\..//..\\\\'),
+            six.u(r'.\\a\\..\\b'),
+            six.u(r'a\\.\\b'),
+        ]
+
+        if platform.system() == "Windows":
+            filenames_to_test.extend(self.NOT_SYNCD_ON_WINDOWS)
+
+        for filename in filenames_to_test:
+            self.bucket.ls.return_value = [
+                (FileVersionInfo('a1', filename, 1, 'text/plain', 'sha1', {}, 1000, 'upload'), '')
+            ]
+            try:
+                list(b2_folder.all_files(self.reporter))
+                self.fail("should have thrown UnSyncableFilename for: '%s'" % filename)
+            except UnSyncableFilename as e:
+                self.assertTrue(filename in str(e))
+
+    def test_syncable_filenames(self):
+        b2_folder = B2Folder('bucket-name', '', self.api)
+
+        # Test a list of syncable file names
+        filenames_to_test = [
+            six.u(''),
+            six.u(' '),
+            six.u(' / '),
+            six.u(' ./. '),
+            six.u(' ../.. '),
+            six.u('.. / ..'),
+            six.u(r'.. \ ..'),
+            six.u('file.txt'),
+            six.u('.folder/'),
+            six.u('..folder/'),
+            six.u('..file'),
+            six.u(r'file/ and\ folder'),
+            six.u('file..'),
+            six.u('..file..'),
+            six.u('folder/a.txt..'),
+            six.u('..a/b../c../..d/e../'),
+            six.u(r'folder\test'),
+            six.u(r'folder\..f..\..f\..f'),
+            six.u(r'mix/and\match/'),
+            six.u(r'a\b\c\d'),
+        ]
+
+        # filenames not permitted on Windows *should* be allowed on Linux
+        if platform.system() != "Windows":
+            filenames_to_test.extend(self.NOT_SYNCD_ON_WINDOWS)
+
+        for filename in filenames_to_test:
+            self.bucket.ls.return_value = [
+                (FileVersionInfo('a1', filename, 1, 'text/plain', 'sha1', {}, 1000, 'upload'), '')
+            ]
+            list(b2_folder.all_files(self.reporter))
 
 
 class FakeFolder(AbstractFolder):
