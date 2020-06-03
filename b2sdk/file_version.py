@@ -42,20 +42,26 @@ class FileVersionInfo(object):
         self.action = action
 
     def as_dict(self):
+        """ represents the object as a dict which looks almost exactly like the raw api output for upload/list """
         result = {
             'fileId': self.id_,
             'fileName': self.file_name,
+            'fileInfo': self.file_info,
         }
-
         if self.size is not None:
             result['size'] = self.size
         if self.upload_timestamp is not None:
             result['uploadTimestamp'] = self.upload_timestamp
         if self.action is not None:
             result['action'] = self.action
+        if self.content_type is not None:
+            result['contentType'] = self.content_type
+        if self.content_sha1 is not None:
+            result['contentSha1'] = self.content_sha1
         return result
 
     def format_ls_entry(self):
+        """ legacy method, to be removed in v2: formats a `ls` entry for b2 command line tool """
         dt = datetime.datetime.utcfromtimestamp(self.upload_timestamp / 1000)
         date_str = dt.strftime('%Y-%m-%d')
         time_str = dt.strftime('%H:%M:%S')
@@ -71,6 +77,7 @@ class FileVersionInfo(object):
 
     @classmethod
     def format_folder_ls_entry(cls, name):
+        """ legacy method, to be removed in v2: formats a `ls` "folder" consistently with format_ls_entry() """
         return cls.LS_ENTRY_TEMPLATE % ('-', '-', '-', '-', 0, name)
 
 
@@ -161,4 +168,5 @@ class FileIdAndName(object):
         self.file_name = file_name
 
     def as_dict(self):
+        """ represents the object as a dict which looks almost exactly like the raw api output for delete_file_version """
         return {'action': 'delete', 'fileId': self.file_id, 'fileName': self.file_name}
