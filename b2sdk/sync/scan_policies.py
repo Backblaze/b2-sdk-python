@@ -11,6 +11,8 @@
 import logging
 import re
 
+from .exception import InvalidArgument
+
 logger = logging.getLogger(__name__)
 
 
@@ -131,6 +133,12 @@ class ScanPoliciesManager(object):
         :param exclude_modified_after: optionally exclude file versions modified after (in millis)
         :type exclude_modified_after: int, optional
         """
+        if include_file_regexes and not exclude_file_regexes:
+            raise InvalidArgument(
+                'include_file_regexes',
+                'cannot be used without exclude_file_regexes at the same time'
+            )
+
         self._exclude_dir_set = RegexSet(exclude_dir_regexes)
         self._exclude_file_because_of_dir_set = RegexSet(
             map(convert_dir_regex_to_dir_prefix_regex, exclude_dir_regexes)
