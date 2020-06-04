@@ -48,6 +48,8 @@ b2sdk>=0.0.0,<1.0.0
 * Ignore urllib3 "connection pool is full" warning
 * Add ability to filter in ScanPoliciesManager based on modification time
 * Add ScanPoliciesManager and SyncReport to public interface
+* Add md5 checksum to FileVersionInfo
+* Add more keys to dicts returned by as_dict() methods
 
 ## 1.0.2 (2019-10-15)
 
