@@ -8,5 +8,4 @@
 #
 ######################################################################
 
-from b2sdk.sync.exception import *
 from b2sdk.v1.exception import *

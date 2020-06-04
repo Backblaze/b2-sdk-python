@@ -349,6 +349,25 @@ class TestLocalFolder(TestFolder):
         else:
             self.assertEqual(self.NAMES, list(f.name for f in folder.all_files(self.reporter)))
 
+    def test_syncable_paths(self):
+        syncable_paths = (
+            (six.u('test.txt'), six.u('test.txt')), (six.u('./a/test.txt'), six.u('a/test.txt')),
+            (six.u('./a/../test.txt'), six.u('test.txt'))
+        )
+
+        folder = self.prepare_folder(prepare_files=False)
+        for syncable_path, norm_syncable_path in syncable_paths:
+            expected = os.path.join(self.root_dir, norm_syncable_path.replace('/', os.path.sep))
+            self.assertEqual(expected, folder.make_full_path(syncable_path))
+
+    def test_unsyncable_paths(self):
+        unsyncable_paths = (six.u('../test.txt'), six.u('a/../../test.txt'), six.u('/a/test.txt'))
+
+        folder = self.prepare_folder(prepare_files=False)
+        for unsyncable_path in unsyncable_paths:
+            with self.assertRaises(UnSyncableFilename):
+                folder.make_full_path(unsyncable_path)
+
 
 class TestB2Folder(TestFolder):
     __test__ = True
