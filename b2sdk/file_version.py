@@ -32,7 +32,16 @@ class FileVersionInfo(object):
     LS_ENTRY_TEMPLATE = '%83s  %6s  %10s  %8s  %9d  %s'  # order is file_id, action, date, time, size, name
 
     def __init__(
-        self, id_, file_name, size, content_type, content_sha1, file_info, upload_timestamp, action, content_md5=None,
+        self,
+        id_,
+        file_name,
+        size,
+        content_type,
+        content_sha1,
+        file_info,
+        upload_timestamp,
+        action,
+        content_md5=None,
     ):
         self.id_ = id_
         self.file_name = file_name
@@ -142,7 +151,15 @@ class FileVersionInfoFactory(object):
         file_info = file_info_dict.get('fileInfo')
 
         return FileVersionInfo(
-            id_, file_name, size, content_type, content_sha1, file_info, upload_timestamp, action, content_md5
+            id_,
+            file_name,
+            size,
+            content_type,
+            content_sha1,
+            file_info,
+            upload_timestamp,
+            action,
+            content_md5,
         )
 
     @classmethod
