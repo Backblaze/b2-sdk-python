@@ -310,7 +310,7 @@ class TestSqliteAccountInfo(AccountInfoBase, TestBase):
             account_info = self._make_sqlite_account_info(env={'XDG_CONFIG_HOME': d})
             expected_path = os.path.abspath(os.path.join(d, 'b2', 'account_info'))
             actual_path = os.path.abspath(account_info.filename)
-            assert expected_path == actual_path, 'Actual path %s is not equal to $XDG_CONFIG_HOME/b2/account_info'
+            assert expected_path == actual_path, 'Actual path %s is not equal to $XDG_CONFIG_HOME/b2/account_info' % (actual_path,)
             assert os.path.exists(
                 os.path.join(d, 'b2')
             ), 'Config folder $XDG_CONFIG_HOME/b2 was not created!'
@@ -325,6 +325,7 @@ class TestSqliteAccountInfo(AccountInfoBase, TestBase):
             )
             expected_path = os.path.abspath(os.path.join(d, 'b2_account_info'))
             actual_path = os.path.abspath(account_info.filename)
-            assert expected_path == actual_path, 'Actual path {path} is not equal to ${var}'.format(
-                path=actual_path, var=B2_ACCOUNT_INFO_ENV_VAR
+            assert expected_path == actual_path, 'Actual path %s is not equal to %s' % (
+                actual_path,
+                B2_ACCOUNT_INFO_ENV_VAR,
             )
