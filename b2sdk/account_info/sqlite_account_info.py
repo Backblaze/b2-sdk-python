@@ -48,22 +48,21 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
         If the directory ``$XDG_CONFIG_HOME/b2`` does not exist, it is created.
 
         :param str file_name: The sqlite file to use; overrides the default.
-        :param dict env: Override Environment variables. For testing only.
         :param int last_upgrade_to_run: For testing only, override the auto-update on the db.
         """
         self.thread_local = threading.local()
 
         if file_name:
             user_account_info_path = file_name
-        elif B2_ACCOUNT_INFO_ENV_VAR in env:
-            user_account_info_path = env[B2_ACCOUNT_INFO_ENV_VAR]
-        elif os.path.exists(
-            os.path.expanduser(B2_ACCOUNT_INFO_DEFAULT_FILE)
-        ):
+        elif B2_ACCOUNT_INFO_ENV_VAR in os.environ:
+            user_account_info_path = os.environ[B2_ACCOUNT_INFO_ENV_VAR]
+        elif os.path.exists(os.path.expanduser(B2_ACCOUNT_INFO_DEFAULT_FILE)):
             user_account_info_path = B2_ACCOUNT_INFO_DEFAULT_FILE
-        elif 'XDG_CONFIG_HOME' in env:
-            user_account_info_path = os.path.join(env['XDG_CONFIG_HOME'], 'b2', 'account_info')
-            os.makedirs(os.path.join(env['XDG_CONFIG_HOME'], 'b2'), mode=0o755, exist_ok=True)
+        elif 'XDG_CONFIG_HOME' in os.environ:
+            config_home = os.environ['XDG_CONFIG_HOME']
+            user_account_info_path = os.path.join(config_home, 'b2', 'account_info')
+            if not os.path.exists(os.path.join(config_home, 'b2')):
+                os.makedirs(os.path.join(config_home, 'b2'), mode=0o755, exist_ok=True)
         else:
             user_account_info_path = B2_ACCOUNT_INFO_DEFAULT_FILE
 

@@ -295,12 +295,15 @@ class TestSqliteAccountInfo(AccountInfoBase, TestBase):
     def _make_sqlite_account_info(self, env=None, last_upgrade_to_run=None):
         """
         Returns a new SqliteAccountInfo that has just read the data from the file.
+
+        :param dict env: Override Environment variables.
         """
-        return SqliteAccountInfo(
-            file_name=self.db_path if not env else None,
-            env=env or {},
-            last_upgrade_to_run=last_upgrade_to_run
-        )
+        with mock.patch.dict('os.environ', env or {}):
+            return SqliteAccountInfo(
+                file_name=self.db_path if not env else None,
+                env=env or {},
+                last_upgrade_to_run=last_upgrade_to_run,
+            )
 
     def test_account_info_persistence(self):
         self._test_account_info(check_persistence=True)
