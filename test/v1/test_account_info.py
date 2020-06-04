@@ -17,6 +17,7 @@ import os
 import platform
 import tempfile
 
+from b2sdk.utils import TempDir
 import six
 
 from .test_base import TestBase
@@ -309,21 +310,23 @@ class TestSqliteAccountInfo(AccountInfoBase, TestBase):
         self._test_account_info(check_persistence=True)
 
     def test_uses_xdg_config_home(self):
-        with tempfile.TemporaryDirectory() as d:
+        with TempDir() as d:
             account_info = self._make_sqlite_account_info(env={'XDG_CONFIG_HOME': d})
             expected_path = os.path.abspath(os.path.join(d, 'b2', 'account_info'))
             actual_path = os.path.abspath(account_info.filename)
-            assert expected_path == actual_path, 'Actual path %s is not equal to $XDG_CONFIG_HOME/b2/account_info' % (actual_path,)
+            assert expected_path == actual_path, 'Actual path %s is not equal to $XDG_CONFIG_HOME/b2/account_info' % (
+                actual_path,
+            )
             assert os.path.exists(
                 os.path.join(d, 'b2')
             ), 'Config folder $XDG_CONFIG_HOME/b2 was not created!'
 
     def test_account_info_env_var_overrides_xdg_config_home(self):
-        with tempfile.TemporaryDirectory() as d:
+        with TempDir() as d:
             account_info = self._make_sqlite_account_info(
                 env={
                     'XDG_CONFIG_HOME': d,
-                    B2_ACCOUNT_INFO_ENV_VAR: os.path.join(d, 'b2_account_info')
+                    B2_ACCOUNT_INFO_ENV_VAR: os.path.join(d, 'b2_account_info'),
                 }
             )
             expected_path = os.path.abspath(os.path.join(d, 'b2_account_info'))
