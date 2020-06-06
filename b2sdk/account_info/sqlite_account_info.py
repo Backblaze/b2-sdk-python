@@ -34,7 +34,7 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
     completed.
     """
 
-    def __init__(self, file_name=None, env=os.environ, last_upgrade_to_run=None):
+    def __init__(self, file_name=None, last_upgrade_to_run=None):
         """
         Initialize SqliteAccountInfo.
 
@@ -62,7 +62,7 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
             config_home = os.environ['XDG_CONFIG_HOME']
             user_account_info_path = os.path.join(config_home, 'b2', 'account_info')
             if not os.path.exists(os.path.join(config_home, 'b2')):
-                os.makedirs(os.path.join(config_home, 'b2'), mode=0o755, exist_ok=True)
+                os.makedirs(os.path.join(config_home, 'b2'), mode=0o755)
         else:
             user_account_info_path = B2_ACCOUNT_INFO_DEFAULT_FILE
 
