@@ -15,6 +15,7 @@ import json
 from nose import SkipTest
 import os
 import platform
+import shutil
 import tempfile
 
 from b2sdk.utils import TempDir
@@ -211,6 +212,7 @@ class TestSqliteAccountInfo(AccountInfoBase, TestBase):
         self.db_path = tempfile.NamedTemporaryFile(
             prefix='tmp_b2_tests_%s__' % (self.id(),), delete=True
         ).name
+        self.home = None
 
     def setUp(self):
         try:
@@ -218,12 +220,15 @@ class TestSqliteAccountInfo(AccountInfoBase, TestBase):
         except OSError:
             pass
         print('using %s' % self.db_path)
+        dirpath_bytes = tempfile.mkdtemp()
+        self.home = six.u(dirpath_bytes.replace('\\', '\\\\'))
 
     def tearDown(self):
         try:
             os.unlink(self.db_path)
         except OSError:
             pass
+        shutil.rmtree(self.home)
 
     def test_corrupted(self):
         """
@@ -299,10 +304,10 @@ class TestSqliteAccountInfo(AccountInfoBase, TestBase):
 
         :param dict env: Override Environment variables.
         """
-        with mock.patch.dict('os.environ', env or {}):
+        # Override HOME to ensure hermetic tests
+        with mock.patch('os.environ', env or {'HOME': self.home}):
             return SqliteAccountInfo(
                 file_name=self.db_path if not env else None,
-                env=env or {},
                 last_upgrade_to_run=last_upgrade_to_run,
             )
 
@@ -311,7 +316,12 @@ class TestSqliteAccountInfo(AccountInfoBase, TestBase):
 
     def test_uses_xdg_config_home(self):
         with TempDir() as d:
-            account_info = self._make_sqlite_account_info(env={'XDG_CONFIG_HOME': d})
+            account_info = self._make_sqlite_account_info(
+                env={
+                    'HOME': self.home,
+                    'XDG_CONFIG_HOME': d,
+                }
+            )
             expected_path = os.path.abspath(os.path.join(d, 'b2', 'account_info'))
             actual_path = os.path.abspath(account_info.filename)
             self.assertEqual(
@@ -326,6 +336,7 @@ class TestSqliteAccountInfo(AccountInfoBase, TestBase):
         with TempDir() as d:
             account_info = self._make_sqlite_account_info(
                 env={
+                    'HOME': self.home,
                     'XDG_CONFIG_HOME': d,
                     B2_ACCOUNT_INFO_ENV_VAR: os.path.join(d, 'b2_account_info'),
                 }
