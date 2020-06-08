@@ -13,6 +13,7 @@ from __future__ import print_function
 from .test_base import TestBase
 
 from .deps import DEFAULT_SCAN_MANAGER, ScanPoliciesManager
+from .deps_exception import InvalidArgument
 
 
 class TestScanPolicies(TestBase):
@@ -23,16 +24,14 @@ class TestScanPolicies(TestBase):
         self.assertFalse(DEFAULT_SCAN_MANAGER.should_exclude_file('a'))
 
     def test_exclude_include(self):
-        policy = ScanPoliciesManager(exclude_file_regexes=['a', 'b'], include_file_regexes=['ab'])
+        policy = ScanPoliciesManager(exclude_file_regexes=('a', 'b'), include_file_regexes=('ab',))
         self.assertTrue(policy.should_exclude_file('alfa'))
         self.assertTrue(policy.should_exclude_file('bravo'))
         self.assertFalse(policy.should_exclude_file('abend'))
         self.assertFalse(policy.should_exclude_file('charlie'))
 
     def test_exclude_dir(self):
-        policy = ScanPoliciesManager(
-            include_file_regexes=['.*[.]txt$'], exclude_dir_regexes=['alfa', 'bravo$']
-        )
+        policy = ScanPoliciesManager(exclude_dir_regexes=('alfa', 'bravo$'))
         self.assertTrue(policy.should_exclude_directory('alfa'))
         self.assertTrue(policy.should_exclude_directory('alfa2'))
         self.assertTrue(policy.should_exclude_directory('alfa/hello'))
@@ -48,3 +47,7 @@ class TestScanPolicies(TestBase):
         self.assertTrue(policy.should_exclude_file('bravo/foo'))
         self.assertFalse(policy.should_exclude_file('bravo2/hello/foo'))
         self.assertTrue(policy.should_exclude_file('bravo/hello/foo.txt'))
+
+    def test_include_without_exclude(self):
+        with self.assertRaises(InvalidArgument):
+            ScanPoliciesManager(include_file_regexes=('.*',))

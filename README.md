@@ -45,9 +45,12 @@ b2sdk>=0.0.0,<1.0.0
 * Add server-side copy support for large files
 * Add ability to synthesize objects from local and remote sources
 * Add AuthInfoCache, InMemoryCache and AbstractCache to public interface
+* Ignore urllib3 "connection pool is full" warning
 * Add ability to filter in ScanPoliciesManager based on modification time
 * Add ScanPoliciesManager and SyncReport to public interface
 * Add support for XDG_CONFIG_HOME (@0az)
+* Add md5 checksum to FileVersionInfo
+* Add more keys to dicts returned by as_dict() methods
 
 ## 1.0.2 (2019-10-15)
 

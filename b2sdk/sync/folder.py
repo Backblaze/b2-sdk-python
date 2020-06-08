@@ -10,16 +10,33 @@
 
 import logging
 import os
+import platform
+import re
 import six
 import sys
 
 from abc import ABCMeta, abstractmethod
 from b2sdk.exception import CommandError
-from .exception import EnvironmentEncodingError
+from .exception import EnvironmentEncodingError, UnSyncableFilename
 from .file import File, FileVersion
 from .scan_policies import DEFAULT_SCAN_MANAGER
 from ..raw_api import SRC_LAST_MODIFIED_MILLIS
 from ..utils import fix_windows_path_limit, is_file_readable
+
+DRIVE_MATCHER = re.compile(r"^([A-Za-z]):([/\\])")
+ABSOLUTE_PATH_MATCHER = re.compile(r"^(/)|^(\\)")
+RELATIVE_PATH_MATCHER = re.compile(
+                           # "abc" and "xyz" represent anything, including "nothing"
+    r"^(\.\.[/\\])|" +     # ../abc or ..\abc
+    r"^(\.[/\\])|" +       # ./abc or .\abc
+    r"([/\\]\.\.[/\\])|" + # abc/../xyz or abc\..\xyz or abc\../xyz or abc/..\xyz
+    r"([/\\]\.[/\\])|" +   # abc/./xyz or abc\.\xyz or abc\./xyz or abc/.\xyz
+    r"([/\\]\.\.)$|" +     # abc/.. or abc\..
+    r"([/\\]\.)$|" +       # abc/. or abc\. 
+    r"^(\.\.)$|" +         # just ".."
+    r"([/\\][/\\])|" +     # abc\/xyz or abc/\xyz or abc//xyz or abc\\xyz
+    r"^(\.)$"              # just "."
+)  # yapf: disable
 
 logger = logging.getLogger(__name__)
 
@@ -124,12 +141,25 @@ class LocalFolder(AbstractFolder):
 
     def make_full_path(self, file_name):
         """
-        Convert a file name into an absolute path.
+        Convert a file name into an absolute path, ensure it is not outside self.root
 
         :param file_name: a file name
         :type file_name: str
         """
-        return os.path.join(self.root, file_name.replace('/', os.path.sep))
+        # Fix OS path separators
+        file_name = file_name.replace('/', os.path.sep)
+
+        # Generate the full path to the file
+        full_path = os.path.normpath(os.path.join(self.root, file_name))
+
+        # Get the common prefix between the new full_path and self.root
+        common_prefix = os.path.commonprefix([full_path, self.root])
+
+        # Ensure the new full_path is inside the self.root directory
+        if common_prefix != self.root:
+            raise UnSyncableFilename("illegal file name", full_path)
+
+        return full_path
 
     def ensure_present(self):
         """
@@ -191,9 +221,9 @@ class LocalFolder(AbstractFolder):
                 name = cls._handle_non_unicode_file_name(name)
 
             if '/' in name:
-                raise Exception(
-                    "sync does not support file names that include '/': %s in dir %s" %
-                    (name, local_dir)
+                raise UnSyncableFilename(
+                    "sync does not support file names that include '/'",
+                    "%s in dir %s" % (name, local_dir)
                 )
 
             local_path = os.path.join(local_dir, name)
@@ -301,6 +331,22 @@ class B2Folder(AbstractFolder):
 
             if policies_manager.should_exclude_file(file_name):
                 continue
+
+            # Do not allow relative paths in file names
+            if RELATIVE_PATH_MATCHER.search(file_name):
+                raise UnSyncableFilename(
+                    "sync does not support file names that include relative paths", file_name
+                )
+            # Do not allow absolute paths in file names
+            if ABSOLUTE_PATH_MATCHER.search(file_name):
+                raise UnSyncableFilename(
+                    "sync does not support file names with absolute paths", file_name
+                )
+            # On Windows, do not allow drive letters in file names
+            if platform.system() == "Windows" and DRIVE_MATCHER.search(file_name):
+                raise UnSyncableFilename(
+                    "sync does not support file names with drive letters", file_name
+                )
 
             if current_name != file_name and current_name is not None and current_versions:
                 yield File(current_name, current_versions)
