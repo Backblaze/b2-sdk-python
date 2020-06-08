@@ -47,6 +47,7 @@ b2sdk>=0.0.0,<1.0.0
 * Add AuthInfoCache, InMemoryCache and AbstractCache to public interface
 * Add ability to filter in ScanPoliciesManager based on modification time
 * Add ScanPoliciesManager and SyncReport to public interface
+* Add support for XDG_CONFIG_HOME (@0az)
 
 ## 1.0.2 (2019-10-15)
 
