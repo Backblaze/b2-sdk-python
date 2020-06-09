@@ -747,7 +747,7 @@ class Bucket(object):
         return self.api.delete_file_version(file_id, file_name)
 
     @disable_trace
-    def as_dict(self):  # TODO: refactor with other as_dict()
+    def as_dict(self):
         """
         Return bucket representation as a dictionary.
 
@@ -761,6 +761,11 @@ class Bucket(object):
             result['bucketName'] = self.name
         if self.type_ is not None:
             result['bucketType'] = self.type_
+        result['bucketInfo'] = self.bucket_info
+        result['corsRules'] = self.cors_rules
+        result['lifecycleRules'] = self.lifecycle_rules
+        result['revision'] = self.revision
+        result['options'] = self.options_set
         return result
 
     def __repr__(self):

@@ -22,6 +22,8 @@ class FileVersionInfo(object):
     :ivar str ~.content_type: RFC 822 content type, for example ``"application/octet-stream"``
     :ivar ~.content_sha1: sha1 checksum of the entire file, can be ``None`` (unknown) if it is a large file uploaded by a client which did not provide it
     :vartype ~.content_sha1: str or None
+    :ivar ~.content_md5: md5 checksum of the file, can be ``None`` (unknown)
+    :vartype ~.content_md5: str or None
     :ivar dict ~.file_info: file info dict
     :ivar ~.upload_timestamp: in milliseconds since :abbr:`epoch (1970-01-01 00:00:00)`. Can be ``None`` (unknown).
     :vartype ~.upload_timestamp: int or None
@@ -30,32 +32,50 @@ class FileVersionInfo(object):
     LS_ENTRY_TEMPLATE = '%83s  %6s  %10s  %8s  %9d  %s'  # order is file_id, action, date, time, size, name
 
     def __init__(
-        self, id_, file_name, size, content_type, content_sha1, file_info, upload_timestamp, action
+        self,
+        id_,
+        file_name,
+        size,
+        content_type,
+        content_sha1,
+        file_info,
+        upload_timestamp,
+        action,
+        content_md5=None,
     ):
         self.id_ = id_
         self.file_name = file_name
         self.size = size
         self.content_type = content_type
         self.content_sha1 = content_sha1
+        self.content_md5 = content_md5
         self.file_info = file_info or {}
         self.upload_timestamp = upload_timestamp
         self.action = action
 
     def as_dict(self):
+        """ represents the object as a dict which looks almost exactly like the raw api output for upload/list """
         result = {
             'fileId': self.id_,
             'fileName': self.file_name,
+            'fileInfo': self.file_info,
         }
-
         if self.size is not None:
             result['size'] = self.size
         if self.upload_timestamp is not None:
             result['uploadTimestamp'] = self.upload_timestamp
         if self.action is not None:
             result['action'] = self.action
+        if self.content_type is not None:
+            result['contentType'] = self.content_type
+        if self.content_sha1 is not None:
+            result['contentSha1'] = self.content_sha1
+        if self.content_md5 is not None:
+            result['contentMd5'] = self.content_md5
         return result
 
     def format_ls_entry(self):
+        """ legacy method, to be removed in v2: formats a `ls` entry for b2 command line tool """
         dt = datetime.datetime.utcfromtimestamp(self.upload_timestamp / 1000)
         date_str = dt.strftime('%Y-%m-%d')
         time_str = dt.strftime('%H:%M:%S')
@@ -71,6 +91,7 @@ class FileVersionInfo(object):
 
     @classmethod
     def format_folder_ls_entry(cls, name):
+        """ legacy method, to be removed in v2: formats a `ls` "folder" consistently with format_ls_entry() """
         return cls.LS_ENTRY_TEMPLATE % ('-', '-', '-', '-', 0, name)
 
 
@@ -126,10 +147,19 @@ class FileVersionInfoFactory(object):
         upload_timestamp = file_info_dict.get('uploadTimestamp')
         content_type = file_info_dict.get('contentType')
         content_sha1 = file_info_dict.get('contentSha1')
+        content_md5 = file_info_dict.get('contentMd5')
         file_info = file_info_dict.get('fileInfo')
 
         return FileVersionInfo(
-            id_, file_name, size, content_type, content_sha1, file_info, upload_timestamp, action
+            id_,
+            file_name,
+            size,
+            content_type,
+            content_sha1,
+            file_info,
+            upload_timestamp,
+            action,
+            content_md5,
         )
 
     @classmethod
@@ -161,4 +191,5 @@ class FileIdAndName(object):
         self.file_name = file_name
 
     def as_dict(self):
+        """ represents the object as a dict which looks almost exactly like the raw api output for delete_file_version """
         return {'action': 'delete', 'fileId': self.file_id, 'fileName': self.file_name}

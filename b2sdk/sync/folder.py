@@ -146,11 +146,11 @@ class LocalFolder(AbstractFolder):
         :param file_name: a file name
         :type file_name: str
         """
-        # Setup the relative_path starting at self.root
-        relative_path = os.path.relpath(file_name.replace('/', os.path.sep), start=self.root)
+        # Fix OS path separators
+        file_name = file_name.replace('/', os.path.sep)
 
-        # Convert the relative path to an absolute path
-        full_path = os.path.abspath(relative_path)
+        # Generate the full path to the file
+        full_path = os.path.normpath(os.path.join(self.root, file_name))
 
         # Get the common prefix between the new full_path and self.root
         common_prefix = os.path.commonprefix([full_path, self.root])
