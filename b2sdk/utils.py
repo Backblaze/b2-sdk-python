@@ -228,8 +228,12 @@ def get_file_mtime(local_path, rounded=True):
         # which were uploaded with older version would have newer mtime
         # on the destination, thus b2 may fail.
         # The default will be changed in v2. See #617 for details.
-        mod_time = round(mod_time)
+        return int(round(mod_time))
 
+    # Getting modification time of a file in v1 was implemented without rounding.
+    # With some values, convert it forth and back will give different result.
+    # It can case that files can be downloaded over and over again, despite the fact
+    # that the modification time is always the same. See #617 for details.
     return int(mod_time)
 
 
