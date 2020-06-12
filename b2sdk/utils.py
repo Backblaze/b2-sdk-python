@@ -231,8 +231,8 @@ def get_file_mtime(local_path, rounded=True):
         return int(round(mod_time))
 
     # Getting modification time of a file in v1 was implemented without rounding.
-    # With some values, convert it forth and back will give different result.
-    # It can case that files can be downloaded over and over again, despite the fact
+    # With some values on some systems, converting it back and forth will give different result.
+    # It such case affected files can be uploaded by sync over and over again, despite the fact
     # that the modification time is always the same. See #617 for details.
     return int(mod_time)
 
