@@ -50,6 +50,7 @@ b2sdk>=0.0.0,<1.0.0
 * Add ScanPoliciesManager and SyncReport to public interface
 * Add md5 checksum to FileVersionInfo
 * Add more keys to dicts returned by as_dict() methods
+* Fix handling of modification time of files
 
 ## 1.0.2 (2019-10-15)
 

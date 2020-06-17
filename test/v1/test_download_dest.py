@@ -30,10 +30,11 @@ class TestDownloadDestLocalFile(TestBase):
         """
         Check that the file gets written and that its mod time gets set.
         """
+        mod_time = 1500222333000
         with TempDir() as temp_dir:
             download_dest, file_path = self._make_dest(temp_dir)
             with download_dest.make_file_context(
-                "file_id", "file_name", 100, "content_type", "sha1", {}, 1500222333000
+                "file_id", "file_name", 100, "content_type", "sha1", {}, mod_time
             ) as f:
                 f.write(six.b('hello world'))
             with open(file_path, 'rb') as f:
@@ -41,7 +42,7 @@ class TestDownloadDestLocalFile(TestBase):
                     six.b(self.expected_result),
                     f.read(),
                 )
-            self.assertEqual(1500222333, os.path.getmtime(file_path))
+            self.assertEqual(mod_time, int(os.path.getmtime(file_path) * 1000))
 
     def test_failed_write_deletes_partial_file(self):
         with TempDir() as temp_dir:
@@ -72,18 +73,19 @@ class TestDownloadDestProgressWrapper(TestBase):
         """
         Check that the file gets written and that its mod time gets set.
         """
+        mod_time = 1500222333000
         with TempDir() as temp_dir:
             file_path = os.path.join(temp_dir, "test.txt")
             download_local_file = DownloadDestLocalFile(file_path)
             progress_listener = ProgressListenerForTest()
             download_dest = DownloadDestProgressWrapper(download_local_file, progress_listener)
             with download_dest.make_file_context(
-                "file_id", "file_name", 100, "content_type", "sha1", {}, 1500222333000
+                "file_id", "file_name", 100, "content_type", "sha1", {}, mod_time
             ) as f:
                 f.write(b'hello world\n')
             with open(file_path, 'rb') as f:
                 self.assertEqual(b'hello world\n', f.read())
-            self.assertEqual(1500222333, os.path.getmtime(file_path))
+            self.assertEqual(mod_time, int(os.path.getmtime(file_path) * 1000))
             self.assertEqual(
                 [
                     'set_total_bytes(100)',
