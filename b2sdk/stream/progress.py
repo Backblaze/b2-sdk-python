@@ -42,6 +42,11 @@ class ReadingStreamWithProgress(AbstractStreamWithProgress):
     Wrap a file-like object, updates progress while reading.
     """
 
+    def __init__(self, *args, **kwargs):
+        length = kwargs.pop('length', None)
+        super(ReadingStreamWithProgress, self).__init__(*args, **kwargs)
+        self.length = length
+
     def read(self, size=None):
         """
         Read data from the stream.
@@ -52,6 +57,9 @@ class ReadingStreamWithProgress(AbstractStreamWithProgress):
         data = super(ReadingStreamWithProgress, self).read(size)
         self._progress_update(len(data))
         return data
+
+    def __len__(self):
+        return self.length
 
 
 class WritingStreamWithProgress(AbstractStreamWithProgress):

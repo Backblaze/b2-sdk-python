@@ -371,6 +371,10 @@ class NonExistentBucket(B2SimpleError):
     prefix = 'No such bucket'
 
 
+class FileSha1Mismatch(B2SimpleError):
+    prefix = 'Upload file SHA1 mismatch'
+
+
 class PartSha1Mismatch(B2Error):
     def __init__(self, key):
         super(PartSha1Mismatch, self).__init__()

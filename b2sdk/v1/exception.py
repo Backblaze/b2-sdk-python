@@ -37,6 +37,7 @@ from b2sdk.exception import DuplicateBucketName
 from b2sdk.exception import FileAlreadyHidden
 from b2sdk.exception import FileNameNotAllowed
 from b2sdk.exception import FileNotPresent
+from b2sdk.exception import FileSha1Mismatch
 from b2sdk.exception import InvalidAuthToken
 from b2sdk.exception import InvalidMetadataDirective
 from b2sdk.exception import InvalidRange
@@ -96,6 +97,7 @@ __all__ = (
     'FileAlreadyHidden',
     'FileNameNotAllowed',
     'FileNotPresent',
+    'FileSha1Mismatch',
     'IncompleteSync',
     'InvalidArgument',
     'InvalidAuthToken',
