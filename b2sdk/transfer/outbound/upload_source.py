@@ -45,10 +45,14 @@ class AbstractUploadSource(OutboundTransferSource):
     def is_copy(self):
         return False
 
+    def is_sha1_known(self):
+        return False
+
 
 class UploadSourceBytes(AbstractUploadSource):
-    def __init__(self, data_bytes):
+    def __init__(self, data_bytes, content_sha1=None):
         self.data_bytes = data_bytes
+        self.content_sha1 = content_sha1
 
     def __repr__(self):
         return '<{classname} data={data} id={id}>'.format(
@@ -62,10 +66,15 @@ class UploadSourceBytes(AbstractUploadSource):
         return len(self.data_bytes)
 
     def get_content_sha1(self):
-        return hashlib.sha1(self.data_bytes).hexdigest()
+        if self.content_sha1 is None:
+            self.content_sha1 = hashlib.sha1(self.data_bytes).hexdigest()
+        return self.content_sha1
 
     def open(self):
         return io.BytesIO(self.data_bytes)
+
+    def is_sha1_known(self):
+        return self.content_sha1 is not None
 
 
 class UploadSourceLocalFile(AbstractUploadSource):
@@ -102,6 +111,9 @@ class UploadSourceLocalFile(AbstractUploadSource):
     def _hex_sha1_of_file(self, local_path):
         with self.open() as f:
             return hex_sha1_of_stream(f, self.content_length)
+
+    def is_sha1_known(self):
+        return self.content_sha1 is not None
 
 
 class UploadSourceLocalFileRange(UploadSourceLocalFile):
@@ -169,6 +181,9 @@ class UploadSourceStream(AbstractUploadSource):
         sha1, content_length = hex_sha1_of_unlimited_stream(self.open())
         self._content_length = content_length
         self._content_sha1 = sha1
+
+    def is_sha1_known(self):
+        return self._content_sha1 is not None
 
 
 class UploadSourceStreamRange(UploadSourceStream):

@@ -28,6 +28,7 @@ from .deps_exception import (
     InvalidUploadSource,
     MaxRetriesExceeded,
     UnsatisfiableRange,
+    FileSha1Mismatch,
 )
 from .deps import B2Api
 from .deps import LargeFileUploadState
@@ -522,6 +523,18 @@ class TestUpload(TestCaseWithBucket):
             os.symlink('non-existing', path)
             with self.assertRaises(InvalidUploadSource):
                 self.bucket.upload_local_file(path, 'file1')
+
+    def test_upload_local_wrong_sha(self):
+        with TempDir() as d:
+            path = os.path.join(d, 'file123')
+            data = six.b('hello world')
+            write_file(path, data)
+            with self.assertRaises(FileSha1Mismatch):
+                self.bucket.upload_local_file(
+                    path,
+                    'file123',
+                    sha1_sum='abcabcabc',
+                )
 
     def test_upload_one_retryable_error(self):
         self.simulator.set_upload_errors([CanRetry(True)])

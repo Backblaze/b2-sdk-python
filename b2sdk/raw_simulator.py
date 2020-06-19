@@ -26,15 +26,22 @@ from .exception import (
     Conflict,
     DuplicateBucketName,
     FileNotPresent,
+    FileSha1Mismatch,
     InvalidAuthToken,
     InvalidMetadataDirective,
     MissingPart,
     NonExistentBucket,
+    PartSha1Mismatch,
     Unauthorized,
     UnsatisfiableRange,
 )
 from .raw_api import AbstractRawApi, HEX_DIGITS_AT_END, MetadataDirectiveMode
-from .utils import b2_url_decode, b2_url_encode, ConcurrentUsedAuthTokenGuard
+from .utils import (
+    b2_url_decode,
+    b2_url_encode,
+    ConcurrentUsedAuthTokenGuard,
+    hex_sha1_of_bytes,
+)
 from .stream.hashing import StreamWithHash
 
 ALL_CAPABILITES = [
@@ -599,6 +606,9 @@ class BucketSimulator(object):
             content_sha1 = data_bytes[-40:].decode()
             data_bytes = data_bytes[0:-40]
             content_length -= 40
+        computed_sha1 = hex_sha1_of_bytes(data_bytes)
+        if content_sha1 != computed_sha1:
+            raise FileSha1Mismatch(file_name)
         file_id = self._next_file_id()
         file_sim = self.FILE_SIMULATOR_CLASS(
             self.account_id, self.bucket_id, file_id, 'upload', file_name, content_type,
@@ -616,6 +626,9 @@ class BucketSimulator(object):
             sha1_sum = part_data[-40:].decode()
             part_data = part_data[0:-40]
             content_length -= 40
+        computed_sha1 = hex_sha1_of_bytes(part_data)
+        if sha1_sum != computed_sha1:
+            raise PartSha1Mismatch(file_id)
         part = PartSimulator(file_sim.file_id, part_number, content_length, sha1_sum, part_data)
         file_sim.add_part(part_number, part)
         return dict(

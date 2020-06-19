@@ -157,16 +157,23 @@ class UploadManager(object):
 
             try:
                 with part_upload_source.open() as part_stream:
-                    input_stream = ReadingStreamWithProgress(part_stream, part_progress_listener)
-                    hashing_stream = StreamWithHash(
-                        input_stream, stream_length=part_upload_source.get_content_length()
-                    )
-                    # it is important that `len()` works on `hashing_stream`
+                    content_length = part_upload_source.get_content_length()
+                    input_stream = ReadingStreamWithProgress(part_stream, part_progress_listener, length=content_length)
+                    if part_upload_source.is_sha1_known():
+                        content_sha1 = part_upload_source.get_content_sha1()
+                    else:
+                        input_stream = StreamWithHash(
+                            input_stream, stream_length=content_length
+                        )
+                        content_sha1 = HEX_DIGITS_AT_END
+                    # it is important that `len()` works on `input_stream`
                     response = self.services.session.upload_part(
-                        file_id, part_number, hashing_stream.length, HEX_DIGITS_AT_END,
-                        hashing_stream
+                        file_id, part_number, len(input_stream), content_sha1,
+                        input_stream
                     )
-                    assert hashing_stream.hash == response['contentSha1']
+                    if content_sha1 == HEX_DIGITS_AT_END:
+                        content_sha1 = input_stream.hash
+                    assert content_sha1 == response['contentSha1']
                     return response
 
             except B2Error as e:
@@ -188,14 +195,20 @@ class UploadManager(object):
             for _ in six.moves.xrange(self.MAX_UPLOAD_ATTEMPTS):
                 try:
                     with upload_source.open() as file:
-                        input_stream = ReadingStreamWithProgress(file, progress_listener)
-                        hashing_stream = StreamWithHash(input_stream, stream_length=content_length)
-                        # it is important that `len()` works on `hashing_stream`
+                        input_stream = ReadingStreamWithProgress(file, progress_listener, length=content_length)
+                        if upload_source.is_sha1_known():
+                            content_sha1 = upload_source.get_content_sha1()
+                        else:
+                            input_stream = StreamWithHash(input_stream, stream_length=content_length)
+                            content_sha1 = HEX_DIGITS_AT_END
+                        # it is important that `len()` works on `input_stream`
                         response = self.services.session.upload_file(
-                            bucket_id, file_name, hashing_stream.length, content_type,
-                            HEX_DIGITS_AT_END, file_info, hashing_stream
+                            bucket_id, file_name, len(input_stream), content_type,
+                            content_sha1, file_info, input_stream
                         )
-                        assert hashing_stream.hash == response['contentSha1']
+                        if content_sha1 == HEX_DIGITS_AT_END:
+                            content_sha1 = input_stream.hash
+                        assert content_sha1 == response['contentSha1']
                         return FileVersionInfoFactory.from_api_response(response)
 
                 except B2Error as e:
