@@ -38,7 +38,11 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
         """
         Initialize SqliteAccountInfo.
 
-        Locations are used in the following order:
+        The exact algorithm used to determine the location of the database file is not API in any sense.
+        If the location of the database file is required (for cleanup, etc), do not assume a specific resolution:
+        instead, use ``self.filename`` to get the actual resolved location.
+
+        SqliteAccountInfo currently checks locations in the following order:
         * ``file_name``, if truthy
         * ``B2_ACCOUNT_INFO_ENV_VAR``'s value, if set
         * ``~/.b2_account_info``, if it exists
