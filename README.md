@@ -37,7 +37,11 @@ b2sdk>=0.0.0,<1.0.0
 
 # Release History
 
-## 1.1.0 (not released yet)
+## Not released yet
+
+* nothing yet for the next release
+
+## 1.1.0
 
 * Make sync treat hidden files as deleted
 * Remove arrow warnings caused by https://github.com/crsmithdev/arrow/issues/612
