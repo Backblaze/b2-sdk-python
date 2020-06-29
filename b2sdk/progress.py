@@ -55,6 +55,9 @@ class AbstractProgressListener(object):
         so far.  This is not a delta, it is the total number of bytes
         transferred so far.
 
+        Transfer can fail and restart from beginning so byte count can
+        decrease between calls.
+
         :param int byte_count: number of bytes have been transferred
         """
 

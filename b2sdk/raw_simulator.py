@@ -638,12 +638,13 @@ class BucketSimulator(object):
             contentSha1=sha1_sum
         )  # yapf: disable
 
-    def _simulate_chunked_post(self, stream, content_length, min_chunks=4, max_chunk_size=8096, simulate_retry=True):
+    def _simulate_chunked_post(
+        self, stream, content_length, min_chunks=4, max_chunk_size=8096, simulate_retry=True
+    ):
         chunk_size = max_chunk_size
         chunks_num = self._chunks_number(content_length, chunk_size)
         if chunks_num < min_chunks:
-            chunk_size = content_length // min_chunks
-        chunks_num = self._chunks_number(content_length, chunk_size)
+            chunk_size = max(content_length // min_chunks, 1)
         loop_count = 2 if simulate_retry else 1
         stream_data = None
         for i in range(loop_count):
@@ -663,7 +664,7 @@ class BucketSimulator(object):
     def _chunks_number(self, content_length, chunk_size):
         chunks_number = content_length // chunk_size
         if content_length % chunk_size > 0:
-            chunks_number + 1
+            chunks_number = chunks_number + 1
         return chunks_number
 
     def _next_file_id(self):

@@ -158,18 +158,17 @@ class UploadManager(object):
             try:
                 with part_upload_source.open() as part_stream:
                     content_length = part_upload_source.get_content_length()
-                    input_stream = ReadingStreamWithProgress(part_stream, part_progress_listener, length=content_length)
+                    input_stream = ReadingStreamWithProgress(
+                        part_stream, part_progress_listener, length=content_length
+                    )
                     if part_upload_source.is_sha1_known():
                         content_sha1 = part_upload_source.get_content_sha1()
                     else:
-                        input_stream = StreamWithHash(
-                            input_stream, stream_length=content_length
-                        )
+                        input_stream = StreamWithHash(input_stream, stream_length=content_length)
                         content_sha1 = HEX_DIGITS_AT_END
                     # it is important that `len()` works on `input_stream`
                     response = self.services.session.upload_part(
-                        file_id, part_number, len(input_stream), content_sha1,
-                        input_stream
+                        file_id, part_number, len(input_stream), content_sha1, input_stream
                     )
                     if content_sha1 == HEX_DIGITS_AT_END:
                         content_sha1 = input_stream.hash
@@ -195,16 +194,20 @@ class UploadManager(object):
             for _ in six.moves.xrange(self.MAX_UPLOAD_ATTEMPTS):
                 try:
                     with upload_source.open() as file:
-                        input_stream = ReadingStreamWithProgress(file, progress_listener, length=content_length)
+                        input_stream = ReadingStreamWithProgress(
+                            file, progress_listener, length=content_length
+                        )
                         if upload_source.is_sha1_known():
                             content_sha1 = upload_source.get_content_sha1()
                         else:
-                            input_stream = StreamWithHash(input_stream, stream_length=content_length)
+                            input_stream = StreamWithHash(
+                                input_stream, stream_length=content_length
+                            )
                             content_sha1 = HEX_DIGITS_AT_END
                         # it is important that `len()` works on `input_stream`
                         response = self.services.session.upload_file(
-                            bucket_id, file_name, len(input_stream), content_type,
-                            content_sha1, file_info, input_stream
+                            bucket_id, file_name, len(input_stream), content_type, content_sha1,
+                            file_info, input_stream
                         )
                         if content_sha1 == HEX_DIGITS_AT_END:
                             content_sha1 = input_stream.hash
