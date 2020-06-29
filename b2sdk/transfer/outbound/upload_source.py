@@ -106,7 +106,7 @@ class UploadSourceLocalFile(AbstractUploadSource):
         return self.content_sha1
 
     def open(self):
-        return open(self.local_path, 'rb')
+        return io.open(self.local_path, 'rb')
 
     def _hex_sha1_of_file(self, local_path):
         with self.open() as f:

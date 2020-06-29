@@ -565,6 +565,14 @@ class TestUpload(TestCaseWithBucket):
         self._check_file_contents('file1', data)
         self.assertEqual("600: 200 400 600 closed", progress_listener.get_history())
 
+    def test_upload_local_large_file(self):
+        with TempDir() as d:
+            path = os.path.join(d, 'file1')
+            data = self._make_data(self.simulator.MIN_PART_SIZE * 3)
+            write_file(path, data)
+            self.bucket.upload_local_file(path, 'file1')
+            self._check_file_contents('file1', data)
+
     def test_upload_large_resume(self):
         part_size = self.simulator.MIN_PART_SIZE
         data = self._make_data(part_size * 3)
