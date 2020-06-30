@@ -82,14 +82,30 @@ class StubProgressListener(AbstractProgressListener):
         self.last_byte_count = byte_count
         self.history.append(str(byte_count))
 
-    def is_valid(self, check_closed=True, check_progress=True):
+    def is_valid(self, **kwargs):
+        valid, _ = self.is_valid_reason(**kwargs)
+        return valid
+
+    def is_valid_reason(self, check_closed=True, check_progress=True, check_monotonic_progress=False):
+        progress_end = -1
+        if self.history[progress_end] == 'closed':
+            progress_end = -2
+
+        # self.total != self.last_byte_count may be a consequence of non-monotonic
+        # progress, so we want to check this first
+        if check_monotonic_progress:
+            prev = 0
+            for val in map(int, self.history[1:progress_end]):
+                if val < prev:
+                    return False, 'non-monotonic progress'
+                prev = val
         if self.total != self.last_byte_count:
-            return False
+            return False, 'total different than last_byte_count'
         if check_closed and self.history[-1] != 'closed':
-            return False
-        if check_progress and len(self.history[1:-1]) < 2:
-            return False
-        return True
+            return False, 'no "closed" at the end of history'
+        if check_progress and len(self.history[1:progress_end]) < 2:
+            return False, 'progress in history has less than 2 entries'
+        return True, ''
 
     def close(self):
         self.history.append('closed')
@@ -714,12 +730,11 @@ class TestUpload(TestCaseWithBucket):
 
 # Downloads
 
-
-class DownloadTests(object):
-    DATA = 'abcdefghijklmnopqrs'
+class DownloadTestsBase(object):
+    DATA = ''
 
     def setUp(self):
-        super(DownloadTests, self).setUp()
+        super(DownloadTestsBase, self).setUp()
         self.file_info = self.bucket.upload_bytes(six.b(self.DATA), 'file1')
         self.download_dest = DownloadDestBytes()
         self.progress_listener = StubProgressListener()
@@ -727,7 +742,16 @@ class DownloadTests(object):
     def _verify(self, expected_result, check_progress_listener=True):
         assert self.download_dest.get_bytes_written() == six.b(expected_result)
         if check_progress_listener:
-            assert self.progress_listener.is_valid(check_closed=False, check_progress=False)
+            valid, reason = self.progress_listener.is_valid_reason(
+                check_closed=False,
+                check_progress=False,
+                check_monotonic_progress=True,
+            )
+            assert valid, reason
+
+
+class DownloadTests(DownloadTestsBase):
+    DATA = 'abcdefghijklmnopqrs'
 
     def test_download_by_id_no_progress(self):
         self.bucket.download_file_by_id(self.file_info.id_, self.download_dest)
@@ -869,9 +893,31 @@ class TestDownloadParallel(DownloadTests, TestCaseWithBucket):
                 force_chunk_size=2,
                 max_streams=999,
                 min_part_size=2,
-            )
+            ),
         ]
 
+
+class TestDownloadParallelALotOfStreams(DownloadTestsBase, TestCaseWithBucket):
+    DATA = ''.join(['01234567890abcdef'] * 32)
+
+    def setUp(self):
+        super(TestDownloadParallelALotOfStreams, self).setUp()
+        self.bucket.api.services.download_manager.strategies = [
+            # this should produce 32 streams with 16 single byte writes
+            # so we increase probability of non-sequential writes as much as possible
+            # with great help from random sleeps in FakeResponse
+            ParallelDownloader(
+                force_chunk_size=1,
+                max_streams=32,
+                min_part_size=16,
+            ),
+        ]
+
+    def test_download_by_id_progress_monotonic(self):
+        self.bucket.download_file_by_id(
+            self.file_info.id_, self.download_dest, self.progress_listener
+        )
+        self._verify(self.DATA)
 
 # Truncated downloads
 

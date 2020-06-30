@@ -307,7 +307,9 @@ class FakeResponse(object):
 
     def iter_content(self, chunk_size=1):
         start = 0
+        rnd = random.Random(self.url)
         while start <= len(self.data_bytes):
+            time.sleep(rnd.random() * 0.01)
             yield self.data_bytes[start:start + chunk_size]
             start += chunk_size
 
