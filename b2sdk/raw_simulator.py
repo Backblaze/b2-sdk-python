@@ -647,7 +647,7 @@ class BucketSimulator(object):
             chunk_size = max(content_length // min_chunks, 1)
         loop_count = 2 if simulate_retry else 1
         stream_data = None
-        for i in range(loop_count):
+        for _ in range(loop_count):
             chunks = []
             stream.seek(0)  # we always do this in `do_post` in `b2http` so we want it here *always*
             while True:
