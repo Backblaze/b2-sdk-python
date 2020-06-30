@@ -731,7 +731,7 @@ class TestUpload(TestCaseWithBucket):
 # Downloads
 
 class DownloadTestsBase(object):
-    DATA = ''
+    DATA = NotImplemented
 
     def setUp(self):
         super(DownloadTestsBase, self).setUp()
