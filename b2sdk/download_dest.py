@@ -91,7 +91,7 @@ class DownloadDestLocalFile(AbstractDownloadDestination):
         completed = False
         try:
             # Open the file and let the caller write it.
-            with open(self.local_file_path, self.MODE) as f:
+            with io.open(self.local_file_path, self.MODE) as f:
                 yield f
 
             # After it's closed, set the mod time.

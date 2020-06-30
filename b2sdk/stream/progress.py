@@ -32,6 +32,11 @@ class AbstractStreamWithProgress(StreamWrapper):
         self.bytes_completed = 0
         self.offset = offset
 
+    def seek(self, pos, whence=0):
+        pos = super(AbstractStreamWithProgress, self).seek(pos, whence=whence)
+        self.bytes_completed = pos
+        return pos
+
     def _progress_update(self, delta):
         self.bytes_completed += delta
         self.progress_listener.bytes_completed(self.bytes_completed + self.offset)

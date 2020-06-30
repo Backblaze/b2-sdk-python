@@ -600,7 +600,7 @@ class BucketSimulator(object):
         self, upload_id, upload_auth_token, file_name, content_length, content_type, content_sha1,
         file_infos, data_stream
     ):
-        data_bytes = data_stream.read()
+        data_bytes = self._simulate_chunked_post(data_stream, content_length)
         assert len(data_bytes) == content_length
         if content_sha1 == HEX_DIGITS_AT_END:
             content_sha1 = data_bytes[-40:].decode()
@@ -620,7 +620,7 @@ class BucketSimulator(object):
 
     def upload_part(self, file_id, part_number, content_length, sha1_sum, input_stream):
         file_sim = self.file_id_to_file[file_id]
-        part_data = input_stream.read()
+        part_data = self._simulate_chunked_post(input_stream, content_length)
         assert len(part_data) == content_length
         if sha1_sum == HEX_DIGITS_AT_END:
             sha1_sum = part_data[-40:].decode()
@@ -637,6 +637,35 @@ class BucketSimulator(object):
             contentLength=content_length,
             contentSha1=sha1_sum
         )  # yapf: disable
+
+    def _simulate_chunked_post(
+        self, stream, content_length, min_chunks=4, max_chunk_size=8096, simulate_retry=True
+    ):
+        chunk_size = max_chunk_size
+        chunks_num = self._chunks_number(content_length, chunk_size)
+        if chunks_num < min_chunks:
+            chunk_size = max(content_length // min_chunks, 1)
+        loop_count = 2 if simulate_retry else 1
+        stream_data = None
+        for _ in range(loop_count):
+            chunks = []
+            stream.seek(0)  # we always do this in `do_post` in `b2http` so we want it here *always*
+            while True:
+                data = stream.read(chunk_size)
+                chunks.append(data)
+                if not data:
+                    break
+            _stream_data = b''.join(chunks)
+            if stream_data is not None:
+                assert _stream_data == stream_data
+            stream_data = _stream_data
+        return stream_data
+
+    def _chunks_number(self, content_length, chunk_size):
+        chunks_number = content_length // chunk_size
+        if content_length % chunk_size > 0:
+            chunks_number = chunks_number + 1
+        return chunks_number
 
     def _next_file_id(self):
         return str(six.next(self.file_id_counter))

@@ -79,12 +79,17 @@ class StubProgressListener(AbstractProgressListener):
         self.history.append('%d:' % (total_byte_count,))
 
     def bytes_completed(self, byte_count):
-        assert byte_count >= self.last_byte_count
         self.last_byte_count = byte_count
         self.history.append(str(byte_count))
 
-    def is_valid(self):
-        return self.total == self.last_byte_count
+    def is_valid(self, check_closed=True, check_progress=True):
+        if self.total != self.last_byte_count:
+            return False
+        if check_closed and self.history[-1] != 'closed':
+            return False
+        if check_progress and len(self.history[1:-1]) < 2:
+            return False
+        return True
 
     def close(self):
         self.history.append('closed')
@@ -496,7 +501,7 @@ class TestUpload(TestCaseWithBucket):
         data = six.b('hello world')
         progress_listener = StubProgressListener()
         self.bucket.upload_bytes(data, 'file1', progress_listener=progress_listener)
-        self.assertEqual("11: 11 closed", progress_listener.get_history())
+        self.assertTrue(progress_listener.is_valid())
 
     def test_upload_local_file(self):
         with TempDir() as d:
@@ -563,7 +568,15 @@ class TestUpload(TestCaseWithBucket):
         progress_listener = StubProgressListener()
         self.bucket.upload_bytes(data, 'file1', progress_listener=progress_listener)
         self._check_file_contents('file1', data)
-        self.assertEqual("600: 200 400 600 closed", progress_listener.get_history())
+        self.assertTrue(progress_listener.is_valid())
+
+    def test_upload_local_large_file(self):
+        with TempDir() as d:
+            path = os.path.join(d, 'file1')
+            data = self._make_data(self.simulator.MIN_PART_SIZE * 3)
+            write_file(path, data)
+            self.bucket.upload_local_file(path, 'file1')
+            self._check_file_contents('file1', data)
 
     def test_upload_large_resume(self):
         part_size = self.simulator.MIN_PART_SIZE
@@ -574,7 +587,7 @@ class TestUpload(TestCaseWithBucket):
         file_info = self.bucket.upload_bytes(data, 'file1', progress_listener=progress_listener)
         self.assertEqual(large_file_id, file_info.id_)
         self._check_file_contents('file1', data)
-        self.assertEqual("600: 200 400 600 closed", progress_listener.get_history())
+        self.assertTrue(progress_listener.is_valid())
 
     def test_upload_large_resume_no_parts(self):
         part_size = self.simulator.MIN_PART_SIZE
@@ -584,7 +597,7 @@ class TestUpload(TestCaseWithBucket):
         file_info = self.bucket.upload_bytes(data, 'file1', progress_listener=progress_listener)
         self.assertNotEqual(large_file_id, file_info.id_)  # it's not a match if there are no parts
         self._check_file_contents('file1', data)
-        self.assertEqual("600: 200 400 600 closed", progress_listener.get_history())
+        self.assertTrue(progress_listener.is_valid())
 
     def test_upload_large_resume_all_parts_there(self):
         part_size = self.simulator.MIN_PART_SIZE
@@ -597,7 +610,7 @@ class TestUpload(TestCaseWithBucket):
         file_info = self.bucket.upload_bytes(data, 'file1', progress_listener=progress_listener)
         self.assertEqual(large_file_id, file_info.id_)
         self._check_file_contents('file1', data)
-        self.assertEqual("600: 200 400 600 closed", progress_listener.get_history())
+        self.assertTrue(progress_listener.is_valid())
 
     def test_upload_large_resume_part_does_not_match(self):
         part_size = self.simulator.MIN_PART_SIZE
@@ -608,7 +621,7 @@ class TestUpload(TestCaseWithBucket):
         file_info = self.bucket.upload_bytes(data, 'file1', progress_listener=progress_listener)
         self.assertNotEqual(large_file_id, file_info.id_)
         self._check_file_contents('file1', data)
-        self.assertEqual("600: 200 400 600 closed", progress_listener.get_history())
+        self.assertTrue(progress_listener.is_valid())
 
     def test_upload_large_resume_wrong_part_size(self):
         part_size = self.simulator.MIN_PART_SIZE
@@ -619,7 +632,7 @@ class TestUpload(TestCaseWithBucket):
         file_info = self.bucket.upload_bytes(data, 'file1', progress_listener=progress_listener)
         self.assertNotEqual(large_file_id, file_info.id_)
         self._check_file_contents('file1', data)
-        self.assertEqual("600: 200 400 600 closed", progress_listener.get_history())
+        self.assertTrue(progress_listener.is_valid())
 
     def test_upload_large_resume_file_info(self):
         part_size = self.simulator.MIN_PART_SIZE
@@ -632,7 +645,7 @@ class TestUpload(TestCaseWithBucket):
         )
         self.assertEqual(large_file_id, file_info.id_)
         self._check_file_contents('file1', data)
-        self.assertEqual("600: 200 400 600 closed", progress_listener.get_history())
+        self.assertTrue(progress_listener.is_valid())
 
     def test_upload_large_resume_file_info_does_not_match(self):
         part_size = self.simulator.MIN_PART_SIZE
@@ -645,7 +658,7 @@ class TestUpload(TestCaseWithBucket):
         )
         self.assertNotEqual(large_file_id, file_info.id_)
         self._check_file_contents('file1', data)
-        self.assertEqual("600: 200 400 600 closed", progress_listener.get_history())
+        self.assertTrue(progress_listener.is_valid())
 
     def test_upload_large_file_with_restricted_api_key(self):
         self.simulator.key_id_to_key[self.account_id].name_prefix_or_none = 'path/to'
@@ -657,7 +670,7 @@ class TestUpload(TestCaseWithBucket):
         )
         self.assertEqual(len(data), file_info.size)
         self._check_file_contents('path/to/file1', data)
-        self.assertEqual("600: 200 400 600 closed", progress_listener.get_history())
+        self.assertTrue(progress_listener.is_valid())
 
     def _start_large_file(self, file_name, file_info=None):
         if file_info is None:
@@ -714,7 +727,7 @@ class DownloadTests(object):
     def _verify(self, expected_result, check_progress_listener=True):
         assert self.download_dest.get_bytes_written() == six.b(expected_result)
         if check_progress_listener:
-            assert self.progress_listener.is_valid()
+            assert self.progress_listener.is_valid(check_closed=False, check_progress=False)
 
     def test_download_by_id_no_progress(self):
         self.bucket.download_file_by_id(self.file_info.id_, self.download_dest)
