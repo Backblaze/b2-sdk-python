@@ -59,7 +59,7 @@ class ReadingStreamWithProgress(AbstractStreamWithProgress):
         return data
 
     def seek(self, pos, whence=0):
-        pos = super(AbstractStreamWithProgress, self).seek(pos, whence=whence)
+        pos = super(ReadingStreamWithProgress, self).seek(pos, whence=whence)
         self.bytes_completed = pos
         return pos
 
