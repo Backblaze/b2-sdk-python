@@ -60,6 +60,12 @@ class ReadingStreamWithProgress(AbstractStreamWithProgress):
 
     def seek(self, pos, whence=0):
         pos = super(ReadingStreamWithProgress, self).seek(pos, whence=whence)
+        # reset progress to current stream position - assumption is that ReadingStreamWithProgress would not be used
+        # for random access streams, and seek is only used to reset stream to beginning to retry file upload
+        # and multipart file upload would open and use different file descriptor for each part;
+        # this logic cannot be used for WritingStreamWithProgress because multipart download has to use
+        # single file descriptor and synchronize writes so seeking cannot be understood there as progress reset
+        # and writing  progress is always monotonic
         self.bytes_completed = pos
         return pos
 
