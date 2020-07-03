@@ -32,11 +32,6 @@ class AbstractStreamWithProgress(StreamWrapper):
         self.bytes_completed = 0
         self.offset = offset
 
-    def seek(self, pos, whence=0):
-        pos = super(AbstractStreamWithProgress, self).seek(pos, whence=whence)
-        self.bytes_completed = pos
-        return pos
-
     def _progress_update(self, delta):
         self.bytes_completed += delta
         self.progress_listener.bytes_completed(self.bytes_completed + self.offset)
@@ -62,6 +57,17 @@ class ReadingStreamWithProgress(AbstractStreamWithProgress):
         data = super(ReadingStreamWithProgress, self).read(size)
         self._progress_update(len(data))
         return data
+
+    def seek(self, pos, whence=0):
+        pos = super(ReadingStreamWithProgress, self).seek(pos, whence=whence)
+        # reset progress to current stream position - assumption is that ReadingStreamWithProgress would not be used
+        # for random access streams, and seek is only used to reset stream to beginning to retry file upload
+        # and multipart file upload would open and use different file descriptor for each part;
+        # this logic cannot be used for WritingStreamWithProgress because multipart download has to use
+        # single file descriptor and synchronize writes so seeking cannot be understood there as progress reset
+        # and writing  progress is always monotonic
+        self.bytes_completed = pos
+        return pos
 
     def __len__(self):
         return self.length
