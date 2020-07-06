@@ -41,7 +41,11 @@ b2sdk>=0.0.0,<1.0.0
 
 * nothing yet for the next release
 
-## 1.1.0
+## 1.1.2 (2020-06-30)
+
+* Fix upload part for file range on Python 2.7
+
+## 1.1.0 (2020-06-24)
 
 * Make sync treat hidden files as deleted
 * Remove arrow warnings caused by https://github.com/crsmithdev/arrow/issues/612
