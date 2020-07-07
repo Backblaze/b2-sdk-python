@@ -41,7 +41,7 @@ b2sdk>=0.0.0,<1.0.0
 
 * nothing yet for the next release
 
-## 1.1.2 (2020-06-30)
+## 1.1.2 (2020-07-06)
 
 * Fix upload part for file range on Python 2.7
 
