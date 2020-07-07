@@ -100,9 +100,9 @@ class B2Session(object):
         """
         # Clean up any previous account info if it was for a different account.
         try:
-            old_account_id = self.account_info.get_account_id()
+            old_application_key_id = self.account_info.get_application_key_id()
             old_realm = self.account_info.get_realm()
-            if application_key_id != old_account_id or realm != old_realm:
+            if application_key_id != old_application_key_id or realm != old_realm:
                 self.cache.clear()
         except MissingAccountData:
             self.cache.clear()
