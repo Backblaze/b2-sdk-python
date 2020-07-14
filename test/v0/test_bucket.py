@@ -84,7 +84,9 @@ class StubProgressListener(AbstractProgressListener):
         valid, _ = self.is_valid_reason(**kwargs)
         return valid
 
-    def is_valid_reason(self, check_closed=True, check_progress=True, check_monotonic_progress=False):
+    def is_valid_reason(
+        self, check_closed=True, check_progress=True, check_monotonic_progress=False
+    ):
         progress_end = -1
         if self.history[progress_end] == 'closed':
             progress_end = -2
