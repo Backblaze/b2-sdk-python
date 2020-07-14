@@ -86,7 +86,9 @@ class StubProgressListener(AbstractProgressListener):
         valid, _ = self.is_valid_reason(**kwargs)
         return valid
 
-    def is_valid_reason(self, check_closed=True, check_progress=True, check_monotonic_progress=False):
+    def is_valid_reason(
+        self, check_closed=True, check_progress=True, check_monotonic_progress=False
+    ):
         progress_end = -1
         if self.history[progress_end] == 'closed':
             progress_end = -2
@@ -730,6 +732,7 @@ class TestUpload(TestCaseWithBucket):
 
 # Downloads
 
+
 class DownloadTestsBase(object):
     DATA = NotImplemented
 
@@ -918,6 +921,7 @@ class TestDownloadParallelALotOfStreams(DownloadTestsBase, TestCaseWithBucket):
             self.file_info.id_, self.download_dest, self.progress_listener
         )
         self._verify(self.DATA)
+
 
 # Truncated downloads
 

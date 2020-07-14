@@ -39,7 +39,7 @@ b2sdk>=0.0.0,<1.0.0
 
 ## Not released yet
 
-* nothing yet for the next release
+* Allow specifying custom realm in B2Session.authorize_account
 
 ## 1.1.2 (2020-07-06)
 

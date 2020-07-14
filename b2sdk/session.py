@@ -108,7 +108,7 @@ class B2Session(object):
             self.cache.clear()
 
         # Authorize
-        realm_url = self.account_info.REALM_URLS[realm]
+        realm_url = self.account_info.REALM_URLS.get(realm, realm)
         response = self.raw_api.authorize_account(realm_url, application_key_id, application_key)
         allowed = response['allowed']
 
