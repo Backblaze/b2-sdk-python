@@ -4,8 +4,8 @@
   - `pip install --upgrade --upgrade-strategy eager -r requirements.txt -r requirements-test.txt -r requirements-setup.txt -r requirements-doc.txt`
 - Bump the version number to an even number in `b2sdk/version.py`.
 - Update the release history in README.md by changing "not released yet" to the current date for this release.
-- Run full tests (currently: `pre-commit.sh`)
-  - You will need B2 account credentials in ~/.b2_auth to run all tests.
+- Run full tests (currently: `nox`)
+  - You will need B2 account credentials in `~/.b2_auth` to run all tests.
 - Build docs locally (currently: `python setup.py develop; (cd doc; ./regenerate.sh) && echo ok`)
 - Commit and push to GitHub, then wait for build to complete successfully.
   - No need to make a branch. Push straight to `master`.
@@ -14,8 +14,7 @@
     - `git push origin vx.x.x`
 - Upload to PyPI.
   - `cd ~/sandbox/b2-sdk-python`    # or wherever your git repository is
-  - `rm -rf dist ; python setup.py sdist`
-  - `twine upload dist/*`
+  - `nox -xs build deploy`
 - Install using pip and verify that it gets the correct version.
 - Update for dev
   - Bump the version number to an odd number (for example: 1.0.2 -> 1.0.3)

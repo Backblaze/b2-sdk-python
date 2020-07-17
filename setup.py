@@ -8,6 +8,7 @@
 #
 ######################################################################
 """A setuptools based setup module.
+
 See:
 https://packaging.python.org/en/latest/distributing.html
 https://github.com/pypa/sampleproject
@@ -15,11 +16,13 @@ https://github.com/pypa/sampleproject
 
 import sys
 
-# Always prefer setuptools over distutils
-from setuptools import setup, find_packages, __version__ as setuptoolsversion
 # To use a consistent encoding
 from codecs import open
 from os import path
+
+# Always prefer setuptools over distutils
+from setuptools import __version__ as setuptoolsversion
+from setuptools import find_packages, setup
 
 #require at least setuptools 20.2 for PEP 508 conditional dependency support
 MIN_SETUPTOOLS_VERSION = (20, 2)
@@ -99,7 +102,7 @@ setup(
 
     # You can just specify the packages manually here if your project is
     # simple. Or you can use find_packages().
-    packages=find_packages(exclude=['contrib', 'docs', 'test']),
+    packages=find_packages(exclude=['contrib', 'doc', 'test']),
 
     # Alternatively, if you want to distribute just a my_module.py, uncomment
     # this:

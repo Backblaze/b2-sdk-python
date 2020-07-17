@@ -1,7 +1,9 @@
 *.pyc
+.coverage
 .idea
 b2sdk.egg-info
 build
 dist
 .eggs/
+.nox/
 venv
