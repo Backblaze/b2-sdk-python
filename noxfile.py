@@ -79,6 +79,7 @@ def liccheck(session):
     session.install('-e', '.', 'liccheck==0.4.7')
     session.run('liccheck', '-s', 'setup.cfg')
 
+
 #
 # TESTING
 #
@@ -117,6 +118,6 @@ def build(session):
 
 @nox.session(python=PYTHON_VERSIONS[-1])
 def deploy(session):
-    """Deploy the distribution to the PYPI."""
+    """Deploy the distribution to the PyPi."""
     session.install('twine')
     session.run('twine', 'upload', 'dist/*')

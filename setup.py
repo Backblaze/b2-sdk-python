@@ -118,13 +118,10 @@ setup(
 
     # If there are data files included in your packages that need to be
     # installed, specify them here.
-    package_data={
-        'b2sdk':
-            [
-                'requirements.txt',
-                'requirements-doc.txt',
-            ]
-    },
+    package_data={'b2sdk': [
+        'requirements.txt',
+        'requirements-doc.txt',
+    ]},
 
     # Although 'package_data' is the preferred approach, in some case you may
     # need to place data files outside of your packages. See:
