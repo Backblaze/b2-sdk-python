@@ -39,6 +39,8 @@ b2sdk>=0.0.0,<1.0.0
 
 ## Not released yet
 
+* Drop Python 2 and Python 3.4 support :tada:
+
 ## 1.1.4 (2020-07-15)
 
 * Allow specifying custom realm in B2Session.authorize_account
