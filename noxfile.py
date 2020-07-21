@@ -20,7 +20,7 @@ nox.options.sessions = [
 
 # use Python interpreter provided by GitHub Actions
 if CI:
-    nox.options.force_venv_backend = None
+    nox.options.force_venv_backend = 'none'
 
 #
 # DEVELOPMENT
