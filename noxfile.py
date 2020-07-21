@@ -5,6 +5,7 @@ import nox
 
 nox.options.reuse_existing_virtualenvs = True
 nox.options.sessions = [
+    'liccheck',
     'lint',
     'test',
 ]
@@ -71,6 +72,12 @@ def lint(session):
         session.error('pyflakes has failed')
     # session.run('flake8', *PY_PATHS)
 
+
+@nox.session(python=PYTHON_VERSIONS[-1])
+def liccheck(session):
+    """Run license check."""
+    session.install('-e', '.', 'liccheck==0.4.7')
+    session.run('liccheck', '-s', 'setup.cfg')
 
 #
 # TESTING

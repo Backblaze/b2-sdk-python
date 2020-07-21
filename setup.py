@@ -41,12 +41,6 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 with open('requirements.txt', encoding='utf-8') as f:
     requirements = f.read().splitlines()
 
-with open('requirements-test.txt', encoding='utf-8') as f:
-    requirements_test = f.read().splitlines()
-
-with open('requirements-setup.txt', encoding='utf-8') as f:
-    requirements_setup = f.read().splitlines()
-
 with open('requirements-doc.txt', encoding='utf-8') as f:
     requirements_doc = f.read().splitlines()
 
@@ -114,13 +108,6 @@ setup(
     # https://packaging.python.org/en/latest/requirements.html
     install_requires=requirements,
 
-    # requirements for tests
-    tests_require=requirements_test,
-
-    # putting nose in test_requires caused a chicken/egg problem
-    # but apparently setup_requires is broken on most python versions
-    # setup_requires=requirements_setup,
-
     # List additional groups of dependencies here (e.g. development
     # dependencies). You can install these using the following syntax,
     # for example:
@@ -135,8 +122,6 @@ setup(
         'b2sdk':
             [
                 'requirements.txt',
-                'requirements-test.txt',
-                'requirements-setup.txt',
                 'requirements-doc.txt',
             ]
     },
