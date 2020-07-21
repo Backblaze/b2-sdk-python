@@ -3,22 +3,24 @@ import subprocess
 
 import nox
 
+CI = os.environ.get('CI') is not None
+PYTHON_VERSIONS = ['3.5', '3.6', '3.7', '3.8']
+PY_PATHS = ['b2sdk', 'test', 'noxfile.py', 'setup.py']
+
+# TODO: remove nose and pyflakes
+REQUIREMENTS_FORMAT = ['docformatter==1.3.1', 'isort==5.1.1', 'yapf==0.27']
+REQUIREMENTS_LINT = [*REQUIREMENTS_FORMAT, 'pyflakes', 'flake8==3.8.3', 'liccheck==0.4.7']
+REQUIREMENTS_TEST = ['nose==1.3.7', 'pytest==5.4.3', 'pytest-cov==2.10.0']
+
 nox.options.reuse_existing_virtualenvs = True
 nox.options.sessions = [
-    'liccheck',
     'lint',
     'test',
 ]
 
-PY_PATHS = ['b2sdk', 'test', 'noxfile.py', 'setup.py']
-CI = os.environ.get('CI') is not None
-PYTHON_VERSIONS = ['3.5', '3.6', '3.7', '3.8']
-# TODO: remove nose and pyflakes
-REQUIREMENTS = {
-    'format': ['docformatter==1.3.1', 'isort==5.1.1', 'yapf==0.27'],
-    'lint': ['pyflakes', 'flake8==3.8.3'],
-    'test': ['nose==1.3.7', 'pytest==5.4.3', 'pytest-cov==2.10.0'],
-}
+# use Python interpreter provided by GitHub Actions
+if CI:
+    nox.options.force_venv_backend = None
 
 #
 # DEVELOPMENT
@@ -29,7 +31,7 @@ REQUIREMENTS = {
 @nox.session(python=PYTHON_VERSIONS[-1])
 def format(session):
     """Run code formatters."""
-    session.install(*REQUIREMENTS['format'])
+    session.install(*REQUIREMENTS_FORMAT)
     # TODO: incremental mode for yapf
     session.run('yapf', '--in-place', '--parallel', '--recursive', *PY_PATHS)
     # TODO: uncomment if we want to use isort and docformatter
@@ -47,8 +49,7 @@ def format(session):
 @nox.session(python=PYTHON_VERSIONS[-1])
 def lint(session):
     """Run linters."""
-    session.install(*REQUIREMENTS['format'], *REQUIREMENTS['lint'])
-    session.run('python', 'setup.py', 'check', '--metadata', '--strict', silent=True)
+    session.install('-e', '.', *REQUIREMENTS_LINT)
     session.run('yapf', '--diff', '--parallel', '--recursive', *PY_PATHS)
     # TODO: uncomment if we want to use isort and docformatter
     # session.run('isort', '--check', *PY_PATHS)
@@ -71,13 +72,8 @@ def lint(session):
         print('\n'.join(output))
         session.error('pyflakes has failed')
     # session.run('flake8', *PY_PATHS)
-
-
-@nox.session(python=PYTHON_VERSIONS[-1])
-def liccheck(session):
-    """Run license check."""
-    session.install('-e', '.', 'liccheck==0.4.7')
-    session.run('liccheck', '-s', 'setup.cfg')
+    session.run('liccheck', '-s', 'setup.cfg', silent=True)
+    session.run('python', 'setup.py', 'check', '--metadata', '--strict', silent=True)
 
 
 #
@@ -88,7 +84,7 @@ def liccheck(session):
 @nox.session(python=PYTHON_VERSIONS)
 def test(session):
     """Run unit tests."""
-    session.install('-e', '.')
+    session.install('-e', '.', *REQUIREMENTS_TEST)
     tests = session.posargs or ['test']
     session.run('pytest', '--cov=b2sdk', '--cov-report=', '--doctest-modules', *tests)
     session.notify('cover')
