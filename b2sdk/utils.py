@@ -8,7 +8,6 @@
 #
 ######################################################################
 
-from __future__ import division, print_function
 import hashlib
 import os
 import platform

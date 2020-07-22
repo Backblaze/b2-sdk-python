@@ -255,16 +255,14 @@ class FileSimulator(object):
             if self.parts[part_number] is None:
                 raise MissingPart(part_number)
         my_part_sha1_array = [
-            self.parts[part_number].content_sha1
-            for part_number in range(1, last_part_number + 1)
+            self.parts[part_number].content_sha1 for part_number in range(1, last_part_number + 1)
         ]
         if part_sha1_array != my_part_sha1_array:
             raise ChecksumMismatch(
                 'sha1', expected=str(part_sha1_array), actual=str(my_part_sha1_array)
             )
         self.data_bytes = b''.join(
-            self.parts[part_number].part_data
-            for part_number in range(1, last_part_number + 1)
+            self.parts[part_number].part_data for part_number in range(1, last_part_number + 1)
         )
         self.content_length = len(self.data_bytes)
         self.action = 'upload'
@@ -430,8 +428,8 @@ class BucketSimulator(object):
     def hide_file(self, file_name):
         file_id = self._next_file_id()
         file_sim = self.FILE_SIMULATOR_CLASS(
-            self.account_id, self.bucket_id, file_id, 'hide', file_name, None, "none", {},
-            b'', next(self.upload_timestamp_counter)
+            self.account_id, self.bucket_id, file_id, 'hide', file_name, None, "none", {}, b'',
+            next(self.upload_timestamp_counter)
         )
         self.file_id_to_file[file_id] = file_sim
         self.file_name_and_id_to_file[file_sim.sort_key()] = file_sim
@@ -1035,8 +1033,7 @@ class RawSimulator(AbstractRawApi):
 
         # Do the query
         sorted_buckets = [
-            self.bucket_name_to_bucket[name]
-            for name in sorted(self.bucket_name_to_bucket)
+            self.bucket_name_to_bucket[name] for name in sorted(self.bucket_name_to_bucket)
         ]
         bucket_list = [
             bucket.bucket_dict()

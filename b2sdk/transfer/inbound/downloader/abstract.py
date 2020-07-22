@@ -8,8 +8,6 @@
 #
 ######################################################################
 
-from __future__ import division
-
 from abc import abstractmethod
 
 from b2sdk.utils import B2TraceMetaAbstract

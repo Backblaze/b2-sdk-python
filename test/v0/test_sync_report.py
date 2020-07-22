@@ -8,8 +8,6 @@
 #
 ######################################################################
 
-from __future__ import print_function
-
 from .test_base import TestBase
 
 from .deps import SyncReport

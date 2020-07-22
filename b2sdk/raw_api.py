@@ -8,8 +8,6 @@
 #
 ######################################################################
 
-from __future__ import print_function
-
 import base64
 import io
 import os
@@ -299,7 +297,9 @@ class B2RawApi(AbstractRawApi):
         return self.b2_http.post_json_return_json(url, headers, params)
 
     def authorize_account(self, realm_url, application_key_id, application_key):
-        auth = b'Basic ' + base64.b64encode(('%s:%s' % (application_key_id, application_key)).encode())
+        auth = b'Basic ' + base64.b64encode(
+            ('%s:%s' % (application_key_id, application_key)).encode()
+        )
         return self._post_json(realm_url, 'b2_authorize_account', auth)
 
     def cancel_large_file(self, api_url, account_auth_token, file_id):

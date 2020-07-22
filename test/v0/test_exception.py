@@ -31,6 +31,7 @@ from .deps_exception import (
     UnknownError,
 )
 
+
 class TestB2Error(TestBase):
     def test_plain_ascii(self):
         self.assertEqual('message', str(B2Error('message')))

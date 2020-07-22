@@ -8,8 +8,6 @@
 #
 ######################################################################
 
-from __future__ import division
-
 import logging
 from enum import Enum, unique
 
