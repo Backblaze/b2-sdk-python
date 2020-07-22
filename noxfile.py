@@ -11,6 +11,7 @@ PY_PATHS = ['b2sdk', 'test', 'noxfile.py', 'setup.py']
 REQUIREMENTS_FORMAT = ['docformatter==1.3.1', 'isort==5.1.1', 'yapf==0.27']
 REQUIREMENTS_LINT = [*REQUIREMENTS_FORMAT, 'pyflakes', 'flake8==3.8.3', 'liccheck==0.4.7']
 REQUIREMENTS_TEST = ['nose==1.3.7', 'pytest==5.4.3', 'pytest-cov==2.10.0']
+REQUIREMENTS_DOC = ['sphinx', 'sphinx-autobuild', 'sphinx_rtd_theme', 'sphinxcontrib-plantuml', 'sadisplay']
 
 nox.options.reuse_existing_virtualenvs = True
 nox.options.sessions = [
@@ -117,3 +118,21 @@ def deploy(session):
     """Deploy the distribution to the PyPi."""
     session.install('twine')
     session.run('twine', 'upload', 'dist/*')
+
+
+@nox.session(python=PYTHON_VERSIONS[-1])
+def doc(session):
+    """Build the documentation."""
+    session.install('-e', '.', *REQUIREMENTS_DOC)
+
+    session.cd('doc')
+    sphinx_args = ['-b', 'html', '-T', '-W', 'source', 'build/html']
+
+    session.run('rm', '-rf', 'build', external=True)
+    if not session.interactive:
+        sphinx_cmd = 'sphinx-build'
+    else:
+        sphinx_cmd = 'sphinx-autobuild'
+        sphinx_args[-2:-2] = ['--open-browser', '-z', '../b2sdk', '-i', '*.pyc', '-i', '*~']
+
+    session.run(sphinx_cmd, *sphinx_args)

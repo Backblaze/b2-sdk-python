@@ -18,7 +18,7 @@ import sys
 
 # To use a consistent encoding
 from codecs import open
-from os import path
+from importlib import import_module
 
 # Always prefer setuptools over distutils
 from setuptools import __version__ as setuptoolsversion
@@ -32,19 +32,14 @@ if tuple(int(x) for x in setuptoolsversion.split('.')[:2]) < MIN_SETUPTOOLS_VERS
         % (MIN_SETUPTOOLS_VERSION * 2)
     )
 
-here = path.abspath(path.dirname(__file__))
-
 # Get the long description from the README file
-with open(path.join(here, 'README.md'), encoding='utf-8') as f:
+with open('README.md', encoding='utf-8') as f:
     long_description = f.read()
 
 with open('requirements.txt', encoding='utf-8') as f:
     requirements = f.read().splitlines()
 
-with open('requirements-doc.txt', encoding='utf-8') as f:
-    requirements_doc = f.read().splitlines()
-
-version = __import__('b2sdk').__version__
+version = import_module('b2sdk').__version__
 
 setup(
     name='b2sdk',
@@ -112,16 +107,11 @@ setup(
     # dependencies). You can install these using the following syntax,
     # for example:
     # $ pip install -e .[dev,test]
-    extras_require={
-        'doc': requirements_doc,
-    },
+    extras_require={},
 
     # If there are data files included in your packages that need to be
     # installed, specify them here.
-    package_data={'b2sdk': [
-        'requirements.txt',
-        'requirements-doc.txt',
-    ]},
+    package_data={'b2sdk': ['requirements.txt',]},
 
     # Although 'package_data' is the preferred approach, in some case you may
     # need to place data files outside of your packages. See:

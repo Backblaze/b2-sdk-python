@@ -21,6 +21,21 @@ jobs:
         run: python -m pip install --upgrade nox pip
       - name: Run linters
         run: nox -s ${{ github.job }}
+  build:
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+      - name: Display Python version
+        run: python -c "import sys; print(sys.version)"
+      - name: Install dependencies
+        run: python -m pip install --upgrade nox pip
+      - name: Build the distribution
+        run: nox -s ${{ github.job }}
   test:
     needs: lint
     runs-on: ${{ matrix.os }}
@@ -47,3 +62,20 @@ jobs:
           TEST_APPLICATION_KEY: ${{ secrets.TEST_APPLICATION_KEY }}
           TEST_APPLICATION_KEY_ID: ${{ secrets.TEST_APPLICATION_KEY_ID }}
         run: nox -s ${{ github.job }}
+  doc:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+      - name: Display Python version
+        run: python -c "import sys; print(sys.version)"
+      - name: Install dependencies
+        run: |
+          apt install graphviz
+          python -m pip install --upgrade nox pip
+      - name: Build the docs
+        run: nox --non-interactive -s ${{ github.job }}
