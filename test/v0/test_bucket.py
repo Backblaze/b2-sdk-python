@@ -9,10 +9,10 @@
 ######################################################################
 
 from io import BytesIO
-
 from nose import SkipTest
 import os
 import platform
+import unittest.mock as mock
 
 from .test_base import TestBase
 
@@ -38,11 +38,6 @@ from .deps import ParallelDownloader
 from .deps import SimpleDownloader
 from .deps import UploadSourceBytes
 from .deps import hex_sha1_of_bytes, TempDir
-
-try:
-    import unittest.mock as mock
-except ImportError:
-    import mock
 
 
 def write_file(path, data):

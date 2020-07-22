@@ -8,16 +8,16 @@
 #
 ######################################################################
 
+import concurrent.futures as futures
 import os
 import platform
 import sys
 import threading
 import time
 import unittest
-
-from nose import SkipTest
-
 from enum import Enum
+from nose import SkipTest
+from unittest.mock import MagicMock
 
 from .test_base import TestBase
 
@@ -33,16 +33,6 @@ from .deps import parse_sync_folder
 from .deps import TempDir
 from .deps import Synchronizer
 from .deps import InvalidArgument
-
-try:
-    from unittest.mock import MagicMock
-except ImportError:
-    from mock import MagicMock
-
-try:
-    import concurrent.futures as futures
-except ImportError:
-    import futures
 
 DAY = 86400000  # milliseconds
 TODAY = DAY * 100  # an arbitrary reference time for testing

@@ -8,16 +8,13 @@
 #
 ######################################################################
 
+import unittest.mock as mock
+
 from .test_base import TestBase
 
 from .deps_exception import InvalidAuthToken, Unauthorized
 from .deps import ALL_CAPABILITIES
 from .deps import B2Session
-
-try:
-    import unittest.mock as mock
-except ImportError:
-    import mock
 
 
 class TestB2Session(TestBase):

@@ -10,6 +10,7 @@
 
 from abc import ABCMeta, abstractmethod
 import json
+import unittest.mock as mock
 from nose import SkipTest
 import os
 import platform
@@ -19,11 +20,6 @@ from .test_base import TestBase
 
 from .deps import AbstractAccountInfo, InMemoryAccountInfo, UploadUrlPool, SqliteAccountInfo
 from .deps_exception import CorruptAccountInfo, MissingAccountData
-
-try:
-    import unittest.mock as mock
-except ImportError:
-    import mock
 
 
 class TestUploadUrlPool(TestBase):

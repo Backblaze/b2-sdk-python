@@ -9,6 +9,8 @@
 ######################################################################
 
 import logging
+import concurrent.futures as futures
+
 from b2sdk.exception import (
     AlreadyFailed,
     B2Error,
@@ -21,11 +23,6 @@ from b2sdk.raw_api import HEX_DIGITS_AT_END
 from b2sdk.utils import B2TraceMetaAbstract
 
 from .progress_reporter import PartProgressReporter
-
-try:
-    import concurrent.futures as futures
-except ImportError:
-    import futures
 
 logger = logging.getLogger(__name__)
 

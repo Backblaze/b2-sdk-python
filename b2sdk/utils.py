@@ -14,15 +14,11 @@ import platform
 import re
 import shutil
 import tempfile
+import concurrent.futures as futures
 from decimal import Decimal
 from urllib.parse import quote, unquote_plus
 
 from logfury.v0_1 import DefaultTraceAbstractMeta, DefaultTraceMeta, limit_trace_arguments, disable_trace, trace_call
-
-try:
-    import concurrent.futures as futures
-except ImportError:
-    import futures
 
 
 def interruptible_get_result(future):

@@ -10,6 +10,7 @@
 
 from abc import ABCMeta, abstractmethod
 import json
+import unittest.mock as mock
 from nose import SkipTest
 import os
 import platform
@@ -23,11 +24,6 @@ from .deps_exception import CorruptAccountInfo, MissingAccountData
 if not platform.system().lower().startswith('java'):
     # in Jython 2.7.1b3 there is no sqlite3
     from .deps import SqliteAccountInfo
-
-try:
-    import unittest.mock as mock
-except ImportError:
-    import mock
 
 
 class TestUploadUrlPool(TestBase):

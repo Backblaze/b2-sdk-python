@@ -8,16 +8,13 @@
 #
 ######################################################################
 
+from unittest.mock import MagicMock
+
 from .test_base import TestBase
 
 from .deps import File, FileVersion
 from .deps import B2Folder
 from .deps import make_b2_keep_days_actions
-
-try:
-    from unittest.mock import MagicMock
-except ImportError:
-    from mock import MagicMock
 
 
 class TestMakeB2KeepDaysActions(TestBase):

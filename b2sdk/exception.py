@@ -10,7 +10,6 @@
 
 from abc import ABCMeta
 
-import json
 import re
 
 from .utils import camelcase_to_underscore

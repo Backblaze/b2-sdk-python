@@ -8,14 +8,11 @@
 #
 ######################################################################
 
+from unittest.mock import MagicMock
+
 from .test_base import TestBase
 
 from .deps import SyncReport
-
-try:
-    from unittest.mock import MagicMock
-except ImportError:
-    from mock import MagicMock
 
 
 class TestSyncReport(TestBase):
