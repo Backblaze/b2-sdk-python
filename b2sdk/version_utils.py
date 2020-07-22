@@ -14,13 +14,10 @@ import inspect
 import warnings
 
 from pkg_resources import parse_version
-import six
-
 from b2sdk.version import VERSION
 
 
-@six.add_metaclass(ABCMeta)
-class AbstractVersionDecorator(object):
+class AbstractVersionDecorator(metaclass=ABCMeta):
     WHAT = NotImplemented  # 'function', 'method', 'class' etc
 
     def __init__(self, changed_version, cutoff_version=None, reason='', current_version=None):
@@ -115,12 +112,8 @@ class rename_argument(AbstractDeprecator):
             message = '%r is not an argument of the decorated function so it cannot be remapped to from a deprecated parameter name' % (
                 self.target,
             )
-            if six.PY2:
-                signature = inspect.getargspec(func)
-                assert self.target in signature.args or self.target in signature.varargs, message
-            else:
-                signature = inspect.getfullargspec(func)
-                assert self.target in signature.args or self.target in signature.kwonlyargs, message
+            signature = inspect.getfullargspec(func)
+            assert self.target in signature.args or self.target in signature.kwonlyargs, message
 
             if self.source in kwargs:
                 assert self.target not in kwargs, 'both argument names were provided: %r (deprecated) and %r (new)' % (

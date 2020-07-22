@@ -8,19 +8,14 @@
 #
 ######################################################################
 
-from __future__ import division
-
 from abc import abstractmethod
-
-import six
 
 from b2sdk.utils import B2TraceMetaAbstract
 
 from .range import Range
 
 
-@six.add_metaclass(B2TraceMetaAbstract)
-class AbstractDownloader(object):
+class AbstractDownloader(metaclass=B2TraceMetaAbstract):
     def __init__(
         self,
         force_chunk_size=None,

@@ -8,8 +8,6 @@
 #
 ######################################################################
 
-from __future__ import print_function
-
 import base64
 import io
 import os
@@ -20,8 +18,6 @@ import time
 import traceback
 from abc import ABCMeta, abstractmethod
 from enum import Enum, unique
-
-import six
 
 from .b2http import B2Http
 from .exception import UnusableFileName, InvalidMetadataDirective
@@ -59,8 +55,7 @@ class MetadataDirectiveMode(Enum):
     REPLACE = 402  #: ignore the source file metadata and set it to provided values
 
 
-@six.add_metaclass(ABCMeta)
-class AbstractRawApi(object):
+class AbstractRawApi(metaclass=ABCMeta):
     """
     Direct access to the B2 web apis.
     """
@@ -302,7 +297,9 @@ class B2RawApi(AbstractRawApi):
         return self.b2_http.post_json_return_json(url, headers, params)
 
     def authorize_account(self, realm_url, application_key_id, application_key):
-        auth = b'Basic ' + base64.b64encode(six.b('%s:%s' % (application_key_id, application_key)))
+        auth = b'Basic ' + base64.b64encode(
+            ('%s:%s' % (application_key_id, application_key)).encode()
+        )
         return self._post_json(realm_url, 'b2_authorize_account', auth)
 
     def cancel_large_file(self, api_url, account_auth_token, file_id):
@@ -651,7 +648,7 @@ class B2RawApi(AbstractRawApi):
             'Content-Type': content_type,
             'X-Bz-Content-Sha1': content_sha1
         }
-        for k, v in six.iteritems(file_infos):
+        for k, v in file_infos.items():
             headers['X-Bz-Info-' + k] = b2_url_encode(v)
 
         return self.b2_http.post_content_return_json(upload_url, headers, data_stream)
@@ -841,7 +838,7 @@ def test_raw_api_helper(raw_api):
     # b2_upload_file
     print('b2_upload_file')
     file_name = 'test.txt'
-    file_contents = six.b('hello world')
+    file_contents = b'hello world'
     file_sha1 = hex_sha1_of_stream(io.BytesIO(file_contents), len(file_contents))
     file_dict = raw_api.upload_file(
         upload_url,
@@ -939,7 +936,7 @@ def test_raw_api_helper(raw_api):
 
     # b2_upload_part
     print('b2_upload_part')
-    part_contents = six.b('hello part')
+    part_contents = b'hello part'
     part_sha1 = hex_sha1_of_stream(io.BytesIO(part_contents), len(part_contents))
     raw_api.upload_part(
         upload_part_url, upload_path_auth, 1, len(part_contents), part_sha1,

@@ -11,16 +11,13 @@
 from abc import ABCMeta, abstractmethod
 from functools import partial
 
-import six
-
 from b2sdk.stream.chained import ChainedStream
 from b2sdk.stream.range import wrap_with_range
 
 from b2sdk.utils import hex_sha1_of_unlimited_stream
 
 
-@six.add_metaclass(ABCMeta)
-class BaseEmergePartDefinition(object):
+class BaseEmergePartDefinition(metaclass=ABCMeta):
     @abstractmethod
     def get_length(self):
         pass

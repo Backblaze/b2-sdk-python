@@ -7,8 +7,7 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
-
-import six
+from io import BytesIO
 
 from .test_base import TestBase
 
@@ -19,7 +18,7 @@ from .deps import hex_sha1_of_bytes
 class TestHashingStream(TestBase):
     def setUp(self):
         self.data = b'01234567'
-        self.stream = StreamWithHash(six.BytesIO(self.data))
+        self.stream = StreamWithHash(BytesIO(self.data))
         self.hash = hex_sha1_of_bytes(self.data)
         self.expected = self.data + self.hash.encode()
 
@@ -46,8 +45,8 @@ class TestHashingStream(TestBase):
         self.assertEqual(self.expected, output)
 
     def test_one_by_one(self):
-        for expected_byte in six.iterbytes(self.expected):
-            self.assertEqual(six.int2byte(expected_byte), self.stream.read(1))
+        for expected_byte in self.expected:
+            self.assertEqual(bytes((expected_byte,)), self.stream.read(1))
         self.assertEqual(b'', self.stream.read(1))
 
     def test_large_read(self):

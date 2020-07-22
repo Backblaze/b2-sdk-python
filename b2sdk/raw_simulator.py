@@ -15,9 +15,6 @@ import re
 import time
 import threading
 
-import six
-from six.moves import range
-
 from .b2http import ResponseContextManager
 from .exception import (
     BadJson,
@@ -206,7 +203,7 @@ class FileSimulator(object):
             headers['Content-Range'] = 'bytes %d-%d/%d' % (
                 range_[0], range_[0] + content_length, len(self.data_bytes)
             )  # yapf: disable
-        for key, value in six.iteritems(self.file_info):
+        for key, value in self.file_info.items():
             headers['x-bz-info-' + key] = value
         return headers
 
@@ -254,20 +251,18 @@ class FileSimulator(object):
 
     def finish(self, part_sha1_array):
         last_part_number = max(part.part_number for part in self.parts if part is not None)
-        for part_number in six.moves.range(1, last_part_number + 1):
+        for part_number in range(1, last_part_number + 1):
             if self.parts[part_number] is None:
                 raise MissingPart(part_number)
         my_part_sha1_array = [
-            self.parts[part_number].content_sha1
-            for part_number in six.moves.range(1, last_part_number + 1)
+            self.parts[part_number].content_sha1 for part_number in range(1, last_part_number + 1)
         ]
         if part_sha1_array != my_part_sha1_array:
             raise ChecksumMismatch(
                 'sha1', expected=str(part_sha1_array), actual=str(my_part_sha1_array)
             )
-        self.data_bytes = six.b('').join(
-            self.parts[part_number].part_data
-            for part_number in six.moves.range(1, last_part_number + 1)
+        self.data_bytes = b''.join(
+            self.parts[part_number].part_data for part_number in range(1, last_part_number + 1)
         )
         self.content_length = len(self.data_bytes)
         self.action = 'upload'
@@ -422,7 +417,7 @@ class BucketSimulator(object):
         return self.file_id_to_file[file_id].as_upload_result()
 
     def get_upload_url(self):
-        upload_id = six.next(self.upload_url_counter)
+        upload_id = next(self.upload_url_counter)
         upload_url = 'https://upload.example.com/%s/%s' % (self.bucket_id, upload_id)
         return dict(bucketId=self.bucket_id, uploadUrl=upload_url, authorizationToken=upload_url)
 
@@ -433,8 +428,8 @@ class BucketSimulator(object):
     def hide_file(self, file_name):
         file_id = self._next_file_id()
         file_sim = self.FILE_SIMULATOR_CLASS(
-            self.account_id, self.bucket_id, file_id, 'hide', file_name, None, "none", {},
-            six.b(''), six.next(self.upload_timestamp_counter)
+            self.account_id, self.bucket_id, file_id, 'hide', file_name, None, "none", {}, b'',
+            next(self.upload_timestamp_counter)
         )
         self.file_id_to_file[file_id] = file_sim
         self.file_name_and_id_to_file[file_sim.sort_key()] = file_sim
@@ -472,7 +467,7 @@ class BucketSimulator(object):
         copy_file_sim = self.FILE_SIMULATOR_CLASS(
             self.account_id, destination_bucket_id, new_file_id, 'copy', new_file_name,
             file_sim.content_type, file_sim.content_sha1, file_sim.file_info, data_bytes,
-            six.next(self.upload_timestamp_counter)
+            next(self.upload_timestamp_counter)
         )
 
         if metadata_directive is MetadataDirectiveMode.REPLACE:
@@ -489,7 +484,7 @@ class BucketSimulator(object):
         result_files = []
         next_file_name = None
         prev_file_name = None
-        for key in sorted(six.iterkeys(self.file_name_and_id_to_file)):
+        for key in sorted(self.file_name_and_id_to_file):
             (file_name, file_id) = key
             assert file_id
             if start_file_name <= file_name and file_name != prev_file_name:
@@ -519,7 +514,7 @@ class BucketSimulator(object):
         result_files = []
         next_file_name = None
         next_file_id = None
-        for key in sorted(six.iterkeys(self.file_name_and_id_to_file)):
+        for key in sorted(self.file_name_and_id_to_file):
             (file_name, file_id) = key
             if (start_file_name < file_name) or (
                 start_file_name == file_name and
@@ -543,7 +538,7 @@ class BucketSimulator(object):
         start_file_id = start_file_id or self.FIRST_FILE_ID
         max_file_count = max_file_count or 100
         all_unfinished_ids = set(
-            k for (k, v) in six.iteritems(self.file_id_to_file)
+            k for (k, v) in self.file_id_to_file.items()
             if v.action == 'start' and k <= start_file_id and
             (prefix is None or v.name.startswith(prefix))
         )
@@ -570,7 +565,7 @@ class BucketSimulator(object):
         file_id = self._next_file_id()
         file_sim = self.FILE_SIMULATOR_CLASS(
             self.account_id, self.bucket_id, file_id, 'start', file_name, content_type, 'none',
-            file_info, None, six.next(self.upload_timestamp_counter)
+            file_info, None, next(self.upload_timestamp_counter)
         )  # yapf: disable
         self.file_id_to_file[file_id] = file_sim
         self.file_name_and_id_to_file[file_sim.sort_key()] = file_sim
@@ -614,7 +609,7 @@ class BucketSimulator(object):
         file_id = self._next_file_id()
         file_sim = self.FILE_SIMULATOR_CLASS(
             self.account_id, self.bucket_id, file_id, 'upload', file_name, content_type,
-            content_sha1, file_infos, data_bytes, six.next(self.upload_timestamp_counter)
+            content_sha1, file_infos, data_bytes, next(self.upload_timestamp_counter)
         )
         self.file_id_to_file[file_id] = file_sim
         self.file_name_and_id_to_file[file_sim.sort_key()] = file_sim
@@ -670,7 +665,7 @@ class BucketSimulator(object):
         return chunks_number
 
     def _next_file_id(self):
-        return str(six.next(self.file_id_counter))
+        return str(next(self.file_id_counter))
 
 
 class RawSimulator(AbstractRawApi):
@@ -824,7 +819,7 @@ class RawSimulator(AbstractRawApi):
         self._assert_account_auth(api_url, account_auth_token, account_id, 'writeBuckets')
         if bucket_name in self.bucket_name_to_bucket:
             raise DuplicateBucketName(bucket_name)
-        bucket_id = 'bucket_' + str(six.next(self.bucket_id_counter))
+        bucket_id = 'bucket_' + str(next(self.bucket_id_counter))
         bucket = self.BUCKET_SIMULATOR_CLASS(
             account_id, bucket_id, bucket_name, bucket_type, bucket_info, cors_rules,
             lifecycle_rules
@@ -1038,8 +1033,7 @@ class RawSimulator(AbstractRawApi):
 
         # Do the query
         sorted_buckets = [
-            self.bucket_name_to_bucket[name]
-            for name in sorted(six.iterkeys(self.bucket_name_to_bucket))
+            self.bucket_name_to_bucket[name] for name in sorted(self.bucket_name_to_bucket)
         ]
         bucket_list = [
             bucket.bucket_dict()
@@ -1048,7 +1042,7 @@ class RawSimulator(AbstractRawApi):
         return dict(buckets=bucket_list)
 
     def _get_bucket_id_or_none_for_bucket_name(self, bucket_name):
-        for bucket in six.itervalues(self.bucket_name_to_bucket):
+        for bucket in self.bucket_name_to_bucket.values():
             if bucket.bucket_name == bucket_name:
                 return bucket.bucket_id
 

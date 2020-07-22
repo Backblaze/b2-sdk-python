@@ -10,13 +10,10 @@
 
 from abc import (ABCMeta)
 
-import six
-
 from ..exception import B2Error
 
 
-@six.add_metaclass(ABCMeta)
-class AccountInfoError(B2Error):
+class AccountInfoError(B2Error, metaclass=ABCMeta):
     """
     Base class for all account info errors.
     """

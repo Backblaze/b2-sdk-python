@@ -12,8 +12,6 @@ import io
 
 from abc import ABCMeta, abstractmethod
 
-import six
-
 from b2sdk.stream.base import ReadOnlyStreamMixin
 
 
@@ -126,8 +124,7 @@ class ChainedStream(ReadOnlyStreamMixin, io.IOBase):
         super(ChainedStream, self).close()
 
 
-@six.add_metaclass(ABCMeta)
-class StreamOpener(object):
+class StreamOpener(metaclass=ABCMeta):
     """ Abstract class to define stream opener with cleanup. """
 
     @abstractmethod

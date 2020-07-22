@@ -8,11 +8,8 @@
 #
 ######################################################################
 
-from __future__ import division
-
 import logging
-import six
-
+import concurrent.futures as futures
 from enum import Enum, unique
 
 from ..bounded_queue_executor import BoundedQueueExecutor
@@ -20,11 +17,6 @@ from .exception import InvalidArgument, IncompleteSync
 from .policy import CompareVersionMode, NewerFileSyncMode
 from .policy_manager import POLICY_MANAGER
 from .scan_policies import DEFAULT_SCAN_MANAGER
-
-try:
-    import concurrent.futures as futures
-except ImportError:
-    import futures
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +26,7 @@ def next_or_none(iterator):
     Return the next item from the iterator, or None if there are no more.
     """
     try:
-        return six.advance_iterator(iterator)
+        return next(iterator)
     except StopIteration:
         return None
 

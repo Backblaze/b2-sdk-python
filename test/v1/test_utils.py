@@ -8,8 +8,6 @@
 #
 ######################################################################
 
-import six
-
 from .test_base import TestBase
 
 from .deps import b2_url_encode, b2_url_decode, choose_part_ranges, format_and_scale_number, format_and_scale_fraction
@@ -257,7 +255,7 @@ class TestChooseParts(TestBase):
         ten_TB = 10 * 1000 * 1000 * 1000 * 1000
         one_GB = 1000 * 1000 * 1000
 
-        expected = [(i * one_GB, one_GB) for i in six.moves.range(10000)]
+        expected = [(i * one_GB, one_GB) for i in range(10000)]
         actual = choose_part_ranges(ten_TB, 100 * 1000 * 1000)
         self.assertEqual(expected, actual)
 

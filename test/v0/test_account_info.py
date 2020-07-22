@@ -8,16 +8,13 @@
 #
 ######################################################################
 
-from __future__ import print_function
-
 from abc import ABCMeta, abstractmethod
 import json
+import unittest.mock as mock
 from nose import SkipTest
 import os
 import platform
 import tempfile
-
-import six
 
 from .test_base import TestBase
 
@@ -27,11 +24,6 @@ from .deps_exception import CorruptAccountInfo, MissingAccountData
 if not platform.system().lower().startswith('java'):
     # in Jython 2.7.1b3 there is no sqlite3
     from .deps import SqliteAccountInfo
-
-try:
-    import unittest.mock as mock
-except ImportError:
-    import mock
 
 
 class TestUploadUrlPool(TestBase):
@@ -60,8 +52,7 @@ class TestUploadUrlPool(TestBase):
         self.assertEqual((None, None), self.pool.take('b'))
 
 
-@six.add_metaclass(ABCMeta)
-class AccountInfoBase(object):
+class AccountInfoBase(metaclass=ABCMeta):
     # it is a mixin to avoid nose from running the tests directly (without inheritance)
     PERSISTENCE = NotImplemented  # subclass should override this
 
@@ -169,7 +160,7 @@ class AccountInfoBase(object):
         account_info = self._make_info()
         self.assertEqual(None, account_info.get_bucket_id_or_none_from_bucket_name('my-bucket'))
         bucket_names = {'a': 'bucket-0', 'b': 'bucket-1'}
-        account_info.refresh_entire_bucket_name_cache(six.iteritems(bucket_names))
+        account_info.refresh_entire_bucket_name_cache(bucket_names.items())
         self.assertEqual('bucket-0', account_info.get_bucket_id_or_none_from_bucket_name('a'))
         if self.PERSISTENCE:
             self.assertEqual(
@@ -236,7 +227,7 @@ class TestSqliteAccountInfo(AccountInfoBase, TestBase):
         Test that a corrupted file will be replaced with a blank file.
         """
         with open(self.db_path, 'wb') as f:
-            f.write(six.u('not a valid database').encode('utf-8'))
+            f.write(b'not a valid database')
 
         with self.assertRaises(CorruptAccountInfo):
             self._make_info()

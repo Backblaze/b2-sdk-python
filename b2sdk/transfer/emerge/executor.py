@@ -12,8 +12,6 @@ import threading
 
 from abc import ABCMeta, abstractmethod
 
-import six
-
 from b2sdk.exception import MaxFileSizeExceeded
 from b2sdk.file_version import FileVersionInfoFactory
 from b2sdk.transfer.outbound.large_file_upload_state import LargeFileUploadState
@@ -63,8 +61,7 @@ class EmergeExecutor(object):
         return execution.execute_plan(emerge_plan)
 
 
-@six.add_metaclass(ABCMeta)
-class BaseEmergeExecution(object):
+class BaseEmergeExecution(metaclass=ABCMeta):
     DEFAULT_CONTENT_TYPE = AUTO_CONTENT_TYPE
 
     def __init__(self, services, bucket_id, file_name, content_type, file_info, progress_listener):
@@ -300,8 +297,7 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
         return None, {}
 
 
-@six.add_metaclass(ABCMeta)
-class BaseExecutionStepFactory(object):
+class BaseExecutionStepFactory(metaclass=ABCMeta):
     def __init__(self, emerge_execution, emerge_part):
         self.emerge_execution = emerge_execution
         self.emerge_part = emerge_part
@@ -369,8 +365,7 @@ class LargeFileEmergeExecutionStepFactory(BaseExecutionStepFactory):
         )
 
 
-@six.add_metaclass(ABCMeta)
-class BaseExecutionStep(object):
+class BaseExecutionStep(metaclass=ABCMeta):
     @abstractmethod
     def execute(self):
         pass

@@ -8,20 +8,11 @@
 #
 ######################################################################
 
-from __future__ import print_function
-
+import concurrent.futures as futures
 import time
 
-import six
-
-from .test_base import TestBase
-
 from .deps import BoundedQueueExecutor
-
-try:
-    import concurrent.futures as futures
-except ImportError:
-    import futures
+from .test_base import TestBase
 
 
 class TestBoundedQueueExecutor(TestBase):
@@ -48,11 +39,11 @@ class TestBoundedQueueExecutor(TestBase):
 
             return fcn
 
-        futures = [self.executor.submit(sleep_and_return_fcn(i)) for i in six.moves.range(10)]
+        futures = [self.executor.submit(sleep_and_return_fcn(i)) for i in range(10)]
 
         # Check the answers
-        answers = list(six.moves.map(lambda f: f.result(), futures))
-        self.assertEqual(list(six.moves.range(10)), answers)
+        answers = list(map(lambda f: f.result(), futures))
+        self.assertEqual(list(range(10)), answers)
 
     def test_no_exceptions(self):
         f = self.executor.submit(lambda: 1)

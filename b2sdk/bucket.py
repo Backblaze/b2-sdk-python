@@ -9,7 +9,6 @@
 ######################################################################
 
 import logging
-import six
 
 from .exception import UnrecognizedBucketType
 from .file_version import FileVersionInfoFactory
@@ -24,8 +23,7 @@ from .utils import b2_url_encode, validate_b2_file_name
 logger = logging.getLogger(__name__)
 
 
-@six.add_metaclass(B2TraceMeta)
-class Bucket(object):
+class Bucket(metaclass=B2TraceMeta):
     """
     Provide access to a bucket in B2: listing files, uploading and downloading.
     """

@@ -9,7 +9,7 @@
 ######################################################################
 
 import logging
-import six
+import concurrent.futures as futures
 
 from b2sdk.exception import (
     AlreadyFailed,
@@ -24,16 +24,10 @@ from b2sdk.utils import B2TraceMetaAbstract
 
 from .progress_reporter import PartProgressReporter
 
-try:
-    import concurrent.futures as futures
-except ImportError:
-    import futures
-
 logger = logging.getLogger(__name__)
 
 
-@six.add_metaclass(B2TraceMetaAbstract)
-class UploadManager(object):
+class UploadManager(metaclass=B2TraceMetaAbstract):
     """
     Handle complex actions around uploads to free raw_api from that responsibility.
     """
@@ -149,7 +143,7 @@ class UploadManager(object):
 
         # Retry the upload as needed
         exception_list = []
-        for _ in six.moves.xrange(self.MAX_UPLOAD_ATTEMPTS):
+        for _ in range(self.MAX_UPLOAD_ATTEMPTS):
             # if another part has already had an error there's no point in
             # uploading this part
             if large_file_upload_state.has_error():
@@ -191,7 +185,7 @@ class UploadManager(object):
         exception_info_list = []
         progress_listener.set_total_bytes(content_length)
         with progress_listener:
-            for _ in six.moves.xrange(self.MAX_UPLOAD_ATTEMPTS):
+            for _ in range(self.MAX_UPLOAD_ATTEMPTS):
                 try:
                     with upload_source.open() as file:
                         input_stream = ReadingStreamWithProgress(

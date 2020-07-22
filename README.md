@@ -15,12 +15,6 @@ The sdk can be installed with:
 
     pip install b2sdk
 
-If you see a message saying that the `six` library cannot be installed, which
-happens if you're installing with the system python on OS X El Capitan, try
-this:
-
-    pip install --ignore-installed b2sdk
-
 # Version policy
 
 b2sdk follows [Semantic Versioning](https://semver.org/) policy, so in essence the version number is MAJOR.MINOR.PATCH (for example 1.2.3) and:
@@ -38,6 +32,8 @@ b2sdk>=0.0.0,<1.0.0
 # Release History
 
 ## Not released yet
+
+* Drop Python 2 and Python 3.4 support :tada:
 
 ## 1.1.4 (2020-07-15)
 

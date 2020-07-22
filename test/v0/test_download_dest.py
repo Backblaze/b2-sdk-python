@@ -10,8 +10,6 @@
 
 import os
 
-import six
-
 from .test_base import TestBase
 
 from .deps import DownloadDestLocalFile, DownloadDestProgressWrapper, PreSeekedDownloadDest
@@ -36,10 +34,10 @@ class TestDownloadDestLocalFile(TestBase):
             with download_dest.make_file_context(
                 "file_id", "file_name", 100, "content_type", "sha1", {}, mod_time
             ) as f:
-                f.write(six.b('hello world'))
+                f.write(b'hello world')
             with open(file_path, 'rb') as f:
                 self.assertEqual(
-                    six.b(self.expected_result),
+                    self.expected_result.encode(),
                     f.read(),
                 )
             self.assertEqual(mod_time, int(os.path.getmtime(file_path) * 1000))
@@ -51,7 +49,7 @@ class TestDownloadDestLocalFile(TestBase):
                 with download_dest.make_file_context(
                     "file_id", "file_name", 100, "content_type", "sha1", {}, 1500222333000
                 ) as f:
-                    f.write(six.b('hello world'))
+                    f.write(b'hello world')
                     raise Exception('test error')
             except Exception as e:
                 self.assertEqual('test error', str(e))
@@ -64,7 +62,7 @@ class TestPreSeekedDownloadDest(TestDownloadDestLocalFile):
     def _make_dest(self, temp_dir):
         file_path = os.path.join(temp_dir, "test.txt")
         with open(file_path, 'wb') as f:
-            f.write(six.b('12345678901234567890'))
+            f.write(b'12345678901234567890')
         return PreSeekedDownloadDest(local_file_path=file_path, seek_target=3), file_path
 
 

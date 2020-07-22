@@ -21,13 +21,6 @@ To install **b2sdk**, checkout the repository and run::
 
 in your python environment.
 
-.. note::
-  If you see a message saying that the ``six`` library cannot be installed, which
-  happens if you're installing with the system python on OS X El Capitan, try this::
-
-    pip install --ignore-installed b2sdk
-
-
 .. _install_contributors:
 
 Installing for contributors
