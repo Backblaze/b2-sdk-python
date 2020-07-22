@@ -15,8 +15,6 @@ from abc import ABCMeta, abstractmethod
 from collections import deque
 from itertools import chain
 
-import six
-
 from b2sdk.transfer.emerge.planner.part_definition import (
     CopyEmergePartDefinition,
     UploadEmergePartDefinition,
@@ -556,8 +554,7 @@ class IntentsState(object):
         return end - start >= self.protected_intent_length
 
 
-@six.add_metaclass(ABCMeta)
-class BaseEmergePlan(object):
+class BaseEmergePlan(metaclass=ABCMeta):
     def __init__(self, emerge_parts):
         self.emerge_parts = emerge_parts
 

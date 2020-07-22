@@ -10,8 +10,6 @@
 
 from __future__ import print_function
 
-from six import unichr
-
 from .test_base import TestBase
 
 from .deps import B2RawApi
@@ -19,9 +17,9 @@ from .deps import B2Http
 from .deps_exception import UnusableFileName
 
 # Unicode characters for testing filenames.  (0x0394 is a letter Delta.)
-TWO_BYTE_UNICHR = unichr(0x0394)
-CHAR_UNDER_32 = unichr(31)
-DEL_CHAR = unichr(127)
+TWO_BYTE_UNICHR = chr(0x0394)
+CHAR_UNDER_32 = chr(31)
+DEL_CHAR = chr(127)
 
 
 class TestRawAPIFilenames(TestBase):

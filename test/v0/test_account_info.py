@@ -17,8 +17,6 @@ import os
 import platform
 import tempfile
 
-import six
-
 from .test_base import TestBase
 
 from .deps import AbstractAccountInfo, InMemoryAccountInfo, UploadUrlPool
@@ -60,8 +58,7 @@ class TestUploadUrlPool(TestBase):
         self.assertEqual((None, None), self.pool.take('b'))
 
 
-@six.add_metaclass(ABCMeta)
-class AccountInfoBase(object):
+class AccountInfoBase(metaclass=ABCMeta):
     # it is a mixin to avoid nose from running the tests directly (without inheritance)
     PERSISTENCE = NotImplemented  # subclass should override this
 
@@ -169,7 +166,7 @@ class AccountInfoBase(object):
         account_info = self._make_info()
         self.assertEqual(None, account_info.get_bucket_id_or_none_from_bucket_name('my-bucket'))
         bucket_names = {'a': 'bucket-0', 'b': 'bucket-1'}
-        account_info.refresh_entire_bucket_name_cache(six.iteritems(bucket_names))
+        account_info.refresh_entire_bucket_name_cache(bucket_names.items())
         self.assertEqual('bucket-0', account_info.get_bucket_id_or_none_from_bucket_name('a'))
         if self.PERSISTENCE:
             self.assertEqual(
@@ -236,7 +233,7 @@ class TestSqliteAccountInfo(AccountInfoBase, TestBase):
         Test that a corrupted file will be replaced with a blank file.
         """
         with open(self.db_path, 'wb') as f:
-            f.write(six.u('not a valid database').encode('utf-8'))
+            f.write(b'not a valid database')
 
         with self.assertRaises(CorruptAccountInfo):
             self._make_info()

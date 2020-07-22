@@ -16,10 +16,9 @@ import re
 import shutil
 import tempfile
 from decimal import Decimal
+from urllib.parse import quote, unquote_plus
 
 from logfury.v0_1 import DefaultTraceAbstractMeta, DefaultTraceMeta, limit_trace_arguments, disable_trace, trace_call
-
-import six
 
 try:
     import concurrent.futures as futures
@@ -53,7 +52,7 @@ def b2_url_encode(s):
     :return: URL-encoded string
     :rtype: str
     """
-    return six.moves.urllib.parse.quote(s.encode('utf-8'))
+    return quote(s.encode('utf-8'))
 
 
 def b2_url_decode(s):
@@ -65,12 +64,7 @@ def b2_url_decode(s):
     :return: a Python unicode string.
     :rtype: str
     """
-    result = six.moves.urllib.parse.unquote_plus(s)
-    if six.PY2:
-        # The behavior of unquote_plus is different in python 2 and 3.
-        # In Python 3, it decodes the UTF-8, while in Python 2 it does not.
-        result = result.decode('utf-8')
-    return result
+    return unquote_plus(s)
 
 
 def choose_part_ranges(content_length, minimum_part_size):
@@ -100,7 +94,7 @@ def choose_part_ranges(content_length, minimum_part_size):
     assert minimum_part_size <= last_part_size
 
     # Make all of the parts except the last
-    parts = [(i * part_size, part_size) for i in six.moves.range(part_count - 1)]
+    parts = [(i * part_size, part_size) for i in range(part_count - 1)]
 
     # Add the last part
     start_of_last = (part_count - 1) * part_size
@@ -171,7 +165,7 @@ def validate_b2_file_name(name):
     :param name: a string to check
     :type name: str
     """
-    if not isinstance(name, six.string_types):
+    if not isinstance(name, str):
         raise ValueError('file name must be a string, not bytes')
     name_utf8 = name.encode('utf-8')
     if len(name_utf8) < 1:
@@ -188,7 +182,7 @@ def validate_b2_file_name(name):
         raise ValueError("file names must not contain '//'")
     if chr(127) in name:
         raise ValueError("file names must not contain DEL")
-    if any(250 < len(segment) for segment in name_utf8.split(six.b('/'))):
+    if any(250 < len(segment) for segment in name_utf8.split(b'/')):
         raise ValueError("file names segments (between '/') can be at most 250 utf-8 bytes")
 
 
@@ -298,7 +292,7 @@ class TempDir(object):
         Return the unicode path to the temp dir.
         """
         dirpath_bytes = tempfile.mkdtemp()
-        self.dirpath = six.u(dirpath_bytes.replace('\\', '\\\\'))
+        self.dirpath = str(dirpath_bytes.replace('\\', '\\\\'))
         return self.dirpath
 
     def __exit__(self, exc_type, exc_val, exc_tb):

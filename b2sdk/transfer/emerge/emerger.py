@@ -10,8 +10,6 @@
 
 import logging
 
-import six
-
 from b2sdk.utils import B2TraceMetaAbstract
 
 from b2sdk.transfer.emerge.executor import EmergeExecutor
@@ -20,8 +18,7 @@ from b2sdk.transfer.emerge.planner.planner import EmergePlanner
 logger = logging.getLogger(__name__)
 
 
-@six.add_metaclass(B2TraceMetaAbstract)
-class Emerger(object):
+class Emerger(metaclass=B2TraceMetaAbstract):
     """
     Handle complex actions around multi source copy/uploads.
 

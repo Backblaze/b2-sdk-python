@@ -9,8 +9,6 @@
 ######################################################################
 
 import logging
-import six
-
 from b2sdk.exception import AlreadyFailed
 
 from b2sdk.file_version import FileVersionInfoFactory
@@ -25,8 +23,7 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-@six.add_metaclass(B2TraceMetaAbstract)
-class CopyManager(object):
+class CopyManager(metaclass=B2TraceMetaAbstract):
     """
     Handle complex actions around server side copy to free raw_api from that responsibility.
     """

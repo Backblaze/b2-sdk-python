@@ -11,8 +11,6 @@
 import os
 import threading
 
-import six
-
 from .sqlite_account_info import SqliteAccountInfo
 
 
@@ -27,7 +25,7 @@ def test_upload_url_concurrency():
     # Make an account info with a bunch of upload URLs in it.
     account_info = SqliteAccountInfo(file_name)
     available_urls = set()
-    for i in six.moves.range(3000):
+    for i in range(3000):
         url = 'url_%d' % i
         account_info.put_bucket_upload_url('bucket-id', url, 'auth-token-%d' % i)
         available_urls.add(url)
@@ -47,7 +45,7 @@ def test_upload_url_concurrency():
                     print('DOUBLE:', url)
 
     threads = []
-    for i in six.moves.range(5):
+    for i in range(5):
         thread = threading.Thread(target=run_thread)
         thread.start()
         threads.append(thread)

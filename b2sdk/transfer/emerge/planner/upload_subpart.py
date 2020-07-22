@@ -13,16 +13,13 @@ import io
 from abc import ABCMeta, abstractmethod
 from functools import partial
 
-import six
-
 from b2sdk.download_dest import DownloadDestBytes
 from b2sdk.stream.chained import StreamOpener
 from b2sdk.stream.range import wrap_with_range
 from b2sdk.utils import hex_sha1_of_unlimited_stream
 
 
-@six.add_metaclass(ABCMeta)
-class BaseUploadSubpart(object):
+class BaseUploadSubpart(metaclass=ABCMeta):
     def __init__(self, outbound_source, relative_offset, length):
         self.outbound_source = outbound_source
         self.relative_offset = relative_offset

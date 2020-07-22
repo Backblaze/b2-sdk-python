@@ -11,9 +11,8 @@
 from abc import abstractmethod
 import logging
 import hashlib
+import queue
 import threading
-
-from six.moves import queue, range
 
 from .abstract import AbstractDownloader
 from .range import Range

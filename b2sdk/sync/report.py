@@ -12,8 +12,6 @@ import logging
 import threading
 import time
 
-import six
-
 from ..progress import AbstractProgressListener
 from ..utils import format_and_scale_number, format_and_scale_fraction
 
@@ -301,7 +299,7 @@ def sample_sync_report_run():
     import sys
     sync_report = SyncReport(sys.stdout, False)
 
-    for i in six.moves.range(20):
+    for i in range(20):
         sync_report.update_local(1)
         time.sleep(0.2)
         if i == 10:
@@ -310,7 +308,7 @@ def sample_sync_report_run():
             sync_report.update_compare(1)
     sync_report.end_local()
 
-    for i in six.moves.range(10):
+    for i in range(10):
         sync_report.update_compare(1)
         time.sleep(0.2)
         if i == 3:
@@ -319,7 +317,7 @@ def sample_sync_report_run():
             sync_report.update_transfer(25, 25000)
     sync_report.end_compare(50, 50000)
 
-    for i in six.moves.range(25):
+    for i in range(25):
         if i % 2 == 0:
             sync_report.print_completion('transferred: %d.txt' % i)
         sync_report.update_transfer(1, 1000)

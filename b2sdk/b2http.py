@@ -17,7 +17,6 @@ import socket
 
 import arrow
 import requests
-import six
 import time
 
 from .exception import (
@@ -25,7 +24,6 @@ from .exception import (
     B2RequestTimeout, ClockSkew, ConnectionReset, interpret_b2_error, UnknownError, UnknownHost
 )
 from .version import USER_AGENT
-from six.moves import range
 
 logger = logging.getLogger(__name__)
 
@@ -341,7 +339,7 @@ class B2Http(object):
         :return: the decoded JSON document
         :rtype: dict
         """
-        data = io.BytesIO(six.b(json.dumps(params)))
+        data = io.BytesIO(json.dumps(params).encode())
         return self.post_content_return_json(url, headers, data, try_count, params)
 
     def get_content(self, url, headers, try_count=5):
@@ -397,8 +395,7 @@ def test_http():
     Run a few tests on error diagnosis.
 
     This test takes a while to run and is not used in the automated tests
-    during building.  Run the test by hand to exercise the code.  Be sure
-    to run in both Python 2 and Python 3.
+    during building.  Run the test by hand to exercise the code.
     """
 
     from .exception import BadJson
@@ -421,8 +418,8 @@ def test_http():
         'https://api.backblazeb2.com/test/echo_zeros?length=10', {}
     ) as response:
         assert response.status_code == 200
-        response_data = six.b('').join(response.iter_content())
-        assert response_data == six.b(chr(0) * 10)
+        response_data = b''.join(response.iter_content())
+        assert response_data == b'\x00' * 10
 
     # Successful post
     print('TEST: post')
@@ -442,7 +439,7 @@ def test_http():
     # Broken pipe
     print('TEST: broken pipe')
     try:
-        data = io.BytesIO(six.b(chr(0)) * 10000000)
+        data = io.BytesIO(b'\x00' * 10000000)
         b2_http.post_content_return_json('https://api.backblazeb2.com/bad_url', {}, data)
         assert False, 'should have failed with broken pipe'
     except BrokenPipe:

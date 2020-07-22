@@ -10,14 +10,11 @@
 
 from abc import abstractmethod
 
-import six
-
 from b2sdk.raw_api import ALL_CAPABILITIES
 from b2sdk.utils import B2TraceMetaAbstract, limit_trace_arguments
 
 
-@six.add_metaclass(B2TraceMetaAbstract)
-class AbstractAccountInfo(object):
+class AbstractAccountInfo(metaclass=B2TraceMetaAbstract):
     """
     Abstract class for a holder for all account-related information
     that needs to be kept between API calls and between invocations of the program.

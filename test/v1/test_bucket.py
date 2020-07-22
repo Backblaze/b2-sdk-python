@@ -10,11 +10,11 @@
 
 from __future__ import absolute_import, division
 
+from io import BytesIO
+
 from nose import SkipTest
 import os
 import platform
-
-import six
 
 from .test_base import TestBase
 
@@ -177,7 +177,7 @@ class TestListParts(TestCaseWithBucket):
 
     def testThree(self):
         file1 = self.bucket.start_large_file('file1.txt', 'text/plain', {})
-        content = six.b('hello world')
+        content = b'hello world'
         content_sha1 = hex_sha1_of_bytes(content)
         large_file_upload_state = mock.MagicMock()
         large_file_upload_state.has_error.return_value = False
@@ -201,7 +201,7 @@ class TestListParts(TestCaseWithBucket):
 class TestUploadPart(TestCaseWithBucket):
     def test_error_in_state(self):
         file1 = self.bucket.start_large_file('file1.txt', 'text/plain', {})
-        content = six.b('hello world')
+        content = b'hello world'
         file_progress_listener = mock.MagicMock()
         large_file_upload_state = LargeFileUploadState(file_progress_listener)
         large_file_upload_state.set_error('test error')
@@ -252,13 +252,13 @@ class TestLs(TestCaseWithBucket):
         self.assertEqual([], list(self.bucket.ls('foo')))
 
     def test_one_file_at_root(self):
-        data = six.b('hello world')
+        data = b'hello world'
         self.bucket.upload_bytes(data, 'hello.txt')
         expected = [('hello.txt', 11, 'upload', None)]
         self.assertBucketContents(expected, '')
 
     def test_three_files_at_root(self):
-        data = six.b('hello world')
+        data = b'hello world'
         self.bucket.upload_bytes(data, 'a')
         self.bucket.upload_bytes(data, 'bb')
         self.bucket.upload_bytes(data, 'ccc')
@@ -268,7 +268,7 @@ class TestLs(TestCaseWithBucket):
         self.assertBucketContents(expected, '')
 
     def test_three_files_in_dir(self):
-        data = six.b('hello world')
+        data = b'hello world'
         self.bucket.upload_bytes(data, 'a')
         self.bucket.upload_bytes(data, 'bb/1')
         self.bucket.upload_bytes(data, 'bb/2/sub1')
@@ -282,7 +282,7 @@ class TestLs(TestCaseWithBucket):
         self.assertBucketContents(expected, 'bb', fetch_count=1)
 
     def test_three_files_multiple_versions(self):
-        data = six.b('hello world')
+        data = b'hello world'
         self.bucket.upload_bytes(data, 'a')
         self.bucket.upload_bytes(data, 'bb/1')
         self.bucket.upload_bytes(data, 'bb/2')
@@ -309,18 +309,18 @@ class TestLs(TestCaseWithBucket):
         self.assertBucketContents(expected, '', show_versions=True)
 
     def test_hidden_file(self):
-        data = six.b('hello world')
+        data = b'hello world'
         self.bucket.upload_bytes(data, 'hello.txt')
         self.bucket.hide_file('hello.txt')
         expected = [('hello.txt', 0, 'hide', None), ('hello.txt', 11, 'upload', None)]
         self.assertBucketContents(expected, '', show_versions=True)
 
     def test_delete_file_version(self):
-        data = six.b('hello world')
+        data = b'hello world'
 
         file_id = self.bucket.upload_bytes(data, 'hello.txt').id_
 
-        data = six.b('hello new world')
+        data = b'hello new world'
         self.bucket.upload_bytes(data, 'hello.txt')
         self.bucket.delete_file_version(file_id, 'hello.txt')
 
@@ -330,7 +330,7 @@ class TestLs(TestCaseWithBucket):
 
 class TestListVersions(TestCaseWithBucket):
     def test_single_version(self):
-        data = six.b('hello world')
+        data = b'hello world'
         a_id = self.bucket.upload_bytes(data, 'a').id_
         b_id = self.bucket.upload_bytes(data, 'b').id_
         c_id = self.bucket.upload_bytes(data, 'c').id_
@@ -357,9 +357,9 @@ class TestListVersions(TestCaseWithBucket):
         self.assertEqual(expected, actual)
 
     def test_multiple_version(self):
-        a_id1 = self.bucket.upload_bytes(six.b('first version'), 'a').id_
-        a_id2 = self.bucket.upload_bytes(six.b('second version'), 'a').id_
-        a_id3 = self.bucket.upload_bytes(six.b('last version'), 'a').id_
+        a_id1 = self.bucket.upload_bytes(b'first version', 'a').id_
+        a_id2 = self.bucket.upload_bytes(b'second version', 'a').id_
+        a_id3 = self.bucket.upload_bytes(b'last version', 'a').id_
 
         expected = [
             (a_id3, 'a', 12, 'upload'), (a_id2, 'a', 14, 'upload'), (a_id1, 'a', 13, 'upload')
@@ -371,7 +371,7 @@ class TestListVersions(TestCaseWithBucket):
         self.assertEqual(expected, actual)
 
     def test_ignores_subdirectory(self):
-        data = six.b('hello world')
+        data = b'hello world'
         file_id = self.bucket.upload_bytes(data, 'a/b').id_
         self.bucket.upload_bytes(data, 'a/b/c')
 
@@ -383,7 +383,7 @@ class TestListVersions(TestCaseWithBucket):
         self.assertEqual(expected, actual)
 
     def test_all_versions_in_response(self):
-        data = six.b('hello world')
+        data = b'hello world'
         file_id = self.bucket.upload_bytes(data, 'a/b').id_
         self.bucket.upload_bytes(data, 'a/b/c')
 
@@ -503,20 +503,20 @@ class TestCopyFile(TestCaseWithBucket):
         self.assertBucketContents(expected, '', show_versions=True)
 
     def _make_file(self, bucket=None):
-        data = six.b('hello world')
+        data = b'hello world'
         actual_bucket = bucket or self.bucket
         return actual_bucket.upload_bytes(data, 'hello.txt').id_
 
 
 class TestUpload(TestCaseWithBucket):
     def test_upload_bytes(self):
-        data = six.b('hello world')
+        data = b'hello world'
         file_info = self.bucket.upload_bytes(data, 'file1')
         self.assertTrue(isinstance(file_info, FileVersionInfo))
         self._check_file_contents('file1', data)
 
     def test_upload_bytes_progress(self):
-        data = six.b('hello world')
+        data = b'hello world'
         progress_listener = StubProgressListener()
         self.bucket.upload_bytes(data, 'file1', progress_listener=progress_listener)
         self.assertTrue(progress_listener.is_valid())
@@ -524,7 +524,7 @@ class TestUpload(TestCaseWithBucket):
     def test_upload_local_file(self):
         with TempDir() as d:
             path = os.path.join(d, 'file1')
-            data = six.b('hello world')
+            data = b'hello world'
             write_file(path, data)
             self.bucket.upload_local_file(path, 'file1')
             self._check_file_contents('file1', data)
@@ -550,7 +550,7 @@ class TestUpload(TestCaseWithBucket):
     def test_upload_local_wrong_sha(self):
         with TempDir() as d:
             path = os.path.join(d, 'file123')
-            data = six.b('hello world')
+            data = b'hello world'
             write_file(path, data)
             with self.assertRaises(FileSha1Mismatch):
                 self.bucket.upload_local_file(
@@ -561,23 +561,23 @@ class TestUpload(TestCaseWithBucket):
 
     def test_upload_one_retryable_error(self):
         self.simulator.set_upload_errors([CanRetry(True)])
-        data = six.b('hello world')
+        data = b'hello world'
         self.bucket.upload_bytes(data, 'file1')
 
     def test_upload_timeout(self):
         self.simulator.set_upload_errors([B2RequestTimeoutDuringUpload()])
-        data = six.b('hello world')
+        data = b'hello world'
         self.bucket.upload_bytes(data, 'file1')
 
     def test_upload_file_one_fatal_error(self):
         self.simulator.set_upload_errors([CanRetry(False)])
-        data = six.b('hello world')
+        data = b'hello world'
         with self.assertRaises(CanRetry):
             self.bucket.upload_bytes(data, 'file1')
 
     def test_upload_file_too_many_retryable_errors(self):
         self.simulator.set_upload_errors([CanRetry(True)] * 6)
-        data = six.b('hello world')
+        data = b'hello world'
         with self.assertRaises(MaxRetriesExceeded):
             self.bucket.upload_bytes(data, 'file1')
 
@@ -699,7 +699,7 @@ class TestUpload(TestCaseWithBucket):
         return large_file_info['fileId']
 
     def _upload_part(self, large_file_id, part_number, part_data):
-        part_stream = six.BytesIO(part_data)
+        part_stream = BytesIO(part_data)
         upload_info = self.simulator.get_upload_part_url(
             self.api_url, self.account_auth_token, large_file_id
         )
@@ -727,7 +727,7 @@ class TestUpload(TestCaseWithBucket):
             fragment = ('%d:' % so_far).encode('utf-8')
             so_far += len(fragment)
             fragments.append(fragment)
-        return six.b('').join(fragments)
+        return b''.join(fragments)
 
 
 # Downloads
@@ -738,12 +738,12 @@ class DownloadTestsBase(object):
 
     def setUp(self):
         super(DownloadTestsBase, self).setUp()
-        self.file_info = self.bucket.upload_bytes(six.b(self.DATA), 'file1')
+        self.file_info = self.bucket.upload_bytes(self.DATA.encode(), 'file1')
         self.download_dest = DownloadDestBytes()
         self.progress_listener = StubProgressListener()
 
     def _verify(self, expected_result, check_progress_listener=True):
-        assert self.download_dest.get_bytes_written() == six.b(expected_result)
+        assert self.download_dest.get_bytes_written() == expected_result.encode()
         if check_progress_listener:
             valid, reason = self.progress_listener.is_valid_reason(
                 check_closed=False,
@@ -814,7 +814,7 @@ class DownloadTests(DownloadTestsBase):
         with TempDir() as d:
             path = os.path.join(d, 'file2')
             download_dest = PreSeekedDownloadDest(seek_target=3, local_file_path=path)
-            data = six.b('12345678901234567890')
+            data = b'12345678901234567890'
             write_file(path, data)
             self.bucket.download_file_by_id(
                 self.file_info.id_,
@@ -822,7 +822,7 @@ class DownloadTests(DownloadTestsBase):
                 self.progress_listener,
                 range_=(3, 9),
             )
-            self._check_local_file_contents(path, six.b('123defghij1234567890'))
+            self._check_local_file_contents(path, b'123defghij1234567890')
 
     def test_download_by_id_progress_partial_shifted_overwrite(self):
         # LOCAL is
@@ -845,7 +845,7 @@ class DownloadTests(DownloadTestsBase):
         with TempDir() as d:
             path = os.path.join(d, 'file2')
             download_dest = PreSeekedDownloadDest(seek_target=7, local_file_path=path)
-            data = six.b('12345678901234567890')
+            data = b'12345678901234567890'
             write_file(path, data)
             self.bucket.download_file_by_id(
                 self.file_info.id_,
@@ -853,7 +853,7 @@ class DownloadTests(DownloadTestsBase):
                 self.progress_listener,
                 range_=(3, 9),
             )
-            self._check_local_file_contents(path, six.b('1234567defghij567890'))
+            self._check_local_file_contents(path, b'1234567defghij567890')
 
     def _check_local_file_contents(self, path, expected_contents):
         with open(path, 'rb') as f:
@@ -868,7 +868,7 @@ class EmptyFileDownloadScenarioMixin(object):
     """ use with DownloadTests, but not for TestDownloadParallel as it does not like empty files """
 
     def test_download_by_name_empty_file(self):
-        self.file_info = self.bucket.upload_bytes(six.b(''), 'empty')
+        self.file_info = self.bucket.upload_bytes(b'', 'empty')
         self.bucket.download_file_by_name('empty', self.download_dest, self.progress_listener)
         self._verify('')
 

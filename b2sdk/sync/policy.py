@@ -11,7 +11,6 @@
 from abc import ABCMeta, abstractmethod
 from enum import Enum, unique
 
-import six
 import logging
 
 from ..exception import DestFileNewer
@@ -39,8 +38,7 @@ class CompareVersionMode(Enum):
     NONE = 203  #: compare using file name only
 
 
-@six.add_metaclass(ABCMeta)
-class AbstractFileSyncPolicy(object):
+class AbstractFileSyncPolicy(metaclass=ABCMeta):
     """
     Abstract policy class.
     """

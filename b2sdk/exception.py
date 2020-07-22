@@ -12,7 +12,6 @@ from abc import ABCMeta
 
 import json
 import re
-import six
 
 from .utils import camelcase_to_underscore
 
@@ -21,8 +20,7 @@ UPLOAD_TOKEN_USED_CONCURRENTLY_ERROR_MESSAGE_RE = re.compile(
 )
 
 
-@six.add_metaclass(ABCMeta)
-class B2Error(Exception):
+class B2Error(Exception, metaclass=ABCMeta):
     def __init__(self, *args, **kwargs):
         """
         Python 2 does not like it when you pass unicode as the message
@@ -35,9 +33,6 @@ class B2Error(Exception):
         # If the exception is caused by a b2 server response,
         # the server MAY have included instructions to pause the thread before issuing any more requests
         self.retry_after_seconds = None
-        if six.PY2:
-            if args and isinstance(args[0], six.text_type):
-                args = tuple([json.dumps(args[0])[1:-1]] + list(args[1:]))
         super(B2Error, self).__init__(*args, **kwargs)
 
     @property
@@ -71,8 +66,7 @@ class B2Error(Exception):
         return False
 
 
-@six.add_metaclass(ABCMeta)
-class B2SimpleError(B2Error):
+class B2SimpleError(B2Error, metaclass=ABCMeta):
     """
     A B2Error with a message prefix.
     """
@@ -81,15 +75,13 @@ class B2SimpleError(B2Error):
         return '%s: %s' % (self.prefix, super(B2SimpleError, self).__str__())
 
 
-@six.add_metaclass(ABCMeta)
-class NotAllowedByAppKeyError(B2SimpleError):
+class NotAllowedByAppKeyError(B2SimpleError, metaclass=ABCMeta):
     """
     Base class for errors caused by restrictions on an application key.
     """
 
 
-@six.add_metaclass(ABCMeta)
-class TransientErrorMixin(object):
+class TransientErrorMixin(metaclass=ABCMeta):
     def should_retry_http(self):
         return True
 

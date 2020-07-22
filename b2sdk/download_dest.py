@@ -13,15 +13,12 @@ import os
 from abc import abstractmethod
 from contextlib import contextmanager
 
-import six
-
 from b2sdk.stream.progress import WritingStreamWithProgress
 
 from .utils import B2TraceMetaAbstract, limit_trace_arguments, set_file_mtime
 
 
-@six.add_metaclass(B2TraceMetaAbstract)
-class AbstractDownloadDestination(object):
+class AbstractDownloadDestination(metaclass=B2TraceMetaAbstract):
     """
     Interface to a destination for a downloaded file.
     """

@@ -10,11 +10,8 @@
 
 from abc import ABCMeta, abstractmethod
 
-import six
 
-
-@six.add_metaclass(ABCMeta)
-class OutboundTransferSource(object):
+class OutboundTransferSource(metaclass=ABCMeta):
     """ Abstract class for defining outbound transfer sources.
 
     Supported outbound transfer sources are:

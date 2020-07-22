@@ -9,8 +9,6 @@
 ######################################################################
 
 import logging
-import six
-
 from b2sdk.download_dest import DownloadDestProgressWrapper
 from b2sdk.progress import DoNothingProgressListener
 
@@ -30,8 +28,7 @@ from .file_metadata import FileMetadata
 logger = logging.getLogger(__name__)
 
 
-@six.add_metaclass(B2TraceMetaAbstract)
-class DownloadManager(object):
+class DownloadManager(metaclass=B2TraceMetaAbstract):
     """
     Handle complex actions around downloads to free raw_api from that responsibility.
     """

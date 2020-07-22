@@ -11,8 +11,6 @@
 from __future__ import division
 
 import logging
-import six
-
 from enum import Enum, unique
 
 from ..bounded_queue_executor import BoundedQueueExecutor
@@ -34,7 +32,7 @@ def next_or_none(iterator):
     Return the next item from the iterator, or None if there are no more.
     """
     try:
-        return six.advance_iterator(iterator)
+        return next(iterator)
     except StopIteration:
         return None
 

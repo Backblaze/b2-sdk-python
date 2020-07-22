@@ -12,8 +12,6 @@ from abc import ABCMeta, abstractmethod
 
 import logging
 import os
-import six
-
 from ..download_dest import DownloadDestLocalFile
 from ..raw_api import SRC_LAST_MODIFIED_MILLIS
 from ..transfer.outbound.upload_source import UploadSourceLocalFile
@@ -22,8 +20,7 @@ from .report import SyncFileReporter
 logger = logging.getLogger(__name__)
 
 
-@six.add_metaclass(ABCMeta)
-class AbstractAction(object):
+class AbstractAction(metaclass=ABCMeta):
     """
     An action to take, such as uploading, downloading, or deleting
     a file.  Multi-threaded tasks create a sequence of Actions which

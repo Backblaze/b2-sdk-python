@@ -8,8 +8,6 @@
 #
 ######################################################################
 
-import six
-
 from .bucket import Bucket, BucketFactory
 from .exception import NonExistentBucket, RestrictedBucket
 from .file_version import FileIdAndName
@@ -59,8 +57,7 @@ class Services(object):
         self.emerger = Emerger(self)
 
 
-@six.add_metaclass(B2TraceMeta)
-class B2Api(object):
+class B2Api(metaclass=B2TraceMeta):
     """
     Provide file-level access to B2 services.
 

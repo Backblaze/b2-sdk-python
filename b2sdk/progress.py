@@ -9,7 +9,6 @@
 ######################################################################
 
 from abc import ABCMeta, abstractmethod
-import six
 import time
 
 try:
@@ -18,8 +17,7 @@ except ImportError:
     tqdm = None  # noqa
 
 
-@six.add_metaclass(ABCMeta)
-class AbstractProgressListener(object):
+class AbstractProgressListener(metaclass=ABCMeta):
     """
     Interface expected by B2Api upload and download methods to report
     on progress.

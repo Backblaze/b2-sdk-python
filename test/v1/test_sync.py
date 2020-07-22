@@ -17,7 +17,6 @@ import threading
 import time
 import unittest
 
-import six
 from nose import SkipTest
 
 from enum import Enum
@@ -68,27 +67,27 @@ class TestFolder(TestSync):
     __test__ = False
 
     NAMES = [
-        six.u('.dot_file'),
-        six.u('hello.'),
+        '.dot_file',
+        'hello.',
         os.path.join('hello', 'a', '1'),
         os.path.join('hello', 'a', '2'),
         os.path.join('hello', 'b'),
-        six.u('hello0'),
+        'hello0',
         os.path.join('inner', 'a.bin'),
         os.path.join('inner', 'a.txt'),
         os.path.join('inner', 'b.bin'),
         os.path.join('inner', 'b.txt'),
         os.path.join('inner', 'more', 'a.bin'),
         os.path.join('inner', 'more', 'a.txt'),
-        six.u('\u81ea\u7531'),
+        '\u81ea\u7531',
     ]
 
-    MOD_TIMES = {six.u('.dot_file'): TODAY - DAY, six.u('hello.'): TODAY - DAY}
+    MOD_TIMES = {'.dot_file': TODAY - DAY, 'hello.': TODAY - DAY}
 
     def setUp(self):
         super(TestFolder, self).setUp()
 
-        self.root_dir = six.u('')
+        self.root_dir = ''
 
     def prepare_folder(
         self,
@@ -108,16 +107,16 @@ class TestFolder(TestSync):
 
     def test_exclusions(self):
         expected_list = [
-            six.u('.dot_file'),
-            six.u('hello.'),
-            six.u('hello/a/1'),
-            six.u('hello/a/2'),
-            six.u('hello/b'),
-            six.u('hello0'),
-            six.u('inner/a.txt'),
-            six.u('inner/b.txt'),
-            six.u('inner/more/a.txt'),
-            six.u('\u81ea\u7531'),
+            '.dot_file',
+            'hello.',
+            'hello/a/1',
+            'hello/a/2',
+            'hello/b',
+            'hello0',
+            'inner/a.txt',
+            'inner/b.txt',
+            'inner/more/a.txt',
+            '\u81ea\u7531',
         ]
         polices_manager = ScanPoliciesManager(exclude_file_regexes=('.*\\.bin',))
         files = self.all_files(polices_manager)
@@ -131,18 +130,18 @@ class TestFolder(TestSync):
 
     def test_exclusions_inclusions(self):
         expected_list = [
-            six.u('.dot_file'),
-            six.u('hello.'),
-            six.u('hello/a/1'),
-            six.u('hello/a/2'),
-            six.u('hello/b'),
-            six.u('hello0'),
-            six.u('inner/a.bin'),
-            six.u('inner/a.txt'),
-            six.u('inner/b.txt'),
-            six.u('inner/more/a.bin'),
-            six.u('inner/more/a.txt'),
-            six.u('\u81ea\u7531'),
+            '.dot_file',
+            'hello.',
+            'hello/a/1',
+            'hello/a/2',
+            'hello/b',
+            'hello0',
+            'inner/a.bin',
+            'inner/a.txt',
+            'inner/b.txt',
+            'inner/more/a.bin',
+            'inner/more/a.txt',
+            '\u81ea\u7531',
         ]
         polices_manager = ScanPoliciesManager(
             exclude_file_regexes=('.*\\.bin',),
@@ -153,13 +152,13 @@ class TestFolder(TestSync):
 
     def test_exclude_matches_prefix(self):
         expected_list = [
-            six.u('.dot_file'),
-            six.u('hello.'),
-            six.u('hello/b'),
-            six.u('hello0'),
-            six.u('inner/b.bin'),
-            six.u('inner/b.txt'),
-            six.u('\u81ea\u7531'),
+            '.dot_file',
+            'hello.',
+            'hello/b',
+            'hello0',
+            'inner/b.bin',
+            'inner/b.txt',
+            '\u81ea\u7531',
         ]
         polices_manager = ScanPoliciesManager(exclude_file_regexes=('.*a',))
         files = self.all_files(polices_manager)
@@ -167,10 +166,10 @@ class TestFolder(TestSync):
 
     def test_exclude_directory(self):
         expected_list = [
-            six.u('.dot_file'),
-            six.u('hello.'),
-            six.u('hello0'),
-            six.u('\u81ea\u7531'),
+            '.dot_file',
+            'hello.',
+            'hello0',
+            '\u81ea\u7531',
         ]
         polices_manager = ScanPoliciesManager(
             exclude_dir_regexes=('hello', 'more', 'hello0'), exclude_file_regexes=('inner',)
@@ -180,10 +179,10 @@ class TestFolder(TestSync):
 
     def test_exclude_directory2(self):
         expected_list = [
-            six.u('.dot_file'),
-            six.u('hello.'),
-            six.u('hello0'),
-            six.u('\u81ea\u7531'),
+            '.dot_file',
+            'hello.',
+            'hello0',
+            '\u81ea\u7531',
         ]
         polices_manager = ScanPoliciesManager(exclude_dir_regexes=('hello$', 'inner'))
         files = self.all_files(polices_manager)
@@ -191,14 +190,14 @@ class TestFolder(TestSync):
 
     def test_exclude_directory_trailing_slash_does_not_match(self):
         expected_list = [
-            six.u('.dot_file'),
-            six.u('hello.'),
-            six.u('hello0'),
-            six.u('inner/a.bin'),
-            six.u('inner/a.txt'),
-            six.u('inner/b.bin'),
-            six.u('inner/b.txt'),
-            six.u('\u81ea\u7531'),
+            '.dot_file',
+            'hello.',
+            'hello0',
+            'inner/a.bin',
+            'inner/a.txt',
+            'inner/b.bin',
+            'inner/b.txt',
+            '\u81ea\u7531',
         ]
         polices_manager = ScanPoliciesManager(exclude_dir_regexes=('hello$', 'inner/'))
         files = self.all_files(polices_manager)
@@ -206,18 +205,18 @@ class TestFolder(TestSync):
 
     def test_exclusion_with_exact_match(self):
         expected_list = [
-            six.u('.dot_file'),
-            six.u('hello.'),
-            six.u('hello/a/1'),
-            six.u('hello/a/2'),
-            six.u('hello/b'),
-            six.u('inner/a.bin'),
-            six.u('inner/a.txt'),
-            six.u('inner/b.bin'),
-            six.u('inner/b.txt'),
-            six.u('inner/more/a.bin'),
-            six.u('inner/more/a.txt'),
-            six.u('\u81ea\u7531'),
+            '.dot_file',
+            'hello.',
+            'hello/a/1',
+            'hello/a/2',
+            'hello/b',
+            'inner/a.bin',
+            'inner/a.txt',
+            'inner/b.bin',
+            'inner/b.txt',
+            'inner/more/a.bin',
+            'inner/more/a.txt',
+            '\u81ea\u7531',
         ]
         polices_manager = ScanPoliciesManager(exclude_file_regexes=('hello0',))
         files = self.all_files(polices_manager)
@@ -225,17 +224,17 @@ class TestFolder(TestSync):
 
     def test_exclude_modified_before_in_range(self):
         expected_list = [
-            six.u('hello/a/1'),
-            six.u('hello/a/2'),
-            six.u('hello/b'),
-            six.u('hello0'),
-            six.u('inner/a.bin'),
-            six.u('inner/a.txt'),
-            six.u('inner/b.bin'),
-            six.u('inner/b.txt'),
-            six.u('inner/more/a.bin'),
-            six.u('inner/more/a.txt'),
-            six.u('\u81ea\u7531'),
+            'hello/a/1',
+            'hello/a/2',
+            'hello/b',
+            'hello0',
+            'inner/a.bin',
+            'inner/a.txt',
+            'inner/b.bin',
+            'inner/b.txt',
+            'inner/more/a.bin',
+            'inner/more/a.txt',
+            '\u81ea\u7531',
         ]
         polices_manager = ScanPoliciesManager(exclude_modified_before=TODAY - 100)
         files = self.all_files(polices_manager)
@@ -243,30 +242,30 @@ class TestFolder(TestSync):
 
     def test_exclude_modified_before_exact(self):
         expected_list = [
-            six.u('hello/a/1'),
-            six.u('hello/a/2'),
-            six.u('hello/b'),
-            six.u('hello0'),
-            six.u('inner/a.bin'),
-            six.u('inner/a.txt'),
-            six.u('inner/b.bin'),
-            six.u('inner/b.txt'),
-            six.u('inner/more/a.bin'),
-            six.u('inner/more/a.txt'),
-            six.u('\u81ea\u7531'),
+            'hello/a/1',
+            'hello/a/2',
+            'hello/b',
+            'hello0',
+            'inner/a.bin',
+            'inner/a.txt',
+            'inner/b.bin',
+            'inner/b.txt',
+            'inner/more/a.bin',
+            'inner/more/a.txt',
+            '\u81ea\u7531',
         ]
         polices_manager = ScanPoliciesManager(exclude_modified_before=TODAY)
         files = self.all_files(polices_manager)
         self.assert_filtered_files(files, expected_list)
 
     def test_exclude_modified_after_in_range(self):
-        expected_list = [six.u('.dot_file'), six.u('hello.')]
+        expected_list = ['.dot_file', 'hello.']
         polices_manager = ScanPoliciesManager(exclude_modified_after=TODAY - 100)
         files = self.all_files(polices_manager)
         self.assert_filtered_files(files, expected_list)
 
     def test_exclude_modified_after_exact(self):
-        expected_list = [six.u('.dot_file'), six.u('hello.')]
+        expected_list = ['.dot_file', 'hello.']
         polices_manager = ScanPoliciesManager(exclude_modified_after=TODAY - DAY)
         files = self.all_files(polices_manager)
         self.assert_filtered_files(files, expected_list)
@@ -351,8 +350,8 @@ class TestLocalFolder(TestFolder):
 
     def test_syncable_paths(self):
         syncable_paths = (
-            (six.u('test.txt'), six.u('test.txt')), (six.u('./a/test.txt'), six.u('a/test.txt')),
-            (six.u('./a/../test.txt'), six.u('test.txt'))
+            ('test.txt', 'test.txt'), ('./a/test.txt', 'a/test.txt'),
+            ('./a/../test.txt', 'test.txt')
         )
 
         folder = self.prepare_folder(prepare_files=False)
@@ -361,7 +360,7 @@ class TestLocalFolder(TestFolder):
             self.assertEqual(expected, folder.make_full_path(syncable_path))
 
     def test_unsyncable_paths(self):
-        unsyncable_paths = (six.u('../test.txt'), six.u('a/../../test.txt'), six.u('/a/test.txt'))
+        unsyncable_paths = ('../test.txt', 'a/../../test.txt', '/a/test.txt')
 
         folder = self.prepare_folder(prepare_files=False)
         for unsyncable_path in unsyncable_paths:
@@ -433,7 +432,7 @@ class TestB2Folder(TestFolder):
             return
 
         if platform.system() == 'Windows':
-            relative_path = relative_path.replace(os.sep, six.u('/'))
+            relative_path = relative_path.replace(os.sep, '/')
         if relative_path in self.MOD_TIMES:
             self.bucket.ls.return_value.append(
                 (
@@ -498,9 +497,9 @@ class TestB2Folder(TestFolder):
 
     # Path names not allowed to be sync'd on Windows
     NOT_SYNCD_ON_WINDOWS = [
-        six.u('Z:/windows/system32/drivers/etc/hosts'),
-        six.u('a:/Users/.default/test'),
-        six.u(r'C:\Windows\system32\drivers\mstsc.sys'),
+        'Z:/windows/system32/drivers/etc/hosts',
+        'a:/Users/.default/test',
+        r'C:\Windows\system32\drivers\mstsc.sys',
     ]
 
     def test_unsyncable_filenames(self):
@@ -508,48 +507,48 @@ class TestB2Folder(TestFolder):
 
         # Test a list of unsyncable file names
         filenames_to_test = [
-            six.u('/'),  # absolute root path
-            six.u('//'),
-            six.u('///'),
-            six.u('/..'),
-            six.u('/../'),
-            six.u('/.../'),
-            six.u('/../.'),
-            six.u('/../..'),
-            six.u('/a.txt'),
-            six.u('/folder/a.txt'),
-            six.u('./folder/a.txt'),  # current dir relative path
-            six.u('folder/./a.txt'),
-            six.u('folder/folder/.'),
-            six.u('a//b/'),  # double-slashes
-            six.u('a///b'),
-            six.u('a////b'),
-            six.u('../test'),  # start with parent dir
-            six.u('../../test'),
-            six.u('../../abc/../test'),
-            six.u('../../abc/../test/'),
-            six.u('../../abc/../.test'),
-            six.u('a/b/c/../d'),  # parent dir embedded
-            six.u('a//..//b../..c/'),
-            six.u('..a/b../..c/../d..'),
-            six.u('a/../'),
-            six.u('a/../../../../../'),
-            six.u('a/b/c/..'),
-            six.u(r'\\'),  # backslash filenames
-            six.u(r'\z'),
-            six.u(r'..\\'),
-            six.u(r'..\..'),
-            six.u(r'\..\\'),
-            six.u(r'\\..\\..'),
-            six.u(r'\\'),
-            six.u(r'\\\\'),
-            six.u(r'\\\\server\\share\\dir\\file'),
-            six.u(r'\\server\share\dir\file'),
-            six.u(r'\\?\C\Drive\temp'),
-            six.u(r'.\\//'),
-            six.u(r'..\\..//..\\\\'),
-            six.u(r'.\\a\\..\\b'),
-            six.u(r'a\\.\\b'),
+            '/',  # absolute root path
+            '//',
+            '///',
+            '/..',
+            '/../',
+            '/.../',
+            '/../.',
+            '/../..',
+            '/a.txt',
+            '/folder/a.txt',
+            './folder/a.txt',  # current dir relative path
+            'folder/./a.txt',
+            'folder/folder/.',
+            'a//b/',  # double-slashes
+            'a///b',
+            'a////b',
+            '../test',  # start with parent dir
+            '../../test',
+            '../../abc/../test',
+            '../../abc/../test/',
+            '../../abc/../.test',
+            'a/b/c/../d',  # parent dir embedded
+            'a//..//b../..c/',
+            '..a/b../..c/../d..',
+            'a/../',
+            'a/../../../../../',
+            'a/b/c/..',
+            r'\\',  # backslash filenames
+            r'\z',
+            r'..\\',
+            r'..\..',
+            r'\..\\',
+            r'\\..\\..',
+            r'\\',
+            r'\\\\',
+            r'\\\\server\\share\\dir\\file',
+            r'\\server\share\dir\file',
+            r'\\?\C\Drive\temp',
+            r'.\\//',
+            r'..\\..//..\\\\',
+            r'.\\a\\..\\b',
+            r'a\\.\\b',
         ]
 
         if platform.system() == "Windows":
@@ -570,26 +569,26 @@ class TestB2Folder(TestFolder):
 
         # Test a list of syncable file names
         filenames_to_test = [
-            six.u(''),
-            six.u(' '),
-            six.u(' / '),
-            six.u(' ./. '),
-            six.u(' ../.. '),
-            six.u('.. / ..'),
-            six.u(r'.. \ ..'),
-            six.u('file.txt'),
-            six.u('.folder/'),
-            six.u('..folder/'),
-            six.u('..file'),
-            six.u(r'file/ and\ folder'),
-            six.u('file..'),
-            six.u('..file..'),
-            six.u('folder/a.txt..'),
-            six.u('..a/b../c../..d/e../'),
-            six.u(r'folder\test'),
-            six.u(r'folder\..f..\..f\..f'),
-            six.u(r'mix/and\match/'),
-            six.u(r'a\b\c\d'),
+            '',
+            ' ',
+            ' / ',
+            ' ./. ',
+            ' ../.. ',
+            '.. / ..',
+            r'.. \ ..',
+            'file.txt',
+            '.folder/',
+            '..folder/',
+            '..file',
+            r'file/ and\ folder',
+            'file..',
+            '..file..',
+            'folder/a.txt..',
+            '..a/b../c../..d/e../',
+            r'folder\test',
+            r'folder\..f..\..f\..f',
+            r'mix/and\match/',
+            r'a\b\c\d',
         ]
 
         # filenames not permitted on Windows *should* be allowed on Linux
@@ -661,7 +660,7 @@ class TestParseSyncFolder(TestBase):
 
     def _check_one(self, expected, to_parse):
         api = MagicMock()
-        self.assertEqual(expected, str(parse_sync_folder(six.u(to_parse), api)))
+        self.assertEqual(expected, str(parse_sync_folder(str(to_parse), api)))
 
 
 class TestZipFolders(TestSync):
@@ -1398,7 +1397,7 @@ class TestBoundedQueueExecutor(TestBase):
                     raise Exception('test')
 
         counter = Counter()
-        for _ in six.moves.range(10):
+        for _ in range(10):
             bounded_executor.submit(counter.run)
         bounded_executor.shutdown()
         self.assertEqual(10, counter.counter)
@@ -1439,7 +1438,7 @@ class TestBoundedQueueExecutor(TestBase):
                     raise Exception('test')
 
         count_at_once = CountAtOnce()
-        for _ in six.moves.range(5):
+        for _ in range(5):
             bounded_executor.submit(count_at_once.run)
         bounded_executor.shutdown()
 

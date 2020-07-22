@@ -10,7 +10,6 @@
 
 import datetime
 import requests
-import six
 import socket
 import sys
 
@@ -45,7 +44,7 @@ class TestTranslateErrors(TestBase):
     def test_b2_error(self):
         response = MagicMock()
         response.status_code = 503
-        response.content = six.b('{"status": 503, "code": "server_busy", "message": "busy"}')
+        response.content = b'{"status": 503, "code": "server_busy", "message": "busy"}'
         with self.assertRaises(ServiceError):
             _translate_errors(lambda: response)
 
@@ -99,9 +98,7 @@ class TestTranslateErrors(TestBase):
         response = MagicMock()
         response.status_code = 429
         response.headers = {'retry-after': 1}
-        response.content = six.b(
-            '{"status": 429, "code": "Too Many requests", "message": "retry after some time"}'
-        )
+        response.content = b'{"status": 429, "code": "Too Many requests", "message": "retry after some time"}'
         with self.assertRaises(TooManyRequests):
             _translate_errors(lambda: response)
 
@@ -204,7 +201,7 @@ class TestB2Http(TestBase):
     HEADERS = dict(my_header='my_value')
     EXPECTED_HEADERS = {'my_header': 'my_value', 'User-Agent': USER_AGENT}
     PARAMS = dict(fileSize=100)
-    PARAMS_JSON_BYTES = six.b('{"fileSize": 100}')
+    PARAMS_JSON_BYTES = b'{"fileSize": 100}'
 
     def setUp(self):
         self.session = MagicMock()
@@ -217,7 +214,7 @@ class TestB2Http(TestBase):
     def test_post_json_return_json(self):
         self.session.post.return_value = self.response
         self.response.status_code = 200
-        self.response.content = six.b('{"color": "blue"}')
+        self.response.content = b'{"color": "blue"}'
         response_dict = self.b2_http.post_json_return_json(self.URL, self.HEADERS, self.PARAMS)
         self.assertEqual({'color': 'blue'}, response_dict)
         (pos_args, kw_args) = self.session.post.call_args
@@ -234,7 +231,7 @@ class TestB2Http(TestBase):
         self.b2_http.add_callback(callback)
         self.session.post.return_value = self.response
         self.response.status_code = 200
-        self.response.content = six.b('{"color": "blue"}')
+        self.response.content = b'{"color": "blue"}'
         self.b2_http.post_json_return_json(self.URL, self.HEADERS, self.PARAMS)
         expected_headers = {'my_header': 'my_value', 'User-Agent': USER_AGENT}
         callback.pre_request.assert_called_with('POST', 'http://example.com', expected_headers)
