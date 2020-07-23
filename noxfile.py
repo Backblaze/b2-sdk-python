@@ -19,7 +19,7 @@ PY_PATHS = ['b2sdk', 'test', 'noxfile.py', 'setup.py']
 
 # TODO: remove nose and pyflakes
 REQUIREMENTS_FORMAT = ['docformatter==1.3.1', 'isort==5.1.1', 'yapf==0.27']
-REQUIREMENTS_LINT = [*REQUIREMENTS_FORMAT, 'pyflakes', 'flake8==3.8.3']
+REQUIREMENTS_LINT = [*REQUIREMENTS_FORMAT, 'pyflakes', 'flake8==3.8.3', 'pytest==5.4.3']
 REQUIREMENTS_TEST = ['nose==1.3.7', 'pytest==5.4.3', 'pytest-cov==2.10.0']
 REQUIREMENTS_BUILD = ['liccheck==0.4.7', 'setuptools>=20.2']
 REQUIREMENTS_DOC = [
@@ -86,6 +86,7 @@ def lint(session):
         print('\n'.join(output))
         session.error('pyflakes has failed')
     # session.run('flake8', *PY_PATHS)
+    session.run('pytest', 'test/static')
 
 
 #
@@ -100,10 +101,13 @@ def test(session):
 
     if session.posargs:
         # Run given test suite
-        session.run('pytest', '--cov=b2sdk', '--cov-report=', *session.posargs)
+        session.run('pytest', '--cov=b2sdk', '--cov-branch', '--cov-report=xml', *session.posargs)
     else:
         # By default, run all suites and show the coverage
-        session.run('pytest', '--cov=b2sdk', '--cov-report=', '--doctest-modules', 'test/unit')
+        session.run(
+            'pytest', '--cov=b2sdk', '--cov-branch', '--cov-report=xml', '--doctest-modules',
+            'test/unit'
+        )
         session.run('pytest', 'test/integration')
         session.notify('cover')
 
