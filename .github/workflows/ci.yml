@@ -6,15 +6,18 @@ on:
   pull_request:
     branches: [master]
 
+env:
+  PYTHON_DEFAULT_VERSION: 3.8
+
 jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Set up Python 3.8
+      - name: Set up Python ${{ env.PYTHON_DEFAULT_VERSION }}
         uses: actions/setup-python@v2
         with:
-          python-version: 3.8
+          python-version: ${{ env.PYTHON_DEFAULT_VERSION }}
       - name: Display Python version
         run: python -c "import sys; print(sys.version)"
       - name: Install dependencies
@@ -26,10 +29,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Set up Python 3.8
+      - name: Set up Python ${{ env.PYTHON_DEFAULT_VERSION }}
         uses: actions/setup-python@v2
         with:
-          python-version: 3.8
+          python-version: ${{ env.PYTHON_DEFAULT_VERSION }}
       - name: Display Python version
         run: python -c "import sys; print(sys.version)"
       - name: Install dependencies
@@ -65,13 +68,13 @@ jobs:
       - name: Run tests
         run: nox -s ${{ github.job }}
       - name: Report to Codacy
-        if: ${{ matrix.os == 'ubuntu-latest' && matrix.python-version == 3.8 && env.CODACY_PROJECT_TOKEN != '' }}
+        if: ${{ matrix.os == 'ubuntu-latest' && matrix.python-version == env.PYTHON_DEFAULT_VERSION && env.CODACY_PROJECT_TOKEN != '' }}
         uses: codacy/codacy-coverage-reporter-action@v0
         with:
           project-token: ${{ env.CODACY_PROJECT_TOKEN }}
           coverage-reports: ./coverage.xml
       - name: Report to Codecov
-        if: ${{ matrix.os == 'ubuntu-latest' && matrix.python-version == 3.8 && env.CODECOV_TOKEN != '' }}
+        if: ${{ matrix.os == 'ubuntu-latest' && matrix.python-version == env.PYTHON_DEFAULT_VERSION && env.CODECOV_TOKEN != '' }}
         uses: codecov/codecov-action@v1
         with:
           token: ${{ env.CODECOV_TOKEN }}
@@ -82,10 +85,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Set up Python 3.8
+      - name: Set up Python ${{ env.PYTHON_DEFAULT_VERSION }}
         uses: actions/setup-python@v2
         with:
-          python-version: 3.8
+          python-version: ${{ env.PYTHON_DEFAULT_VERSION }}
       - name: Display Python version
         run: python -c "import sys; print(sys.version)"
       - name: Install dependencies

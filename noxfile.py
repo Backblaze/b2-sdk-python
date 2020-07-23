@@ -15,6 +15,7 @@ import nox
 
 CI = os.environ.get('CI') is not None
 PYTHON_VERSIONS = ['3.5', '3.6', '3.7', '3.8']
+PYTHON_DEFAULT_VERSION = os.environ.get('PYTHON_DEFAULT_VERSION', PYTHON_VERSIONS[-1])
 PY_PATHS = ['b2sdk', 'test', 'noxfile.py', 'setup.py']
 
 # TODO: remove nose and pyflakes
@@ -38,7 +39,7 @@ if CI:
 
 
 # noinspection PyShadowingBuiltins
-@nox.session(python=PYTHON_VERSIONS[-1])
+@nox.session(python=PYTHON_DEFAULT_VERSION)
 def format(session):
     """Format the code."""
     session.install(*REQUIREMENTS_FORMAT)
@@ -56,7 +57,7 @@ def format(session):
     # )
 
 
-@nox.session(python=PYTHON_VERSIONS[-1])
+@nox.session(python=PYTHON_DEFAULT_VERSION)
 def lint(session):
     """Run linters."""
     session.install('-e', '.', *REQUIREMENTS_LINT)
@@ -111,7 +112,7 @@ def cover(session):
     session.run('coverage', 'erase')
 
 
-@nox.session(python=PYTHON_VERSIONS[-1])
+@nox.session(python=PYTHON_DEFAULT_VERSION)
 def build(session):
     """Build the distribution."""
     # TODO: consider using wheel as well
@@ -122,14 +123,14 @@ def build(session):
     session.run('python', 'setup.py', 'sdist', *session.posargs)
 
 
-@nox.session(python=PYTHON_VERSIONS[-1])
+@nox.session(python=PYTHON_DEFAULT_VERSION)
 def deploy(session):
     """Deploy the distribution to the PyPi."""
     session.install('twine')
     session.run('twine', 'upload', 'dist/*')
 
 
-@nox.session(python=PYTHON_VERSIONS[-1])
+@nox.session(python=PYTHON_DEFAULT_VERSION)
 def doc(session):
     """Build the documentation."""
     session.install('-e', '.', *REQUIREMENTS_DOC)
