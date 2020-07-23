@@ -88,7 +88,7 @@ def lint(session):
 
 @nox.session(python=PYTHON_VERSIONS)
 def test(session):
-    """Run test suites."""
+    """Run test suite."""
     session.install('-e', '.', *REQUIREMENTS_TEST)
 
     if session.posargs:
