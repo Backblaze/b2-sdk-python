@@ -117,8 +117,8 @@ We encourage outside contributors to perform changes on our codebase. Many such 
 * maintain a set of integration tests (run with a production cloud)
 * maintain a set of (well over a hundred) unit tests
 * automatically run unit tests on 13 versions of python (including osx and pypy)
-* format the code automatically using [yapf](https://github.com/google/yapf)
-* use static code analysis to find subtle/potential issues with maintainability
+* format the code using [yapf](https://github.com/google/yapf)
+* run linters to find subtle/potential issues with maintainability
 * maintain other Continous Integration tools (coverage tracker)
 
 You'll need to some Python packages installed.  To get all the latest things:
