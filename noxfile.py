@@ -36,10 +36,6 @@ nox.options.sessions = [
 if CI:
     nox.options.force_venv_backend = 'none'
 
-#
-# DEVELOPMENT
-#
-
 
 # noinspection PyShadowingBuiltins
 @nox.session(python=PYTHON_VERSIONS[-1])
@@ -89,11 +85,6 @@ def lint(session):
     session.run('pytest', 'test/static')
 
 
-#
-# TESTING
-#
-
-
 @nox.session(python=PYTHON_VERSIONS)
 def test(session):
     """Run test suites."""
@@ -118,11 +109,6 @@ def cover(session):
     session.install('coverage')
     session.run('coverage', 'report', '--fail-under=75', '--show-missing')
     session.run('coverage', 'erase')
-
-
-#
-# DEPLOYMENT
-#
 
 
 @nox.session(python=PYTHON_VERSIONS[-1])
@@ -150,10 +136,26 @@ def doc(session):
     session.cd('doc')
     sphinx_args = ['-b', 'html', '-T', '-W', 'source', 'build/html']
     session.run('rm', '-rf', 'build', external=True)
-    if not session.interactive:
-        sphinx_cmd = 'sphinx-build'
-    else:
-        sphinx_cmd = 'sphinx-autobuild'
-        sphinx_args[-2:-2] = ['--open-browser', '-z', '../b2sdk', '-i', '*.pyc', '-i', '*~']
 
-    session.run(sphinx_cmd, *sphinx_args)
+    if not session.interactive:
+        session.run('sphinx-build', *sphinx_args)
+        session.notify('doc_cover')
+    else:
+        sphinx_args[-2:-2] = ['--open-browser', '-z', '../b2sdk', '-i', '*.pyc', '-i', '*~']
+        session.run('sphinx-autobuild', *sphinx_args)
+
+
+@nox.session
+def doc_cover(session):
+    """Perform coverage analysis for the documentation."""
+    session.install('-e', '.', *REQUIREMENTS_DOC)
+    session.cd('doc')
+    sphinx_args = ['-b', 'coverage', '-T', '-W', 'source', 'build/coverage']
+    report_file = 'build/coverage/python.txt'
+    session.run('sphinx-build', *sphinx_args)
+    session.run('cat', report_file, external=True)
+
+    with open('build/coverage/python.txt') as fd:
+        # If there is no undocumented files, the report should have only 2 lines (header)
+        if sum(1 for _ in fd) != 2:
+            session.error('sphinx coverage has failed')
