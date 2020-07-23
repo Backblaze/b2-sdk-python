@@ -4,7 +4,7 @@
   - `pip install -U nox`
 - Bump the version number to an even number in `b2sdk/version.py`.
 - Update the release history in `README.md` by changing "not released yet" to the current date for this release.
-- Run full tests:
+- Run linters and tests:
   - `export TEST_APPLICATION_KEY=your_app_key`
   - `export TEST_APPLICATION_KEY_ID=your_app_key_id`
   - `nox -x`

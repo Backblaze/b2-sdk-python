@@ -14,4 +14,3 @@ def test_files_headers():
                 pytest.fail('Missing "All Rights Reserved" in the header in: {}'.format(file))
             if file not in head:
                 pytest.fail('Wrong file name in the header in: {}'.format(file))
-    all([1, 2])
