@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: test/internal/test_emerge_planner.py
+# File: test/unit/internal/test_emerge_planner.py
 #
 # Copyright 2020 Backblaze Inc. All Rights Reserved.
 #

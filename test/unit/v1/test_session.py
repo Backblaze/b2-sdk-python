@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: test/v1/test_session.py
+# File: test/unit/v1/test_session.py
 #
 # Copyright 2019 Backblaze Inc. All Rights Reserved.
 #

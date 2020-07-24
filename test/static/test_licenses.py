@@ -1,3 +1,13 @@
+######################################################################
+#
+# File: test/static/test_licenses.py
+#
+# Copyright 2020 Backblaze Inc. All Rights Reserved.
+#
+# License https://www.backblaze.com/using_b2_code.html
+#
+######################################################################
+
 from glob import glob
 from itertools import islice
 
@@ -6,8 +16,6 @@ import pytest
 
 def test_files_headers():
     for file in glob('**/*.py', recursive=True):
-        if file.startswith('test'):
-            continue
         with open(file) as fd:
             head = ''.join(islice(fd, 9))
             if 'All Rights Reserved' not in head:

@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: test/v0/__init__.py
+# File: test/unit/v0/__init__.py
 #
 # Copyright 2019 Backblaze Inc. All Rights Reserved.
 #

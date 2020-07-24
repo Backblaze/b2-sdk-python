@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: test/sync/__init__.py
+# File: test/unit/sync/__init__.py
 #
 # Copyright 2020 Backblaze Inc. All Rights Reserved.
 #

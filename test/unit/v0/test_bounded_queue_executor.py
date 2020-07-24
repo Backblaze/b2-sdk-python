@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: test/v0/test_bounded_queue_executor.py
+# File: test/unit/v0/test_bounded_queue_executor.py
 #
 # Copyright 2019 Backblaze Inc. All Rights Reserved.
 #

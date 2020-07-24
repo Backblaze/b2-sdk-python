@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: test/v1/deps.py
+# File: test/unit/v1/deps.py
 #
 # Copyright 2019 Backblaze Inc. All Rights Reserved.
 #

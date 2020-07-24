@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: test/sync/test_exception.py
+# File: test/unit/sync/test_exception.py
 #
 # Copyright 2020 Backblaze Inc. All Rights Reserved.
 #

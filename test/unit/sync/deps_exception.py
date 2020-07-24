@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: test/sync/deps_exception.py
+# File: test/unit/sync/deps_exception.py
 #
 # Copyright 2020 Backblaze Inc. All Rights Reserved.
 #

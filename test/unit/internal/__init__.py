@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: test/internal/__init__.py
+# File: test/unit/internal/__init__.py
 #
 # Copyright 2020 Backblaze Inc. All Rights Reserved.
 #
