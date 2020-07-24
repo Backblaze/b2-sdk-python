@@ -60,7 +60,7 @@ def format(session):
 @nox.session(python=PYTHON_DEFAULT_VERSION)
 def lint(session):
     """Run linters."""
-    session.install('-e', '.', *REQUIREMENTS_LINT)
+    session.install(*REQUIREMENTS_LINT)
     session.run('yapf', '--diff', '--parallel', '--recursive', *PY_PATHS)
     # TODO: uncomment if we want to use isort and docformatter
     # session.run('isort', '--check', *PY_PATHS)
@@ -100,7 +100,7 @@ def test(session):
             'pytest', '--cov=b2sdk', '--cov-branch', '--cov-report=xml', '--doctest-modules',
             'test/unit'
         )
-        session.run('pytest', 'test/integration')
+        session.run('pytest', '-s', 'test/integration')
         session.notify('cover')
 
 

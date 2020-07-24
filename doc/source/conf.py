@@ -69,7 +69,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'b2-sdk-python'
-copyright = u'2019, Backblaze'
+copyright = u'2020, Backblaze'
 author = u'Backblaze'
 
 # The version info for the project you're documenting, acts as replacement for
