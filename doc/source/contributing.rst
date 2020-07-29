@@ -47,23 +47,13 @@ For example::
     nox > Creating virtual environment (virtualenv) using python3.8 in .nox/format
     ...
 
+    $ nox -s format
+    nox > Running session format
+    nox > Re-using existing virtual environment at .nox/format.
+    ...
+
     $ nox --no-venv -s format
     nox > Running session format
-    ...
-
-    $ nox -s test
-    nox > Running session test-3.5
-    ...
-    nox > Running session test-3.6
-    ...
-    nox > Running session test-3.7
-    ...
-    nox > Running session test-3.8
-    ...
-
-    $ nox -s test-3.8
-    nox > Running session test-3.8
-    nox > Re-using existing virtual environment at .nox/test-3-8.
     ...
 
 Session ``test`` can run on many python versions.
@@ -71,11 +61,46 @@ In order to do it, given Python interpreter must be installed in the operating s
 
 Sessions other than ``test`` use the latest stable Python. You can change it::
 
-    export PYTHON_DEFAULT_VERSION=3.7
+    $ export PYTHON_DEFAULT_VERSION=3.7
+
+Linting
+#############
+
+To run all available linters::
+
+    $ nox -s lint
+
+We marked the places in the code which are significantly less intuitive than others in a special way. To find them occurrences, use ``git grep '*magic*'``.
+
+
+Testing
+#############
+
+To run all tests on every available Python version::
+
+    $ nox -s test
+
+To run all tests on a specific version::
+
+    $ nox -s test-3.8
+
+To run just unit tests::
+
+    $ nox -s test-3.8 -- test/unit
 
 The integration tests need two environment variables::
 
-    export TEST_APPLICATION_KEY=your_app_key
-    export TEST_APPLICATION_KEY_ID=your_app_key_id
+    $ export TEST_APPLICATION_KEY=your_app_key
+    $ export TEST_APPLICATION_KEY_ID=your_app_key_id
+    $ nox -s test-3.8 -- test/integration
 
-We marked the places in the code which are significantly less intuitive than others in a special way. To find them occurrences, use ``git grep '*magic*'``.
+Documentation
+#############
+
+To build the documentation and watch for changes (including the source code)::
+
+    $ nox -s doc
+
+To just build the documentation::
+
+    $ nox --non-interactive -s doc
