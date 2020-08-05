@@ -40,6 +40,11 @@ if CI:
     nox.options.force_venv_backend = 'none'
 
 
+def install_myself(session):
+    """Install from the source."""
+    session.install('-e', '.')
+
+
 # noinspection PyShadowingBuiltins
 @nox.session(python=PYTHON_DEFAULT_VERSION)
 def format(session):
@@ -91,7 +96,8 @@ def lint(session):
 @nox.session(python=PYTHON_VERSIONS)
 def test(session):
     """Run test suite."""
-    session.install('-e', '.', *REQUIREMENTS_TEST)
+    install_myself(session)
+    session.install(*REQUIREMENTS_TEST)
 
     if session.posargs:
         # Run given test suite
@@ -118,7 +124,8 @@ def cover(session):
 def build(session):
     """Build the distribution."""
     # TODO: consider using wheel as well
-    session.install('-e', '.', *REQUIREMENTS_BUILD)
+    install_myself(session)
+    session.install(*REQUIREMENTS_BUILD)
     session.run('liccheck', '-s', 'setup.cfg')
     session.run('python', 'setup.py', 'check', '--metadata', '--strict')
     session.run('rm', '-rf', 'build', 'dist', 'b2sdk.egg-info', external=True)
@@ -135,7 +142,8 @@ def deploy(session):
 @nox.session(python=PYTHON_DEFAULT_VERSION)
 def doc(session):
     """Build the documentation."""
-    session.install('-e', '.', *REQUIREMENTS_DOC)
+    install_myself(session)
+    session.install(*REQUIREMENTS_DOC)
     session.cd('doc')
     sphinx_args = ['-b', 'html', '-T', '-W', 'source', 'build/html']
     session.run('rm', '-rf', 'build', external=True)
@@ -151,7 +159,8 @@ def doc(session):
 @nox.session
 def doc_cover(session):
     """Perform coverage analysis for the documentation."""
-    session.install('-e', '.', *REQUIREMENTS_DOC)
+    install_myself(session)
+    session.install(*REQUIREMENTS_DOC)
     session.cd('doc')
     sphinx_args = ['-b', 'coverage', '-T', '-W', 'source', 'build/coverage']
     report_file = 'build/coverage/python.txt'
