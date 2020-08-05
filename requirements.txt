@@ -2,5 +2,4 @@ arrow>=0.8.0,<1.0.0; python_version <= '3.5'
 arrow>=0.8.0; python_version > '3.5'
 logfury>=0.1.2
 requests>=2.9.1
-setuptools
 tqdm>=4.5.0
