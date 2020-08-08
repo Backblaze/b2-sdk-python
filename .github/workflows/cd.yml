@@ -8,9 +8,10 @@ env:
   PYTHON_DEFAULT_VERSION: 3.8
 
 jobs:
-  build:
+  deploy:
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      B2_PYPI_PASSWORD: ${{ secrets.B2_PYPI_PASSWORD }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -36,15 +37,21 @@ jobs:
           draft: false
           prerelease: false
       - name: Upload the distribution to GitHub
-        id: upload-dist
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ steps.create-release.outputs.upload_url }}
           asset_path: ./dist/${{ steps.output-dist.outputs.dist }}
           asset_name: ${{ steps.output-dist.outputs.dist }}
           asset_content_type: application/gzip
-  doc:
-    needs: build
+      - name: Upload the distribution to PyPI
+        if: ${{ env.B2_PYPI_PASSWORD != '' }}
+        uses: pypa/gh-action-pypi-publish@v1.3.1
+        with:
+          user: __token__
+          password: ${{ env.B2_PYPI_PASSWORD }}
+          repository_url: https://test.pypi.org/legacy/
+  doc_deploy:
+    needs: deploy
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
