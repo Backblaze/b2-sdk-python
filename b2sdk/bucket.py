@@ -338,7 +338,7 @@ class Bucket(metaclass=B2TraceMeta):
 
         :param str file_name: a file name
         :param str,None content_type: the MIME type, or ``None`` to accept the default based on file extension of the B2 file name
-        :param dict,None file_infos: a file info to store with the file or ``None`` to not store anything
+        :param dict,None file_info: a file info to store with the file or ``None`` to not store anything
         """
         validate_b2_file_name(file_name)
         return self.api.services.large_file.start_large_file(
@@ -426,7 +426,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param b2sdk.v1.UploadSource upload_source: an object that opens the source of the upload
         :param str file_name: the file name of the new B2 file
         :param str,None content_type: the MIME type, or ``None`` to accept the default based on file extension of the B2 file name
-        :param dict,None file_infos: a file info to store with the file or ``None`` to not store anything
+        :param dict,None file_info: a file info to store with the file or ``None`` to not store anything
         :param int,None min_part_size: the smallest part size to use or ``None`` to determine automatically
         :param b2sdk.v1.AbstractProgressListener,None progress_listener: a progress listener object to use, or ``None`` to not report progress
 
