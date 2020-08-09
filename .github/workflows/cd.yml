@@ -58,20 +58,3 @@ jobs:
           password: ${{ env.B2_PYPI_PASSWORD }}
           repository_url: https://test.pypi.org/legacy/
           skip_existing: true
-  doc_deploy:
-    needs: deploy
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Set up Python ${{ env.PYTHON_DEFAULT_VERSION }}
-        uses: actions/setup-python@v2
-        with:
-          python-version: ${{ env.PYTHON_DEFAULT_VERSION }}
-      - name: Display Python version
-        run: python -c "import sys; print(sys.version)"
-      - name: Install dependencies
-        run: |
-          sudo apt-get install -y graphviz plantuml
-          python -m pip install --upgrade nox pip
-      - name: Build the docs
-        run: nox --non-interactive -vs doc
