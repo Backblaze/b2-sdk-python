@@ -6,7 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Removed
-* Drop Python 2 and Python 3.4 support :tada:* Remove `--prefix` from `ls` (it didn't really work, use `folderName` argument)
+* Drop Python 2 and Python 3.4 support :tada:
+* Remove `--prefix` from `ls` (it didn't really work, use `folderName` argument)
 
 ## [1.1.4] - 2020-07-15
 ### Added
