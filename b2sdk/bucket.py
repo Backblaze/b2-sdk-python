@@ -362,6 +362,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param str,None content_type: the MIME type, or ``None`` to accept the default based on file extension of the B2 file name
         :param dict,None file_infos: a file info to store with the file or ``None`` to not store anything
         :param b2sdk.v1.AbstractProgressListener,None progress_listener: a progress listener object to use, or ``None`` to not track progress
+        :rtype: generator[b2sdk.sync.file.FileVersion]
         """
         upload_source = UploadSourceBytes(data_bytes)
         return self.upload(
@@ -396,6 +397,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param str,None sha1_sum: file SHA1 hash or ``None`` to compute it automatically
         :param int min_part_size: a minimum size of a part
         :param b2sdk.v1.AbstractProgressListener,None progress_listener: a progress listener object to use, or ``None`` to not report progress
+        :rtype: generator[b2sdk.sync.file.FileVersion]
         """
         upload_source = UploadSourceLocalFile(local_path=local_file, content_sha1=sha1_sum)
         return self.upload(
@@ -429,6 +431,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param dict,None file_info: a file info to store with the file or ``None`` to not store anything
         :param int,None min_part_size: the smallest part size to use or ``None`` to determine automatically
         :param b2sdk.v1.AbstractProgressListener,None progress_listener: a progress listener object to use, or ``None`` to not report progress
+        :rtype: generator[b2sdk.sync.file.FileVersion]
 
         The function `opener` should return a file-like object, and it
         must be possible to call it more than once in case the upload
