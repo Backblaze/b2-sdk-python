@@ -171,11 +171,17 @@ class Synchronizer(object):
         :param int now_millis: current time in milliseconds
         :param b2sdk.sync.report.SyncReport,None reporter: progress reporter
         """
+        source_type = source_folder.folder_type()
+        dest_type = dest_folder.folder_type()
+
+        if source_type != 'b2' and dest_type != 'b2':
+            raise NotImplemented('Sync between two local folders is not supported!')
+
         # For downloads, make sure that the target directory is there.
-        if dest_folder.folder_type() == 'local' and not self.dry_run:
+        if dest_type == 'local' and not self.dry_run:
             dest_folder.ensure_present()
 
-        if source_folder.folder_type() == 'local' and not self.allow_empty_source:
+        if source_type == 'local' and not self.allow_empty_source:
             source_folder.ensure_non_empty()
 
         # Make an executor to count files and run all of the actions. This is
@@ -192,23 +198,20 @@ class Synchronizer(object):
         # First, start the thread that counts the local files. That's the operation
         # that should be fastest, and it provides scale for the progress reporting.
         local_folder = None
-        if source_folder.folder_type() == 'local':
+        if source_type == 'local':
             local_folder = source_folder
         if dest_folder.folder_type() == 'local':
             local_folder = dest_folder
-        if local_folder is None:
-            raise ValueError('neither folder is a local folder')
-        if reporter:
+        if reporter and local_folder is not None:
             sync_executor.submit(count_files, local_folder, reporter)
 
         # Schedule each of the actions
         bucket = None
         if source_folder.folder_type() == 'b2':
             bucket = source_folder.bucket
-        if dest_folder.folder_type() == 'b2':
+        if dest_type == 'b2':
             bucket = dest_folder.bucket
-        if bucket is None:
-            raise ValueError('neither folder is a b2 folder')
+
         total_files = 0
         total_bytes = 0
         for action in self.make_folder_sync_actions(
@@ -250,8 +253,8 @@ class Synchronizer(object):
         source_type = source_folder.folder_type()
         dest_type = dest_folder.folder_type()
         sync_type = '%s-to-%s' % (source_type, dest_type)
-        if (source_type, dest_type) not in [('b2', 'local'), ('local', 'b2')]:
-            raise NotImplementedError("Sync support only local-to-b2 and b2-to-local")
+        if source_type != 'b2' and dest_type != 'b2':
+            raise NotImplementedError('Sync between two local folders is not supported!')
 
         for source_file, dest_file in zip_folders(
             source_folder,

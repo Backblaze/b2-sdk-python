@@ -13,8 +13,8 @@ from b2sdk.transfer.outbound.outbound_source import OutboundTransferSource
 
 class CopySource(OutboundTransferSource):
     def __init__(self, file_id, offset=0, length=None):
-        if length is None and offset > 0:
-            raise ValueError('Cannot copy with non zero offset and unknown length')
+        if not length and offset > 0:
+            raise ValueError('Cannot copy with non zero offset and unknown or zero length')
         self.file_id = file_id
         self.length = length
         self.offset = offset
@@ -38,13 +38,15 @@ class CopySource(OutboundTransferSource):
         return True
 
     def get_bytes_range(self):
-        if self.length is None:
+        if not self.length:
             if self.offset > 0:
                 # auto mode should get file info and create correct copy source (with length)
-                raise ValueError('cannot return bytes range for non zero offset and unknown length')
+                raise ValueError(
+                    'cannot return bytes range for non zero offset and unknown or zero length'
+                )
             return None
 
-        return (self.offset, self.offset + self.length - 1)
+        return self.offset, self.offset + self.length - 1
 
     def get_copy_source_range(self, relative_offset, range_length):
         if self.length is not None and range_length + relative_offset > self.length:

@@ -267,6 +267,75 @@ class B2DownloadAction(AbstractAction):
         )
 
 
+class B2CopyAction(AbstractAction):
+    """
+    File copying action.
+    """
+
+    def __init__(
+        self, relative_name, b2_file_name, file_id, dest_b2_file_name, mod_time_millis, size
+    ):
+        """
+        :param relative_name: a relative file name
+        :type relative_name: str
+        :param b2_file_name: a name of a remote file
+        :type b2_file_name: str
+        :param file_id: a file ID
+        :type file_id: str
+        :param dest_b2_file_name: a name of a destination remote file
+        :type dest_b2_file_name: str
+        :param mod_time_millis: file modification time in milliseconds
+        :type mod_time_millis: int
+        :param size: a file size
+        :type size: int
+        """
+        self.relative_name = relative_name
+        self.b2_file_name = b2_file_name
+        self.file_id = file_id
+        self.dest_b2_file_name = dest_b2_file_name
+        self.mod_time_millis = mod_time_millis
+        self.size = size
+
+    def get_bytes(self):
+        """
+        Return file size.
+
+        :rtype: int
+        """
+        return self.size
+
+    def do_action(self, bucket, reporter):
+        """
+        Perform the copying action, returning only after the action is completed.
+
+        :param bucket: a Bucket object
+        :type bucket: b2sdk.bucket.Bucket
+        :param reporter: a place to report errors
+        """
+        bucket.copy(
+            self.file_id,
+            self.dest_b2_file_name,
+            length=self.size,
+            progress_listener=SyncFileReporter(reporter)
+        )
+
+    def do_report(self, bucket, reporter):
+        """
+        Report the copying action performed.
+
+        :param bucket: a Bucket object
+        :type bucket: b2sdk.bucket.Bucket
+        :param reporter: a place to report errors
+        """
+        reporter.print_completion('copy ' + self.relative_name)
+
+    def __str__(self):
+        return (
+            'b2_copy(%s, %s, %s, %d)' %
+            (self.b2_file_name, self.file_id, self.dest_b2_file_name, self.mod_time_millis)
+        )
+
+
 class B2DeleteAction(AbstractAction):
     def __init__(self, relative_name, b2_file_name, file_id, note):
         """

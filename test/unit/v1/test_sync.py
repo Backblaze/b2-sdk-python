@@ -862,13 +862,6 @@ class IllegalEnum(Enum):
 
 
 class TestMakeSyncActions(TestSync):
-    def test_illegal_b2_to_b2(self):
-        b2_folder = FakeFolder('b2', [])
-        with self.assertRaises(NotImplementedError):
-            fakeargs = FakeArgs()
-            syncronizer = fakeargs.get_synchronizer()
-            list(syncronizer.make_folder_sync_actions(b2_folder, b2_folder, 0, self.reporter))
-
     def test_illegal_local_to_local(self):
         local_folder = FakeFolder('local', [])
         with self.assertRaises(NotImplementedError):
