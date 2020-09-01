@@ -62,7 +62,7 @@ class RemoteSourceUploadSubpart(BaseUploadSubpart):
         return CachedBytesStreamOpener(partial(self._download, emerge_execution))
 
     def _download(self, emerge_execution):
-        url = emerge_execution.session.get_download_url_by_id(self.outbound_source.file_id)
+        url = emerge_execution.services.session.get_download_url_by_id(self.outbound_source.file_id)
         absolute_offset = self.outbound_source.offset + self.relative_offset
         download_dest = DownloadDestBytes()
         range_ = (absolute_offset, absolute_offset + self.length - 1)
