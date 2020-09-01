@@ -383,6 +383,8 @@ class CopyFileExecutionStep(BaseExecutionStep):
         # would result with an error, because default in such case is: copy from source
         if execution.content_type is not None:
             file_info = execution.file_info or {}
+        else:
+            file_info = None
         return execution.services.copy_manager.copy_file(
             self.copy_source_range,
             execution.file_name,
