@@ -35,7 +35,7 @@ class FileMetadata(object):
         self.file_name = file_name
         self.content_type = content_type
         self.content_length = content_length
-        self.content_sha1 = content_sha1
+        self.content_sha1 = self._parse_content_sha1(content_sha1)
         self.file_info = file_info
 
     @classmethod
@@ -59,3 +59,9 @@ class FileMetadata(object):
             'contentSha1': self.content_sha1,
             'fileInfo': self.file_info,
         }
+
+    @classmethod
+    def _parse_content_sha1(cls, content_sha1):
+        if content_sha1.startswith('unverified:'):
+            return content_sha1.replace('unverified:', '')
+        return content_sha1

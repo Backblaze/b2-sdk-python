@@ -44,6 +44,7 @@ class AbstractDownloadDestination(metaclass=B2TraceMetaAbstract):
 
         :param str file_id: the B2 file ID from the headers
         :param str file_name: the B2 file name from the headers
+        :param str content_length: the content length
         :param str content_type: the content type from the headers
         :param str content_sha1: the content sha1 from the headers (or ``"none"`` for large files)
         :param dict file_info: the user file info from the headers
