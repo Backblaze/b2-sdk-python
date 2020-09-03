@@ -39,7 +39,8 @@ class DownloadManager(metaclass=B2TraceMetaAbstract):
     # minimum size of a download chunk
     DEFAULT_MIN_PART_SIZE = 100 * 1024 * 1024
 
-    # block size used when downloading file. If it is set to a high value, progress reporting will be jumpy, if it's too low, it impacts CPU
+    # block size used when downloading file. If it is set to a high value,
+    # progress reporting will be jumpy, if it's too low, it impacts CPU
     MIN_CHUNK_SIZE = 8192  # ~1MB file will show ~1% progress increment
     MAX_CHUNK_SIZE = 1024**2
 
@@ -123,7 +124,8 @@ class DownloadManager(metaclass=B2TraceMetaAbstract):
                 )  # raises exceptions
                 return metadata.as_info_dict()
 
-    def _validate_download(self, range_, bytes_read, actual_sha1, metadata):
+    @classmethod
+    def _validate_download(cls, range_, bytes_read, actual_sha1, metadata):
         if range_ is None:
             if bytes_read != metadata.content_length:
                 raise TruncatedOutput(bytes_read, metadata.content_length)
@@ -131,7 +133,7 @@ class DownloadManager(metaclass=B2TraceMetaAbstract):
             if metadata.content_sha1 != 'none' and actual_sha1 != metadata.content_sha1:
                 raise ChecksumMismatch(
                     checksum_type='sha1',
-                    expected=metadata.content_length,
+                    expected=metadata.content_sha1,
                     actual=actual_sha1,
                 )
         else:
