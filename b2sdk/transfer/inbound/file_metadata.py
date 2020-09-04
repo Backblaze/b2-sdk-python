@@ -13,6 +13,8 @@ class FileMetadata(object):
     """
     Hold information about a file which is being downloaded.
     """
+    UNVERIFIED_CHECKSUM_PREFIX = 'unverified:'
+
     __slots__ = (
         'file_id',
         'file_name',
@@ -62,6 +64,6 @@ class FileMetadata(object):
 
     @classmethod
     def _parse_content_sha1(cls, content_sha1):
-        if content_sha1.startswith('unverified:'):
-            return content_sha1.replace('unverified:', '')
+        if content_sha1.startswith(cls.UNVERIFIED_CHECKSUM_PREFIX):
+            return content_sha1[len(cls.UNVERIFIED_CHECKSUM_PREFIX):]
         return content_sha1

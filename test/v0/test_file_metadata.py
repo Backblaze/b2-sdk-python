@@ -19,11 +19,16 @@ def snake_to_camel(name):
 
 class TestFileMetadata(TestBase):
     KWARGS = {
-        'file_id': '4_deadbeaf3b3e38a957f100d1e_f1042665d79618ae7_d20200903_m194254_c000_v0001053_t0048',
-        'file_name': 'foo.txt',
-        'content_type': 'text/plain',
-        'content_length': '1',
-        'content_sha1': '4518012e1b365e504001dbc94120624f15b8bbd5',
+        'file_id':
+            '4_deadbeaf3b3e38a957f100d1e_f1042665d79618ae7_d20200903_m194254_c000_v0001053_t0048',
+        'file_name':
+            'foo.txt',
+        'content_type':
+            'text/plain',
+        'content_length':
+            '1',
+        'content_sha1':
+            '4518012e1b365e504001dbc94120624f15b8bbd5',
         'file_info': {},
     }
     INFO_DICT = {snake_to_camel(k): v for k, v in KWARGS.items()}
