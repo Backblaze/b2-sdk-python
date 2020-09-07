@@ -772,13 +772,13 @@ def test_raw_api_helper(raw_api):
     this test will break and we'll have to do something about
     it.
     """
-    application_key_id = os.environ.get('TEST_APPLICATION_KEY_ID')
+    application_key_id = os.environ.get('B2_TEST_APPLICATION_KEY_ID')
     if application_key_id is None:
-        print('TEST_APPLICATION_KEY_ID is not set.', file=sys.stderr)
+        print('B2_TEST_APPLICATION_KEY_ID is not set.', file=sys.stderr)
         sys.exit(1)
-    application_key = os.environ.get('TEST_APPLICATION_KEY')
+    application_key = os.environ.get('B2_TEST_APPLICATION_KEY')
     if application_key is None:
-        print('TEST_APPLICATION_KEY is not set.', file=sys.stderr)
+        print('B2_TEST_APPLICATION_KEY is not set.', file=sys.stderr)
         sys.exit(1)
     realm_url = 'https://api.backblazeb2.com'
 
