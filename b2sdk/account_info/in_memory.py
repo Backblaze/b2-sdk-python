@@ -24,7 +24,7 @@ def _raise_missing_if_result_is_none(function):
         assert function.__name__.startswith('get_')
         result = function(*args, **kwargs)
         if result is None:
-            # *magic*: assumes that it is a "get_field_name"
+            # assumes that it is a "get_field_name"
             raise MissingAccountData(function.__name__[4:])
         return result
 
