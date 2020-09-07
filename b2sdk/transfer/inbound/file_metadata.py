@@ -21,6 +21,7 @@ class FileMetadata(object):
         'content_type',
         'content_length',
         'content_sha1',
+        'content_sha1_verified',
         'file_info',
     )
 
@@ -37,7 +38,7 @@ class FileMetadata(object):
         self.file_name = file_name
         self.content_type = content_type
         self.content_length = content_length
-        self.content_sha1 = self._parse_content_sha1(content_sha1)
+        self.content_sha1, self.content_sha1_verified = self._decode_content_sha1(content_sha1)
         self.file_info = file_info
 
     @classmethod
@@ -58,12 +59,18 @@ class FileMetadata(object):
             'fileName': self.file_name,
             'contentType': self.content_type,
             'contentLength': self.content_length,
-            'contentSha1': self.content_sha1,
+            'contentSha1': self._encode_content_sha1(self.content_sha1, self.content_sha1_verified),
             'fileInfo': self.file_info,
         }
 
     @classmethod
-    def _parse_content_sha1(cls, content_sha1):
+    def _decode_content_sha1(cls, content_sha1):
         if content_sha1.startswith(cls.UNVERIFIED_CHECKSUM_PREFIX):
-            return content_sha1[len(cls.UNVERIFIED_CHECKSUM_PREFIX):]
+            return content_sha1[len(cls.UNVERIFIED_CHECKSUM_PREFIX):], False
+        return content_sha1, True
+
+    @classmethod
+    def _encode_content_sha1(cls, content_sha1, content_sha1_verified):
+        if not content_sha1_verified:
+            return '{}{}'.format(cls.UNVERIFIED_CHECKSUM_PREFIX, content_sha1)
         return content_sha1
