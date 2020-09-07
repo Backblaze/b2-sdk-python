@@ -40,9 +40,13 @@ if CI:
     nox.options.force_venv_backend = 'none'
 
 
-def install_myself(session):
+def install_myself(session, extras=None):
     """Install from the source."""
-    session.install('-e', '.')
+    arg = '.'
+    if extras:
+        arg += '[%s]' % ','.join(extras)
+
+    session.install('-e', arg)
 
 
 @nox.session(name='format', python=PYTHON_DEFAULT_VERSION)
@@ -153,8 +157,7 @@ def deploy(session):
 @nox.session(python=PYTHON_DEFAULT_VERSION)
 def doc(session):
     """Build the documentation."""
-    install_myself(session)
-    session.install(*REQUIREMENTS_DOC)
+    install_myself(session, extras=['doc'])
     session.cd('doc')
     sphinx_args = ['-b', 'html', '-T', '-W', 'source', 'build/html']
     session.run('rm', '-rf', 'build', external=True)
@@ -170,8 +173,7 @@ def doc(session):
 @nox.session
 def doc_cover(session):
     """Perform coverage analysis for the documentation."""
-    install_myself(session)
-    session.install(*REQUIREMENTS_DOC)
+    install_myself(session, extras=['doc'])
     session.cd('doc')
     sphinx_args = ['-b', 'coverage', '-T', '-W', 'source', 'build/coverage']
     report_file = 'build/coverage/python.txt'
