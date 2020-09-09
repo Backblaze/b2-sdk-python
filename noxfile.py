@@ -22,8 +22,8 @@ PYTHON_DEFAULT_VERSION = PYTHON_VERSIONS[-1]
 PY_PATHS = ['b2sdk', 'test', 'noxfile.py', 'setup.py']
 
 REQUIREMENTS_FORMAT = ['yapf==0.27']
-REQUIREMENTS_LINT = ['yapf==0.27', 'pyflakes==2.2.0', 'pytest==5.4.3', 'liccheck==0.4.7']
-REQUIREMENTS_TEST = ['nose==1.3.7', 'pytest==5.4.3', 'pytest-cov==2.10.0']
+REQUIREMENTS_LINT = ['yapf==0.27', 'pyflakes==2.2.0', 'pytest==6.0.1', 'liccheck==0.4.7']
+REQUIREMENTS_TEST = ['nose==1.3.7', 'pytest==6.0.1', 'pytest-cov==2.10.0', 'pytest-mock==3.3.1']
 REQUIREMENTS_BUILD = ['setuptools>=20.2']
 REQUIREMENTS_DOC = [
     'sphinx', 'sphinx-autobuild', 'sphinx_rtd_theme', 'sphinxcontrib-plantuml', 'sadisplay'
@@ -103,11 +103,12 @@ def unit(session):
     """Run unit tests."""
     install_myself(session)
     session.install(*REQUIREMENTS_TEST)
-    session.run(
-        'pytest', '--cov=b2sdk', '--cov-branch', '--cov-report=xml', '--doctest-modules',
-        *session.posargs, 'test/unit'
-    )
-    session.notify('cover')
+    args = ['--cov=b2sdk', '--cov-branch', '--cov-report=xml', '--doctest-modules']
+    session.run('pytest', '--api=v1', *args, *session.posargs, 'test/unit')
+    session.run('pytest', '--api=v0', '--cov-append', *args, *session.posargs, 'test/unit')
+
+    if not session.posargs:
+        session.notify('cover')
 
 
 @nox.session(python=PYTHON_VERSIONS)

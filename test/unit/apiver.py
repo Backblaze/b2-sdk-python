@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: test/unit/sync/deps_exception.py
+# File: test/unit/apiver.py
 #
 # Copyright 2020 Backblaze Inc. All Rights Reserved.
 #
@@ -8,4 +8,7 @@
 #
 ######################################################################
 
-from b2sdk.sync.exception import *
+import pytest
+
+# noinspection PyUnresolvedReferences
+apiver, apiver_exception = pytest.get_apiver_modules()

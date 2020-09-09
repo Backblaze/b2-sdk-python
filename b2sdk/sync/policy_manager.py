@@ -95,7 +95,7 @@ class SyncPolicyManager(object):
                 return CopyAndKeepDaysPolicy
             else:
                 return CopyPolicy
-        raise NotImplemented(
+        raise NotImplementedError(
             'invalid sync type: %s, keep_days: %s, delete: %s' % (
                 sync_type,
                 keep_days,
