@@ -179,7 +179,9 @@ class TestEmergePlanner(TestBase):
         self.verify_emerge_plan_for_write_intents(
             [WriteIntent(source)],
             [
-                part([source]),  # this means: download and then upload
+                # single small copy should be processed using `copy_file`
+                # which does not have minimum file size limit
+                part(source),
             ],
         )
 
