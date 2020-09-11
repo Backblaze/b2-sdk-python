@@ -133,7 +133,7 @@ File actions
 
 .. tip:: Sync is the preferred way of getting files into and out of B2 cloud, because it can achieve *highest performance* due to parallelization of scanning and data transfer operations.
 
-    To learn more about sync, see `Sync <sync.html>`_.
+    To learn more about sync, see :ref:`sync`.
 
     Use the functions described below only if you *really* need to transfer a single file.
 
