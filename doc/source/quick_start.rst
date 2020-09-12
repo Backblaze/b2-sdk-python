@@ -282,8 +282,6 @@ Get file metadata
 Copy file
 =========
 
-Please switch to  :meth:`b2sdk.v2.Bucket.copy`.
-
 .. code-block:: python
 
     >>> file_id = '4_z5485a1682662eb3e60980d10_f118df9ba2c5131e8_d20190619_m065809_c002_v0001126_t0040'
