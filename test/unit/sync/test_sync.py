@@ -11,8 +11,10 @@
 from enum import Enum
 from functools import partial
 
+from deps_exception import CommandError, DestFileNewer, InvalidArgument
+from deps import CompareVersionMode, KeepOrDeleteMode, NewerFileSyncMode
+
 from .fixtures import *
-from ..apiver import apiver, apiver_exception
 
 DAY = 86400000  # milliseconds
 TODAY = DAY * 100  # an arbitrary reference time for testing
@@ -60,13 +62,13 @@ class TestSynchronizer:
             'keep_days_or_delete',
         ]
     )
-    def test_illegal_args(self, synchronizer_factory, b2sdk_apiver, args):
+    def test_illegal_args(self, synchronizer_factory, apiver, args):
         exceptions = {
-            'v1': apiver_exception.InvalidArgument,
-            'v0': apiver_exception.CommandError,
+            'v1': InvalidArgument,
+            'v0': CommandError,
         }
 
-        with pytest.raises(exceptions[b2sdk_apiver]):
+        with pytest.raises(exceptions[apiver]):
             synchronizer_factory(**args)
 
     def test_illegal(self, synchronizer):
@@ -118,7 +120,7 @@ class TestSynchronizer:
         src = self.folder_factory(src_type, ('directory/a.txt', [100]))
         dst = self.b2_folder_factory()
         synchronizer = synchronizer_factory(
-            keep_days_or_delete=apiver.KeepOrDeleteMode.KEEP_BEFORE_DELETE, keep_days=1
+            keep_days_or_delete=KeepOrDeleteMode.KEEP_BEFORE_DELETE, keep_days=1
         )
         self.assert_folder_sync_actions(synchronizer, src, dst, expected)
 
@@ -134,7 +136,7 @@ class TestSynchronizer:
     ):  # reproduces issue 220
         src = self.folder_factory(src_type, ('directory/a.txt', [100]))
         dst = self.b2_folder_factory()
-        synchronizer = synchronizer_factory(keep_days_or_delete=apiver.KeepOrDeleteMode.DELETE)
+        synchronizer = synchronizer_factory(keep_days_or_delete=KeepOrDeleteMode.DELETE)
         self.assert_folder_sync_actions(synchronizer, src, dst, expected)
 
     # # src: absent, dst: present
@@ -161,7 +163,7 @@ class TestSynchronizer:
         ],
     )
     def test_delete(self, synchronizer_factory, src_type, dst_type, expected):
-        synchronizer = synchronizer_factory(keep_days_or_delete=apiver.KeepOrDeleteMode.DELETE)
+        synchronizer = synchronizer_factory(keep_days_or_delete=KeepOrDeleteMode.DELETE)
         src = self.folder_factory(src_type)
         dst = self.folder_factory(dst_type, ('a.txt', [100]))
         self.assert_folder_sync_actions(synchronizer, src, dst, expected)
@@ -175,7 +177,7 @@ class TestSynchronizer:
         ],
     )
     def test_delete_large(self, synchronizer_factory, src_type, dst_type, expected):
-        synchronizer = synchronizer_factory(keep_days_or_delete=apiver.KeepOrDeleteMode.DELETE)
+        synchronizer = synchronizer_factory(keep_days_or_delete=KeepOrDeleteMode.DELETE)
         src = self.folder_factory(src_type)
         dst = self.folder_factory(dst_type, ('a.txt', [100], 10737418240))
         self.assert_folder_sync_actions(synchronizer, src, dst, expected)
@@ -188,7 +190,7 @@ class TestSynchronizer:
         ],
     )
     def test_delete_multiple_versions(self, synchronizer_factory, src_type):
-        synchronizer = synchronizer_factory(keep_days_or_delete=apiver.KeepOrDeleteMode.DELETE)
+        synchronizer = synchronizer_factory(keep_days_or_delete=KeepOrDeleteMode.DELETE)
         src = self.folder_factory(src_type)
         dst = self.b2_folder_factory(('a.txt', [100, 200]))
         expected = [
@@ -206,7 +208,7 @@ class TestSynchronizer:
     )
     def test_delete_hide_b2_multiple_versions(self, synchronizer_factory, src_type):
         synchronizer = synchronizer_factory(
-            keep_days_or_delete=apiver.KeepOrDeleteMode.KEEP_BEFORE_DELETE, keep_days=1
+            keep_days_or_delete=KeepOrDeleteMode.KEEP_BEFORE_DELETE, keep_days=1
         )
         src = self.folder_factory(src_type)
         dst = self.b2_folder_factory(('a.txt', [TODAY, TODAY - 2 * DAY, TODAY - 4 * DAY]))
@@ -224,7 +226,7 @@ class TestSynchronizer:
     )
     def test_delete_hide_b2_multiple_versions_old(self, synchronizer_factory, src_type):
         synchronizer = synchronizer_factory(
-            keep_days_or_delete=apiver.KeepOrDeleteMode.KEEP_BEFORE_DELETE, keep_days=2
+            keep_days_or_delete=KeepOrDeleteMode.KEEP_BEFORE_DELETE, keep_days=2
         )
         src = self.folder_factory(src_type)
         dst = self.b2_folder_factory(('a.txt', [TODAY - 1 * DAY, TODAY - 3 * DAY, TODAY - 5 * DAY]))
@@ -254,7 +256,7 @@ class TestSynchronizer:
     )
     def test_already_hidden_multiple_versions_keep_days(self, synchronizer_factory, src_type):
         synchronizer = synchronizer_factory(
-            keep_days_or_delete=apiver.KeepOrDeleteMode.KEEP_BEFORE_DELETE, keep_days=1
+            keep_days_or_delete=KeepOrDeleteMode.KEEP_BEFORE_DELETE, keep_days=1
         )
         src = self.folder_factory(src_type)
         dst = self.b2_folder_factory(('a.txt', [-TODAY, TODAY - 2 * DAY, TODAY - 4 * DAY]))
@@ -272,7 +274,7 @@ class TestSynchronizer:
         self, synchronizer_factory, src_type
     ):
         synchronizer = synchronizer_factory(
-            keep_days_or_delete=apiver.KeepOrDeleteMode.KEEP_BEFORE_DELETE, keep_days=5
+            keep_days_or_delete=KeepOrDeleteMode.KEEP_BEFORE_DELETE, keep_days=5
         )
         src = self.folder_factory(src_type)
         dst = self.b2_folder_factory(
@@ -291,7 +293,7 @@ class TestSynchronizer:
         self, synchronizer_factory, src_type
     ):
         synchronizer = synchronizer_factory(
-            keep_days_or_delete=apiver.KeepOrDeleteMode.KEEP_BEFORE_DELETE, keep_days=2
+            keep_days_or_delete=KeepOrDeleteMode.KEEP_BEFORE_DELETE, keep_days=2
         )
         src = self.folder_factory(src_type)
         dst = self.b2_folder_factory(
@@ -311,7 +313,7 @@ class TestSynchronizer:
         self, synchronizer_factory, src_type
     ):
         synchronizer = synchronizer_factory(
-            keep_days_or_delete=apiver.KeepOrDeleteMode.KEEP_BEFORE_DELETE, keep_days=1
+            keep_days_or_delete=KeepOrDeleteMode.KEEP_BEFORE_DELETE, keep_days=1
         )
         src = self.folder_factory(src_type)
         dst = self.b2_folder_factory(
@@ -335,7 +337,7 @@ class TestSynchronizer:
         self, synchronizer_factory, src_type
     ):
         synchronizer = synchronizer_factory(
-            keep_days_or_delete=apiver.KeepOrDeleteMode.KEEP_BEFORE_DELETE, keep_days=1
+            keep_days_or_delete=KeepOrDeleteMode.KEEP_BEFORE_DELETE, keep_days=1
         )
         src = self.folder_factory(src_type)
         dst = self.b2_folder_factory(('a.txt', [-TODAY + 2 * DAY, TODAY - 4 * DAY]))
@@ -353,7 +355,7 @@ class TestSynchronizer:
         ],
     )
     def test_already_hidden_multiple_versions_delete(self, synchronizer_factory, src_type):
-        synchronizer = synchronizer_factory(keep_days_or_delete=apiver.KeepOrDeleteMode.DELETE)
+        synchronizer = synchronizer_factory(keep_days_or_delete=KeepOrDeleteMode.DELETE)
         src = self.folder_factory(src_type)
         dst = self.b2_folder_factory(('a.txt', [-TODAY, TODAY - 2 * DAY, TODAY - 4 * DAY]))
         expected = [
@@ -399,7 +401,7 @@ class TestSynchronizer:
     )
     def test_same_clean_old_version(self, synchronizer_factory, src_type):
         synchronizer = synchronizer_factory(
-            keep_days_or_delete=apiver.KeepOrDeleteMode.KEEP_BEFORE_DELETE, keep_days=1
+            keep_days_or_delete=KeepOrDeleteMode.KEEP_BEFORE_DELETE, keep_days=1
         )
         src = self.folder_factory(src_type, ('a.txt', [TODAY - 3 * DAY]))
         dst = self.b2_folder_factory(('a.txt', [TODAY - 3 * DAY, TODAY - 4 * DAY]))
@@ -415,7 +417,7 @@ class TestSynchronizer:
     )
     def test_keep_days_no_change_with_old_file(self, synchronizer_factory, src_type):
         synchronizer = synchronizer_factory(
-            keep_days_or_delete=apiver.KeepOrDeleteMode.KEEP_BEFORE_DELETE, keep_days=1
+            keep_days_or_delete=KeepOrDeleteMode.KEEP_BEFORE_DELETE, keep_days=1
         )
         src = self.folder_factory(src_type, ('a.txt', [TODAY - 3 * DAY]))
         dst = self.b2_folder_factory(('a.txt', [TODAY - 3 * DAY]))
@@ -429,7 +431,7 @@ class TestSynchronizer:
         ],
     )
     def test_same_delete_old_versions(self, synchronizer_factory, src_type):
-        synchronizer = synchronizer_factory(keep_days_or_delete=apiver.KeepOrDeleteMode.DELETE)
+        synchronizer = synchronizer_factory(keep_days_or_delete=KeepOrDeleteMode.DELETE)
         src = self.folder_factory(src_type, ('a.txt', [TODAY]))
         dst = self.b2_folder_factory(('a.txt', [TODAY, TODAY - 3 * DAY]))
         expected = ['b2_delete(folder/a.txt, id_a_8380800000, (old version))']
@@ -469,7 +471,7 @@ class TestSynchronizer:
     )
     def test_newer_clean_old_versions(self, synchronizer_factory, src_type, expected):
         synchronizer = synchronizer_factory(
-            keep_days_or_delete=apiver.KeepOrDeleteMode.KEEP_BEFORE_DELETE, keep_days=2
+            keep_days_or_delete=KeepOrDeleteMode.KEEP_BEFORE_DELETE, keep_days=2
         )
         src = self.folder_factory(src_type, ('a.txt', [TODAY]))
         dst = self.b2_folder_factory(('a.txt', [TODAY - 1 * DAY, TODAY - 3 * DAY, TODAY - 5 * DAY]))
@@ -495,7 +497,7 @@ class TestSynchronizer:
         ],
     )
     def test_newer_delete_old_versions(self, synchronizer_factory, src_type, expected):
-        synchronizer = synchronizer_factory(keep_days_or_delete=apiver.KeepOrDeleteMode.DELETE)
+        synchronizer = synchronizer_factory(keep_days_or_delete=KeepOrDeleteMode.DELETE)
         src = self.folder_factory(src_type, ('a.txt', [TODAY]))
         dst = self.b2_folder_factory(('a.txt', [TODAY - 1 * DAY, TODAY - 3 * DAY]))
         self.assert_folder_sync_actions(synchronizer, src, dst, expected)
@@ -510,10 +512,10 @@ class TestSynchronizer:
             ('b2', 'b2', ['b2_copy(folder/a.txt, id_a_200, folder/a.txt, 200)']),
         ],
     )
-    def test_older(self, synchronizer, b2sdk_apiver, src_type, dst_type, expected):
+    def test_older(self, synchronizer, apiver, src_type, dst_type, expected):
         src = self.folder_factory(src_type, ('a.txt', [100]))
         dst = self.folder_factory(dst_type, ('a.txt', [200]))
-        with pytest.raises(apiver_exception.DestFileNewer) as excinfo:
+        with pytest.raises(DestFileNewer) as excinfo:
             self.assert_folder_sync_actions(synchronizer, src, dst, expected)
         messages = {
             'v1': 'source file is older than destination: %s://a.txt with a time of 100 '
@@ -524,7 +526,7 @@ class TestSynchronizer:
                   'unless --skipNewer or --replaceNewer is provided',
         }  # yapf: disable
 
-        assert str(excinfo.value) == messages[b2sdk_apiver] % (src_type, dst_type)
+        assert str(excinfo.value) == messages[apiver] % (src_type, dst_type)
 
     @pytest.mark.parametrize(
         'src_type,dst_type',
@@ -535,7 +537,7 @@ class TestSynchronizer:
         ],
     )
     def test_older_skip(self, synchronizer_factory, src_type, dst_type):
-        synchronizer = synchronizer_factory(newer_file_mode=apiver.NewerFileSyncMode.SKIP)
+        synchronizer = synchronizer_factory(newer_file_mode=NewerFileSyncMode.SKIP)
         src = self.folder_factory(src_type, ('a.txt', [100]))
         dst = self.folder_factory(dst_type, ('a.txt', [200]))
         self.assert_folder_sync_actions(synchronizer, src, dst, [])
@@ -549,7 +551,7 @@ class TestSynchronizer:
         ],
     )
     def test_older_replace(self, synchronizer_factory, src_type, dst_type, expected):
-        synchronizer = synchronizer_factory(newer_file_mode=apiver.NewerFileSyncMode.REPLACE)
+        synchronizer = synchronizer_factory(newer_file_mode=NewerFileSyncMode.REPLACE)
         src = self.folder_factory(src_type, ('a.txt', [100]))
         dst = self.folder_factory(dst_type, ('a.txt', [200]))
         self.assert_folder_sync_actions(synchronizer, src, dst, expected)
@@ -573,8 +575,7 @@ class TestSynchronizer:
     )
     def test_older_replace_delete(self, synchronizer_factory, src_type, expected):
         synchronizer = synchronizer_factory(
-            newer_file_mode=apiver.NewerFileSyncMode.REPLACE,
-            keep_days_or_delete=apiver.KeepOrDeleteMode.DELETE
+            newer_file_mode=NewerFileSyncMode.REPLACE, keep_days_or_delete=KeepOrDeleteMode.DELETE
         )
         src = self.folder_factory(src_type, ('a.txt', [100]))
         dst = self.b2_folder_factory(('a.txt', [200]))
@@ -591,7 +592,7 @@ class TestSynchronizer:
         ],
     )
     def test_compare_none_newer(self, synchronizer_factory, src_type, dst_type):
-        synchronizer = synchronizer_factory(compare_version_mode=apiver.CompareVersionMode.NONE)
+        synchronizer = synchronizer_factory(compare_version_mode=CompareVersionMode.NONE)
         src = self.folder_factory(src_type, ('a.txt', [200]))
         dst = self.folder_factory(dst_type, ('a.txt', [100]))
         self.assert_folder_sync_actions(synchronizer, src, dst, [])
@@ -605,7 +606,7 @@ class TestSynchronizer:
         ],
     )
     def test_compare_none_older(self, synchronizer_factory, src_type, dst_type):
-        synchronizer = synchronizer_factory(compare_version_mode=apiver.CompareVersionMode.NONE)
+        synchronizer = synchronizer_factory(compare_version_mode=CompareVersionMode.NONE)
         src = self.folder_factory(src_type, ('a.txt', [100]))
         dst = self.folder_factory(dst_type, ('a.txt', [200]))
         self.assert_folder_sync_actions(synchronizer, src, dst, [])
@@ -619,7 +620,7 @@ class TestSynchronizer:
         ],
     )
     def test_compare_size_equal(self, synchronizer_factory, src_type, dst_type):
-        synchronizer = synchronizer_factory(compare_version_mode=apiver.CompareVersionMode.SIZE)
+        synchronizer = synchronizer_factory(compare_version_mode=CompareVersionMode.SIZE)
         src = self.folder_factory(src_type, ('a.txt', [200], 10))
         dst = self.folder_factory(dst_type, ('a.txt', [100], 10))
         self.assert_folder_sync_actions(synchronizer, src, dst, [])
@@ -633,7 +634,7 @@ class TestSynchronizer:
         ],
     )
     def test_compare_size_not_equal(self, synchronizer_factory, src_type, dst_type, expected):
-        synchronizer = synchronizer_factory(compare_version_mode=apiver.CompareVersionMode.SIZE)
+        synchronizer = synchronizer_factory(compare_version_mode=CompareVersionMode.SIZE)
         src = self.folder_factory(src_type, ('a.txt', [200], 11))
         dst = self.folder_factory(dst_type, ('a.txt', [100], 10))
         self.assert_folder_sync_actions(synchronizer, src, dst, expected)
@@ -660,8 +661,8 @@ class TestSynchronizer:
         self, synchronizer_factory, src_type, dst_type, expected
     ):
         synchronizer = synchronizer_factory(
-            compare_version_mode=apiver.CompareVersionMode.SIZE,
-            keep_days_or_delete=apiver.KeepOrDeleteMode.DELETE
+            compare_version_mode=CompareVersionMode.SIZE,
+            keep_days_or_delete=KeepOrDeleteMode.DELETE
         )
         src = self.folder_factory(src_type, ('a.txt', [200], 11))
         dst = self.folder_factory(dst_type, ('a.txt', [100], 10))

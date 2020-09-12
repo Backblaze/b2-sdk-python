@@ -8,7 +8,7 @@
 #
 ######################################################################
 
-from b2sdk.sync.exception import (
+from deps_exception import (
     EnvironmentEncodingError,
     InvalidArgument,
     IncompleteSync,

@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: test/unit_new/conftest.py
+# File: test/unit/conftest.py
 #
 # Copyright 2020 Backblaze Inc. All Rights Reserved.
 #
@@ -8,18 +8,12 @@
 #
 ######################################################################
 
-import importlib
-from functools import partial
+import sys
+from pathlib import Path
 
 import pytest
 
 pytest.register_assert_rewrite('test.unit')
-
-
-def get_apiver_modules(version):
-    return importlib.import_module('b2sdk.%s' % version), importlib.import_module(
-        'b2sdk.%s.exception' % version
-    )
 
 
 @pytest.hookimpl
@@ -34,7 +28,7 @@ def pytest_addoption(parser):
 
 @pytest.hookimpl
 def pytest_configure(config):
-    pytest.get_apiver_modules = partial(get_apiver_modules, config.getoption('--api'))
+    sys.path.insert(0, str(Path(__file__).parent / config.getoption('--api')))
 
 
 @pytest.hookimpl
@@ -54,5 +48,5 @@ def pytest_ignore_collect(path, config):
 
 
 @pytest.fixture(scope='session')
-def b2sdk_apiver(request):
+def apiver(request):
     return request.config.getoption('--api')

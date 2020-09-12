@@ -10,10 +10,12 @@
 
 import pytest
 
-from ..apiver import apiver
+from deps import AbstractFolder, File, FileVersion
+from deps import CompareVersionMode, NewerFileSyncMode, KeepOrDeleteMode
+from deps import DEFAULT_SCAN_MANAGER, Synchronizer
 
 
-class FakeFolder(apiver.AbstractFolder):
+class FakeFolder(AbstractFolder):
     def __init__(self, f_type, files=None):
         if files is None:
             files = []
@@ -21,7 +23,7 @@ class FakeFolder(apiver.AbstractFolder):
         self.f_type = f_type
         self.files = files
 
-    def all_files(self, reporter, policies_manager=apiver.DEFAULT_SCAN_MANAGER):
+    def all_files(self, reporter, policies_manager=DEFAULT_SCAN_MANAGER):
         for single_file in self.files:
             if single_file.name.endswith('/'):
                 if policies_manager.should_exclude_directory(single_file.name):
@@ -50,10 +52,9 @@ def local_file(name, mod_times, size=10):
     each modification time given in mod_times.
     """
     versions = [
-        apiver.FileVersion('/dir/%s' % (name,), name, mod_time, 'upload', size)
-        for mod_time in mod_times
+        FileVersion('/dir/%s' % (name,), name, mod_time, 'upload', size) for mod_time in mod_times
     ]
-    return apiver.File(name, versions)
+    return File(name, versions)
 
 
 def b2_file(name, mod_times, size=10):
@@ -78,7 +79,7 @@ def b2_file(name, mod_times, size=10):
         )
     """
     versions = [
-        apiver.FileVersion(
+        FileVersion(
             'id_%s_%d' % (name[0], abs(mod_time)),
             'folder/' + name,
             abs(mod_time),
@@ -86,7 +87,7 @@ def b2_file(name, mod_times, size=10):
             size,
         ) for mod_time in mod_times
     ]  # yapf disable
-    return apiver.File(name, versions)
+    return File(name, versions)
 
 
 @pytest.fixture(scope='module')
@@ -108,16 +109,16 @@ def folder_factory():
 @pytest.fixture(scope='module')
 def synchronizer_factory():
     def get_synchronizer(
-        policies_manager=apiver.DEFAULT_SCAN_MANAGER,
+        policies_manager=DEFAULT_SCAN_MANAGER,
         dry_run=False,
         allow_empty_source=False,
-        newer_file_mode=apiver.NewerFileSyncMode.RAISE_ERROR,
-        keep_days_or_delete=apiver.KeepOrDeleteMode.NO_DELETE,
+        newer_file_mode=NewerFileSyncMode.RAISE_ERROR,
+        keep_days_or_delete=KeepOrDeleteMode.NO_DELETE,
         keep_days=None,
-        compare_version_mode=apiver.CompareVersionMode.MODTIME,
+        compare_version_mode=CompareVersionMode.MODTIME,
         compare_threshold=None,
     ):
-        return apiver.Synchronizer(
+        return Synchronizer(
             1,
             policies_manager=policies_manager,
             dry_run=dry_run,
