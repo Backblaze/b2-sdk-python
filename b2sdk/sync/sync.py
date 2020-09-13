@@ -200,14 +200,14 @@ class Synchronizer(object):
         local_folder = None
         if source_type == 'local':
             local_folder = source_folder
-        if dest_folder.folder_type() == 'local':
+        if dest_type == 'local':
             local_folder = dest_folder
         if reporter and local_folder is not None:
             sync_executor.submit(count_files, local_folder, reporter)
 
         # Schedule each of the actions
         bucket = None
-        if source_folder.folder_type() == 'b2':
+        if source_type == 'b2':
             bucket = source_folder.bucket
         if dest_type == 'b2':
             bucket = dest_folder.bucket
@@ -267,7 +267,7 @@ class Synchronizer(object):
             elif dest_file is None:
                 logger.debug('determined that %s is not present on destination', source_file)
 
-            if source_folder.folder_type() == 'local':
+            if source_type == 'local':
                 if source_file is not None:
                     reporter.update_compare(1)
             else:
