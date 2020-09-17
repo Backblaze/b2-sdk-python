@@ -28,7 +28,7 @@ def pytest_addoption(parser):
 
 @pytest.hookimpl
 def pytest_configure(config):
-    sys.path.insert(0, str(Path(__file__).parent / config.getoption('--api')))
+    sys.path.insert(0, str(Path(__file__).parent / config.getoption('--api') / 'apiver'))
 
 
 @pytest.hookimpl

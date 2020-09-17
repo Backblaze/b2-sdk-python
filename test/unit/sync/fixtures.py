@@ -10,9 +10,9 @@
 
 import pytest
 
-from deps import AbstractFolder, File, FileVersion
-from deps import CompareVersionMode, NewerFileSyncMode, KeepOrDeleteMode
-from deps import DEFAULT_SCAN_MANAGER, Synchronizer
+from apiver_deps import AbstractFolder, File, FileVersion
+from apiver_deps import CompareVersionMode, NewerFileSyncMode, KeepOrDeleteMode
+from apiver_deps import DEFAULT_SCAN_MANAGER, Synchronizer
 
 
 class FakeFolder(AbstractFolder):

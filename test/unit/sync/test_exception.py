@@ -8,7 +8,7 @@
 #
 ######################################################################
 
-from deps_exception import (
+from apiver_deps_exception import (
     EnvironmentEncodingError,
     InvalidArgument,
     IncompleteSync,

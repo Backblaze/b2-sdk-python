@@ -11,8 +11,7 @@
 from enum import Enum
 from functools import partial
 
-from deps_exception import CommandError, DestFileNewer, InvalidArgument
-from deps import CompareVersionMode, KeepOrDeleteMode, NewerFileSyncMode
+from apiver_deps_exception import CommandError, DestFileNewer, InvalidArgument
 
 from .fixtures import *
 
