@@ -7,7 +7,7 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
-
+import os
 import sys
 from pathlib import Path
 
@@ -40,9 +40,9 @@ def pytest_report_header(config):
 def pytest_ignore_collect(path, config):
     path = str(path)
     ver = config.getoption('--api')
-    if ver == 'v1' and 'v0/' in path:
+    if ver == 'v1' and 'v0' + os.sep in path:
         return True
-    if ver == 'v0' and 'v1/' in path:
+    if ver == 'v0' and 'v1' + os.sep in path:
         return True
     return False
 
