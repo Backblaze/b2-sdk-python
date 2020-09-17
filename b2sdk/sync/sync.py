@@ -266,7 +266,6 @@ class Synchronizer(object):
                     reporter.update_total(1)
                 reporter.update_compare(1)
 
-            import time
             for action in self.make_file_sync_actions(
                 sync_type,
                 source_file,
@@ -278,7 +277,6 @@ class Synchronizer(object):
                 total_files += 1
                 total_bytes += action.get_bytes()
                 yield action
-                time.sleep(.02)
 
         if reporter is not None:
             if source_type == 'b2':

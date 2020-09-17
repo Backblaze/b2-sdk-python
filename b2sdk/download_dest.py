@@ -219,5 +219,4 @@ class DownloadDestProgressWrapper(AbstractDownloadDestination):
             if range_ is not None:
                 total_bytes = range_[1] - range_[0] + 1
             self.progress_listener.set_total_bytes(total_bytes)
-            with self.progress_listener:
-                yield WritingStreamWithProgress(file_, self.progress_listener)
+            yield WritingStreamWithProgress(file_, self.progress_listener)
