@@ -18,7 +18,7 @@ from ..utils import format_and_scale_number, format_and_scale_fraction
 logger = logging.getLogger(__name__)
 
 
-class SyncReport(object):
+class SyncReport:
     """
     Handle reporting progress for syncing.
 
@@ -45,8 +45,8 @@ class SyncReport(object):
         self.stdout = stdout
         self.no_progress = no_progress
         self.start_time = time.time()
-        self.local_file_count = 0
-        self.local_done = False
+        self.total_count = 0
+        self.total_done = False
         self.compare_done = False
         self.compare_count = 0
         self.total_transfer_files = 0  # set in end_compare()
@@ -109,9 +109,9 @@ class SyncReport(object):
                 self._last_update_time = now
                 time_delta = time.time() - self.start_time
                 rate = 0 if time_delta == 0 else int(self.transfer_bytes / time_delta)
-                if not self.local_done:
+                if not self.total_done:
                     message = ' count: %d files   compare: %d files   updated: %d files   %s   %s' % (
-                        self.local_file_count,
+                        self.total_count,
                         self.compare_count,
                         self.transfer_files,
                         format_and_scale_number(self.transfer_bytes, 'B'),
@@ -120,15 +120,13 @@ class SyncReport(object):
                 elif not self.compare_done:
                     message = ' compare: %d/%d files   updated: %d files   %s   %s' % (
                         self.compare_count,
-                        self.local_file_count,
+                        self.total_count,
                         self.transfer_files,
                         format_and_scale_number(self.transfer_bytes, 'B'),
                         format_and_scale_number(rate, 'B/s')
                     )  # yapf: disable
                 else:
-                    message = ' compare: %d/%d files   updated: %d/%d files   %s   %s' % (
-                        self.compare_count,
-                        self.local_file_count,
+                    message = ' updated: %d/%d files   %s   %s' % (
                         self.transfer_files,
                         self.total_transfer_files,
                         format_and_scale_fraction(self.transfer_bytes, self.total_transfer_bytes, 'B'),
@@ -169,23 +167,23 @@ class SyncReport(object):
             self.current_line = line
         self.stdout.flush()
 
-    def update_local(self, delta):
+    def update_total(self, delta):
         """
-        Report that more local files have been found.
+        Report that more files have been found for comparison.
 
         :param delta: number of files found since the last check
         :type delta: int
         """
         with self.lock:
-            self.local_file_count += delta
+            self.total_count += delta
             self._update_progress()
 
-    def end_local(self):
+    def end_total(self):
         """
-        Local file count is done.  Can proceed to step 2.
+        Total files count is done. Can proceed to step 2.
         """
         with self.lock:
-            self.local_done = True
+            self.total_done = True
             self._update_progress()
 
     def update_compare(self, delta):
@@ -251,6 +249,30 @@ class SyncReport(object):
     def symlink_skipped(self, path):
         pass
 
+    @property
+    def local_file_count(self):
+        # TODO: Deprecated. Should be removed in v2
+        return self.total_count
+
+    @local_file_count.setter
+    def local_file_count(self, value):
+        # TODO: Deprecated. Should be removed in v2
+        self.total_count = value
+
+    @property
+    def local_done(self):
+        # TODO: Deprecated. Should be removed in v2
+        return self.total_done
+
+    @local_done.setter
+    def local_done(self, value):
+        # TODO: Deprecated. Should be removed in v2
+        self.total_done = value
+
+    # TODO: Deprecated. Should be removed in v2
+    update_local = update_total
+    end_local = end_total
+
 
 class SyncFileReporter(AbstractProgressListener):
     """
@@ -300,13 +322,13 @@ def sample_sync_report_run():
     sync_report = SyncReport(sys.stdout, False)
 
     for i in range(20):
-        sync_report.update_local(1)
+        sync_report.update_total(1)
         time.sleep(0.2)
         if i == 10:
             sync_report.print_completion('transferred: a.txt')
         if i % 2 == 0:
             sync_report.update_compare(1)
-    sync_report.end_local()
+    sync_report.end_total()
 
     for i in range(10):
         sync_report.update_compare(1)

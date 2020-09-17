@@ -119,11 +119,15 @@ class B2UploadAction(AbstractAction):
         :type bucket: b2sdk.bucket.Bucket
         :param reporter: a place to report errors
         """
+        if reporter:
+            progress_listener = SyncFileReporter(reporter)
+        else:
+            progress_listener = None
         bucket.upload(
             UploadSourceLocalFile(self.local_full_path),
             self.b2_file_name,
             file_info={SRC_LAST_MODIFIED_MILLIS: str(self.mod_time_millis)},
-            progress_listener=SyncFileReporter(reporter)
+            progress_listener=progress_listener
         )
 
     def do_report(self, bucket, reporter):
@@ -238,10 +242,15 @@ class B2DownloadAction(AbstractAction):
         if not os.path.isdir(parent_dir):
             raise Exception('could not create directory %s' % (parent_dir,))
 
+        if reporter:
+            progress_listener = SyncFileReporter(reporter)
+        else:
+            progress_listener = None
+
         # Download the file to a .tmp file
         download_path = self.local_full_path + '.b2.sync.tmp'
         download_dest = DownloadDestLocalFile(download_path)
-        bucket.download_file_by_id(self.file_id, download_dest, SyncFileReporter(reporter))
+        bucket.download_file_by_id(self.file_id, download_dest, progress_listener)
 
         # Move the file into place
         try:
@@ -312,11 +321,16 @@ class B2CopyAction(AbstractAction):
         :type bucket: b2sdk.bucket.Bucket
         :param reporter: a place to report errors
         """
+        if reporter:
+            progress_listener = SyncFileReporter(reporter)
+        else:
+            progress_listener = None
+
         bucket.copy(
             self.file_id,
             self.dest_b2_file_name,
             length=self.size,
-            progress_listener=SyncFileReporter(reporter)
+            progress_listener=progress_listener
         )
 
     def do_report(self, bucket, reporter):

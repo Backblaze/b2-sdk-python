@@ -73,7 +73,7 @@ def zip_folders(folder_a, folder_b, reporter, policies_manager=DEFAULT_SCAN_MANA
             current_b = next_or_none(iter_b)
 
 
-def count_files(local_folder, reporter):
+def count_files(local_folder, reporter, policies_manager):
     """
     Count all of the files in a local folder.
 
@@ -82,9 +82,9 @@ def count_files(local_folder, reporter):
     """
     # Don't pass in a reporter to all_files.  Broken symlinks will be reported
     # during the next pass when the source and dest files are compared.
-    for _ in local_folder.all_files(None):
-        reporter.update_local(1)
-    reporter.end_local()
+    for _ in local_folder.all_files(None, policies_manager=policies_manager):
+        reporter.update_total(1)
+    reporter.end_total()
 
 
 @unique
@@ -195,34 +195,24 @@ class Synchronizer(object):
         queue_limit = self.max_workers + 1000
         sync_executor = BoundedQueueExecutor(unbounded_executor, queue_limit=queue_limit)
 
-        # First, start the thread that counts the local files. That's the operation
-        # that should be fastest, and it provides scale for the progress reporting.
-        local_folder = None
-        if source_type == 'local':
-            local_folder = source_folder
-        if dest_type == 'local':
-            local_folder = dest_folder
-        if reporter and local_folder is not None:
-            sync_executor.submit(count_files, local_folder, reporter)
+        if source_type == 'local' and reporter is not None:
+            # Start the thread that counts the local files. That's the operation
+            # that should be fastest, and it provides scale for the progress reporting.
+            sync_executor.submit(count_files, source_folder, reporter, self.policies_manager)
 
         # Schedule each of the actions
         bucket = None
-        if source_type == 'b2':
-            bucket = source_folder.bucket
         if dest_type == 'b2':
             bucket = dest_folder.bucket
+        elif source_type == 'b2':
+            bucket = source_folder.bucket
 
-        total_files = 0
-        total_bytes = 0
         for action in self.make_folder_sync_actions(
             source_folder, dest_folder, now_millis, reporter, self.policies_manager
         ):
             logging.debug('scheduling action %s on bucket %s', action, bucket)
             sync_executor.submit(action.run, bucket, reporter, self.dry_run)
-            total_files += 1
-            total_bytes += action.get_bytes()
-        if reporter:
-            reporter.end_compare(total_files, total_bytes)
+
         # Wait for everything to finish
         sync_executor.shutdown()
         if sync_executor.get_num_exceptions() != 0:
@@ -256,6 +246,8 @@ class Synchronizer(object):
         if source_type != 'b2' and dest_type != 'b2':
             raise NotImplementedError('Sync between two local folders is not supported!')
 
+        total_files = 0
+        total_bytes = 0
         for source_file, dest_file in zip_folders(
             source_folder,
             dest_folder,
@@ -267,13 +259,14 @@ class Synchronizer(object):
             elif dest_file is None:
                 logger.debug('determined that %s is not present on destination', source_file)
 
-            if source_type == 'local':
-                if source_file is not None:
-                    reporter.update_compare(1)
-            else:
-                if dest_file is not None:
-                    reporter.update_compare(1)
+            if source_file is not None:
+                if source_type == 'b2':
+                    # For buckets we don't want to count files separately as it would require
+                    # more API calls. Instead, we count them when comparing.
+                    reporter.update_total(1)
+                reporter.update_compare(1)
 
+            import time
             for action in self.make_file_sync_actions(
                 sync_type,
                 source_file,
@@ -282,7 +275,17 @@ class Synchronizer(object):
                 dest_folder,
                 now_millis,
             ):
+                total_files += 1
+                total_bytes += action.get_bytes()
                 yield action
+                time.sleep(.02)
+
+        if reporter is not None:
+            if source_type == 'b2':
+                # For buckets we don't want to count files separately as it would require
+                # more API calls. Instead, we count them when comparing.
+                reporter.end_total()
+            reporter.end_compare(total_files, total_bytes)
 
     def make_file_sync_actions(
         self,

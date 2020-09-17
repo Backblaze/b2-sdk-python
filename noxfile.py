@@ -134,7 +134,7 @@ def test(session):
 def cover(session):
     """Perform coverage analysis."""
     session.install('coverage')
-    session.run('coverage', 'report', '--fail-under=75', '--show-missing')
+    session.run('coverage', 'report', '--fail-under=75', '--show-missing', '--skip-covered')
     session.run('coverage', 'erase')
 
 
