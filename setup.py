@@ -117,9 +117,7 @@ setup(
 
     # If there are data files included in your packages that need to be
     # installed, specify them here.
-    package_data={
-        'b2sdk': ['CHANGELOG.md', 'CONTRIBUTING.md', 'README.md', 'requirements.txt', 'LICENSE']
-    },
+    package_data={'b2sdk': ['requirements.txt', 'LICENSE']},
 
     # Although 'package_data' is the preferred approach, in some case you may
     # need to place data files outside of your packages. See:
