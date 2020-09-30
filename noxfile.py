@@ -10,6 +10,7 @@
 
 import os
 import subprocess
+from glob import glob
 
 import nox
 
@@ -147,12 +148,16 @@ def build(session):
     session.run('rm', '-rf', 'build', 'dist', 'b2sdk.egg-info', external=True)
     session.run('python', 'setup.py', 'sdist', *session.posargs)
 
+    # Set outputs for GitHub Actions
+    if CI:
+        asset_path = glob('dist/*')[0]
+        print('::set-output name=asset_path::', asset_path, sep='')
 
-@nox.session(python=PYTHON_DEFAULT_VERSION)
-def deploy(session):
-    """Deploy the distribution to the PyPi."""
-    session.install('twine')
-    session.run('twine', 'upload', 'dist/*')
+        asset_name = os.path.basename(asset_path)
+        print('::set-output name=asset_name::', asset_name, sep='')
+
+        version = os.environ['GITHUB_REF'].replace('refs/tags/v', '')
+        print('::set-output name=version::', version, sep='')
 
 
 @nox.session(python=PYTHON_DEFAULT_VERSION)

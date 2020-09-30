@@ -30,84 +30,9 @@ Therefore when setting up b2sdk as a dependency, please make sure to match the v
 b2sdk>=0.0.0,<1.0.0
 ```
 
-
 # Release History
 
-## Not released yet
-
-* Drop Python 2 and Python 3.4 support :tada:
-* Support for bucket to bucket sync
-
-## 1.1.4 (2020-07-15)
-
-* Allow specifying custom realm in B2Session.authorize_account
-
-## 1.1.2 (2020-07-06)
-
-* Fix upload part for file range on Python 2.7
-
-## 1.1.0 (2020-06-24)
-
-* Make sync treat hidden files as deleted
-* Remove arrow warnings caused by https://github.com/crsmithdev/arrow/issues/612
-* Add `list_file_versions` method to buckets.
-* Add server-side copy support for large files
-* Add ability to synthesize objects from local and remote sources
-* Add AuthInfoCache, InMemoryCache and AbstractCache to public interface
-* Ignore urllib3 "connection pool is full" warning
-* Add ability to filter in ScanPoliciesManager based on modification time
-* Add ScanPoliciesManager and SyncReport to public interface
-* Add md5 checksum to FileVersionInfo
-* Add more keys to dicts returned by as_dict() methods
-* Fix handling of modification time of files
-
-## 1.0.2 (2019-10-15)
-
-Changes:
-
-* Remove upper version limit for arrow dependency
-
-## 1.0.0 (2019-10-03)
-
-Changes:
-
-* Minor bug fix.
-
-## 1.0.0-rc1 (2019-07-09)
-
-Changes:
-
-* Deprecate some transitional method names to v0 in preparation for v1.0.0.
-
-## 0.1.10 (2019-07-09)
-
-Changes:
-
-* Remove a parameter (which did nothing, really) from `b2sdk.v1.Bucket.copy_file` signature
-
-
-## 0.1.8 (2019-06-28)
-
-Changes:
-
-* Add support for b2_copy_file
-* Add support for `prefix` parameter on ls-like calls
-
-
-## 0.1.6 (2019-04-24)
-
-Changes:
-
-* Fix transferer crashing on empty file download attempt
-* Rename account ID for authentication to application key ID.
-Account ID is still backwards compatible, only the terminology
-has changed.
-
-
-## 0.1.4 (2019-04-04)
-
-Initial official release of SDK as a separate package (until now it was a part of B2 CLI)
-
+Please refer to the [changelog](CHANGELOG.md).
 
 # Developer Info
 
