@@ -15,13 +15,15 @@ import pytest
 
 pytest.register_assert_rewrite('test.unit')
 
+API_VERSIONS = ['v0', 'v1']
+
 
 @pytest.hookimpl
 def pytest_addoption(parser):
     parser.addoption(
         '--api',
-        default='v1',
-        choices=['v0', 'v1'],
+        default=API_VERSIONS[-1],
+        choices=API_VERSIONS,
         help='version of the API',
     )
 
@@ -40,10 +42,10 @@ def pytest_report_header(config):
 def pytest_ignore_collect(path, config):
     path = str(path)
     ver = config.getoption('--api')
-    if ver == 'v1' and 'v0' + os.sep in path:
-        return True
-    if ver == 'v0' and 'v1' + os.sep in path:
-        return True
+    other_versions = [v for v in API_VERSIONS if v != ver]
+    for other_version in other_versions:
+        if other_version + os.sep in path:
+            return True
     return False
 
 
