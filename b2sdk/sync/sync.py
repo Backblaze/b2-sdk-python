@@ -175,7 +175,7 @@ class Synchronizer(object):
         dest_type = dest_folder.folder_type()
 
         if source_type != 'b2' and dest_type != 'b2':
-            raise NotImplementedError('Sync between two local folders is not supported!')
+            raise ValueError('Sync between two local folders is not supported!')
 
         # For downloads, make sure that the target directory is there.
         if dest_type == 'local' and not self.dry_run:
@@ -244,7 +244,7 @@ class Synchronizer(object):
         dest_type = dest_folder.folder_type()
         sync_type = '%s-to-%s' % (source_type, dest_type)
         if source_type != 'b2' and dest_type != 'b2':
-            raise NotImplementedError('Sync between two local folders is not supported!')
+            raise ValueError('Sync between two local folders is not supported!')
 
         total_files = 0
         total_bytes = 0

@@ -71,7 +71,7 @@ class TestSynchronizer:
             synchronizer_factory(**args)
 
     def test_illegal(self, synchronizer):
-        with pytest.raises(NotImplementedError):
+        with pytest.raises(ValueError):
             src = self.local_folder_factory()
             dst = self.local_folder_factory()
             self.assert_folder_sync_actions(synchronizer, src, dst, [])
