@@ -552,7 +552,7 @@ class B2RawApi(AbstractRawApi):
         lifecycle_rules=None,
         if_revision_is=None
     ):
-        assert bucket_info or bucket_type
+        assert bucket_info is not None or bucket_type is not None
 
         kwargs = {}
         if if_revision_is is not None:

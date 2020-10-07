@@ -25,7 +25,7 @@ PY_PATHS = ['b2sdk', 'test', 'noxfile.py', 'setup.py']
 
 REQUIREMENTS_FORMAT = ['yapf==0.27']
 REQUIREMENTS_LINT = ['yapf==0.27', 'pyflakes==2.2.0', 'pytest==6.1.1', 'liccheck==0.4.7']
-REQUIREMENTS_TEST = ['pytest==6.1.1', 'pytest-cov==2.10.1']
+REQUIREMENTS_TEST = ['pytest==6.1.1', 'pytest-cov==2.10.1', 'pytest-mock==3.3.1']
 REQUIREMENTS_BUILD = ['setuptools>=20.2']
 
 nox.options.reuse_existing_virtualenvs = True
