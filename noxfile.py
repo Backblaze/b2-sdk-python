@@ -17,7 +17,8 @@ import nox
 CI = os.environ.get('CI') is not None
 NOX_PYTHONS = os.environ.get('NOX_PYTHONS')
 
-PYTHON_VERSIONS = ['3.5', '3.6', '3.7', '3.8'] if NOX_PYTHONS is None else NOX_PYTHONS.split(',')
+PYTHON_VERSIONS = ['3.5', '3.6', '3.7', '3.8', '3.9'
+                  ] if NOX_PYTHONS is None else NOX_PYTHONS.split(',')
 PYTHON_DEFAULT_VERSION = PYTHON_VERSIONS[-1]
 
 PY_PATHS = ['b2sdk', 'test', 'noxfile.py', 'setup.py']
@@ -26,9 +27,6 @@ REQUIREMENTS_FORMAT = ['yapf==0.27']
 REQUIREMENTS_LINT = ['yapf==0.27', 'pyflakes==2.2.0', 'pytest==6.1.1', 'liccheck==0.4.7']
 REQUIREMENTS_TEST = ['pytest==6.1.1', 'pytest-cov==2.10.1']
 REQUIREMENTS_BUILD = ['setuptools>=20.2']
-REQUIREMENTS_DOC = [
-    'sphinx', 'sphinx-autobuild', 'sphinx_rtd_theme', 'sphinxcontrib-plantuml', 'sadisplay'
-]
 
 nox.options.reuse_existing_virtualenvs = True
 nox.options.sessions = [
@@ -171,7 +169,9 @@ def doc(session):
         session.run('sphinx-build', *sphinx_args)
         session.notify('doc_cover')
     else:
-        sphinx_args[-2:-2] = ['--open-browser', '-z', '../b2sdk', '-i', '*.pyc', '-i', '*~']
+        sphinx_args[-2:-2] = [
+            '--open-browser', '--watch', '../b2sdk', '--ignore', '*.pyc', '--ignore', '*~'
+        ]
         session.run('sphinx-autobuild', *sphinx_args)
 
 
