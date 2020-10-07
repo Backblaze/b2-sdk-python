@@ -9,10 +9,11 @@
 ######################################################################
 
 from io import BytesIO
-from nose import SkipTest
 import os
 import platform
 import unittest.mock as mock
+
+import pytest
 
 from .test_base import TestBase
 
@@ -522,18 +523,16 @@ class TestUpload(TestCaseWithBucket):
             self.bucket.upload_local_file(path, 'file1')
             self._check_file_contents('file1', data)
 
+    @pytest.mark.skipif(platform.system() == 'Windows', reason='no os.mkfifo() on Windows')
     def test_upload_fifo(self):
-        if platform.system() == 'Windows':
-            raise SkipTest('no os.mkfifo() on Windows')
         with TempDir() as d:
             path = os.path.join(d, 'file1')
             os.mkfifo(path)
             with self.assertRaises(InvalidUploadSource):
                 self.bucket.upload_local_file(path, 'file1')
 
+    @pytest.mark.skipif(platform.system() == 'Windows', reason='no os.symlink() on Windows')
     def test_upload_dead_symlink(self):
-        if platform.system() == 'Windows':
-            raise SkipTest('no os.symlink() on Windows')
         with TempDir() as d:
             path = os.path.join(d, 'file1')
             os.symlink('non-existing', path)
