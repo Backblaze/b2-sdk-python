@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+* Add support for Python 3.9
+
 ### Removed
 * Drop Python 2 and Python 3.4 support :tada:
 * Remove `--prefix` from `ls` (it didn't really work, use `folderName` argument)

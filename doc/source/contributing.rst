@@ -33,7 +33,7 @@ With ``nox``, you can run different sessions (default are ``lint`` and ``test``)
 
 * ``format`` -> Format the code.
 * ``lint`` -> Run linters.
-* ``test`` (``test-3.5``, ``test-3.6``, ``test-3.7``, ``test-3.8``) -> Run test suite.
+* ``test`` (``test-3.5``, ``test-3.6``, ``test-3.7``, ``test-3.8``, ``test-3.9``) -> Run test suite.
 * ``cover`` -> Perform coverage analysis.
 * ``build`` -> Build the distribution.
 * ``deploy`` -> Deploy the distribution to the PyPi.
@@ -44,7 +44,7 @@ For example::
 
     $ nox -s format
     nox > Running session format
-    nox > Creating virtual environment (virtualenv) using python3.8 in .nox/format
+    nox > Creating virtual environment (virtualenv) using python3.9 in .nox/format
     ...
 
     $ nox -s format
@@ -56,9 +56,9 @@ For example::
     nox > Running session format
     ...
 
-Sessions ``test``, ``unit``, and ``integration`` can run on many Python versions, 3.5-3.8 by default.
+Sessions ``test``, ``unit``, and ``integration`` can run on many Python versions, 3.5-3.9 by default.
 
-Sessions other than ``test`` use the last given Python version, 3.8 by default.
+Sessions other than ``test`` use the last given Python version, 3.9 by default.
 
 You can change it::
 
@@ -85,17 +85,17 @@ To run all tests on every available Python version::
 
 To run all tests on a specific version::
 
-    $ nox -s test-3.8
+    $ nox -s test-3.9
 
 To run just unit tests::
 
-    $ nox -s unit-3.8
+    $ nox -s unit-3.9
 
 To run just integration tests::
 
     $ export B2_TEST_APPLICATION_KEY=your_app_key
     $ export B2_TEST_APPLICATION_KEY_ID=your_app_key_id
-    $ nox -s integration-3.8
+    $ nox -s integration-3.9
 
 Documentation
 #############

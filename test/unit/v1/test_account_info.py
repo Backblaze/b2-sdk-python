@@ -11,10 +11,11 @@
 from abc import ABCMeta, abstractmethod
 import json
 import unittest.mock as mock
-from nose import SkipTest
 import os
 import platform
 import tempfile
+
+import pytest
 
 from .test_base import TestBase
 
@@ -49,7 +50,7 @@ class TestUploadUrlPool(TestBase):
 
 
 class AccountInfoBase(metaclass=ABCMeta):
-    # it is a mixin to avoid nose from running the tests directly (without inheritance)
+    # it is a mixin to avoid running the tests directly (without inheritance)
     PERSISTENCE = NotImplemented  # subclass should override this
 
     @abstractmethod
@@ -225,13 +226,15 @@ class TestSqliteAccountInfo(AccountInfoBase, TestBase):
         with self.assertRaises(CorruptAccountInfo):
             self._make_info()
 
+    @pytest.mark.skipif(
+        platform.system() == 'Windows',
+        reason='it fails to upgrade on Windows, not worth to fix it anymore'
+    )
     def test_convert_from_json(self):
         """
         Tests converting from a JSON account info file, which is what version
         0.5.2 of the command-line tool used.
         """
-        if platform.system() == 'Windows':
-            raise SkipTest('it fails to upgrade on Windows, not worth to fix it anymore')
         data = dict(
             account_auth_token='auth_token',
             account_id='account_id',
