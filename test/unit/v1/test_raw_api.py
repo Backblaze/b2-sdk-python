@@ -95,20 +95,20 @@ class TestRawAPIFilenames(TestBase):
         self._should_raise(u'foo/' + 125 * TWO_BYTE_UNICHR + u'x', "segment too long")
 
 
-class TestAssertions:
-    """Test various assertions."""
+class TestUpdateBucket:
+    """Test updating bucket."""
 
     @pytest.fixture(autouse=True)
     def init(self, mocker):
         b2_http = mocker.MagicMock()
         self.raw_api = B2RawApi(b2_http)
 
-    def test_update_bucket_raises(self):
+    def test_assertion_raises(self):
         with pytest.raises(AssertionError):
             self.raw_api.update_bucket('test', 'account_auth_token', 'account_id', 'bucket_id')
 
     @pytest.mark.parametrize('bucket_type,bucket_info', ((None, {}), ('allPublic', None)))
-    def test_update_bucket_not_raises(self, bucket_type, bucket_info):
+    def test_assertion_not_raises(self, bucket_type, bucket_info):
         self.raw_api.update_bucket(
             'test',
             'account_auth_token',
