@@ -75,12 +75,12 @@ class TestDownloadDestProgressWrapper(TestBase):
         with TempDir() as temp_dir:
             file_path = os.path.join(temp_dir, "test.txt")
             download_local_file = DownloadDestLocalFile(file_path)
-            with ProgressListenerForTest() as progress_listener:
-                download_dest = DownloadDestProgressWrapper(download_local_file, progress_listener)
-                with download_dest.make_file_context(
-                    "file_id", "file_name", 100, "content_type", "sha1", {}, mod_time
-                ) as f:
-                    f.write(b'hello world\n')
+            progress_listener = ProgressListenerForTest()
+            download_dest = DownloadDestProgressWrapper(download_local_file, progress_listener)
+            with download_dest.make_file_context(
+                "file_id", "file_name", 100, "content_type", "sha1", {}, mod_time
+            ) as f:
+                f.write(b'hello world\n')
             with open(file_path, 'rb') as f:
                 self.assertEqual(b'hello world\n', f.read())
             self.assertEqual(mod_time, int(os.path.getmtime(file_path) * 1000))

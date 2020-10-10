@@ -13,7 +13,6 @@ from abc import ABCMeta, abstractmethod
 import logging
 import os
 from ..download_dest import DownloadDestLocalFile
-from ..progress import DoNothingProgressListener
 from ..raw_api import SRC_LAST_MODIFIED_MILLIS
 from ..transfer.outbound.upload_source import UploadSourceLocalFile
 from .report import SyncFileReporter
@@ -123,15 +122,13 @@ class B2UploadAction(AbstractAction):
         if reporter:
             progress_listener = SyncFileReporter(reporter)
         else:
-            progress_listener = DoNothingProgressListener()
-
-        with progress_listener:
-            bucket.upload(
-                UploadSourceLocalFile(self.local_full_path),
-                self.b2_file_name,
-                file_info={SRC_LAST_MODIFIED_MILLIS: str(self.mod_time_millis)},
-                progress_listener=progress_listener
-            )
+            progress_listener = None
+        bucket.upload(
+            UploadSourceLocalFile(self.local_full_path),
+            self.b2_file_name,
+            file_info={SRC_LAST_MODIFIED_MILLIS: str(self.mod_time_millis)},
+            progress_listener=progress_listener
+        )
 
     def do_report(self, bucket, reporter):
         """
@@ -248,13 +245,12 @@ class B2DownloadAction(AbstractAction):
         if reporter:
             progress_listener = SyncFileReporter(reporter)
         else:
-            progress_listener = DoNothingProgressListener()
+            progress_listener = None
 
         # Download the file to a .tmp file
         download_path = self.local_full_path + '.b2.sync.tmp'
         download_dest = DownloadDestLocalFile(download_path)
-        with progress_listener:
-            bucket.download_file_by_id(self.file_id, download_dest, progress_listener)
+        bucket.download_file_by_id(self.file_id, download_dest, progress_listener)
 
         # Move the file into place
         try:
@@ -328,15 +324,14 @@ class B2CopyAction(AbstractAction):
         if reporter:
             progress_listener = SyncFileReporter(reporter)
         else:
-            progress_listener = DoNothingProgressListener()
+            progress_listener = None
 
-        with progress_listener:
-            bucket.copy(
-                self.file_id,
-                self.dest_b2_file_name,
-                length=self.size,
-                progress_listener=progress_listener
-            )
+        bucket.copy(
+            self.file_id,
+            self.dest_b2_file_name,
+            length=self.size,
+            progress_listener=progress_listener
+        )
 
     def do_report(self, bucket, reporter):
         """

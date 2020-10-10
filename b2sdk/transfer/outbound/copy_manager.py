@@ -151,29 +151,31 @@ class CopyManager(metaclass=B2TraceMetaAbstract):
         destination_bucket_id,
         progress_listener,
     ):
-        progress_listener.set_total_bytes(copy_source.get_content_length() or 0)
+        with progress_listener:
+            progress_listener.set_total_bytes(copy_source.get_content_length() or 0)
 
-        bytes_range = copy_source.get_bytes_range()
+            bytes_range = copy_source.get_bytes_range()
 
-        if content_type is None:
-            if file_info is not None:
-                raise ValueError('File info can be set only when content type is set')
-            metadata_directive = MetadataDirectiveMode.COPY
-        else:
-            if file_info is None:
-                raise ValueError('File info can be not set only when content type is not set')
-            metadata_directive = MetadataDirectiveMode.REPLACE
+            if content_type is None:
+                if file_info is not None:
+                    raise ValueError('File info can be set only when content type is set')
+                metadata_directive = MetadataDirectiveMode.COPY
+            else:
+                if file_info is None:
+                    raise ValueError('File info can be not set only when content type is not set')
+                metadata_directive = MetadataDirectiveMode.REPLACE
 
-        response = self.services.session.copy_file(
-            copy_source.file_id,
-            file_name,
-            bytes_range=bytes_range,
-            metadata_directive=metadata_directive,
-            content_type=content_type,
-            file_info=file_info,
-            destination_bucket_id=destination_bucket_id
-        )
-        file_info = FileVersionInfoFactory.from_api_response(response)
-        progress_listener.bytes_completed(file_info.size)
+            response = self.services.session.copy_file(
+                copy_source.file_id,
+                file_name,
+                bytes_range=bytes_range,
+                metadata_directive=metadata_directive,
+                content_type=content_type,
+                file_info=file_info,
+                destination_bucket_id=destination_bucket_id
+            )
+            file_info = FileVersionInfoFactory.from_api_response(response)
+            if progress_listener is not None:
+                progress_listener.bytes_completed(file_info.size)
 
         return file_info

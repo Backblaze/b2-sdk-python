@@ -425,8 +425,8 @@ class TestUpload(TestCaseWithBucket):
 
     def test_upload_bytes_progress(self):
         data = b'hello world'
-        with StubProgressListener() as progress_listener:
-            self.bucket.upload_bytes(data, 'file1', progress_listener=progress_listener)
+        progress_listener = StubProgressListener()
+        self.bucket.upload_bytes(data, 'file1', progress_listener=progress_listener)
         self.assertTrue(progress_listener.is_valid())
 
     def test_upload_local_file(self):
@@ -472,8 +472,8 @@ class TestUpload(TestCaseWithBucket):
 
     def test_upload_large(self):
         data = self._make_data(self.simulator.MIN_PART_SIZE * 3)
-        with StubProgressListener() as progress_listener:
-            self.bucket.upload_bytes(data, 'file1', progress_listener=progress_listener)
+        progress_listener = StubProgressListener()
+        self.bucket.upload_bytes(data, 'file1', progress_listener=progress_listener)
         self._check_file_contents('file1', data)
         self.assertTrue(progress_listener.is_valid())
 
@@ -482,8 +482,8 @@ class TestUpload(TestCaseWithBucket):
         data = self._make_data(part_size * 3)
         large_file_id = self._start_large_file('file1')
         self._upload_part(large_file_id, 1, data[:part_size])
-        with StubProgressListener() as progress_listener:
-            file_info = self.bucket.upload_bytes(data, 'file1', progress_listener=progress_listener)
+        progress_listener = StubProgressListener()
+        file_info = self.bucket.upload_bytes(data, 'file1', progress_listener=progress_listener)
         self.assertEqual(large_file_id, file_info.id_)
         self._check_file_contents('file1', data)
         self.assertTrue(progress_listener.is_valid())
@@ -492,8 +492,8 @@ class TestUpload(TestCaseWithBucket):
         part_size = self.simulator.MIN_PART_SIZE
         data = self._make_data(part_size * 3)
         large_file_id = self._start_large_file('file1')
-        with StubProgressListener() as progress_listener:
-            file_info = self.bucket.upload_bytes(data, 'file1', progress_listener=progress_listener)
+        progress_listener = StubProgressListener()
+        file_info = self.bucket.upload_bytes(data, 'file1', progress_listener=progress_listener)
         self.assertNotEqual(large_file_id, file_info.id_)  # it's not a match if there are no parts
         self._check_file_contents('file1', data)
         self.assertTrue(progress_listener.is_valid())
@@ -505,8 +505,8 @@ class TestUpload(TestCaseWithBucket):
         self._upload_part(large_file_id, 1, data[:part_size])
         self._upload_part(large_file_id, 2, data[part_size:2 * part_size])
         self._upload_part(large_file_id, 3, data[2 * part_size:])
-        with StubProgressListener() as progress_listener:
-            file_info = self.bucket.upload_bytes(data, 'file1', progress_listener=progress_listener)
+        progress_listener = StubProgressListener()
+        file_info = self.bucket.upload_bytes(data, 'file1', progress_listener=progress_listener)
         self.assertEqual(large_file_id, file_info.id_)
         self._check_file_contents('file1', data)
         self.assertTrue(progress_listener.is_valid())
@@ -516,8 +516,8 @@ class TestUpload(TestCaseWithBucket):
         data = self._make_data(part_size * 3)
         large_file_id = self._start_large_file('file1')
         self._upload_part(large_file_id, 3, data[:part_size])  # wrong part number for this data
-        with StubProgressListener() as progress_listener:
-            file_info = self.bucket.upload_bytes(data, 'file1', progress_listener=progress_listener)
+        progress_listener = StubProgressListener()
+        file_info = self.bucket.upload_bytes(data, 'file1', progress_listener=progress_listener)
         self.assertNotEqual(large_file_id, file_info.id_)
         self._check_file_contents('file1', data)
         self.assertTrue(progress_listener.is_valid())
@@ -527,8 +527,8 @@ class TestUpload(TestCaseWithBucket):
         data = self._make_data(part_size * 3)
         large_file_id = self._start_large_file('file1')
         self._upload_part(large_file_id, 1, data[:part_size + 1])  # one byte to much
-        with StubProgressListener() as progress_listener:
-            file_info = self.bucket.upload_bytes(data, 'file1', progress_listener=progress_listener)
+        progress_listener = StubProgressListener()
+        file_info = self.bucket.upload_bytes(data, 'file1', progress_listener=progress_listener)
         self.assertNotEqual(large_file_id, file_info.id_)
         self._check_file_contents('file1', data)
         self.assertTrue(progress_listener.is_valid())
@@ -538,13 +538,10 @@ class TestUpload(TestCaseWithBucket):
         data = self._make_data(part_size * 3)
         large_file_id = self._start_large_file('file1', {'property': 'value1'})
         self._upload_part(large_file_id, 1, data[:part_size])
-        with StubProgressListener() as progress_listener:
-            file_info = self.bucket.upload_bytes(
-                data,
-                'file1',
-                progress_listener=progress_listener,
-                file_infos={'property': 'value1'}
-            )
+        progress_listener = StubProgressListener()
+        file_info = self.bucket.upload_bytes(
+            data, 'file1', progress_listener=progress_listener, file_infos={'property': 'value1'}
+        )
         self.assertEqual(large_file_id, file_info.id_)
         self._check_file_contents('file1', data)
         self.assertTrue(progress_listener.is_valid())
@@ -554,13 +551,10 @@ class TestUpload(TestCaseWithBucket):
         data = self._make_data(part_size * 3)
         large_file_id = self._start_large_file('file1', {'property': 'value1'})
         self._upload_part(large_file_id, 1, data[:part_size])
-        with StubProgressListener() as progress_listener:
-            file_info = self.bucket.upload_bytes(
-                data,
-                'file1',
-                progress_listener=progress_listener,
-                file_infos={'property': 'value2'}
-            )
+        progress_listener = StubProgressListener()
+        file_info = self.bucket.upload_bytes(
+            data, 'file1', progress_listener=progress_listener, file_infos={'property': 'value2'}
+        )
         self.assertNotEqual(large_file_id, file_info.id_)
         self._check_file_contents('file1', data)
         self.assertTrue(progress_listener.is_valid())
