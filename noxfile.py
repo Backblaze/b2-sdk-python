@@ -106,7 +106,8 @@ def unit(session):
         'pytest', '--cov=b2sdk', '--cov-branch', '--cov-report=xml', '--doctest-modules',
         *session.posargs, 'test/unit'
     )
-    session.notify('cover')
+    if not session.posargs:
+        session.notify('cover')
 
 
 @nox.session(python=PYTHON_VERSIONS)
@@ -132,7 +133,7 @@ def test(session):
 def cover(session):
     """Perform coverage analysis."""
     session.install('coverage')
-    session.run('coverage', 'report', '--fail-under=75', '--show-missing')
+    session.run('coverage', 'report', '--fail-under=75', '--show-missing', '--skip-covered')
     session.run('coverage', 'erase')
 
 
