@@ -200,18 +200,20 @@ class Synchronizer(object):
             # that should be fastest, and it provides scale for the progress reporting.
             sync_executor.submit(count_files, source_folder, reporter, self.policies_manager)
 
-        # Schedule each of the actions
-        bucket = None
+        # Bucket for scheduling actions.
+        # For bucket-to-bucket sync, the bucket for the API calls should be the destination.
+        action_bucket = None
         if dest_type == 'b2':
-            bucket = dest_folder.bucket
+            action_bucket = dest_folder.bucket
         elif source_type == 'b2':
-            bucket = source_folder.bucket
+            action_bucket = source_folder.bucket
 
+        # Schedule each of the actions.
         for action in self.make_folder_sync_actions(
             source_folder, dest_folder, now_millis, reporter, self.policies_manager
         ):
-            logging.debug('scheduling action %s on bucket %s', action, bucket)
-            sync_executor.submit(action.run, bucket, reporter, self.dry_run)
+            logging.debug('scheduling action %s on bucket %s', action, action_bucket)
+            sync_executor.submit(action.run, action_bucket, reporter, self.dry_run)
 
         # Wait for everything to finish
         sync_executor.shutdown()

@@ -126,7 +126,9 @@ class SyncReport:
                         format_and_scale_number(rate, 'B/s')
                     )  # yapf: disable
                 else:
-                    message = ' updated: %d/%d files   %s   %s' % (
+                    message = ' compare: %d/%d files   updated: %d/%d files   %s   %s' % (
+                        self.compare_count,
+                        self.total_count,
                         self.transfer_files,
                         self.total_transfer_files,
                         format_and_scale_fraction(self.transfer_bytes, self.total_transfer_bytes, 'B'),
