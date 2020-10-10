@@ -5,22 +5,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
 ### Added
+* Add support for Python 3.9
 * Support for bucket to bucket sync
 
 ### Removed
 * Drop Python 2 and Python 3.4 support :tada:
 * Remove `--prefix` from `ls` (it didn't really work, use `folderName` argument)
 
+### Fixed
+* Allow to set an empty bucket info during the update
+
 ## [1.1.4] - 2020-07-15
+
 ### Added
 * Allow specifying custom realm in B2Session.authorize_account
 
 ## [1.1.2] - 2020-07-06
+
 ### Fixed
 * Fix upload part for file range on Python 2.7
 
 ## [1.1.0] - 2020-06-24
+
 ### Added
 * Add `list_file_versions` method to buckets.
 * Add server-side copy support for large files
@@ -42,27 +50,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Fix handling of modification time of files
 
 ## [1.0.2] - 2019-10-15
+
 ### Changed
 * Remove upper version limit for arrow dependency
 
 ## [1.0.0] - 2019-10-03
+
 ### Fixed
 * Minor bug fix.
 
 ## [1.0.0-rc1] - 2019-07-09
+
 ### Deprecated
 * Deprecate some transitional method names to v0 in preparation for v1.0.0.
 
 ## [0.1.10] - 2019-07-09
+
 ### Removed
 * Remove a parameter (which did nothing, really) from `b2sdk.v1.Bucket.copy_file` signature
 
 ## [0.1.8] - 2019-06-28
+
 ### Added
 * Add support for b2_copy_file
 * Add support for `prefix` parameter on ls-like calls
 
 ## [0.1.6] - 2019-04-24
+
 ### Changed
 * Rename account ID for authentication to application key ID.
 Account ID is still backwards compatible, only the terminology
@@ -71,8 +85,8 @@ has changed.
 ### Fixed
 * Fix transferer crashing on empty file download attempt
 
-
 ## [0.1.4] - 2019-04-04
+
 ### Added
 Initial official release of SDK as a separate package (until now it was a part of B2 CLI)
 

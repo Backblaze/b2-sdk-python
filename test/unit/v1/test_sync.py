@@ -15,8 +15,10 @@ import sys
 import threading
 import time
 import unittest
-from nose import SkipTest
+from enum import Enum
 from unittest.mock import MagicMock
+
+import pytest
 
 from .test_base import TestBase
 
@@ -278,9 +280,7 @@ class TestLocalFolder(TestFolder):
         assert not (broken_symlink and invalid_permissions)
 
         if platform.system() == 'Windows':
-            raise SkipTest(
-                'on Windows there are some environment issues with test directory creation'
-            )
+            pytest.skip('on Windows there are some environment issues with test directory creation')
 
         if prepare_files:
             for relative_path in self.NAMES:
