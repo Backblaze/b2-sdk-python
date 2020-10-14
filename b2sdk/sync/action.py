@@ -285,18 +285,12 @@ class B2CopyAction(AbstractAction):
         self, relative_name, b2_file_name, file_id, dest_b2_file_name, mod_time_millis, size
     ):
         """
-        :param relative_name: a relative file name
-        :type relative_name: str
-        :param b2_file_name: a name of a remote file
-        :type b2_file_name: str
-        :param file_id: a file ID
-        :type file_id: str
-        :param dest_b2_file_name: a name of a destination remote file
-        :type dest_b2_file_name: str
-        :param mod_time_millis: file modification time in milliseconds
-        :type mod_time_millis: int
-        :param size: a file size
-        :type size: int
+        :param str relative_name: a relative file name
+        :param str b2_file_name: a name of a remote file
+        :param str file_id: a file ID
+        :param str dest_b2_file_name: a name of a destination remote file
+        :param int mod_time_millis: file modification time in milliseconds
+        :param int size: a file size
         """
         self.relative_name = relative_name
         self.b2_file_name = b2_file_name
