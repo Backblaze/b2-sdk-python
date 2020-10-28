@@ -96,6 +96,32 @@ class KeepOrDeleteMode(Enum):
 
 
 class Synchronizer(object):
+    """
+    Copies multiple files from source to destination.  Optionally
+    deletes or hides destination files that the source does not have.
+
+    The synchronizer can copy files:
+
+    - From a B2 bucket to a local destination.
+    - From a local source to a B2 bucket.
+    - From one B2 bucket to another.
+    - Between different folders in the same B2 bucket.
+      It will sync only the latest versions of files.
+
+    By default, the synchronizer:
+
+    - Fails when the specified source directory doesn't exist or is empty.
+      (see ``allow_empty_source`` argument)
+    - Fails when the source is newer.
+      (see ``newer_file_mode`` argument)
+    - Doesn't delete a file if it's present on the destination but not on the source.
+      When the source is B2 and the file is hidden, the file on the destination won't be deleted
+      even with ``KeepOrDeleteMode.DELETE``.
+      (see ``keep_days_or_delete`` and ``keep_days`` arguments)
+    - Compares files based on modification time.
+      (see ``compare_version_mode`` and ``compare_threshold`` arguments)
+    """
+
     def __init__(
         self,
         max_workers,
