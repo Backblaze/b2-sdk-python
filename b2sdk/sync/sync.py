@@ -97,7 +97,7 @@ class KeepOrDeleteMode(Enum):
 
 class Synchronizer(object):
     """
-    Copies multiple files from source to destination.  Optionally
+    Copies multiple "files" from source to destination.  Optionally
     deletes or hides destination files that the source does not have.
 
     The synchronizer can copy files:
