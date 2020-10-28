@@ -27,7 +27,7 @@ Following are the important optional arguments that can be provided while initia
 * ``compare_version_mode``: When comparing the source and destination files for finding whether to replace them or not, `compare_version_mode` can be passed to specify the mode of comparision. For possible values see :class:`b2sdk.v1.CompareVersionMode`. Default value is :py:attr:`b2sdk.v1.CompareVersionMode.MODTIME`
 * ``compare_threshold``: It's the minimum size (in bytes)/modification time (in seconds) difference between source and destination files before we assume that it is new and replace.
 * ``newer_file_mode``: To identify whether to skip or replace if source is older. For possible values see :class:`b2sdk.v1.NewerFileSyncMode`. If you don't specify this the sync will raise :class:`b2sdk.v1.exception.DestFileNewer` in case any of the source file is older than destination.
-* ``keep_days_or_delete``: specify policy to keep or delete older files. For possible values see :class:`b2sdk.v1.KeepOrDeleteMode`. Default is `DO_NOTHING`. When the source is B2 and the file is hidden, the file on the destination won't be deleted even with :py:attr:`b2sdk.v1.KeepOrDeleteMode.DELETE`.
+* ``keep_days_or_delete``: specify policy to keep or delete older files. For possible values see :class:`b2sdk.v1.KeepOrDeleteMode`. Default is `DO_NOTHING`.
 * ``keep_days``: if `keep_days_or_delete` is :py:attr:`b2sdk.v1.CompareVersionMode.KEEP_BEFORE_DELETE` then this specify for how many days should we keep.
 
 .. code-block:: python

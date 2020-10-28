@@ -115,8 +115,6 @@ class Synchronizer(object):
     - Fails when the source is newer.
       (see ``newer_file_mode`` argument)
     - Doesn't delete a file if it's present on the destination but not on the source.
-      When the source is B2 and the file is hidden, the file on the destination won't be deleted
-      even with ``KeepOrDeleteMode.DELETE``.
       (see ``keep_days_or_delete`` and ``keep_days`` arguments)
     - Compares files based on modification time.
       (see ``compare_version_mode`` and ``compare_threshold`` arguments)
