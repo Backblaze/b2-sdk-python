@@ -15,7 +15,6 @@ import sys
 import threading
 import time
 import unittest
-from enum import Enum
 from unittest.mock import MagicMock
 
 import pytest
