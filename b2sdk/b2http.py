@@ -248,15 +248,17 @@ class B2Http(object):
     # timeout for HTTP GET/POST requests
     TIMEOUT = 130
 
-    def __init__(self, requests_module=None, install_clock_skew_hook=True):
+    def __init__(self, requests_module=None, install_clock_skew_hook=True, user_agent_append=None):
         """
         Initialize with a reference to the requests module, which makes
         it easy to mock for testing.
 
         :param requests_module: a reference to requests module
         :param bool install_clock_skew_hook: if True, install a clock skew hook
+        :param str user_agent_append: if provided, the string will be appended to the User-Agent
         """
         requests_to_use = requests_module or requests
+        self.user_agent = self._get_user_agent(user_agent_append)
         self.session = requests_to_use.Session()
         self.callbacks = []
         if install_clock_skew_hook:
@@ -292,7 +294,7 @@ class B2Http(object):
         # Make the headers we'll send by adding User-Agent to what
         # the caller provided.  Make a copy before modifying.
         headers = dict(headers)  # make copy before modifying
-        headers['User-Agent'] = USER_AGENT
+        headers['User-Agent'] = self.user_agent
 
         # Do the HTTP POST.  This may retry, so each post needs to
         # rewind the data back to the beginning.
@@ -367,7 +369,7 @@ class B2Http(object):
         # Make the headers we'll send by adding User-Agent to what
         # the caller provided.  Make a copy before modifying.
         headers = dict(headers)  # make copy before modifying
-        headers['User-Agent'] = USER_AGENT
+        headers['User-Agent'] = self.user_agent
 
         # Do the HTTP GET.
         def do_get():
@@ -378,6 +380,12 @@ class B2Http(object):
 
         response = _translate_and_retry(do_get, try_count, None)
         return ResponseContextManager(response)
+
+    @classmethod
+    def _get_user_agent(cls, user_agent_append):
+        if user_agent_append:
+            return '%s %s' % (USER_AGENT, user_agent_append)
+        return USER_AGENT
 
     def _run_pre_request_hooks(self, method, url, headers):
         for callback in self.callbacks:

@@ -198,6 +198,7 @@ class TestTranslateAndRetry(TestBase):
 class TestB2Http(TestBase):
 
     URL = 'http://example.com'
+    UA_APPEND = None
     HEADERS = dict(my_header='my_value')
     EXPECTED_HEADERS = {'my_header': 'my_value', 'User-Agent': USER_AGENT}
     PARAMS = dict(fileSize=100)
@@ -209,7 +210,9 @@ class TestB2Http(TestBase):
 
         requests = MagicMock()
         requests.Session.return_value = self.session
-        self.b2_http = B2Http(requests, install_clock_skew_hook=False)
+        self.b2_http = B2Http(
+            requests, install_clock_skew_hook=False, user_agent_append=self.UA_APPEND
+        )
 
     def test_post_json_return_json(self):
         self.session.post.return_value = self.response
@@ -233,10 +236,9 @@ class TestB2Http(TestBase):
         self.response.status_code = 200
         self.response.content = b'{"color": "blue"}'
         self.b2_http.post_json_return_json(self.URL, self.HEADERS, self.PARAMS)
-        expected_headers = {'my_header': 'my_value', 'User-Agent': USER_AGENT}
-        callback.pre_request.assert_called_with('POST', 'http://example.com', expected_headers)
+        callback.pre_request.assert_called_with('POST', 'http://example.com', self.EXPECTED_HEADERS)
         callback.post_request.assert_called_with(
-            'POST', 'http://example.com', expected_headers, self.response
+            'POST', 'http://example.com', self.EXPECTED_HEADERS, self.response
         )
 
     def test_get_content(self):
@@ -248,6 +250,14 @@ class TestB2Http(TestBase):
             self.URL, headers=self.EXPECTED_HEADERS, stream=True, timeout=B2Http.TIMEOUT
         )
         self.response.close.assert_called_with()
+
+
+class TestB2HttpUserAgentAppend(TestB2Http):
+
+    UA_APPEND = 'ua_extra_string'
+    EXPECTED_HEADERS = {
+        **TestB2Http.EXPECTED_HEADERS, 'User-Agent': '%s %s' % (USER_AGENT, UA_APPEND)
+    }
 
 
 class TestClockSkewHook(TestBase):
