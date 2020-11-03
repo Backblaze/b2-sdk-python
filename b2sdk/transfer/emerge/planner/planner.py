@@ -607,7 +607,7 @@ class EmergePlan(BaseEmergePlan):
             return None
 
         json_id = json.dumps([emerge_part.get_part_id() for emerge_part in self.emerge_parts])
-        return hashlib.sha1(json_id).hexdigest()
+        return hashlib.sha1(json_id.encode()).hexdigest()
 
 
 class StreamingEmergePlan(BaseEmergePlan):

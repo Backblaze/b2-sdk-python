@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: test/unit/sync/deps_exception.py
+# File: test/unit/v1/apiver/apiver_deps.py
 #
 # Copyright 2020 Backblaze Inc. All Rights Reserved.
 #
@@ -8,4 +8,4 @@
 #
 ######################################################################
 
-from b2sdk.sync.exception import *
+from b2sdk.v1 import *

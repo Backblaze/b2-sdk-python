@@ -5,8 +5,8 @@ Synchronizer
 ########################
 
 Synchronizer is a powerful utility with functionality of a basic backup application.
-It is able to copy entire folders into the cloud and back to a local drive, providing
-retention policies and many other options.
+It is able to copy entire folders into the cloud and back to a local drive
+or even between two cloud buckets, providing retention policies and many other options.
 
 The **high performance** of sync is credited to parallelization of:
 

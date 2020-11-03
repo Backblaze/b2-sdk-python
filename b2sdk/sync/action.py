@@ -119,11 +119,15 @@ class B2UploadAction(AbstractAction):
         :type bucket: b2sdk.bucket.Bucket
         :param reporter: a place to report errors
         """
+        if reporter:
+            progress_listener = SyncFileReporter(reporter)
+        else:
+            progress_listener = None
         bucket.upload(
             UploadSourceLocalFile(self.local_full_path),
             self.b2_file_name,
             file_info={SRC_LAST_MODIFIED_MILLIS: str(self.mod_time_millis)},
-            progress_listener=SyncFileReporter(reporter)
+            progress_listener=progress_listener
         )
 
     def do_report(self, bucket, reporter):
@@ -238,10 +242,15 @@ class B2DownloadAction(AbstractAction):
         if not os.path.isdir(parent_dir):
             raise Exception('could not create directory %s' % (parent_dir,))
 
+        if reporter:
+            progress_listener = SyncFileReporter(reporter)
+        else:
+            progress_listener = None
+
         # Download the file to a .tmp file
         download_path = self.local_full_path + '.b2.sync.tmp'
         download_dest = DownloadDestLocalFile(download_path)
-        bucket.download_file_by_id(self.file_id, download_dest, SyncFileReporter(reporter))
+        bucket.download_file_by_id(self.file_id, download_dest, progress_listener)
 
         # Move the file into place
         try:
@@ -264,6 +273,74 @@ class B2DownloadAction(AbstractAction):
         return (
             'b2_download(%s, %s, %s, %d)' %
             (self.b2_file_name, self.file_id, self.local_full_path, self.mod_time_millis)
+        )
+
+
+class B2CopyAction(AbstractAction):
+    """
+    File copying action.
+    """
+
+    def __init__(
+        self, relative_name, b2_file_name, file_id, dest_b2_file_name, mod_time_millis, size
+    ):
+        """
+        :param str relative_name: a relative file name
+        :param str b2_file_name: a name of a remote file
+        :param str file_id: a file ID
+        :param str dest_b2_file_name: a name of a destination remote file
+        :param int mod_time_millis: file modification time in milliseconds
+        :param int size: a file size
+        """
+        self.relative_name = relative_name
+        self.b2_file_name = b2_file_name
+        self.file_id = file_id
+        self.dest_b2_file_name = dest_b2_file_name
+        self.mod_time_millis = mod_time_millis
+        self.size = size
+
+    def get_bytes(self):
+        """
+        Return file size.
+
+        :rtype: int
+        """
+        return self.size
+
+    def do_action(self, bucket, reporter):
+        """
+        Perform the copying action, returning only after the action is completed.
+
+        :param bucket: a Bucket object
+        :type bucket: b2sdk.bucket.Bucket
+        :param reporter: a place to report errors
+        """
+        if reporter:
+            progress_listener = SyncFileReporter(reporter)
+        else:
+            progress_listener = None
+
+        bucket.copy(
+            self.file_id,
+            self.dest_b2_file_name,
+            length=self.size,
+            progress_listener=progress_listener
+        )
+
+    def do_report(self, bucket, reporter):
+        """
+        Report the copying action performed.
+
+        :param bucket: a Bucket object
+        :type bucket: b2sdk.bucket.Bucket
+        :param reporter: a place to report errors
+        """
+        reporter.print_completion('copy ' + self.relative_name)
+
+    def __str__(self):
+        return (
+            'b2_copy(%s, %s, %s, %d)' %
+            (self.b2_file_name, self.file_id, self.dest_b2_file_name, self.mod_time_millis)
         )
 
 

@@ -125,6 +125,7 @@ from b2sdk.transfer.inbound.downloader.simple import SimpleDownloader
 # sync
 
 from b2sdk.sync.action import AbstractAction
+from b2sdk.sync.action import B2CopyAction
 from b2sdk.sync.action import B2DeleteAction
 from b2sdk.sync.action import B2DownloadAction
 from b2sdk.sync.action import B2HideAction
@@ -145,6 +146,9 @@ from b2sdk.sync.policy import NewerFileSyncMode
 from b2sdk.sync.policy import DownAndDeletePolicy
 from b2sdk.sync.policy import DownAndKeepDaysPolicy
 from b2sdk.sync.policy import DownPolicy
+from b2sdk.sync.policy import CopyPolicy
+from b2sdk.sync.policy import CopyAndDeletePolicy
+from b2sdk.sync.policy import CopyAndKeepDaysPolicy
 from b2sdk.sync.policy import UpAndDeletePolicy
 from b2sdk.sync.policy import UpAndKeepDaysPolicy
 from b2sdk.sync.policy import UpPolicy

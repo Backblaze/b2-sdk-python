@@ -687,10 +687,11 @@ class Bucket(metaclass=B2TraceMeta):
         """
 
         copy_source = CopySource(file_id, offset=offset, length=length)
-        if length is None:
+        if not length:
             # TODO: it feels like this should be checked on lower level - eg. RawApi
             validate_b2_file_name(new_file_name)
-            return self.api.services.upload_manager.copy_file(
+            progress_listener = progress_listener or DoNothingProgressListener()
+            return self.api.services.copy_manager.copy_file(
                 copy_source,
                 new_file_name,
                 content_type=content_type,
