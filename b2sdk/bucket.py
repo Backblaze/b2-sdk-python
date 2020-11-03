@@ -224,7 +224,7 @@ class Bucket(metaclass=B2TraceMeta):
             if start_file_name is None:
                 return
 
-    def ls(self, folder_to_list='', show_versions=False, recursive=False, fetch_count=None):
+    def ls(self, folder_to_list='', show_versions=False, recursive=False, fetch_count=10000):
         """
         Pretend that folders exist and yields the information about the files in a folder.
 
@@ -241,7 +241,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param bool show_versions: when ``True`` returns info about all versions of a file,
                               when ``False``, just returns info about the most recent versions
         :param bool recursive: if ``True``, list folders recursively
-        :param int,None fetch_count: how many entries to return or ``None`` to use the default. Acceptable values: 1 - 1000
+        :param int,None fetch_count: how many entries to return or ``None`` to use the default. Acceptable values: 1 - 10000
         :rtype: generator[tuple[b2sdk.v1.FileVersionInfo, str]]
         :returns: generator of (file_version_info, folder_name) tuples
 
