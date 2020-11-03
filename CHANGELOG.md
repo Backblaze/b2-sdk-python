@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 * Allow to set an empty bucket info during the update
+* Fix docs generation in CI
 
 ## [1.1.4] - 2020-07-15
 
