@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2020-11-03
+
 ### Added
 * Add support for Python 3.9
 * Support for bucket to bucket sync
@@ -95,7 +97,8 @@ has changed.
 ### Added
 Initial official release of SDK as a separate package (until now it was a part of B2 CLI)
 
-[Unreleased]: https://github.com/Backblaze/b2-sdk-python/compare/v1.1.4...HEAD
+[Unreleased]: https://github.com/Backblaze/b2-sdk-python/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/Backblaze/b2-sdk-python/compare/v1.1.4...v1.2.0
 [1.1.4]: https://github.com/Backblaze/b2-sdk-python/compare/v1.1.2...v1.1.4
 [1.1.2]: https://github.com/Backblaze/b2-sdk-python/compare/v1.1.0...v1.1.2
 [1.1.0]: https://github.com/Backblaze/b2-sdk-python/compare/v1.0.2...v1.1.0
