@@ -14,7 +14,7 @@ from enum import Enum, unique
 import logging
 
 from ..exception import DestFileNewer
-from .action import LocalDeleteAction, B2DeleteAction, B2DownloadAction, B2HideAction, B2UploadAction
+from .action import LocalDeleteAction, B2CopyAction, B2DeleteAction, B2DownloadAction, B2HideAction, B2UploadAction
 from .exception import InvalidArgument
 
 ONE_DAY_IN_MS = 24 * 60 * 60 * 1000
@@ -303,6 +303,60 @@ class DownAndKeepDaysPolicy(DownPolicy):
     File is synced down (from the cloud to disk) and the keepDays flag is SET.
     """
     pass
+
+
+class CopyPolicy(AbstractFileSyncPolicy):
+    """
+    File is copied (server-side).
+    """
+    DESTINATION_PREFIX = 'b2://'
+    SOURCE_PREFIX = 'b2://'
+
+    def _make_transfer_action(self):
+        return B2CopyAction(
+            self._source_file.name,
+            self._source_folder.make_full_path(self._source_file.name),
+            self._source_file.latest_version().id_,
+            self._dest_folder.make_full_path(self._source_file.name),
+            self._get_source_mod_time(),
+            self._source_file.latest_version().size,
+        )
+
+
+class CopyAndDeletePolicy(CopyPolicy):
+    """
+    File is copied (server-side) and the delete flag is SET.
+    """
+
+    def _get_hide_delete_actions(self):
+        for action in super()._get_hide_delete_actions():
+            yield action
+        for action in make_b2_delete_actions(
+            self._source_file,
+            self._dest_file,
+            self._dest_folder,
+            self._transferred,
+        ):
+            yield action
+
+
+class CopyAndKeepDaysPolicy(CopyPolicy):
+    """
+    File is copied (server-side) and the keepDays flag is SET.
+    """
+
+    def _get_hide_delete_actions(self):
+        for action in super()._get_hide_delete_actions():
+            yield action
+        for action in make_b2_keep_days_actions(
+            self._source_file,
+            self._dest_file,
+            self._dest_folder,
+            self._transferred,
+            self._keep_days,
+            self._now_millis,
+        ):
+            yield action
 
 
 def make_b2_delete_note(version, index, transferred):

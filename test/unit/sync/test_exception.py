@@ -7,9 +7,8 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
-from .test_base import TestBase
 
-from .deps_exception import (
+from apiver_deps_exception import (
     EnvironmentEncodingError,
     InvalidArgument,
     IncompleteSync,
@@ -17,7 +16,7 @@ from .deps_exception import (
 )
 
 
-class TestExceptions(TestBase):
+class TestSyncExceptions:
     def test_environment_encoding_error(self):
         try:
             raise EnvironmentEncodingError('fred', 'george')

@@ -8,8 +8,9 @@
 #
 ######################################################################
 
-from .policy import DownAndDeletePolicy, DownAndKeepDaysPolicy, DownPolicy
-from .policy import UpAndDeletePolicy, UpAndKeepDaysPolicy, UpPolicy
+from .policy import CopyAndDeletePolicy, CopyAndKeepDaysPolicy, CopyPolicy, \
+    DownAndDeletePolicy, DownAndKeepDaysPolicy, DownPolicy, UpAndDeletePolicy, \
+    UpAndKeepDaysPolicy, UpPolicy
 
 
 class SyncPolicyManager(object):
@@ -87,10 +88,19 @@ class SyncPolicyManager(object):
                 return DownAndKeepDaysPolicy
             else:
                 return DownPolicy
-        assert False, 'invalid sync type: %s, keep_days: %s, delete: %s' % (
-            sync_type,
-            keep_days,
-            delete,
+        elif sync_type == 'b2-to-b2':
+            if delete:
+                return CopyAndDeletePolicy
+            elif keep_days:
+                return CopyAndKeepDaysPolicy
+            else:
+                return CopyPolicy
+        raise NotImplementedError(
+            'invalid sync type: %s, keep_days: %s, delete: %s' % (
+                sync_type,
+                keep_days,
+                delete,
+            )
         )
 
 

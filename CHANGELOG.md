@@ -8,7 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 * Add support for Python 3.9
+* Support for bucket to bucket sync
 * Add a possibility to append a string to the User-Agent in `B2Http`
+
+### Changed
+* Change default fetch count for `ls` to 10000
 
 ### Removed
 * Drop Python 2 and Python 3.4 support :tada:
@@ -16,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 * Allow to set an empty bucket info during the update
+* Fix docs generation in CI
 
 ## [1.1.4] - 2020-07-15
 

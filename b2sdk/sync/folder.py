@@ -166,7 +166,7 @@ class LocalFolder(AbstractFolder):
         if not os.path.exists(self.root):
             try:
                 os.mkdir(self.root)
-            except:
+            except OSError:
                 raise Exception('unable to create directory %s' % (self.root,))
         elif not os.path.isdir(self.root):
             raise Exception('%s is not a directory' % (self.root,))
@@ -232,7 +232,8 @@ class LocalFolder(AbstractFolder):
                 continue
 
             if policies_manager.exclude_all_symlinks and os.path.islink(local_path):
-                reporter.symlink_skipped(local_path)
+                if reporter is not None:
+                    reporter.symlink_skipped(local_path)
                 continue
 
             if os.path.isdir(local_path):
@@ -316,8 +317,8 @@ class B2Folder(AbstractFolder):
         """
         current_name = None
         current_versions = []
-        for (file_version_info, folder_name) in self.bucket.ls(
-            self.folder_name, show_versions=True, recursive=True, fetch_count=1000
+        for file_version_info, _ in self.bucket.ls(
+            self.folder_name, show_versions=True, recursive=True
         ):
             assert file_version_info.file_name.startswith(self.prefix)
             if file_version_info.action == 'start':

@@ -102,10 +102,10 @@ def unit(session):
     """Run unit tests."""
     install_myself(session)
     session.install(*REQUIREMENTS_TEST)
-    session.run(
-        'pytest', '--cov=b2sdk', '--cov-branch', '--cov-report=xml', '--doctest-modules',
-        *session.posargs, 'test/unit'
-    )
+    args = ['--cov=b2sdk', '--cov-branch', '--cov-report=xml', '--doctest-modules']
+    session.run('pytest', '--api=v1', *args, *session.posargs, 'test/unit')
+    session.run('pytest', '--api=v0', '--cov-append', *args, *session.posargs, 'test/unit')
+
     if not session.posargs:
         session.notify('cover')
 
