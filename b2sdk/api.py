@@ -8,6 +8,7 @@
 #
 ######################################################################
 
+from typing import Any, Dict
 from .bucket import Bucket, BucketFactory
 from .exception import NonExistentBucket, RestrictedBucket
 from .file_version import FileIdAndName
@@ -423,7 +424,7 @@ class B2Api(metaclass=B2TraceMeta):
         )
 
     # other
-    def get_file_info(self, file_id):
+    def get_file_info(self, file_id: str) -> Dict[str, Any]:
         """
         Legacy interface which just returns whatever remote API returns.
 

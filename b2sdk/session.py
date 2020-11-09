@@ -10,6 +10,7 @@
 
 from functools import partial
 from enum import Enum, unique
+from typing import Any, Dict
 
 from b2sdk.account_info.sqlite_account_info import SqliteAccountInfo
 from b2sdk.account_info.exception import MissingAccountData
@@ -183,10 +184,10 @@ class B2Session(object):
             valid_duration_in_seconds
         )
 
-    def get_file_info_by_id(self, file_id):
+    def get_file_info_by_id(self, file_id: str) -> Dict[str, Any]:
         return self._wrap_default_token(self.raw_api.get_file_info_by_id, file_id)
 
-    def get_file_info_by_name(self, bucket_name, file_name):
+    def get_file_info_by_name(self, bucket_name: str, file_name: str) -> Dict[str, Any]:
         return self._wrap_default_token(self.raw_api.get_file_info_by_name, bucket_name, file_name)
 
     def get_upload_url(self, bucket_id):

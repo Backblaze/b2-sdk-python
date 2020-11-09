@@ -17,6 +17,8 @@ import arrow
 import requests
 import time
 
+from typing import Any, Dict
+
 from .exception import (
     B2Error, B2RequestTimeoutDuringUpload, BadDateFormat, BrokenPipe, B2ConnectionError,
     B2RequestTimeout, ClockSkew, ConnectionReset, interpret_b2_error, UnknownError, UnknownHost
@@ -379,7 +381,7 @@ class B2Http(object):
         response = _translate_and_retry(do_get, try_count, None)
         return ResponseContextManager(response)
 
-    def head_content(self, url, headers, try_count=5):
+    def head_content(self, url: str, headers: Dict[str, Any], try_count: int = 5) -> Dict[str, Any]:
         """
         Does a HEAD instead of a GET for the URL.
         The response's content is limited to the headers.

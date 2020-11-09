@@ -19,6 +19,7 @@ import traceback
 from abc import ABCMeta, abstractmethod
 from enum import Enum, unique
 from logging import getLogger
+from typing import Any, Dict
 
 from .b2http import B2Http
 from .exception import FileOrBucketNotFound, ResourceNotFound, UnusableFileName, InvalidMetadataDirective
@@ -146,11 +147,14 @@ class AbstractRawApi(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def get_file_info_by_id(self, api_url, account_auth_token, file_id):
+    def get_file_info_by_id(self, api_url: str, account_auth_token: str,
+                            file_id: str) -> Dict[str, Any]:
         pass
 
     @abstractmethod
-    def get_file_info_by_name(self, download_url, account_auth_token, bucket_name, file_name):
+    def get_file_info_by_name(
+        self, download_url: str, account_auth_token: str, bucket_name: str, file_name: str
+    ) -> Dict[str, Any]:
         pass
 
     @abstractmethod
@@ -288,9 +292,8 @@ class B2RawApi(AbstractRawApi):
 
     def __init__(self, b2_http):
         self.b2_http = b2_http
-        self.logger = getLogger(__name__)
 
-    def _post_json(self, base_url, api_name, auth, **params):
+    def _post_json(self, base_url, api_name, auth, **params) -> Dict[str, Any]:
         """
         A helper method for calling an API with the given auth and params.
 
@@ -416,10 +419,13 @@ class B2RawApi(AbstractRawApi):
             validDurationInSeconds=valid_duration_in_seconds
         )
 
-    def get_file_info_by_id(self, api_url, account_auth_token, file_id):
+    def get_file_info_by_id(self, api_url: str, account_auth_token: str,
+                            file_id: str) -> Dict[str, Any]:
         return self._post_json(api_url, 'b2_get_file_info', account_auth_token, fileId=file_id)
 
-    def get_file_info_by_name(self, download_url, account_auth_token, bucket_name, file_name):
+    def get_file_info_by_name(
+        self, download_url: str, account_auth_token: str, bucket_name: str, file_name: str
+    ) -> Dict[str, Any]:
         download_url = self.get_download_url_by_name(download_url, bucket_name, file_name)
         try:
             response = self.b2_http.head_content(

@@ -11,6 +11,7 @@
 from abc import ABCMeta
 
 import re
+from typing import Any, Dict, Optional
 
 from .utils import camelcase_to_underscore
 
@@ -470,7 +471,13 @@ class UploadTokenUsedConcurrently(B2Error):
         return "More than one concurrent upload using auth token %s" % (self.token,)
 
 
-def interpret_b2_error(status, code, message, response_headers, post_params=None):
+def interpret_b2_error(
+    status: int,
+    code: Optional[str],
+    message: Optional[str],
+    response_headers: Dict[str, Any],
+    post_params: Optional[Dict[str, Any]] = None
+) -> B2Error:
     post_params = post_params or {}
     if status == 400 and code == "already_hidden":
         return FileAlreadyHidden(post_params.get('fileName'))

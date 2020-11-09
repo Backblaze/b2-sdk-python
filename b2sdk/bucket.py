@@ -171,7 +171,7 @@ class Bucket(metaclass=B2TraceMeta):
             url, download_dest, progress_listener, range_
         )
 
-    def get_file_info_by_id(self, file_id):
+    def get_file_info_by_id(self, file_id: str) -> FileVersionInfo:
         """
         Gets a file version's info by ID.
 
@@ -180,7 +180,7 @@ class Bucket(metaclass=B2TraceMeta):
         """
         return FileVersionInfoFactory.from_api_response(self.api.get_file_info(file_id))
 
-    def get_file_info_by_name(self, file_name):
+    def get_file_info_by_name(self, file_name: str) -> FileVersionInfo:
         """
         Gets a file version's info by its name.
 
