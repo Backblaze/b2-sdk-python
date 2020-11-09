@@ -429,8 +429,12 @@ class B2Api(metaclass=B2TraceMeta):
 
         .. todo::
             get_file_info() should return a File with .delete(), copy(), rename(), read() and so on
+
+        :param str file_id: the id of the file who's info will be retrieved.
+        :return: The parsed response
+        :rtype: dict
         """
-        return self.session.get_file_info(file_id)
+        return self.session.get_file_info_by_id(file_id)
 
     def check_bucket_restrictions(self, bucket_name):
         """

@@ -51,11 +51,11 @@ def _translate_errors(fcn, post_params=None):
         response = fcn()
         if response.status_code not in [200, 206]:
             # Decode the error object returned by the service
-            error = json.loads(response.content.decode('utf-8'))
+            error = json.loads(response.content.decode('utf-8')) if response.content else {}
             raise interpret_b2_error(
-                int(error['status']),
-                error['code'],
-                error['message'],
+                int(error.get('status', response.status_code)),
+                error.get('code'),
+                error.get('message'),
                 response.headers,
                 post_params,
             )
@@ -291,18 +291,17 @@ class B2Http(object):
         :return: a dict that is the decoded JSON
         :rtype: dict
         """
-        # Make the headers we'll send by adding User-Agent to what
-        # the caller provided.  Make a copy before modifying.
-        headers = dict(headers)  # make copy before modifying
-        headers['User-Agent'] = self.user_agent
+        request_headers = {**headers, 'User-Agent': self.user_agent}
 
         # Do the HTTP POST.  This may retry, so each post needs to
         # rewind the data back to the beginning.
         def do_post():
             data.seek(0)
-            self._run_pre_request_hooks('POST', url, headers)
-            response = self.session.post(url, headers=headers, data=data, timeout=self.TIMEOUT)
-            self._run_post_request_hooks('POST', url, headers, response)
+            self._run_pre_request_hooks('POST', url, request_headers)
+            response = self.session.post(
+                url, headers=request_headers, data=data, timeout=self.TIMEOUT
+            )
+            self._run_post_request_hooks('POST', url, request_headers, response)
             return response
 
         try:
@@ -344,7 +343,7 @@ class B2Http(object):
 
     def get_content(self, url, headers, try_count=5):
         """
-        Fetche content from a URL.
+        Fetches content from a URL.
 
         Use like this:
 
@@ -366,20 +365,56 @@ class B2Http(object):
         :param int try_count: a number or retries
         :return: Context manager that returns an object that supports iter_content()
         """
-        # Make the headers we'll send by adding User-Agent to what
-        # the caller provided.  Make a copy before modifying.
-        headers = dict(headers)  # make copy before modifying
-        headers['User-Agent'] = self.user_agent
+        request_headers = {**headers, 'User-Agent': self.user_agent}
 
         # Do the HTTP GET.
         def do_get():
-            self._run_pre_request_hooks('GET', url, headers)
-            response = self.session.get(url, headers=headers, stream=True, timeout=self.TIMEOUT)
-            self._run_post_request_hooks('GET', url, headers, response)
+            self._run_pre_request_hooks('GET', url, request_headers)
+            response = self.session.get(
+                url, headers=request_headers, stream=True, timeout=self.TIMEOUT
+            )
+            self._run_post_request_hooks('GET', url, request_headers, response)
             return response
 
         response = _translate_and_retry(do_get, try_count, None)
         return ResponseContextManager(response)
+
+    def head_content(self, url, headers, try_count=5):
+        """
+        Does a HEAD instead of a GET for the URL.
+        The response's content is limited to the headers.
+
+        Use like this:
+
+        .. code-block:: python
+
+           try:
+               response_dict = b2_http.head_content(url, headers)
+               ...
+           except B2Error as e:
+               ...
+
+        The response object is only guaranteed to have:
+            - headers
+
+        :param str url: a URL to call
+        :param dict headers: headers to send
+        :param int try_count: a number or retries
+        :return: the decoded response
+        :rtype: dict
+        """
+        request_headers = {**headers, 'User-Agent': self.user_agent}
+
+        # Do the HTTP HEAD.
+        def do_head():
+            self._run_pre_request_hooks('HEAD', url, request_headers)
+            response = self.session.head(
+                url, headers=request_headers, stream=True, timeout=self.TIMEOUT
+            )
+            self._run_post_request_hooks('HEAD', url, request_headers, response)
+            return response
+
+        return _translate_and_retry(do_head, try_count, None)
 
     @classmethod
     def _get_user_agent(cls, user_agent_append):

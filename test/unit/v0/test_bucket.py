@@ -227,6 +227,30 @@ class TestListUnfinished(TestCaseWithBucket):
         return self.bucket.start_large_file(file_name, 'text/plain', {})
 
 
+class TestGetFileInfo(TestCaseWithBucket):
+    def test_version_by_name(self):
+        data = b'hello world'
+        a_id = self.bucket.upload_bytes(data, 'a').id_
+
+        info = self.bucket.get_file_info_by_name('a')
+
+        self.assertIsInstance(info, FileVersionInfo)
+        expected = (a_id, 'a', 11, None, 'b2/x-auto')
+        actual = (info.id_, info.file_name, info.size, info.action, info.content_type)
+        self.assertEqual(expected, actual)
+
+    def test_version_by_id(self):
+        data = b'hello world'
+        b_id = self.bucket.upload_bytes(data, 'b').id_
+
+        info = self.bucket.get_file_info_by_id(b_id)
+
+        self.assertIsInstance(info, FileVersionInfo)
+        expected = (b_id, 'b', 11, 'upload', 'b2/x-auto')
+        actual = (info.id_, info.file_name, info.size, info.action, info.content_type)
+        self.assertEqual(expected, actual)
+
+
 class TestLs(TestCaseWithBucket):
     def test_empty(self):
         self.assertEqual([], list(self.bucket.ls('foo')))
