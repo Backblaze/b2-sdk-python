@@ -27,6 +27,7 @@ from b2sdk.exception import BadUploadUrl
 from b2sdk.exception import BrokenPipe
 from b2sdk.exception import BucketNotAllowed
 from b2sdk.exception import CapabilityNotAllowed
+from b2sdk.exception import CapExceeded
 from b2sdk.exception import ChecksumMismatch
 from b2sdk.exception import ClockSkew
 from b2sdk.exception import CommandError
@@ -53,6 +54,7 @@ from b2sdk.exception import ServiceError
 from b2sdk.exception import StorageCapExceeded
 from b2sdk.exception import TooManyRequests
 from b2sdk.exception import TransientErrorMixin
+from b2sdk.exception import TransactionCapExceeded
 from b2sdk.exception import TruncatedOutput
 from b2sdk.exception import Unauthorized
 from b2sdk.exception import UnexpectedCloudBehaviour
@@ -85,6 +87,7 @@ __all__ = (
     'BrokenPipe',
     'BucketNotAllowed',
     'CapabilityNotAllowed',
+    'CapExceeded',
     'ChecksumMismatch',
     'ClockSkew',
     'CommandError',
@@ -115,6 +118,7 @@ __all__ = (
     'ServiceError',
     'StorageCapExceeded',
     'TooManyRequests',
+    'TransactionCapExceeded',
     'TransientErrorMixin',
     'TruncatedOutput',
     'Unauthorized',

@@ -381,9 +381,19 @@ class ServiceError(TransientErrorMixin, B2Error):
     """
 
 
-class StorageCapExceeded(B2Error):
+class CapExceeded(B2Error):
     def __str__(self):
-        return 'Cannot upload files, storage cap exceeded.'
+        return 'Cap exceeded.'
+
+
+class StorageCapExceeded(CapExceeded):
+    def __str__(self):
+        return 'Cannot upload or copy files, storage cap exceeded.'
+
+
+class TransactionCapExceeded(CapExceeded):
+    def __str__(self):
+        return 'Cannot perform the operation, transaction cap exceeded.'
 
 
 class TooManyRequests(B2Error):
@@ -478,6 +488,8 @@ def interpret_b2_error(status, code, message, response_headers, post_params=None
         return Unauthorized(message, code)
     elif status == 403 and code == "storage_cap_exceeded":
         return StorageCapExceeded()
+    elif status == 403 and code == "transaction_cap_exceeded":
+        return TransactionCapExceeded()
     elif status == 409:
         return Conflict()
     elif status == 416 and code == "range_not_satisfiable":
