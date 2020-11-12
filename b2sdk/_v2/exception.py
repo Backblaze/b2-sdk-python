@@ -71,6 +71,7 @@ from b2sdk.sync.exception import EnvironmentEncodingError
 from b2sdk.sync.exception import IncompleteSync
 from b2sdk.sync.exception import InvalidArgument
 from b2sdk.sync.exception import UnSyncableFilename
+from b2sdk.sync.exception import check_invalid_argument
 
 __all__ = (
     'AccountInfoError',
@@ -133,6 +134,7 @@ __all__ = (
     'UnsatisfiableRange',
     'UnusableFileName',
     'interpret_b2_error',
+    'check_invalid_argument',
     'SSECKeyIdMismatchInCopy',
     'SSECKeyError',
     'WrongEncryptionModeForBucketDefault',

@@ -8,11 +8,14 @@
 #
 ######################################################################
 
+import pytest
+
 from apiver_deps_exception import (
     EnvironmentEncodingError,
     InvalidArgument,
     IncompleteSync,
     UnSyncableFilename,
+    check_invalid_argument,
 )
 
 
@@ -43,3 +46,23 @@ export LANG=en_US.UTF-8""", str(e)
             raise UnSyncableFilename('message', 'filename')
         except UnSyncableFilename as e:
             assert str(e) == 'message: filename', str(e)
+
+
+class TestCheckInvalidArgument:
+    def test_custom_message(self):
+        with pytest.raises(InvalidArgument):
+            try:
+                with check_invalid_argument('param', 'an error occurred', RuntimeError):
+                    raise RuntimeError()
+            except InvalidArgument as exc:
+                assert str(exc) == 'param an error occurred'
+                raise
+
+    def test_message_from_exception(self):
+        with pytest.raises(InvalidArgument):
+            try:
+                with check_invalid_argument('param', '', RuntimeError):
+                    raise RuntimeError('an error occurred')
+            except InvalidArgument as exc:
+                assert str(exc) == 'param an error occurred'
+                raise
