@@ -1,20 +1,19 @@
 ######################################################################
 #
-# File: test/unit/v1/test_exception.py
+# File: test/unit/test_exception.py
 #
-# Copyright 2019 Backblaze Inc. All Rights Reserved.
+# Copyright 2020 Backblaze Inc. All Rights Reserved.
 #
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
 
-from .test_base import TestBase
-
-from .deps_exception import (
+from apiver_deps_exception import (
     AlreadyFailed,
     B2Error,
     BadJson,
     BadUploadUrl,
+    CapExceeded,
     CommandError,
     Conflict,
     DuplicateBucketName,
@@ -27,20 +26,21 @@ from .deps_exception import (
     ServiceError,
     StorageCapExceeded,
     TooManyRequests,
+    TransactionCapExceeded,
     Unauthorized,
     UnknownError,
 )
 
 
-class TestB2Error(TestBase):
+class TestB2Error:
     def test_plain_ascii(self):
-        self.assertEqual('message', str(B2Error('message')))
+        assert 'message' == str(B2Error('message'))
 
     def test_unicode(self):
-        self.assertEqual('\u81ea\u7531', str(B2Error('\u81ea\u7531')))
+        assert '\u81ea\u7531' == str(B2Error('\u81ea\u7531'))
 
 
-class TestExceptions(TestBase):
+class TestExceptions:
     def test_bad_upload_url_exception(self):
         try:
             raise BadUploadUrl('foo')
@@ -62,13 +62,11 @@ class TestExceptions(TestBase):
             assert str(e) == 'foo', str(e)
 
 
-class TestInterpretError(TestBase):
+class TestInterpretError:
     def test_file_already_hidden(self):
         self._check_one(FileAlreadyHidden, 400, 'already_hidden', '', {})
-        self.assertEqual(
-            'File already hidden: file.txt',
-            str(interpret_b2_error(400, 'already_hidden', '', {}, {'fileName': 'file.txt'})),
-        )
+        assert 'File already hidden: file.txt' == \
+            str(interpret_b2_error(400, 'already_hidden', '', {}, {'fileName': 'file.txt'}))
 
     def test_bad_json(self):
         self._check_one(BadJson, 400, 'bad_json', '', {})
@@ -77,35 +75,27 @@ class TestInterpretError(TestBase):
         self._check_one(FileNotPresent, 400, 'no_such_file', '', {})
         self._check_one(FileNotPresent, 400, 'file_not_present', '', {})
         self._check_one(FileNotPresent, 404, 'not_found', '', {})
-        self.assertEqual(
-            'File not present: file.txt',
-            str(interpret_b2_error(404, 'not_found', '', {}, {'fileName': 'file.txt'})),
-        )
+        assert 'File not present: file.txt' == \
+            str(interpret_b2_error(404, 'not_found', '', {}, {'fileName': 'file.txt'}))
 
     def test_duplicate_bucket_name(self):
         self._check_one(DuplicateBucketName, 400, 'duplicate_bucket_name', '', {})
-        self.assertEqual(
-            'Bucket name is already in use: my-bucket',
+        assert 'Bucket name is already in use: my-bucket' == \
             str(
                 interpret_b2_error(
                     400, 'duplicate_bucket_name', '', {}, {'bucketName': 'my-bucket'}
                 )
-            ),
-        )
+            )
 
     def test_missing_part(self):
         self._check_one(MissingPart, 400, 'missing_part', '', {})
-        self.assertEqual(
-            'Part number has not been uploaded: my-file-id',
-            str(interpret_b2_error(400, 'missing_part', '', {}, {'fileId': 'my-file-id'})),
-        )
+        assert 'Part number has not been uploaded: my-file-id' == \
+            str(interpret_b2_error(400, 'missing_part', '', {}, {'fileId': 'my-file-id'}))
 
     def test_part_sha1_mismatch(self):
         self._check_one(PartSha1Mismatch, 400, 'part_sha1_mismatch', '', {})
-        self.assertEqual(
-            'Part number my-file-id has wrong SHA1',
-            str(interpret_b2_error(400, 'part_sha1_mismatch', '', {}, {'fileId': 'my-file-id'})),
-        )
+        assert 'Part number my-file-id has wrong SHA1' == \
+            str(interpret_b2_error(400, 'part_sha1_mismatch', '', {}, {'fileId': 'my-file-id'}))
 
     def test_unauthorized(self):
         self._check_one(Unauthorized, 401, '', '', {})
@@ -115,7 +105,12 @@ class TestInterpretError(TestBase):
         self._check_one(InvalidAuthToken, 401, 'expired_auth_token', '', {})
 
     def test_storage_cap_exceeded(self):
-        self._check_one(StorageCapExceeded, 403, 'storage_cap_exceeded', '', {})
+        self._check_one((CapExceeded, StorageCapExceeded), 403, 'storage_cap_exceeded', '', {})
+
+    def test_transaction_cap_exceeded(self):
+        self._check_one(
+            (CapExceeded, TransactionCapExceeded), 403, 'transaction_cap_exceeded', '', {}
+        )
 
     def test_conflict(self):
         self._check_one(Conflict, 409, '', '', {})
@@ -129,24 +124,25 @@ class TestInterpretError(TestBase):
             '',
             {'retry-after': retry_after},
         )
-        self.assertEqual(error.retry_after_seconds, retry_after)
+        assert error.retry_after_seconds == retry_after
 
     def test_too_many_requests_without_retry_after_header(self):
         error = self._check_one(TooManyRequests, 429, '', '', {})
-        self.assertIsNone(error.retry_after_seconds)
+        assert error.retry_after_seconds is None
 
     def test_service_error(self):
         error = interpret_b2_error(500, 'code', 'message', {})
-        self.assertTrue(isinstance(error, ServiceError))
-        self.assertEqual('500 code message', str(error))
+        assert isinstance(error, ServiceError)
+        assert '500 code message' == str(error)
 
     def test_unknown_error(self):
         error = interpret_b2_error(499, 'code', 'message', {})
-        self.assertTrue(isinstance(error, UnknownError))
-        self.assertEqual('Unknown error: 499 code message', str(error))
+        assert isinstance(error, UnknownError)
+        assert 'Unknown error: 499 code message' == str(error)
 
+    @classmethod
     def _check_one(
-        self,
+        cls,
         expected_class,
         status,
         code,
@@ -155,5 +151,5 @@ class TestInterpretError(TestBase):
         post_params=None,
     ):
         actual_exception = interpret_b2_error(status, code, message, response_headers, post_params)
-        self.assertTrue(isinstance(actual_exception, expected_class))
+        assert isinstance(actual_exception, expected_class)
         return actual_exception
