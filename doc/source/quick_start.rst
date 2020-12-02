@@ -30,6 +30,7 @@ Synchronization
     >>> from b2sdk.v1 import ScanPoliciesManager
     >>> from b2sdk.v1 import parse_sync_folder
     >>> from b2sdk.v1 import Synchronizer
+    >>> from b2sdk.v1 import SyncReport
     >>> import time
     >>> import sys
 
