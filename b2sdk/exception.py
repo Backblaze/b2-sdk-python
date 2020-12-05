@@ -11,6 +11,7 @@
 from abc import ABCMeta
 
 import re
+from typing import Any, Dict, Optional
 
 from .utils import camelcase_to_underscore
 
@@ -238,6 +239,22 @@ class DuplicateBucketName(B2SimpleError):
     prefix = 'Bucket name is already in use'
 
 
+class ResourceNotFound(B2SimpleError):
+    prefix = 'No such file, bucket, or endpoint'
+
+
+class FileOrBucketNotFound(ResourceNotFound):
+    def __init__(self, bucket_name=None, file_id_or_name=None):
+        super(FileOrBucketNotFound, self).__init__()
+        self.bucket_name = bucket_name
+        self.file_id_or_name = file_id_or_name
+
+    def __str__(self):
+        file_str = ('file [%s]' % self.file_id_or_name) if self.file_id_or_name else 'a file'
+        bucket_str = ('bucket [%s]' % self.bucket_name) if self.bucket_name else 'a bucket'
+        return 'Could not find %s within %s' % (file_str, bucket_str)
+
+
 class FileAlreadyHidden(B2SimpleError):
     pass
 
@@ -246,8 +263,9 @@ class FileNameNotAllowed(NotAllowedByAppKeyError):
     pass
 
 
-class FileNotPresent(B2SimpleError):
-    pass
+class FileNotPresent(FileOrBucketNotFound):
+    def __str__(self):  # overriden to retain message across prev versions
+        return "File not present%s" % (': ' + self.file_id_or_name if self.file_id_or_name else "")
 
 
 class UnusableFileName(B2SimpleError):
@@ -358,8 +376,9 @@ class MissingPart(B2SimpleError):
     prefix = 'Part number has not been uploaded'
 
 
-class NonExistentBucket(B2SimpleError):
-    prefix = 'No such bucket'
+class NonExistentBucket(FileOrBucketNotFound):
+    def __str__(self):  # overriden to retain message across prev versions
+        return "No such bucket%s" % (': ' + self.bucket_name if self.bucket_name else "")
 
 
 class FileSha1Mismatch(B2SimpleError):
@@ -452,7 +471,13 @@ class UploadTokenUsedConcurrently(B2Error):
         return "More than one concurrent upload using auth token %s" % (self.token,)
 
 
-def interpret_b2_error(status, code, message, response_headers, post_params=None):
+def interpret_b2_error(
+    status: int,
+    code: Optional[str],
+    message: Optional[str],
+    response_headers: Dict[str, Any],
+    post_params: Optional[Dict[str, Any]] = None
+) -> B2Error:
     post_params = post_params or {}
     if status == 400 and code == "already_hidden":
         return FileAlreadyHidden(post_params.get('fileName'))
@@ -467,7 +492,14 @@ def interpret_b2_error(status, code, message, response_headers, post_params=None
         # get_file_info returns 404 and "not_found"
         # download_file_by_name/download_file_by_id return 404 and "not_found"
         # but don't have post_params
-        return FileNotPresent(post_params.get('fileName'))
+        return FileNotPresent(
+            file_id_or_name=post_params.get('fileId') or post_params.get('fileName')
+        )
+    elif status == 404:
+        # often times backblaze will return cryptic error messages on invalid URLs.
+        # We should ideally only reach that case on programming error or outdated
+        # sdk versions, but to prevent user confusion we omit the message param
+        return ResourceNotFound()
     elif status == 400 and code == "duplicate_bucket_name":
         return DuplicateBucketName(post_params.get('bucketName'))
     elif status == 400 and code == "missing_part":

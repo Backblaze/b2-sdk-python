@@ -251,6 +251,18 @@ class TestB2Http(TestBase):
         )
         self.response.close.assert_called_with()
 
+    def test_head_content(self):
+        self.session.head.return_value = self.response
+        self.response.status_code = 200
+        self.response.headers = {"color": "blue"}
+
+        response = self.b2_http.head_content(self.URL, self.HEADERS)
+
+        self.assertEqual({'color': 'blue'}, response.headers)
+        (pos_args, kw_args) = self.session.head.call_args
+        self.assertEqual(self.URL, pos_args[0])
+        self.assertEqual(self.EXPECTED_HEADERS, kw_args['headers'])
+
 
 class TestB2HttpUserAgentAppend(TestB2Http):
 

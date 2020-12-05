@@ -175,6 +175,19 @@ class FileVersionInfoFactory(object):
             'cancel'
         )
 
+    @classmethod
+    def from_response_headers(cls, headers):
+        return FileVersionInfo(
+            id_=headers.get('x-bz-file-id'),
+            file_name=headers.get('x-bz-file-name'),
+            size=headers.get('content-length'),
+            content_type=headers.get('content-type'),
+            content_sha1=headers.get('x-bz-content-sha1'),
+            file_info=None,
+            upload_timestamp=headers.get('x-bz-upload-timestamp'),
+            action=None
+        )
+
 
 class FileIdAndName(object):
     """

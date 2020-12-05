@@ -10,8 +10,8 @@
 
 import logging
 
-from .exception import UnrecognizedBucketType
-from .file_version import FileVersionInfoFactory
+from .exception import FileNotPresent, FileOrBucketNotFound, UnrecognizedBucketType
+from .file_version import FileVersionInfo, FileVersionInfoFactory
 from .progress import DoNothingProgressListener
 from .transfer.emerge.executor import AUTO_CONTENT_TYPE
 from .transfer.emerge.write_intent import WriteIntent
@@ -156,7 +156,7 @@ class Bucket(metaclass=B2TraceMeta):
 
             :ref:`Synchronizer <sync>`, a *high-performance* utility that synchronizes a local folder with a Bucket.
 
-        :param str file_id: a file ID
+        :param str file_name: a file name
         :param download_dest: an instance of the one of the following classes: \
         :class:`~b2sdk.v1.DownloadDestLocalFile`,\
         :class:`~b2sdk.v1.DownloadDestBytes`,\
@@ -170,6 +170,29 @@ class Bucket(metaclass=B2TraceMeta):
         return self.api.services.download_manager.download_file_from_url(
             url, download_dest, progress_listener, range_
         )
+
+    def get_file_info_by_id(self, file_id: str) -> FileVersionInfo:
+        """
+        Gets a file version's info by ID.
+
+        :param str file_id: the id of the file who's info will be retrieved.
+        :rtype: generator[b2sdk.v1.FileVersionInfo]
+        """
+        return FileVersionInfoFactory.from_api_response(self.api.get_file_info(file_id))
+
+    def get_file_info_by_name(self, file_name: str) -> FileVersionInfo:
+        """
+        Gets a file version's info by its name.
+
+        :param str file_name: the name of the file who's info will be retrieved.
+        :rtype: generator[b2sdk.v1.FileVersionInfo]
+        """
+        try:
+            return FileVersionInfoFactory.from_response_headers(
+                self.api.session.get_file_info_by_name(self.name, file_name)
+            )
+        except FileOrBucketNotFound:
+            raise FileNotPresent(bucket_name=self.name, file_id_or_name=file_name)
 
     def get_download_authorization(self, file_name_prefix, valid_duration_in_seconds):
         """

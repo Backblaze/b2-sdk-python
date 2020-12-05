@@ -8,6 +8,7 @@
 #
 ######################################################################
 
+from typing import Any, Dict
 from .bucket import Bucket, BucketFactory
 from .exception import NonExistentBucket, RestrictedBucket
 from .file_version import FileIdAndName
@@ -423,14 +424,18 @@ class B2Api(metaclass=B2TraceMeta):
         )
 
     # other
-    def get_file_info(self, file_id):
+    def get_file_info(self, file_id: str) -> Dict[str, Any]:
         """
         Legacy interface which just returns whatever remote API returns.
 
         .. todo::
             get_file_info() should return a File with .delete(), copy(), rename(), read() and so on
+
+        :param str file_id: the id of the file who's info will be retrieved.
+        :return: The parsed response
+        :rtype: dict
         """
-        return self.session.get_file_info(file_id)
+        return self.session.get_file_info_by_id(file_id)
 
     def check_bucket_restrictions(self, bucket_name):
         """

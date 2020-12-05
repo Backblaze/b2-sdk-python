@@ -398,10 +398,10 @@ class BucketSimulator(object):
     def download_file_by_name(self, file_name, url, range_=None):
         files = self.list_file_names(file_name, 1)['files']
         if len(files) == 0:
-            raise FileNotPresent(file_name)
+            raise FileNotPresent(file_id_or_name=file_name)
         file_dict = files[0]
         if file_dict['fileName'] != file_name or file_dict['action'] != 'upload':
-            raise FileNotPresent(file_name)
+            raise FileNotPresent(file_id_or_name=file_name)
         file_sim = self.file_name_and_id_to_file[(file_name, file_dict['fileId'])]
         return self._download_file_sim(file_sim, url, range_=range_)
 
@@ -413,8 +413,14 @@ class BucketSimulator(object):
         file_sim.finish(part_sha1_array)
         return file_sim.as_upload_result()
 
-    def get_file_info(self, file_id):
+    def get_file_info_by_id(self, file_id):
         return self.file_id_to_file[file_id].as_upload_result()
+
+    def get_file_info_by_name(self, file_name):
+        for ((name, id), file) in self.file_name_and_id_to_file.items():
+            if file_name == name:
+                return file.as_download_headers()
+        raise FileNotPresent(file_id_or_name=file_name, bucket_name=self.bucket_name)
 
     def get_upload_url(self):
         upload_id = next(self.upload_url_counter)
@@ -933,10 +939,15 @@ class RawSimulator(AbstractRawApi):
                 )
         }
 
-    def get_file_info(self, api_url, account_auth_token, file_id):
+    def get_file_info_by_id(self, api_url, account_auth_token, file_id):
         bucket_id = self.file_id_to_bucket_id[file_id]
         bucket = self._get_bucket_by_id(bucket_id)
-        return bucket.get_file_info(file_id)
+        return bucket.get_file_info_by_id(file_id)
+
+    def get_file_info_by_name(self, api_url, account_auth_token, bucket_name, file_name):
+        bucket = self._get_bucket_by_name(bucket_name)
+        info = bucket.get_file_info_by_name(file_name)
+        return info
 
     def get_upload_url(self, api_url, account_auth_token, bucket_id):
         bucket = self._get_bucket_by_id(bucket_id)

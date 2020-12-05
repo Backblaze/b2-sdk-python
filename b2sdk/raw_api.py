@@ -18,9 +18,11 @@ import time
 import traceback
 from abc import ABCMeta, abstractmethod
 from enum import Enum, unique
+from logging import getLogger
+from typing import Any, Dict
 
 from .b2http import B2Http
-from .exception import UnusableFileName, InvalidMetadataDirective
+from .exception import FileOrBucketNotFound, ResourceNotFound, UnusableFileName, InvalidMetadataDirective
 from .utils import b2_url_encode, hex_sha1_of_stream
 
 # All possible capabilities
@@ -46,6 +48,8 @@ HEX_DIGITS_AT_END = 'hex_digits_at_end'
 
 # API version number to use when calling the service
 API_VERSION = 'v2'
+
+logger = getLogger(__name__)
 
 
 @unique
@@ -143,7 +147,14 @@ class AbstractRawApi(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def get_file_info(self, api_url, account_auth_token, file_id):
+    def get_file_info_by_id(self, api_url: str, account_auth_token: str,
+                            file_id: str) -> Dict[str, Any]:
+        pass
+
+    @abstractmethod
+    def get_file_info_by_name(
+        self, download_url: str, account_auth_token: str, bucket_name: str, file_name: str
+    ) -> Dict[str, Any]:
         pass
 
     @abstractmethod
@@ -282,7 +293,7 @@ class B2RawApi(AbstractRawApi):
     def __init__(self, b2_http):
         self.b2_http = b2_http
 
-    def _post_json(self, base_url, api_name, auth, **params):
+    def _post_json(self, base_url, api_name, auth, **params) -> Dict[str, Any]:
         """
         A helper method for calling an API with the given auth and params.
 
@@ -290,7 +301,8 @@ class B2RawApi(AbstractRawApi):
         :param auth: passed in Authorization header
         :param api_name: example: "b2_create_bucket"
         :param args: the rest of the parameters are passed to b2
-        :return:
+        :return: the decoded JSON response
+        :rtype: dict
         """
         url = '%s/b2api/%s/%s' % (base_url, API_VERSION, api_name)
         headers = {'Authorization': auth}
@@ -407,8 +419,22 @@ class B2RawApi(AbstractRawApi):
             validDurationInSeconds=valid_duration_in_seconds
         )
 
-    def get_file_info(self, api_url, account_auth_token, file_id):
+    def get_file_info_by_id(self, api_url: str, account_auth_token: str,
+                            file_id: str) -> Dict[str, Any]:
         return self._post_json(api_url, 'b2_get_file_info', account_auth_token, fileId=file_id)
+
+    def get_file_info_by_name(
+        self, download_url: str, account_auth_token: str, bucket_name: str, file_name: str
+    ) -> Dict[str, Any]:
+        download_url = self.get_download_url_by_name(download_url, bucket_name, file_name)
+        try:
+            response = self.b2_http.head_content(
+                download_url, headers={"Authorization": account_auth_token}
+            )
+            return response.headers
+        except ResourceNotFound:
+            logger.debug("Resource Not Found: %s" % download_url)
+            raise FileOrBucketNotFound(bucket_name, file_name)
 
     def get_upload_url(self, api_url, account_auth_token, bucket_id):
         return self._post_json(api_url, 'b2_get_upload_url', account_auth_token, bucketId=bucket_id)
@@ -911,14 +937,33 @@ def test_raw_api_helper(raw_api):
     copy_file_name = 'test_copy.txt'
     raw_api.copy_file(api_url, account_auth_token, file_id, copy_file_name)
 
+    # b2_get_file_info_by_id
+    print('b2_get_file_info_by_id')
+    file_info_dict = raw_api.get_file_info_by_id(api_url, account_auth_token, file_id)
+    assert file_info_dict['fileName'] == file_name
+
+    # b2_get_file_info_by_name
+    print('b2_get_file_info_by_name (no auth)')
+    info_headers = raw_api.get_file_info_by_name(download_url, None, bucket_name, file_name)
+    assert info_headers['x-bz-file-id'] == file_id
+
+    # b2_get_file_info_by_name
+    print('b2_get_file_info_by_name (auth)')
+    info_headers = raw_api.get_file_info_by_name(
+        download_url, account_auth_token, bucket_name, file_name
+    )
+    assert info_headers['x-bz-file-id'] == file_id
+
+    # b2_get_file_info_by_name
+    print('b2_get_file_info_by_name (download auth)')
+    info_headers = raw_api.get_file_info_by_name(
+        download_url, download_auth_token, bucket_name, file_name
+    )
+    assert info_headers['x-bz-file-id'] == file_id
+
     # b2_hide_file
     print('b2_hide_file')
     raw_api.hide_file(api_url, account_auth_token, bucket_id, file_name)
-
-    # b2_get_file_info
-    print('b2_get_file_info')
-    file_info_dict = raw_api.get_file_info(api_url, account_auth_token, file_id)
-    assert file_info_dict['fileName'] == file_name
 
     # b2_start_large_file
     print('b2_start_large_file')
