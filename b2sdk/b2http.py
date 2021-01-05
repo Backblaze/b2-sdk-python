@@ -19,6 +19,7 @@ import time
 
 from typing import Any, Dict
 
+from .b2response import B2Response
 from .exception import (
     B2Error, B2RequestTimeoutDuringUpload, BadDateFormat, BrokenPipe, B2ConnectionError,
     B2RequestTimeout, ClockSkew, ConnectionReset, interpret_b2_error, UnknownError, UnknownHost
@@ -375,6 +376,8 @@ class B2Http(object):
             response = self.session.get(
                 url, headers=request_headers, stream=True, timeout=self.TIMEOUT
             )
+            # cast response to B2Response so we can override iter_content()
+            response.__class__ = B2Response
             self._run_post_request_hooks('GET', url, request_headers, response)
             return response
 

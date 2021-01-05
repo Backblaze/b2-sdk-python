@@ -961,6 +961,30 @@ def test_raw_api_helper(raw_api):
     )
     assert info_headers['x-bz-file-id'] == file_id
 
+    # b2_upload_file with b2-content-encoding=gzip
+    print('b2_upload_file (b2-content-encoding=gzip)')
+    file_name = 'test.txt'
+    file_contents = b'hello world'
+    file_sha1 = hex_sha1_of_stream(io.BytesIO(file_contents), len(file_contents))
+    file_dict = raw_api.upload_file(
+        upload_url,
+        upload_auth_token,
+        file_name,
+        len(file_contents),
+        'text/plain',
+        file_sha1,
+        {'b2-content-encoding': 'gzip'},
+        io.BytesIO(file_contents),
+    )
+    file_id = file_dict['fileId']
+
+    # b2_download_file_by_id with content-encoding=gzip
+    print('b2_download_file_by_id (content-encoding=gzip)')
+    url = raw_api.get_download_url_by_id(download_url, file_id)
+    with raw_api.download_file_from_url(account_auth_token, url) as response:
+        data = next(response.iter_content(chunk_size=len(file_contents)))
+        assert data == file_contents, data
+
     # b2_hide_file
     print('b2_hide_file')
     raw_api.hide_file(api_url, account_auth_token, bucket_id, file_name)
