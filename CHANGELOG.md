@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Add custom exception for `403 transaction_cap_exceeded`
 * Add `get_file_info_by_id` and `get_file_info_by_name` to `Bucket`
 * `FileNotPresent` and `NonExistentBucket` now subclass new exceptions `FileOrBucketNotFound` and `ResourceNotFound`
+* Add and use `B2Response` class to avoid decompressing on download when `content-encoding=gzip` header is present
 
 ### Changed
 * Fix missing import in the synchronization example
