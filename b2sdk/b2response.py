@@ -1,3 +1,13 @@
+######################################################################
+#
+# File: b2sdk/b2response.py
+#
+# Copyright 2020 Backblaze Inc. All Rights Reserved.
+#
+# License https://www.backblaze.com/using_b2_code.html
+#
+######################################################################
+
 from requests.exceptions import ChunkedEncodingError, ContentDecodingError, ConnectionError, StreamConsumedError
 from requests.models import Response
 from requests.utils import iter_slices, stream_decode_response_unicode
