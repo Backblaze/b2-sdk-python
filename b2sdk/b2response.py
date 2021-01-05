@@ -1,4 +1,4 @@
-from requests.exceptions import ChunkedEncodingError, ContentDecodingError, StreamConsumedError
+from requests.exceptions import ChunkedEncodingError, ContentDecodingError, ConnectionError, StreamConsumedError
 from requests.models import Response
 from requests.utils import iter_slices, stream_decode_response_unicode
 from urllib3.exceptions import ProtocolError, DecodeError, ReadTimeoutError
@@ -44,7 +44,7 @@ class B2Response(Response):
                 except DecodeError as e:
                     raise ContentDecodingError(e)
                 except ReadTimeoutError as e:
-                    raise ConnectiоnError(e)
+                    raise ConnectionError(e)
             else:
                 # Standard file-like object.
                 while True:
