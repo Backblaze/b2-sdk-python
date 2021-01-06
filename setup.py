@@ -39,15 +39,8 @@ with open('README.md', encoding='utf-8') as f:
 with open('requirements.txt', encoding='utf-8') as f:
     requirements = f.read().splitlines()
 
-version = import_module('b2sdk').__version__
-
 setup(
     name='b2sdk',
-
-    # Versions should comply with PEP440.  For a discussion on single-sourcing
-    # the version across setup.py and the project code, see
-    # https://packaging.python.org/en/latest/single_source_version.html
-    version=version,
     description='Backblaze B2 SDK',
     long_description=long_description,
     long_description_content_type='text/markdown',
@@ -116,6 +109,9 @@ setup(
             ],
     },
 
+    setup_requires=['setuptools_scm'],
+    use_scm_version=True,
+
     # If there are data files included in your packages that need to be
     # installed, specify them here.
     package_data={'b2sdk': ['requirements.txt', 'LICENSE']},
@@ -127,4 +123,11 @@ setup(
     data_files=[
         #('my_data', ['data/data_file'])
     ],
+
+    # To provide executable scripts, use entry points in preference to the
+    # "scripts" keyword. Entry points provide cross-platform support and allow
+    # pip to create the appropriate form of executable for the target platform.
+    entry_points={
+        'pyinstaller40': ['hook-dirs=b2sdk._pyinstaller:get_hook_dirs'],
+    },
 )

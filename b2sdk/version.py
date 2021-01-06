@@ -9,12 +9,13 @@
 ######################################################################
 
 import sys
+from importlib.metadata import version, PackageNotFoundError
 
-# To avoid confusion between official Backblaze releases of this tool and
-# the versions on Github, we use the convention that the third number is
-# odd for Github, and even for Backblaze releases.
-VERSION = '1.2.1'
+try:
+    VERSION = version('b2sdk')
+except PackageNotFoundError:
+    VERSION = '0.0.0'
 
-PYTHON_VERSION = '.'.join(map(str, sys.version_info[:3]))  # something like: 2.7.11
+PYTHON_VERSION = '.'.join(map(str, sys.version_info[:3]))  # something like: 3.9.1
 
 USER_AGENT = 'backblaze-b2/%s python/%s' % (VERSION, PYTHON_VERSION)
