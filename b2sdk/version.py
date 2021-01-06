@@ -11,14 +11,11 @@
 import sys
 
 try:
-    from importlib.metadata import version, PackageNotFoundError
+    from importlib.metadata import version
 except ImportError:  # ModuleNotFoundError is not available in Python 3.5
-    from importlib_metadata import version, PackageNotFoundError
+    from importlib_metadata import version
 
-try:
-    VERSION = version('b2sdk')
-except PackageNotFoundError:
-    VERSION = '0.0.0'
+VERSION = version('b2sdk')
 
 PYTHON_VERSION = '.'.join(map(str, sys.version_info[:3]))  # something like: 3.9.1
 
