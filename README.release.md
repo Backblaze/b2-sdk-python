@@ -2,7 +2,6 @@
 
 - Get the Nox:
   - `pip install -U nox`
-- Bump the version number to an even number in `b2sdk/version.py`.
 - Update the release history in `CHANGELOG.md`:
   - Change "Unreleased" to the current release version and date.
   - Create empty "Unreleased" section.
@@ -24,6 +23,3 @@
   - Verify that the release has been uploaded to the PyPI
 - Install using pip and verify that it gets the correct version:
   - `pip install -U b2sdk`
-- Update for dev:
-  - Bump the version number to an odd number (for example: 1.0.2 -> 1.0.3)
-  - Commit the changes and push to GitHub again.
