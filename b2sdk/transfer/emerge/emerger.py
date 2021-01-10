@@ -63,10 +63,12 @@ class Emerger(metaclass=B2TraceMetaAbstract):
         """
         planner = self.get_emerge_planner(recommended_upload_part_size=recommended_upload_part_size)
         emerge_plan = planner.get_emerge_plan(write_intents)
-        if emerge_plan.is_large_file() and 'large_file_sha1' not in file_info:
+        if emerge_plan.is_large_file():
             [write_intent] = write_intents
             if write_intent.outbound_source.is_sha1_known():
-                file_info['large_file_sha1'] = write_intent.outbound_source.get_content_sha1()
+                file_info = file_info or {}
+                if 'large_file_sha1' not in file_info:
+                    file_info['large_file_sha1'] = write_intent.outbound_source.get_content_sha1()
         return self.emerge_executor.execute_emerge_plan(
             emerge_plan,
             bucket_id,
