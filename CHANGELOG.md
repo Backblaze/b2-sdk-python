@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2021-01-13
+
 ### Added
 * Add custom exception for `403 transaction_cap_exceeded`
 * Add `get_file_info_by_id` and `get_file_info_by_name` to `Bucket`
@@ -106,7 +108,8 @@ has changed.
 ### Added
 Initial official release of SDK as a separate package (until now it was a part of B2 CLI)
 
-[Unreleased]: https://github.com/Backblaze/b2-sdk-python/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/Backblaze/b2-sdk-python/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/Backblaze/b2-sdk-python/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/Backblaze/b2-sdk-python/compare/v1.1.4...v1.2.0
 [1.1.4]: https://github.com/Backblaze/b2-sdk-python/compare/v1.1.2...v1.1.4
 [1.1.2]: https://github.com/Backblaze/b2-sdk-python/compare/v1.1.0...v1.1.2
