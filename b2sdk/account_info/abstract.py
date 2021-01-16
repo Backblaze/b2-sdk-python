@@ -10,6 +10,7 @@
 
 from abc import abstractmethod
 
+from . import exception
 from b2sdk.raw_api import ALL_CAPABILITIES
 from b2sdk.utils import B2TraceMetaAbstract, limit_trace_arguments
 
@@ -98,6 +99,20 @@ class AbstractAccountInfo(metaclass=B2TraceMetaAbstract):
 
         :param str bucket_id: a bucket ID
         """
+
+    def check_current_credentials(self, key_id, key, realm):
+        """
+        Checks whether provided key_id, key and realm are the credentials cached at the moment
+        :rtype: bool
+        """
+        try:
+            return (
+                    self.get_application_key() == key and
+                    self.get_application_key_id() == key_id and
+                    self.get_realm() == realm
+            )
+        except exception.MissingAccountData:
+            return False
 
     @abstractmethod
     def get_account_id(self):
