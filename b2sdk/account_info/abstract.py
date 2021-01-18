@@ -102,14 +102,17 @@ class AbstractAccountInfo(metaclass=B2TraceMetaAbstract):
 
     def check_current_credentials(self, key_id, key, realm):
         """
-        Checks whether provided key_id, key and realm are the credentials cached at the moment
+        Check whether provided key_id, key and realm are the credentials cached at the moment.
+
+        :param str key_id: application key ID used to authenticate
+        :param str key: application key
+        :param str realm: authorization realm
         :rtype: bool
         """
         try:
             return (
-                    self.get_application_key() == key and
-                    self.get_application_key_id() == key_id and
-                    self.get_realm() == realm
+                self.get_application_key() == key and self.get_application_key_id() == key_id and
+                self.get_realm() == realm
             )
         except exception.MissingAccountData:
             return False

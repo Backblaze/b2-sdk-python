@@ -62,7 +62,14 @@ class AccountInfoBase(metaclass=ABCMeta):
     def test_clear(self):
         account_info = self._make_info()
         account_info.set_auth_data(
-            'account_id', 'account_auth', 'api_url', 'download_url', 100, 'app_key', 'realm'
+            'account_id',
+            'account_auth',
+            'api_url',
+            'download_url',
+            100,
+            'app_key',
+            'realm',
+            application_key_id='key_id',
         )
         account_info.clear()
 
@@ -80,6 +87,9 @@ class AccountInfoBase(metaclass=ABCMeta):
             account_info.get_realm()
         with self.assertRaises(MissingAccountData):
             account_info.get_minimum_part_size()
+        with self.assertRaises(MissingAccountData):
+            account_info.get_application_key_id()
+        self.assertFalse(account_info.check_current_credentials('key_id', 'app_key', 'realm'))
 
     def test_set_auth_data_compatibility(self):
         account_info = self._make_info()
@@ -168,7 +178,14 @@ class AccountInfoBase(metaclass=ABCMeta):
     def _test_account_info(self, check_persistence):
         account_info = self._make_info()
         account_info.set_auth_data(
-            'account_id', 'account_auth', 'api_url', 'download_url', 100, 'app_key', 'realm'
+            'account_id',
+            'account_auth',
+            'api_url',
+            'download_url',
+            100,
+            'app_key',
+            'realm',
+            application_key_id='key_id'
         )
 
         object_instances = [account_info]
@@ -180,8 +197,11 @@ class AccountInfoBase(metaclass=ABCMeta):
             self.assertEqual('account_auth', info2.get_account_auth_token())
             self.assertEqual('api_url', info2.get_api_url())
             self.assertEqual('app_key', info2.get_application_key())
+            self.assertEqual('key_id', info2.get_application_key_id())
             self.assertEqual('realm', info2.get_realm())
             self.assertEqual(100, info2.get_minimum_part_size())
+            self.assertTrue(info2.check_current_credentials('key_id', 'app_key', 'realm'))
+            self.assertFalse(info2.check_current_credentials('key_id', 'app_key', 'another_realm'))
 
     def test_account_info_same_object(self):
         self._test_account_info(check_persistence=False)

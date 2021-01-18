@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+* Add `check_current_credentials` method to AccountInfo.
+
+### Removed
+* Removed `get_bucket_name_or_none_from_allowed` method from cache classes
+
 ## [1.3.0] - 2021-01-13
 
 ### Added
