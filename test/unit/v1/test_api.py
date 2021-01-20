@@ -104,10 +104,10 @@ class TestApi(TestBase):
         with mock.patch.object(self.cache, 'clear') as clear_mock:
             # the first time we authorize the cache is supposed to be cleaned
             self._authorize_account()
-            clear_mock.assert_called_once()
+            clear_mock.assert_called_once_with()
             # the second time it's not supposed to be called
             self._authorize_account()
-            clear_mock.assert_called_once()
+            clear_mock.assert_called_once_with()
 
     def _authorize_account(self):
         self.api.authorize_account('production', self.application_key_id, self.master_key)
