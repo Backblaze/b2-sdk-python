@@ -89,7 +89,7 @@ class AccountInfoBase(metaclass=ABCMeta):
             account_info.get_minimum_part_size()
         with self.assertRaises(MissingAccountData):
             account_info.get_application_key_id()
-        self.assertFalse(account_info.check_current_credentials('key_id', 'app_key', 'realm'))
+        self.assertFalse(account_info.is_same_key('key_id', 'realm'))
 
     def test_set_auth_data_compatibility(self):
         account_info = self._make_info()
@@ -200,8 +200,8 @@ class AccountInfoBase(metaclass=ABCMeta):
             self.assertEqual('key_id', info2.get_application_key_id())
             self.assertEqual('realm', info2.get_realm())
             self.assertEqual(100, info2.get_minimum_part_size())
-            self.assertTrue(info2.check_current_credentials('key_id', 'app_key', 'realm'))
-            self.assertFalse(info2.check_current_credentials('key_id', 'app_key', 'another_realm'))
+            self.assertTrue(info2.is_same_key('key_id', 'realm'))
+            self.assertFalse(info2.is_same_key('key_id', 'another_realm'))
 
     def test_account_info_same_object(self):
         self._test_account_info(check_persistence=False)

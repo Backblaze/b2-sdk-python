@@ -100,20 +100,16 @@ class AbstractAccountInfo(metaclass=B2TraceMetaAbstract):
         :param str bucket_id: a bucket ID
         """
 
-    def check_current_credentials(self, key_id, key, realm):
+    def is_same_key(self, application_key_id, realm):
         """
-        Check whether provided key_id, key and realm are the credentials cached at the moment.
+        Check whether cached application key is the same as the one provided.
 
-        :param str key_id: application key ID used to authenticate
-        :param str key: application key
+        :param str application_key_id: application key ID
         :param str realm: authorization realm
         :rtype: bool
         """
         try:
-            return (
-                self.get_application_key() == key and self.get_application_key_id() == key_id and
-                self.get_realm() == realm
-            )
+            return self.get_application_key_id() == application_key_id and self.get_realm() == realm
         except exception.MissingAccountData:
             return False
 
