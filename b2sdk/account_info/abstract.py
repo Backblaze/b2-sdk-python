@@ -10,6 +10,7 @@
 
 from abc import abstractmethod
 
+from . import exception
 from b2sdk.raw_api import ALL_CAPABILITIES
 from b2sdk.utils import B2TraceMetaAbstract, limit_trace_arguments
 
@@ -98,6 +99,19 @@ class AbstractAccountInfo(metaclass=B2TraceMetaAbstract):
 
         :param str bucket_id: a bucket ID
         """
+
+    def is_same_key(self, application_key_id, realm):
+        """
+        Check whether cached application key is the same as the one provided.
+
+        :param str application_key_id: application key ID
+        :param str realm: authorization realm
+        :rtype: bool
+        """
+        try:
+            return self.get_application_key_id() == application_key_id and self.get_realm() == realm
+        except exception.MissingAccountData:
+            return False
 
     @abstractmethod
     def get_account_id(self):

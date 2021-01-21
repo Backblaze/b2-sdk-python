@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+* Add `is_same_key` method to `AccountInfo`.
+
+### Fixed
+* Remove unnecessary cache clearing when reauthorizing with the same key
+
 ## [1.3.0] - 2021-01-13
 
 ### Added
