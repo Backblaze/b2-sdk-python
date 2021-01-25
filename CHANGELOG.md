@@ -15,7 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 * Fix missing import in the synchronization example
-* Use setuptools-scm for versioning
+* Use `setuptools-scm` for versioning
+* Clean up CI steps
 
 ## [1.2.0] - 2020-11-03
 
