@@ -171,7 +171,7 @@ def doc(session):
         session.notify('doc_cover')
     else:
         sphinx_args[-2:-2] = [
-            '--open-browser', '--watch', '../b2sdk', '--ignore', '*.pyc', '--ignore', '*~'
+            '-E', '--open-browser', '--watch', '../b2sdk', '--ignore', '*.pyc', '--ignore', '*~'
         ]
         session.run('sphinx-autobuild', *sphinx_args)
 
