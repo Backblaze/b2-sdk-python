@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+* Add an ability to provide `bucket_id` filter parameter for `list_buckets`
+
 ### Fixed
 * Fix docs autogen
 

@@ -46,6 +46,15 @@ class TestApi(TestBase):
             [b.name for b in self.api.list_buckets(bucket_name='bucket1')],
         )
 
+    def test_list_buckets_with_id(self):
+        self._authorize_account()
+        bucket = self.api.create_bucket('bucket1', 'allPrivate')
+        self.api.create_bucket('bucket2', 'allPrivate')
+        self.assertEqual(
+            ['bucket1'],
+            [b.name for b in self.api.list_buckets(bucket_id=bucket.id_)],
+        )
+
     def test_reauthorize_with_app_key(self):
         # authorize and create a key
         self._authorize_account()
