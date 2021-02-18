@@ -274,17 +274,18 @@ class B2Api(metaclass=B2TraceMeta):
         account_id = self.account_info.get_account_id()
         self.session.delete_bucket(account_id, bucket.id_)
 
-    def list_buckets(self, bucket_name=None):
+    def list_buckets(self, bucket_name=None, bucket_id=None):
         """
         Call ``b2_list_buckets`` and return a list of buckets.
 
-        When no bucket name is specified, returns *all* of the buckets
-        in the account.  When a bucket name is given, returns just that
+        When no bucket name nor ID is specified, returns *all* of the buckets
+        in the account.  When a bucket name or ID is given, returns just that
         bucket.  When authorized with an :term:`application key` restricted to
         one :term:`bucket`, you must specify the bucket name, or the request
         will be unauthorized.
 
         :param str bucket_name: the name of the one bucket to return
+        :param str bucket_id: the ID of the one bucket to return
         :rtype: list[b2sdk.v1.Bucket]
         """
         # Give a useful warning if the current application key does not
@@ -294,7 +295,9 @@ class B2Api(metaclass=B2TraceMeta):
         account_id = self.account_info.get_account_id()
         self.check_bucket_restrictions(bucket_name)
 
-        response = self.session.list_buckets(account_id, bucket_name=bucket_name)
+        response = self.session.list_buckets(
+            account_id, bucket_name=bucket_name, bucket_id=bucket_id
+        )
         buckets = self.BUCKET_FACTORY_CLASS.from_api_response(self, response)
 
         if bucket_name is not None:
