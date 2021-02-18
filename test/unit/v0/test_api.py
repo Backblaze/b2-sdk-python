@@ -7,7 +7,6 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
-from unittest import mock
 
 from .test_base import TestBase
 
@@ -110,15 +109,6 @@ class TestApi(TestBase):
         self.api.authorize_account('production', key['applicationKeyId'], key['applicationKey'])
         with self.assertRaises(RestrictedBucket):
             self.api.list_buckets()
-
-    def test_authorize_account_cache_reused(self):
-        with mock.patch.object(self.cache, 'clear') as clear_mock:
-            # the first time we authorize the cache is supposed to be cleaned
-            self._authorize_account()
-            clear_mock.assert_called_once_with()
-            # the second time it's not supposed to be called
-            self._authorize_account()
-            clear_mock.assert_called_once_with()
 
     def _authorize_account(self):
         self.api.authorize_account('production', self.application_key_id, self.master_key)

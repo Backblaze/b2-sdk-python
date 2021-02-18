@@ -100,7 +100,12 @@ class B2Session(object):
         :param str application_key: user's :term:`application key`
         """
         # Clean up any previous account info if it was for a different account.
-        if not self.account_info.is_same_key(application_key_id, realm):
+        try:
+            old_account_id = self.account_info.get_account_id()
+            old_realm = self.account_info.get_realm()
+            if application_key_id != old_account_id or realm != old_realm:
+                self.cache.clear()
+        except MissingAccountData:
             self.cache.clear()
 
         # Authorize
