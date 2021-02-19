@@ -10,7 +10,7 @@
 
 from abc import abstractmethod
 
-from . import exception
+from b2sdk.account_info import exception
 from b2sdk.raw_api import ALL_CAPABILITIES
 from b2sdk.utils import B2TraceMetaAbstract, limit_trace_arguments
 
