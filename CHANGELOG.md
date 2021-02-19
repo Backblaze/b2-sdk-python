@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 * Add an ability to provide `bucket_id` filter parameter for `list_buckets`
-* Add `is_same_key` method to `AccountInfo`.
+* Add `is_same_key` method to `AccountInfo`
 
 ### Fixed
 * Fix docs autogen
@@ -22,7 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 * Fix missing import in the synchronization example
-* Use setuptools-scm for versioning
+* Use `setuptools-scm` for versioning
+* Clean up CI steps
 
 ## [1.2.0] - 2020-11-03
 

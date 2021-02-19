@@ -203,6 +203,7 @@ class AccountInfoBase(metaclass=ABCMeta):
             self.assertTrue(info2.is_same_key('key_id', 'realm'))
             self.assertFalse(info2.is_same_key('key_id', 'another_realm'))
             self.assertFalse(info2.is_same_key('another_key_id', 'realm'))
+            self.assertFalse(info2.is_same_key('another_key_id', 'another_realm'))
 
     def test_account_info_same_object(self):
         self._test_account_info(check_persistence=False)
