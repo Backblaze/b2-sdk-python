@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2021-03-03
+
 ### Changed
 * Add an ability to provide `bucket_id` filter parameter for `list_buckets`
 * Add `is_same_key` method to `AccountInfo`
@@ -117,7 +119,8 @@ has changed.
 ### Added
 Initial official release of SDK as a separate package (until now it was a part of B2 CLI)
 
-[Unreleased]: https://github.com/Backblaze/b2-sdk-python/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/Backblaze/b2-sdk-python/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/Backblaze/b2-sdk-python/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/Backblaze/b2-sdk-python/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/Backblaze/b2-sdk-python/compare/v1.1.4...v1.2.0
 [1.1.4]: https://github.com/Backblaze/b2-sdk-python/compare/v1.1.2...v1.1.4
