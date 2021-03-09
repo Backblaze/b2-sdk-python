@@ -167,7 +167,8 @@ class B2Api(metaclass=B2TraceMeta):
     # buckets
 
     def create_bucket(
-        self, name, bucket_type, bucket_info=None, cors_rules=None, lifecycle_rules=None
+        self, name, bucket_type, bucket_info=None, cors_rules=None, lifecycle_rules=None,
+        default_server_side_encryption=None,
     ):
         """
         Create a bucket.
@@ -177,6 +178,7 @@ class B2Api(metaclass=B2TraceMeta):
         :param dict bucket_info: additional bucket info to store with the bucket
         :param dict cors_rules: bucket CORS rules to store with the bucket
         :param dict lifecycle_rules: bucket lifecycle rules to store with the bucket
+        :param dict default_server_side_encryption: default server side encryption settings
         :return: a Bucket object
         :rtype: b2sdk.v1.Bucket
         """
@@ -188,7 +190,8 @@ class B2Api(metaclass=B2TraceMeta):
             bucket_type,
             bucket_info=bucket_info,
             cors_rules=cors_rules,
-            lifecycle_rules=lifecycle_rules
+            lifecycle_rules=lifecycle_rules,
+            default_server_side_encryption=default_server_side_encryption,
         )
         bucket = self.BUCKET_FACTORY_CLASS.from_api_bucket_dict(self, response)
         assert name == bucket.name, 'API created a bucket with different name\

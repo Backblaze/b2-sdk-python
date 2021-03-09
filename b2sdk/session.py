@@ -136,7 +136,8 @@ class B2Session(object):
         bucket_type,
         bucket_info=None,
         cors_rules=None,
-        lifecycle_rules=None
+        lifecycle_rules=None,
+        default_server_side_encryption=None,
     ):
         return self._wrap_default_token(
             self.raw_api.create_bucket,
@@ -146,6 +147,7 @@ class B2Session(object):
             bucket_info=bucket_info,
             cors_rules=cors_rules,
             lifecycle_rules=lifecycle_rules,
+            default_server_side_encryption=default_server_side_encryption,
         )
 
     def create_key(
@@ -281,6 +283,7 @@ class B2Session(object):
         cors_rules=None,
         lifecycle_rules=None,
         if_revision_is=None,
+        default_server_side_encrption=None,
     ):
         return self._wrap_default_token(
             self.raw_api.update_bucket,
@@ -291,6 +294,7 @@ class B2Session(object):
             cors_rules=cors_rules,
             lifecycle_rules=lifecycle_rules,
             if_revision_is=if_revision_is,
+            default_server_side_encrption=default_server_side_encrption,
         )
 
     def upload_file(

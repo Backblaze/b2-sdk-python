@@ -40,6 +40,15 @@ ALL_CAPABILITIES = [
     'deleteFiles',
 ]
 
+
+class EncryptionMode(Enum):
+    SSE_C = 'SSE-C'
+    SSE_B2 = 'SSE-B2'
+
+
+class EncryptionAlgorithm(Enum):
+    AES256 = 'AES256'
+
 # Standard names for file info entries
 SRC_LAST_MODIFIED_MILLIS = 'src_last_modified_millis'
 
@@ -326,7 +335,8 @@ class B2RawApi(AbstractRawApi):
         bucket_type,
         bucket_info=None,
         cors_rules=None,
-        lifecycle_rules=None
+        lifecycle_rules=None,
+        default_server_side_encryption=None,
     ):
         return self._post_json(
             api_url,
@@ -337,7 +347,8 @@ class B2RawApi(AbstractRawApi):
             bucketType=bucket_type,
             bucketInfo=bucket_info,
             corsRules=cors_rules,
-            lifecycleRules=lifecycle_rules
+            lifecycleRules=lifecycle_rules,
+            defaultServerSideEncryption=default_server_side_encryption,
         )
 
     def create_key(
@@ -576,7 +587,8 @@ class B2RawApi(AbstractRawApi):
         bucket_info=None,
         cors_rules=None,
         lifecycle_rules=None,
-        if_revision_is=None
+        if_revision_is=None,
+        default_server_side_encryption=None,
     ):
         assert bucket_info is not None or bucket_type is not None
 
@@ -591,6 +603,8 @@ class B2RawApi(AbstractRawApi):
             kwargs['corsRules'] = cors_rules
         if lifecycle_rules is not None:
             kwargs['lifecycleRules'] = lifecycle_rules
+        if default_server_side_encryption is not None:
+            kwargs['defaultServerSideEncryption'] = default_server_side_encryption
 
         return self._post_json(
             api_url,

@@ -13,6 +13,7 @@ import logging
 from .exception import FileNotPresent, FileOrBucketNotFound, UnrecognizedBucketType
 from .file_version import FileVersionInfo, FileVersionInfoFactory
 from .progress import DoNothingProgressListener
+from .raw_api import EncryptionMode, EncryptionAlgorithm
 from .transfer.emerge.executor import AUTO_CONTENT_TYPE
 from .transfer.emerge.write_intent import WriteIntent
 from .transfer.outbound.copy_source import CopySource
@@ -42,6 +43,8 @@ class Bucket(metaclass=B2TraceMeta):
         revision=None,
         bucket_dict=None,
         options_set=None,
+        enc_is_client_authorized=None,
+        enc_value=None,
     ):
         """
         :param b2sdk.v1.B2Api api: an API object
@@ -54,6 +57,8 @@ class Bucket(metaclass=B2TraceMeta):
         :param int revision: a bucket revision number
         :param dict bucket_dict: a dictionary which contains bucket parameters
         :param set options_set: set of bucket options strings
+        :param bool enc_is_client_authorized: is client authorized to read bucket's default encryption settings
+        :param dict or None enc_value: bucket's default encryption settings
         """
         self.api = api
         self.id_ = id_
@@ -65,6 +70,18 @@ class Bucket(metaclass=B2TraceMeta):
         self.revision = revision
         self.bucket_dict = bucket_dict or {}
         self.options_set = options_set or set()
+
+        if enc_value is None:
+            mode = None
+            algorithm = None
+        elif enc_value['mode'] == 'none':
+            mode = None
+            algorithm = None
+        else:
+            mode = EncryptionMode(enc_value['mode'])
+            algorithm = EncryptionAlgorithm(enc_value['algorithm'])
+
+        self.default_srver_side_encrption = DefaultServerSideEncryption(enc_is_client_authorized, mode, algorithm)
 
     def get_id(self):
         """
@@ -98,6 +115,7 @@ class Bucket(metaclass=B2TraceMeta):
         cors_rules=None,
         lifecycle_rules=None,
         if_revision_is=None,
+        default_server_side_encrption=None,
     ):
         """
         Update various bucket parameters.
@@ -107,6 +125,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param dict cors_rules: CORS rules to store with a bucket
         :param dict lifecycle_rules: lifecycle rules to store with a bucket
         :param int if_revision_is: revision number, update the info **only if** *revision* equals to *if_revision_is*
+        :param dict default_server_side_encrption: default server-side-encryption settings
         """
         account_id = self.api.account_info.get_account_id()
         return self.api.session.update_bucket(
@@ -116,7 +135,8 @@ class Bucket(metaclass=B2TraceMeta):
             bucket_info=bucket_info,
             cors_rules=cors_rules,
             lifecycle_rules=lifecycle_rules,
-            if_revision_is=if_revision_is
+            if_revision_is=if_revision_is,
+            default_server_side_encrption=default_server_side_encrption,
         )
 
     def cancel_large_file(self, file_id):
@@ -828,12 +848,19 @@ class BucketFactory(object):
                "accountId": "4aa9865d6f00",
                "bucketInfo": {},
                "options": [],
-               "revision": 1
+               "revision": 1,
+               "defaultServerSideEncryption": {
+                   "isClientAuthorizedToRead" : true,
+                   "value": {
+                     "algorithm" : "AES256",
+                     "mode" : "SSE-B2"
+                   }
+               }
            }
 
         into a Bucket object.
 
-        :param b2sdk.v1.B2Api api: API lient
+        :param b2sdk.v1.B2Api api: API client
         :param dict bucket_dict: a dictionary with bucket properties
         :rtype: b2sdk.v1.Bucket
 
@@ -846,9 +873,40 @@ class BucketFactory(object):
         lifecycle_rules = bucket_dict['lifecycleRules']
         revision = bucket_dict['revision']
         options = set(bucket_dict['options'])
+        enc_is_client_authorized = bucket_dict['defaultServerSideEncryption']['isClientAuthorizedToRead']
+        enc_value = bucket_dict['defaultServerSideEncryption']['value']
         if type_ is None:
             raise UnrecognizedBucketType(bucket_dict['bucketType'])
         return cls.BUCKET_CLASS(
             api, bucket_id, bucket_name, type_, bucket_info, cors_rules, lifecycle_rules, revision,
-            bucket_dict, options
+            bucket_dict, options, enc_is_client_authorized, enc_value,
         )
+
+
+class EncryptionSettings:
+    """
+    Hold information about encryption settings.
+    """
+
+    def __init__(self, mode, algorithm):
+        """
+        :param EncryptionMode mode: encryption mode, or None
+        :param EncryptionAlgorithm algorithm: encryption algorithm, or None
+        """
+        self.mode = mode
+        self.algorithm = algorithm
+
+
+class DefaultServerSideEncryption(EncryptionSettings):
+    """
+    Provide information about bucket's default server side encryption settings.
+    """
+
+    def __init__(self, authorized_to_read, mode, algorithm):
+        """
+        :param bool authorized_to_read: is current key authorized to read bucket's encryption settings
+        :param EncryptionMode mode: bucket's default encryption mode, or None
+        :param EncryptionAlgorithm algorithm: bucket's default encryption algorithm, or None
+        """
+        self.authorized_to_read = authorized_to_read
+        super(DefaultServerSideEncryption, self).__init__(mode, algorithm)
