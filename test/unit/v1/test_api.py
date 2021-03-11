@@ -12,6 +12,9 @@ from .test_base import TestBase
 
 from .deps import B2Api
 from .deps import DummyCache
+from .deps import EncryptionAlgorithm
+from .deps import EncryptionMode
+from .deps import EncryptionSetting
 from .deps import InMemoryAccountInfo
 from .deps import RawSimulator
 from .deps_exception import RestrictedBucket
@@ -44,6 +47,78 @@ class TestApi(TestBase):
         self.assertEqual(
             ['bucket1'],
             [b.name for b in self.api.list_buckets(bucket_name='bucket1')],
+        )
+
+    def test_buckets_with_encryption(self):
+        self._authorize_account()
+        sse_b2_aes = EncryptionSetting(
+            mode=EncryptionMode.SSE_B2,
+            algorithm=EncryptionAlgorithm.AES256,
+        )
+        no_encryption = EncryptionSetting(
+            mode=EncryptionMode.NONE,
+        )
+
+        b1 = self.api.create_bucket('bucket1', 'allPrivate', default_server_side_encryption=sse_b2_aes)
+        print('b1 created', b1, b1.default_server_side_encryption)
+        b2 = self.api.create_bucket('bucket2', 'allPrivate')
+        #b2 = self.api.create_bucket('bucket2', 'allPrivate', default_server_side_encryption=sse_b2_aes)
+        print('b2 created', b1, b1.default_server_side_encryption)
+        buckets = {
+            b.name: b
+            for b in self.api.list_buckets()
+        }
+
+        b1 = buckets['bucket1']
+        print('b1 as retrieved', b1, b1.default_server_side_encryption)
+
+        # b2 is not encrypted
+        self.assertEqual(
+            buckets['bucket2'].default_server_side_encryption,
+            no_encryption,
+        )
+
+        # b1 is
+        self.assertEqual(
+            buckets['bucket1'].default_server_side_encryption,
+            sse_b2_aes,
+        )
+
+        # update to set encryption on b2
+        buckets['bucket2'].update(default_server_side_encryption=sse_b2_aes)
+        self.assertEqual(
+            buckets['bucket1'].default_server_side_encryption.mode,
+            EncryptionMode.SSE_B2,
+        )
+        self.assertEqual(
+            buckets['bucket1'].default_server_side_encryption.algorithm,
+            EncryptionAlgorithm.AES256,
+        )
+
+        # update to unset encryption again
+        buckets['bucket2'].update(default_server_side_encryption=no_encryption)
+        self.assertEqual(
+            buckets['bucket2'].default_server_side_encryption,
+            no_encryption,
+        )
+
+        # now check it with no readBucketEncryption permission to see that it's unknown
+
+        key = self.api.create_key(['listBuckets'], 'key1')
+        self.api.authorize_account('production', key['applicationKeyId'], key['applicationKey'])
+        buckets = {
+            b.name: b
+            for b in self.api.list_buckets()  # scan again with new key
+        }
+
+        self.assertEqual(
+            buckets['bucket1'].default_server_side_encryption,
+            None,
+        )
+
+        self.assertEqual(
+            buckets['bucket2'].default_server_side_encryption,
+            None,
         )
 
     def test_list_buckets_with_id(self):

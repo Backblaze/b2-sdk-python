@@ -283,7 +283,7 @@ class B2Session(object):
         cors_rules=None,
         lifecycle_rules=None,
         if_revision_is=None,
-        default_server_side_encrption=None,
+        default_server_side_encryption=None,
     ):
         return self._wrap_default_token(
             self.raw_api.update_bucket,
@@ -294,7 +294,7 @@ class B2Session(object):
             cors_rules=cors_rules,
             lifecycle_rules=lifecycle_rules,
             if_revision_is=if_revision_is,
-            default_server_side_encrption=default_server_side_encrption,
+            default_server_side_encryption=default_server_side_encryption,
         )
 
     def upload_file(

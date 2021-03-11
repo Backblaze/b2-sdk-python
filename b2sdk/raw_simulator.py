@@ -16,6 +16,7 @@ import time
 import threading
 
 from .b2http import ResponseContextManager
+from .encryption.setting import EncryptionSetting
 from .exception import (
     BadJson,
     BadUploadUrl,
@@ -32,7 +33,7 @@ from .exception import (
     Unauthorized,
     UnsatisfiableRange,
 )
-from .raw_api import AbstractRawApi, HEX_DIGITS_AT_END, MetadataDirectiveMode
+from .raw_api import AbstractRawApi, HEX_DIGITS_AT_END, MetadataDirectiveMode, EncryptionMode, ALL_CAPABILITIES
 from .utils import (
     b2_url_decode,
     b2_url_encode,
@@ -40,20 +41,6 @@ from .utils import (
     hex_sha1_of_bytes,
 )
 from .stream.hashing import StreamWithHash
-
-ALL_CAPABILITES = [
-    'listKeys',
-    'writeKeys',
-    'deleteKeys',
-    'listBuckets',
-    'writeBuckets',
-    'deleteBuckets',
-    'listFiles',
-    'readFiles',
-    'shareFiles',
-    'writeFiles',
-    'deleteFiles',
-]
 
 
 def get_bytes_range(data_bytes, bytes_range):
@@ -332,6 +319,7 @@ class BucketSimulator(object):
 
     def __init__(
         self,
+        api,
         account_id,
         bucket_id,
         bucket_name,
@@ -339,9 +327,11 @@ class BucketSimulator(object):
         bucket_info=None,
         cors_rules=None,
         lifecycle_rules=None,
-        options_set=None
+        options_set=None,
+        default_server_side_encryption=None,
     ):
         assert bucket_type in ['allPrivate', 'allPublic']
+        self.api = api
         self.account_id = account_id
         self.bucket_name = bucket_name
         self.bucket_id = bucket_id
@@ -358,8 +348,26 @@ class BucketSimulator(object):
         self.file_id_to_file = dict()
         # It would be nice to use an OrderedDict for this, but 2.6 doesn't have it.
         self.file_name_and_id_to_file = dict()
+        if default_server_side_encryption is None:
+            default_server_side_encryption = EncryptionSetting(mode=EncryptionMode.NONE)
+        self.default_server_side_encryption = default_server_side_encryption
+        print('BucketSimulator.__init__', self, default_server_side_encryption)
 
-    def bucket_dict(self):
+    def bucket_dict(self, account_auth_token):
+        default_sse = {'isClientAuthorizedToRead': False}
+        if 'readBucketEncryption' in self.api.auth_token_to_key[account_auth_token].get_allowed()['capabilities']:
+            print('TOKEN', account_auth_token, 'CAN READ ENCRYPTION', self.api.auth_token_to_key[account_auth_token].get_allowed())
+            default_sse = {
+                'isClientAuthorizedToRead': True,
+            }
+            if self.default_server_side_encryption.mode is not None:
+                default_sse['value'] = {
+                    'mode': self.default_server_side_encryption.mode.value
+                }
+                if self.default_server_side_encryption.algorithm is not None:
+                    default_sse['value']['algorithm'] = self.default_server_side_encryption.algorithm.value
+        else:
+            print('TOKEN', account_auth_token, 'CANNOT READ ENCRYPTION', self.api.auth_token_to_key[account_auth_token].get_allowed())
         return dict(
             accountId=self.account_id,
             bucketName=self.bucket_name,
@@ -370,6 +378,7 @@ class BucketSimulator(object):
             lifecycleRules=self.lifecycle_rules,
             options=self.options_set,
             revision=self.revision,
+            defaultServerSideEncryption=default_sse,
         )
 
     def cancel_large_file(self, file_id):
@@ -577,13 +586,14 @@ class BucketSimulator(object):
         self.file_name_and_id_to_file[file_sim.sort_key()] = file_sim
         return file_sim.as_start_large_file_result()
 
-    def update_bucket(
+    def _update_bucket(
         self,
         bucket_type=None,
         bucket_info=None,
         cors_rules=None,
         lifecycle_rules=None,
-        if_revision_is=None
+        if_revision_is=None,
+        default_server_side_encryption=None,
     ):
         if if_revision_is is not None and self.revision != if_revision_is:
             raise Conflict()
@@ -596,8 +606,10 @@ class BucketSimulator(object):
             self.cors_rules = cors_rules
         if lifecycle_rules is not None:
             self.lifecycle_rules = lifecycle_rules
+        if default_server_side_encryption is not None:
+            self.default_server_side_encryption = default_server_side_encryption
         self.revision += 1
-        return self.bucket_dict()
+        return self.bucket_dict(self.api.current_token)
 
     def upload_file(
         self, upload_id, upload_auth_token, file_name, content_length, content_type, content_sha1,
@@ -759,7 +771,7 @@ class RawSimulator(AbstractRawApi):
             name='master',
             application_key_id=account_id,
             key=master_key,
-            capabilities=ALL_CAPABILITES,
+            capabilities=ALL_CAPABILITIES,
             expiration_timestamp_or_none=None,
             bucket_id_or_none=None,
             bucket_name_or_none=None,
@@ -785,6 +797,8 @@ class RawSimulator(AbstractRawApi):
         if application_key != key_sim.key:
             raise InvalidAuthToken('secret key is wrong', 'unauthorized')
         auth_token = 'auth_token_%d' % (self.auth_token_counter,)
+        self.current_token = auth_token
+        print('authorize_account fired', auth_token)
         self.auth_token_counter += 1
         self.auth_token_to_key[auth_token] = key_sim
         allowed = key_sim.get_allowed()
@@ -818,7 +832,8 @@ class RawSimulator(AbstractRawApi):
         bucket_type,
         bucket_info=None,
         cors_rules=None,
-        lifecycle_rules=None
+        lifecycle_rules=None,
+        default_server_side_encryption=None,
     ):
         if not re.match(r'^[-a-zA-Z0-9]*$', bucket_name):
             raise BadJson('illegal bucket name: ' + bucket_name)
@@ -827,16 +842,32 @@ class RawSimulator(AbstractRawApi):
             raise DuplicateBucketName(bucket_name)
         bucket_id = 'bucket_' + str(next(self.bucket_id_counter))
         bucket = self.BUCKET_SIMULATOR_CLASS(
-            account_id, bucket_id, bucket_name, bucket_type, bucket_info, cors_rules,
-            lifecycle_rules
+            self,
+            account_id,
+            bucket_id,
+            bucket_name,
+            bucket_type,
+            bucket_info,
+            cors_rules,
+            lifecycle_rules,
+            # watch out for options!
+            default_server_side_encryption=default_server_side_encryption,
         )
+        print('BucketSimulator.create_bucket', bucket, default_server_side_encryption, bucket.default_server_side_encryption)
         self.bucket_name_to_bucket[bucket_name] = bucket
         self.bucket_id_to_bucket[bucket_id] = bucket
-        return bucket.bucket_dict()
+        return bucket.bucket_dict(account_auth_token)  # TODO it should be an object, right?
 
     def create_key(
-        self, api_url, account_auth_token, account_id, capabilities, key_name,
-        valid_duration_seconds, bucket_id, name_prefix
+        self,
+        api_url,
+        account_auth_token,
+        account_id,
+        capabilities,
+        key_name,
+        valid_duration_seconds,
+        bucket_id,
+        name_prefix,
     ):
         if not re.match(r'^[A-Za-z0-9-]{1,100}$', key_name):
             raise BadJson('illegal key name: ' + key_name)
@@ -869,7 +900,7 @@ class RawSimulator(AbstractRawApi):
             expiration_timestamp_or_none=expiration_timestamp_or_none,
             bucket_id_or_none=bucket_id,
             bucket_name_or_none=bucket_name_or_none,
-            name_prefix_or_none=name_prefix
+            name_prefix_or_none=name_prefix,
         )
         self.key_id_to_key[application_key_id] = key_sim
         self.all_application_keys.append(key_sim)
@@ -886,7 +917,7 @@ class RawSimulator(AbstractRawApi):
         bucket = self._get_bucket_by_id(bucket_id)
         del self.bucket_name_to_bucket[bucket.bucket_name]
         del self.bucket_id_to_bucket[bucket_id]
-        return bucket.bucket_dict()
+        return bucket.bucket_dict(account_auth_token)
 
     def download_file_from_url(self, account_auth_token_or_none, url, range_=None):
         # TODO: check auth token if bucket is not public
@@ -1047,7 +1078,7 @@ class RawSimulator(AbstractRawApi):
             self.bucket_name_to_bucket[name] for name in sorted(self.bucket_name_to_bucket)
         ]
         bucket_list = [
-            bucket.bucket_dict()
+            bucket.bucket_dict(account_auth_token)
             for bucket in sorted_buckets if self._bucket_matches(bucket, bucket_id, bucket_name)
         ]
         return dict(buckets=bucket_list)
@@ -1158,17 +1189,19 @@ class RawSimulator(AbstractRawApi):
         bucket_info=None,
         cors_rules=None,
         lifecycle_rules=None,
-        if_revision_is=None
+        if_revision_is=None,
+        default_server_side_encryption=None,
     ):
-        assert bucket_type or bucket_info
+        assert bucket_type or bucket_info or cors_rules or lifecycle_rules or default_server_side_encryption
         bucket = self._get_bucket_by_id(bucket_id)
         self._assert_account_auth(api_url, account_auth_token, bucket.account_id, 'writeBuckets')
-        return bucket.update_bucket(
+        return bucket._update_bucket(
             bucket_type=bucket_type,
             bucket_info=bucket_info,
             cors_rules=cors_rules,
             lifecycle_rules=lifecycle_rules,
-            if_revision_is=if_revision_is
+            if_revision_is=if_revision_is,
+            default_server_side_encryption=default_server_side_encryption,
         )
 
     def upload_file(

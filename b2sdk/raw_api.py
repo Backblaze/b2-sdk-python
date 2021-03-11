@@ -33,21 +33,14 @@ ALL_CAPABILITIES = [
     'listBuckets',
     'writeBuckets',
     'deleteBuckets',
+    'readBucketEncryption',
+    'writeBucketEncryption',
     'listFiles',
     'readFiles',
     'shareFiles',
     'writeFiles',
     'deleteFiles',
 ]
-
-
-class EncryptionMode(Enum):
-    SSE_C = 'SSE-C'
-    SSE_B2 = 'SSE-B2'
-
-
-class EncryptionAlgorithm(Enum):
-    AES256 = 'AES256'
 
 # Standard names for file info entries
 SRC_LAST_MODIFIED_MILLIS = 'src_last_modified_millis'
@@ -59,6 +52,19 @@ HEX_DIGITS_AT_END = 'hex_digits_at_end'
 API_VERSION = 'v2'
 
 logger = getLogger(__name__)
+
+
+@unique
+class EncryptionMode(Enum):
+    NONE = 'none'  #: no encryption (plaintext)
+    SSE_B2 = 'SSE-B2'  #: server-side encryption with key maintained by B2
+    SSE_C = 'SSE-C'  #: server-side encryption with key provided by the client
+    #CLIENT = 'CLIENT'  #: client-side encryption
+
+
+@unique
+class EncryptionAlgorithm(Enum):
+    AES256 = 'AES256'
 
 
 @unique
@@ -118,7 +124,8 @@ class AbstractRawApi(metaclass=ABCMeta):
         bucket_type,
         bucket_info=None,
         cors_rules=None,
-        lifecycle_rules=None
+        lifecycle_rules=None,
+        default_server_side_encryption=None,
     ):
         pass
 
@@ -258,7 +265,8 @@ class AbstractRawApi(metaclass=ABCMeta):
         bucket_info=None,
         cors_rules=None,
         lifecycle_rules=None,
-        if_revision_is=None
+        if_revision_is=None,
+        default_server_side_encryption=None,
     ):
         pass
 

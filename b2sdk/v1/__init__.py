@@ -18,6 +18,13 @@ from b2sdk.bucket import Bucket
 from b2sdk.bucket import BucketFactory
 from b2sdk.raw_api import ALL_CAPABILITIES
 
+# encryption
+
+from b2sdk.encryption.setting import EncryptionSetting
+from b2sdk.encryption.setting import EncryptionSettingFactory
+from b2sdk.raw_api import EncryptionMode
+from b2sdk.raw_api import EncryptionAlgorithm
+
 # account info
 
 from b2sdk.account_info.abstract import AbstractAccountInfo

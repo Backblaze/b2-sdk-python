@@ -167,7 +167,12 @@ class B2Api(metaclass=B2TraceMeta):
     # buckets
 
     def create_bucket(
-        self, name, bucket_type, bucket_info=None, cors_rules=None, lifecycle_rules=None,
+        self,
+        name,
+        bucket_type,
+        bucket_info=None,
+        cors_rules=None,
+        lifecycle_rules=None,
         default_server_side_encryption=None,
     ):
         """
@@ -178,7 +183,7 @@ class B2Api(metaclass=B2TraceMeta):
         :param dict bucket_info: additional bucket info to store with the bucket
         :param dict cors_rules: bucket CORS rules to store with the bucket
         :param dict lifecycle_rules: bucket lifecycle rules to store with the bucket
-        :param dict default_server_side_encryption: default server side encryption settings
+        :param b2sdk.v1.EncryptionSetting default_server_side_encryption: default server side encryption settings (``None`` if unknown)
         :return: a Bucket object
         :rtype: b2sdk.v1.Bucket
         """
