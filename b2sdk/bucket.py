@@ -115,7 +115,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param dict cors_rules: CORS rules to store with a bucket
         :param dict lifecycle_rules: lifecycle rules to store with a bucket
         :param int if_revision_is: revision number, update the info **only if** *revision* equals to *if_revision_is*
-        :param dict default_server_side_encryption: default server-side-encryption settings
+        :param b2sdk.v1.EncryptionSetting default_server_side_encryption: default server side encryption settings for the bucket
         """
         account_id = self.api.account_info.get_account_id()
         return self.api.session.update_bucket(

@@ -2,7 +2,7 @@
 #
 # File: test/unit/v1/test_api.py
 #
-# Copyright 2019 Backblaze Inc. All Rights Reserved.
+# Copyright 2021 Backblaze Inc. All Rights Reserved.
 #
 # License https://www.backblaze.com/using_b2_code.html
 #
@@ -55,19 +55,16 @@ class TestApi(TestBase):
             mode=EncryptionMode.SSE_B2,
             algorithm=EncryptionAlgorithm.AES256,
         )
-        no_encryption = EncryptionSetting(
-            mode=EncryptionMode.NONE,
-        )
+        no_encryption = EncryptionSetting(mode=EncryptionMode.NONE,)
 
-        b1 = self.api.create_bucket('bucket1', 'allPrivate', default_server_side_encryption=sse_b2_aes)
+        b1 = self.api.create_bucket(
+            'bucket1', 'allPrivate', default_server_side_encryption=sse_b2_aes
+        )
         print('b1 created', b1, b1.default_server_side_encryption)
         b2 = self.api.create_bucket('bucket2', 'allPrivate')
         #b2 = self.api.create_bucket('bucket2', 'allPrivate', default_server_side_encryption=sse_b2_aes)
         print('b2 created', b1, b1.default_server_side_encryption)
-        buckets = {
-            b.name: b
-            for b in self.api.list_buckets()
-        }
+        buckets = {b.name: b for b in self.api.list_buckets()}
 
         b1 = buckets['bucket1']
         print('b1 as retrieved', b1, b1.default_server_side_encryption)

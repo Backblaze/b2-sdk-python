@@ -55,19 +55,6 @@ logger = getLogger(__name__)
 
 
 @unique
-class EncryptionMode(Enum):
-    NONE = 'none'  #: no encryption (plaintext)
-    SSE_B2 = 'SSE-B2'  #: server-side encryption with key maintained by B2
-    SSE_C = 'SSE-C'  #: server-side encryption with key provided by the client
-    #CLIENT = 'CLIENT'  #: client-side encryption
-
-
-@unique
-class EncryptionAlgorithm(Enum):
-    AES256 = 'AES256'
-
-
-@unique
 class MetadataDirectiveMode(Enum):
     """ Mode of handling metadata when copying a file """
     COPY = 401  #: copy metadata from the source file
@@ -346,17 +333,24 @@ class B2RawApi(AbstractRawApi):
         lifecycle_rules=None,
         default_server_side_encryption=None,
     ):
+        kwargs = dict(
+            accountId=account_id,
+            bucketName=bucket_name,
+            bucketType=bucket_type,
+        )
+        if bucket_info is not None:
+            kwargs['bucketInfo'] = bucket_info
+        if cors_rules is not None:
+            kwargs['corsRules'] = cors_rules
+        if lifecycle_rules is not None:
+            kwargs['lifecycleRules'] = lifecycle_rules
+        if default_server_side_encryption is not None:
+            kwargs['defaultServerSideEncryption'] = default_server_side_encryption.value_as_dict()
         return self._post_json(
             api_url,
             'b2_create_bucket',
             account_auth_token,
-            accountId=account_id,
-            bucketName=bucket_name,
-            bucketType=bucket_type,
-            bucketInfo=bucket_info,
-            corsRules=cors_rules,
-            lifecycleRules=lifecycle_rules,
-            defaultServerSideEncryption=default_server_side_encryption,
+            **kwargs,
         )
 
     def create_key(
@@ -612,7 +606,7 @@ class B2RawApi(AbstractRawApi):
         if lifecycle_rules is not None:
             kwargs['lifecycleRules'] = lifecycle_rules
         if default_server_side_encryption is not None:
-            kwargs['defaultServerSideEncryption'] = default_server_side_encryption
+            kwargs['defaultServerSideEncryption'] = default_server_side_encryption.value_as_dict()
 
         return self._post_json(
             api_url,
@@ -870,12 +864,42 @@ def test_raw_api_helper(raw_api):
     bucket_dict = raw_api.create_bucket(
         api_url, account_auth_token, account_id, bucket_name, 'allPublic'
     )
+    print('-' * 50)
+    print(bucket_dict)
+    print('-' * 50)
     bucket_id = bucket_dict['bucketId']
     first_bucket_revision = bucket_dict['revision']
+
+    ##################
+    print('b2_update_bucket')
+    from .encryption.types import EncryptionAlgorithm, EncryptionMode
+    from .encryption.setting import EncryptionSetting
+    for encryption_setting in [
+        EncryptionSetting(
+            mode=EncryptionMode.SSE_B2,
+            algorithm=EncryptionAlgorithm.AES256,
+        ),
+        EncryptionSetting(mode=EncryptionMode.NONE,),
+    ]:
+        updated_bucket = raw_api.update_bucket(
+            api_url,
+            account_auth_token,
+            account_id,
+            bucket_id,
+            'allPrivate',
+            default_server_side_encryption=encryption_setting,
+        )
+        print(updated_bucket)
+    ##################
+    #assert False
 
     # b2_list_buckets
     print('b2_list_buckets')
     bucket_list_dict = raw_api.list_buckets(api_url, account_auth_token, account_id)
+    print('-' * 50)
+    for bucket in bucket_list_dict:
+        print(bucket, ':', bucket_list_dict[bucket])
+    print('-' * 50)
 
     # b2_get_upload_url
     print('b2_get_upload_url')

@@ -16,7 +16,7 @@ import time
 import threading
 
 from .b2http import ResponseContextManager
-from .encryption.setting import EncryptionSetting
+from .encryption.setting import EncryptionMode, EncryptionSetting
 from .exception import (
     BadJson,
     BadUploadUrl,
@@ -33,7 +33,7 @@ from .exception import (
     Unauthorized,
     UnsatisfiableRange,
 )
-from .raw_api import AbstractRawApi, HEX_DIGITS_AT_END, MetadataDirectiveMode, EncryptionMode, ALL_CAPABILITIES
+from .raw_api import AbstractRawApi, HEX_DIGITS_AT_END, MetadataDirectiveMode, ALL_CAPABILITIES
 from .utils import (
     b2_url_decode,
     b2_url_encode,
@@ -355,19 +355,26 @@ class BucketSimulator(object):
 
     def bucket_dict(self, account_auth_token):
         default_sse = {'isClientAuthorizedToRead': False}
-        if 'readBucketEncryption' in self.api.auth_token_to_key[account_auth_token].get_allowed()['capabilities']:
-            print('TOKEN', account_auth_token, 'CAN READ ENCRYPTION', self.api.auth_token_to_key[account_auth_token].get_allowed())
+        if 'readBucketEncryption' in self.api.auth_token_to_key[account_auth_token].get_allowed(
+        )['capabilities']:
+            print(
+                'TOKEN', account_auth_token, 'CAN READ ENCRYPTION',
+                self.api.auth_token_to_key[account_auth_token].get_allowed()
+            )
             default_sse = {
                 'isClientAuthorizedToRead': True,
             }
+            assert self.default_server_side_encryption.mode != "none"
             if self.default_server_side_encryption.mode is not None:
-                default_sse['value'] = {
-                    'mode': self.default_server_side_encryption.mode.value
-                }
+                default_sse['value'] = {'mode': self.default_server_side_encryption.mode.value}
                 if self.default_server_side_encryption.algorithm is not None:
-                    default_sse['value']['algorithm'] = self.default_server_side_encryption.algorithm.value
+                    default_sse['value']['algorithm'
+                                        ] = self.default_server_side_encryption.algorithm.value
         else:
-            print('TOKEN', account_auth_token, 'CANNOT READ ENCRYPTION', self.api.auth_token_to_key[account_auth_token].get_allowed())
+            print(
+                'TOKEN', account_auth_token, 'CANNOT READ ENCRYPTION',
+                self.api.auth_token_to_key[account_auth_token].get_allowed()
+            )
         return dict(
             accountId=self.account_id,
             bucketName=self.bucket_name,
@@ -853,7 +860,10 @@ class RawSimulator(AbstractRawApi):
             # watch out for options!
             default_server_side_encryption=default_server_side_encryption,
         )
-        print('BucketSimulator.create_bucket', bucket, default_server_side_encryption, bucket.default_server_side_encryption)
+        print(
+            'BucketSimulator.create_bucket', bucket, default_server_side_encryption,
+            bucket.default_server_side_encryption
+        )
         self.bucket_name_to_bucket[bucket_name] = bucket
         self.bucket_id_to_bucket[bucket_id] = bucket
         return bucket.bucket_dict(account_auth_token)  # TODO it should be an object, right?
