@@ -7,8 +7,10 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
-
+import inspect
 from abc import abstractmethod
+from typing import Optional
+from urllib.parse import ParseResult, urlparse
 
 from b2sdk.account_info import exception
 from b2sdk.raw_api import ALL_CAPABILITIES
@@ -188,7 +190,16 @@ class AbstractAccountInfo(metaclass=B2TraceMetaAbstract):
         :rtype: dict
         """
 
-    @limit_trace_arguments(only=['self', 'api_url', 'download_url', 'minimum_part_size', 'realm'])
+    # TODO: In v2, it should be an abstract method and S3 API URL should be properly handled
+    def get_s3_api_url(self):
+        """
+        Return s3_api_url or raises MissingAccountData exception.
+
+        :rtype: str
+        """
+
+    # TODO: In v2, s3_api_url should not be optional and should be passed to the _set_auth_data
+    @limit_trace_arguments(only=['self', 'api_url', 'download_url', 'minimum_part_size', 'realm', 's3_api_url'])
     def set_auth_data(
         self,
         account_id,
@@ -200,6 +211,7 @@ class AbstractAccountInfo(metaclass=B2TraceMetaAbstract):
         realm,
         allowed=None,
         application_key_id=None,
+        s3_api_url=None,
     ):
         """
         Check permission correctness and stores the results of ``b2_authorize_account``.
@@ -218,6 +230,7 @@ class AbstractAccountInfo(metaclass=B2TraceMetaAbstract):
         :param str realm: a realm to authorize account in
         :param dict allowed: the structure to use for old account info that was saved without 'allowed'
         :param str application_key_id: application key ID
+        :param str s3_api_url: S3-compatible API URL
 
         .. versionchanged:: 0.1.5
            `account_id_or_app_key_id` renamed to `application_key_id`
@@ -225,6 +238,16 @@ class AbstractAccountInfo(metaclass=B2TraceMetaAbstract):
         if allowed is None:
             allowed = self.DEFAULT_ALLOWED
         assert self.allowed_is_valid(allowed)
+
+        if s3_api_url is None:
+            s3_api_url = self._construct_s3_api_url(api_url)
+
+        # TODO: In v2, remove this check as s3_api_url will be mandatory in _set_auth_data
+        if 's3_api_url' in inspect.getfullargspec(self._set_auth_data).args:
+            extra_args = {'s3_api_url': s3_api_url}
+        else:
+            extra_args = {}
+
         self._set_auth_data(
             account_id,
             auth_token,
@@ -235,6 +258,7 @@ class AbstractAccountInfo(metaclass=B2TraceMetaAbstract):
             realm,
             allowed,
             application_key_id,
+            **extra_args,
         )
 
     @classmethod
@@ -255,6 +279,7 @@ class AbstractAccountInfo(metaclass=B2TraceMetaAbstract):
             ('capabilities' in allowed) and ('namePrefix' in allowed)
         )
 
+    # TODO: In v2, s3_api_url should not be optional
     # TODO: make a decorator for set_auth_data()
     @abstractmethod
     def _set_auth_data(
@@ -268,6 +293,7 @@ class AbstractAccountInfo(metaclass=B2TraceMetaAbstract):
         realm,
         allowed,
         application_key_id,
+        s3_api_url=None,
     ):
         """
         Actually store the auth data.  Can assume that 'allowed' is present and valid.
@@ -329,3 +355,33 @@ class AbstractAccountInfo(metaclass=B2TraceMetaAbstract):
         :param str file_id: a file ID
         """
         pass
+
+    # TODO: Remove when s3ApiUrl is returned by the server. See #200 for details.
+    @classmethod
+    def _construct_s3_api_url(cls, api_url: str) -> Optional[str]:
+        url = urlparse(api_url)
+        subdomain, domain = url.netloc.split('.', maxsplit=1)
+
+        if subdomain == 'api000':
+            subdomain = 's3.us-west-000'
+        elif subdomain == 'api001':
+            subdomain = 's3.us-west-001'
+        elif subdomain == 'api002':
+            subdomain = 's3.us-west-002'
+        elif subdomain == 'api003':
+            subdomain = 's3.eu-central-003'
+        else:
+            return None  # we don't know how to calculate
+
+        url = ParseResult(
+            **{
+                'scheme': url.scheme,
+                'netloc': '.'.join((subdomain, domain)),
+                'path': url.path,
+                'params': url.params,
+                'query': url.query,
+                'fragment': url.fragment,
+            }
+        )
+
+        return url.geturl()

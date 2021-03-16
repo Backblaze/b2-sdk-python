@@ -64,7 +64,7 @@ class AccountInfoBase(metaclass=ABCMeta):
         account_info.set_auth_data(
             'account_id',
             'account_auth',
-            'api_url',
+            'https://api.backblazeb2.com',
             'download_url',
             100,
             'app_key',
@@ -96,7 +96,8 @@ class AccountInfoBase(metaclass=ABCMeta):
 
         # The original set_auth_data
         account_info.set_auth_data(
-            'account_id', 'account_auth', 'api_url', 'download_url', 100, 'app_key', 'realm'
+            'account_id', 'account_auth', 'https://api.backblazeb2.com', 'download_url', 100,
+            'app_key', 'realm'
         )
         actual = account_info.get_allowed()
         self.assertEqual(AbstractAccountInfo.DEFAULT_ALLOWED, actual, 'default allowed')
@@ -111,7 +112,7 @@ class AccountInfoBase(metaclass=ABCMeta):
         account_info.set_auth_data(
             'account_id',
             'account_auth',
-            'api_url',
+            'https://api.backblazeb2.com',
             'download_url',
             100,
             'app_key',
@@ -180,7 +181,7 @@ class AccountInfoBase(metaclass=ABCMeta):
         account_info.set_auth_data(
             'account_id',
             'account_auth',
-            'api_url',
+            'https://api.backblazeb2.com',
             'download_url',
             100,
             'app_key',
@@ -195,7 +196,7 @@ class AccountInfoBase(metaclass=ABCMeta):
             print(info2)
             self.assertEqual('account_id', info2.get_account_id())
             self.assertEqual('account_auth', info2.get_account_auth_token())
-            self.assertEqual('api_url', info2.get_api_url())
+            self.assertEqual('https://api.backblazeb2.com', info2.get_api_url())
             self.assertEqual('app_key', info2.get_application_key())
             self.assertEqual('key_id', info2.get_application_key_id())
             self.assertEqual('realm', info2.get_realm())
@@ -270,40 +271,6 @@ class TestSqliteAccountInfo(AccountInfoBase, TestBase):
             f.write(json.dumps(data).encode('utf-8'))
         account_info = self._make_info()
         self.assertEqual('auth_token', account_info.get_account_auth_token())
-
-    def test_upgrade_1_default_allowed(self):
-        """
-        The 'allowed' field should be the default for upgraded databases.
-        """
-        old_account_info = self._make_sqlite_account_info(last_upgrade_to_run=0)
-        old_account_info.set_auth_data_with_schema_0_for_test(
-            'account_id',
-            'auth_token',
-            'api_url',
-            'dowload_url',
-            100,  # minimum part size
-            'application_key',
-            'realm',
-        )
-        new_account_info = self._make_info()
-        self.assertEqual(AbstractAccountInfo.DEFAULT_ALLOWED, new_account_info.get_allowed())
-
-    def test_upgrade_2_default_app_key(self):
-        """
-        The 'application_key_id' field should default to the account ID.
-        """
-        old_account_info = self._make_sqlite_account_info(last_upgrade_to_run=0)
-        old_account_info.set_auth_data_with_schema_0_for_test(
-            'account_id',
-            'auth_token',
-            'api_url',
-            'dowload_url',
-            100,  # minimum part size
-            'application_key',
-            'realm',
-        )
-        new_account_info = self._make_info()
-        self.assertEqual('account_id', new_account_info.get_application_key_id())
 
     def _make_info(self):
         return self._make_sqlite_account_info()

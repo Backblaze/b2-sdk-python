@@ -42,6 +42,7 @@ class StubAccountInfo(AbstractAccountInfo):
         if bucket_id in self.buckets:
             del self.buckets[bucket_id]
 
+    # TODO: In v2, s3_api_url should not be optional
     def _set_auth_data(
         self,
         account_id,
@@ -53,6 +54,7 @@ class StubAccountInfo(AbstractAccountInfo):
         realm,
         allowed,
         application_key_id,
+        s3_api_url=None,
     ):
         self.account_id = account_id
         self.auth_token = auth_token
@@ -63,6 +65,7 @@ class StubAccountInfo(AbstractAccountInfo):
         self.realm = realm
         self.allowed = allowed
         self.application_key_id = application_key_id
+        self.s3_api_url = s3_api_url
 
     def refresh_entire_bucket_name_cache(self, name_id_iterable):
         self.buckets = {}
@@ -111,6 +114,9 @@ class StubAccountInfo(AbstractAccountInfo):
 
     def get_bucket_upload_data(self, bucket_id):
         return self.buckets.get(bucket_id, (None, None))
+
+    def get_s3_api_url(self):
+        return self.s3_api_url
 
     def put_large_file_upload_url(self, file_id, upload_url, upload_auth_token):
         with self._large_file_uploads_lock:

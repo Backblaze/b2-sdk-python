@@ -55,7 +55,9 @@ class InMemoryAccountInfo(UrlPoolAccountInfo):
         self._download_url = None
         self._minimum_part_size = None
         self._realm = None
+        self._s3_api_url = None
 
+    # TODO: In v2, s3_api_url should not be optional
     def _set_auth_data(
         self,
         account_id,
@@ -67,6 +69,7 @@ class InMemoryAccountInfo(UrlPoolAccountInfo):
         realm,
         allowed,
         application_key_id,
+        s3_api_url=None,
     ):
         self._account_id = account_id
         self._application_key_id = application_key_id
@@ -77,6 +80,7 @@ class InMemoryAccountInfo(UrlPoolAccountInfo):
         self._application_key = application_key
         self._realm = realm
         self._allowed = allowed
+        self._s3_api_url = s3_api_url
 
     def refresh_entire_bucket_name_cache(self, name_id_iterable):
         self._buckets = dict(name_id_iterable)
@@ -126,3 +130,7 @@ class InMemoryAccountInfo(UrlPoolAccountInfo):
     @_raise_missing_if_result_is_none
     def get_allowed(self):
         return self._allowed
+
+    @_raise_missing_if_result_is_none
+    def get_s3_api_url(self):
+        return self._s3_api_url
