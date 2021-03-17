@@ -372,7 +372,7 @@ class AbstractAccountInfo(metaclass=B2TraceMetaAbstract):
         elif subdomain == 'api003':
             subdomain = 's3.eu-central-003'
         else:
-            return None  # we don't know how to calculate
+            return ''  # we don't know how to calculate
 
         url = ParseResult(
             **{

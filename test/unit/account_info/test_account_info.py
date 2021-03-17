@@ -33,6 +33,7 @@ class TestS3ApiUrl:
             ('https://api002.backblazeb2.com', 'https://s3.us-west-002.backblazeb2.com'),
             ('https://api003.backblazeb2.com', 'https://s3.eu-central-003.backblazeb2.com'),
             ('http://api000.backblazeb2.xyz:8180', 'http://s3.us-west-000.backblazeb2.xyz:8180'),
+            ('https://api.example.com', ''),
         )
     )
     def test_not_pass_to_set_auth_data(self, api_url, s3_api_url):
