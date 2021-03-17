@@ -31,12 +31,13 @@ class EncryptionSetting:
         self.mode = mode
         self.algorithm = algorithm
         self.key = key
+        assert self.mode == EncryptionMode.NONE or isinstance(self.algorithm, EncryptionAlgorithm)  # TODO
         if self.mode == EncryptionMode.NONE:
             if self.algorithm or self.key:
                 raise ValueError("cannot specify algorithm or key for 'plaintext' encryption mode")
         elif self.mode in ENCRYPTION_MODES_WITH_MANDATORY_KEY and not self.key:
             raise ValueError(
-                "must specify key for encryption mode %s and algorithm %s" %
+                'must specify key for encryption mode %s and algorithm %s' %
                 (self.mode, self.algorithm)
             )
 
@@ -45,24 +46,25 @@ class EncryptionSetting:
             raise ValueError('cannot compare a known encryption setting to an unknown one')
         return self.mode == other.mode and self.algorithm == other.algorithm and self.key == other.key
 
-    def value_as_dict(self):
+    def as_value_dict(self):
         result = {'mode': self.mode.value}
-        #if result['mode'] == 'none':
-        #    result['mode'] = None
         if self.algorithm is not None:
             result['algorithm'] = self.algorithm.value
-        #print('result:', result)
         return result
 
     def __repr__(self):
-        return '<EncryptionSetting(%s, %s)>' % (self.mode, self.algorithm)
+        key_repr = '******'
+        if self.key is None:
+            key_repr = None
+        return '<%s(%s, %s, %s)>' % (self.__class__.__name__, self.mode, self.algorithm, key_repr)
 
 
 class EncryptionSettingFactory:
     @classmethod
     def from_bucket_dict(cls, bucket_dict: dict) -> Optional[EncryptionSetting]:
         """
-        Returns EncryptionSetting for the given bucket or None when unknown (unauthorized?).
+        Returns EncryptionSetting for the given bucket dict retrieved from the api
+
         Example inputs:
 
         .. code-block:: python
@@ -111,6 +113,6 @@ class EncryptionSettingFactory:
 
         algorithm = default_sse['value'].get('algorithm')
         if algorithm is not None:
-            kwargs['algorithm'] = algorithm
+            kwargs['algorithm'] = EncryptionAlgorithm(algorithm)
 
         return EncryptionSetting(**kwargs)
