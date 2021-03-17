@@ -199,7 +199,9 @@ class AbstractAccountInfo(metaclass=B2TraceMetaAbstract):
         """
 
     # TODO: In v2, s3_api_url should not be optional and should be passed to the _set_auth_data
-    @limit_trace_arguments(only=['self', 'api_url', 'download_url', 'minimum_part_size', 'realm', 's3_api_url'])
+    @limit_trace_arguments(
+        only=['self', 'api_url', 'download_url', 'minimum_part_size', 'realm', 's3_api_url']
+    )
     def set_auth_data(
         self,
         account_id,
