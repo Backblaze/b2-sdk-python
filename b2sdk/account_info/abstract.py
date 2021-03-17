@@ -241,11 +241,10 @@ class AbstractAccountInfo(metaclass=B2TraceMetaAbstract):
             allowed = self.DEFAULT_ALLOWED
         assert self.allowed_is_valid(allowed)
 
-        if s3_api_url is None:
-            s3_api_url = self._construct_s3_api_url(api_url)
-
         # TODO: In v2, remove this check as s3_api_url will be mandatory in _set_auth_data
         if 's3_api_url' in inspect.getfullargspec(self._set_auth_data).args:
+            if s3_api_url is None:
+                s3_api_url = self._construct_s3_api_url(api_url)
             extra_args = {'s3_api_url': s3_api_url}
         else:
             extra_args = {}
