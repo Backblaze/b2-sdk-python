@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Add `dependabot.yml`
 * Calculate S3-compatible API URL base on API URL
 
+### Changed
+* Add upper version limit for the requirements
+
 ### Fixed
 * Pin `setuptools-scm<6.0` as `>=6.0` doesn't support Python 3.5
 
