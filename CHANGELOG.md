@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 * Add `dependabot.yml`
+* Calculate S3-compatible API URL base on API URL
 
 ## [1.4.0] - 2021-03-03
 
