@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 * Add `dependabot.yml`
 
+### Changed
+* Add upper version limit for the requirements
+
 ### Fixed
 * Pin `setuptools-scm<6.0` as `>=6.0` doesn't support Python 3.5
 
