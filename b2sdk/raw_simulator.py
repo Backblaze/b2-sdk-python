@@ -685,6 +685,7 @@ class RawSimulator(AbstractRawApi):
 
     BUCKET_SIMULATOR_CLASS = BucketSimulator
     API_URL = 'http://api.example.com'
+    S3_API_URL = 'http://s3.api.example.com'
     DOWNLOAD_URL = 'http://download.example.com'
 
     MIN_PART_SIZE = 200
@@ -801,6 +802,7 @@ class RawSimulator(AbstractRawApi):
             recommendedPartSize=self.MIN_PART_SIZE,
             absoluteMinimumPartSize=self.MIN_PART_SIZE,
             allowed=allowed,
+            s3ApiUrl=self.S3_API_URL,
         )
 
     def cancel_large_file(self, api_url, account_auth_token, file_id):
