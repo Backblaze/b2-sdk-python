@@ -25,7 +25,7 @@ def in_memory_account_info_factory():
         realm='realm',
         allowed=None,
         application_key_id=None,
-        s3_api_url=None,
+        s3_api_url=None
     ):
         account_info = InMemoryAccountInfo()
         account_info.set_auth_data(
@@ -65,7 +65,7 @@ def sqlite_account_info_factory(tmpdir):
         s3_api_url=None,
         *,
         file_name=None,
-        schema_0=False,
+        schema_0=False
     ):
         if file_name is None:
             file_name = str(tmpdir.join('b2_account_info'))
