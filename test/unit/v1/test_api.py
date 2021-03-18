@@ -58,49 +58,30 @@ class TestApi(TestBase):
         no_encryption = EncryptionSetting(mode=EncryptionMode.NONE,)
 
         b1 = self.api.create_bucket(
-            'bucket1', 'allPrivate', default_server_side_encryption=sse_b2_aes
+            'bucket1',
+            'allPrivate',
+            default_server_side_encryption=sse_b2_aes,
         )
-        print('b1 created', b1, b1.default_server_side_encryption)
+        self._verify_if_bucket_is_encrypted(b1, should_be_encrypted=True)
+
         b2 = self.api.create_bucket('bucket2', 'allPrivate')
-        #b2 = self.api.create_bucket('bucket2', 'allPrivate', default_server_side_encryption=sse_b2_aes)
-        print('b2 created', b1, b1.default_server_side_encryption)
-        buckets = {b.name: b for b in self.api.list_buckets()}
+        self._verify_if_bucket_is_encrypted(b2, should_be_encrypted=False)
 
-        b1 = buckets['bucket1']
-        print('b1 as retrieved', b1, b1.default_server_side_encryption)
-
-        # b2 is not encrypted
-        self.assertEqual(
-            buckets['bucket2'].default_server_side_encryption,
-            no_encryption,
-        )
-
-        # b1 is
-        self.assertEqual(
-            buckets['bucket1'].default_server_side_encryption,
-            sse_b2_aes,
-        )
+        # uses list_buckets
+        self._check_if_bucket_is_encrypted('bucket1', should_be_encrypted=True)
+        self._check_if_bucket_is_encrypted('bucket2', should_be_encrypted=False)
 
         # update to set encryption on b2
-        buckets['bucket2'].update(default_server_side_encryption=sse_b2_aes)
-        self.assertEqual(
-            buckets['bucket1'].default_server_side_encryption.mode,
-            EncryptionMode.SSE_B2,
-        )
-        self.assertEqual(
-            buckets['bucket1'].default_server_side_encryption.algorithm,
-            EncryptionAlgorithm.AES256,
-        )
+        b2.update(default_server_side_encryption=sse_b2_aes)
+        self._check_if_bucket_is_encrypted('bucket1', should_be_encrypted=True)
+        self._check_if_bucket_is_encrypted('bucket2', should_be_encrypted=True)
 
         # update to unset encryption again
-        buckets['bucket2'].update(default_server_side_encryption=no_encryption)
-        self.assertEqual(
-            buckets['bucket2'].default_server_side_encryption,
-            no_encryption,
-        )
+        b2.update(default_server_side_encryption=no_encryption)
+        self._check_if_bucket_is_encrypted('bucket1', should_be_encrypted=True)
+        self._check_if_bucket_is_encrypted('bucket2', should_be_encrypted=False)
 
         # now check it with no readBucketEncryption permission to see that it's unknown
-
         key = self.api.create_key(['listBuckets'], 'key1')
         self.api.authorize_account('production', key['applicationKeyId'], key['applicationKey'])
         buckets = {
@@ -117,6 +98,36 @@ class TestApi(TestBase):
             buckets['bucket2'].default_server_side_encryption,
             None,
         )
+
+    def _check_if_bucket_is_encrypted(self, bucket_name, should_be_encrypted):
+        buckets = {b.name: b for b in self.api.list_buckets()}
+        bucket = buckets[bucket_name]
+        return self._verify_if_bucket_is_encrypted(bucket, should_be_encrypted)
+
+    def _verify_if_bucket_is_encrypted(self, bucket, should_be_encrypted):
+        sse_b2_aes = EncryptionSetting(
+            mode=EncryptionMode.SSE_B2,
+            algorithm=EncryptionAlgorithm.AES256,
+        )
+        no_encryption = EncryptionSetting(mode=EncryptionMode.NONE,)
+        if not should_be_encrypted:
+            self.assertEqual(
+                bucket.default_server_side_encryption,
+                no_encryption,
+            )
+        else:
+            self.assertEqual(
+                bucket.default_server_side_encryption,
+                sse_b2_aes,
+            )
+            self.assertEqual(
+                bucket.default_server_side_encryption.mode,
+                EncryptionMode.SSE_B2,
+            )
+            self.assertEqual(
+                bucket.default_server_side_encryption.algorithm,
+                EncryptionAlgorithm.AES256,
+            )
 
     def test_list_buckets_with_id(self):
         self._authorize_account()
