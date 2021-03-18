@@ -11,6 +11,7 @@
 import logging
 import concurrent.futures as futures
 
+from b2sdk.encryption.setting import EncryptionMode, EncryptionSetting
 from b2sdk.exception import AlreadyFailed
 from b2sdk.file_version import FileVersionInfoFactory
 from b2sdk.raw_api import MetadataDirectiveMode
@@ -69,6 +70,7 @@ class CopyManager(metaclass=B2TraceMetaAbstract):
         file_info,
         destination_bucket_id,
         progress_listener,
+        encryption: EncryptionSetting = None,
     ):
         # Run small copies in the same thread pool as large file copies,
         # so that they share resources during a sync.
@@ -80,6 +82,7 @@ class CopyManager(metaclass=B2TraceMetaAbstract):
             file_info=file_info,
             destination_bucket_id=destination_bucket_id,
             progress_listener=progress_listener,
+            encryption=encryption,
         )
 
     def copy_part(
@@ -88,7 +91,8 @@ class CopyManager(metaclass=B2TraceMetaAbstract):
         part_copy_source,
         part_number,
         large_file_upload_state,
-        finished_parts=None
+        finished_parts=None,
+        encryption: EncryptionSetting = None,
     ):
         return self.get_thread_pool().submit(
             self._copy_part,
@@ -97,6 +101,7 @@ class CopyManager(metaclass=B2TraceMetaAbstract):
             part_number,
             large_file_upload_state,
             finished_parts=finished_parts,
+            encryption=encryption,
         )
 
     def _copy_part(
@@ -105,7 +110,8 @@ class CopyManager(metaclass=B2TraceMetaAbstract):
         part_copy_source,
         part_number,
         large_file_upload_state,
-        finished_parts=None
+        finished_parts,
+        encryption: EncryptionSetting,
     ):
         """
         Copy a file part to started large file.
@@ -118,6 +124,7 @@ class CopyManager(metaclass=B2TraceMetaAbstract):
         :param dict,None finished_parts: dictionary of known finished parts, keys are part numbers,
                                          values are instances of :class:`~b2sdk.v1.Part`
         """
+        assert encryption is None or encryption.mode in (EncryptionMode.SSE_B2,)
 
         # Check if this part was uploaded before
         if finished_parts is not None and part_number in finished_parts:
@@ -150,6 +157,7 @@ class CopyManager(metaclass=B2TraceMetaAbstract):
         file_info,
         destination_bucket_id,
         progress_listener,
+        encryption,
     ):
         with progress_listener:
             progress_listener.set_total_bytes(copy_source.get_content_length() or 0)
@@ -172,7 +180,8 @@ class CopyManager(metaclass=B2TraceMetaAbstract):
                 metadata_directive=metadata_directive,
                 content_type=content_type,
                 file_info=file_info,
-                destination_bucket_id=destination_bucket_id
+                destination_bucket_id=destination_bucket_id,
+                encryption=encryption,
             )
             file_info = FileVersionInfoFactory.from_api_response(response)
             if progress_listener is not None:

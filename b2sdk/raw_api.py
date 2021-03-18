@@ -19,10 +19,11 @@ import traceback
 from abc import ABCMeta, abstractmethod
 from enum import Enum, unique
 from logging import getLogger
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from .b2http import B2Http
 from .exception import FileOrBucketNotFound, ResourceNotFound, UnusableFileName, InvalidMetadataDirective
+from .encryption.setting import EncryptionAlgorithm, EncryptionMode, EncryptionSetting
 from .utils import b2_url_encode, hex_sha1_of_stream
 
 # All possible capabilities
@@ -86,6 +87,7 @@ class AbstractRawApi(metaclass=ABCMeta):
         content_type=None,
         file_info=None,
         destination_bucket_id=None,
+        destination_server_side_encryption: Optional[EncryptionSetting] = None,
     ):
         pass
 
@@ -98,6 +100,7 @@ class AbstractRawApi(metaclass=ABCMeta):
         large_file_id,
         part_number,
         bytes_range=None,
+        destination_server_side_encryption: Optional[EncryptionSetting] = None,
     ):
         pass
 
@@ -112,7 +115,7 @@ class AbstractRawApi(metaclass=ABCMeta):
         bucket_info=None,
         cors_rules=None,
         lifecycle_rules=None,
-        default_server_side_encryption=None,
+        default_server_side_encryption: Optional[EncryptionSetting] = None,
     ):
         pass
 
@@ -237,7 +240,14 @@ class AbstractRawApi(metaclass=ABCMeta):
 
     @abstractmethod
     def start_large_file(
-        self, api_url, account_auth_token, bucket_id, file_name, content_type, file_info
+        self,
+        api_url,
+        account_auth_token,
+        bucket_id,
+        file_name,
+        content_type,
+        file_info,
+        server_side_encryption: Optional[EncryptionSetting] = None,
     ):
         pass
 
@@ -253,20 +263,35 @@ class AbstractRawApi(metaclass=ABCMeta):
         cors_rules=None,
         lifecycle_rules=None,
         if_revision_is=None,
-        default_server_side_encryption=None,
+        default_server_side_encryption: Optional[EncryptionSetting] = None,
     ):
         pass
 
     @abstractmethod
     def upload_file(
-        self, upload_url, upload_auth_token, file_name, content_length, content_type, content_sha1,
-        file_infos, data_stream
+        self,
+        upload_url,
+        upload_auth_token,
+        file_name,
+        content_length,
+        content_type,
+        content_sha1,
+        file_infos,
+        data_stream,
+        server_side_encryption: Optional[EncryptionSetting] = None,
     ):
         pass
 
     @abstractmethod
     def upload_part(
-        self, upload_url, upload_auth_token, part_number, content_length, sha1_sum, input_stream
+        self,
+        upload_url,
+        upload_auth_token,
+        part_number,
+        content_length,
+        sha1_sum,
+        input_stream,
+        server_side_encryption: Optional[EncryptionSetting] = None,
     ):
         pass
 
@@ -345,7 +370,7 @@ class B2RawApi(AbstractRawApi):
         if lifecycle_rules is not None:
             kwargs['lifecycleRules'] = lifecycle_rules
         if default_server_side_encryption is not None:
-            kwargs['defaultServerSideEncryption'] = default_server_side_encryption.value_as_dict()
+            kwargs['defaultServerSideEncryption'] = default_server_side_encryption.as_value_dict()
         return self._post_json(
             api_url,
             'b2_create_bucket',
@@ -567,8 +592,18 @@ class B2RawApi(AbstractRawApi):
         )
 
     def start_large_file(
-        self, api_url, account_auth_token, bucket_id, file_name, content_type, file_info
+        self,
+        api_url,
+        account_auth_token,
+        bucket_id,
+        file_name,
+        content_type,
+        file_info,
+        server_side_encryption: Optional[EncryptionSetting] = None,
     ):
+        kwargs = {}
+        if server_side_encryption is not None:
+            kwargs['serverSideEncryption'] = server_side_encryption.as_value_dict()
         return self._post_json(
             api_url,
             'b2_start_large_file',
@@ -576,7 +611,8 @@ class B2RawApi(AbstractRawApi):
             bucketId=bucket_id,
             fileName=file_name,
             fileInfo=file_info,
-            contentType=content_type
+            contentType=content_type,
+            **kwargs
         )
 
     def update_bucket(
@@ -606,7 +642,7 @@ class B2RawApi(AbstractRawApi):
         if lifecycle_rules is not None:
             kwargs['lifecycleRules'] = lifecycle_rules
         if default_server_side_encryption is not None:
-            kwargs['defaultServerSideEncryption'] = default_server_side_encryption.value_as_dict()
+            kwargs['defaultServerSideEncryption'] = default_server_side_encryption.as_value_dict()
 
         return self._post_json(
             api_url,
@@ -665,8 +701,16 @@ class B2RawApi(AbstractRawApi):
             raise UnusableFileName("Filename segment too long (maximum 250 bytes in utf-8).")
 
     def upload_file(
-        self, upload_url, upload_auth_token, file_name, content_length, content_type, content_sha1,
-        file_infos, data_stream
+        self,
+        upload_url,
+        upload_auth_token,
+        file_name,
+        content_length,
+        content_type,
+        content_sha1,
+        file_infos,
+        data_stream,
+        server_side_encryption: Optional[EncryptionSetting] = None,
     ):
         """
         Upload one, small file to b2.
@@ -688,15 +732,24 @@ class B2RawApi(AbstractRawApi):
             'Content-Length': str(content_length),
             'X-Bz-File-Name': b2_url_encode(file_name),
             'Content-Type': content_type,
-            'X-Bz-Content-Sha1': content_sha1
+            'X-Bz-Content-Sha1': content_sha1,
         }
+        if server_side_encryption is not None:
+            server_side_encryption.add_to_upload_headers(headers)
         for k, v in file_infos.items():
             headers['X-Bz-Info-' + k] = b2_url_encode(v)
 
         return self.b2_http.post_content_return_json(upload_url, headers, data_stream)
 
     def upload_part(
-        self, upload_url, upload_auth_token, part_number, content_length, content_sha1, data_stream
+        self,
+        upload_url,
+        upload_auth_token,
+        part_number,
+        content_length,
+        content_sha1,
+        data_stream,
+        server_side_encryption: Optional[EncryptionSetting] = None,
     ):
         headers = {
             'Authorization': upload_auth_token,
@@ -704,6 +757,8 @@ class B2RawApi(AbstractRawApi):
             'X-Bz-Part-Number': str(part_number),
             'X-Bz-Content-Sha1': content_sha1
         }
+        if server_side_encryption is not None:
+            server_side_encryption.add_to_upload_headers(headers)
 
         return self.b2_http.post_content_return_json(upload_url, headers, data_stream)
 
@@ -718,6 +773,7 @@ class B2RawApi(AbstractRawApi):
         content_type=None,
         file_info=None,
         destination_bucket_id=None,
+        destination_server_side_encryption: Optional[EncryptionSetting] = None,
     ):
         kwargs = {}
         if bytes_range is not None:
@@ -745,6 +801,9 @@ class B2RawApi(AbstractRawApi):
             kwargs['fileInfo'] = file_info
         if destination_bucket_id is not None:
             kwargs['destinationBucketId'] = destination_bucket_id
+        if destination_server_side_encryption is not None:
+            kwargs['destinationServerSideEncryption'
+                  ] = destination_server_side_encryption.as_value_dict()
 
         return self._post_json(
             api_url,
@@ -763,12 +822,16 @@ class B2RawApi(AbstractRawApi):
         large_file_id,
         part_number,
         bytes_range=None,
+        destination_server_side_encryption: Optional[EncryptionSetting] = None,
     ):
         kwargs = {}
         if bytes_range is not None:
             range_dict = {}
             _add_range_header(range_dict, bytes_range)
             kwargs['range'] = range_dict['Range']
+        if destination_server_side_encryption is not None:
+            kwargs['destinationServerSideEncryption'
+                  ] = destination_server_side_encryption.as_value_dict()
         return self._post_json(
             api_url,
             'b2_copy_part',
@@ -872,24 +935,24 @@ def test_raw_api_helper(raw_api):
 
     ##################
     print('b2_update_bucket')
-    from .encryption.types import EncryptionAlgorithm, EncryptionMode
-    from .encryption.setting import EncryptionSetting
+    sse_b2_aes = EncryptionSetting(
+        mode=EncryptionMode.SSE_B2,
+        algorithm=EncryptionAlgorithm.AES256,
+    )
+    sse_none = EncryptionSetting(mode=EncryptionMode.NONE)
     for encryption_setting in [
-        EncryptionSetting(
-            mode=EncryptionMode.SSE_B2,
-            algorithm=EncryptionAlgorithm.AES256,
-        ),
-        EncryptionSetting(mode=EncryptionMode.NONE,),
+        sse_none,
+        sse_b2_aes,
     ]:
-        updated_bucket = raw_api.update_bucket(
+        bucket_dict = raw_api.update_bucket(
             api_url,
             account_auth_token,
             account_id,
             bucket_id,
-            'allPrivate',
+            'allPublic',
             default_server_side_encryption=encryption_setting,
         )
-        print(updated_bucket)
+        print(bucket_dict)
     ##################
     #assert False
 
@@ -921,8 +984,16 @@ def test_raw_api_helper(raw_api):
         file_sha1,
         {'color': 'blue'},
         io.BytesIO(file_contents),
+        server_side_encryption=sse_b2_aes,
     )
+    #from pprint import pprint
     file_id = file_dict['fileId']
+
+    # b2_list_file_versions
+    print('b2_list_file_versions')
+    list_versions_dict = raw_api.list_file_versions(api_url, account_auth_token, bucket_id)
+    assert [file_name] == [f_dict['fileName'] for f_dict in list_versions_dict['files']]
+    #assert False
 
     # b2_download_file_by_id with auth
     print('b2_download_file_by_id (auth)')
@@ -1015,7 +1086,13 @@ def test_raw_api_helper(raw_api):
     print('b2_start_large_file')
     file_info = {'color': 'red'}
     large_info = raw_api.start_large_file(
-        api_url, account_auth_token, bucket_id, file_name, 'text/plain', file_info
+        api_url,
+        account_auth_token,
+        bucket_id,
+        file_name,
+        'text/plain',
+        file_info,
+        server_side_encryption=sse_b2_aes,
     )
     large_file_id = large_info['fileId']
 

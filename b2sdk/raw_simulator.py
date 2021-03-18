@@ -2,12 +2,13 @@
 #
 # File: b2sdk/raw_simulator.py
 #
-# Copyright 2019 Backblaze Inc. All Rights Reserved.
+# Copyright 2021 Backblaze Inc. All Rights Reserved.
 #
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
 
+from typing import Optional
 import collections
 import io
 import random
@@ -142,7 +143,8 @@ class FileSimulator(object):
         file_info,
         data_bytes,
         upload_timestamp,
-        range_=None
+        range_=None,
+        encryption: Optional[EncryptionSetting] = None,
     ):
         self.account_id = account_id
         self.bucket_id = bucket_id
@@ -153,10 +155,13 @@ class FileSimulator(object):
             self.content_length = len(data_bytes)
         self.content_type = content_type
         self.content_sha1 = content_sha1
+        if content_sha1 and content_sha1 != 'none' and len(content_sha1) != 40:
+            raise ValueError(content_sha1)
         self.file_info = file_info
         self.data_bytes = data_bytes
         self.upload_timestamp = upload_timestamp
         self.range_ = range_
+        self.encryption = encryption
 
         if action == 'start':
             self.parts = []
@@ -195,7 +200,7 @@ class FileSimulator(object):
         return headers
 
     def as_upload_result(self):
-        return dict(
+        result = dict(
             fileId=self.file_id,
             fileName=self.name,
             accountId=self.account_id,
@@ -205,11 +210,14 @@ class FileSimulator(object):
             contentSha1=self.content_sha1,
             fileInfo=self.file_info,
             action=self.action,
-            uploadTimestamp=self.upload_timestamp
+            uploadTimestamp=self.upload_timestamp,
         )  # yapf: disable
+        if self.encryption is not None:
+            result['serverSideEncryption'] = self.encryption.as_value_dict()
+        return result
 
     def as_list_files_dict(self):
-        return dict(
+        result = dict(
             fileId=self.file_id,
             fileName=self.name,
             contentLength=len(self.data_bytes) if self.data_bytes is not None else 0,
@@ -217,19 +225,25 @@ class FileSimulator(object):
             contentSha1=self.content_sha1,
             fileInfo=self.file_info,
             action=self.action,
-            uploadTimestamp=self.upload_timestamp
+            uploadTimestamp=self.upload_timestamp,
         )  # yapf: disable
+        if self.encryption is not None and self.encryption != EncryptionSetting.NONE:
+            result['serverSideEncryption'] = self.encryption.as_value_dict()
+        return result
 
     def as_start_large_file_result(self):
-        return dict(
+        result = dict(
             fileId=self.file_id,
             fileName=self.name,
             accountId=self.account_id,
             bucketId=self.bucket_id,
             contentType=self.content_type,
             fileInfo=self.file_info,
-            uploadTimestamp=self.upload_timestamp
+            uploadTimestamp=self.upload_timestamp,
         )  # yapf: disable
+        if self.encryption is not None and self.encryption != EncryptionSetting.NONE:
+            result['serverSideEncryption'] = self.encryption.as_value_dict()
+        return result
 
     def add_part(self, part_number, part):
         while len(self.parts) < part_number + 1:
@@ -466,6 +480,7 @@ class BucketSimulator(object):
         content_type=None,
         file_info=None,
         destination_bucket_id=None,
+        destination_encryption: Optional[EncryptionSetting] = None,
     ):
         if metadata_directive is not None:
             assert metadata_directive in tuple(MetadataDirectiveMode)
@@ -487,9 +502,17 @@ class BucketSimulator(object):
 
         destination_bucket_id = destination_bucket_id or self.bucket_id
         copy_file_sim = self.FILE_SIMULATOR_CLASS(
-            self.account_id, destination_bucket_id, new_file_id, 'copy', new_file_name,
-            file_sim.content_type, file_sim.content_sha1, file_sim.file_info, data_bytes,
-            next(self.upload_timestamp_counter)
+            self.account_id,
+            destination_bucket_id,
+            new_file_id,
+            'copy',
+            new_file_name,
+            file_sim.content_type,
+            file_sim.content_sha1,
+            file_sim.file_info,
+            data_bytes,
+            next(self.upload_timestamp_counter),
+            encryption=destination_encryption,
         )
 
         if metadata_directive is MetadataDirectiveMode.REPLACE:
@@ -583,11 +606,17 @@ class BucketSimulator(object):
             next_file_id = str(int(file_dict_list[-1]['fileId']) - 1)
         return dict(files=file_dict_list, nextFileId=next_file_id)
 
-    def start_large_file(self, file_name, content_type, file_info):
+    def start_large_file(
+        self,
+        file_name,
+        content_type,
+        file_info,
+        encryption: Optional[EncryptionSetting] = None,
+    ):
         file_id = self._next_file_id()
         file_sim = self.FILE_SIMULATOR_CLASS(
             self.account_id, self.bucket_id, file_id, 'start', file_name, content_type, 'none',
-            file_info, None, next(self.upload_timestamp_counter)
+            file_info, None, next(self.upload_timestamp_counter), encryption,
         )  # yapf: disable
         self.file_id_to_file[file_id] = file_sim
         self.file_name_and_id_to_file[file_sim.sort_key()] = file_sim
@@ -619,8 +648,16 @@ class BucketSimulator(object):
         return self.bucket_dict(self.api.current_token)
 
     def upload_file(
-        self, upload_id, upload_auth_token, file_name, content_length, content_type, content_sha1,
-        file_infos, data_stream
+        self,
+        upload_id,
+        upload_auth_token,
+        file_name,
+        content_length,
+        content_type,
+        content_sha1,
+        file_infos,
+        data_stream,
+        encryption: Optional[EncryptionSetting] = None,
     ):
         data_bytes = self._simulate_chunked_post(data_stream, content_length)
         assert len(data_bytes) == content_length
@@ -628,19 +665,38 @@ class BucketSimulator(object):
             content_sha1 = data_bytes[-40:].decode()
             data_bytes = data_bytes[0:-40]
             content_length -= 40
+        elif len(content_sha1) != 40:
+            raise ValueError(content_sha1)
         computed_sha1 = hex_sha1_of_bytes(data_bytes)
         if content_sha1 != computed_sha1:
             raise FileSha1Mismatch(file_name)
         file_id = self._next_file_id()
         file_sim = self.FILE_SIMULATOR_CLASS(
-            self.account_id, self.bucket_id, file_id, 'upload', file_name, content_type,
-            content_sha1, file_infos, data_bytes, next(self.upload_timestamp_counter)
+            self.account_id,
+            self.bucket_id,
+            file_id,
+            'upload',
+            file_name,
+            content_type,
+            content_sha1,
+            file_infos,
+            data_bytes,
+            next(self.upload_timestamp_counter),
+            encryption,
         )
         self.file_id_to_file[file_id] = file_sim
         self.file_name_and_id_to_file[file_sim.sort_key()] = file_sim
         return file_sim.as_upload_result()
 
-    def upload_part(self, file_id, part_number, content_length, sha1_sum, input_stream):
+    def upload_part(
+        self,
+        file_id,
+        part_number,
+        content_length,
+        sha1_sum,
+        input_stream,
+        encryption: Optional[EncryptionSetting] = None,
+    ):
         file_sim = self.file_id_to_file[file_id]
         part_data = self._simulate_chunked_post(input_stream, content_length)
         assert len(part_data) == content_length
@@ -653,12 +709,15 @@ class BucketSimulator(object):
             raise PartSha1Mismatch(file_id)
         part = PartSimulator(file_sim.file_id, part_number, content_length, sha1_sum, part_data)
         file_sim.add_part(part_number, part)
-        return dict(
+        result = dict(
             fileId=file_id,
             partNumber=part_number,
             contentLength=content_length,
-            contentSha1=sha1_sum
+            contentSha1=sha1_sum,
         )  # yapf: disable
+        if encryption is not None:
+            result['serverSideEncryption'] = encryption.as_value_dict()
+        return result
 
     def _simulate_chunked_post(
         self, stream, content_length, min_chunks=4, max_chunk_size=8096, simulate_retry=True
@@ -1052,6 +1111,7 @@ class RawSimulator(AbstractRawApi):
         large_file_id,
         part_number,
         bytes_range=None,
+        destination_encryption: Optional[EncryptionSetting] = None,
     ):
         src_bucket_id = self.file_id_to_bucket_id[source_file_id]
         src_bucket = self._get_bucket_by_id(src_bucket_id)
@@ -1068,7 +1128,12 @@ class RawSimulator(AbstractRawApi):
         sha1_sum = HEX_DIGITS_AT_END
 
         return dest_bucket.upload_part(
-            large_file_id, part_number, content_length, sha1_sum, data_stream
+            large_file_id,
+            part_number,
+            content_length,
+            sha1_sum,
+            data_stream,
+            encryption=destination_encryption,
         )
 
     def list_buckets(
@@ -1215,8 +1280,16 @@ class RawSimulator(AbstractRawApi):
         )
 
     def upload_file(
-        self, upload_url, upload_auth_token, file_name, content_length, content_type, content_sha1,
-        file_infos, data_stream
+        self,
+        upload_url,
+        upload_auth_token,
+        file_name,
+        content_length,
+        content_type,
+        content_sha1,
+        file_infos,
+        data_stream,
+        encryption: Optional[EncryptionSetting] = None,
     ):
         with ConcurrentUsedAuthTokenGuard(
             self.currently_used_auth_tokens[upload_auth_token], upload_auth_token
@@ -1238,13 +1311,21 @@ class RawSimulator(AbstractRawApi):
                 content_sha1,
                 file_infos,
                 data_stream,
+                encryption,
             )
             file_id = response['fileId']
             self.file_id_to_bucket_id[file_id] = bucket_id
         return response
 
     def upload_part(
-        self, upload_url, upload_auth_token, part_number, content_length, sha1_sum, input_stream
+        self,
+        upload_url,
+        upload_auth_token,
+        part_number,
+        content_length,
+        sha1_sum,
+        input_stream,
+        encryption: Optional[EncryptionSetting] = None,
     ):
         with ConcurrentUsedAuthTokenGuard(
             self.currently_used_auth_tokens[upload_auth_token], upload_auth_token
@@ -1255,7 +1336,9 @@ class RawSimulator(AbstractRawApi):
             file_id = url_match.group(1)
             bucket_id = self.file_id_to_bucket_id[file_id]
             bucket = self._get_bucket_by_id(bucket_id)
-            part = bucket.upload_part(file_id, part_number, content_length, sha1_sum, input_stream)
+            part = bucket.upload_part(
+                file_id, part_number, content_length, sha1_sum, input_stream, encryption
+            )
         return part
 
     def _assert_account_auth(

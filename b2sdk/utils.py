@@ -142,15 +142,18 @@ def hex_sha1_of_unlimited_stream(input_stream, limit=None):
             return digest.hexdigest(), content_length
 
 
-def hex_sha1_of_bytes(data):
+def hex_sha1_of_bytes(data: bytes) -> str:
     """
     Return the 40-character hex SHA1 checksum of the data.
-
-    :param data: an array of bytes
-    :type data: bytes
-    :rtype: str
     """
     return hashlib.sha1(data).hexdigest()
+
+
+def hex_md5_of_bytes(data: bytes) -> str:
+    """
+    Return the 32-character hex MD5 checksum of the data.
+    """
+    return hashlib.md5(data).hexdigest()
 
 
 def validate_b2_file_name(name):

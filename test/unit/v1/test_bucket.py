@@ -41,6 +41,7 @@ from .deps import ParallelDownloader
 from .deps import SimpleDownloader
 from .deps import UploadSourceBytes
 from .deps import hex_sha1_of_bytes, TempDir
+from .deps import EncryptionAlgorithm, EncryptionSetting, EncryptionMode
 
 
 def write_file(path, data):
@@ -420,6 +421,27 @@ class TestListVersions(TestCaseWithBucket):
         except ValueError as e:
             self.assertEqual('unsupported fetch_count value', str(e))
 
+    def test_encryption(self):
+        sse_none = EncryptionSetting(mode=EncryptionMode.NONE,)
+        sse_b2_aes = EncryptionSetting(
+            mode=EncryptionMode.SSE_B2,
+            algorithm=EncryptionAlgorithm.AES256,
+        )
+
+        data = b'hello world'
+        a_id = self.bucket.upload_bytes(data, 'a').id_
+        b_id = self.bucket.upload_bytes(data, 'b', encryption=sse_b2_aes).id_
+        #c_id = self.bucket.upload_bytes(data, 'c', encryption=sse_none).id_  # TODO
+
+        actual = [info.server_side_encryption for info in self.bucket.list_file_versions('a')][0]
+        self.assertEqual(sse_none, actual)  # bucket default
+
+        actual = [info.server_side_encryption for info in self.bucket.list_file_versions('b')][0]
+        self.assertEqual(sse_b2_aes, actual)  # explicitly requested sse-b2
+
+        #actual = [info.server_side_encryption for info in self.bucket.list_file_versions('c')][0]
+        #self.assertEqual(sse_none, actual)  # explicitly requested none
+
 
 class TestCopyFile(TestCaseWithBucket):
     def test_copy_without_optional_params(self):
@@ -532,6 +554,18 @@ class TestUpload(TestCaseWithBucket):
         file_info = self.bucket.upload_bytes(data, 'file1')
         self.assertTrue(isinstance(file_info, FileVersionInfo))
         self._check_file_contents('file1', data)
+        sse_none = EncryptionSetting(mode=EncryptionMode.NONE,)
+        self.assertEquals(file_info.server_side_encryption, sse_none)
+
+    def test_upload_bytes_sse_b2(self):
+        sse_b2_aes = EncryptionSetting(
+            mode=EncryptionMode.SSE_B2,
+            algorithm=EncryptionAlgorithm.AES256,
+        )
+        data = b'hello world'
+        file_info = self.bucket.upload_bytes(data, 'file1', server_side_encryption=sse_b2_aes)
+        self.assertTrue(isinstance(file_info, FileVersionInfo))
+        self.assertEquals(file_info.server_side_encryption, sse_b2_aes)
 
     def test_upload_bytes_progress(self):
         data = b'hello world'

@@ -12,7 +12,7 @@ import logging
 from typing import Optional
 
 from .encryption.setting import EncryptionSetting, EncryptionSettingFactory
-from .exception import FileNotPresent, FileOrBucketNotFound, UnrecognizedBucketType
+from .exception import FileNotPresent, FileOrBucketNotFound, UnexpectedCloudBehaviour, UnrecognizedBucketType
 from .file_version import FileVersionInfo, FileVersionInfoFactory
 from .progress import DoNothingProgressListener
 from .transfer.emerge.executor import AUTO_CONTENT_TYPE
@@ -44,7 +44,7 @@ class Bucket(metaclass=B2TraceMeta):
         revision=None,
         bucket_dict=None,
         options_set=None,
-        default_server_side_encryption=None,
+        default_server_side_encryption: Optional[EncryptionSetting] = None,
     ):
         """
         :param b2sdk.v1.B2Api api: an API object
@@ -57,7 +57,6 @@ class Bucket(metaclass=B2TraceMeta):
         :param int revision: a bucket revision number
         :param dict bucket_dict: a dictionary which contains bucket parameters
         :param set options_set: set of bucket options strings
-        :param b2sdk.v1.DefaultServerSideEncryption default_server_side_encryption: bucket's default encryption settings
         """
         #:param bool sse_is_client_authorized: is client authorized to read bucket's default encryption settings
         #:param dict sse_settings: bucket's default encryption settings
@@ -115,7 +114,6 @@ class Bucket(metaclass=B2TraceMeta):
         :param dict cors_rules: CORS rules to store with a bucket
         :param dict lifecycle_rules: lifecycle rules to store with a bucket
         :param int if_revision_is: revision number, update the info **only if** *revision* equals to *if_revision_is*
-        :param b2sdk.v1.EncryptionSetting default_server_side_encryption: default server side encryption settings for the bucket
         """
         account_id = self.api.account_info.get_account_id()
         return self.api.session.update_bucket(
@@ -386,6 +384,7 @@ class Bucket(metaclass=B2TraceMeta):
         content_type=None,
         file_infos=None,
         progress_listener=None,
+        encryption: Optional[EncryptionSetting] = None,
     ):
         """
         Upload bytes in memory to a B2 file.
@@ -404,6 +403,7 @@ class Bucket(metaclass=B2TraceMeta):
             content_type=content_type,
             file_info=file_infos,
             progress_listener=progress_listener,
+            encryption=encryption,
         )
 
     def upload_local_file(
@@ -415,6 +415,7 @@ class Bucket(metaclass=B2TraceMeta):
         sha1_sum=None,
         min_part_size=None,
         progress_listener=None,
+        encryption: Optional[EncryptionSetting] = None,
     ):
         """
         Upload a file on local disk to a B2 file.
@@ -440,6 +441,7 @@ class Bucket(metaclass=B2TraceMeta):
             file_info=file_infos,
             min_part_size=min_part_size,
             progress_listener=progress_listener,
+            encryption=encryption,
         )
 
     def upload(
@@ -449,7 +451,8 @@ class Bucket(metaclass=B2TraceMeta):
         content_type=None,
         file_info=None,
         min_part_size=None,
-        progress_listener=None
+        progress_listener=None,
+        encryption: Optional[EncryptionSetting] = None,
     ):
         """
         Upload a file to B2, retrying as needed.
@@ -478,6 +481,7 @@ class Bucket(metaclass=B2TraceMeta):
             progress_listener=progress_listener,
             # FIXME: Bucket.upload documents wrong logic
             recommended_upload_part_size=min_part_size,
+            encryption=encryption,
         )
 
     def create_file(
@@ -489,6 +493,7 @@ class Bucket(metaclass=B2TraceMeta):
         progress_listener=None,
         recommended_upload_part_size=None,
         continue_large_file_id=None,
+        encryption: Optional[EncryptionSetting] = None,
     ):
         """
         Creates a new file in this bucket using an iterable (list, tuple etc) of remote or local sources.
@@ -520,6 +525,7 @@ class Bucket(metaclass=B2TraceMeta):
             progress_listener=progress_listener,
             continue_large_file_id=continue_large_file_id,
             recommended_upload_part_size=recommended_upload_part_size,
+            encryption=encryption,
         )
 
     def create_file_stream(
@@ -531,6 +537,7 @@ class Bucket(metaclass=B2TraceMeta):
         progress_listener=None,
         recommended_upload_part_size=None,
         continue_large_file_id=None,
+        encryption: Optional[EncryptionSetting] = None,
     ):
         """
         Creates a new file in this bucket using a stream of multiple remote or local sources.
@@ -564,6 +571,7 @@ class Bucket(metaclass=B2TraceMeta):
             progress_listener=progress_listener,
             continue_large_file_id=continue_large_file_id,
             recommended_upload_part_size=recommended_upload_part_size,
+            encryption=encryption,
         )
 
     def _create_file(
@@ -576,6 +584,7 @@ class Bucket(metaclass=B2TraceMeta):
         progress_listener=None,
         recommended_upload_part_size=None,
         continue_large_file_id=None,
+        encryption: Optional[EncryptionSetting] = None,
     ):
         validate_b2_file_name(file_name)
         progress_listener = progress_listener or DoNothingProgressListener()
@@ -589,6 +598,7 @@ class Bucket(metaclass=B2TraceMeta):
             progress_listener,
             recommended_upload_part_size=recommended_upload_part_size,
             continue_large_file_id=continue_large_file_id,
+            encryption=encryption,
         )
 
     def concatenate(
@@ -600,6 +610,7 @@ class Bucket(metaclass=B2TraceMeta):
         progress_listener=None,
         recommended_upload_part_size=None,
         continue_large_file_id=None,
+        encryption: Optional[EncryptionSetting] = None,
     ):
         """
         Creates a new file in this bucket by concatenating multiple remote or local sources.
@@ -627,6 +638,7 @@ class Bucket(metaclass=B2TraceMeta):
             progress_listener=progress_listener,
             recommended_upload_part_size=recommended_upload_part_size,
             continue_large_file_id=continue_large_file_id,
+            encryption=encryption,
         )
 
     def concatenate_stream(
@@ -638,6 +650,7 @@ class Bucket(metaclass=B2TraceMeta):
         progress_listener=None,
         recommended_upload_part_size=None,
         continue_large_file_id=None,
+        encryption: Optional[EncryptionSetting] = None,
     ):
         """
         Creates a new file in this bucket by concatenating stream of multiple remote or local sources.
@@ -666,6 +679,7 @@ class Bucket(metaclass=B2TraceMeta):
             progress_listener=progress_listener,
             recommended_upload_part_size=recommended_upload_part_size,
             continue_large_file_id=continue_large_file_id,
+            encryption=encryption,
         )
 
     def get_download_url(self, filename):
@@ -699,7 +713,8 @@ class Bucket(metaclass=B2TraceMeta):
         file_info=None,
         offset=0,
         length=None,
-        progress_listener=None
+        progress_listener=None,
+        encryption: Optional[EncryptionSetting] = None,
     ):
         """
         Creates a new file in this bucket by (server-side) copying from an existing file.
@@ -731,6 +746,7 @@ class Bucket(metaclass=B2TraceMeta):
                 file_info=file_info,
                 destination_bucket_id=self.id_,
                 progress_listener=progress_listener,
+                encryption=encryption,
             ).result()
         else:
             return self.create_file(
@@ -739,6 +755,7 @@ class Bucket(metaclass=B2TraceMeta):
                 content_type=content_type,
                 file_info=file_info,
                 progress_listener=progress_listener,
+                encryption=encryption,
             )
 
     # FIXME: this shold be deprecated
@@ -750,6 +767,7 @@ class Bucket(metaclass=B2TraceMeta):
         metadata_directive=None,
         content_type=None,
         file_info=None,
+        encryption: Optional[EncryptionSetting] = None,
     ):
         """
         Creates a new file in this bucket by (server-side) copying from an existing file.
@@ -769,6 +787,7 @@ class Bucket(metaclass=B2TraceMeta):
             content_type,
             file_info,
             self.id_,
+            encryption=encryption,
         )
 
     def delete_file_version(self, file_id, file_name):
@@ -866,7 +885,8 @@ class BucketFactory(object):
         revision = bucket_dict['revision']
         options = set(bucket_dict['options'])
 
-        #assert bucket_dict.get('defaultServerSideEncryption', None) is not None, 'server did not provide defaultServerSideEncryption'  # TODO
+        if 'defaultServerSideEncryption' not in bucket_dict:
+            raise UnexpectedCloudBehaviour('server did not provide `defaultServerSideEncryption`')
         default_server_side_encryption = EncryptionSettingFactory.from_bucket_dict(bucket_dict)
         return cls.BUCKET_CLASS(
             api,

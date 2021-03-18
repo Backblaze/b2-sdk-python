@@ -10,12 +10,13 @@
 
 from functools import partial
 from enum import Enum, unique
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from b2sdk.account_info.sqlite_account_info import SqliteAccountInfo
 from b2sdk.account_info.exception import MissingAccountData
 from b2sdk.b2http import B2Http
 from b2sdk.cache import AuthInfoCache, DummyCache
+from b2sdk.encryption.setting import EncryptionSetting
 from b2sdk.exception import (InvalidAuthToken, Unauthorized)
 from b2sdk.raw_api import ALL_CAPABILITIES, B2RawApi
 
@@ -283,7 +284,7 @@ class B2Session(object):
         cors_rules=None,
         lifecycle_rules=None,
         if_revision_is=None,
-        default_server_side_encryption=None,
+        default_server_side_encryption: Optional[EncryptionSetting] = None,
     ):
         return self._wrap_default_token(
             self.raw_api.update_bucket,
@@ -298,8 +299,15 @@ class B2Session(object):
         )
 
     def upload_file(
-        self, bucket_id, file_name, content_length, content_type, content_sha1, file_infos,
-        data_stream
+        self,
+        bucket_id,
+        file_name,
+        content_length,
+        content_type,
+        content_sha1,
+        file_infos,
+        data_stream,
+        server_side_encryption: Optional[EncryptionSetting] = None,
     ):
         return self._wrap_token(
             self.raw_api.upload_file,
@@ -311,9 +319,18 @@ class B2Session(object):
             content_sha1,
             file_infos,
             data_stream,
+            server_side_encryption,
         )
 
-    def upload_part(self, file_id, part_number, content_length, sha1_sum, input_stream):
+    def upload_part(
+        self,
+        file_id,
+        part_number,
+        content_length,
+        sha1_sum,
+        input_stream,
+        server_side_encryption: Optional[EncryptionSetting] = None,
+    ):
         return self._wrap_token(
             self.raw_api.upload_part,
             TokenType.UPLOAD_PART,
@@ -322,6 +339,7 @@ class B2Session(object):
             content_length,
             sha1_sum,
             input_stream,
+            server_side_encryption,
         )
 
     def get_download_url_by_id(self, file_id):
@@ -341,6 +359,7 @@ class B2Session(object):
         content_type=None,
         file_info=None,
         destination_bucket_id=None,
+        destination_server_side_encryption: Optional[EncryptionSetting] = None,
     ):
         return self._wrap_default_token(
             self.raw_api.copy_file,
@@ -351,6 +370,7 @@ class B2Session(object):
             content_type=content_type,
             file_info=file_info,
             destination_bucket_id=destination_bucket_id,
+            destination_server_side_encryption=destination_server_side_encryption,
         )
 
     def copy_part(
@@ -359,13 +379,15 @@ class B2Session(object):
         large_file_id,
         part_number,
         bytes_range=None,
+        destination_server_side_encryption: Optional[EncryptionSetting] = None,
     ):
         return self._wrap_default_token(
             self.raw_api.copy_part,
             source_file_id,
             large_file_id,
             part_number,
-            bytes_range=bytes_range
+            bytes_range=bytes_range,
+            destination_server_side_encryption=destination_server_side_encryption,
         )
 
     def _wrap_default_token(self, raw_api_method, *args, **kwargs):
