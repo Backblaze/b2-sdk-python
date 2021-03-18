@@ -42,19 +42,9 @@ class StubAccountInfo(AbstractAccountInfo):
         if bucket_id in self.buckets:
             del self.buckets[bucket_id]
 
-    # TODO: In v2, s3_api_url should not be optional
     def _set_auth_data(
-        self,
-        account_id,
-        auth_token,
-        api_url,
-        download_url,
-        minimum_part_size,
-        application_key,
-        realm,
-        allowed,
-        application_key_id,
-        s3_api_url=None,
+        self, account_id, auth_token, api_url, download_url, minimum_part_size, application_key,
+        realm, s3_api_url, allowed, application_key_id
     ):
         self.account_id = account_id
         self.auth_token = auth_token
@@ -63,9 +53,9 @@ class StubAccountInfo(AbstractAccountInfo):
         self.minimum_part_size = minimum_part_size
         self.application_key = application_key
         self.realm = realm
+        self.s3_api_url = s3_api_url
         self.allowed = allowed
         self.application_key_id = application_key_id
-        self.s3_api_url = s3_api_url
 
     def refresh_entire_bucket_name_cache(self, name_id_iterable):
         self.buckets = {}

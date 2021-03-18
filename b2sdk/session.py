@@ -115,16 +115,16 @@ class B2Session(object):
 
         # Store the auth data
         self.account_info.set_auth_data(
-            response['accountId'],
-            response['authorizationToken'],
-            response['apiUrl'],
-            response['downloadUrl'],
-            response['recommendedPartSize'],
-            application_key,
-            realm,
-            allowed,
-            application_key_id,
+            account_id=response['accountId'],
+            auth_token=response['authorizationToken'],
+            api_url=response['apiUrl'],
+            download_url=response['downloadUrl'],
+            minimum_part_size=response['recommendedPartSize'],
+            application_key=application_key,
+            realm=realm,
             s3_api_url=response.get('s3ApiUrl'),
+            allowed=allowed,
+            application_key_id=application_key_id
         )
 
     def cancel_large_file(self, file_id):

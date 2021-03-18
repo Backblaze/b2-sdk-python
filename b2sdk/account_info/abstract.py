@@ -7,7 +7,6 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
-import inspect
 from abc import abstractmethod
 from typing import Optional
 from urllib.parse import ParseResult, urlparse
@@ -190,7 +189,7 @@ class AbstractAccountInfo(metaclass=B2TraceMetaAbstract):
         :rtype: dict
         """
 
-    # TODO: In v2, it should be an abstract method and S3 API URL should be properly handled
+    @abstractmethod
     def get_s3_api_url(self):
         """
         Return s3_api_url or raises MissingAccountData exception.
@@ -198,7 +197,6 @@ class AbstractAccountInfo(metaclass=B2TraceMetaAbstract):
         :rtype: str
         """
 
-    # TODO: In v2, s3_api_url should not be optional and should be passed to the _set_auth_data
     @limit_trace_arguments(
         only=['self', 'api_url', 'download_url', 'minimum_part_size', 'realm', 's3_api_url']
     )
@@ -211,9 +209,9 @@ class AbstractAccountInfo(metaclass=B2TraceMetaAbstract):
         minimum_part_size,
         application_key,
         realm,
+        s3_api_url,
         allowed=None,
-        application_key_id=None,
-        s3_api_url=None,
+        application_key_id=None
     ):
         """
         Check permission correctness and stores the results of ``b2_authorize_account``.
@@ -241,25 +239,12 @@ class AbstractAccountInfo(metaclass=B2TraceMetaAbstract):
             allowed = self.DEFAULT_ALLOWED
         assert self.allowed_is_valid(allowed)
 
-        # TODO: In v2, remove this check as s3_api_url will be mandatory in _set_auth_data
-        if 's3_api_url' in inspect.getfullargspec(self._set_auth_data).args:
-            if s3_api_url is None:
-                s3_api_url = self._construct_s3_api_url(api_url)
-            extra_args = {'s3_api_url': s3_api_url}
-        else:
-            extra_args = {}
+        if s3_api_url is None:
+            s3_api_url = self._construct_s3_api_url(api_url)
 
         self._set_auth_data(
-            account_id,
-            auth_token,
-            api_url,
-            download_url,
-            minimum_part_size,
-            application_key,
-            realm,
-            allowed,
-            application_key_id,
-            **extra_args,
+            account_id, auth_token, api_url, download_url, minimum_part_size, application_key,
+            realm, s3_api_url, allowed, application_key_id
         )
 
     @classmethod
@@ -280,21 +265,11 @@ class AbstractAccountInfo(metaclass=B2TraceMetaAbstract):
             ('capabilities' in allowed) and ('namePrefix' in allowed)
         )
 
-    # TODO: In v2, s3_api_url should not be optional
     # TODO: make a decorator for set_auth_data()
     @abstractmethod
     def _set_auth_data(
-        self,
-        account_id,
-        auth_token,
-        api_url,
-        download_url,
-        minimum_part_size,
-        application_key,
-        realm,
-        allowed,
-        application_key_id,
-        s3_api_url=None,
+        self, account_id, auth_token, api_url, download_url, minimum_part_size, application_key,
+        realm, s3_api_url, allowed, application_key_id
     ):
         """
         Actually store the auth data.  Can assume that 'allowed' is present and valid.

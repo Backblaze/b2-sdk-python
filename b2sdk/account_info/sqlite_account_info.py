@@ -218,19 +218,9 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
             conn.execute('DELETE FROM bucket;')
             conn.execute('DELETE FROM bucket_upload_url;')
 
-    # TODO: In v2, s3_api_url should not be optional
     def _set_auth_data(
-        self,
-        account_id,
-        auth_token,
-        api_url,
-        download_url,
-        minimum_part_size,
-        application_key,
-        realm,
-        allowed,
-        application_key_id,
-        s3_api_url=None,
+        self, account_id, auth_token, api_url, download_url, minimum_part_size, application_key,
+        realm, s3_api_url, allowed, application_key_id
     ):
         assert self.allowed_is_valid(allowed)
         with self._get_connection() as conn:

@@ -7,7 +7,7 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
-
+from collections import defaultdict
 from enum import Enum
 from functools import partial
 
@@ -62,10 +62,7 @@ class TestSynchronizer:
         ]
     )
     def test_illegal_args(self, synchronizer_factory, apiver, args):
-        exceptions = {
-            'v1': InvalidArgument,
-            'v0': CommandError,
-        }
+        exceptions = defaultdict(lambda: InvalidArgument, v0=CommandError)
 
         with pytest.raises(exceptions[apiver]):
             synchronizer_factory(**args)
@@ -516,14 +513,14 @@ class TestSynchronizer:
         dst = self.folder_factory(dst_type, ('a.txt', [200]))
         with pytest.raises(DestFileNewer) as excinfo:
             self.assert_folder_sync_actions(synchronizer, src, dst, expected)
-        messages = {
-            'v1': 'source file is older than destination: %s://a.txt with a time of 100 '
-                  'cannot be synced to %s://a.txt with a time of 200, '
-                  'unless a valid newer_file_mode is provided',
-            'v0': 'source file is older than destination: %s://a.txt with a time of 100 '
-                  'cannot be synced to %s://a.txt with a time of 200, '
-                  'unless --skipNewer or --replaceNewer is provided',
-        }  # yapf: disable
+        messages = defaultdict(
+            lambda: 'source file is older than destination: %s://a.txt with a time of 100 '
+                    'cannot be synced to %s://a.txt with a time of 200, '
+                    'unless a valid newer_file_mode is provided',
+            v0='source file is older than destination: %s://a.txt with a time of 100 '
+               'cannot be synced to %s://a.txt with a time of 200, '
+               'unless --skipNewer or --replaceNewer is provided'
+        )  # yapf: disable
 
         assert str(excinfo.value) == messages[apiver] % (src_type, dst_type)
 

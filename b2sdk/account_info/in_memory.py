@@ -57,19 +57,9 @@ class InMemoryAccountInfo(UrlPoolAccountInfo):
         self._realm = None
         self._s3_api_url = None
 
-    # TODO: In v2, s3_api_url should not be optional
     def _set_auth_data(
-        self,
-        account_id,
-        auth_token,
-        api_url,
-        download_url,
-        minimum_part_size,
-        application_key,
-        realm,
-        allowed,
-        application_key_id,
-        s3_api_url=None,
+        self, account_id, auth_token, api_url, download_url, minimum_part_size, application_key,
+        realm, s3_api_url, allowed, application_key_id
     ):
         self._account_id = account_id
         self._application_key_id = application_key_id
@@ -79,8 +69,8 @@ class InMemoryAccountInfo(UrlPoolAccountInfo):
         self._minimum_part_size = minimum_part_size
         self._application_key = application_key
         self._realm = realm
-        self._allowed = allowed
         self._s3_api_url = s3_api_url
+        self._allowed = allowed
 
     def refresh_entire_bucket_name_cache(self, name_id_iterable):
         self._buckets = dict(name_id_iterable)
