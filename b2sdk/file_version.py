@@ -8,6 +8,7 @@
 #
 ######################################################################
 
+from typing import Optional
 import datetime
 
 from .encryption.setting import EncryptionSetting, EncryptionSettingFactory
@@ -44,7 +45,7 @@ class FileVersionInfo(object):
         upload_timestamp,
         action,
         content_md5=None,
-        server_side_encryption: EncryptionSetting = None,
+        server_side_encryption: Optional[EncryptionSetting] = None,  # TODO: make it mandatory in v2
     ):
         self.id_ = id_
         self.file_name = file_name
@@ -76,6 +77,8 @@ class FileVersionInfo(object):
             result['contentSha1'] = self.content_sha1
         if self.content_md5 is not None:
             result['contentMd5'] = self.content_md5
+        if self.server_side_encryption is not None:
+            result['serverSideEncryption'] = self.server_side_encryption.as_value_dict()
         return result
 
     def format_ls_entry(self):
@@ -192,7 +195,8 @@ class FileVersionInfoFactory(object):
             content_sha1=headers.get('x-bz-content-sha1'),
             file_info=None,
             upload_timestamp=headers.get('x-bz-upload-timestamp'),
-            action=None
+            action=None,
+            server_side_encryption=EncryptionSettingFactory.from_response_headers(headers),
         )
 
 

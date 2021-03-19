@@ -602,6 +602,20 @@ class TestUpload(TestCaseWithBucket):
         self.assertTrue(isinstance(file_info, FileVersionInfo))
         self.assertEqual(file_info.server_side_encryption, sse_b2_aes)
 
+    def test_upload_local_file_sse_b2(self):
+        sse_b2_aes = EncryptionSetting(
+            mode=EncryptionMode.SSE_B2,
+            algorithm=EncryptionAlgorithm.AES256,
+        )
+        with TempDir() as d:
+            path = os.path.join(d, 'file1')
+            data = b'hello world'
+            write_file(path, data)
+            file_info = self.bucket.upload_local_file(path, 'file1', encryption=sse_b2_aes)
+            self.assertTrue(isinstance(file_info, FileVersionInfo))
+            self.assertEqual(file_info.server_side_encryption, sse_b2_aes)
+            self._check_file_contents('file1', data)
+
     def test_upload_bytes_progress(self):
         data = b'hello world'
         progress_listener = StubProgressListener()
@@ -609,12 +623,17 @@ class TestUpload(TestCaseWithBucket):
         self.assertTrue(progress_listener.is_valid())
 
     def test_upload_local_file(self):
+        sse_none = EncryptionSetting(mode=EncryptionMode.NONE,)
         with TempDir() as d:
             path = os.path.join(d, 'file1')
             data = b'hello world'
             write_file(path, data)
-            self.bucket.upload_local_file(path, 'file1')
+            file_info = self.bucket.upload_local_file(path, 'file1')
             self._check_file_contents('file1', data)
+            self.assertTrue(isinstance(file_info, FileVersionInfo))
+            self.assertEqual(file_info.server_side_encryption, sse_none)
+            print(file_info.as_dict())
+            self.assertEqual(file_info.as_dict()['serverSideEncryption'], {'mode': 'none'})
 
     @pytest.mark.skipif(platform.system() == 'Windows', reason='no os.mkfifo() on Windows')
     def test_upload_fifo(self):

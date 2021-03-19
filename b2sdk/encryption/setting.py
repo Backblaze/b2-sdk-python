@@ -176,3 +176,15 @@ class EncryptionSettingFactory:
             kwargs['algorithm'] = EncryptionAlgorithm(algorithm)
 
         return EncryptionSetting(**kwargs)
+
+    @classmethod
+    def from_response_headers(cls, headers):
+        kwargs = {
+            'mode': EncryptionMode(headers.get('X-Bz-Server-Side-Encryption'),),
+        }
+        assert kwargs['mode'] is not None
+        algorithm = headers.get('X-Bz-Server-Side-Encryption-Customer-Algorithm')
+        if algorithm is not None:
+            kwargs['algorithm'] = EncryptionAlgorithm(algorithm)
+
+        return EncryptionSetting(**kwargs)
