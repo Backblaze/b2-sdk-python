@@ -9,7 +9,10 @@
 ######################################################################
 
 import logging
+from typing import Optional
+
 from b2sdk.download_dest import DownloadDestProgressWrapper
+from b2sdk.encryption.setting import EncryptionMode, EncryptionSetting
 from b2sdk.progress import DoNothingProgressListener
 
 from b2sdk.exception import (
@@ -72,6 +75,7 @@ class DownloadManager(metaclass=B2TraceMetaAbstract):
         download_dest,
         progress_listener=None,
         range_=None,
+        encryption: Optional[EncryptionSetting] = None,
     ):
         """
         :param url: url from which the file should be downloaded
@@ -79,6 +83,7 @@ class DownloadManager(metaclass=B2TraceMetaAbstract):
         :param progress_listener: where to notify about progress downloading
         :param range_: 2-element tuple containing data of http Range header
         """
+        assert encryption is None or encryption.mode in (EncryptionMode.SSE_B2,)
         progress_listener = progress_listener or DoNothingProgressListener()
         download_dest = DownloadDestProgressWrapper(download_dest, progress_listener)
         with self.services.session.download_file_from_url(

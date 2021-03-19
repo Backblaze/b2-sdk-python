@@ -136,7 +136,14 @@ class Bucket(metaclass=B2TraceMeta):
         """
         return self.api.cancel_large_file(file_id)
 
-    def download_file_by_id(self, file_id, download_dest, progress_listener=None, range_=None):
+    def download_file_by_id(
+        self,
+        file_id,
+        download_dest,
+        progress_listener=None,
+        range_=None,
+        encryption: Optional[EncryptionSetting] = None,
+    ):
         """
         Download a file by ID.
 
@@ -154,10 +161,21 @@ class Bucket(metaclass=B2TraceMeta):
         :param tuple[int, int] range_: two integer values, start and end offsets
         """
         return self.api.download_file_by_id(
-            file_id, download_dest, progress_listener, range_=range_
+            file_id,
+            download_dest,
+            progress_listener,
+            range_=range_,
+            encryption=encryption,
         )
 
-    def download_file_by_name(self, file_name, download_dest, progress_listener=None, range_=None):
+    def download_file_by_name(
+        self,
+        file_name,
+        download_dest,
+        progress_listener=None,
+        range_=None,
+        encryption: Optional[EncryptionSetting] = None,
+    ):
         """
         Download a file by name.
 
@@ -177,7 +195,11 @@ class Bucket(metaclass=B2TraceMeta):
         """
         url = self.api.session.get_download_url_by_name(self.name, file_name)
         return self.api.services.download_manager.download_file_from_url(
-            url, download_dest, progress_listener, range_
+            url,
+            download_dest,
+            progress_listener,
+            range_,
+            encryption=encryption,
         )
 
     def get_file_info_by_id(self, file_id: str) -> FileVersionInfo:

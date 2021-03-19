@@ -8,8 +8,10 @@
 #
 ######################################################################
 
-from typing import Any, Dict
+from typing import Any, Dict, Optional
+
 from .bucket import Bucket, BucketFactory
+from .encryption.setting import EncryptionSetting
 from .exception import NonExistentBucket, RestrictedBucket
 from .file_version import FileIdAndName
 from .large_file.services import LargeFileServices
@@ -208,7 +210,14 @@ class B2Api(metaclass=B2TraceMeta):
         self.cache.save_bucket(bucket)
         return bucket
 
-    def download_file_by_id(self, file_id, download_dest, progress_listener=None, range_=None):
+    def download_file_by_id(
+        self,
+        file_id,
+        download_dest,
+        progress_listener=None,
+        range_=None,
+        encryption: Optional[EncryptionSetting] = None,
+    ):
         """
         Download a file with the given ID.
 
@@ -233,7 +242,11 @@ class B2Api(metaclass=B2TraceMeta):
         """
         url = self.session.get_download_url_by_id(file_id)
         return self.services.download_manager.download_file_from_url(
-            url, download_dest, progress_listener, range_
+            url,
+            download_dest,
+            progress_listener,
+            range_,
+            encryption,
         )
 
     def get_bucket_by_id(self, bucket_id):
