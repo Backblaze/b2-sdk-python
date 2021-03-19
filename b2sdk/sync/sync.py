@@ -13,6 +13,7 @@ import concurrent.futures as futures
 from enum import Enum, unique
 
 from ..bounded_queue_executor import BoundedQueueExecutor
+from ..encryption.provider import AbstractEncryptionSettingsProvider, ServerDefaultEncryptionSettingsProvider
 from .exception import InvalidArgument, IncompleteSync
 from .policy import CompareVersionMode, NewerFileSyncMode
 from .policy_manager import POLICY_MANAGER
@@ -184,7 +185,15 @@ class Synchronizer(object):
                 'must be one of :%s' % CompareVersionMode.__members__,
             )
 
-    def sync_folders(self, source_folder, dest_folder, now_millis, reporter):
+    def sync_folders(
+        self,
+        source_folder,
+        dest_folder,
+        now_millis,
+        reporter,
+        encryption_settings_provider:
+        AbstractEncryptionSettingsProvider = ServerDefaultEncryptionSettingsProvider(),
+    ):
         """
         Syncs two folders.  Always ensures that every file in the
         source is also in the destination.  Deletes any file versions
@@ -234,7 +243,8 @@ class Synchronizer(object):
 
         # Schedule each of the actions.
         for action in self.make_folder_sync_actions(
-            source_folder, dest_folder, now_millis, reporter, self.policies_manager
+            source_folder, dest_folder, now_millis, reporter, self.policies_manager,
+            encryption_settings_provider
         ):
             logging.debug('scheduling action %s on bucket %s', action, action_bucket)
             sync_executor.submit(action.run, action_bucket, reporter, self.dry_run)
@@ -251,6 +261,8 @@ class Synchronizer(object):
         now_millis,
         reporter,
         policies_manager=DEFAULT_SCAN_MANAGER,
+        encryption_settings_provider:
+        AbstractEncryptionSettingsProvider = ServerDefaultEncryptionSettingsProvider(),
     ):
         """
         Yield a sequence of actions that will sync the destination
@@ -299,6 +311,7 @@ class Synchronizer(object):
                 source_folder,
                 dest_folder,
                 now_millis,
+                encryption_settings_provider,
             ):
                 total_files += 1
                 total_bytes += action.get_bytes()
@@ -319,6 +332,8 @@ class Synchronizer(object):
         source_folder,
         dest_folder,
         now_millis,
+        encryption_settings_provider:
+        AbstractEncryptionSettingsProvider = ServerDefaultEncryptionSettingsProvider(),
     ):
         """
         Yields the sequence of actions needed to sync the two files
