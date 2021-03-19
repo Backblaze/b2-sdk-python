@@ -429,8 +429,12 @@ class TestListVersions(TestCaseWithBucket):
         )
 
         data = b'hello world'
-        a_id = self.bucket.upload_bytes(data, 'a').id_
-        b_id = self.bucket.upload_bytes(data, 'b', encryption=sse_b2_aes).id_
+        a = self.bucket.upload_bytes(data, 'a')
+        a_id = a.id_
+        self.assertEqual(a.server_side_encryption, sse_none)
+        b = self.bucket.upload_bytes(data, 'b', encryption=sse_b2_aes)
+        self.assertEqual(b.server_side_encryption, sse_b2_aes)
+        b_id = b.id_
         #c_id = self.bucket.upload_bytes(data, 'c', encryption=sse_none).id_  # TODO
         d_id = self.bucket.copy(a_id, 'd', destination_encryption=sse_b2_aes).id_
         e_id = self.bucket.copy(b_id, 'e').id_
