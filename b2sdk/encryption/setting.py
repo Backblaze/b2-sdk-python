@@ -162,7 +162,7 @@ class EncryptionSettingFactory:
         )
 
         if not default_sse['isClientAuthorizedToRead']:
-            return None
+            return EncryptionSetting(EncryptionMode.UNKNOWN)
 
         assert 'value' in default_sse, default_sse
         return cls._from_value_dict(default_sse['value'])

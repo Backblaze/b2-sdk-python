@@ -56,6 +56,7 @@ class TestApi(TestBase):
             algorithm=EncryptionAlgorithm.AES256,
         )
         no_encryption = EncryptionSetting(mode=EncryptionMode.NONE,)
+        unknown_encryption = EncryptionSetting(mode=EncryptionMode.UNKNOWN,)
 
         b1 = self.api.create_bucket(
             'bucket1',
@@ -91,12 +92,12 @@ class TestApi(TestBase):
 
         self.assertEqual(
             buckets['bucket1'].default_server_side_encryption,
-            None,
+            unknown_encryption,
         )
 
         self.assertEqual(
             buckets['bucket2'].default_server_side_encryption,
-            None,
+            unknown_encryption,
         )
 
     def _check_if_bucket_is_encrypted(self, bucket_name, should_be_encrypted):
