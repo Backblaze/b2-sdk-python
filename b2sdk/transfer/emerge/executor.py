@@ -187,7 +187,7 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
                     file_id,
                     large_file_upload_state,
                     finished_parts=finished_parts,
-                    encryption=encryption,
+                    # it already knows encryption from BaseMergeExecution being passed as self
                 )
                 execution_step = execution_step_factory.get_execution_step()
                 future = self._execute_step(execution_step)
@@ -322,7 +322,7 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
                 continue
             if file_.file_info != file_info:
                 continue
-            if file_.encryption != encryption:
+            if encryption is not None and encryption != file_.encryption:
                 continue
             files_match = True
             finished_parts = {}
@@ -395,6 +395,7 @@ class LargeFileEmergeExecutionStepFactory(BaseExecutionStepFactory):
         large_file_id,
         large_file_upload_state,
         finished_parts=None,
+        destination_encryption: Optional[EncryptionSetting] = None,
     ):
         super(LargeFileEmergeExecutionStepFactory, self).__init__(emerge_execution, emerge_part)
         self.part_number = part_number
@@ -454,7 +455,7 @@ class CopyFileExecutionStep(BaseExecutionStep):
             file_info=file_info,
             destination_bucket_id=execution.bucket_id,
             progress_listener=execution.progress_listener,
-            encryption=execution.encryption,
+            destination_encryption=execution.encryption,
         )
 
 
@@ -482,7 +483,7 @@ class CopyPartExecutionStep(BaseExecutionStep):
             self.part_number,
             self.large_file_upload_state,
             finished_parts=self.finished_parts,
-            encryption=self.emerge_execution.encryption,
+            destination_encryption=self.emerge_execution.encryption,
         )
 
 

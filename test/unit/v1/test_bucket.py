@@ -432,6 +432,8 @@ class TestListVersions(TestCaseWithBucket):
         a_id = self.bucket.upload_bytes(data, 'a').id_
         b_id = self.bucket.upload_bytes(data, 'b', encryption=sse_b2_aes).id_
         #c_id = self.bucket.upload_bytes(data, 'c', encryption=sse_none).id_  # TODO
+        d_id = self.bucket.copy(a_id, 'd', destination_encryption=sse_b2_aes).id_
+        e_id = self.bucket.copy(b_id, 'e').id_
 
         actual = [info.server_side_encryption for info in self.bucket.list_file_versions('a')][0]
         self.assertEqual(sse_none, actual)  # bucket default
@@ -441,6 +443,12 @@ class TestListVersions(TestCaseWithBucket):
 
         #actual = [info.server_side_encryption for info in self.bucket.list_file_versions('c')][0]
         #self.assertEqual(sse_none, actual)  # explicitly requested none
+
+        actual = [info.server_side_encryption for info in self.bucket.list_file_versions('d')][0]
+        self.assertEqual(sse_b2_aes, actual)  # explicitly requested sse-b2
+
+        actual = [info.server_side_encryption for info in self.bucket.list_file_versions('e')][0]
+        self.assertEqual(sse_none, actual)  # bucket default
 
 
 class TestCopyFile(TestCaseWithBucket):
@@ -542,6 +550,29 @@ class TestCopyFile(TestCaseWithBucket):
         expected = [('hello_new.txt', 11, 'copy', None)]
         self.assertBucketContents(expected, '', show_versions=True)
 
+    def test_copy_encryption(self):
+        file_id = self._make_file()
+        sse_b2_aes = EncryptionSetting(
+            mode=EncryptionMode.SSE_B2,
+            algorithm=EncryptionAlgorithm.AES256,
+        )
+        sse_none = EncryptionSetting(mode=EncryptionMode.NONE,)
+        file_info = self.bucket.copy(
+            file_id,
+            'hello_new.txt',
+            destination_encryption=sse_b2_aes,
+        )
+        self.assertTrue(isinstance(file_info, FileVersionInfo))
+        self.assertEqual(file_info.server_side_encryption, sse_b2_aes)
+
+        #file_info = self.bucket.copy(
+        #    file_id,
+        #    'hello_new.txt',
+        #    destination_encryption=sse_none,
+        #)
+        #self.assertTrue(isinstance(file_info, FileVersionInfo))
+        #self.assertEqual(file_info.server_side_encryption, sse_none)
+
     def _make_file(self, bucket=None):
         data = b'hello world'
         actual_bucket = bucket or self.bucket
@@ -555,7 +586,7 @@ class TestUpload(TestCaseWithBucket):
         self.assertTrue(isinstance(file_info, FileVersionInfo))
         self._check_file_contents('file1', data)
         sse_none = EncryptionSetting(mode=EncryptionMode.NONE,)
-        self.assertEquals(file_info.server_side_encryption, sse_none)
+        self.assertEqual(file_info.server_side_encryption, sse_none)
 
     def test_upload_bytes_sse_b2(self):
         sse_b2_aes = EncryptionSetting(
@@ -563,9 +594,9 @@ class TestUpload(TestCaseWithBucket):
             algorithm=EncryptionAlgorithm.AES256,
         )
         data = b'hello world'
-        file_info = self.bucket.upload_bytes(data, 'file1', server_side_encryption=sse_b2_aes)
+        file_info = self.bucket.upload_bytes(data, 'file1', encryption=sse_b2_aes)
         self.assertTrue(isinstance(file_info, FileVersionInfo))
-        self.assertEquals(file_info.server_side_encryption, sse_b2_aes)
+        self.assertEqual(file_info.server_side_encryption, sse_b2_aes)
 
     def test_upload_bytes_progress(self):
         data = b'hello world'
@@ -606,7 +637,7 @@ class TestUpload(TestCaseWithBucket):
                 self.bucket.upload_local_file(
                     path,
                     'file123',
-                    sha1_sum='abcabcabc',
+                    sha1_sum='abcd' * 10,
                 )
 
     def test_upload_one_retryable_error(self):

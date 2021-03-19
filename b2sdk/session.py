@@ -11,6 +11,7 @@
 from functools import partial
 from enum import Enum, unique
 from typing import Any, Dict, Optional
+import logging
 
 from b2sdk.account_info.sqlite_account_info import SqliteAccountInfo
 from b2sdk.account_info.exception import MissingAccountData
@@ -19,6 +20,8 @@ from b2sdk.cache import AuthInfoCache, DummyCache
 from b2sdk.encryption.setting import EncryptionSetting
 from b2sdk.exception import (InvalidAuthToken, Unauthorized)
 from b2sdk.raw_api import ALL_CAPABILITIES, B2RawApi
+
+logger = logging.getLogger(__name__)
 
 
 @unique
@@ -270,9 +273,21 @@ class B2Session(object):
             prefix=prefix,
         )
 
-    def start_large_file(self, bucket_id, file_name, content_type, file_info):
+    def start_large_file(
+        self,
+        bucket_id,
+        file_name,
+        content_type,
+        file_info,
+        server_side_encryption: Optional[EncryptionSetting] = None,
+    ):
         return self._wrap_default_token(
-            self.raw_api.start_large_file, bucket_id, file_name, content_type, file_info
+            self.raw_api.start_large_file,
+            bucket_id,
+            file_name,
+            content_type,
+            file_info,
+            server_side_encryption,
         )
 
     def update_bucket(
@@ -309,6 +324,7 @@ class B2Session(object):
         data_stream,
         server_side_encryption: Optional[EncryptionSetting] = None,
     ):
+        logger.debug('upload_file called with sse=%s', server_side_encryption)  # TODO
         return self._wrap_token(
             self.raw_api.upload_file,
             TokenType.UPLOAD_SMALL,

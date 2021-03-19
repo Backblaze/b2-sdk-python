@@ -12,6 +12,7 @@ import logging
 from typing import Optional
 
 from .encryption.setting import EncryptionSetting, EncryptionSettingFactory
+from .encryption.types import EncryptionMode
 from .exception import FileNotPresent, FileOrBucketNotFound, UnexpectedCloudBehaviour, UnrecognizedBucketType
 from .file_version import FileVersionInfo, FileVersionInfoFactory
 from .progress import DoNothingProgressListener
@@ -714,7 +715,7 @@ class Bucket(metaclass=B2TraceMeta):
         offset=0,
         length=None,
         progress_listener=None,
-        encryption: Optional[EncryptionSetting] = None,
+        destination_encryption: Optional[EncryptionSetting] = None,
     ):
         """
         Creates a new file in this bucket by (server-side) copying from an existing file.
@@ -746,7 +747,7 @@ class Bucket(metaclass=B2TraceMeta):
                 file_info=file_info,
                 destination_bucket_id=self.id_,
                 progress_listener=progress_listener,
-                encryption=encryption,
+                destination_encryption=destination_encryption,
             ).result()
         else:
             return self.create_file(
@@ -755,7 +756,7 @@ class Bucket(metaclass=B2TraceMeta):
                 content_type=content_type,
                 file_info=file_info,
                 progress_listener=progress_listener,
-                encryption=encryption,
+                encryption=destination_encryption,
             )
 
     # FIXME: this shold be deprecated
@@ -767,7 +768,7 @@ class Bucket(metaclass=B2TraceMeta):
         metadata_directive=None,
         content_type=None,
         file_info=None,
-        encryption: Optional[EncryptionSetting] = None,
+        destination_encryption: Optional[EncryptionSetting] = None,
     ):
         """
         Creates a new file in this bucket by (server-side) copying from an existing file.
@@ -779,6 +780,9 @@ class Bucket(metaclass=B2TraceMeta):
         :param str,None content_type: content_type for the new file if metadata_directive is set to :py:attr:`b2sdk.v1.MetadataDirectiveMode.REPLACE`, default will copy the content_type of old file
         :param dict,None file_info: file_info for the new file if metadata_directive is set to :py:attr:`b2sdk.v1.MetadataDirectiveMode.REPLACE`, default will copy the file_info of old file
         """
+        assert destination_encryption is None or destination_encryption.mode in (
+            EncryptionMode.SSE_B2,
+        )
         return self.api.session.copy_file(
             file_id,
             new_file_name,
@@ -787,7 +791,7 @@ class Bucket(metaclass=B2TraceMeta):
             content_type,
             file_info,
             self.id_,
-            encryption=encryption,
+            destination_server_side_encryption=destination_encryption,
         )
 
     def delete_file_version(self, file_id, file_name):

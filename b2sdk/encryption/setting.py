@@ -11,8 +11,9 @@
 import logging
 from typing import Optional
 
-from .types import EncryptionAlgorithm, EncryptionKey, EncryptionMode
+from ..utils import hex_md5_of_bytes
 from .types import ENCRYPTION_MODES_WITH_MANDATORY_KEY
+from .types import EncryptionAlgorithm, EncryptionKey, EncryptionMode
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +64,7 @@ class EncryptionSetting:
         elif self.mode == EncryptionMode.SSE_C:
             headers['X-Bz-Server-Side-Encryption-Customer-Algorithm'] = self.algorithm.name
             headers['X-Bz-Server-Side-Encryption-Customer-Key'] = self.key
-            headers['X-Bz-Server-Side-Encryption-Customer-Key-Md5'] = md5sum_as_hex(self.key)
+            headers['X-Bz-Server-Side-Encryption-Customer-Key-Md5'] = hex_md5_of_bytes(self.key)
         else:
             raise NotImplementedError('unsupported encryption setting: %s' % (self,))
 
@@ -159,6 +160,7 @@ class EncryptionSettingFactory:
         if not default_sse['isClientAuthorizedToRead']:
             return None
 
+        assert 'value' in default_sse, default_sse
         return cls._from_value_dict(default_sse['value'])
 
     @classmethod
