@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+* Add support for SSE-B2 server-side encryption mode
+
 ## [1.4.0] - 2021-03-03
 
 ### Changed
