@@ -32,8 +32,12 @@ class EncryptionSetting:
         self.mode = mode
         self.algorithm = algorithm
         self.key = key
-        assert self.mode == EncryptionMode.NONE or isinstance(
-            self.algorithm, EncryptionAlgorithm
+        assert self.mode in (
+            EncryptionMode.NONE,
+            EncryptionMode.UNKNOWN,
+        ) or isinstance(
+            self.algorithm,
+            EncryptionAlgorithm,
         )  # TODO
         if self.mode == EncryptionMode.NONE:
             if self.algorithm or self.key:

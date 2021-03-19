@@ -45,7 +45,9 @@ class Bucket(metaclass=B2TraceMeta):
         revision=None,
         bucket_dict=None,
         options_set=None,
-        default_server_side_encryption: Optional[EncryptionSetting] = None,
+        default_server_side_encryption: EncryptionSetting = EncryptionSetting(
+            EncryptionMode.UNKNOWN
+        ),
     ):
         """
         :param b2sdk.v1.B2Api api: an API object
@@ -846,6 +848,7 @@ class Bucket(metaclass=B2TraceMeta):
         result['lifecycleRules'] = self.lifecycle_rules
         result['revision'] = self.revision
         result['options'] = self.options_set
+        result['defaultServerSideEncryption'] = self.default_server_side_encryption.as_value_dict()
         return result
 
     def __repr__(self):
