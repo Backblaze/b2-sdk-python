@@ -38,6 +38,11 @@ class AbstractEncryptionSettingsProvider(metaclass=ABCMeta):
 
 
 class ServerDefaultEncryptionSettingsProvider(AbstractEncryptionSettingsProvider):
+    """
+    Encryption settings provider which assumes setting-less (2021-03-18: no encryption or SSE-B2) reads
+    and a bucket default for writes.
+    """
+
     def get_setting_for_destination(self, bucket, file_version) -> None:
         return None
 
@@ -56,10 +61,16 @@ class BasicEncryptionSettingsProvider(AbstractEncryptionSettingsProvider):
         """
         self.bucket_settings = bucket_settings
 
-    def get_setting_for_destination(self, bucket,
-                                    file_version: FileVersionInfo) -> Optional[EncryptionSetting]:
+    def get_setting_for_destination(
+        self,
+        bucket,
+        file_version: FileVersionInfo,
+    ) -> Optional[EncryptionSetting]:
         return self.bucket_settings[bucket.name]
 
-    def get_setting_for_source(self, bucket,
-                               file_version: FileVersionInfo) -> Optional[EncryptionSetting]:
+    def get_setting_for_source(
+        self,
+        bucket,
+        file_version: FileVersionInfo,
+    ) -> Optional[EncryptionSetting]:
         return self.bucket_settings[bucket.name]
