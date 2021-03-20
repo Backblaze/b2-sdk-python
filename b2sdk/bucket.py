@@ -111,6 +111,7 @@ class Bucket(metaclass=B2TraceMeta):
     ):
         """
         Update various bucket parameters.
+        For legacy reasons in apiver v1 it returns whatever server returned on b2_update_bucket call, v2 will change that.
 
         :param str bucket_type: a bucket type
         :param dict bucket_info: an info to store with a bucket

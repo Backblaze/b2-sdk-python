@@ -149,7 +149,11 @@ class FileSimulator(object):
         range_=None,
         server_side_encryption: Optional[EncryptionSetting] = None,
     ):
-        logger.debug('FileSimulator called with sse=%s', server_side_encryption)  # TODO
+        logger.debug('FileSimulator called with sse=%s', server_side_encryption)
+        if action == 'hide':
+            assert server_side_encryption is None
+        else:
+            assert server_side_encryption is not None
         self.account_id = account_id
         self.bucket_id = bucket_id
         self.file_id = file_id
@@ -231,7 +235,7 @@ class FileSimulator(object):
             action=self.action,
             uploadTimestamp=self.upload_timestamp,
         )  # yapf: disable
-        if self.server_side_encryption is not None and self.server_side_encryption.mode != EncryptionMode.NONE:
+        if self.server_side_encryption is not None:
             result['serverSideEncryption'] = self.server_side_encryption.as_value_dict()
         return result
 
@@ -245,7 +249,7 @@ class FileSimulator(object):
             fileInfo=self.file_info,
             uploadTimestamp=self.upload_timestamp,
         )  # yapf: disable
-        if self.server_side_encryption is not None and self.server_side_encryption.mode != EncryptionMode.NONE:
+        if self.server_side_encryption is not None:
             result['serverSideEncryption'] = self.server_side_encryption.as_value_dict()
         return result
 
@@ -389,6 +393,9 @@ class BucketSimulator(object):
             if self.default_server_side_encryption.algorithm is not None:
                 default_sse['value']['algorithm'
                                     ] = self.default_server_side_encryption.algorithm.value
+        else:
+            default_sse['value'] = {'mode': EncryptionMode.UNKNOWN}
+        logger.debug('default sse returned is: %s', default_sse)
         return dict(
             accountId=self.account_id,
             bucketName=self.bucket_name,
@@ -501,6 +508,8 @@ class BucketSimulator(object):
         data_bytes = get_bytes_range(file_sim.data_bytes, bytes_range)
 
         destination_bucket_id = destination_bucket_id or self.bucket_id
+        sse = destination_server_side_encryption or self.default_server_side_encryption
+        logger.debug('setting encryption to %s', sse)
         copy_file_sim = self.FILE_SIMULATOR_CLASS(
             self.account_id,
             destination_bucket_id,
@@ -512,7 +521,7 @@ class BucketSimulator(object):
             file_sim.file_info,
             data_bytes,
             next(self.upload_timestamp_counter),
-            server_side_encryption=destination_server_side_encryption,
+            server_side_encryption=sse,
         )
 
         if metadata_directive is MetadataDirectiveMode.REPLACE:
@@ -614,9 +623,11 @@ class BucketSimulator(object):
         server_side_encryption: Optional[EncryptionSetting] = None,
     ):
         file_id = self._next_file_id()
+        sse = server_side_encryption or self.default_server_side_encryption
+        logger.debug('setting encryption to %s', sse)
         file_sim = self.FILE_SIMULATOR_CLASS(
             self.account_id, self.bucket_id, file_id, 'start', file_name, content_type, 'none',
-            file_info, None, next(self.upload_timestamp_counter), server_side_encryption,
+            file_info, None, next(self.upload_timestamp_counter), server_side_encryption=sse,
         )  # yapf: disable
         self.file_id_to_file[file_id] = file_sim
         self.file_name_and_id_to_file[file_sim.sort_key()] = file_sim
@@ -672,6 +683,10 @@ class BucketSimulator(object):
         if content_sha1 != computed_sha1:
             raise FileSha1Mismatch(file_name)
         file_id = self._next_file_id()
+
+        encryption = server_side_encryption or self.default_server_side_encryption
+        logger.debug('setting encryption to %s', encryption)
+
         file_sim = self.FILE_SIMULATOR_CLASS(
             self.account_id,
             self.bucket_id,
@@ -683,7 +698,7 @@ class BucketSimulator(object):
             file_infos,
             data_bytes,
             next(self.upload_timestamp_counter),
-            server_side_encryption=server_side_encryption,
+            server_side_encryption=encryption,
         )
         self.file_id_to_file[file_id] = file_sim
         self.file_name_and_id_to_file[file_sim.sort_key()] = file_sim
@@ -899,7 +914,7 @@ class RawSimulator(AbstractRawApi):
         bucket_info=None,
         cors_rules=None,
         lifecycle_rules=None,
-        default_server_side_encryption=None,
+        default_server_side_encryption: Optional[EncryptionSetting] = None,
     ):
         if not re.match(r'^[-a-zA-Z0-9]*$', bucket_name):
             raise BadJson('illegal bucket name: ' + bucket_name)

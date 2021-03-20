@@ -169,11 +169,15 @@ class EncryptionSettingFactory:
 
     @classmethod
     def _from_value_dict(cls, value_dict):
-        kwargs = {'mode': EncryptionMode(value_dict['mode'])}
+        kwargs = {}
+        if value_dict is None:
+            kwargs['mode'] = EncryptionMode.NONE
+        else:
+            kwargs['mode'] = EncryptionMode(value_dict['mode'])
 
-        algorithm = value_dict.get('algorithm')
-        if algorithm is not None:
-            kwargs['algorithm'] = EncryptionAlgorithm(algorithm)
+            algorithm = value_dict.get('algorithm')
+            if algorithm is not None:
+                kwargs['algorithm'] = EncryptionAlgorithm(algorithm)
 
         return EncryptionSetting(**kwargs)
 
