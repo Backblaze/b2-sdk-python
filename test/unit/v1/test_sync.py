@@ -280,7 +280,9 @@ class TestLocalFolder(TestFolder):
         assert not (broken_symlink and invalid_permissions)
 
         if platform.system() == 'Windows':
-            pytest.skip('on Windows there are some environment issues with test directory creation')  # TODO: fix it
+            pytest.skip(
+                'on Windows there are some environment issues with test directory creation'
+            )  # TODO: fix it
 
         if prepare_files:
             for relative_path in self.NAMES:

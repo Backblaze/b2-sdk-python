@@ -106,9 +106,7 @@ class EncryptionSettingFactory:
             ...
 
         """
-        sse = file_version_dict.get(
-            'serverSideEncryption'
-        )  # TODO in python3.8 switch to walrus operator to avoid a double dict get
+        sse = file_version_dict.get('serverSideEncryption')
         if sse is None:
             return EncryptionSetting(EncryptionMode.NONE)
         return cls._from_value_dict(sse)
@@ -184,9 +182,8 @@ class EncryptionSettingFactory:
     @classmethod
     def from_response_headers(cls, headers):
         kwargs = {
-            'mode': EncryptionMode(headers.get('X-Bz-Server-Side-Encryption'),),
+            'mode': EncryptionMode(headers.get('X-Bz-Server-Side-Encryption', 'none'),),
         }
-        assert kwargs['mode'] is not None
         algorithm = headers.get('X-Bz-Server-Side-Encryption-Customer-Algorithm')
         if algorithm is not None:
             kwargs['algorithm'] = EncryptionAlgorithm(algorithm)
