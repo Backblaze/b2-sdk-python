@@ -16,11 +16,15 @@ EncryptionKey = NewType('EncryptionKey', bytes)
 
 @unique
 class EncryptionAlgorithm(Enum):
+    """Encryption algorithm."""
+
     AES256 = 'AES256'
 
 
 @unique
 class EncryptionMode(Enum):
+    """Encryption mode."""
+
     UNKNOWN = None  #: unknown encryption mode (sdk doesn't know or used key has no rights to know)
     NONE = "none"  #: no encryption (plaintext)
     SSE_B2 = 'SSE-B2'  #: server-side encryption with key maintained by B2
@@ -28,4 +32,7 @@ class EncryptionMode(Enum):
     #CLIENT = 'CLIENT'  #: client-side encryption
 
 
+ENCRYPTION_MODES_WITH_MANDATORY_ALGORITHM = frozenset(
+    (EncryptionMode.SSE_B2, EncryptionMode.SSE_C)
+)  # yapf: off
 ENCRYPTION_MODES_WITH_MANDATORY_KEY = frozenset((EncryptionMode.SSE_C,))  # yapf: off

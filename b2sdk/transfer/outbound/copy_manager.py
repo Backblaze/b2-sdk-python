@@ -124,6 +124,8 @@ class CopyManager(metaclass=B2TraceMetaAbstract):
                                                                       on large file upload
         :param dict,None finished_parts: dictionary of known finished parts, keys are part numbers,
                                          values are instances of :class:`~b2sdk.v1.Part`
+        :param b2sdk.v1.EncryptionSetting destination_encryption: encryption settings for the destination
+                        (``None`` if unknown)
         """
         assert destination_encryption is None or destination_encryption.mode in (
             EncryptionMode.SSE_B2,

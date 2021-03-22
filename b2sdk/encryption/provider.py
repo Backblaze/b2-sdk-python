@@ -29,7 +29,7 @@ class AbstractEncryptionSettingsProvider(metaclass=ABCMeta):
         file_info: dict,
     ) -> Optional[EncryptionSetting]:
         """
-        returns an EncryptionSetting for uploading an object or None if server should decide
+        Return an EncryptionSetting for uploading an object or None if server should decide
 
         WARNING: the signature of this method is not final yet and not part of the public interface
         """
@@ -43,7 +43,7 @@ class AbstractEncryptionSettingsProvider(metaclass=ABCMeta):
         length: int,
     ) -> Optional[EncryptionSetting]:
         """
-        returns an EncryptionSetting for source of copying an object or None if not required
+        Return an EncryptionSetting for source of copying an object or None if not required
 
         WARNING: the signature of this method is not final yet and not part of the public interface
         """
@@ -57,7 +57,7 @@ class AbstractEncryptionSettingsProvider(metaclass=ABCMeta):
         length: int,
     ) -> Optional[EncryptionSetting]:
         """
-        returns an EncryptionSetting for destination for copying an object or None if server should decide
+        Return an EncryptionSetting for destination for copying an object or None if server should decide
 
         WARNING: the signature of this method is not final yet and not part of the public interface
         """
@@ -72,7 +72,7 @@ class AbstractEncryptionSettingsProvider(metaclass=ABCMeta):
         file_size,
     ) -> Optional[EncryptionSetting]:
         """
-        returns an EncryptionSetting for downloading an object from, or None if not required
+        Return an EncryptionSetting for downloading an object from, or None if not required
 
         WARNING: the signature of this method is not final yet and not part of the public interface
         """
@@ -111,7 +111,7 @@ class BasicEncryptionSettingsProvider(AbstractEncryptionSettingsProvider):
 
     def __init__(self, bucket_settings: Dict[str, EncryptionSetting]):
         """
-        bucket_settings is a mapping from bucket name to EncryptionSetting object
+        :param dict bucket_settings: a mapping from bucket name to EncryptionSetting object
         """
         self.bucket_settings = bucket_settings
 

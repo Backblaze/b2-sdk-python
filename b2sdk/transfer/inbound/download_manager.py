@@ -82,6 +82,7 @@ class DownloadManager(metaclass=B2TraceMetaAbstract):
         :param download_dest: where to put the file when it is downloaded
         :param progress_listener: where to notify about progress downloading
         :param range_: 2-element tuple containing data of http Range header
+        :param b2sdk.v1.EncryptionSetting encryption: encryption setting (``None`` if unknown)
         """
         assert encryption is None or encryption.mode in (EncryptionMode.SSE_B2,)
         progress_listener = progress_listener or DoNothingProgressListener()

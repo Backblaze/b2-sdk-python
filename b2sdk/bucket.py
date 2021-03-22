@@ -60,9 +60,8 @@ class Bucket(metaclass=B2TraceMeta):
         :param int revision: a bucket revision number
         :param dict bucket_dict: a dictionary which contains bucket parameters
         :param set options_set: set of bucket options strings
+        :param b2sdk.v1.EncryptionSetting default_server_side_encryption: default server side encryption settings
         """
-        #:param bool sse_is_client_authorized: is client authorized to read bucket's default encryption settings
-        #:param dict sse_settings: bucket's default encryption settings
         self.api = api
         self.id_ = id_
         self.name = name
@@ -118,6 +117,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param dict cors_rules: CORS rules to store with a bucket
         :param dict lifecycle_rules: lifecycle rules to store with a bucket
         :param int if_revision_is: revision number, update the info **only if** *revision* equals to *if_revision_is*
+        :param b2sdk.v1.EncryptionSetting default_server_side_encryption: default server side encryption settings (``None`` if unknown)
         """
         account_id = self.api.account_info.get_account_id()
         return self.api.session.update_bucket(
@@ -162,6 +162,7 @@ class Bucket(metaclass=B2TraceMeta):
         or any sub class of :class:`~b2sdk.v1.AbstractDownloadDestination`
         :param b2sdk.v1.AbstractProgressListener, None progress_listener: a progress listener object to use, or ``None`` to not report progress
         :param tuple[int, int] range_: two integer values, start and end offsets
+        :param b2sdk.v1.EncryptionSetting encryption: encryption settings (``None`` if unknown)
         """
         return self.api.download_file_by_id(
             file_id,
@@ -195,6 +196,7 @@ class Bucket(metaclass=B2TraceMeta):
         or any sub class of :class:`~b2sdk.v1.AbstractDownloadDestination`
         :param b2sdk.v1.AbstractProgressListener, None progress_listener: a progress listener object to use, or ``None`` to not track progress
         :param tuple[int, int] range_: two integer values, start and end offsets
+        :param b2sdk.v1.EncryptionSetting encryption: encryption settings (``None`` if unknown)
         """
         url = self.api.session.get_download_url_by_name(self.name, file_name)
         return self.api.services.download_manager.download_file_from_url(
@@ -420,6 +422,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param str,None content_type: the MIME type, or ``None`` to accept the default based on file extension of the B2 file name
         :param dict,None file_infos: a file info to store with the file or ``None`` to not store anything
         :param b2sdk.v1.AbstractProgressListener,None progress_listener: a progress listener object to use, or ``None`` to not track progress
+        :param b2sdk.v1.EncryptionSetting encryption: encryption settings (``None`` if unknown)
         :rtype: generator[b2sdk.v1.FileVersion]
         """
         upload_source = UploadSourceBytes(data_bytes)
@@ -457,6 +460,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param str,None sha1_sum: file SHA1 hash or ``None`` to compute it automatically
         :param int min_part_size: a minimum size of a part
         :param b2sdk.v1.AbstractProgressListener,None progress_listener: a progress listener object to use, or ``None`` to not report progress
+        :param b2sdk.v1.EncryptionSetting encryption: encryption settings (``None`` if unknown)
         :rtype: generator[b2sdk.v1.FileVersion]
         """
         upload_source = UploadSourceLocalFile(local_path=local_file, content_sha1=sha1_sum)
@@ -487,17 +491,18 @@ class Bucket(metaclass=B2TraceMeta):
         open (and re-open) the file.  The result of opening should be a binary
         file whose read() method returns bytes.
 
+        The function `opener` should return a file-like object, and it
+        must be possible to call it more than once in case the upload
+        is retried.
+
         :param b2sdk.v1.UploadSource upload_source: an object that opens the source of the upload
         :param str file_name: the file name of the new B2 file
         :param str,None content_type: the MIME type, or ``None`` to accept the default based on file extension of the B2 file name
         :param dict,None file_info: a file info to store with the file or ``None`` to not store anything
         :param int,None min_part_size: the smallest part size to use or ``None`` to determine automatically
         :param b2sdk.v1.AbstractProgressListener,None progress_listener: a progress listener object to use, or ``None`` to not report progress
+        :param b2sdk.v1.EncryptionSetting encryption: encryption settings (``None`` if unknown)
         :rtype: generator[b2sdk.v1.FileVersion]
-
-        The function `opener` should return a file-like object, and it
-        must be possible to call it more than once in case the upload
-        is retried.
         """
         return self.create_file(
             [WriteIntent(upload_source)],
@@ -541,6 +546,7 @@ class Bucket(metaclass=B2TraceMeta):
                         maximum possible part size
         :param str,None continue_large_file_id: large file id that should be selected to resume file creation
                         for multipart upload/copy, ``None`` for automatic search for this id
+        :param b2sdk.v1.EncryptionSetting encryption: encryption settings (``None`` if unknown)
         """
         return self._create_file(
             self.api.services.emerger.emerge,
@@ -587,6 +593,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param str,None continue_large_file_id: large file id that should be selected to resume file creation
                         for multipart upload/copy, if ``None`` in multipart case it would always start a new
                         large file
+        :param b2sdk.v1.EncryptionSetting encryption: encryption settings (``None`` if unknown)
         """
         return self._create_file(
             self.api.services.emerger.emerge_stream,
@@ -655,6 +662,7 @@ class Bucket(metaclass=B2TraceMeta):
                         maximum possible part size
         :param str,None continue_large_file_id: large file id that should be selected to resume file creation
                         for multipart upload/copy, ``None`` for automatic search for this id
+        :param b2sdk.v1.EncryptionSetting encryption: encryption settings (``None`` if unknown)
         """
         return self.create_file(
             WriteIntent.wrap_sources_iterator(outbound_sources),
@@ -696,6 +704,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param str,None continue_large_file_id: large file id that should be selected to resume file creation
                         for multipart upload/copy, if ``None`` in multipart case it would always start a new
                         large file
+        :param b2sdk.v1.EncryptionSetting encryption: encryption setting (``None`` if unknown)
         """
         return self.create_file_stream(
             WriteIntent.wrap_sources_iterator(outbound_sources_iterator),
@@ -758,6 +767,8 @@ class Bucket(metaclass=B2TraceMeta):
                         For large files length have to be specified to use ``b2_copy_part`` instead.
         :param b2sdk.v1.AbstractProgressListener,None progress_listener: a progress listener object to use
                         for multipart copy, or ``None`` to not report progress
+        :param b2sdk.v1.EncryptionSetting destination_encryption: encryption settings for the destination
+                        (``None`` if unknown)
         """
 
         copy_source = CopySource(file_id, offset=offset, length=length)
@@ -804,6 +815,8 @@ class Bucket(metaclass=B2TraceMeta):
         :param b2sdk.v1.MetadataDirectiveMode,None metadata_directive: default is :py:attr:`b2sdk.v1.MetadataDirectiveMode.COPY`
         :param str,None content_type: content_type for the new file if metadata_directive is set to :py:attr:`b2sdk.v1.MetadataDirectiveMode.REPLACE`, default will copy the content_type of old file
         :param dict,None file_info: file_info for the new file if metadata_directive is set to :py:attr:`b2sdk.v1.MetadataDirectiveMode.REPLACE`, default will copy the file_info of old file
+        :param b2sdk.v1.EncryptionSetting destination_encryption: encryption settings for the destination
+                (``None`` if unknown)
         """
         assert destination_encryption is None or destination_encryption.mode in (
             EncryptionMode.SSE_B2,

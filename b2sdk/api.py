@@ -175,7 +175,7 @@ class B2Api(metaclass=B2TraceMeta):
         bucket_info=None,
         cors_rules=None,
         lifecycle_rules=None,
-        default_server_side_encryption=None,
+        default_server_side_encryption: Optional[EncryptionSetting] = None,
     ):
         """
         Create a bucket.
@@ -238,6 +238,7 @@ class B2Api(metaclass=B2TraceMeta):
         or any sub class of :class:`~b2sdk.v1.AbstractProgressListener`
         :param list range_: a list of two integers, the first one is a start\
         position, and the second one is the end position in the file
+        :param b2sdk.v1.EncryptionSetting encryption: encryption settings (``None`` if unknown)
         :return: context manager that returns an object that supports iter_content()
         """
         url = self.session.get_download_url_by_id(file_id)

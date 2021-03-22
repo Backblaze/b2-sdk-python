@@ -927,9 +927,6 @@ def test_raw_api_helper(raw_api):
     bucket_dict = raw_api.create_bucket(
         api_url, account_auth_token, account_id, bucket_name, 'allPublic'
     )
-    print('-' * 50)
-    print(bucket_dict)
-    print('-' * 50)
     bucket_id = bucket_dict['bucketId']
     first_bucket_revision = bucket_dict['revision']
 
@@ -952,17 +949,10 @@ def test_raw_api_helper(raw_api):
             'allPublic',
             default_server_side_encryption=encryption_setting,
         )
-        print(bucket_dict)
-    ##################
-    #assert False
 
     # b2_list_buckets
     print('b2_list_buckets')
     bucket_list_dict = raw_api.list_buckets(api_url, account_auth_token, account_id)
-    print('-' * 50)
-    for bucket in bucket_list_dict:
-        print(bucket, ':', bucket_list_dict[bucket])
-    print('-' * 50)
 
     # b2_get_upload_url
     print('b2_get_upload_url')
@@ -986,14 +976,13 @@ def test_raw_api_helper(raw_api):
         io.BytesIO(file_contents),
         server_side_encryption=sse_b2_aes,
     )
-    #from pprint import pprint
+
     file_id = file_dict['fileId']
 
     # b2_list_file_versions
     print('b2_list_file_versions')
     list_versions_dict = raw_api.list_file_versions(api_url, account_auth_token, bucket_id)
     assert [file_name] == [f_dict['fileName'] for f_dict in list_versions_dict['files']]
-    #assert False
 
     # b2_download_file_by_id with auth
     print('b2_download_file_by_id (auth)')

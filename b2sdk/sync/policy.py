@@ -70,6 +70,7 @@ class AbstractFileSyncPolicy(metaclass=ABCMeta):
         :param b2sdk.v1.NEWER_FILE_MODES newer_file_mode: setting which determines handling for destination files newer than on the source
         :param int compare_threshold: when comparing with size or time for sync
         :param b2sdk.v1.COMPARE_VERSION_MODES compare_version_mode: how to compare source and destination files
+        :param b2sdk.v1.AbstractEncryptionSettingsProvider encryption_settings_provider: encryption setting provider
         """
         self._source_file = source_file
         self._source_folder = source_folder
