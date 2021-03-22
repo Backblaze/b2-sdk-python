@@ -28,6 +28,7 @@ from b2sdk.encryption.types import EncryptionMode
 from b2sdk.encryption.provider import AbstractEncryptionSettingsProvider
 from b2sdk.encryption.provider import BasicEncryptionSettingsProvider
 from b2sdk.encryption.provider import ServerDefaultEncryptionSettingsProvider
+from b2sdk.encryption.provider import SERVER_DEFAULT_ENCRYPTION_SETTINGS_PROVIDER
 
 # account info
 

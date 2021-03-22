@@ -318,7 +318,9 @@ class B2Folder(AbstractFolder):
         current_name = None
         current_versions = []
         for file_version_info, _ in self.bucket.ls(
-            self.folder_name, show_versions=True, recursive=True
+            self.folder_name,
+            show_versions=True,
+            recursive=True,
         ):
             assert file_version_info.file_name.startswith(self.prefix)
             if file_version_info.action == 'start':

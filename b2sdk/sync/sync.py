@@ -13,7 +13,7 @@ import concurrent.futures as futures
 from enum import Enum, unique
 
 from ..bounded_queue_executor import BoundedQueueExecutor
-from ..encryption.provider import AbstractEncryptionSettingsProvider, ServerDefaultEncryptionSettingsProvider
+from ..encryption.provider import AbstractEncryptionSettingsProvider, SERVER_DEFAULT_ENCRYPTION_SETTINGS_PROVIDER
 from .exception import InvalidArgument, IncompleteSync
 from .policy import CompareVersionMode, NewerFileSyncMode
 from .policy_manager import POLICY_MANAGER
@@ -192,7 +192,7 @@ class Synchronizer(object):
         now_millis,
         reporter,
         encryption_settings_provider:
-        AbstractEncryptionSettingsProvider = ServerDefaultEncryptionSettingsProvider(),
+        AbstractEncryptionSettingsProvider = SERVER_DEFAULT_ENCRYPTION_SETTINGS_PROVIDER,
     ):
         """
         Syncs two folders.  Always ensures that every file in the
@@ -204,6 +204,7 @@ class Synchronizer(object):
         :param int now_millis: current time in milliseconds
         :param b2sdk.sync.report.SyncReport,None reporter: progress reporter
         """
+        print('sync_folders encryption_settings_provider', encryption_settings_provider)
         source_type = source_folder.folder_type()
         dest_type = dest_folder.folder_type()
 
@@ -243,8 +244,12 @@ class Synchronizer(object):
 
         # Schedule each of the actions.
         for action in self.make_folder_sync_actions(
-            source_folder, dest_folder, now_millis, reporter, self.policies_manager,
-            encryption_settings_provider
+            source_folder,
+            dest_folder,
+            now_millis,
+            reporter,
+            self.policies_manager,
+            encryption_settings_provider,
         ):
             logging.debug('scheduling action %s on bucket %s', action, action_bucket)
             sync_executor.submit(action.run, action_bucket, reporter, self.dry_run)
@@ -262,7 +267,7 @@ class Synchronizer(object):
         reporter,
         policies_manager=DEFAULT_SCAN_MANAGER,
         encryption_settings_provider:
-        AbstractEncryptionSettingsProvider = ServerDefaultEncryptionSettingsProvider(),
+        AbstractEncryptionSettingsProvider = SERVER_DEFAULT_ENCRYPTION_SETTINGS_PROVIDER,
     ):
         """
         Yield a sequence of actions that will sync the destination
@@ -333,7 +338,7 @@ class Synchronizer(object):
         dest_folder,
         now_millis,
         encryption_settings_provider:
-        AbstractEncryptionSettingsProvider = ServerDefaultEncryptionSettingsProvider(),
+        AbstractEncryptionSettingsProvider = SERVER_DEFAULT_ENCRYPTION_SETTINGS_PROVIDER,
     ):
         """
         Yields the sequence of actions needed to sync the two files
@@ -360,5 +365,6 @@ class Synchronizer(object):
             self.newer_file_mode,
             self.compare_threshold,
             self.compare_version_mode,
+            encryption_settings_provider=encryption_settings_provider,
         )
         return policy.get_all_actions()

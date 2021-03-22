@@ -35,6 +35,7 @@ class SyncPolicyManager(object):
         newer_file_mode,
         compare_threshold,
         compare_version_mode,
+        encryption_settings_provider,
     ):
         """
         Return a policy object.
@@ -50,6 +51,7 @@ class SyncPolicyManager(object):
         :param b2sdk.v1.NewerFileSyncMode newer_file_mode: setting which determines handling for destination files newer than on the source
         :param int compare_threshold: difference between file modification time or file size
         :param b2sdk.v1.CompareVersionMode compare_version_mode: setting which determines how to compare source and destination files
+        :param b2sdk.v1.AbstractEncryptionSettingsProvider encryption_settings_provider: an object which decides which encryption to use (if any)
         :return: a policy object
         """
         policy_class = self.get_policy_class(sync_type, delete, keep_days)
@@ -63,6 +65,7 @@ class SyncPolicyManager(object):
             newer_file_mode,
             compare_threshold,
             compare_version_mode,
+            encryption_settings_provider,
         )
 
     def get_policy_class(self, sync_type, delete, keep_days):
