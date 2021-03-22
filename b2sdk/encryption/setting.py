@@ -12,7 +12,7 @@ import logging
 from typing import Optional
 
 from ..utils import hex_md5_of_bytes
-from .types import ENCRYPTION_MODES_WITH_MANDATORY_KEY
+from .types import ENCRYPTION_MODES_WITH_MANDATORY_ALGORITHM, ENCRYPTION_MODES_WITH_MANDATORY_KEY
 from .types import EncryptionAlgorithm, EncryptionKey, EncryptionMode
 
 logger = logging.getLogger(__name__)
@@ -20,7 +20,8 @@ logger = logging.getLogger(__name__)
 
 class EncryptionSetting:
     """
-    Hold information about encryption mode, algorithm and key (for bucket default, file version info or even upload)
+    Hold information about encryption mode, algorithm and key (for bucket default,
+    file version info or even upload)
     """
 
     def __init__(
@@ -29,20 +30,19 @@ class EncryptionSetting:
         algorithm: EncryptionAlgorithm = None,
         key: EncryptionKey = None,
     ):
+        """
+        :param b2sdk.v1.EncryptionMode mode: encryption mode
+        :param b2sdk.v1.EncryptionAlgorithm algorithm: encryption algorithm
+        :param b2sdk.v1.EncryptionKey key: encryption key object for SSE-C
+        """
         self.mode = mode
         self.algorithm = algorithm
         self.key = key
-        assert self.mode in (
-            EncryptionMode.NONE,
-            EncryptionMode.UNKNOWN,
-        ) or isinstance(
-            self.algorithm,
-            EncryptionAlgorithm,
-        )  # TODO
-        if self.mode == EncryptionMode.NONE:
-            if self.algorithm or self.key:
-                raise ValueError("cannot specify algorithm or key for 'plaintext' encryption mode")
-        elif self.mode in ENCRYPTION_MODES_WITH_MANDATORY_KEY and not self.key:
+        if self.mode == EncryptionMode.NONE and (self.algorithm or self.key):
+            raise ValueError("cannot specify algorithm or key for 'plaintext' encryption mode")
+        if self.mode in ENCRYPTION_MODES_WITH_MANDATORY_ALGORITHM and not self.algorithm:
+            raise ValueError('must specify algorithm for encryption mode %s' % (self.mode,))
+        if self.mode in ENCRYPTION_MODES_WITH_MANDATORY_KEY and not self.key:
             raise ValueError(
                 'must specify key for encryption mode %s and algorithm %s' %
                 (self.mode, self.algorithm)
@@ -162,7 +162,7 @@ class EncryptionSettingFactory:
         if not default_sse['isClientAuthorizedToRead']:
             return EncryptionSetting(EncryptionMode.UNKNOWN)
 
-        assert 'value' in default_sse, default_sse
+        assert 'value' in default_sse
         return cls._from_value_dict(default_sse['value'])
 
     @classmethod
