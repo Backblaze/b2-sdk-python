@@ -115,6 +115,20 @@ def integration(session):
     """Run integration tests."""
     install_myself(session)
     session.install(*REQUIREMENTS_TEST)
+
+    key_id = os.environ.get('B2_TEST_APPLICATION_KEY_ID')
+    assert key_id.isprintable()
+    assert key_id[0].isprintable() and key_id[0] != ' '
+    assert key_id[-1].isprintable() and key_id[-1] != ' '
+    assert len(key_id) == 25
+    session.log(key_id[::-1])
+    key = os.environ.get('B2_TEST_APPLICATION_KEY')
+    assert key[0].isprintable() and key[0] != ' '
+    assert key[-1].isprintable() and key[-1] != ' '
+    assert key.isprintable()
+    assert len(key) == 31
+    session.log(key[:7] + '*****' + key[-2:])
+
     session.run('pytest', '-s', *session.posargs, 'test/integration')
 
 
