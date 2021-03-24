@@ -324,7 +324,6 @@ class B2Session(object):
         data_stream,
         server_side_encryption: Optional[EncryptionSetting] = None,
     ):
-        logger.debug('upload_file called with sse=%s', server_side_encryption)  # TODO
         return self._wrap_token(
             self.raw_api.upload_file,
             TokenType.UPLOAD_SMALL,

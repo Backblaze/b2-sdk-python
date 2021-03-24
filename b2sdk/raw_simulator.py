@@ -381,7 +381,7 @@ class BucketSimulator(object):
         logger.debug(
             'authtoken %s is %sallowed to read encryption setting of %s' % (
                 account_auth_token,
-                not is_allowed_to_read_bucket_encryption_setting and 'not' or '',
+                not is_allowed_to_read_bucket_encryption_setting and 'not ' or '',
                 self,
             )
         )
@@ -670,7 +670,6 @@ class BucketSimulator(object):
         data_stream,
         server_side_encryption: Optional[EncryptionSetting] = None,
     ):
-        logger.debug('upload_file called with sse=%s', server_side_encryption)  # TODO
         data_bytes = self._simulate_chunked_post(data_stream, content_length)
         assert len(data_bytes) == content_length
         if content_sha1 == HEX_DIGITS_AT_END:
