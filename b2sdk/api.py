@@ -8,8 +8,10 @@
 #
 ######################################################################
 
-from typing import Any, Dict
+from typing import Any, Dict, Optional
+
 from .bucket import Bucket, BucketFactory
+from .encryption.setting import EncryptionSetting
 from .exception import NonExistentBucket, RestrictedBucket
 from .file_version import FileIdAndName
 from .large_file.services import LargeFileServices
@@ -167,7 +169,13 @@ class B2Api(metaclass=B2TraceMeta):
     # buckets
 
     def create_bucket(
-        self, name, bucket_type, bucket_info=None, cors_rules=None, lifecycle_rules=None
+        self,
+        name,
+        bucket_type,
+        bucket_info=None,
+        cors_rules=None,
+        lifecycle_rules=None,
+        default_server_side_encryption: Optional[EncryptionSetting] = None,
     ):
         """
         Create a bucket.
@@ -177,6 +185,7 @@ class B2Api(metaclass=B2TraceMeta):
         :param dict bucket_info: additional bucket info to store with the bucket
         :param dict cors_rules: bucket CORS rules to store with the bucket
         :param dict lifecycle_rules: bucket lifecycle rules to store with the bucket
+        :param b2sdk.v1.EncryptionSetting default_server_side_encryption: default server side encryption settings (``None`` if unknown)
         :return: a Bucket object
         :rtype: b2sdk.v1.Bucket
         """
@@ -188,7 +197,8 @@ class B2Api(metaclass=B2TraceMeta):
             bucket_type,
             bucket_info=bucket_info,
             cors_rules=cors_rules,
-            lifecycle_rules=lifecycle_rules
+            lifecycle_rules=lifecycle_rules,
+            default_server_side_encryption=default_server_side_encryption,
         )
         bucket = self.BUCKET_FACTORY_CLASS.from_api_bucket_dict(self, response)
         assert name == bucket.name, 'API created a bucket with different name\
@@ -200,7 +210,14 @@ class B2Api(metaclass=B2TraceMeta):
         self.cache.save_bucket(bucket)
         return bucket
 
-    def download_file_by_id(self, file_id, download_dest, progress_listener=None, range_=None):
+    def download_file_by_id(
+        self,
+        file_id,
+        download_dest,
+        progress_listener=None,
+        range_=None,
+        encryption: Optional[EncryptionSetting] = None,
+    ):
         """
         Download a file with the given ID.
 
@@ -221,11 +238,16 @@ class B2Api(metaclass=B2TraceMeta):
         or any sub class of :class:`~b2sdk.v1.AbstractProgressListener`
         :param list range_: a list of two integers, the first one is a start\
         position, and the second one is the end position in the file
+        :param b2sdk.v1.EncryptionSetting encryption: encryption settings (``None`` if unknown)
         :return: context manager that returns an object that supports iter_content()
         """
         url = self.session.get_download_url_by_id(file_id)
         return self.services.download_manager.download_file_from_url(
-            url, download_dest, progress_listener, range_
+            url,
+            download_dest,
+            progress_listener,
+            range_,
+            encryption,
         )
 
     def get_bucket_by_id(self, bucket_id):

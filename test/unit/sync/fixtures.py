@@ -23,6 +23,12 @@ class FakeFolder(AbstractFolder):
         self.f_type = f_type
         self.files = files
 
+    @property
+    def bucket_name(self):
+        if self.f_type != 'b2':
+            raise ValueError('FakeFolder with type!=b2 does not have a bucket name')
+        return 'fake_bucket_name'
+
     def all_files(self, reporter, policies_manager=DEFAULT_SCAN_MANAGER):
         for single_file in self.files:
             if single_file.name.endswith('/'):

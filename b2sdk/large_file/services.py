@@ -2,12 +2,16 @@
 #
 # File: b2sdk/large_file/services.py
 #
-# Copyright 2020 Backblaze Inc. All Rights Reserved.
+# Copyright 2021 Backblaze Inc. All Rights Reserved.
 #
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
 
+from typing import Optional
+
+from b2sdk.encryption.setting import EncryptionSetting
+from b2sdk.encryption.types import EncryptionMode
 from b2sdk.file_version import FileVersionInfoFactory
 from b2sdk.large_file.part import PartFactory
 from b2sdk.large_file.unfinished_large_file import UnfinishedLargeFile
@@ -74,16 +78,31 @@ class LargeFileServices(object):
 
         return unfinished_large_file
 
-    def start_large_file(self, bucket_id, file_name, content_type=None, file_info=None):
+    def start_large_file(
+        self,
+        bucket_id,
+        file_name,
+        content_type=None,
+        file_info=None,
+        encryption: Optional[EncryptionSetting] = None,
+    ):
         """
         Start a large file transfer.
 
         :param str file_name: a file name
         :param str,None content_type: the MIME type, or ``None`` to accept the default based on file extension of the B2 file name
-        :param dict,None file_infos: a file info to store with the file or ``None`` to not store anything
+        :param dict,None file_info: a file info to store with the file or ``None`` to not store anything
+        :param b2sdk.v1.EncryptionSetting encryption: encryption settings (``None`` if unknown)
         """
+        assert encryption is None or encryption.mode in (EncryptionMode.SSE_B2,)
         return UnfinishedLargeFile(
-            self.services.session.start_large_file(bucket_id, file_name, content_type, file_info)
+            self.services.session.start_large_file(
+                bucket_id,
+                file_name,
+                content_type,
+                file_info,
+                server_side_encryption=encryption,
+            )
         )
 
     # delete/cancel

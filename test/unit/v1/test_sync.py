@@ -21,16 +21,16 @@ import pytest
 
 from .test_base import TestBase
 
-from .deps_exception import UnSyncableFilename
-from .deps import FileVersionInfo
 from .deps import AbstractFolder, B2Folder, LocalFolder
-from .deps import File, FileVersion
-from .deps import ScanPoliciesManager, DEFAULT_SCAN_MANAGER
-from .deps import KeepOrDeleteMode, NewerFileSyncMode, CompareVersionMode
 from .deps import BoundedQueueExecutor, zip_folders
-from .deps import parse_sync_folder
-from .deps import TempDir
+from .deps import File, FileVersion
+from .deps import FileVersionInfo
+from .deps import KeepOrDeleteMode, NewerFileSyncMode, CompareVersionMode
+from .deps import ScanPoliciesManager, DEFAULT_SCAN_MANAGER
 from .deps import Synchronizer
+from .deps import TempDir
+from .deps import parse_sync_folder
+from .deps_exception import UnSyncableFilename
 
 DAY = 86400000  # milliseconds
 TODAY = DAY * 100  # an arbitrary reference time for testing
@@ -80,7 +80,7 @@ class TestFolder(TestSync):
         prepare_files=True,
         broken_symlink=False,
         invalid_permissions=False,
-        use_file_versions_info=False
+        use_file_versions_info=False,
     ):
         raise NotImplementedError
 
@@ -279,7 +279,9 @@ class TestLocalFolder(TestFolder):
         assert not (broken_symlink and invalid_permissions)
 
         if platform.system() == 'Windows':
-            pytest.skip('on Windows there are some environment issues with test directory creation')
+            pytest.skip(
+                'on Windows there are some environment issues with test directory creation'
+            )  # TODO: fix it
 
         if prepare_files:
             for relative_path in self.NAMES:
@@ -590,6 +592,12 @@ class FakeFolder(AbstractFolder):
     def __init__(self, f_type, files):
         self.f_type = f_type
         self.files = files
+
+    @property
+    def bucket_name(self):
+        if self.f_type != 'b2':
+            raise ValueError('FakeFolder with type!=b2 does not have a bucket name')
+        return 'fake_bucket_name'
 
     def all_files(self, reporter, policies_manager=DEFAULT_SCAN_MANAGER):
         for single_file in self.files:

@@ -11,6 +11,7 @@
 import logging
 import concurrent.futures as futures
 
+from b2sdk.encryption.setting import EncryptionMode, EncryptionSetting
 from b2sdk.exception import (
     AlreadyFailed,
     B2Error,
@@ -77,6 +78,7 @@ class UploadManager(metaclass=B2TraceMetaAbstract):
         content_type,
         file_info,
         progress_listener,
+        encryption: EncryptionSetting = None,
     ):
         f = self.get_thread_pool().submit(
             self._upload_small_file,
@@ -86,6 +88,7 @@ class UploadManager(metaclass=B2TraceMetaAbstract):
             content_type,
             file_info,
             progress_listener,
+            encryption,
         )
         return f
 
@@ -97,6 +100,7 @@ class UploadManager(metaclass=B2TraceMetaAbstract):
         part_number,
         large_file_upload_state,
         finished_parts=None,
+        encryption: EncryptionSetting = None,
     ):
         f = self.get_thread_pool().submit(
             self._upload_part,
@@ -106,6 +110,7 @@ class UploadManager(metaclass=B2TraceMetaAbstract):
             part_number,
             large_file_upload_state,
             finished_parts,
+            encryption,
         )
         return f
 
@@ -116,7 +121,8 @@ class UploadManager(metaclass=B2TraceMetaAbstract):
         part_upload_source,
         part_number,
         large_file_upload_state,
-        finished_parts=None
+        finished_parts,
+        encryption: EncryptionSetting,
     ):
         """
         Upload a file part to started large file.
@@ -128,7 +134,9 @@ class UploadManager(metaclass=B2TraceMetaAbstract):
                                                                       on large file upload
         :param dict,None finished_parts: dictionary of known finished parts, keys are part numbers,
                                          values are instances of :class:`~b2sdk.v1.Part`
+        :param b2sdk.v1.EncryptionSetting encryption: encryption setting (``None`` if unknown)
         """
+        assert encryption is None or encryption.mode in (EncryptionMode.SSE_B2,)
         # Check if this part was uploaded before
         if finished_parts is not None and part_number in finished_parts:
             # Report this part finished
@@ -162,7 +170,12 @@ class UploadManager(metaclass=B2TraceMetaAbstract):
                         content_sha1 = HEX_DIGITS_AT_END
                     # it is important that `len()` works on `input_stream`
                     response = self.services.session.upload_part(
-                        file_id, part_number, len(input_stream), content_sha1, input_stream
+                        file_id,
+                        part_number,
+                        len(input_stream),
+                        content_sha1,
+                        input_stream,
+                        server_side_encryption=encryption,  # todo: client side encryption
                     )
                     if content_sha1 == HEX_DIGITS_AT_END:
                         content_sha1 = input_stream.hash
@@ -179,8 +192,16 @@ class UploadManager(metaclass=B2TraceMetaAbstract):
         raise MaxRetriesExceeded(self.MAX_UPLOAD_ATTEMPTS, exception_list)
 
     def _upload_small_file(
-        self, bucket_id, upload_source, file_name, content_type, file_info, progress_listener
+        self,
+        bucket_id,
+        upload_source,
+        file_name,
+        content_type,
+        file_info,
+        progress_listener,
+        encryption: EncryptionSetting,
     ):
+        assert encryption is None or encryption.mode in (EncryptionMode.SSE_B2,)
         content_length = upload_source.get_content_length()
         exception_info_list = []
         progress_listener.set_total_bytes(content_length)
@@ -200,12 +221,19 @@ class UploadManager(metaclass=B2TraceMetaAbstract):
                             content_sha1 = HEX_DIGITS_AT_END
                         # it is important that `len()` works on `input_stream`
                         response = self.services.session.upload_file(
-                            bucket_id, file_name, len(input_stream), content_type, content_sha1,
-                            file_info, input_stream
+                            bucket_id,
+                            file_name,
+                            len(input_stream),
+                            content_type,
+                            content_sha1,
+                            file_info,
+                            input_stream,
+                            server_side_encryption=encryption,  # todo: client side encryption
                         )
                         if content_sha1 == HEX_DIGITS_AT_END:
                             content_sha1 = input_stream.hash
-                        assert content_sha1 == response['contentSha1']
+                        assert content_sha1 == response[
+                            'contentSha1'], '%s != %s' % (content_sha1, response['contentSha1'])
                         return FileVersionInfoFactory.from_api_response(response)
 
                 except B2Error as e:

@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 * Add `dependabot.yml`
+* Add support for SSE-B2 server-side encryption mode
 
 ### Changed
 * Add upper version limit for the requirements
