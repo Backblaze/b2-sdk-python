@@ -395,7 +395,6 @@ class LargeFileEmergeExecutionStepFactory(BaseExecutionStepFactory):
         large_file_id,
         large_file_upload_state,
         finished_parts=None,
-        destination_encryption: Optional[EncryptionSetting] = None,
     ):
         super(LargeFileEmergeExecutionStepFactory, self).__init__(emerge_execution, emerge_part)
         self.part_number = part_number
@@ -421,7 +420,7 @@ class LargeFileEmergeExecutionStepFactory(BaseExecutionStepFactory):
             self.large_file_upload_state,
             stream_length=stream_length,
             stream_sha1=stream_sha1,
-            finished_parts=self.finished_parts
+            finished_parts=self.finished_parts,
         )
 
 
