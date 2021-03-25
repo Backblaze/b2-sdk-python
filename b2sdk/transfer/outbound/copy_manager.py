@@ -131,6 +131,10 @@ class CopyManager(metaclass=B2TraceMetaAbstract):
             EncryptionMode.SSE_B2,
         )
 
+        # b2_copy_part doesn't need SSE-B2. Large file encryption is decided on b2_start_large_file.
+        if destination_encryption is not None and destination_encryption.mode == EncryptionMode.SSE_B2:
+            destination_encryption = None
+
         # Check if this part was uploaded before
         if finished_parts is not None and part_number in finished_parts:
             # Report this part finished

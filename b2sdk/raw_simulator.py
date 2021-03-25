@@ -1125,6 +1125,10 @@ class RawSimulator(AbstractRawApi):
         bytes_range=None,
         destination_server_side_encryption: Optional[EncryptionSetting] = None,
     ):
+        if destination_server_side_encryption is not None and destination_server_side_encryption.mode == EncryptionMode.SSE_B2:
+            raise ValueError(
+                'unsupported sse mode for copy_part!'
+            )  # SSE-B2 is only to be marked in b2_start_large_file
         src_bucket_id = self.file_id_to_bucket_id[source_file_id]
         src_bucket = self._get_bucket_by_id(src_bucket_id)
         dest_bucket_id = self.file_id_to_bucket_id[large_file_id]
