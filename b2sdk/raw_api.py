@@ -1102,7 +1102,7 @@ def test_raw_api_helper(raw_api):
 
     # b2_copy_part
     print('b2_copy_part')
-    raw_api.copy_part(api_url, account_auth_token, file_id, large_file_id, 2, (0, 5), sse_b2_aes)
+    raw_api.copy_part(api_url, account_auth_token, file_id, large_file_id, 2, (0, 5))
 
     # b2_list_parts
     print('b2_list_parts')
