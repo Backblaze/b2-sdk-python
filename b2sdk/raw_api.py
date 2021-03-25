@@ -1100,10 +1100,14 @@ def test_raw_api_helper(raw_api):
         io.BytesIO(part_contents)
     )
 
+    # b2_copy_part
+    print('b2_copy_part')
+    raw_api.copy_part(api_url, account_auth_token, file_id, large_file_id, 2, (0, 5), sse_b2_aes)
+
     # b2_list_parts
     print('b2_list_parts')
     parts_response = raw_api.list_parts(api_url, account_auth_token, large_file_id, 1, 100)
-    assert [1] == [part['partNumber'] for part in parts_response['parts']]
+    assert [1, 2] == [part['partNumber'] for part in parts_response['parts']]
 
     # b2_list_unfinished_large_files
     unfinished_list = raw_api.list_unfinished_large_files(api_url, account_auth_token, bucket_id)
@@ -1111,14 +1115,13 @@ def test_raw_api_helper(raw_api):
     assert file_info == unfinished_list['files'][0]['fileInfo']
 
     # b2_finish_large_file
-    # We don't upload enough data to actually finish on, so we'll just
-    # check that the right error is returned.
     print('b2_finish_large_file')
     try:
         raw_api.finish_large_file(api_url, account_auth_token, large_file_id, [part_sha1])
         raise Exception('finish should have failed')
     except Exception as e:
         assert 'large files must have at least 2 parts' in str(e)
+    # TODO: make another attempt to finish but this time successfully
 
     # b2_update_bucket
     print('b2_update_bucket')
