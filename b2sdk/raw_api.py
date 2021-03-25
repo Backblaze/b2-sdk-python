@@ -830,6 +830,7 @@ class B2RawApi(AbstractRawApi):
             _add_range_header(range_dict, bytes_range)
             kwargs['range'] = range_dict['Range']
         if destination_server_side_encryption is not None:
+            assert destination_server_side_encryption.mode != EncryptionMode.SSE_B2
             kwargs['destinationServerSideEncryption'
                   ] = destination_server_side_encryption.as_value_dict()
         return self._post_json(
