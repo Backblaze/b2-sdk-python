@@ -205,7 +205,6 @@ class Synchronizer(object):
         :param b2sdk.sync.report.SyncReport,None reporter: progress reporter
         :param b2sdk.v1.AbstractEncryptionSettingsProvider encryption_settings_provider: encryption setting provider
         """
-        print('sync_folders encryption_settings_provider', encryption_settings_provider)
         source_type = source_folder.folder_type()
         dest_type = dest_folder.folder_type()
 
