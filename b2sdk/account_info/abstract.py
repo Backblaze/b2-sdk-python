@@ -112,6 +112,19 @@ class AbstractAccountInfo(metaclass=B2TraceMetaAbstract):
         except exception.MissingAccountData:
             return False
 
+    def is_same_account(self, account_id: str, realm: str) -> bool:
+        """
+        Check whether cached account is the same as the one provided.
+
+        :param str account_id: account ID
+        :param str realm: authorization realm
+        :rtype: bool
+        """
+        try:
+            return self.get_account_id() == account_id and self.get_realm() == realm
+        except exception.MissingAccountData:
+            return False
+
     @abstractmethod
     def get_account_id(self):
         """

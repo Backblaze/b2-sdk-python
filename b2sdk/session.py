@@ -103,23 +103,19 @@ class B2Session(object):
         :param str application_key_id: :term:`application key ID`
         :param str application_key: user's :term:`application key`
         """
-        # Clean up any previous account info if it was for a different account.
-        try:
-            old_account_id = self.account_info.get_account_id()
-            old_realm = self.account_info.get_realm()
-            if application_key_id != old_account_id or realm != old_realm:
-                self.cache.clear()
-        except MissingAccountData:
-            self.cache.clear()
-
         # Authorize
         realm_url = self.account_info.REALM_URLS.get(realm, realm)
         response = self.raw_api.authorize_account(realm_url, application_key_id, application_key)
+        account_id = response['accountId']
         allowed = response['allowed']
+
+        # Clear the cache if new account has been used
+        if not self.account_info.is_same_account(account_id, realm):
+            self.cache.clear()
 
         # Store the auth data
         self.account_info.set_auth_data(
-            account_id=response['accountId'],
+            account_id=account_id,
             auth_token=response['authorizationToken'],
             api_url=response['apiUrl'],
             download_url=response['downloadUrl'],
