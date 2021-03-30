@@ -40,7 +40,14 @@ class TestApi(TestBase):
             'lifecycleRules': [],
             'options': set(),
             'revision': 1,
-        }
+            'defaultServerSideEncryption':
+                {
+                    'isClientAuthorizedToRead': True,
+                    'value': {
+                        'mode': 'none'
+                    },
+                },
+        }  # yapf: off
         assert delete_output == expected, delete_output
         self.api.create_bucket('bucket3', 'allPrivate')
         self.assertEqual(

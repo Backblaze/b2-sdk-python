@@ -7,8 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-* Add `dependabot.yml`
 * Calculate S3-compatible API URL base on API URL
+
+## [1.5.0] - 2021-03-25
+
+### Added
+* Add `dependabot.yml`
+
 
 ### Changed
 * Add upper version limit for the requirements
@@ -129,7 +134,8 @@ has changed.
 ### Added
 Initial official release of SDK as a separate package (until now it was a part of B2 CLI)
 
-[Unreleased]: https://github.com/Backblaze/b2-sdk-python/compare/v1.4.0...HEAD
+[Unreleased]: https://github.com/Backblaze/b2-sdk-python/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/Backblaze/b2-sdk-python/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/Backblaze/b2-sdk-python/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/Backblaze/b2-sdk-python/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/Backblaze/b2-sdk-python/compare/v1.1.4...v1.2.0

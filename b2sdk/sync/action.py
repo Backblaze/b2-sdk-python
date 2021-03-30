@@ -13,6 +13,8 @@ from abc import ABCMeta, abstractmethod
 import logging
 import os
 from ..download_dest import DownloadDestLocalFile
+from ..encryption.provider import AbstractEncryptionSettingsProvider
+
 from ..raw_api import SRC_LAST_MODIFIED_MILLIS
 from ..transfer.outbound.upload_source import UploadSourceLocalFile
 from .report import SyncFileReporter
@@ -84,24 +86,29 @@ class B2UploadAction(AbstractAction):
     File uploading action.
     """
 
-    def __init__(self, local_full_path, relative_name, b2_file_name, mod_time_millis, size):
+    def __init__(
+        self,
+        local_full_path,
+        relative_name,
+        b2_file_name,
+        mod_time_millis,
+        size,
+        encryption_settings_provider: AbstractEncryptionSettingsProvider,
+    ):
         """
-        :param local_full_path: a local file path
-        :type local_full_path: str
-        :param relative_name: a relative file name
-        :type relative_name: str
-        :param b2_file_name: a name of a new remote file
-        :type b2_file_name: str
-        :param mod_time_millis: file modification time in milliseconds
-        :type mod_time_millis: int
-        :param size: a file size
-        :type size: int
+        :param str local_full_path: a local file path
+        :param str relative_name: a relative file name
+        :param str b2_file_name: a name of a new remote file
+        :param int mod_time_millis: file modification time in milliseconds
+        :param int size: a file size
+        :param b2sdk.v1.AbstractEncryptionSettingsProvider encryption_settings_provider: encryption setting provider
         """
         self.local_full_path = local_full_path
         self.relative_name = relative_name
         self.b2_file_name = b2_file_name
         self.mod_time_millis = mod_time_millis
         self.size = size
+        self.encryption_settings_provider = encryption_settings_provider
 
     def get_bytes(self):
         """
@@ -115,19 +122,25 @@ class B2UploadAction(AbstractAction):
         """
         Perform the uploading action, returning only after the action is completed.
 
-        :param bucket: a Bucket object
-        :type bucket: b2sdk.bucket.Bucket
+        :param b2sdk.v1.Bucket bucket: a Bucket object
         :param reporter: a place to report errors
         """
         if reporter:
             progress_listener = SyncFileReporter(reporter)
         else:
             progress_listener = None
+        file_info = {SRC_LAST_MODIFIED_MILLIS: str(self.mod_time_millis)}
+        encryption = self.encryption_settings_provider.get_setting_for_upload(
+            bucket,
+            self.b2_file_name,
+            file_info,
+        )
         bucket.upload(
             UploadSourceLocalFile(self.local_full_path),
             self.b2_file_name,
-            file_info={SRC_LAST_MODIFIED_MILLIS: str(self.mod_time_millis)},
-            progress_listener=progress_listener
+            file_info=file_info,
+            progress_listener=progress_listener,
+            encryption=encryption,
         )
 
     def do_report(self, bucket, reporter):
@@ -193,21 +206,23 @@ class B2HideAction(AbstractAction):
 
 class B2DownloadAction(AbstractAction):
     def __init__(
-        self, relative_name, b2_file_name, file_id, local_full_path, mod_time_millis, file_size
+        self,
+        relative_name,
+        b2_file_name,
+        file_id,
+        local_full_path,
+        mod_time_millis,
+        file_size,
+        encryption_settings_provider: AbstractEncryptionSettingsProvider,
     ):
         """
-        :param relative_name: a relative file name
-        :type relative_name: str
-        :param b2_file_name: a name of a remote file
-        :type b2_file_name: str
-        :param file_id: a file ID
-        :type file_id: str
-        :param local_full_path: a local file path
-        :type local_full_path: str
-        :param mod_time_millis: file modification time in milliseconds
-        :type mod_time_millis: int
-        :param file_size: a file size
-        :type file_size: int
+        :param str relative_name: a relative file name
+        :param str b2_file_name: a name of a remote file
+        :param str file_id: a file ID
+        :param str local_full_path: a local file path
+        :param int mod_time_millis: file modification time in milliseconds
+        :param int file_size: a file size
+        :param b2sdk.v1.AbstractEncryptionSettingsProvider encryption_settings_provider: encryption setting provider
         """
         self.relative_name = relative_name
         self.b2_file_name = b2_file_name
@@ -215,6 +230,7 @@ class B2DownloadAction(AbstractAction):
         self.local_full_path = local_full_path
         self.mod_time_millis = mod_time_millis
         self.file_size = file_size
+        self.encryption_settings_provider = encryption_settings_provider
 
     def get_bytes(self):
         """
@@ -228,8 +244,7 @@ class B2DownloadAction(AbstractAction):
         """
         Perform the downloading action, returning only after the action is completed.
 
-        :param bucket: a Bucket object
-        :type bucket: b2sdk.bucket.Bucket
+        :param b2sdk.v1.Bucket bucket: a Bucket object
         :param reporter: a place to report errors
         """
         # Make sure the directory exists
@@ -250,7 +265,12 @@ class B2DownloadAction(AbstractAction):
         # Download the file to a .tmp file
         download_path = self.local_full_path + '.b2.sync.tmp'
         download_dest = DownloadDestLocalFile(download_path)
-        bucket.download_file_by_id(self.file_id, download_dest, progress_listener)
+
+        bucket.download_file_by_id(
+            self.file_id,
+            download_dest,
+            progress_listener,
+        )
 
         # Move the file into place
         try:
@@ -282,7 +302,14 @@ class B2CopyAction(AbstractAction):
     """
 
     def __init__(
-        self, relative_name, b2_file_name, file_id, dest_b2_file_name, mod_time_millis, size
+        self,
+        relative_name,
+        b2_file_name,
+        file_id,
+        dest_b2_file_name,
+        mod_time_millis,
+        size,
+        encryption_settings_provider: AbstractEncryptionSettingsProvider,
     ):
         """
         :param str relative_name: a relative file name
@@ -291,6 +318,7 @@ class B2CopyAction(AbstractAction):
         :param str dest_b2_file_name: a name of a destination remote file
         :param int mod_time_millis: file modification time in milliseconds
         :param int size: a file size
+        :param b2sdk.v1.AbstractEncryptionSettingsProvider encryption_settings_provider: encryption setting provider
         """
         self.relative_name = relative_name
         self.b2_file_name = b2_file_name
@@ -298,6 +326,7 @@ class B2CopyAction(AbstractAction):
         self.dest_b2_file_name = dest_b2_file_name
         self.mod_time_millis = mod_time_millis
         self.size = size
+        self.encryption_settings_provider = encryption_settings_provider
 
     def get_bytes(self):
         """
@@ -320,11 +349,18 @@ class B2CopyAction(AbstractAction):
         else:
             progress_listener = None
 
+        destination_encryption = self.encryption_settings_provider.get_destination_setting_for_copy(
+            bucket,
+            self.file_id,
+            self.dest_b2_file_name,
+            length=self.size,
+        )
         bucket.copy(
             self.file_id,
             self.dest_b2_file_name,
             length=self.size,
-            progress_listener=progress_listener
+            progress_listener=progress_listener,
+            destination_encryption=destination_encryption,
         )
 
     def do_report(self, bucket, reporter):
@@ -347,14 +383,10 @@ class B2CopyAction(AbstractAction):
 class B2DeleteAction(AbstractAction):
     def __init__(self, relative_name, b2_file_name, file_id, note):
         """
-        :param relative_name: a relative file name
-        :type relative_name: str
-        :param b2_file_name: a name of a remote file
-        :type b2_file_name: str
-        :param file_id: a file ID
-        :type file_id: str
-        :param note: a deletion note
-        :type note: str
+        :param str relative_name: a relative file name
+        :param str b2_file_name: a name of a remote file
+        :param str file_id: a file ID
+        :param str note: a deletion note
         """
         self.relative_name = relative_name
         self.b2_file_name = b2_file_name

@@ -2,7 +2,7 @@
 #
 # File: test/unit/v1/test_api.py
 #
-# Copyright 2019 Backblaze Inc. All Rights Reserved.
+# Copyright 2021 Backblaze Inc. All Rights Reserved.
 #
 # License https://www.backblaze.com/using_b2_code.html
 #
@@ -12,6 +12,9 @@ from .test_base import TestBase
 
 from .deps import B2Api
 from .deps import DummyCache
+from .deps import EncryptionAlgorithm
+from .deps import EncryptionMode
+from .deps import EncryptionSetting
 from .deps import InMemoryAccountInfo
 from .deps import RawSimulator
 from .deps_exception import RestrictedBucket
@@ -45,6 +48,87 @@ class TestApi(TestBase):
             ['bucket1'],
             [b.name for b in self.api.list_buckets(bucket_name='bucket1')],
         )
+
+    def test_buckets_with_encryption(self):
+        self._authorize_account()
+        sse_b2_aes = EncryptionSetting(
+            mode=EncryptionMode.SSE_B2,
+            algorithm=EncryptionAlgorithm.AES256,
+        )
+        no_encryption = EncryptionSetting(mode=EncryptionMode.NONE,)
+        unknown_encryption = EncryptionSetting(mode=EncryptionMode.UNKNOWN,)
+
+        b1 = self.api.create_bucket(
+            'bucket1',
+            'allPrivate',
+            default_server_side_encryption=sse_b2_aes,
+        )
+        self._verify_if_bucket_is_encrypted(b1, should_be_encrypted=True)
+
+        b2 = self.api.create_bucket('bucket2', 'allPrivate')
+        self._verify_if_bucket_is_encrypted(b2, should_be_encrypted=False)
+
+        # uses list_buckets
+        self._check_if_bucket_is_encrypted('bucket1', should_be_encrypted=True)
+        self._check_if_bucket_is_encrypted('bucket2', should_be_encrypted=False)
+
+        # update to set encryption on b2
+        b2.update(default_server_side_encryption=sse_b2_aes)
+        self._check_if_bucket_is_encrypted('bucket1', should_be_encrypted=True)
+        self._check_if_bucket_is_encrypted('bucket2', should_be_encrypted=True)
+
+        # update to unset encryption again
+        b2.update(default_server_side_encryption=no_encryption)
+        self._check_if_bucket_is_encrypted('bucket1', should_be_encrypted=True)
+        self._check_if_bucket_is_encrypted('bucket2', should_be_encrypted=False)
+
+        # now check it with no readBucketEncryption permission to see that it's unknown
+        key = self.api.create_key(['listBuckets'], 'key1')
+        self.api.authorize_account('production', key['applicationKeyId'], key['applicationKey'])
+        buckets = {
+            b.name: b
+            for b in self.api.list_buckets()  # scan again with new key
+        }
+
+        self.assertEqual(
+            buckets['bucket1'].default_server_side_encryption,
+            unknown_encryption,
+        )
+
+        self.assertEqual(
+            buckets['bucket2'].default_server_side_encryption,
+            unknown_encryption,
+        )
+
+    def _check_if_bucket_is_encrypted(self, bucket_name, should_be_encrypted):
+        buckets = {b.name: b for b in self.api.list_buckets()}
+        bucket = buckets[bucket_name]
+        return self._verify_if_bucket_is_encrypted(bucket, should_be_encrypted)
+
+    def _verify_if_bucket_is_encrypted(self, bucket, should_be_encrypted):
+        sse_b2_aes = EncryptionSetting(
+            mode=EncryptionMode.SSE_B2,
+            algorithm=EncryptionAlgorithm.AES256,
+        )
+        no_encryption = EncryptionSetting(mode=EncryptionMode.NONE,)
+        if not should_be_encrypted:
+            self.assertEqual(
+                bucket.default_server_side_encryption,
+                no_encryption,
+            )
+        else:
+            self.assertEqual(
+                bucket.default_server_side_encryption,
+                sse_b2_aes,
+            )
+            self.assertEqual(
+                bucket.default_server_side_encryption.mode,
+                EncryptionMode.SSE_B2,
+            )
+            self.assertEqual(
+                bucket.default_server_side_encryption.algorithm,
+                EncryptionAlgorithm.AES256,
+            )
 
     def test_list_buckets_with_id(self):
         self._authorize_account()

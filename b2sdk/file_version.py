@@ -8,7 +8,10 @@
 #
 ######################################################################
 
+from typing import Optional
 import datetime
+
+from .encryption.setting import EncryptionSetting, EncryptionSettingFactory
 
 
 class FileVersionInfo(object):
@@ -42,6 +45,7 @@ class FileVersionInfo(object):
         upload_timestamp,
         action,
         content_md5=None,
+        server_side_encryption: Optional[EncryptionSetting] = None,  # TODO: make it mandatory in v2
     ):
         self.id_ = id_
         self.file_name = file_name
@@ -52,6 +56,7 @@ class FileVersionInfo(object):
         self.file_info = file_info or {}
         self.upload_timestamp = upload_timestamp
         self.action = action
+        self.server_side_encryption = server_side_encryption
 
     def as_dict(self):
         """ represents the object as a dict which looks almost exactly like the raw api output for upload/list """
@@ -72,6 +77,8 @@ class FileVersionInfo(object):
             result['contentSha1'] = self.content_sha1
         if self.content_md5 is not None:
             result['contentMd5'] = self.content_md5
+        if self.server_side_encryption is not None:  # this is for backward compatibility of interface only, b2sdk always sets it
+            result['serverSideEncryption'] = self.server_side_encryption.as_value_dict()
         return result
 
     def format_ls_entry(self):
@@ -127,7 +134,8 @@ class FileVersionInfoFactory(object):
                "contentType": "application/octet-stream",
                "fileId": "4_z547a2a395826655d561f0010_f106d4ca95f8b5b78_d20160104_m003906_c001_v0001013_t0005",
                "fileInfo": {},
-               "fileName": "randomdata"
+               "fileName": "randomdata",
+               "serverSideEncryption": {"algorithm": "AES256", "mode": "SSE-B2"}
            }
 
         into a :py:class:`b2sdk.v1.FileVersionInfo` object.
@@ -149,6 +157,7 @@ class FileVersionInfoFactory(object):
         content_sha1 = file_info_dict.get('contentSha1')
         content_md5 = file_info_dict.get('contentMd5')
         file_info = file_info_dict.get('fileInfo')
+        server_side_encryption = EncryptionSettingFactory.from_file_version_dict(file_info_dict)
 
         return FileVersionInfo(
             id_,
@@ -160,6 +169,7 @@ class FileVersionInfoFactory(object):
             upload_timestamp,
             action,
             content_md5,
+            server_side_encryption,
         )
 
     @classmethod
@@ -185,7 +195,8 @@ class FileVersionInfoFactory(object):
             content_sha1=headers.get('x-bz-content-sha1'),
             file_info=None,
             upload_timestamp=headers.get('x-bz-upload-timestamp'),
-            action=None
+            action=None,
+            server_side_encryption=EncryptionSettingFactory.from_response_headers(headers),
         )
 
 
