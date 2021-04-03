@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 * Calculate S3-compatible API URL base on API URL
 
+### Fixed
+* Exclude packages inside the test package when installing
+
 ## [1.5.0] - 2021-03-25
 
 ### Added
