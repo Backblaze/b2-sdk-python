@@ -13,7 +13,7 @@ import pytest
 from .fixtures import *
 
 
-class TestS3ApiUrl:
+class TestAccountInfo:
     @pytest.fixture(autouse=True)
     def setup(self, account_info_factory):
         self.account_info_factory = account_info_factory
@@ -22,20 +22,6 @@ class TestS3ApiUrl:
         's3_api_url',
         ('https://s3.us-east-123.backblazeb2.com', 'https://s3.us-west-321.backblazeb2.com')
     )
-    def test_pass_to_set_auth_data(self, s3_api_url):
+    def test_s3_api_url(self, s3_api_url):
         account_info = self.account_info_factory(s3_api_url=s3_api_url)
-        assert s3_api_url == account_info.get_s3_api_url()
-
-    @pytest.mark.parametrize(
-        'api_url,s3_api_url', (
-            ('https://api000.backblazeb2.com', 'https://s3.us-west-000.backblazeb2.com'),
-            ('https://api001.backblazeb2.com', 'https://s3.us-west-001.backblazeb2.com'),
-            ('https://api002.backblazeb2.com', 'https://s3.us-west-002.backblazeb2.com'),
-            ('https://api003.backblazeb2.com', 'https://s3.eu-central-003.backblazeb2.com'),
-            ('http://api000.backblazeb2.xyz:8180', 'http://s3.us-west-000.backblazeb2.xyz:8180'),
-            ('https://api.example.com', ''),
-        )
-    )
-    def test_not_pass_to_set_auth_data(self, api_url, s3_api_url):
-        account_info = self.account_info_factory(api_url=api_url)
         assert s3_api_url == account_info.get_s3_api_url()

@@ -39,4 +39,4 @@ class TestDatabseMigrations:
         old_account_info = self.sqlite_account_info_factory(schema_0=True)
         new_account_info = self.sqlite_account_info_factory(file_name=old_account_info.filename)
 
-        assert 'https://s3.us-west-000.backblazeb2.com' == new_account_info.get_s3_api_url()
+        assert '' == new_account_info.get_s3_api_url()

@@ -346,7 +346,7 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
     def get_s3_api_url(self):
         result = self._get_account_info_or_raise('s3_api_url')
         if result is None:
-            return self._construct_s3_api_url(self.get_api_url())
+            return ''
         else:
             return result
 

@@ -8,8 +8,6 @@
 #
 ######################################################################
 from abc import abstractmethod
-from typing import Optional
-from urllib.parse import ParseResult, urlparse
 
 from b2sdk.account_info import exception
 from b2sdk.raw_api import ALL_CAPABILITIES
@@ -117,7 +115,7 @@ class AbstractAccountInfo(metaclass=B2TraceMetaAbstract):
     @abstractmethod
     def get_account_id(self):
         """
-        Return account ID or raises MissingAccountData exception.
+        Return account ID or raises :class:`~b2sdk.v1.exception.MissingAccountData` exception.
 
         :rtype: str
         """
@@ -133,7 +131,7 @@ class AbstractAccountInfo(metaclass=B2TraceMetaAbstract):
     @abstractmethod
     def get_account_auth_token(self):
         """
-        Return account_auth_token or raises MissingAccountData exception.
+        Return account_auth_token or raises :class:`~b2sdk.v1.exception.MissingAccountData` exception.
 
         :rtype: str
         """
@@ -141,7 +139,7 @@ class AbstractAccountInfo(metaclass=B2TraceMetaAbstract):
     @abstractmethod
     def get_api_url(self):
         """
-        Return api_url or raises MissingAccountData exception.
+        Return api_url or raises :class:`~b2sdk.v1.exception.MissingAccountData` exception.
 
         :rtype: str
         """
@@ -149,7 +147,7 @@ class AbstractAccountInfo(metaclass=B2TraceMetaAbstract):
     @abstractmethod
     def get_application_key(self):
         """
-        Return application_key or raises MissingAccountData exception.
+        Return application_key or raises :class:`~b2sdk.v1.exception.MissingAccountData` exception.
 
         :rtype: str
         """
@@ -157,7 +155,7 @@ class AbstractAccountInfo(metaclass=B2TraceMetaAbstract):
     @abstractmethod
     def get_download_url(self):
         """
-        Return download_url or raises MissingAccountData exception.
+        Return download_url or raises :class:`~b2sdk.v1.exception.MissingAccountData` exception.
 
         :rtype: str
         """
@@ -165,7 +163,7 @@ class AbstractAccountInfo(metaclass=B2TraceMetaAbstract):
     @abstractmethod
     def get_realm(self):
         """
-        Return realm or raises MissingAccountData exception.
+        Return realm or raises :class:`~b2sdk.v1.exception.MissingAccountData` exception.
 
         :rtype: str
         """
@@ -192,7 +190,7 @@ class AbstractAccountInfo(metaclass=B2TraceMetaAbstract):
     @abstractmethod
     def get_s3_api_url(self):
         """
-        Return s3_api_url or raises MissingAccountData exception.
+        Return s3_api_url or raises :class:`~b2sdk.v1.exception.MissingAccountData` exception.
 
         :rtype: str
         """
@@ -238,9 +236,6 @@ class AbstractAccountInfo(metaclass=B2TraceMetaAbstract):
         if allowed is None:
             allowed = self.DEFAULT_ALLOWED
         assert self.allowed_is_valid(allowed)
-
-        if s3_api_url is None:
-            s3_api_url = self._construct_s3_api_url(api_url)
 
         self._set_auth_data(
             account_id, auth_token, api_url, download_url, minimum_part_size, application_key,
@@ -331,33 +326,3 @@ class AbstractAccountInfo(metaclass=B2TraceMetaAbstract):
         :param str file_id: a file ID
         """
         pass
-
-    # TODO: Remove when s3ApiUrl is returned by the server. See #200 for details.
-    @classmethod
-    def _construct_s3_api_url(cls, api_url: str) -> Optional[str]:
-        url = urlparse(api_url)
-        subdomain, domain = url.netloc.split('.', maxsplit=1)
-
-        if subdomain == 'api000':
-            subdomain = 's3.us-west-000'
-        elif subdomain == 'api001':
-            subdomain = 's3.us-west-001'
-        elif subdomain == 'api002':
-            subdomain = 's3.us-west-002'
-        elif subdomain == 'api003':
-            subdomain = 's3.eu-central-003'
-        else:
-            return ''  # we don't know how to calculate
-
-        url = ParseResult(
-            **{
-                'scheme': url.scheme,
-                'netloc': '.'.join((subdomain, domain)),
-                'path': url.path,
-                'params': url.params,
-                'query': url.query,
-                'fragment': url.fragment,
-            }
-        )
-
-        return url.geturl()

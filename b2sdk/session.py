@@ -126,7 +126,7 @@ class B2Session(object):
             minimum_part_size=response['recommendedPartSize'],
             application_key=application_key,
             realm=realm,
-            s3_api_url=response.get('s3ApiUrl'),
+            s3_api_url=response['s3ApiUrl'],
             allowed=allowed,
             application_key_id=application_key_id
         )
