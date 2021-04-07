@@ -96,7 +96,7 @@ def b2_file(name, mod_times, size=10):
     return File(name, versions)
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='session')
 def folder_factory():
     def get_folder(f_type, *files):
         def get_files():
@@ -112,7 +112,7 @@ def folder_factory():
     return get_folder
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='session')
 def synchronizer_factory():
     def get_synchronizer(
         policies_manager=DEFAULT_SCAN_MANAGER,

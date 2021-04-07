@@ -177,13 +177,16 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
         """
         )
         # By default, we run all the upgrades
-        last_upgrade_to_run = 2 if last_upgrade_to_run is None else last_upgrade_to_run
+        last_upgrade_to_run = 3 if last_upgrade_to_run is None else last_upgrade_to_run
         # Add the 'allowed' column if it hasn't been yet.
         if 1 <= last_upgrade_to_run:
             self._ensure_update(1, 'ALTER TABLE account ADD COLUMN allowed TEXT;')
         # Add the 'account_id_or_app_key_id' column if it hasn't been yet
         if 2 <= last_upgrade_to_run:
             self._ensure_update(2, 'ALTER TABLE account ADD COLUMN account_id_or_app_key_id TEXT;')
+        # Add the 's3_api_url' column if it hasn't been yet
+        if 3 <= last_upgrade_to_run:
+            self._ensure_update(3, 'ALTER TABLE account ADD COLUMN s3_api_url TEXT;')
 
     def _ensure_update(self, update_number, update_command):
         """
@@ -199,7 +202,7 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
                 (update_number,)
             )
             update_count = cursor.fetchone()[0]
-            assert update_count in [0, 1]
+            assert update_count in [0, 1, 2]
             if update_count == 0:
                 conn.execute(update_command)
                 conn.execute(
@@ -216,16 +219,8 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
             conn.execute('DELETE FROM bucket_upload_url;')
 
     def _set_auth_data(
-        self,
-        account_id,
-        auth_token,
-        api_url,
-        download_url,
-        minimum_part_size,
-        application_key,
-        realm,
-        allowed,
-        application_key_id,
+        self, account_id, auth_token, api_url, download_url, minimum_part_size, application_key,
+        realm, s3_api_url, allowed, application_key_id
     ):
         assert self.allowed_is_valid(allowed)
         with self._get_connection() as conn:
@@ -234,8 +229,8 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
             conn.execute('DELETE FROM bucket_upload_url;')
             insert_statement = """
                 INSERT INTO account
-                (account_id, account_id_or_app_key_id, application_key, account_auth_token, api_url, download_url, minimum_part_size, realm, allowed)
-                values (?, ?, ?, ?, ?, ?, ?, ?, ?);
+                (account_id, account_id_or_app_key_id, application_key, account_auth_token, api_url, download_url, minimum_part_size, realm, allowed, s3_api_url)
+                values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
             """
 
             conn.execute(
@@ -249,6 +244,7 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
                     minimum_part_size,
                     realm,
                     json.dumps(allowed),
+                    s3_api_url,
                 )
             )
 
@@ -346,6 +342,13 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
             return self.DEFAULT_ALLOWED
         else:
             return json.loads(allowed_json)
+
+    def get_s3_api_url(self):
+        result = self._get_account_info_or_raise('s3_api_url')
+        if result is None:
+            return ''
+        else:
+            return result
 
     def _get_account_info_or_raise(self, column_name):
         try:

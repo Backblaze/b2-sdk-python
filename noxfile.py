@@ -25,7 +25,9 @@ PY_PATHS = ['b2sdk', 'test', 'noxfile.py', 'setup.py']
 
 REQUIREMENTS_FORMAT = ['yapf==0.27']
 REQUIREMENTS_LINT = ['yapf==0.27', 'pyflakes==2.2.0', 'pytest==6.1.1', 'liccheck==0.4.7']
-REQUIREMENTS_TEST = ['pytest==6.1.1', 'pytest-cov==2.10.1', 'pytest-mock==3.3.1']
+REQUIREMENTS_TEST = [
+    'pytest==6.1.1', 'pytest-cov==2.10.1', 'pytest-mock==3.3.1', 'pytest-lazy-fixture==0.6.3'
+]
 REQUIREMENTS_BUILD = ['setuptools>=20.2']
 
 nox.options.reuse_existing_virtualenvs = True
@@ -103,7 +105,9 @@ def unit(session):
     install_myself(session)
     session.install(*REQUIREMENTS_TEST)
     args = ['--cov=b2sdk', '--cov-branch', '--cov-report=xml', '--doctest-modules']
-    session.run('pytest', '--api=v1', *args, *session.posargs, 'test/unit')
+    # TODO: Use session.parametrize for apiver
+    session.run('pytest', '--api=v2', *args, *session.posargs, 'test/unit')
+    session.run('pytest', '--api=v1', '--cov-append', *args, *session.posargs, 'test/unit')
     session.run('pytest', '--api=v0', '--cov-append', *args, *session.posargs, 'test/unit')
 
     if not session.posargs:
