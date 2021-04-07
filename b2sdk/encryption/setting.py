@@ -171,7 +171,7 @@ class EncryptionSettingFactory:
         if value_dict is None:
             kwargs['mode'] = EncryptionMode.NONE
         else:
-            kwargs['mode'] = EncryptionMode(value_dict['mode'])
+            kwargs['mode'] = EncryptionMode(value_dict['mode'] or 'none')
 
             algorithm = value_dict.get('algorithm')
             if algorithm is not None:
