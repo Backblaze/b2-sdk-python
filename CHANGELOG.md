@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 * Exclude packages inside the test package when installing
+* Fix for server response change regarding SSE
 
 ## [1.5.0] - 2021-03-25
 
