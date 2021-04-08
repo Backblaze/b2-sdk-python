@@ -6,8 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.0] - 2021-04-08
+
 ### Added
-* Calculate S3-compatible API URL base on API URL
+* Fetch S3-compatible API URL from `authorize_account`
 
 ### Fixed
 * Exclude packages inside the test package when installing
@@ -138,7 +140,8 @@ has changed.
 ### Added
 Initial official release of SDK as a separate package (until now it was a part of B2 CLI)
 
-[Unreleased]: https://github.com/Backblaze/b2-sdk-python/compare/v1.5.0...HEAD
+[Unreleased]: https://github.com/Backblaze/b2-sdk-python/compare/v1.6.0...HEAD
+[1.6.0]: https://github.com/Backblaze/b2-sdk-python/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/Backblaze/b2-sdk-python/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/Backblaze/b2-sdk-python/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/Backblaze/b2-sdk-python/compare/v1.2.0...v1.3.0
