@@ -96,9 +96,7 @@ class DownloadDestLocalFile(AbstractDownloadDestination):
             # This is an ugly hack to make the tests work.  I can't think
             # of any other cases where set_file_mtime might fail.
             if self.local_file_path != os.devnull:
-                # FIXME: Change to rounded=True for v2 to be able to remove
-                #  workaround while setting mtime
-                set_file_mtime(self.local_file_path, mod_time_millis, rounded=False)
+                set_file_mtime(self.local_file_path, mod_time_millis)
 
             # Set the flag that means to leave the downloaded file on disk.
             completed = True

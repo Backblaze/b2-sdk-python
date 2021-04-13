@@ -260,9 +260,7 @@ class LocalFolder(AbstractFolder):
                 # Check that the file still exists and is accessible, since it can take a long time
                 # to iterate through large folders
                 if is_file_readable(local_path, reporter):
-                    # FIXME: Change to rounded=True for v2 to be able to remove
-                    #  workaround while setting mtime
-                    file_mod_time = get_file_mtime(local_path, rounded=False)
+                    file_mod_time = get_file_mtime(local_path)
                     file_size = os.path.getsize(local_path)
                     version = FileVersion(local_path, b2_path, file_mod_time, 'upload', file_size)
 
