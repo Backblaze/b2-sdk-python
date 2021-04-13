@@ -62,7 +62,7 @@ class TestSynchronizer:
         ]
     )
     def test_illegal_args(self, synchronizer_factory, apiver, args):
-        exceptions = defaultdict(lambda: InvalidArgument, v0=CommandError)
+        exceptions = defaultdict(lambda: InvalidArgument, v0=CommandError)  # noqa
 
         with pytest.raises(exceptions[apiver]):
             synchronizer_factory(**args)

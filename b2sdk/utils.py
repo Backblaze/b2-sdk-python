@@ -204,32 +204,19 @@ def is_file_readable(local_path, reporter=None):
     return True
 
 
-def get_file_mtime(local_path, rounded=True):
+def get_file_mtime(local_path):
     """
     Get modification time of a file in milliseconds.
 
     :param local_path: a file path
     :type local_path: str
-    :param rounded: floating point time should be rounded instead of stripped
-    :type rounded: bool
     :rtype: int
     """
     mod_time = os.path.getmtime(local_path) * 1000
-    if rounded:
-        # Using round() is non backward-compatible change, as some files
-        # which were uploaded with older version would have newer mtime
-        # on the destination, thus b2 may fail.
-        # The default will be changed in v2. See #617 for details.
-        return int(round(mod_time))
-
-    # Getting modification time of a file in v1 was implemented without rounding.
-    # With some values on some systems, converting it back and forth will give different result.
-    # It such case affected files can be uploaded by sync over and over again, despite the fact
-    # that the modification time is always the same. See #617 for details.
     return int(mod_time)
 
 
-def set_file_mtime(local_path, mod_time_millis, rounded=True):
+def set_file_mtime(local_path, mod_time_millis):
     """
     Set modification time of a file in milliseconds.
 
@@ -237,21 +224,19 @@ def set_file_mtime(local_path, mod_time_millis, rounded=True):
     :type local_path: str
     :param mod_time_millis: time to be set
     :type mod_time_millis: int
-    :param rounded: if False, the time is updated with small delta
-    :type rounded: bool
     """
     mod_time = mod_time_millis / 1000.0
-    if not rounded:
-        # We have to convert it this way to avoid differences when mtime
-        # is read from the local file in the next iterations, and time is fetched
-        # without rounding.
-        # This is caused by floating point arithmetic as POSIX systems
-        # represents mtime as floats and B2 as integers.
-        # E.g. for 1093258377393, it would be converted to 1093258377.393
-        # which is actually represented by 1093258377.3929998874664306640625.
-        # When we save mtime and read it again, we will end up with 1093258377392.
-        # The default will be changed in v2. See #617 for details.
-        mod_time = float(Decimal('%.3f5' % mod_time))
+
+    # We have to convert it this way to avoid differences when mtime
+    # is read from the local file in the next iterations, and time is fetched
+    # without rounding.
+    # This is caused by floating point arithmetic as POSIX systems
+    # represents mtime as floats and B2 as integers.
+    # E.g. for 1093258377393, it would be converted to 1093258377.393
+    # which is actually represented by 1093258377.3929998874664306640625.
+    # When we save mtime and read it again, we will end up with 1093258377392.
+    # See #617 for details.
+    mod_time = float(Decimal('%.3f5' % mod_time))
 
     os.utime(local_path, (mod_time, mod_time))
 
