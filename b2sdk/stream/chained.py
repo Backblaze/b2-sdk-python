@@ -86,27 +86,40 @@ class ChainedStream(ReadOnlyStreamMixin, io.IOBase):
 
     def read(self, size=None):
         """
-        Read data from the stream.
+        Read at most `size` bytes from underlying streams, or all available data, if `size` is None or negative.
+        Open the streams only when their data is needed, and possibly leave them open and part-way read for further
+        reading - by subsequent calls to this method.
 
         :param int,None size: number of bytes to read. If omitted, ``None``,
-                    or negative data is read and returned until EOF is reached
+                    or negative data is read and returned until EOF from final stream is reached
 
         :return: data read from the stream
         """
-        if size < 0:
-            size = None
         byte_arrays = []
-        remaining = size
-        while 1:
-            current_stream = self.stream
-            buff = current_stream.read(remaining)
-            byte_arrays.append(buff)
-            if remaining is None or not buff:
-                self._next_stream()
-                if self.stream is current_stream:
-                    break
-            else:
+
+        if size < 0 or size is None:
+            while 1:
+                current_stream = self.stream
+                buff = current_stream.read()
+                byte_arrays.append(buff)
+                if not buff:
+                    self._next_stream()
+                    if self.stream is current_stream:
+                        break
+        else:
+            remaining = size
+            while 1:
+                current_stream = self.stream
+                buff = current_stream.read(remaining)
+                byte_arrays.append(buff)
                 remaining -= len(buff)
+                if remaining == 0:
+                    # no need to open any other streams - we're satisfied
+                    break
+                if not buff:
+                    self._next_stream()
+                    if self.stream is current_stream:
+                        break
 
         if not byte_arrays:
             data = byte_arrays[0]
