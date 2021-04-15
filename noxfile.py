@@ -102,6 +102,9 @@ def lint(session):
 @nox.session(python=PYTHON_VERSIONS)
 def unit(session):
     """Run unit tests."""
+    print('PRINTING!!!!!!!!!!!!!!!!!!')
+    with open(os.path.join(os.path.dirname(__file__), 'b2sdk/account_info/abstract.py')) as f:
+        print(f.read())
     install_myself(session)
     session.install(*REQUIREMENTS_TEST)
     args = ['--cov=b2sdk', '--cov-branch', '--cov-report=xml', '--doctest-modules']
