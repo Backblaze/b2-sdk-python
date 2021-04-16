@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 * Fix clearing cache during `authorize_account`
 * Fix `ChainedStream` (needed in `Bucket.create_file` etc.)
+* Make tqdm-based progress reporters less jumpy and easier to read
 
 ## [1.6.0] - 2021-04-08
 
