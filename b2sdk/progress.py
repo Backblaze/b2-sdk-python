@@ -95,6 +95,8 @@ class TqdmProgressListener(AbstractProgressListener):
                 unit_scale=True,
                 leave=True,
                 miniters=1,
+                smoothing=0.1,
+                mininterval=0.2,
             )
 
     def bytes_completed(self, byte_count):
