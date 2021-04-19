@@ -34,6 +34,11 @@ class FileVersionInfo(object):
     """
     LS_ENTRY_TEMPLATE = '%83s  %6s  %10s  %8s  %9d  %s'  # order is file_id, action, date, time, size, name
 
+    __slots__ = [
+        'id_', 'file_name', 'size', 'content_type', 'content_sha1', 'content_md5', 'file_info',
+        'upload_timestamp', 'action', 'server_side_encryption'
+    ]
+
     def __init__(
         self,
         id_,
@@ -100,6 +105,13 @@ class FileVersionInfo(object):
     def format_folder_ls_entry(cls, name):
         """ legacy method, to be removed in v2: formats a `ls` "folder" consistently with format_ls_entry() """
         return cls.LS_ENTRY_TEMPLATE % ('-', '-', '-', '-', 0, name)
+
+    def __eq__(self, other):
+        sentry = object()
+        for attr in self.__slots__:
+            if getattr(self, attr) != getattr(other, attr, sentry):
+                return False
+        return True
 
 
 class FileVersionInfoFactory(object):
