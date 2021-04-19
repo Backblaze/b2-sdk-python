@@ -107,10 +107,9 @@ class FileVersionInfo(object):
         return cls.LS_ENTRY_TEMPLATE % ('-', '-', '-', '-', 0, name)
 
     def __eq__(self, other):
-        if not isinstance(other, self.__class__):
-            return False
+        sentry = object()
         for attr in self.__slots__:
-            if getattr(self, attr) != getattr(other, attr):
+            if getattr(self, attr) != getattr(other, attr, sentry):
                 return False
         return True
 
