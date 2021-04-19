@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+* Add `__slots__` and `__eq__` to `FileVersionInfo` for memory usage optimization and ease of testing
+
 ### Fixed
 * Fix clearing cache during `authorize_account`
 * Fix `ChainedStream` (needed in `Bucket.create_file` etc.)
