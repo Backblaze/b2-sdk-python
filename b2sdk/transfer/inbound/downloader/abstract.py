@@ -9,8 +9,10 @@
 ######################################################################
 
 from abc import abstractmethod
+from typing import Optional
 
 from b2sdk.utils import B2TraceMetaAbstract
+from b2sdk.encryption.setting import EncryptionSetting
 
 from .range import Range
 
@@ -67,6 +69,7 @@ class AbstractDownloader(metaclass=B2TraceMetaAbstract):
         response,
         metadata,
         session,
+        encryption: Optional[EncryptionSetting] = None,
     ):
         """
         @returns (bytes_read, actual_sha1)

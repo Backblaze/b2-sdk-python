@@ -11,9 +11,13 @@ import pytest
 
 from .test_base import TestBase
 
+from .deps import EncryptionAlgorithm
+from .deps import EncryptionKey
+from .deps import EncryptionMode
+from .deps import EncryptionSetting
 from .deps import B2RawApi
 from .deps import B2Http
-from .deps_exception import UnusableFileName
+from .deps_exception import UnusableFileName, WrongEncryptionModeForBucketDefault
 
 # Unicode characters for testing filenames.  (0x0394 is a letter Delta.)
 TWO_BYTE_UNICHR = chr(0x0394)
@@ -95,13 +99,15 @@ class TestRawAPIFilenames(TestBase):
         self._should_raise(u'foo/' + 125 * TWO_BYTE_UNICHR + u'x', "segment too long")
 
 
-class TestUpdateBucket:
-    """Test updating bucket."""
-
+class BucketTestBase:
     @pytest.fixture(autouse=True)
     def init(self, mocker):
         b2_http = mocker.MagicMock()
         self.raw_api = B2RawApi(b2_http)
+
+
+class TestUpdateBucket(BucketTestBase):
+    """Test updating bucket."""
 
     def test_assertion_raises(self):
         with pytest.raises(AssertionError):
@@ -117,3 +123,51 @@ class TestUpdateBucket:
             bucket_type=bucket_type,
             bucket_info=bucket_info
         )
+
+    @pytest.mark.parametrize(
+        'encryption_setting,', (
+            EncryptionSetting(
+                mode=EncryptionMode.SSE_C,
+                algorithm=EncryptionAlgorithm.AES256,
+                key=EncryptionKey(b'key', 'key-id')
+            ),
+            EncryptionSetting(mode=EncryptionMode.UNKNOWN,),
+        )
+    )
+    def test_update_bucket_wrong_encryption(self, encryption_setting):
+        with pytest.raises(WrongEncryptionModeForBucketDefault):
+            self.raw_api.update_bucket(
+                'test',
+                'account_auth_token',
+                'account_id',
+                'bucket_id',
+                default_server_side_encryption=encryption_setting,
+                bucket_type='allPublic',
+            )
+
+
+class TestCreateBucket(BucketTestBase):
+    """Test creating bucket."""
+
+    @pytest.mark.parametrize(
+        'encryption_setting,', (
+            EncryptionSetting(
+                mode=EncryptionMode.SSE_C,
+                algorithm=EncryptionAlgorithm.AES256,
+                key=EncryptionKey(b'key', 'key-id')
+            ),
+            EncryptionSetting(mode=EncryptionMode.UNKNOWN,),
+        )
+    )
+    def test_create_bucket_wrong_encryption(self, encryption_setting):
+
+        with pytest.raises(WrongEncryptionModeForBucketDefault):
+            self.raw_api.create_bucket(
+                'test',
+                'account_auth_token',
+                'account_id',
+                'bucket_id',
+                bucket_type='allPrivate',
+                bucket_info={},
+                default_server_side_encryption=encryption_setting,
+            )

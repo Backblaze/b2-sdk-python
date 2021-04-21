@@ -455,6 +455,7 @@ class CopyFileExecutionStep(BaseExecutionStep):
             destination_bucket_id=execution.bucket_id,
             progress_listener=execution.progress_listener,
             destination_encryption=execution.encryption,
+            source_encryption=self.copy_source_range.encryption,
         )
 
 
@@ -483,6 +484,7 @@ class CopyPartExecutionStep(BaseExecutionStep):
             self.large_file_upload_state,
             finished_parts=self.finished_parts,
             destination_encryption=self.emerge_execution.encryption,
+            source_encryption=self.copy_source_range.encryption,
         )
 
 

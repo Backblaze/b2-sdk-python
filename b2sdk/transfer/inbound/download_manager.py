@@ -12,7 +12,7 @@ import logging
 from typing import Optional
 
 from b2sdk.download_dest import DownloadDestProgressWrapper
-from b2sdk.encryption.setting import EncryptionMode, EncryptionSetting
+from b2sdk.encryption.setting import EncryptionSetting
 from b2sdk.progress import DoNothingProgressListener
 
 from b2sdk.exception import (
@@ -84,12 +84,12 @@ class DownloadManager(metaclass=B2TraceMetaAbstract):
         :param range_: 2-element tuple containing data of http Range header
         :param b2sdk.v1.EncryptionSetting encryption: encryption setting (``None`` if unknown)
         """
-        assert encryption is None or encryption.mode in (EncryptionMode.SSE_B2,)
         progress_listener = progress_listener or DoNothingProgressListener()
         download_dest = DownloadDestProgressWrapper(download_dest, progress_listener)
         with self.services.session.download_file_from_url(
             url,
             range_=range_,
+            encryption=encryption,
         ) as response:
             metadata = FileMetadata.from_response(response)
             if range_ is not None:
@@ -119,7 +119,11 @@ class DownloadManager(metaclass=B2TraceMetaAbstract):
                 for strategy in self.strategies:
                     if strategy.is_suitable(metadata, progress_listener):
                         bytes_read, actual_sha1 = strategy.download(
-                            file, response, metadata, self.services.session
+                            file,
+                            response,
+                            metadata,
+                            self.services.session,
+                            encryption=encryption,
                         )
                         break
                 else:

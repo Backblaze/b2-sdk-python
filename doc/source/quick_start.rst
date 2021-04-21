@@ -50,12 +50,21 @@ Synchronization
         )
 
     >>> no_progress = False
+    >>> encryption_settings_provider = BasicSyncEncryptionSettingsProvider({
+            'bucket1': EncryptionSettings(mode=EncryptionMode.SSE_B2),
+            'bucket2': EncryptionSettings(
+                           mode=EncryptionMode.SSE_C,
+                           key=EncryptionKey(secret=b'VkYp3s6v9y$B&E)H@McQfTjWmZq4t7w!', id='user-generated-key-id')
+                       ),
+            'bucket3': None,
+        })
     >>> with SyncReport(sys.stdout, no_progress) as reporter:
             synchronizer.sync_folders(
                 source_folder=source,
                 dest_folder=destination,
                 now_millis=int(round(time.time() * 1000)),
                 reporter=reporter,
+                encryption_settings_provider=encryption_settings_provider,
             )
     upload some.pdf
     upload som2.pdf
@@ -65,6 +74,14 @@ Synchronization
 
     To learn more about sync, see :ref:`sync`.
 
+Sync uses an encryption provider. In principle, it's a mapping between file metadata (bucket_name, file_info, etc) and
+`EncryptionSetting`. The reason for employing such a mapping, rather than a single `EncryptionSetting`, is the fact that
+users of Sync do not necessarily know up front what files it's going to upload and download. This approach enables using
+unique keys, or key identifiers, across files. This is covered in greater detail in :ref:`server_side_encryption`.
+
+In the example above, Sync will assume `SSE-B2` for all files in `bucket1`, `SSE-C` with the key provided for `bucket2`
+and rely on bucket default for `bucket3`. Should developers need to provide keys per file (and not per bucket), they
+need to implement their own :class:`b2sdk.v1.AbstractSyncEncryptionSettingsProvider`.
 
 **************
 Bucket actions
@@ -115,7 +132,8 @@ Update bucket info
     >>> bucket_name = 'example-mybucket-b2'
 
     >>> bucket = b2_api.get_bucket_by_name(bucket_name)
-    >>> bucket.update(bucket_type=new_bucket_type)
+    >>> bucket.update(bucket_type=new_bucket_type,
+                      default_server_side_encryption=EncryptionSetting(mode=EncryptionMode.SSE_B2))
     {'accountId': '451862be08d0',
      'bucketId': '5485a1682662eb3e60980d10',
      'bucketInfo': {},
@@ -123,7 +141,10 @@ Update bucket info
      'bucketType': 'allPrivate',
      'corsRules': [],
      'lifecycleRules': [],
-     'revision': 3}
+     'revision': 3,
+     'defaultServerSideEncryption': {'isClientAuthorizedToRead': True,
+                                     'value': {'algorithm': 'AES256', 'mode': 'SSE-B2'}}},
+     }
 
 For more information see :meth:`b2sdk.v1.Bucket.update`.
 
@@ -159,6 +180,27 @@ Upload file
 This will work regardless of the size of the file - ``upload_local_file`` automatically uses large file upload API when necessary.
 
 For more information see :meth:`b2sdk.v1.Bucket.upload_local_file`.
+
+Upload file encrypted with SSE-C
+--------------------------------
+
+.. code-block:: python
+
+    >>> local_file_path = '/home/user1/b2_example/new.pdf'
+    >>> b2_file_name = 'dummy_new.pdf'
+    >>> file_info = {'how': 'good-file'}
+    >>> encryption_setting = EncryptionSetting(
+            mode=EncryptionMode.SSE_C,
+            key=EncryptionKey(secret=b'VkYp3s6v9y$B&E)H@McQfTjWmZq4t7w!', id='user-generated-key-id'),
+        )
+
+    >>> bucket = b2_api.get_bucket_by_name(bucket_name)
+    >>> bucket.upload_local_file(
+            local_file=local_file_path,
+            file_name=b2_file_name,
+            file_infos=file_info,
+            encryption=encryption_setting,
+        )
 
 Download file
 =============
@@ -212,6 +254,12 @@ By name
      'contentSha1': 'd821849a70922e87c2b0786c0be7266b89d87df0',
      'fileInfo': {'how': 'good-file'}}
 
+
+Downloading encrypted files
+---------------------------
+
+Both methods (`By name`_ and `By id`_) accept an optional `encryption` argument, similarly to `Upload file`_. This
+parameter is necessary for downloading files encrypted with `SSE-C`.
 
 List files
 ==========
@@ -276,9 +324,12 @@ Get file metadata
      'contentSha1': 'd821849a70922e87c2b0786c0be7266b89d87df0',
      'contentType': 'application/pdf',
      'fileId': '4_z5485a1682662eb3e60980d10_f113f963288e711a6_d20190404_m065910_c002_v0001095_t0044',
-     'fileInfo': {'how': 'good-file'},
+     'fileInfo': {'how': 'good-file', 'sse_c_key_id': 'user-generated-key-id'},
      'fileName': 'dummy_new.pdf',
-     'uploadTimestamp': 1554361150000}
+     'uploadTimestamp': 1554361150000,
+     "serverSideEncryption": {"algorithm": "AES256",
+                              "mode": "SSE-C"},
+     }
 
 Copy file
 =========
@@ -298,9 +349,14 @@ Please switch to  :meth:`b2sdk.v1.Bucket.copy`.
      'fileId': '4_z5485a1682662eb3e60980d10_f1022e2320daf707f_d20190620_m122848_c002_v0001123_t0020',
      'fileInfo': {'src_last_modified_millis': '1560848707000'},
      'fileName': 'f2_copy.txt',
-     'uploadTimestamp': 1561033728000}
+     'uploadTimestamp': 1561033728000,
+     "serverSideEncryption": {"algorithm": "AES256",
+                              "mode": "SSE-B2"}}
 
 If the ``content length`` is not provided and the file is larger than 5GB, ``copy`` would not succeed and error would be raised. If length is provided, then the file may be copied as a large file. Maximum copy part size can be set by ``max_copy_part_size`` - if not set, it will default to 5GB. If ``max_copy_part_size`` is lower than :term:`absoluteMinimumPartSize`, file would be copied in single request - this may be used to force copy in single request large file that fits in server small file limit.
+
+Copying files allows for providing encryption settings for both source and destination files - `SSE-C` encrypted source files
+cannot be used unless the proper key is provided.
 
 If you want to copy just the part of the file, then you can specify the offset and content length:
 

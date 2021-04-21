@@ -173,9 +173,15 @@ class B2Session(object):
     def delete_file_version(self, file_id, file_name):
         return self._wrap_default_token(self.raw_api.delete_file_version, file_id, file_name)
 
-    def download_file_from_url(self, url, range_=None):
+    def download_file_from_url(
+        self, url, range_=None, encryption: Optional[EncryptionSetting] = None
+    ):
         return self._wrap_token(
-            self.raw_api.download_file_from_url, TokenType.API_TOKEN_ONLY, url, range_=range_
+            self.raw_api.download_file_from_url,
+            TokenType.API_TOKEN_ONLY,
+            url,
+            range_=range_,
+            encryption=encryption,
         )
 
     def finish_large_file(self, file_id, part_sha1_array):
@@ -372,6 +378,7 @@ class B2Session(object):
         file_info=None,
         destination_bucket_id=None,
         destination_server_side_encryption: Optional[EncryptionSetting] = None,
+        source_server_side_encryption: Optional[EncryptionSetting] = None,
     ):
         return self._wrap_default_token(
             self.raw_api.copy_file,
@@ -383,6 +390,7 @@ class B2Session(object):
             file_info=file_info,
             destination_bucket_id=destination_bucket_id,
             destination_server_side_encryption=destination_server_side_encryption,
+            source_server_side_encryption=source_server_side_encryption,
         )
 
     def copy_part(
@@ -392,6 +400,7 @@ class B2Session(object):
         part_number,
         bytes_range=None,
         destination_server_side_encryption: Optional[EncryptionSetting] = None,
+        source_server_side_encryption: Optional[EncryptionSetting] = None,
     ):
         return self._wrap_default_token(
             self.raw_api.copy_part,
@@ -400,6 +409,7 @@ class B2Session(object):
             part_number,
             bytes_range=bytes_range,
             destination_server_side_encryption=destination_server_side_encryption,
+            source_server_side_encryption=source_server_side_encryption,
         )
 
     def _wrap_default_token(self, raw_api_method, *args, **kwargs):

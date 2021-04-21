@@ -8,11 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 * Add `__slots__` and `__eq__` to `FileVersionInfo` for memory usage optimization and ease of testing
+* Add support for SSE-C server-side encryption mode
 
 ### Fixed
 * Fix clearing cache during `authorize_account`
 * Fix `ChainedStream` (needed in `Bucket.create_file` etc.)
 * Make tqdm-based progress reporters less jumpy and easier to read
+* Fix emerger examples in docs
 
 ## [1.6.0] - 2021-04-08
 

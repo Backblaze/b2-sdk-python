@@ -80,10 +80,15 @@ class UploadSourceBytes(AbstractUploadSource):
 class UploadSourceLocalFile(AbstractUploadSource):
     def __init__(self, local_path, content_sha1=None):
         self.local_path = local_path
-        if not os.path.isfile(local_path):
-            raise InvalidUploadSource(local_path)
-        self.content_length = os.path.getsize(local_path)
+        self.content_length = 0
+        self.check_path_and_get_size()
+
         self.content_sha1 = content_sha1
+
+    def check_path_and_get_size(self):
+        if not os.path.isfile(self.local_path):
+            raise InvalidUploadSource(self.local_path)
+        self.content_length = os.path.getsize(self.local_path)
 
     def __repr__(self):
         return (

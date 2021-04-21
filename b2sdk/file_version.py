@@ -83,7 +83,7 @@ class FileVersionInfo(object):
         if self.content_md5 is not None:
             result['contentMd5'] = self.content_md5
         if self.server_side_encryption is not None:  # this is for backward compatibility of interface only, b2sdk always sets it
-            result['serverSideEncryption'] = self.server_side_encryption.as_value_dict()
+            result['serverSideEncryption'] = self.server_side_encryption.as_dict()
         return result
 
     def format_ls_entry(self):

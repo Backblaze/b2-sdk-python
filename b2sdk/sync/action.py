@@ -13,10 +13,12 @@ from abc import ABCMeta, abstractmethod
 import logging
 import os
 from ..download_dest import DownloadDestLocalFile
-from ..encryption.provider import AbstractEncryptionSettingsProvider
+from .encryption_provider import AbstractSyncEncryptionSettingsProvider
+from ..bucket import Bucket
 
 from ..raw_api import SRC_LAST_MODIFIED_MILLIS
 from ..transfer.outbound.upload_source import UploadSourceLocalFile
+from .file import B2File
 from .report import SyncFileReporter
 
 logger = logging.getLogger(__name__)
@@ -93,7 +95,7 @@ class B2UploadAction(AbstractAction):
         b2_file_name,
         mod_time_millis,
         size,
-        encryption_settings_provider: AbstractEncryptionSettingsProvider,
+        encryption_settings_provider: AbstractSyncEncryptionSettingsProvider,
     ):
         """
         :param str local_full_path: a local file path
@@ -101,7 +103,7 @@ class B2UploadAction(AbstractAction):
         :param str b2_file_name: a name of a new remote file
         :param int mod_time_millis: file modification time in milliseconds
         :param int size: a file size
-        :param b2sdk.v1.AbstractEncryptionSettingsProvider encryption_settings_provider: encryption setting provider
+        :param b2sdk.v1.AbstractSyncEncryptionSettingsProvider encryption_settings_provider: encryption setting provider
         """
         self.local_full_path = local_full_path
         self.relative_name = relative_name
@@ -131,9 +133,10 @@ class B2UploadAction(AbstractAction):
             progress_listener = None
         file_info = {SRC_LAST_MODIFIED_MILLIS: str(self.mod_time_millis)}
         encryption = self.encryption_settings_provider.get_setting_for_upload(
-            bucket,
-            self.b2_file_name,
-            file_info,
+            bucket=bucket,
+            b2_file_name=self.b2_file_name,
+            file_info=file_info,
+            length=self.size,
         )
         bucket.upload(
             UploadSourceLocalFile(self.local_full_path),
@@ -207,29 +210,20 @@ class B2HideAction(AbstractAction):
 class B2DownloadAction(AbstractAction):
     def __init__(
         self,
-        relative_name,
-        b2_file_name,
-        file_id,
-        local_full_path,
-        mod_time_millis,
-        file_size,
-        encryption_settings_provider: AbstractEncryptionSettingsProvider,
+        source_file: B2File,
+        b2_file_name: str,
+        local_full_path: str,
+        encryption_settings_provider: AbstractSyncEncryptionSettingsProvider,
     ):
         """
-        :param str relative_name: a relative file name
-        :param str b2_file_name: a name of a remote file
-        :param str file_id: a file ID
+        :param b2sdk.v1.B2File source_file: the file to be downloaded
+        :param str b2_file_name: b2_file_name
         :param str local_full_path: a local file path
-        :param int mod_time_millis: file modification time in milliseconds
-        :param int file_size: a file size
-        :param b2sdk.v1.AbstractEncryptionSettingsProvider encryption_settings_provider: encryption setting provider
+        :param b2sdk.v1.AbstractSyncEncryptionSettingsProvider encryption_settings_provider: encryption setting provider
         """
-        self.relative_name = relative_name
+        self.source_file = source_file
         self.b2_file_name = b2_file_name
-        self.file_id = file_id
         self.local_full_path = local_full_path
-        self.mod_time_millis = mod_time_millis
-        self.file_size = file_size
         self.encryption_settings_provider = encryption_settings_provider
 
     def get_bytes(self):
@@ -238,16 +232,9 @@ class B2DownloadAction(AbstractAction):
 
         :rtype: int
         """
-        return self.file_size
+        return self.source_file.latest_version().size
 
-    def do_action(self, bucket, reporter):
-        """
-        Perform the downloading action, returning only after the action is completed.
-
-        :param b2sdk.v1.Bucket bucket: a Bucket object
-        :param reporter: a place to report errors
-        """
-        # Make sure the directory exists
+    def _ensure_directory_existence(self):
         parent_dir = os.path.dirname(self.local_full_path)
         if not os.path.isdir(parent_dir):
             try:
@@ -256,6 +243,15 @@ class B2DownloadAction(AbstractAction):
                 pass
         if not os.path.isdir(parent_dir):
             raise Exception('could not create directory %s' % (parent_dir,))
+
+    def do_action(self, bucket, reporter):
+        """
+        Perform the downloading action, returning only after the action is completed.
+
+        :param b2sdk.v1.Bucket bucket: a Bucket object
+        :param reporter: a place to report errors
+        """
+        self._ensure_directory_existence()
 
         if reporter:
             progress_listener = SyncFileReporter(reporter)
@@ -266,10 +262,16 @@ class B2DownloadAction(AbstractAction):
         download_path = self.local_full_path + '.b2.sync.tmp'
         download_dest = DownloadDestLocalFile(download_path)
 
+        encryption = self.encryption_settings_provider.get_setting_for_download(
+            bucket=bucket,
+            file_version_info=self.source_file.latest_version().file_version_info,
+        )
+
         bucket.download_file_by_id(
-            self.file_id,
+            self.source_file.latest_version().id_,
             download_dest,
             progress_listener,
+            encryption=encryption,
         )
 
         # Move the file into place
@@ -287,12 +289,14 @@ class B2DownloadAction(AbstractAction):
         :type bucket: b2sdk.bucket.Bucket
         :param reporter: a place to report errors
         """
-        reporter.print_completion('dnload ' + self.relative_name)
+        reporter.print_completion('dnload ' + self.source_file.name)
 
     def __str__(self):
         return (
-            'b2_download(%s, %s, %s, %d)' %
-            (self.b2_file_name, self.file_id, self.local_full_path, self.mod_time_millis)
+            'b2_download(%s, %s, %s, %d)' % (
+                self.b2_file_name, self.source_file.latest_version().id_, self.local_full_path,
+                self.source_file.latest_version().mod_time
+            )
         )
 
 
@@ -303,30 +307,27 @@ class B2CopyAction(AbstractAction):
 
     def __init__(
         self,
-        relative_name,
-        b2_file_name,
-        file_id,
+        b2_file_name: str,
+        source_file: B2File,
         dest_b2_file_name,
-        mod_time_millis,
-        size,
-        encryption_settings_provider: AbstractEncryptionSettingsProvider,
+        source_bucket: Bucket,
+        destination_bucket: Bucket,
+        encryption_settings_provider: AbstractSyncEncryptionSettingsProvider,
     ):
         """
-        :param str relative_name: a relative file name
-        :param str b2_file_name: a name of a remote file
-        :param str file_id: a file ID
+        :param str b2_file_name: a b2_file_name
+        :param b2sdk.v1.B2File source_file: the file to be copied
         :param str dest_b2_file_name: a name of a destination remote file
-        :param int mod_time_millis: file modification time in milliseconds
-        :param int size: a file size
-        :param b2sdk.v1.AbstractEncryptionSettingsProvider encryption_settings_provider: encryption setting provider
+        :param Bucket source_bucket: bucket to copy from
+        :param Bucket destination_bucket: bucket to copy to
+        :param b2sdk.v1.AbstractSyncEncryptionSettingsProvider encryption_settings_provider: encryption setting provider
         """
-        self.relative_name = relative_name
         self.b2_file_name = b2_file_name
-        self.file_id = file_id
+        self.source_file = source_file
         self.dest_b2_file_name = dest_b2_file_name
-        self.mod_time_millis = mod_time_millis
-        self.size = size
         self.encryption_settings_provider = encryption_settings_provider
+        self.source_bucket = source_bucket
+        self.destination_bucket = destination_bucket
 
     def get_bytes(self):
         """
@@ -334,7 +335,7 @@ class B2CopyAction(AbstractAction):
 
         :rtype: int
         """
-        return self.size
+        return self.source_file.latest_version().size
 
     def do_action(self, bucket, reporter):
         """
@@ -349,18 +350,26 @@ class B2CopyAction(AbstractAction):
         else:
             progress_listener = None
 
-        destination_encryption = self.encryption_settings_provider.get_destination_setting_for_copy(
-            bucket,
-            self.file_id,
-            self.dest_b2_file_name,
-            length=self.size,
+        source_encryption = self.encryption_settings_provider.get_source_setting_for_copy(
+            bucket=self.source_bucket,
+            source_file_version_info=self.source_file.latest_version().file_version_info,
         )
+
+        destination_encryption = self.encryption_settings_provider.get_destination_setting_for_copy(
+            bucket=self.destination_bucket,
+            source_file_version_info=self.source_file.latest_version().file_version_info,
+            dest_b2_file_name=self.dest_b2_file_name,
+        )
+
         bucket.copy(
-            self.file_id,
+            self.source_file.latest_version().id_,
             self.dest_b2_file_name,
-            length=self.size,
+            length=self.source_file.latest_version().size,
             progress_listener=progress_listener,
             destination_encryption=destination_encryption,
+            source_encryption=source_encryption,
+            source_file_info=self.source_file.latest_version().file_version_info.file_info,
+            source_content_type=self.source_file.latest_version().file_version_info.content_type,
         )
 
     def do_report(self, bucket, reporter):
@@ -371,12 +380,14 @@ class B2CopyAction(AbstractAction):
         :type bucket: b2sdk.bucket.Bucket
         :param reporter: a place to report errors
         """
-        reporter.print_completion('copy ' + self.relative_name)
+        reporter.print_completion('copy ' + self.source_file.name)
 
     def __str__(self):
         return (
-            'b2_copy(%s, %s, %s, %d)' %
-            (self.b2_file_name, self.file_id, self.dest_b2_file_name, self.mod_time_millis)
+            'b2_copy(%s, %s, %s, %d)' % (
+                self.b2_file_name, self.source_file.latest_version().id_, self.dest_b2_file_name,
+                self.source_file.latest_version().mod_time
+            )
         )
 
 

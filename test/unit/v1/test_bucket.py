@@ -28,6 +28,7 @@ from .deps_exception import (
     MaxRetriesExceeded,
     UnsatisfiableRange,
     FileSha1Mismatch,
+    SSECKeyError,
 )
 from .deps import B2Api
 from .deps import LargeFileUploadState
@@ -36,18 +37,38 @@ from .deps import FileVersionInfo
 from .deps import MetadataDirectiveMode
 from .deps import Part
 from .deps import AbstractProgressListener
-from .deps import StubAccountInfo, RawSimulator, BucketSimulator, FakeResponse
+from .deps import StubAccountInfo, RawSimulator, BucketSimulator, FakeResponse, FileSimulator
 from .deps import ParallelDownloader
 from .deps import SimpleDownloader
 from .deps import UploadSourceBytes
 from .deps import hex_sha1_of_bytes, TempDir
-from .deps import EncryptionAlgorithm, EncryptionSetting, EncryptionMode
+from .deps import EncryptionAlgorithm, EncryptionSetting, EncryptionMode, EncryptionKey, SSE_NONE, SSE_B2_AES
 from .deps import CopySource, UploadSourceLocalFile, WriteIntent
 
-SSE_NONE = EncryptionSetting(mode=EncryptionMode.NONE,)
-SSE_B2_AES = EncryptionSetting(
-    mode=EncryptionMode.SSE_B2,
+SSE_C_AES = EncryptionSetting(
+    mode=EncryptionMode.SSE_C,
     algorithm=EncryptionAlgorithm.AES256,
+    key=EncryptionKey(secret=b'some_key', key_id='some-id'),
+)
+SSE_C_AES_NO_SECRET = EncryptionSetting(
+    mode=EncryptionMode.SSE_C,
+    algorithm=EncryptionAlgorithm.AES256,
+    key=EncryptionKey(secret=None, key_id='some-id'),
+)
+SSE_C_AES_2 = EncryptionSetting(
+    mode=EncryptionMode.SSE_C,
+    algorithm=EncryptionAlgorithm.AES256,
+    key=EncryptionKey(secret=b'some_other_key', key_id='some-id-2'),
+)
+SSE_C_AES_2_NO_SECRET = EncryptionSetting(
+    mode=EncryptionMode.SSE_C,
+    algorithm=EncryptionAlgorithm.AES256,
+    key=EncryptionKey(secret=None, key_id='some-id-2'),
+)
+SSE_C_AES_FROM_SERVER = EncryptionSetting(
+    mode=EncryptionMode.SSE_C,
+    algorithm=EncryptionAlgorithm.AES256,
+    key=EncryptionKey(key_id=None, secret=None),
 )
 
 
@@ -152,6 +173,22 @@ class TestCaseWithBucket(TestBase):
             for (info, folder) in self.bucket.ls(*args, **kwargs)
         ]
         self.assertEqual(expected, actual)
+
+    def _make_data(self, approximate_length):
+        """
+        Generate a sequence of bytes to use in testing an upload.
+        Don't repeat a short pattern, so we're sure that the different
+        parts of a large file are actually different.
+
+        Returns bytes.
+        """
+        fragments = []
+        so_far = 0
+        while so_far < approximate_length:
+            fragment = ('%d:' % so_far).encode('utf-8')
+            so_far += len(fragment)
+            fragments.append(fragment)
+        return b''.join(fragments)
 
 
 class TestReauthorization(TestCaseWithBucket):
@@ -442,9 +479,11 @@ class TestListVersions(TestCaseWithBucket):
         b = self.bucket.upload_bytes(data, 'b', encryption=SSE_B2_AES)
         self.assertEqual(b.server_side_encryption, SSE_B2_AES)
         b_id = b.id_
-        #c_id = self.bucket.upload_bytes(data, 'c', encryption=SSE_NONE).id_  # TODO
-        d_id = self.bucket.copy(a_id, 'd', destination_encryption=SSE_B2_AES).id_
-        e_id = self.bucket.copy(b_id, 'e').id_
+        # c_id = self.bucket.upload_bytes(data, 'c', encryption=SSE_NONE).id_  # TODO
+        self.bucket.copy(a_id, 'd', destination_encryption=SSE_B2_AES)
+        self.bucket.copy(
+            b_id, 'e', destination_encryption=SSE_C_AES, file_info={}, content_type='text/plain'
+        )
 
         actual = [info.server_side_encryption for info in self.bucket.list_file_versions('a')][0]
         self.assertEqual(SSE_NONE, actual)  # bucket default
@@ -452,14 +491,14 @@ class TestListVersions(TestCaseWithBucket):
         actual = [info.server_side_encryption for info in self.bucket.list_file_versions('b')][0]
         self.assertEqual(SSE_B2_AES, actual)  # explicitly requested sse-b2
 
-        #actual = [info.server_side_encryption for info in self.bucket.list_file_versions('c')][0]
-        #self.assertEqual(SSE_NONE, actual)  # explicitly requested none
+        # actual = [info.server_side_encryption for info in self.bucket.list_file_versions('c')][0]
+        # self.assertEqual(SSE_NONE, actual)  # explicitly requested none
 
         actual = [info.server_side_encryption for info in self.bucket.list_file_versions('d')][0]
         self.assertEqual(SSE_B2_AES, actual)  # explicitly requested sse-b2
 
         actual = [info.server_side_encryption for info in self.bucket.list_file_versions('e')][0]
-        self.assertEqual(SSE_NONE, actual)  # bucket default
+        self.assertEqual(SSE_C_AES_NO_SECRET, actual)  # explicitly requested sse-c
 
 
 class TestCopyFile(TestCaseWithBucket):
@@ -562,22 +601,127 @@ class TestCopyFile(TestCaseWithBucket):
         self.assertBucketContents(expected, '', show_versions=True)
 
     def test_copy_encryption(self):
-        file_id = self._make_file()
-        file_info = self.bucket.copy(
-            file_id,
-            'hello_new.txt',
-            destination_encryption=SSE_B2_AES,
-        )
-        self.assertTrue(isinstance(file_info, FileVersionInfo))
-        self.assertEqual(file_info.server_side_encryption, SSE_B2_AES)
+        data = b'hello_world'
+        a = self.bucket.upload_bytes(data, 'a')
+        a_id = a.id_
+        self.assertEqual(a.server_side_encryption, SSE_NONE)
 
-        #file_info = self.bucket.copy(
-        #    file_id,
-        #    'hello_new.txt',
-        #    destination_encryption=SSE_NONE,
-        #)
-        #self.assertTrue(isinstance(file_info, FileVersionInfo))
-        #self.assertEqual(file_info.server_side_encryption, SSE_NONE)
+        b = self.bucket.upload_bytes(data, 'b', encryption=SSE_B2_AES)
+        self.assertEqual(b.server_side_encryption, SSE_B2_AES)
+        b_id = b.id_
+
+        c = self.bucket.upload_bytes(data, 'c', encryption=SSE_C_AES)
+        self.assertEqual(c.server_side_encryption, SSE_C_AES_NO_SECRET)
+        c_id = c.id_
+
+        for length in [None, len(data)]:
+            for kwargs, expected_encryption in [
+                (dict(file_id=a_id, destination_encryption=SSE_B2_AES), SSE_B2_AES),
+                (
+                    dict(
+                        file_id=a_id,
+                        destination_encryption=SSE_C_AES,
+                        file_info={'new': 'value'},
+                        content_type='text/plain'
+                    ), SSE_C_AES_NO_SECRET
+                ),
+                (
+                    dict(
+                        file_id=a_id,
+                        destination_encryption=SSE_C_AES,
+                        source_file_info={'old': 'value'},
+                        source_content_type='text/plain'
+                    ), SSE_C_AES_NO_SECRET
+                ),
+                (dict(file_id=b_id), SSE_NONE),
+                (dict(file_id=b_id, source_encryption=SSE_B2_AES), SSE_NONE),
+                (
+                    dict(
+                        file_id=b_id,
+                        source_encryption=SSE_B2_AES,
+                        destination_encryption=SSE_B2_AES
+                    ), SSE_B2_AES
+                ),
+                (
+                    dict(
+                        file_id=b_id,
+                        source_encryption=SSE_B2_AES,
+                        destination_encryption=SSE_C_AES,
+                        file_info={'new': 'value'},
+                        content_type='text/plain'
+                    ), SSE_C_AES_NO_SECRET
+                ),
+                (
+                    dict(
+                        file_id=b_id,
+                        source_encryption=SSE_B2_AES,
+                        destination_encryption=SSE_C_AES,
+                        source_file_info={'old': 'value'},
+                        source_content_type='text/plain'
+                    ), SSE_C_AES_NO_SECRET
+                ),
+                (
+                    dict(
+                        file_id=c_id,
+                        source_encryption=SSE_C_AES,
+                        file_info={'new': 'value'},
+                        content_type='text/plain'
+                    ), SSE_NONE
+                ),
+                (
+                    dict(
+                        file_id=c_id,
+                        source_encryption=SSE_C_AES,
+                        source_file_info={'old': 'value'},
+                        source_content_type='text/plain'
+                    ), SSE_NONE
+                ),
+                (
+                    dict(
+                        file_id=c_id, source_encryption=SSE_C_AES, destination_encryption=SSE_C_AES
+                    ), SSE_C_AES_NO_SECRET
+                ),
+                (
+                    dict(
+                        file_id=c_id,
+                        source_encryption=SSE_C_AES,
+                        destination_encryption=SSE_B2_AES,
+                        source_file_info={'old': 'value'},
+                        source_content_type='text/plain'
+                    ), SSE_B2_AES
+                ),
+                (
+                    dict(
+                        file_id=c_id,
+                        source_encryption=SSE_C_AES,
+                        destination_encryption=SSE_B2_AES,
+                        file_info={'new': 'value'},
+                        content_type='text/plain'
+                    ), SSE_B2_AES
+                ),
+                (
+                    dict(
+                        file_id=c_id,
+                        source_encryption=SSE_C_AES,
+                        destination_encryption=SSE_C_AES_2,
+                        source_file_info={'old': 'value'},
+                        source_content_type='text/plain'
+                    ), SSE_C_AES_2_NO_SECRET
+                ),
+                (
+                    dict(
+                        file_id=c_id,
+                        source_encryption=SSE_C_AES,
+                        destination_encryption=SSE_C_AES_2,
+                        file_info={'new': 'value'},
+                        content_type='text/plain'
+                    ), SSE_C_AES_2_NO_SECRET
+                ),
+            ]:
+                with self.subTest(kwargs=kwargs, length=length, data=data):
+                    file_info = self.bucket.copy(**kwargs, new_file_name='new_file', length=length)
+                    self.assertTrue(isinstance(file_info, FileVersionInfo))
+                    self.assertEqual(file_info.server_side_encryption, expected_encryption)
 
     def _make_file(self, bucket=None):
         data = b'hello world'
@@ -599,6 +743,12 @@ class TestUpload(TestCaseWithBucket):
         self.assertTrue(isinstance(file_info, FileVersionInfo))
         self.assertEqual(file_info.server_side_encryption, SSE_B2_AES)
 
+    def test_upload_bytes_sse_c(self):
+        data = b'hello world'
+        file_info = self.bucket.upload_bytes(data, 'file1', encryption=SSE_C_AES)
+        self.assertTrue(isinstance(file_info, FileVersionInfo))
+        self.assertEqual(SSE_C_AES_NO_SECRET, file_info.server_side_encryption)
+
     def test_upload_local_file_sse_b2(self):
         with TempDir() as d:
             path = os.path.join(d, 'file1')
@@ -607,6 +757,16 @@ class TestUpload(TestCaseWithBucket):
             file_info = self.bucket.upload_local_file(path, 'file1', encryption=SSE_B2_AES)
             self.assertTrue(isinstance(file_info, FileVersionInfo))
             self.assertEqual(file_info.server_side_encryption, SSE_B2_AES)
+            self._check_file_contents('file1', data)
+
+    def test_upload_local_file_sse_c(self):
+        with TempDir() as d:
+            path = os.path.join(d, 'file1')
+            data = b'hello world'
+            write_file(path, data)
+            file_info = self.bucket.upload_local_file(path, 'file1', encryption=SSE_C_AES)
+            self.assertTrue(isinstance(file_info, FileVersionInfo))
+            self.assertEqual(SSE_C_AES_NO_SECRET, file_info.server_side_encryption)
             self._check_file_contents('file1', data)
 
     def test_upload_bytes_progress(self):
@@ -806,24 +966,9 @@ class TestUpload(TestCaseWithBucket):
 
     def _check_file_contents(self, file_name, expected_contents):
         download = DownloadDestBytes()
-        self.bucket.download_file_by_name(file_name, download)
+        with FileSimulator.dont_check_encryption():
+            self.bucket.download_file_by_name(file_name, download)
         self.assertEqual(expected_contents, download.get_bytes_written())
-
-    def _make_data(self, approximate_length):
-        """
-        Generate a sequence of bytes to use in testing an upload.
-        Don't repeat a short pattern, so we're sure that the different
-        parts of a large file are actually different.
-
-        Returns bytes.
-        """
-        fragments = []
-        so_far = 0
-        while so_far < approximate_length:
-            fragment = ('%d:' % so_far).encode('utf-8')
-            so_far += len(fragment)
-            fragments.append(fragment)
-        return b''.join(fragments)
 
 
 class TestConcatenate(TestCaseWithBucket):
@@ -852,6 +997,37 @@ class TestConcatenate(TestCaseWithBucket):
                 created_file.server_side_encryption
             )
             expected = ('9997', 'created_file', 33, SSE_NONE)
+            self.assertEqual(expected, actual)
+
+    def test_create_remote_encryption(self):
+        for data in [b'hello_world', self._make_data(self.simulator.MIN_PART_SIZE * 3)]:
+
+            f1_id = self.bucket.upload_bytes(data, 'f1', encryption=SSE_C_AES).id_
+            f2_id = self.bucket.upload_bytes(data, 'f1', encryption=SSE_C_AES_2).id_
+            with TempDir() as d:
+                path = os.path.join(d, 'file')
+                write_file(path, data)
+                created_file = self._create_remote(
+                    [
+                        CopySource(f1_id, length=len(data), offset=0, encryption=SSE_C_AES),
+                        UploadSourceLocalFile(path),
+                        CopySource(f2_id, length=len(data), offset=0, encryption=SSE_C_AES_2),
+                    ],
+                    file_name='created_file_%s' % (len(data),),
+                    encryption=SSE_C_AES
+                )
+            self.assertIsInstance(created_file, FileVersionInfo)
+            actual = (
+                created_file.id_, created_file.file_name, created_file.size,
+                created_file.server_side_encryption
+            )
+            expected = (
+                mock.ANY,
+                'created_file_%s' % (len(data),),
+                mock.ANY,  # FIXME: this should be equal to len(data) * 3,
+                # but there is a problem in the simulator/test code somewhere
+                SSE_C_AES_NO_SECRET
+            )
             self.assertEqual(expected, actual)
 
 
@@ -887,6 +1063,9 @@ class DownloadTestsBase(object):
     def setUp(self):
         super(DownloadTestsBase, self).setUp()
         self.file_info = self.bucket.upload_bytes(self.DATA.encode(), 'file1')
+        self.encrypted_file_info = self.bucket.upload_bytes(
+            self.DATA.encode(), 'enc_file1', encryption=SSE_C_AES
+        )
         self.download_dest = DownloadDestBytes()
         self.progress_listener = StubProgressListener()
 
@@ -913,24 +1092,32 @@ class DownloadTests(DownloadTestsBase):
         self._verify(self.DATA, check_progress_listener=False)
 
     def test_download_by_name_progress(self):
-        self.bucket.download_file_by_name('file1', self.download_dest, self.progress_listener)
+        self.bucket.download_file_by_name(
+            'file1', self.download_dest, progress_listener=self.progress_listener
+        )
         self._verify(self.DATA)
 
     def test_download_by_id_progress(self):
         self.bucket.download_file_by_id(
-            self.file_info.id_, self.download_dest, self.progress_listener
+            self.file_info.id_, self.download_dest, progress_listener=self.progress_listener
         )
         self._verify(self.DATA)
 
     def test_download_by_id_progress_partial(self):
         self.bucket.download_file_by_id(
-            self.file_info.id_, self.download_dest, self.progress_listener, range_=(3, 9)
+            self.file_info.id_,
+            self.download_dest,
+            progress_listener=self.progress_listener,
+            range_=(3, 9)
         )
         self._verify('defghij')
 
     def test_download_by_id_progress_exact_range(self):
         self.bucket.download_file_by_id(
-            self.file_info.id_, self.download_dest, self.progress_listener, range_=(0, 18)
+            self.file_info.id_,
+            self.download_dest,
+            progress_listener=self.progress_listener,
+            range_=(0, 18)
         )
         self._verify(self.DATA)
 
@@ -967,7 +1154,7 @@ class DownloadTests(DownloadTestsBase):
             self.bucket.download_file_by_id(
                 self.file_info.id_,
                 download_dest,
-                self.progress_listener,
+                progress_listener=self.progress_listener,
                 range_=(3, 9),
             )
             self._check_local_file_contents(path, b'123defghij1234567890')
@@ -998,10 +1185,22 @@ class DownloadTests(DownloadTestsBase):
             self.bucket.download_file_by_id(
                 self.file_info.id_,
                 download_dest,
-                self.progress_listener,
+                progress_listener=self.progress_listener,
                 range_=(3, 9),
             )
             self._check_local_file_contents(path, b'1234567defghij567890')
+
+    def test_download_by_id_no_progress_encryption(self):
+        self.bucket.download_file_by_id(
+            self.encrypted_file_info.id_, self.download_dest, encryption=SSE_C_AES
+        )
+        self._verify(self.DATA, check_progress_listener=False)
+
+    def test_download_by_id_no_progress_wrong_encryption(self):
+        with self.assertRaises(SSECKeyError):
+            self.bucket.download_file_by_id(
+                self.encrypted_file_info.id_, self.download_dest, encryption=SSE_C_AES_2
+            )
 
     def _check_local_file_contents(self, path, expected_contents):
         with open(path, 'rb') as f:

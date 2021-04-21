@@ -461,7 +461,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param int min_part_size: a minimum size of a part
         :param b2sdk.v1.AbstractProgressListener,None progress_listener: a progress listener object to use, or ``None`` to not report progress
         :param b2sdk.v1.EncryptionSetting encryption: encryption settings (``None`` if unknown)
-        :rtype: generator[b2sdk.v1.FileVersion]
+        :rtype: b2sdk.v1.FileVersionInfo
         """
         upload_source = UploadSourceLocalFile(local_path=local_file, content_sha1=sha1_sum)
         return self.upload(
@@ -502,7 +502,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param int,None min_part_size: the smallest part size to use or ``None`` to determine automatically
         :param b2sdk.v1.AbstractProgressListener,None progress_listener: a progress listener object to use, or ``None`` to not report progress
         :param b2sdk.v1.EncryptionSetting encryption: encryption settings (``None`` if unknown)
-        :rtype: generator[b2sdk.v1.FileVersion]
+        :rtype: b2sdk.v1.FileVersionInfo
         """
         return self.create_file(
             [WriteIntent(upload_source)],
@@ -750,6 +750,9 @@ class Bucket(metaclass=B2TraceMeta):
         length=None,
         progress_listener=None,
         destination_encryption: Optional[EncryptionSetting] = None,
+        source_encryption: Optional[EncryptionSetting] = None,
+        source_file_info: Optional[dict] = None,
+        source_content_type: Optional[str] = None,
     ):
         """
         Creates a new file in this bucket by (server-side) copying from an existing file.
@@ -769,9 +772,20 @@ class Bucket(metaclass=B2TraceMeta):
                         for multipart copy, or ``None`` to not report progress
         :param b2sdk.v1.EncryptionSetting destination_encryption: encryption settings for the destination
                         (``None`` if unknown)
+        :param b2sdk.v1.EncryptionSetting source_encryption: encryption settings for the source
+                        (``None`` if unknown)
+        :param dict,None source_file_info: source file's file_info dict, useful when copying files with SSE-C
+        :param str,None source_content_type: source file's content type, useful when copying files with SSE-C
         """
 
-        copy_source = CopySource(file_id, offset=offset, length=length)
+        copy_source = CopySource(
+            file_id,
+            offset=offset,
+            length=length,
+            encryption=source_encryption,
+            source_file_info=source_file_info,
+            source_content_type=source_content_type,
+        )
         if not length:
             # TODO: it feels like this should be checked on lower level - eg. RawApi
             validate_b2_file_name(new_file_name)
@@ -784,6 +798,7 @@ class Bucket(metaclass=B2TraceMeta):
                 destination_bucket_id=self.id_,
                 progress_listener=progress_listener,
                 destination_encryption=destination_encryption,
+                source_encryption=source_encryption,
             ).result()
         else:
             return self.create_file(
@@ -805,6 +820,7 @@ class Bucket(metaclass=B2TraceMeta):
         content_type=None,
         file_info=None,
         destination_encryption: Optional[EncryptionSetting] = None,
+        source_encryption: Optional[EncryptionSetting] = None,
     ):
         """
         Creates a new file in this bucket by (server-side) copying from an existing file.
@@ -817,10 +833,9 @@ class Bucket(metaclass=B2TraceMeta):
         :param dict,None file_info: file_info for the new file if metadata_directive is set to :py:attr:`b2sdk.v1.MetadataDirectiveMode.REPLACE`, default will copy the file_info of old file
         :param b2sdk.v1.EncryptionSetting destination_encryption: encryption settings for the destination
                 (``None`` if unknown)
+        :param b2sdk.v1.EncryptionSetting source_encryption: encryption settings for the source
+                (``None`` if unknown)
         """
-        assert destination_encryption is None or destination_encryption.mode in (
-            EncryptionMode.SSE_B2,
-        )
         return self.api.session.copy_file(
             file_id,
             new_file_name,
@@ -830,6 +845,7 @@ class Bucket(metaclass=B2TraceMeta):
             file_info,
             self.id_,
             destination_server_side_encryption=destination_encryption,
+            source_server_side_encryption=source_encryption,
         )
 
     def delete_file_version(self, file_id, file_name):
@@ -862,7 +878,7 @@ class Bucket(metaclass=B2TraceMeta):
         result['lifecycleRules'] = self.lifecycle_rules
         result['revision'] = self.revision
         result['options'] = self.options_set
-        result['defaultServerSideEncryption'] = self.default_server_side_encryption.as_value_dict()
+        result['defaultServerSideEncryption'] = self.default_server_side_encryption.as_dict()
         return result
 
     def __repr__(self):

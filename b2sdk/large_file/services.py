@@ -11,7 +11,6 @@
 from typing import Optional
 
 from b2sdk.encryption.setting import EncryptionSetting
-from b2sdk.encryption.types import EncryptionMode
 from b2sdk.file_version import FileVersionInfoFactory
 from b2sdk.large_file.part import PartFactory
 from b2sdk.large_file.unfinished_large_file import UnfinishedLargeFile
@@ -94,7 +93,6 @@ class LargeFileServices(object):
         :param dict,None file_info: a file info to store with the file or ``None`` to not store anything
         :param b2sdk.v1.EncryptionSetting encryption: encryption settings (``None`` if unknown)
         """
-        assert encryption is None or encryption.mode in (EncryptionMode.SSE_B2,)
         return UnfinishedLargeFile(
             self.services.session.start_large_file(
                 bucket_id,
