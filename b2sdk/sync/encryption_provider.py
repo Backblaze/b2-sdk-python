@@ -99,29 +99,32 @@ SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER = ServerDefaultSyncEncryptionSe
 
 class BasicSyncEncryptionSettingsProvider(AbstractSyncEncryptionSettingsProvider):
     """
-    Basic encryption setting provider that supports exactly one encryption setting per bucket
+    Basic encryption setting provider that supports exactly one encryption setting per bucket for reading
+    and one encryption setting per bucket for writing
 
     WARNING: This class can be used by B2CLI for SSE-B2, but it's still in development
     """
 
-    def __init__(self, bucket_settings: Dict[str, Optional[EncryptionSetting]]):
-        """
-        :param dict bucket_settings: a mapping from bucket name to EncryptionSetting object
-        """
-        self.bucket_settings = bucket_settings
+    def __init__(
+        self,
+        read_bucket_settings: Dict[str, Optional[EncryptionSetting]],
+        write_bucket_settings: Dict[str, Optional[EncryptionSetting]],
+    ):
+        self.read_bucket_settings = read_bucket_settings
+        self.write_bucket_settings = write_bucket_settings
 
     def get_setting_for_upload(self, bucket, *args, **kwargs) -> Optional[EncryptionSetting]:
-        return self.bucket_settings.get(bucket.name)
+        return self.write_bucket_settings.get(bucket.name)
 
     def get_source_setting_for_copy(self, bucket, *args, **kwargs) -> None:
-        return self.bucket_settings.get(bucket.name)
+        return self.read_bucket_settings.get(bucket.name)
 
     def get_destination_setting_for_copy(self, bucket, *args,
                                          **kwargs) -> Optional[EncryptionSetting]:
-        return self.bucket_settings.get(bucket.name)
+        return self.write_bucket_settings.get(bucket.name)
 
     def get_setting_for_download(self, bucket, *args, **kwargs) -> None:
-        return self.bucket_settings.get(bucket.name)
+        return self.read_bucket_settings.get(bucket.name)
 
     def __repr__(self):
         return '<%s:%s>' % (self.__class__.__name__, self.bucket_settings)
