@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Add support for SSE-C server-side encryption mode
 
 ### Changed
-* `BasicSyncEncryptionSettingsProvider` supports disting settings sets for reading and writing
+* `BasicSyncEncryptionSettingsProvider` supports different settings sets for reading and writing
 
 ### Fixed
 * Fix clearing cache during `authorize_account`
