@@ -282,6 +282,10 @@ class InvalidMetadataDirective(B2Error):
     pass
 
 
+class SSECKeyIdMismatchInCopy(InvalidMetadataDirective):
+    pass
+
+
 class InvalidRange(B2Error):
     def __init__(self, content_length, range_):
         super(InvalidRange, self).__init__()
@@ -471,6 +475,20 @@ class UploadTokenUsedConcurrently(B2Error):
         return "More than one concurrent upload using auth token %s" % (self.token,)
 
 
+class SSECKeyError(B2Error):
+    def __str__(self):
+        return "Wrong or no SSE-C key provided when reading a file."
+
+
+class WrongEncryptionModeForBucketDefault(B2Error):
+    def __init__(self, encryption_mode):
+        super().__init__()
+        self.encryption_mode = encryption_mode
+
+    def __str__(self):
+        return "%s cannot be used as default for a bucket." % (self.encryption_mode,)
+
+
 def interpret_b2_error(
     status: int,
     code: Optional[str],
@@ -522,6 +540,8 @@ def interpret_b2_error(
         return StorageCapExceeded()
     elif status == 403 and code == "transaction_cap_exceeded":
         return TransactionCapExceeded()
+    elif status == 403 and code == "access_denied":
+        return SSECKeyError()
     elif status == 409:
         return Conflict()
     elif status == 416 and code == "range_not_satisfiable":

@@ -13,7 +13,7 @@ import concurrent.futures as futures
 from enum import Enum, unique
 
 from ..bounded_queue_executor import BoundedQueueExecutor
-from ..encryption.provider import AbstractEncryptionSettingsProvider, SERVER_DEFAULT_ENCRYPTION_SETTINGS_PROVIDER
+from .encryption_provider import AbstractSyncEncryptionSettingsProvider, SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER
 from .exception import InvalidArgument, IncompleteSync
 from .policy import CompareVersionMode, NewerFileSyncMode
 from .policy_manager import POLICY_MANAGER
@@ -192,7 +192,7 @@ class Synchronizer(object):
         now_millis,
         reporter,
         encryption_settings_provider:
-        AbstractEncryptionSettingsProvider = SERVER_DEFAULT_ENCRYPTION_SETTINGS_PROVIDER,
+        AbstractSyncEncryptionSettingsProvider = SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER,
     ):
         """
         Syncs two folders.  Always ensures that every file in the
@@ -203,7 +203,7 @@ class Synchronizer(object):
         :param b2sdk.sync.folder.AbstractFolder dest_folder: destination folder object
         :param int now_millis: current time in milliseconds
         :param b2sdk.sync.report.SyncReport,None reporter: progress reporter
-        :param b2sdk.v1.AbstractEncryptionSettingsProvider encryption_settings_provider: encryption setting provider
+        :param b2sdk.v1.AbstractSyncEncryptionSettingsProvider encryption_settings_provider: encryption setting provider
         """
         source_type = source_folder.folder_type()
         dest_type = dest_folder.folder_type()
@@ -267,7 +267,7 @@ class Synchronizer(object):
         reporter,
         policies_manager=DEFAULT_SCAN_MANAGER,
         encryption_settings_provider:
-        AbstractEncryptionSettingsProvider = SERVER_DEFAULT_ENCRYPTION_SETTINGS_PROVIDER,
+        AbstractSyncEncryptionSettingsProvider = SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER,
     ):
         """
         Yield a sequence of actions that will sync the destination
@@ -278,7 +278,7 @@ class Synchronizer(object):
         :param int now_millis: current time in milliseconds
         :param b2sdk.v1.SyncReport reporter: reporter object
         :param policies_manager: policies manager object
-        :param b2sdk.v1.AbstractEncryptionSettingsProvider encryption_settings_provider: encryption setting provider
+        :param b2sdk.v1.AbstractSyncEncryptionSettingsProvider encryption_settings_provider: encryption setting provider
         """
         if self.keep_days_or_delete == KeepOrDeleteMode.KEEP_BEFORE_DELETE and dest_folder.folder_type(
         ) == 'local':
@@ -339,7 +339,7 @@ class Synchronizer(object):
         dest_folder,
         now_millis,
         encryption_settings_provider:
-        AbstractEncryptionSettingsProvider = SERVER_DEFAULT_ENCRYPTION_SETTINGS_PROVIDER,
+        AbstractSyncEncryptionSettingsProvider = SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER,
     ):
         """
         Yields the sequence of actions needed to sync the two files
@@ -350,7 +350,7 @@ class Synchronizer(object):
         :param b2sdk.v1.AbstractFolder source_folder: a source folder object
         :param b2sdk.v1.AbstractFolder dest_folder: a destination folder object
         :param int now_millis: current time in milliseconds
-        :param b2sdk.v1.AbstractEncryptionSettingsProvider encryption_settings_provider: encryption setting provider
+        :param b2sdk.v1.AbstractSyncEncryptionSettingsProvider encryption_settings_provider: encryption setting provider
         """
         delete = self.keep_days_or_delete == KeepOrDeleteMode.DELETE
         keep_days = self.keep_days

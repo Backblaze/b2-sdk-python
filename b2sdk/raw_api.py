@@ -22,7 +22,7 @@ from logging import getLogger
 from typing import Any, Dict, Optional
 
 from .b2http import B2Http
-from .exception import FileOrBucketNotFound, ResourceNotFound, UnusableFileName, InvalidMetadataDirective
+from .exception import FileOrBucketNotFound, ResourceNotFound, UnusableFileName, InvalidMetadataDirective, WrongEncryptionModeForBucketDefault
 from .encryption.setting import EncryptionAlgorithm, EncryptionMode, EncryptionSetting
 from .utils import b2_url_encode, hex_sha1_of_stream
 
@@ -88,6 +88,7 @@ class AbstractRawApi(metaclass=ABCMeta):
         file_info=None,
         destination_bucket_id=None,
         destination_server_side_encryption: Optional[EncryptionSetting] = None,
+        source_server_side_encryption: Optional[EncryptionSetting] = None,
     ):
         pass
 
@@ -101,6 +102,7 @@ class AbstractRawApi(metaclass=ABCMeta):
         part_number,
         bytes_range=None,
         destination_server_side_encryption: Optional[EncryptionSetting] = None,
+        source_server_side_encryption: Optional[EncryptionSetting] = None,
     ):
         pass
 
@@ -127,7 +129,13 @@ class AbstractRawApi(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def download_file_from_url(self, account_auth_token_or_none, url, range_=None):
+    def download_file_from_url(
+        self,
+        account_auth_token_or_none,
+        url,
+        range_=None,
+        encryption: Optional[EncryptionSetting] = None,
+    ):
         pass
 
     @abstractmethod
@@ -370,7 +378,10 @@ class B2RawApi(AbstractRawApi):
         if lifecycle_rules is not None:
             kwargs['lifecycleRules'] = lifecycle_rules
         if default_server_side_encryption is not None:
-            kwargs['defaultServerSideEncryption'] = default_server_side_encryption.as_value_dict()
+            if not default_server_side_encryption.mode.can_be_set_as_bucket_default():
+                raise WrongEncryptionModeForBucketDefault(default_server_side_encryption.mode)
+            kwargs['defaultServerSideEncryption'
+                  ] = default_server_side_encryption.serialize_to_json_for_request()
         return self._post_json(
             api_url,
             'b2_create_bucket',
@@ -420,17 +431,30 @@ class B2RawApi(AbstractRawApi):
             applicationKeyId=application_key_id,
         )
 
-    def download_file_from_url(self, account_auth_token_or_none, url, range_=None):
+    def download_file_from_url(
+        self,
+        account_auth_token_or_none,
+        url,
+        range_=None,
+        encryption: Optional[EncryptionSetting] = None,
+    ):
         """
         Issue a streaming request for download of a file, potentially authorized.
 
-        :param account_auth_token_or_none: an optional account auth token to pass in
-        :param url: the full URL to download from
-        :param range: two-element tuple for http Range header
+        :param str account_auth_token_or_none: an optional account auth token to pass in
+        :param str url: the full URL to download from
+        :param tuple range: two-element tuple for http Range header
+        :param b2sdk.v1.EncryptionSetting encryption: encryption settings for downloading
         :return: b2_http response
         """
         request_headers = {}
         _add_range_header(request_headers, range_)
+
+        if encryption is not None:
+            assert encryption.mode in (
+                EncryptionMode.NONE, EncryptionMode.SSE_B2, EncryptionMode.SSE_C
+            )
+            encryption.add_to_download_headers(request_headers)
 
         if account_auth_token_or_none is not None:
             request_headers['Authorization'] = account_auth_token_or_none
@@ -603,7 +627,10 @@ class B2RawApi(AbstractRawApi):
     ):
         kwargs = {}
         if server_side_encryption is not None:
-            kwargs['serverSideEncryption'] = server_side_encryption.as_value_dict()
+            assert server_side_encryption.mode in (
+                EncryptionMode.NONE, EncryptionMode.SSE_B2, EncryptionMode.SSE_C
+            )
+            kwargs['serverSideEncryption'] = server_side_encryption.serialize_to_json_for_request()
         return self._post_json(
             api_url,
             'b2_start_large_file',
@@ -642,7 +669,11 @@ class B2RawApi(AbstractRawApi):
         if lifecycle_rules is not None:
             kwargs['lifecycleRules'] = lifecycle_rules
         if default_server_side_encryption is not None:
-            kwargs['defaultServerSideEncryption'] = default_server_side_encryption.as_value_dict()
+            if default_server_side_encryption is not None:
+                if not default_server_side_encryption.mode.can_be_set_as_bucket_default():
+                    raise WrongEncryptionModeForBucketDefault(default_server_side_encryption.mode)
+                kwargs['defaultServerSideEncryption'
+                      ] = default_server_side_encryption.serialize_to_json_for_request()
 
         return self._post_json(
             api_url,
@@ -734,10 +765,13 @@ class B2RawApi(AbstractRawApi):
             'Content-Type': content_type,
             'X-Bz-Content-Sha1': content_sha1,
         }
-        if server_side_encryption is not None:
-            server_side_encryption.add_to_upload_headers(headers)
         for k, v in file_infos.items():
             headers['X-Bz-Info-' + k] = b2_url_encode(v)
+        if server_side_encryption is not None:
+            assert server_side_encryption.mode in (
+                EncryptionMode.NONE, EncryptionMode.SSE_B2, EncryptionMode.SSE_C
+            )
+            server_side_encryption.add_to_upload_headers(headers)
 
         return self.b2_http.post_content_return_json(upload_url, headers, data_stream)
 
@@ -758,6 +792,9 @@ class B2RawApi(AbstractRawApi):
             'X-Bz-Content-Sha1': content_sha1
         }
         if server_side_encryption is not None:
+            assert server_side_encryption.mode in (
+                EncryptionMode.NONE, EncryptionMode.SSE_B2, EncryptionMode.SSE_C
+            )
             server_side_encryption.add_to_upload_headers(headers)
 
         return self.b2_http.post_content_return_json(upload_url, headers, data_stream)
@@ -774,6 +811,7 @@ class B2RawApi(AbstractRawApi):
         file_info=None,
         destination_bucket_id=None,
         destination_server_side_encryption: Optional[EncryptionSetting] = None,
+        source_server_side_encryption: Optional[EncryptionSetting] = None,
     ):
         kwargs = {}
         if bytes_range is not None:
@@ -802,8 +840,15 @@ class B2RawApi(AbstractRawApi):
         if destination_bucket_id is not None:
             kwargs['destinationBucketId'] = destination_bucket_id
         if destination_server_side_encryption is not None:
+            assert destination_server_side_encryption.mode in (
+                EncryptionMode.NONE, EncryptionMode.SSE_B2, EncryptionMode.SSE_C
+            )
             kwargs['destinationServerSideEncryption'
-                  ] = destination_server_side_encryption.as_value_dict()
+                  ] = destination_server_side_encryption.serialize_to_json_for_request()
+        if source_server_side_encryption is not None:
+            assert source_server_side_encryption.mode == EncryptionMode.SSE_C
+            kwargs['sourceServerSideEncryption'
+                  ] = source_server_side_encryption.serialize_to_json_for_request()
 
         return self._post_json(
             api_url,
@@ -823,6 +868,7 @@ class B2RawApi(AbstractRawApi):
         part_number,
         bytes_range=None,
         destination_server_side_encryption: Optional[EncryptionSetting] = None,
+        source_server_side_encryption: Optional[EncryptionSetting] = None,
     ):
         kwargs = {}
         if bytes_range is not None:
@@ -830,9 +876,17 @@ class B2RawApi(AbstractRawApi):
             _add_range_header(range_dict, bytes_range)
             kwargs['range'] = range_dict['Range']
         if destination_server_side_encryption is not None:
-            assert destination_server_side_encryption.mode != EncryptionMode.SSE_B2
+            assert destination_server_side_encryption.mode in (
+                EncryptionMode.NONE, EncryptionMode.SSE_B2, EncryptionMode.SSE_C
+            )
             kwargs['destinationServerSideEncryption'
-                  ] = destination_server_side_encryption.as_value_dict()
+                  ] = destination_server_side_encryption.serialize_to_json_for_request()
+        if source_server_side_encryption is not None:
+            assert source_server_side_encryption.mode in (
+                EncryptionMode.NONE, EncryptionMode.SSE_B2, EncryptionMode.SSE_C
+            )
+            kwargs['sourceServerSideEncryption'
+                  ] = source_server_side_encryption.serialize_to_json_for_request()
         return self._post_json(
             api_url,
             'b2_copy_part',

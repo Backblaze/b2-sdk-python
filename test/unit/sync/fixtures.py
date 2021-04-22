@@ -10,7 +10,7 @@
 
 import pytest
 
-from apiver_deps import AbstractFolder, File, FileVersion
+from apiver_deps import AbstractFolder, File, B2File, FileVersion, B2FileVersion, FileVersionInfo
 from apiver_deps import CompareVersionMode, NewerFileSyncMode, KeepOrDeleteMode
 from apiver_deps import DEFAULT_SCAN_MANAGER, Synchronizer
 
@@ -28,6 +28,12 @@ class FakeFolder(AbstractFolder):
         if self.f_type != 'b2':
             raise ValueError('FakeFolder with type!=b2 does not have a bucket name')
         return 'fake_bucket_name'
+
+    @property
+    def bucket(self):
+        if self.f_type != 'b2':
+            raise ValueError('FakeFolder with type!=b2 does not have a bucket')
+        return 'fake_bucket'  # WARNING: this is supposed to be a Bucket object, not a string
 
     def all_files(self, reporter, policies_manager=DEFAULT_SCAN_MANAGER):
         for single_file in self.files:
@@ -54,7 +60,7 @@ class FakeFolder(AbstractFolder):
 
 def local_file(name, mod_times, size=10):
     """
-    Makes a File object for a b2 file, with one FileVersion for
+    Makes a File object for a local file, with one FileVersion for
     each modification time given in mod_times.
     """
     versions = [
@@ -85,15 +91,20 @@ def b2_file(name, mod_times, size=10):
         )
     """
     versions = [
-        FileVersion(
-            'id_%s_%d' % (name[0], abs(mod_time)),
-            'folder/' + name,
-            abs(mod_time),
-            'upload' if 0 < mod_time else 'hide',
-            size,
+        B2FileVersion(
+            FileVersionInfo(
+                id_='id_%s_%d' % (name[0], abs(mod_time)),
+                file_name='folder/' + name,
+                upload_timestamp=abs(mod_time),
+                action='upload' if 0 < mod_time else 'hide',
+                size=size,
+                file_info={'in_b2': 'yes'},
+                content_type='text/plain',
+                content_sha1='content_sha1',
+            )
         ) for mod_time in mod_times
     ]  # yapf disable
-    return File(name, versions)
+    return B2File(name, versions)
 
 
 @pytest.fixture(scope='session')

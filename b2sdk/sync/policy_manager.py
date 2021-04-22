@@ -11,6 +11,7 @@
 from .policy import CopyAndDeletePolicy, CopyAndKeepDaysPolicy, CopyPolicy, \
     DownAndDeletePolicy, DownAndKeepDaysPolicy, DownPolicy, UpAndDeletePolicy, \
     UpAndKeepDaysPolicy, UpPolicy
+from .file import File
 
 
 class SyncPolicyManager(object):
@@ -25,9 +26,9 @@ class SyncPolicyManager(object):
     def get_policy(
         self,
         sync_type,
-        source_file,
+        source_file: File,
         source_folder,
-        dest_file,
+        dest_file: File,
         dest_folder,
         now_millis,
         delete,
@@ -41,9 +42,9 @@ class SyncPolicyManager(object):
         Return a policy object.
 
         :param str sync_type: synchronization type
-        :param str source_file: source file name
+        :param b2sdk.v1.File source_file: source file name
         :param str source_folder: a source folder path
-        :param str dest_file: destination file name
+        :param b2sdk.v1.File dest_file: destination file name
         :param str dest_folder: a destination folder path
         :param int now_millis: current time in milliseconds
         :param bool delete: delete policy
@@ -51,7 +52,7 @@ class SyncPolicyManager(object):
         :param b2sdk.v1.NewerFileSyncMode newer_file_mode: setting which determines handling for destination files newer than on the source
         :param int compare_threshold: difference between file modification time or file size
         :param b2sdk.v1.CompareVersionMode compare_version_mode: setting which determines how to compare source and destination files
-        :param b2sdk.v1.AbstractEncryptionSettingsProvider encryption_settings_provider: an object which decides which encryption to use (if any)
+        :param b2sdk.v1.AbstractSyncEncryptionSettingsProvider encryption_settings_provider: an object which decides which encryption to use (if any)
         :return: a policy object
         """
         policy_class = self.get_policy_class(sync_type, delete, keep_days)

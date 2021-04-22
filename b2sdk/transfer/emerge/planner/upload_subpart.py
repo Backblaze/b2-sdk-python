@@ -67,7 +67,7 @@ class RemoteSourceUploadSubpart(BaseUploadSubpart):
         download_dest = DownloadDestBytes()
         range_ = (absolute_offset, absolute_offset + self.length - 1)
         emerge_execution.services.download_manager.download_file_from_url(
-            url, download_dest, range_=range_
+            url, download_dest, range_=range_, encryption=self.outbound_source.encryption
         )
         return download_dest.get_bytes_written()
 

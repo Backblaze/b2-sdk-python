@@ -9,6 +9,7 @@
 ######################################################################
 
 from abc import abstractmethod
+from typing import Optional
 import logging
 import hashlib
 import queue
@@ -16,6 +17,7 @@ import threading
 
 from .abstract import AbstractDownloader
 from .range import Range
+from b2sdk.encryption.setting import EncryptionSetting
 
 logger = logging.getLogger(__name__)
 
@@ -60,11 +62,7 @@ class ParallelDownloader(AbstractDownloader):
         return min(self.max_streams, content_length // self.min_part_size) or 1
 
     def download(
-        self,
-        file,
-        response,
-        metadata,
-        session,
+        self, file, response, metadata, session, encryption: Optional[EncryptionSetting] = None
     ):
         """
         Download a file from given url using parallel download sessions and stores it in the given download_destination.
@@ -97,6 +95,7 @@ class ParallelDownloader(AbstractDownloader):
                 first_part,
                 parts_to_download[1:],
                 self._get_chunk_size(actual_size),
+                encryption=encryption,
             )
         bytes_written = writer.total
 
@@ -129,7 +128,8 @@ class ParallelDownloader(AbstractDownloader):
                 break
 
     def _get_parts(
-        self, response, session, writer, hasher, first_part, parts_to_download, chunk_size
+        self, response, session, writer, hasher, first_part, parts_to_download, chunk_size,
+        encryption
     ):
         stream = FirstPartDownloaderThread(
             response,
@@ -138,6 +138,7 @@ class ParallelDownloader(AbstractDownloader):
             writer,
             first_part,
             chunk_size,
+            encryption=encryption,
         )
         stream.start()
         streams = [stream]
@@ -149,6 +150,7 @@ class ParallelDownloader(AbstractDownloader):
                 writer,
                 part,
                 chunk_size,
+                encryption=encryption,
             )
             stream.start()
             streams.append(stream)
@@ -207,7 +209,14 @@ class WriterThread(threading.Thread):
 
 
 class AbstractDownloaderThread(threading.Thread):
-    def __init__(self, session, writer, part_to_download, chunk_size):
+    def __init__(
+        self,
+        session,
+        writer,
+        part_to_download,
+        chunk_size,
+        encryption: Optional[EncryptionSetting] = None,
+    ):
         """
         :param session: raw_api wrapper
         :param writer: where to write data
@@ -218,6 +227,7 @@ class AbstractDownloaderThread(threading.Thread):
         self.writer = writer
         self.part_to_download = part_to_download
         self.chunk_size = chunk_size
+        self.encryption = encryption
         super(AbstractDownloaderThread, self).__init__()
 
     @abstractmethod
@@ -274,6 +284,7 @@ class FirstPartDownloaderThread(AbstractDownloaderThread):
             with self.session.download_file_from_url(
                 url,
                 cloud_range.as_tuple(),
+                encryption=self.encryption,
             ) as response:
                 for to_write in response.iter_content(chunk_size=self.chunk_size):
                     writer_queue_put((False, first_offset + bytes_read, to_write))
@@ -308,6 +319,7 @@ class NonHashingDownloaderThread(AbstractDownloaderThread):
             with self.session.download_file_from_url(
                 self.url,
                 cloud_range.as_tuple(),
+                encryption=self.encryption,
             ) as response:
                 for to_write in response.iter_content(chunk_size=self.chunk_size):
                     writer_queue_put((False, start_range + bytes_read, to_write))

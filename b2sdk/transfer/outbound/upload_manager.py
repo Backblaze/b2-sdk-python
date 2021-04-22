@@ -136,7 +136,6 @@ class UploadManager(metaclass=B2TraceMetaAbstract):
                                          values are instances of :class:`~b2sdk.v1.Part`
         :param b2sdk.v1.EncryptionSetting encryption: encryption setting (``None`` if unknown)
         """
-        assert encryption is None or encryption.mode in (EncryptionMode.SSE_B2,)
 
         # b2_upload_part doesn't need SSE-B2. Large file encryption is decided on b2_start_large_file.
         if encryption is not None and encryption.mode == EncryptionMode.SSE_B2:
@@ -206,7 +205,6 @@ class UploadManager(metaclass=B2TraceMetaAbstract):
         progress_listener,
         encryption: EncryptionSetting,
     ):
-        assert encryption is None or encryption.mode in (EncryptionMode.SSE_B2,)
         content_length = upload_source.get_content_length()
         exception_info_list = []
         progress_listener.set_total_bytes(content_length)

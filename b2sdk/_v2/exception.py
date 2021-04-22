@@ -63,6 +63,9 @@ from b2sdk.exception import UnknownHost
 from b2sdk.exception import UnrecognizedBucketType
 from b2sdk.exception import UnsatisfiableRange
 from b2sdk.exception import UnusableFileName
+from b2sdk.exception import SSECKeyIdMismatchInCopy
+from b2sdk.exception import SSECKeyError
+from b2sdk.exception import WrongEncryptionModeForBucketDefault
 from b2sdk.exception import interpret_b2_error
 from b2sdk.sync.exception import EnvironmentEncodingError
 from b2sdk.sync.exception import IncompleteSync
@@ -130,4 +133,7 @@ __all__ = (
     'UnsatisfiableRange',
     'UnusableFileName',
     'interpret_b2_error',
+    'SSECKeyIdMismatchInCopy',
+    'SSECKeyError',
+    'WrongEncryptionModeForBucketDefault',
 )
