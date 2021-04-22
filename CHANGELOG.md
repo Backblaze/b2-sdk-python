@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 * Add `__slots__` and `__eq__` to `FileVersionInfo` for memory usage optimization and ease of testing
 * Add support for SSE-C server-side encryption mode
+* Add `get_bucket_name_or_none_from_bucket_id` to `AccountInfo` and `Cache`
 
 ### Fixed
 * Fix clearing cache during `authorize_account`
