@@ -10,3 +10,4 @@
 
 from b2sdk._v2 import *  # noqa
 from b2sdk.v1.account_info import AbstractAccountInfo, InMemoryAccountInfo, UrlPoolAccountInfo, SqliteAccountInfo
+from b2sdk.v1.cache import AbstractCache
