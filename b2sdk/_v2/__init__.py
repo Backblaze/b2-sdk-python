@@ -25,7 +25,7 @@ from b2sdk.raw_api import ALL_CAPABILITIES
 from b2sdk.encryption.setting import EncryptionSetting
 from b2sdk.encryption.setting import EncryptionSettingFactory
 from b2sdk.encryption.setting import EncryptionKey
-from b2sdk.encryption.setting import SSE_NONE, SSE_B2_AES
+from b2sdk.encryption.setting import SSE_NONE, SSE_B2_AES, SSE_C_KEY_ID_FILE_INFO_KEY_NAME
 from b2sdk.encryption.types import EncryptionAlgorithm
 from b2sdk.encryption.types import EncryptionMode
 

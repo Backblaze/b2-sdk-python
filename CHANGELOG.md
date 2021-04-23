@@ -6,10 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.0] - 2021-04-22
+
 ### Added
 * Add `__slots__` and `__eq__` to `FileVersionInfo` for memory usage optimization and ease of testing
 * Add support for SSE-C server-side encryption mode
 * Add `get_bucket_name_or_none_from_bucket_id` to `AccountInfo` and `Cache`
+
+### Changed
+* `BasicSyncEncryptionSettingsProvider` supports different settings sets for reading and writing
 
 ### Fixed
 * Fix clearing cache during `authorize_account`
@@ -151,7 +156,8 @@ has changed.
 ### Added
 Initial official release of SDK as a separate package (until now it was a part of B2 CLI)
 
-[Unreleased]: https://github.com/Backblaze/b2-sdk-python/compare/v1.6.0...HEAD
+[Unreleased]: https://github.com/Backblaze/b2-sdk-python/compare/v1.7.0...HEAD
+[1.7.0]: https://github.com/Backblaze/b2-sdk-python/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/Backblaze/b2-sdk-python/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/Backblaze/b2-sdk-python/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/Backblaze/b2-sdk-python/compare/v1.3.0...v1.4.0
