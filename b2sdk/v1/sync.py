@@ -71,10 +71,12 @@ class ScanPoliciesManager(v2.ScanPoliciesManager):
 DEFAULT_SCAN_MANAGER = ScanPoliciesManager()
 
 
+# Override to change "policies_manager" default argument
 def zip_folders(folder_a, folder_b, reporter, policies_manager=DEFAULT_SCAN_MANAGER):
     return v2.zip_folders(folder_a, folder_b, reporter, policies_manager=policies_manager)
 
 
+# Override to change "policies_manager" default arguments
 class Synchronizer(v2.Synchronizer):
     def __init__(
         self,
@@ -108,6 +110,7 @@ class Synchronizer(v2.Synchronizer):
         )
 
 
+# Override to change "policies_manager" default argument
 class AbstractFolder(v2.AbstractFolder):
     @abstractmethod
     def all_files(self, reporter, policies_manager=DEFAULT_SCAN_MANAGER):
@@ -122,5 +125,6 @@ class B2Folder(v2.B2Folder, AbstractFolder):
     pass
 
 
-def parse_sync_folder(folder_name, api, local_folder_class=LocalFolder, b2_folder_class=B2Folder):
-    return v2.parse_sync_folder(folder_name, api, local_folder_class, b2_folder_class)
+# Override to use v1 version of "LocalFolder" and "B2Folder"
+def parse_sync_folder(folder_name, api):
+    return v2.parse_sync_folder(folder_name, api, LocalFolder, B2Folder)
