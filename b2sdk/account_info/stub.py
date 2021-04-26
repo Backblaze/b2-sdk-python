@@ -8,6 +8,7 @@
 #
 ######################################################################
 
+from typing import Optional
 import collections
 import threading
 
@@ -61,6 +62,9 @@ class StubAccountInfo(AbstractAccountInfo):
         self.buckets = {}
 
     def get_bucket_id_or_none_from_bucket_name(self, bucket_name):
+        return None
+
+    def get_bucket_name_or_none_from_bucket_id(self, bucket_id: str) -> Optional[str]:
         return None
 
     def save_bucket(self, bucket):

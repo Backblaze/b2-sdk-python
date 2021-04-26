@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+* Add `get_bucket_name_or_none_from_bucket_id` to `AccountInfo` and `Cache`
+
 ### Fixed
 * Use proper error handling in `ScanPoliciesManager`
 

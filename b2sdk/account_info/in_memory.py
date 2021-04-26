@@ -8,6 +8,8 @@
 #
 ######################################################################
 
+from typing import Optional
+
 from .exception import MissingAccountData
 from .upload_url_pool import UrlPoolAccountInfo
 
@@ -77,6 +79,12 @@ class InMemoryAccountInfo(UrlPoolAccountInfo):
 
     def get_bucket_id_or_none_from_bucket_name(self, bucket_name):
         return self._buckets.get(bucket_name)
+
+    def get_bucket_name_or_none_from_bucket_id(self, bucket_id: str) -> Optional[str]:
+        for name, cached_id_ in self._buckets.items():
+            if cached_id_ == bucket_id:
+                return name
+        return None
 
     def save_bucket(self, bucket):
         self._buckets[bucket.name] = bucket.id_
