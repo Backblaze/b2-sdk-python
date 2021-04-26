@@ -20,6 +20,7 @@ from b2sdk.v1 import KeepOrDeleteMode
 from b2sdk.v1 import DEFAULT_SCAN_MANAGER
 from b2sdk.v1 import SyncReport
 from b2sdk.v1 import Synchronizer as SynchronizerV1
+from b2sdk.v1 import AbstractSyncEncryptionSettingsProvider, SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER
 
 logger = logging.getLogger(__name__)
 
@@ -112,6 +113,8 @@ def make_folder_sync_actions(
     now_millis,
     reporter,
     policies_manager=DEFAULT_SCAN_MANAGER,
+    encryption_settings_provider:
+    AbstractSyncEncryptionSettingsProvider = SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER,
 ):
     """
     This is deprecated. Use the new Synchronizer class.
@@ -127,6 +130,8 @@ def make_folder_sync_actions(
     :type now_millis: int
     :param reporter: reporter object
     :param policies_manager: policies manager object
+    :param encryption_settings_provider: encryption settings provider
+    :type encryption_settings_provider: AbstractSyncEncryptionSettingsProvider
     """
     synchronizer = get_synchronizer_from_args(
         args,
@@ -142,6 +147,7 @@ def make_folder_sync_actions(
             now_millis,
             reporter,
             policies_manager=policies_manager,
+            encryption_settings_provider=encryption_settings_provider
         )
     except InvalidArgument as e:
         raise CommandError('--%s %s' % (e.parameter_name, e.message))
@@ -159,6 +165,8 @@ def sync_folders(
     policies_manager=DEFAULT_SCAN_MANAGER,
     dry_run=False,
     allow_empty_source=False,
+    encryption_settings_provider:
+    AbstractSyncEncryptionSettingsProvider = SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER,
 ):
     """
     This is deprecated. Use the new Synchronizer class.
@@ -183,6 +191,8 @@ def sync_folders(
     :type dry_run: bool
     :param allow_empty_source: if True, do not check whether source folder is empty
     :type allow_empty_source: bool
+    :param encryption_settings_provider: encryption settings provider
+    :type encryption_settings_provider: AbstractSyncEncryptionSettingsProvider
     """
     synchronizer = get_synchronizer_from_args(
         args,
@@ -192,4 +202,10 @@ def sync_folders(
         allow_empty_source=allow_empty_source,
     )
     with SyncReport(stdout, no_progress) as reporter:
-        synchronizer.sync_folders(source_folder, dest_folder, now_millis, reporter)
+        synchronizer.sync_folders(
+            source_folder,
+            dest_folder,
+            now_millis,
+            reporter,
+            encryption_settings_provider=encryption_settings_provider
+        )

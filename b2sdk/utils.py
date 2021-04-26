@@ -8,22 +8,18 @@
 #
 ######################################################################
 
-from __future__ import division, print_function
+import base64
 import hashlib
 import os
 import platform
 import re
 import shutil
 import tempfile
+import concurrent.futures as futures
+from decimal import Decimal
+from urllib.parse import quote, unquote_plus
 
 from logfury.v0_1 import DefaultTraceAbstractMeta, DefaultTraceMeta, limit_trace_arguments, disable_trace, trace_call
-
-import six
-
-try:
-    import concurrent.futures as futures
-except ImportError:
-    import futures
 
 
 def interruptible_get_result(future):
@@ -52,7 +48,7 @@ def b2_url_encode(s):
     :return: URL-encoded string
     :rtype: str
     """
-    return six.moves.urllib.parse.quote(s.encode('utf-8'))
+    return quote(s.encode('utf-8'))
 
 
 def b2_url_decode(s):
@@ -64,12 +60,7 @@ def b2_url_decode(s):
     :return: a Python unicode string.
     :rtype: str
     """
-    result = six.moves.urllib.parse.unquote_plus(s)
-    if six.PY2:
-        # The behavior of unquote_plus is different in python 2 and 3.
-        # In Python 3, it decodes the UTF-8, while in Python 2 it does not.
-        result = result.decode('utf-8')
-    return result
+    return unquote_plus(s)
 
 
 def choose_part_ranges(content_length, minimum_part_size):
@@ -99,7 +90,7 @@ def choose_part_ranges(content_length, minimum_part_size):
     assert minimum_part_size <= last_part_size
 
     # Make all of the parts except the last
-    parts = [(i * part_size, part_size) for i in six.moves.range(part_count - 1)]
+    parts = [(i * part_size, part_size) for i in range(part_count - 1)]
 
     # Add the last part
     start_of_last = (part_count - 1) * part_size
@@ -152,15 +143,32 @@ def hex_sha1_of_unlimited_stream(input_stream, limit=None):
             return digest.hexdigest(), content_length
 
 
-def hex_sha1_of_bytes(data):
+def hex_sha1_of_bytes(data: bytes) -> str:
     """
     Return the 40-character hex SHA1 checksum of the data.
-
-    :param data: an array of bytes
-    :type data: bytes
-    :rtype: str
     """
     return hashlib.sha1(data).hexdigest()
+
+
+def hex_md5_of_bytes(data: bytes) -> str:
+    """
+    Return the 32-character hex MD5 checksum of the data.
+    """
+    return hashlib.md5(data).hexdigest()
+
+
+def md5_of_bytes(data: bytes) -> bytes:
+    """
+    Return the 16-byte MD5 checksum of the data.
+    """
+    return hashlib.md5(data).digest()
+
+
+def b64_of_bytes(data: bytes) -> str:
+    """
+    Return the base64 encoded represtantion of the data.
+    """
+    return base64.b64encode(data).decode()
 
 
 def validate_b2_file_name(name):
@@ -170,7 +178,7 @@ def validate_b2_file_name(name):
     :param name: a string to check
     :type name: str
     """
-    if not isinstance(name, six.string_types):
+    if not isinstance(name, str):
         raise ValueError('file name must be a string, not bytes')
     name_utf8 = name.encode('utf-8')
     if len(name_utf8) < 1:
@@ -187,7 +195,7 @@ def validate_b2_file_name(name):
         raise ValueError("file names must not contain '//'")
     if chr(127) in name:
         raise ValueError("file names must not contain DEL")
-    if any(250 < len(segment) for segment in name_utf8.split(six.b('/'))):
+    if any(250 < len(segment) for segment in name_utf8.split(b'/')):
         raise ValueError("file names segments (between '/') can be at most 250 utf-8 bytes")
 
 
@@ -209,6 +217,43 @@ def is_file_readable(local_path, reporter=None):
             reporter.local_permission_error(local_path)
         return False
     return True
+
+
+def get_file_mtime(local_path):
+    """
+    Get modification time of a file in milliseconds.
+
+    :param local_path: a file path
+    :type local_path: str
+    :rtype: int
+    """
+    mod_time = os.path.getmtime(local_path) * 1000
+    return int(mod_time)
+
+
+def set_file_mtime(local_path, mod_time_millis):
+    """
+    Set modification time of a file in milliseconds.
+
+    :param local_path: a file path
+    :type local_path: str
+    :param mod_time_millis: time to be set
+    :type mod_time_millis: int
+    """
+    mod_time = mod_time_millis / 1000.0
+
+    # We have to convert it this way to avoid differences when mtime
+    # is read from the local file in the next iterations, and time is fetched
+    # without rounding.
+    # This is caused by floating point arithmetic as POSIX systems
+    # represents mtime as floats and B2 as integers.
+    # E.g. for 1093258377393, it would be converted to 1093258377.393
+    # which is actually represented by 1093258377.3929998874664306640625.
+    # When we save mtime and read it again, we will end up with 1093258377392.
+    # See #617 for details.
+    mod_time = float(Decimal('%.3f5' % mod_time))
+
+    os.utime(local_path, (mod_time, mod_time))
 
 
 def fix_windows_path_limit(path):
@@ -245,7 +290,7 @@ class TempDir(object):
         Return the unicode path to the temp dir.
         """
         dirpath_bytes = tempfile.mkdtemp()
-        self.dirpath = six.u(dirpath_bytes.replace('\\', '\\\\'))
+        self.dirpath = str(dirpath_bytes.replace('\\', '\\\\'))
         return self.dirpath
 
     def __exit__(self, exc_type, exc_val, exc_tb):

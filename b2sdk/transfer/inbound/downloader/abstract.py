@@ -8,19 +8,16 @@
 #
 ######################################################################
 
-from __future__ import division
-
 from abc import abstractmethod
-
-import six
+from typing import Optional
 
 from b2sdk.utils import B2TraceMetaAbstract
+from b2sdk.encryption.setting import EncryptionSetting
 
 from .range import Range
 
 
-@six.add_metaclass(B2TraceMetaAbstract)
-class AbstractDownloader(object):
+class AbstractDownloader(metaclass=B2TraceMetaAbstract):
     def __init__(
         self,
         force_chunk_size=None,
@@ -72,6 +69,7 @@ class AbstractDownloader(object):
         response,
         metadata,
         session,
+        encryption: Optional[EncryptionSetting] = None,
     ):
         """
         @returns (bytes_read, actual_sha1)

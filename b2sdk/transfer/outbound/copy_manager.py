@@ -8,25 +8,20 @@
 #
 ######################################################################
 
+import concurrent.futures as futures
 import logging
-import six
+from typing import Optional
 
-from b2sdk.exception import AlreadyFailed
-
+from b2sdk.encryption.setting import EncryptionMode, EncryptionSetting, SSE_C_KEY_ID_FILE_INFO_KEY_NAME
+from b2sdk.exception import AlreadyFailed, SSECKeyIdMismatchInCopy
 from b2sdk.file_version import FileVersionInfoFactory
 from b2sdk.raw_api import MetadataDirectiveMode
 from b2sdk.utils import B2TraceMetaAbstract
 
-try:
-    import concurrent.futures as futures
-except ImportError:
-    import futures
-
 logger = logging.getLogger(__name__)
 
 
-@six.add_metaclass(B2TraceMetaAbstract)
-class CopyManager(object):
+class CopyManager(metaclass=B2TraceMetaAbstract):
     """
     Handle complex actions around server side copy to free raw_api from that responsibility.
     """
@@ -72,10 +67,12 @@ class CopyManager(object):
         self,
         copy_source,
         file_name,
-        content_type=None,
-        file_info=None,
-        destination_bucket_id=None,
-        progress_listener=None,
+        content_type,
+        file_info,
+        destination_bucket_id,
+        progress_listener,
+        destination_encryption: Optional[EncryptionSetting] = None,
+        source_encryption: Optional[EncryptionSetting] = None,
     ):
         # Run small copies in the same thread pool as large file copies,
         # so that they share resources during a sync.
@@ -87,6 +84,8 @@ class CopyManager(object):
             file_info=file_info,
             destination_bucket_id=destination_bucket_id,
             progress_listener=progress_listener,
+            destination_encryption=destination_encryption,
+            source_encryption=source_encryption,
         )
 
     def copy_part(
@@ -95,7 +94,9 @@ class CopyManager(object):
         part_copy_source,
         part_number,
         large_file_upload_state,
-        finished_parts=None
+        finished_parts=None,
+        destination_encryption: Optional[EncryptionSetting] = None,
+        source_encryption: Optional[EncryptionSetting] = None,
     ):
         return self.get_thread_pool().submit(
             self._copy_part,
@@ -104,6 +105,8 @@ class CopyManager(object):
             part_number,
             large_file_upload_state,
             finished_parts=finished_parts,
+            destination_encryption=destination_encryption,
+            source_encryption=source_encryption,
         )
 
     def _copy_part(
@@ -112,7 +115,9 @@ class CopyManager(object):
         part_copy_source,
         part_number,
         large_file_upload_state,
-        finished_parts=None
+        finished_parts,
+        destination_encryption: Optional[EncryptionSetting],
+        source_encryption: Optional[EncryptionSetting],
     ):
         """
         Copy a file part to started large file.
@@ -124,7 +129,14 @@ class CopyManager(object):
                                                                       on large file upload
         :param dict,None finished_parts: dictionary of known finished parts, keys are part numbers,
                                          values are instances of :class:`~b2sdk.v1.Part`
+        :param b2sdk.v1.EncryptionSetting destination_encryption: encryption settings for the destination
+                        (``None`` if unknown)
+        :param b2sdk.v1.EncryptionSetting source_encryption: encryption settings for the source
+                        (``None`` if unknown)
         """
+        # b2_copy_part doesn't need SSE-B2. Large file encryption is decided on b2_start_large_file.
+        if destination_encryption is not None and destination_encryption.mode == EncryptionMode.SSE_B2:
+            destination_encryption = None
 
         # Check if this part was uploaded before
         if finished_parts is not None and part_number in finished_parts:
@@ -145,6 +157,8 @@ class CopyManager(object):
             large_file_id,
             part_number,
             bytes_range=part_copy_source.get_bytes_range(),
+            destination_server_side_encryption=destination_encryption,
+            source_server_side_encryption=source_encryption,
         )
         large_file_upload_state.update_part_bytes(response['contentLength'])
         return response
@@ -153,35 +167,100 @@ class CopyManager(object):
         self,
         copy_source,
         file_name,
-        content_type=None,
-        file_info=None,
-        destination_bucket_id=None,
-        progress_listener=None,
+        content_type,
+        file_info,
+        destination_bucket_id,
+        progress_listener,
+        destination_encryption: Optional[EncryptionSetting],
+        source_encryption: Optional[EncryptionSetting],
     ):
-        if progress_listener is not None:
+        with progress_listener:
             progress_listener.set_total_bytes(copy_source.get_content_length() or 0)
 
-        bytes_range = copy_source.get_bytes_range()
+            bytes_range = copy_source.get_bytes_range()
 
-        if content_type is None:
-            if file_info is not None:
-                raise ValueError('File info can be set only when content type is set')
-            metadata_directive = MetadataDirectiveMode.COPY
-        else:
-            if file_info is None:
-                raise ValueError('File info can be not set only when content type is not set')
-            metadata_directive = MetadataDirectiveMode.REPLACE
+            if content_type is None:
+                if file_info is not None:
+                    raise ValueError('File info can be set only when content type is set')
+                metadata_directive = MetadataDirectiveMode.COPY
+            else:
+                if file_info is None:
+                    raise ValueError('File info can be not set only when content type is not set')
+                metadata_directive = MetadataDirectiveMode.REPLACE
+            metadata_directive, file_info, content_type = self.establish_sse_c_file_metadata(
+                metadata_directive=metadata_directive,
+                destination_file_info=file_info,
+                destination_content_type=content_type,
+                destination_server_side_encryption=destination_encryption,
+                source_server_side_encryption=source_encryption,
+                source_file_info=copy_source.source_file_info,
+                source_content_type=copy_source.source_content_type,
+            )
+            response = self.services.session.copy_file(
+                copy_source.file_id,
+                file_name,
+                bytes_range=bytes_range,
+                metadata_directive=metadata_directive,
+                content_type=content_type,
+                file_info=file_info,
+                destination_bucket_id=destination_bucket_id,
+                destination_server_side_encryption=destination_encryption,
+                source_server_side_encryption=source_encryption,
+            )
+            file_info = FileVersionInfoFactory.from_api_response(response)
+            if progress_listener is not None:
+                progress_listener.bytes_completed(file_info.size)
 
-        response = self.services.session.copy_file(
-            copy_source.file_id,
-            file_name,
-            bytes_range=bytes_range,
-            metadata_directive=metadata_directive,
-            content_type=content_type,
-            file_info=file_info,
-            destination_bucket_id=destination_bucket_id
-        )
-        file_info = FileVersionInfoFactory.from_api_response(response)
-        if progress_listener is not None:
-            progress_listener.bytes_completed(file_info.size)
         return file_info
+
+    @classmethod
+    def establish_sse_c_file_metadata(
+        cls,
+        metadata_directive: MetadataDirectiveMode,
+        destination_file_info: Optional[dict],
+        destination_content_type: Optional[str],
+        destination_server_side_encryption: Optional[EncryptionSetting],
+        source_server_side_encryption: Optional[EncryptionSetting],
+        source_file_info: Optional[dict],
+        source_content_type: Optional[str],
+    ):
+        assert metadata_directive in (MetadataDirectiveMode.REPLACE, MetadataDirectiveMode.COPY)
+
+        if metadata_directive == MetadataDirectiveMode.REPLACE:
+            if destination_server_side_encryption:
+                destination_file_info = destination_server_side_encryption.add_key_id_to_file_info(
+                    destination_file_info
+                )
+            return metadata_directive, destination_file_info, destination_content_type
+
+        source_key_id = None
+        destination_key_id = None
+
+        if destination_server_side_encryption is not None and destination_server_side_encryption.key is not None and \
+                destination_server_side_encryption.key.key_id is not None:
+            destination_key_id = destination_server_side_encryption.key.key_id
+
+        if source_server_side_encryption is not None and source_server_side_encryption.key is not None and \
+                source_server_side_encryption.key.key_id is not None:
+            source_key_id = source_server_side_encryption.key.key_id
+
+        if source_key_id == destination_key_id:
+            return metadata_directive, destination_file_info, destination_content_type
+
+        if source_file_info is None or source_content_type is None:
+            raise SSECKeyIdMismatchInCopy(
+                'attempting to copy file using %s without providing source_file_info '
+                'and source_content_type for differing sse_c_key_ids: source="%s", '
+                'destination="%s"' %
+                (MetadataDirectiveMode.COPY, source_key_id, destination_key_id)
+            )
+
+        destination_file_info = source_file_info.copy()
+        destination_file_info.pop(SSE_C_KEY_ID_FILE_INFO_KEY_NAME, None)
+        if destination_server_side_encryption:
+            destination_file_info = destination_server_side_encryption.add_key_id_to_file_info(
+                destination_file_info
+            )
+        destination_content_type = source_content_type
+
+        return MetadataDirectiveMode.REPLACE, destination_file_info, destination_content_type

@@ -2,23 +2,24 @@
 #
 # File: b2sdk/raw_simulator.py
 #
-# Copyright 2019 Backblaze Inc. All Rights Reserved.
+# Copyright 2021 Backblaze Inc. All Rights Reserved.
 #
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
 
+from typing import Optional
 import collections
 import io
+import logging
 import random
 import re
 import time
 import threading
-
-import six
-from six.moves import range
+from contextlib import contextmanager
 
 from .b2http import ResponseContextManager
+from .encryption.setting import EncryptionMode, EncryptionSetting
 from .exception import (
     BadJson,
     BadUploadUrl,
@@ -26,30 +27,26 @@ from .exception import (
     Conflict,
     DuplicateBucketName,
     FileNotPresent,
+    FileSha1Mismatch,
     InvalidAuthToken,
     InvalidMetadataDirective,
     MissingPart,
     NonExistentBucket,
+    PartSha1Mismatch,
     Unauthorized,
     UnsatisfiableRange,
+    SSECKeyError,
 )
-from .raw_api import AbstractRawApi, HEX_DIGITS_AT_END, MetadataDirectiveMode
-from .utils import b2_url_decode, b2_url_encode, ConcurrentUsedAuthTokenGuard
+from .raw_api import AbstractRawApi, HEX_DIGITS_AT_END, MetadataDirectiveMode, ALL_CAPABILITIES
+from .utils import (
+    b2_url_decode,
+    b2_url_encode,
+    ConcurrentUsedAuthTokenGuard,
+    hex_sha1_of_bytes,
+)
 from .stream.hashing import StreamWithHash
 
-ALL_CAPABILITES = [
-    'listKeys',
-    'writeKeys',
-    'deleteKeys',
-    'listBuckets',
-    'writeBuckets',
-    'deleteBuckets',
-    'listFiles',
-    'readFiles',
-    'shareFiles',
-    'writeFiles',
-    'deleteFiles',
-]
+logger = logging.getLogger(__name__)
 
 
 def get_bytes_range(data_bytes, bytes_range):
@@ -139,6 +136,8 @@ class FileSimulator(object):
     One of three: an unfinished large file, a finished file, or a deletion marker.
     """
 
+    CHECK_ENCRYPTION = True
+
     def __init__(
         self,
         account_id,
@@ -151,8 +150,14 @@ class FileSimulator(object):
         file_info,
         data_bytes,
         upload_timestamp,
-        range_=None
+        range_=None,
+        server_side_encryption: Optional[EncryptionSetting] = None,
     ):
+        logger.debug('FileSimulator called with sse=%s', server_side_encryption)
+        if action == 'hide':
+            assert server_side_encryption is None
+        else:
+            assert server_side_encryption is not None
         self.account_id = account_id
         self.bucket_id = bucket_id
         self.file_id = file_id
@@ -162,13 +167,23 @@ class FileSimulator(object):
             self.content_length = len(data_bytes)
         self.content_type = content_type
         self.content_sha1 = content_sha1
+        if content_sha1 and content_sha1 != 'none' and len(content_sha1) != 40:
+            raise ValueError(content_sha1)
         self.file_info = file_info
         self.data_bytes = data_bytes
         self.upload_timestamp = upload_timestamp
         self.range_ = range_
+        self.server_side_encryption = server_side_encryption
 
         if action == 'start':
             self.parts = []
+
+    @classmethod
+    @contextmanager
+    def dont_check_encryption(cls):
+        cls.CHECK_ENCRYPTION = False
+        yield
+        cls.CHECK_ENCRYPTION = True
 
     def sort_key(self):
         """
@@ -199,12 +214,12 @@ class FileSimulator(object):
             headers['Content-Range'] = 'bytes %d-%d/%d' % (
                 range_[0], range_[0] + content_length, len(self.data_bytes)
             )  # yapf: disable
-        for key, value in six.iteritems(self.file_info):
+        for key, value in self.file_info.items():
             headers['x-bz-info-' + key] = value
         return headers
 
     def as_upload_result(self):
-        return dict(
+        result = dict(
             fileId=self.file_id,
             fileName=self.name,
             accountId=self.account_id,
@@ -214,11 +229,15 @@ class FileSimulator(object):
             contentSha1=self.content_sha1,
             fileInfo=self.file_info,
             action=self.action,
-            uploadTimestamp=self.upload_timestamp
+            uploadTimestamp=self.upload_timestamp,
         )  # yapf: disable
+        if self.server_side_encryption is not None:
+            result['serverSideEncryption'
+                  ] = self.server_side_encryption.serialize_to_json_for_request()
+        return result
 
     def as_list_files_dict(self):
-        return dict(
+        result = dict(
             fileId=self.file_id,
             fileName=self.name,
             contentLength=len(self.data_bytes) if self.data_bytes is not None else 0,
@@ -226,19 +245,27 @@ class FileSimulator(object):
             contentSha1=self.content_sha1,
             fileInfo=self.file_info,
             action=self.action,
-            uploadTimestamp=self.upload_timestamp
+            uploadTimestamp=self.upload_timestamp,
         )  # yapf: disable
+        if self.server_side_encryption is not None:
+            result['serverSideEncryption'
+                  ] = self.server_side_encryption.serialize_to_json_for_request()
+        return result
 
     def as_start_large_file_result(self):
-        return dict(
+        result = dict(
             fileId=self.file_id,
             fileName=self.name,
             accountId=self.account_id,
             bucketId=self.bucket_id,
             contentType=self.content_type,
             fileInfo=self.file_info,
-            uploadTimestamp=self.upload_timestamp
+            uploadTimestamp=self.upload_timestamp,
         )  # yapf: disable
+        if self.server_side_encryption is not None:
+            result['serverSideEncryption'
+                  ] = self.server_side_encryption.serialize_to_json_for_request()
+        return result
 
     def add_part(self, part_number, part):
         while len(self.parts) < part_number + 1:
@@ -247,20 +274,18 @@ class FileSimulator(object):
 
     def finish(self, part_sha1_array):
         last_part_number = max(part.part_number for part in self.parts if part is not None)
-        for part_number in six.moves.range(1, last_part_number + 1):
+        for part_number in range(1, last_part_number + 1):
             if self.parts[part_number] is None:
                 raise MissingPart(part_number)
         my_part_sha1_array = [
-            self.parts[part_number].content_sha1
-            for part_number in six.moves.range(1, last_part_number + 1)
+            self.parts[part_number].content_sha1 for part_number in range(1, last_part_number + 1)
         ]
         if part_sha1_array != my_part_sha1_array:
             raise ChecksumMismatch(
                 'sha1', expected=str(part_sha1_array), actual=str(my_part_sha1_array)
             )
-        self.data_bytes = six.b('').join(
-            self.parts[part_number].part_data
-            for part_number in six.moves.range(1, last_part_number + 1)
+        self.data_bytes = b''.join(
+            self.parts[part_number].part_data for part_number in range(1, last_part_number + 1)
         )
         self.content_length = len(self.data_bytes)
         self.action = 'upload'
@@ -285,6 +310,32 @@ class FileSimulator(object):
             parts = parts[:max_part_count]
         return dict(parts=parts, nextPartNumber=next_part_number)
 
+    def check_encryption(self, request_encryption: Optional[EncryptionSetting]):
+        if not self.CHECK_ENCRYPTION:
+            return
+        file_mode, file_secret = self._get_encryption_mode_and_secret(self.server_side_encryption)
+        request_mode, request_secret = self._get_encryption_mode_and_secret(request_encryption)
+
+        if file_mode in (None, EncryptionMode.NONE):
+            assert request_mode in (None, EncryptionMode.NONE)
+        elif file_mode == EncryptionMode.SSE_B2:
+            assert request_mode in (None, EncryptionMode.NONE, EncryptionMode.SSE_B2)
+        elif file_mode == EncryptionMode.SSE_C:
+            if request_mode != EncryptionMode.SSE_C or file_secret != request_secret:
+                raise SSECKeyError()
+        else:
+            raise ValueError('Unsupported EncryptionMode: %s' % (file_mode))
+
+    def _get_encryption_mode_and_secret(self, encryption: Optional[EncryptionSetting]):
+        if encryption is None:
+            return None, None
+        mode = encryption.mode
+        if encryption.key is None:
+            secret = None
+        else:
+            secret = encryption.key.secret
+        return mode, secret
+
 
 FakeRequest = collections.namedtuple('FakeRequest', 'url headers')
 
@@ -300,7 +351,9 @@ class FakeResponse(object):
 
     def iter_content(self, chunk_size=1):
         start = 0
+        rnd = random.Random(self.url)
         while start <= len(self.data_bytes):
+            time.sleep(rnd.random() * 0.01)
             yield self.data_bytes[start:start + chunk_size]
             start += chunk_size
 
@@ -328,6 +381,7 @@ class BucketSimulator(object):
 
     def __init__(
         self,
+        api,
         account_id,
         bucket_id,
         bucket_name,
@@ -335,9 +389,11 @@ class BucketSimulator(object):
         bucket_info=None,
         cors_rules=None,
         lifecycle_rules=None,
-        options_set=None
+        options_set=None,
+        default_server_side_encryption=None,
     ):
         assert bucket_type in ['allPrivate', 'allPublic']
+        self.api = api
         self.account_id = account_id
         self.bucket_name = bucket_name
         self.bucket_id = bucket_id
@@ -354,8 +410,32 @@ class BucketSimulator(object):
         self.file_id_to_file = dict()
         # It would be nice to use an OrderedDict for this, but 2.6 doesn't have it.
         self.file_name_and_id_to_file = dict()
+        if default_server_side_encryption is None:
+            default_server_side_encryption = EncryptionSetting(mode=EncryptionMode.NONE)
+        self.default_server_side_encryption = default_server_side_encryption
 
-    def bucket_dict(self):
+    def bucket_dict(self, account_auth_token):
+        default_sse = {'isClientAuthorizedToRead': False}
+        is_allowed_to_read_bucket_encryption_setting = 'readBucketEncryption' in self.api.auth_token_to_key[
+            account_auth_token].get_allowed()['capabilities']
+        logger.debug(
+            'authtoken %s is %sallowed to read encryption setting of %s' % (
+                account_auth_token,
+                not is_allowed_to_read_bucket_encryption_setting and 'not ' or '',
+                self,
+            )
+        )
+        if is_allowed_to_read_bucket_encryption_setting:
+            default_sse = {
+                'isClientAuthorizedToRead': True,
+            }
+            default_sse['value'] = {'mode': self.default_server_side_encryption.mode.value}
+            if self.default_server_side_encryption.algorithm is not None:
+                default_sse['value']['algorithm'
+                                    ] = self.default_server_side_encryption.algorithm.value
+        else:
+            default_sse['value'] = {'mode': EncryptionMode.UNKNOWN}
+        logger.debug('default sse returned is: %s', default_sse)
         return dict(
             accountId=self.account_id,
             bucketName=self.bucket_name,
@@ -366,6 +446,7 @@ class BucketSimulator(object):
             lifecycleRules=self.lifecycle_rules,
             options=self.options_set,
             revision=self.revision,
+            defaultServerSideEncryption=default_sse,
         )
 
     def cancel_large_file(self, file_id):
@@ -387,18 +468,24 @@ class BucketSimulator(object):
         del self.file_id_to_file[file_id]
         return dict(fileId=file_id, fileName=file_name, uploadTimestamp=file_sim.upload_timestamp)
 
-    def download_file_by_id(self, file_id, url, range_=None):
+    def download_file_by_id(
+        self, file_id, url, range_=None, encryption: Optional[EncryptionSetting] = None
+    ):
         file_sim = self.file_id_to_file[file_id]
+        file_sim.check_encryption(encryption)
         return self._download_file_sim(file_sim, url, range_=range_)
 
-    def download_file_by_name(self, file_name, url, range_=None):
+    def download_file_by_name(
+        self, file_name, url, range_=None, encryption: Optional[EncryptionSetting] = None
+    ):
         files = self.list_file_names(file_name, 1)['files']
         if len(files) == 0:
-            raise FileNotPresent(file_name)
+            raise FileNotPresent(file_id_or_name=file_name)
         file_dict = files[0]
         if file_dict['fileName'] != file_name or file_dict['action'] != 'upload':
-            raise FileNotPresent(file_name)
+            raise FileNotPresent(file_id_or_name=file_name)
         file_sim = self.file_name_and_id_to_file[(file_name, file_dict['fileId'])]
+        file_sim.check_encryption(encryption)
         return self._download_file_sim(file_sim, url, range_=range_)
 
     def _download_file_sim(self, file_sim, url, range_=None):
@@ -409,11 +496,17 @@ class BucketSimulator(object):
         file_sim.finish(part_sha1_array)
         return file_sim.as_upload_result()
 
-    def get_file_info(self, file_id):
+    def get_file_info_by_id(self, file_id):
         return self.file_id_to_file[file_id].as_upload_result()
 
+    def get_file_info_by_name(self, file_name):
+        for ((name, id), file) in self.file_name_and_id_to_file.items():
+            if file_name == name:
+                return file.as_download_headers()
+        raise FileNotPresent(file_id_or_name=file_name, bucket_name=self.bucket_name)
+
     def get_upload_url(self):
-        upload_id = six.next(self.upload_url_counter)
+        upload_id = next(self.upload_url_counter)
         upload_url = 'https://upload.example.com/%s/%s' % (self.bucket_id, upload_id)
         return dict(bucketId=self.bucket_id, uploadUrl=upload_url, authorizationToken=upload_url)
 
@@ -424,8 +517,8 @@ class BucketSimulator(object):
     def hide_file(self, file_name):
         file_id = self._next_file_id()
         file_sim = self.FILE_SIMULATOR_CLASS(
-            self.account_id, self.bucket_id, file_id, 'hide', file_name, None, "none", {},
-            six.b(''), six.next(self.upload_timestamp_counter)
+            self.account_id, self.bucket_id, file_id, 'hide', file_name, None, "none", {}, b'',
+            next(self.upload_timestamp_counter)
         )
         self.file_id_to_file[file_id] = file_sim
         self.file_name_and_id_to_file[file_sim.sort_key()] = file_sim
@@ -440,6 +533,8 @@ class BucketSimulator(object):
         content_type=None,
         file_info=None,
         destination_bucket_id=None,
+        destination_server_side_encryption: Optional[EncryptionSetting] = None,
+        source_server_side_encryption: Optional[EncryptionSetting] = None,
     ):
         if metadata_directive is not None:
             assert metadata_directive in tuple(MetadataDirectiveMode)
@@ -455,15 +550,26 @@ class BucketSimulator(object):
                 )
 
         file_sim = self.file_id_to_file[file_id]
+        file_sim.check_encryption(source_server_side_encryption)
         new_file_id = self._next_file_id()
 
         data_bytes = get_bytes_range(file_sim.data_bytes, bytes_range)
 
         destination_bucket_id = destination_bucket_id or self.bucket_id
+        sse = destination_server_side_encryption or self.default_server_side_encryption
+        logger.debug('setting encryption to %s', sse)
         copy_file_sim = self.FILE_SIMULATOR_CLASS(
-            self.account_id, destination_bucket_id, new_file_id, 'copy', new_file_name,
-            file_sim.content_type, file_sim.content_sha1, file_sim.file_info, data_bytes,
-            six.next(self.upload_timestamp_counter)
+            self.account_id,
+            destination_bucket_id,
+            new_file_id,
+            'copy',
+            new_file_name,
+            file_sim.content_type,
+            file_sim.content_sha1,
+            file_sim.file_info,
+            data_bytes,
+            next(self.upload_timestamp_counter),
+            server_side_encryption=sse,
         )
 
         if metadata_directive is MetadataDirectiveMode.REPLACE:
@@ -480,7 +586,7 @@ class BucketSimulator(object):
         result_files = []
         next_file_name = None
         prev_file_name = None
-        for key in sorted(six.iterkeys(self.file_name_and_id_to_file)):
+        for key in sorted(self.file_name_and_id_to_file):
             (file_name, file_id) = key
             assert file_id
             if start_file_name <= file_name and file_name != prev_file_name:
@@ -510,7 +616,7 @@ class BucketSimulator(object):
         result_files = []
         next_file_name = None
         next_file_id = None
-        for key in sorted(six.iterkeys(self.file_name_and_id_to_file)):
+        for key in sorted(self.file_name_and_id_to_file):
             (file_name, file_id) = key
             if (start_file_name < file_name) or (
                 start_file_name == file_name and
@@ -534,7 +640,7 @@ class BucketSimulator(object):
         start_file_id = start_file_id or self.FIRST_FILE_ID
         max_file_count = max_file_count or 100
         all_unfinished_ids = set(
-            k for (k, v) in six.iteritems(self.file_id_to_file)
+            k for (k, v) in self.file_id_to_file.items()
             if v.action == 'start' and k <= start_file_id and
             (prefix is None or v.name.startswith(prefix))
         )
@@ -557,23 +663,34 @@ class BucketSimulator(object):
             next_file_id = str(int(file_dict_list[-1]['fileId']) - 1)
         return dict(files=file_dict_list, nextFileId=next_file_id)
 
-    def start_large_file(self, file_name, content_type, file_info):
+    def start_large_file(
+        self,
+        file_name,
+        content_type,
+        file_info,
+        server_side_encryption: Optional[EncryptionSetting] = None,
+    ):
         file_id = self._next_file_id()
+        sse = server_side_encryption or self.default_server_side_encryption
+        if sse:  # FIXME: remove this part when RawApi<->Encryption adapters are implemented properly
+            file_info = sse.add_key_id_to_file_info(file_info)
+        logger.debug('setting encryption to %s', sse)
         file_sim = self.FILE_SIMULATOR_CLASS(
             self.account_id, self.bucket_id, file_id, 'start', file_name, content_type, 'none',
-            file_info, None, six.next(self.upload_timestamp_counter)
+            file_info, None, next(self.upload_timestamp_counter), server_side_encryption=sse,
         )  # yapf: disable
         self.file_id_to_file[file_id] = file_sim
         self.file_name_and_id_to_file[file_sim.sort_key()] = file_sim
         return file_sim.as_start_large_file_result()
 
-    def update_bucket(
+    def _update_bucket(
         self,
         bucket_type=None,
         bucket_info=None,
         cors_rules=None,
         lifecycle_rules=None,
-        if_revision_is=None
+        if_revision_is=None,
+        default_server_side_encryption=None,
     ):
         if if_revision_is is not None and self.revision != if_revision_is:
             raise Conflict()
@@ -586,47 +703,120 @@ class BucketSimulator(object):
             self.cors_rules = cors_rules
         if lifecycle_rules is not None:
             self.lifecycle_rules = lifecycle_rules
+        if default_server_side_encryption is not None:
+            self.default_server_side_encryption = default_server_side_encryption
         self.revision += 1
-        return self.bucket_dict()
+        return self.bucket_dict(self.api.current_token)
 
     def upload_file(
-        self, upload_id, upload_auth_token, file_name, content_length, content_type, content_sha1,
-        file_infos, data_stream
+        self,
+        upload_id,
+        upload_auth_token,
+        file_name,
+        content_length,
+        content_type,
+        content_sha1,
+        file_infos,
+        data_stream,
+        server_side_encryption: Optional[EncryptionSetting] = None,
     ):
-        data_bytes = data_stream.read()
+        data_bytes = self._simulate_chunked_post(data_stream, content_length)
         assert len(data_bytes) == content_length
         if content_sha1 == HEX_DIGITS_AT_END:
             content_sha1 = data_bytes[-40:].decode()
             data_bytes = data_bytes[0:-40]
             content_length -= 40
+        elif len(content_sha1) != 40:
+            raise ValueError(content_sha1)
+        computed_sha1 = hex_sha1_of_bytes(data_bytes)
+        if content_sha1 != computed_sha1:
+            raise FileSha1Mismatch(file_name)
         file_id = self._next_file_id()
+
+        encryption = server_side_encryption or self.default_server_side_encryption
+        if encryption:  # FIXME: remove this part when RawApi<->Encryption adapters are implemented properly
+            file_infos = encryption.add_key_id_to_file_info(file_infos)
+        logger.debug('setting encryption to %s', encryption)
+
         file_sim = self.FILE_SIMULATOR_CLASS(
-            self.account_id, self.bucket_id, file_id, 'upload', file_name, content_type,
-            content_sha1, file_infos, data_bytes, six.next(self.upload_timestamp_counter)
+            self.account_id,
+            self.bucket_id,
+            file_id,
+            'upload',
+            file_name,
+            content_type,
+            content_sha1,
+            file_infos,
+            data_bytes,
+            next(self.upload_timestamp_counter),
+            server_side_encryption=encryption,
         )
         self.file_id_to_file[file_id] = file_sim
         self.file_name_and_id_to_file[file_sim.sort_key()] = file_sim
         return file_sim.as_upload_result()
 
-    def upload_part(self, file_id, part_number, content_length, sha1_sum, input_stream):
+    def upload_part(
+        self,
+        file_id,
+        part_number,
+        content_length,
+        sha1_sum,
+        input_stream,
+        server_side_encryption: Optional[EncryptionSetting] = None,
+    ):
         file_sim = self.file_id_to_file[file_id]
-        part_data = input_stream.read()
+        part_data = self._simulate_chunked_post(input_stream, content_length)
         assert len(part_data) == content_length
         if sha1_sum == HEX_DIGITS_AT_END:
             sha1_sum = part_data[-40:].decode()
             part_data = part_data[0:-40]
             content_length -= 40
+        computed_sha1 = hex_sha1_of_bytes(part_data)
+        if sha1_sum != computed_sha1:
+            raise PartSha1Mismatch(file_id)
         part = PartSimulator(file_sim.file_id, part_number, content_length, sha1_sum, part_data)
         file_sim.add_part(part_number, part)
-        return dict(
+        result = dict(
             fileId=file_id,
             partNumber=part_number,
             contentLength=content_length,
-            contentSha1=sha1_sum
+            contentSha1=sha1_sum,
         )  # yapf: disable
+        if server_side_encryption is not None:
+            result['serverSideEncryption'] = server_side_encryption.serialize_to_json_for_request()
+        return result
+
+    def _simulate_chunked_post(
+        self, stream, content_length, min_chunks=4, max_chunk_size=8096, simulate_retry=True
+    ):
+        chunk_size = max_chunk_size
+        chunks_num = self._chunks_number(content_length, chunk_size)
+        if chunks_num < min_chunks:
+            chunk_size = max(content_length // min_chunks, 1)
+        loop_count = 2 if simulate_retry else 1
+        stream_data = None
+        for _ in range(loop_count):
+            chunks = []
+            stream.seek(0)  # we always do this in `do_post` in `b2http` so we want it here *always*
+            while True:
+                data = stream.read(chunk_size)
+                chunks.append(data)
+                if not data:
+                    break
+            _stream_data = b''.join(chunks)
+            if stream_data is not None:
+                assert _stream_data == stream_data
+            stream_data = _stream_data
+        return stream_data
+
+    def _chunks_number(self, content_length, chunk_size):
+        chunks_number = content_length // chunk_size
+        if content_length % chunk_size > 0:
+            chunks_number = chunks_number + 1
+        return chunks_number
 
     def _next_file_id(self):
-        return str(six.next(self.file_id_counter))
+        return str(next(self.file_id_counter))
 
 
 class RawSimulator(AbstractRawApi):
@@ -640,6 +830,7 @@ class RawSimulator(AbstractRawApi):
 
     BUCKET_SIMULATOR_CLASS = BucketSimulator
     API_URL = 'http://api.example.com'
+    S3_API_URL = 'http://s3.api.example.com'
     DOWNLOAD_URL = 'http://download.example.com'
 
     MIN_PART_SIZE = 200
@@ -714,7 +905,7 @@ class RawSimulator(AbstractRawApi):
             name='master',
             application_key_id=account_id,
             key=master_key,
-            capabilities=ALL_CAPABILITES,
+            capabilities=ALL_CAPABILITIES,
             expiration_timestamp_or_none=None,
             bucket_id_or_none=None,
             bucket_name_or_none=None,
@@ -740,6 +931,7 @@ class RawSimulator(AbstractRawApi):
         if application_key != key_sim.key:
             raise InvalidAuthToken('secret key is wrong', 'unauthorized')
         auth_token = 'auth_token_%d' % (self.auth_token_counter,)
+        self.current_token = auth_token
         self.auth_token_counter += 1
         self.auth_token_to_key[auth_token] = key_sim
         allowed = key_sim.get_allowed()
@@ -756,6 +948,7 @@ class RawSimulator(AbstractRawApi):
             recommendedPartSize=self.MIN_PART_SIZE,
             absoluteMinimumPartSize=self.MIN_PART_SIZE,
             allowed=allowed,
+            s3ApiUrl=self.S3_API_URL,
         )
 
     def cancel_large_file(self, api_url, account_auth_token, file_id):
@@ -773,25 +966,41 @@ class RawSimulator(AbstractRawApi):
         bucket_type,
         bucket_info=None,
         cors_rules=None,
-        lifecycle_rules=None
+        lifecycle_rules=None,
+        default_server_side_encryption: Optional[EncryptionSetting] = None,
     ):
         if not re.match(r'^[-a-zA-Z0-9]*$', bucket_name):
             raise BadJson('illegal bucket name: ' + bucket_name)
         self._assert_account_auth(api_url, account_auth_token, account_id, 'writeBuckets')
         if bucket_name in self.bucket_name_to_bucket:
             raise DuplicateBucketName(bucket_name)
-        bucket_id = 'bucket_' + str(six.next(self.bucket_id_counter))
+        bucket_id = 'bucket_' + str(next(self.bucket_id_counter))
         bucket = self.BUCKET_SIMULATOR_CLASS(
-            account_id, bucket_id, bucket_name, bucket_type, bucket_info, cors_rules,
-            lifecycle_rules
+            self,
+            account_id,
+            bucket_id,
+            bucket_name,
+            bucket_type,
+            bucket_info,
+            cors_rules,
+            lifecycle_rules,
+            # watch out for options!
+            default_server_side_encryption=default_server_side_encryption,
         )
         self.bucket_name_to_bucket[bucket_name] = bucket
         self.bucket_id_to_bucket[bucket_id] = bucket
-        return bucket.bucket_dict()
+        return bucket.bucket_dict(account_auth_token)  # TODO it should be an object, right?
 
     def create_key(
-        self, api_url, account_auth_token, account_id, capabilities, key_name,
-        valid_duration_seconds, bucket_id, name_prefix
+        self,
+        api_url,
+        account_auth_token,
+        account_id,
+        capabilities,
+        key_name,
+        valid_duration_seconds,
+        bucket_id,
+        name_prefix,
     ):
         if not re.match(r'^[A-Za-z0-9-]{1,100}$', key_name):
             raise BadJson('illegal key name: ' + key_name)
@@ -824,7 +1033,7 @@ class RawSimulator(AbstractRawApi):
             expiration_timestamp_or_none=expiration_timestamp_or_none,
             bucket_id_or_none=bucket_id,
             bucket_name_or_none=bucket_name_or_none,
-            name_prefix_or_none=name_prefix
+            name_prefix_or_none=name_prefix,
         )
         self.key_id_to_key[application_key_id] = key_sim
         self.all_application_keys.append(key_sim)
@@ -841,9 +1050,15 @@ class RawSimulator(AbstractRawApi):
         bucket = self._get_bucket_by_id(bucket_id)
         del self.bucket_name_to_bucket[bucket.bucket_name]
         del self.bucket_id_to_bucket[bucket_id]
-        return bucket.bucket_dict()
+        return bucket.bucket_dict(account_auth_token)
 
-    def download_file_from_url(self, account_auth_token_or_none, url, range_=None):
+    def download_file_from_url(
+        self,
+        account_auth_token_or_none,
+        url,
+        range_=None,
+        encryption: Optional[EncryptionSetting] = None
+    ):
         # TODO: check auth token if bucket is not public
         matcher = self.DOWNLOAD_URL_MATCHER.match(url)
         assert matcher is not None, url
@@ -854,10 +1069,14 @@ class RawSimulator(AbstractRawApi):
         if file_id is not None:
             bucket_id = self.file_id_to_bucket_id[file_id]
             bucket = self._get_bucket_by_id(bucket_id)
-            return bucket.download_file_by_id(file_id, range_=range_, url=url)
+            return bucket.download_file_by_id(
+                file_id, range_=range_, url=url, encryption=encryption
+            )
         elif bucket_name is not None and file_name is not None:
             bucket = self._get_bucket_by_name(bucket_name)
-            return bucket.download_file_by_name(b2_url_decode(file_name), range_=range_, url=url)
+            return bucket.download_file_by_name(
+                b2_url_decode(file_name), range_=range_, url=url, encryption=encryption
+            )
         else:
             assert False
 
@@ -894,10 +1113,15 @@ class RawSimulator(AbstractRawApi):
                 )
         }
 
-    def get_file_info(self, api_url, account_auth_token, file_id):
+    def get_file_info_by_id(self, api_url, account_auth_token, file_id):
         bucket_id = self.file_id_to_bucket_id[file_id]
         bucket = self._get_bucket_by_id(bucket_id)
-        return bucket.get_file_info(file_id)
+        return bucket.get_file_info_by_id(file_id)
+
+    def get_file_info_by_name(self, api_url, account_auth_token, bucket_name, file_name):
+        bucket = self._get_bucket_by_name(bucket_name)
+        info = bucket.get_file_info_by_name(file_name)
+        return info
 
     def get_upload_url(self, api_url, account_auth_token, bucket_id):
         bucket = self._get_bucket_by_id(bucket_id)
@@ -928,6 +1152,8 @@ class RawSimulator(AbstractRawApi):
         content_type=None,
         file_info=None,
         destination_bucket_id=None,
+        destination_server_side_encryption=None,
+        source_server_side_encryption=None,
     ):
         bucket_id = self.file_id_to_bucket_id[source_file_id]
         bucket = self._get_bucket_by_id(bucket_id)
@@ -940,6 +1166,8 @@ class RawSimulator(AbstractRawApi):
             content_type,
             file_info,
             destination_bucket_id,
+            destination_server_side_encryption=destination_server_side_encryption,
+            source_server_side_encryption=source_server_side_encryption
         )
 
         if destination_bucket_id:
@@ -961,7 +1189,13 @@ class RawSimulator(AbstractRawApi):
         large_file_id,
         part_number,
         bytes_range=None,
+        destination_server_side_encryption: Optional[EncryptionSetting] = None,
+        source_server_side_encryption: Optional[EncryptionSetting] = None,
     ):
+        if destination_server_side_encryption is not None and destination_server_side_encryption.mode == EncryptionMode.SSE_B2:
+            raise ValueError(
+                'unsupported sse mode for copy_part!'
+            )  # SSE-B2 is only to be marked in b2_start_large_file
         src_bucket_id = self.file_id_to_bucket_id[source_file_id]
         src_bucket = self._get_bucket_by_id(src_bucket_id)
         dest_bucket_id = self.file_id_to_bucket_id[large_file_id]
@@ -970,6 +1204,7 @@ class RawSimulator(AbstractRawApi):
         self._assert_account_auth(api_url, account_auth_token, dest_bucket.account_id, 'writeFiles')
 
         file_sim = src_bucket.file_id_to_file[source_file_id]
+        file_sim.check_encryption(source_server_side_encryption)
         data_bytes = get_bytes_range(file_sim.data_bytes, bytes_range)
 
         data_stream = StreamWithHash(io.BytesIO(data_bytes), len(data_bytes))
@@ -977,7 +1212,12 @@ class RawSimulator(AbstractRawApi):
         sha1_sum = HEX_DIGITS_AT_END
 
         return dest_bucket.upload_part(
-            large_file_id, part_number, content_length, sha1_sum, data_stream
+            large_file_id,
+            part_number,
+            content_length,
+            sha1_sum,
+            data_stream,
+            server_side_encryption=destination_server_side_encryption,
         )
 
     def list_buckets(
@@ -994,17 +1234,16 @@ class RawSimulator(AbstractRawApi):
 
         # Do the query
         sorted_buckets = [
-            self.bucket_name_to_bucket[name]
-            for name in sorted(six.iterkeys(self.bucket_name_to_bucket))
+            self.bucket_name_to_bucket[name] for name in sorted(self.bucket_name_to_bucket)
         ]
         bucket_list = [
-            bucket.bucket_dict()
+            bucket.bucket_dict(account_auth_token)
             for bucket in sorted_buckets if self._bucket_matches(bucket, bucket_id, bucket_name)
         ]
         return dict(buckets=bucket_list)
 
     def _get_bucket_id_or_none_for_bucket_name(self, bucket_name):
-        for bucket in six.itervalues(self.bucket_name_to_bucket):
+        for bucket in self.bucket_name_to_bucket.values():
             if bucket.bucket_name == bucket_name:
                 return bucket.bucket_id
 
@@ -1091,11 +1330,23 @@ class RawSimulator(AbstractRawApi):
         return bucket.list_unfinished_large_files(start_file_id, max_file_count, prefix)
 
     def start_large_file(
-        self, api_url, account_auth_token, bucket_id, file_name, content_type, file_info
+        self,
+        api_url,
+        account_auth_token,
+        bucket_id,
+        file_name,
+        content_type,
+        file_info,
+        server_side_encryption: Optional[EncryptionSetting] = None,
     ):
         bucket = self._get_bucket_by_id(bucket_id)
         self._assert_account_auth(api_url, account_auth_token, bucket.account_id, 'writeFiles')
-        result = bucket.start_large_file(file_name, content_type, file_info)
+        result = bucket.start_large_file(
+            file_name,
+            content_type,
+            file_info,
+            server_side_encryption,
+        )
         self.file_id_to_bucket_id[result['fileId']] = bucket_id
         return result
 
@@ -1109,22 +1360,32 @@ class RawSimulator(AbstractRawApi):
         bucket_info=None,
         cors_rules=None,
         lifecycle_rules=None,
-        if_revision_is=None
+        if_revision_is=None,
+        default_server_side_encryption=None,
     ):
-        assert bucket_type or bucket_info
+        assert bucket_type or bucket_info or cors_rules or lifecycle_rules or default_server_side_encryption
         bucket = self._get_bucket_by_id(bucket_id)
         self._assert_account_auth(api_url, account_auth_token, bucket.account_id, 'writeBuckets')
-        return bucket.update_bucket(
+        return bucket._update_bucket(
             bucket_type=bucket_type,
             bucket_info=bucket_info,
             cors_rules=cors_rules,
             lifecycle_rules=lifecycle_rules,
-            if_revision_is=if_revision_is
+            if_revision_is=if_revision_is,
+            default_server_side_encryption=default_server_side_encryption,
         )
 
     def upload_file(
-        self, upload_url, upload_auth_token, file_name, content_length, content_type, content_sha1,
-        file_infos, data_stream
+        self,
+        upload_url,
+        upload_auth_token,
+        file_name,
+        content_length,
+        content_type,
+        content_sha1,
+        file_infos,
+        data_stream,
+        server_side_encryption: Optional[EncryptionSetting] = None,
     ):
         with ConcurrentUsedAuthTokenGuard(
             self.currently_used_auth_tokens[upload_auth_token], upload_auth_token
@@ -1137,6 +1398,11 @@ class RawSimulator(AbstractRawApi):
                 raise self.upload_errors.pop(0)
             bucket_id, upload_id = url_match.groups()
             bucket = self._get_bucket_by_id(bucket_id)
+            if server_side_encryption is not None:
+                assert server_side_encryption.mode in (
+                    EncryptionMode.NONE, EncryptionMode.SSE_B2, EncryptionMode.SSE_C
+                )
+                file_infos = server_side_encryption.add_key_id_to_file_info(file_infos)
             response = bucket.upload_file(
                 upload_id,
                 upload_auth_token,
@@ -1146,13 +1412,21 @@ class RawSimulator(AbstractRawApi):
                 content_sha1,
                 file_infos,
                 data_stream,
+                server_side_encryption,
             )
             file_id = response['fileId']
             self.file_id_to_bucket_id[file_id] = bucket_id
         return response
 
     def upload_part(
-        self, upload_url, upload_auth_token, part_number, content_length, sha1_sum, input_stream
+        self,
+        upload_url,
+        upload_auth_token,
+        part_number,
+        content_length,
+        sha1_sum,
+        input_stream,
+        server_side_encryption: Optional[EncryptionSetting] = None,
     ):
         with ConcurrentUsedAuthTokenGuard(
             self.currently_used_auth_tokens[upload_auth_token], upload_auth_token
@@ -1163,7 +1437,9 @@ class RawSimulator(AbstractRawApi):
             file_id = url_match.group(1)
             bucket_id = self.file_id_to_bucket_id[file_id]
             bucket = self._get_bucket_by_id(bucket_id)
-            part = bucket.upload_part(file_id, part_number, content_length, sha1_sum, input_stream)
+            part = bucket.upload_part(
+                file_id, part_number, content_length, sha1_sum, input_stream, server_side_encryption
+            )
         return part
 
     def _assert_account_auth(

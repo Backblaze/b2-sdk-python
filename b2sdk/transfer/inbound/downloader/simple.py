@@ -8,10 +8,12 @@
 #
 ######################################################################
 
+from typing import Optional
 import hashlib
 import logging
 
 from .abstract import AbstractDownloader
+from b2sdk.encryption.setting import EncryptionSetting
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +25,9 @@ class SimpleDownloader(AbstractDownloader):
     def is_suitable(self, metadata, progress_listener):
         return True
 
-    def download(self, file, response, metadata, session):
+    def download(
+        self, file, response, metadata, session, encryption: Optional[EncryptionSetting] = None
+    ):
         actual_size = self._get_remote_range(response, metadata).size()
         chunk_size = self._get_chunk_size(actual_size)
 
@@ -56,6 +60,7 @@ class SimpleDownloader(AbstractDownloader):
             with session.download_file_from_url(
                 response.request.url,
                 new_range.as_tuple(),
+                encryption=encryption,
             ) as followup_response:
                 for data in followup_response.iter_content(
                     chunk_size=self._get_chunk_size(actual_size)

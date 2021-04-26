@@ -6,7 +6,7 @@ Advanced usage patterns
 
 B2 server API allows for creation of an object from existing objects. This allows to avoid transferring data from the source machine if the desired outcome can be (at least partially) constructed from what is already on the server.
 
-The way **b2sdk** exposes this functonality is through a few functions that allow the user to express the desired outcome and then the library takes care of planning and executing the work. Please refer to the table below to compare the support of object creation methods for various usage patterns.
+The way **b2sdk** exposes this functionality is through a few functions that allow the user to express the desired outcome and then the library takes care of planning and executing the work. Please refer to the table below to compare the support of object creation methods for various usage patterns.
 
 *****************
 Available methods
@@ -37,7 +37,7 @@ Available methods
 Range overlap
 =============
 
-Some methods support overlapping ranges between local and remote files. **b2sdk** tries to use the remote ranges as much as possible, but due to limitations of ``b2_copy_part`` (specifically the minimum size of a part) that may not be always possible. A possible solutuon for such case is to download a (small) range and then upload it along with another one, to meet the ``b2_copy_part`` requirements. This can be improved if the same data is already available locally - in such case **b2sdk** will use the local range rather than downloading it.
+Some methods support overlapping ranges between local and remote files. **b2sdk** tries to use the remote ranges as much as possible, but due to limitations of ``b2_copy_part`` (specifically the minimum size of a part) that may not be always possible. A possible solution for such case is to download a (small) range and then upload it along with another one, to meet the ``b2_copy_part`` requirements. This can be improved if the same data is already available locally - in such case **b2sdk** will use the local range rather than downloading it.
 
 
 Streaming interface
@@ -69,9 +69,9 @@ Concatenate files of known size
 
     >>> bucket = b2_api.get_bucket_by_name(bucket_name)
     >>> input_sources = [
-    ...     RemoteFileUploadSource('4_z5485a1682662eb3e60980d10_f113f963288e711a6_d20190404_m065910_c002_v0001095_t0044', offset=100, length=100),
-    ...     LocalUploadSource('my_local_path/to_file.txt'),
-    ...     RemoteFileUploadSource('4_z5485a1682662eb3e60980d10_f1022e2320daf707f_d20190620_m122848_c002_v0001123_t0020', length=2123456789),
+    ...     CopySource('4_z5485a1682662eb3e60980d10_f113f963288e711a6_d20190404_m065910_c002_v0001095_t0044', offset=100, length=100),
+    ...     UploadSourceLocalFile('my_local_path/to_file.txt'),
+    ...     CopySource('4_z5485a1682662eb3e60980d10_f1022e2320daf707f_d20190620_m122848_c002_v0001123_t0020', length=2123456789),
     ... ]
     >>> file_info = {'how': 'good-file'}
     >>> bucket.concatenate(input_sources, remote_name, file_info)
@@ -81,7 +81,7 @@ If one of remote source has length smaller than :term:`absoluteMinimumPartSize` 
 
 Please note that this method only allows checksum verification for local upload sources. Checksum verification for remote sources is available only when local copy is available. In such case :meth:`b2sdk.v1.Bucket.create_file` can be used with overalapping ranges in input.
 
-For more information about ``concatenate`` please see :meth:`b2sdk.v1.Bucket.concatenate` and :class:`b2sdk.v1.RemoteUploadSource`.
+For more information about ``concatenate`` please see :meth:`b2sdk.v1.Bucket.concatenate` and :class:`b2sdk.v1.CopySource`.
 
 
 Concatenate files of known size (streamed version)
@@ -93,9 +93,9 @@ Concatenate files of known size (streamed version)
 
     >>> bucket = b2_api.get_bucket_by_name(bucket_name)
     >>> input_sources = [
-    ...     RemoteFileUploadSource('4_z5485a1682662eb3e60980d10_f113f963288e711a6_d20190404_m065910_c002_v0001095_t0044', offset=100, length=100),
-    ...     LocalUploadSource('my_local_path/to_file.txt'),
-    ...     RemoteFileUploadSource('4_z5485a1682662eb3e60980d10_f1022e2320daf707f_d20190620_m122848_c002_v0001123_t0020', length=2123456789),
+    ...     CopySource('4_z5485a1682662eb3e60980d10_f113f963288e711a6_d20190404_m065910_c002_v0001095_t0044', offset=100, length=100),
+    ...     UploadSourceLocalFile('my_local_path/to_file.txt'),
+    ...     CopySource('4_z5485a1682662eb3e60980d10_f1022e2320daf707f_d20190620_m122848_c002_v0001123_t0020', length=2123456789),
     ... ]
     >>> file_info = {'how': 'good-file'}
     >>> bucket.concatenate_stream(input_sources, remote_name, file_info)
@@ -134,7 +134,7 @@ The assumption here is that the file has been appended to since it was last uplo
     >>> bucket = b2_api.get_bucket_by_name(bucket_name)
     >>> input_sources = [
     ...     WriteIntent(
-    ...         data=RemoteFileUploadSource(
+    ...         data=CopySource(
     ...             '4_z5485a1682662eb3e60980d10_f113f963288e711a6_d20190404_m065910_c002_v0001095_t0044',
     ...             offset=0,
     ...             length=5000000,
@@ -142,7 +142,7 @@ The assumption here is that the file has been appended to since it was last uplo
     ...         destination_offset=0,
     ...     ),
     ...     WriteIntent(
-    ...         data=LocalFileUploadSource('my_local_path/to_file.txt'),  # of length 60000000
+    ...         data=UploadSourceLocalFile('my_local_path/to_file.txt'),  # of length 60000000
     ...         destination_offset=0,
     ...     ),
     ... ]
@@ -163,15 +163,15 @@ Change the middle of the remote file
     >>> bucket = b2_api.get_bucket_by_name(bucket_name)
     >>> input_sources = [
     ...     WriteIntent(
-    ...         RemoteUploadSource('4_z5485a1682662eb3e60980d10_f113f963288e711a6_d20190404_m065910_c002_v0001095_t0044', offset=0, length=4000000),
+    ...         CopySource('4_z5485a1682662eb3e60980d10_f113f963288e711a6_d20190404_m065910_c002_v0001095_t0044', offset=0, length=4000000),
     ...         destination_offset=0,
     ...     ),
     ...     WriteIntent(
-    ...         LocalFileUploadSource('my_local_path/to_file.txt'),  # length=1024, here not passed and just checked from local source using seek
+    ...         UploadSourceLocalFile('my_local_path/to_file.txt'),  # length=1024, here not passed and just checked from local source using seek
     ...         destination_offset=4000000,
     ...     ),
     ...     WriteIntent(
-    ...         RemoteUploadSource('4_z5485a1682662eb3e60980d10_f113f963288e711a6_d20190404_m065910_c002_v0001095_t0044', offset=4001024, length=123456789),
+    ...         CopySource('4_z5485a1682662eb3e60980d10_f113f963288e711a6_d20190404_m065910_c002_v0001095_t0044', offset=4001024, length=123456789),
     ...         destination_offset=4001024,
     ...     ),
     ... ]
@@ -222,15 +222,15 @@ Scenarios such as below are then possible:
     >>> bucket = b2_api.get_bucket_by_name(bucket_name)
     >>> def generate_input():
     ...     yield WriteIntent(
-    ...         RemoteUploadSource('4_z5485a1682662eb3e60980d10_f113f963288e711a6_d20190404_m065910_c002_v0001095_t0044', offset=0, length=lengthC),
+    ...         CopySource('4_z5485a1682662eb3e60980d10_f113f963288e711a6_d20190404_m065910_c002_v0001095_t0044', offset=0, length=lengthC),
     ...         destination_offset=0,
     ...     )
     ...     yield WriteIntent(
-    ...         LocalFileUploadSource('my_local_path/to_file.txt'), # length = offsetF - offsetB
+    ...         UploadSourceLocalFile('my_local_path/to_file.txt'), # length = offsetF - offsetB
     ...         destination_offset=offsetB,
     ...     )
     ...     yield WriteIntent(
-    ...         RemoteUploadSource('4_z5485a1682662eb3e60980d10_f113f963288e711a6_d20190404_m065910_c002_v0001095_t0044', offset=0, length=offsetG-offsetD),
+    ...         CopySource('4_z5485a1682662eb3e60980d10_f113f963288e711a6_d20190404_m065910_c002_v0001095_t0044', offset=0, length=offsetG-offsetD),
     ...         destination_offset=offsetD,
     ...     )
     ...
@@ -243,6 +243,10 @@ In such case, if the sizes allow for it (there would be no parts smaller than :t
 
 For more information see :meth:`b2sdk.v1.Bucket.create_file`.
 
+Encryption
+----------
+
+Even if files `A-C` and `D-G` are encrypted using `SSE-C` with different keys, they can still be used in a single :meth:`b2sdk.v1.Bucket.create_file` call, because :class:`b2sdk.v1.CopySource` accepts an optional :class:`b2sdk.v1.EncryptionSetting`.
 
 Prioritize remote or local sources
 ----------------------------------

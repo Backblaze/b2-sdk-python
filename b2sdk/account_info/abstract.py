@@ -7,19 +7,17 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
-
 from abc import abstractmethod
 
-import six
-
+from b2sdk.account_info import exception
 from b2sdk.raw_api import ALL_CAPABILITIES
 from b2sdk.utils import B2TraceMetaAbstract, limit_trace_arguments
 
 
-@six.add_metaclass(B2TraceMetaAbstract)
-class AbstractAccountInfo(object):
+class AbstractAccountInfo(metaclass=B2TraceMetaAbstract):
     """
-    Abstract class for a holder for all account-related information that needs to be kept between API calls and between invocations of the program.
+    Abstract class for a holder for all account-related information
+    that needs to be kept between API calls and between invocations of the program.
 
     This includes: account ID, application key ID, application key,
     auth tokens, API URL, download URL, and uploads URLs.
@@ -101,10 +99,36 @@ class AbstractAccountInfo(object):
         :param str bucket_id: a bucket ID
         """
 
+    def is_same_key(self, application_key_id, realm):
+        """
+        Check whether cached application key is the same as the one provided.
+
+        :param str application_key_id: application key ID
+        :param str realm: authorization realm
+        :rtype: bool
+        """
+        try:
+            return self.get_application_key_id() == application_key_id and self.get_realm() == realm
+        except exception.MissingAccountData:
+            return False
+
+    def is_same_account(self, account_id: str, realm: str) -> bool:
+        """
+        Check whether cached account is the same as the one provided.
+
+        :param str account_id: account ID
+        :param str realm: authorization realm
+        :rtype: bool
+        """
+        try:
+            return self.get_account_id() == account_id and self.get_realm() == realm
+        except exception.MissingAccountData:
+            return False
+
     @abstractmethod
     def get_account_id(self):
         """
-        Return account ID or raises MissingAccountData exception.
+        Return account ID or raises :class:`~b2sdk.v1.exception.MissingAccountData` exception.
 
         :rtype: str
         """
@@ -120,7 +144,7 @@ class AbstractAccountInfo(object):
     @abstractmethod
     def get_account_auth_token(self):
         """
-        Return account_auth_token or raises MissingAccountData exception.
+        Return account_auth_token or raises :class:`~b2sdk.v1.exception.MissingAccountData` exception.
 
         :rtype: str
         """
@@ -128,7 +152,7 @@ class AbstractAccountInfo(object):
     @abstractmethod
     def get_api_url(self):
         """
-        Return api_url or raises MissingAccountData exception.
+        Return api_url or raises :class:`~b2sdk.v1.exception.MissingAccountData` exception.
 
         :rtype: str
         """
@@ -136,7 +160,7 @@ class AbstractAccountInfo(object):
     @abstractmethod
     def get_application_key(self):
         """
-        Return application_key or raises MissingAccountData exception.
+        Return application_key or raises :class:`~b2sdk.v1.exception.MissingAccountData` exception.
 
         :rtype: str
         """
@@ -144,7 +168,7 @@ class AbstractAccountInfo(object):
     @abstractmethod
     def get_download_url(self):
         """
-        Return download_url or raises MissingAccountData exception.
+        Return download_url or raises :class:`~b2sdk.v1.exception.MissingAccountData` exception.
 
         :rtype: str
         """
@@ -152,7 +176,7 @@ class AbstractAccountInfo(object):
     @abstractmethod
     def get_realm(self):
         """
-        Return realm or raises MissingAccountData exception.
+        Return realm or raises :class:`~b2sdk.v1.exception.MissingAccountData` exception.
 
         :rtype: str
         """
@@ -176,7 +200,17 @@ class AbstractAccountInfo(object):
         :rtype: dict
         """
 
-    @limit_trace_arguments(only=['self', 'api_url', 'download_url', 'minimum_part_size', 'realm'])
+    @abstractmethod
+    def get_s3_api_url(self):
+        """
+        Return s3_api_url or raises :class:`~b2sdk.v1.exception.MissingAccountData` exception.
+
+        :rtype: str
+        """
+
+    @limit_trace_arguments(
+        only=['self', 'api_url', 'download_url', 'minimum_part_size', 'realm', 's3_api_url']
+    )
     def set_auth_data(
         self,
         account_id,
@@ -186,8 +220,9 @@ class AbstractAccountInfo(object):
         minimum_part_size,
         application_key,
         realm,
+        s3_api_url,
         allowed=None,
-        application_key_id=None,
+        application_key_id=None
     ):
         """
         Check permission correctness and stores the results of ``b2_authorize_account``.
@@ -206,6 +241,7 @@ class AbstractAccountInfo(object):
         :param str realm: a realm to authorize account in
         :param dict allowed: the structure to use for old account info that was saved without 'allowed'
         :param str application_key_id: application key ID
+        :param str s3_api_url: S3-compatible API URL
 
         .. versionchanged:: 0.1.5
            `account_id_or_app_key_id` renamed to `application_key_id`
@@ -213,16 +249,10 @@ class AbstractAccountInfo(object):
         if allowed is None:
             allowed = self.DEFAULT_ALLOWED
         assert self.allowed_is_valid(allowed)
+
         self._set_auth_data(
-            account_id,
-            auth_token,
-            api_url,
-            download_url,
-            minimum_part_size,
-            application_key,
-            realm,
-            allowed,
-            application_key_id,
+            account_id, auth_token, api_url, download_url, minimum_part_size, application_key,
+            realm, s3_api_url, allowed, application_key_id
         )
 
     @classmethod
@@ -246,16 +276,8 @@ class AbstractAccountInfo(object):
     # TODO: make a decorator for set_auth_data()
     @abstractmethod
     def _set_auth_data(
-        self,
-        account_id,
-        auth_token,
-        api_url,
-        download_url,
-        minimum_part_size,
-        application_key,
-        realm,
-        allowed,
-        application_key_id,
+        self, account_id, auth_token, api_url, download_url, minimum_part_size, application_key,
+        realm, s3_api_url, allowed, application_key_id
     ):
         """
         Actually store the auth data.  Can assume that 'allowed' is present and valid.

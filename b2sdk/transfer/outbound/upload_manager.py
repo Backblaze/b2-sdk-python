@@ -9,8 +9,9 @@
 ######################################################################
 
 import logging
-import six
+import concurrent.futures as futures
 
+from b2sdk.encryption.setting import EncryptionMode, EncryptionSetting
 from b2sdk.exception import (
     AlreadyFailed,
     B2Error,
@@ -24,16 +25,10 @@ from b2sdk.utils import B2TraceMetaAbstract
 
 from .progress_reporter import PartProgressReporter
 
-try:
-    import concurrent.futures as futures
-except ImportError:
-    import futures
-
 logger = logging.getLogger(__name__)
 
 
-@six.add_metaclass(B2TraceMetaAbstract)
-class UploadManager(object):
+class UploadManager(metaclass=B2TraceMetaAbstract):
     """
     Handle complex actions around uploads to free raw_api from that responsibility.
     """
@@ -83,6 +78,7 @@ class UploadManager(object):
         content_type,
         file_info,
         progress_listener,
+        encryption: EncryptionSetting = None,
     ):
         f = self.get_thread_pool().submit(
             self._upload_small_file,
@@ -92,6 +88,7 @@ class UploadManager(object):
             content_type,
             file_info,
             progress_listener,
+            encryption,
         )
         return f
 
@@ -103,6 +100,7 @@ class UploadManager(object):
         part_number,
         large_file_upload_state,
         finished_parts=None,
+        encryption: EncryptionSetting = None,
     ):
         f = self.get_thread_pool().submit(
             self._upload_part,
@@ -112,6 +110,7 @@ class UploadManager(object):
             part_number,
             large_file_upload_state,
             finished_parts,
+            encryption,
         )
         return f
 
@@ -122,7 +121,8 @@ class UploadManager(object):
         part_upload_source,
         part_number,
         large_file_upload_state,
-        finished_parts=None
+        finished_parts,
+        encryption: EncryptionSetting,
     ):
         """
         Upload a file part to started large file.
@@ -134,7 +134,13 @@ class UploadManager(object):
                                                                       on large file upload
         :param dict,None finished_parts: dictionary of known finished parts, keys are part numbers,
                                          values are instances of :class:`~b2sdk.v1.Part`
+        :param b2sdk.v1.EncryptionSetting encryption: encryption setting (``None`` if unknown)
         """
+
+        # b2_upload_part doesn't need SSE-B2. Large file encryption is decided on b2_start_large_file.
+        if encryption is not None and encryption.mode == EncryptionMode.SSE_B2:
+            encryption = None
+
         # Check if this part was uploaded before
         if finished_parts is not None and part_number in finished_parts:
             # Report this part finished
@@ -149,7 +155,7 @@ class UploadManager(object):
 
         # Retry the upload as needed
         exception_list = []
-        for _ in six.moves.xrange(self.MAX_UPLOAD_ATTEMPTS):
+        for _ in range(self.MAX_UPLOAD_ATTEMPTS):
             # if another part has already had an error there's no point in
             # uploading this part
             if large_file_upload_state.has_error():
@@ -157,16 +163,27 @@ class UploadManager(object):
 
             try:
                 with part_upload_source.open() as part_stream:
-                    input_stream = ReadingStreamWithProgress(part_stream, part_progress_listener)
-                    hashing_stream = StreamWithHash(
-                        input_stream, stream_length=part_upload_source.get_content_length()
+                    content_length = part_upload_source.get_content_length()
+                    input_stream = ReadingStreamWithProgress(
+                        part_stream, part_progress_listener, length=content_length
                     )
-                    # it is important that `len()` works on `hashing_stream`
+                    if part_upload_source.is_sha1_known():
+                        content_sha1 = part_upload_source.get_content_sha1()
+                    else:
+                        input_stream = StreamWithHash(input_stream, stream_length=content_length)
+                        content_sha1 = HEX_DIGITS_AT_END
+                    # it is important that `len()` works on `input_stream`
                     response = self.services.session.upload_part(
-                        file_id, part_number, hashing_stream.length, HEX_DIGITS_AT_END,
-                        hashing_stream
+                        file_id,
+                        part_number,
+                        len(input_stream),
+                        content_sha1,
+                        input_stream,
+                        server_side_encryption=encryption,  # todo: client side encryption
                     )
-                    assert hashing_stream.hash == response['contentSha1']
+                    if content_sha1 == HEX_DIGITS_AT_END:
+                        content_sha1 = input_stream.hash
+                    assert content_sha1 == response['contentSha1']
                     return response
 
             except B2Error as e:
@@ -179,23 +196,47 @@ class UploadManager(object):
         raise MaxRetriesExceeded(self.MAX_UPLOAD_ATTEMPTS, exception_list)
 
     def _upload_small_file(
-        self, bucket_id, upload_source, file_name, content_type, file_info, progress_listener
+        self,
+        bucket_id,
+        upload_source,
+        file_name,
+        content_type,
+        file_info,
+        progress_listener,
+        encryption: EncryptionSetting,
     ):
         content_length = upload_source.get_content_length()
         exception_info_list = []
         progress_listener.set_total_bytes(content_length)
         with progress_listener:
-            for _ in six.moves.xrange(self.MAX_UPLOAD_ATTEMPTS):
+            for _ in range(self.MAX_UPLOAD_ATTEMPTS):
                 try:
                     with upload_source.open() as file:
-                        input_stream = ReadingStreamWithProgress(file, progress_listener)
-                        hashing_stream = StreamWithHash(input_stream, stream_length=content_length)
-                        # it is important that `len()` works on `hashing_stream`
-                        response = self.services.session.upload_file(
-                            bucket_id, file_name, hashing_stream.length, content_type,
-                            HEX_DIGITS_AT_END, file_info, hashing_stream
+                        input_stream = ReadingStreamWithProgress(
+                            file, progress_listener, length=content_length
                         )
-                        assert hashing_stream.hash == response['contentSha1']
+                        if upload_source.is_sha1_known():
+                            content_sha1 = upload_source.get_content_sha1()
+                        else:
+                            input_stream = StreamWithHash(
+                                input_stream, stream_length=content_length
+                            )
+                            content_sha1 = HEX_DIGITS_AT_END
+                        # it is important that `len()` works on `input_stream`
+                        response = self.services.session.upload_file(
+                            bucket_id,
+                            file_name,
+                            len(input_stream),
+                            content_type,
+                            content_sha1,
+                            file_info,
+                            input_stream,
+                            server_side_encryption=encryption,  # todo: client side encryption
+                        )
+                        if content_sha1 == HEX_DIGITS_AT_END:
+                            content_sha1 = input_stream.hash
+                        assert content_sha1 == response[
+                            'contentSha1'], '%s != %s' % (content_sha1, response['contentSha1'])
                         return FileVersionInfoFactory.from_api_response(response)
 
                 except B2Error as e:

@@ -12,16 +12,14 @@ import logging
 import os
 import platform
 import re
-import six
 import sys
 
 from abc import ABCMeta, abstractmethod
 from b2sdk.exception import CommandError
 from .exception import EnvironmentEncodingError, UnSyncableFilename
-from .file import File, FileVersion
+from .file import File, B2File, FileVersion, B2FileVersion
 from .scan_policies import DEFAULT_SCAN_MANAGER
-from ..raw_api import SRC_LAST_MODIFIED_MILLIS
-from ..utils import fix_windows_path_limit, is_file_readable
+from ..utils import fix_windows_path_limit, get_file_mtime, is_file_readable
 
 DRIVE_MATCHER = re.compile(r"^([A-Za-z]):([/\\])")
 ABSOLUTE_PATH_MATCHER = re.compile(r"^(/)|^(\\)")
@@ -41,8 +39,7 @@ RELATIVE_PATH_MATCHER = re.compile(
 logger = logging.getLogger(__name__)
 
 
-@six.add_metaclass(ABCMeta)
-class AbstractFolder(object):
+class AbstractFolder(metaclass=ABCMeta):
     """
     Interface to a folder full of files, which might be a B2 bucket,
     a virtual folder in a B2 bucket, or a directory on a local file
@@ -117,7 +114,7 @@ class LocalFolder(AbstractFolder):
         :param root: path to the root of the local folder.  Must be unicode.
         :type root: str
         """
-        if not isinstance(root, six.text_type):
+        if not isinstance(root, str):
             raise ValueError('folder path should be unicode: %s' % repr(root))
         self.root = fix_windows_path_limit(os.path.abspath(root))
 
@@ -168,7 +165,7 @@ class LocalFolder(AbstractFolder):
         if not os.path.exists(self.root):
             try:
                 os.mkdir(self.root)
-            except:
+            except OSError:
                 raise Exception('unable to create directory %s' % (self.root,))
         elif not os.path.isdir(self.root):
             raise Exception('%s is not a directory' % (self.root,))
@@ -196,7 +193,7 @@ class LocalFolder(AbstractFolder):
         :param policies_manager: a manager for polices scan results
         :return:
         """
-        if not isinstance(local_dir, six.text_type):
+        if not isinstance(local_dir, str):
             raise ValueError('folder path should be unicode: %s' % repr(local_dir))
 
         # Collect the names.  We do this before returning any results, because
@@ -217,7 +214,7 @@ class LocalFolder(AbstractFolder):
             # We expect listdir() to return unicode if dir_path is unicode.
             # If the file name is not valid, based on the file system
             # encoding, then listdir() will return un-decoded str/bytes.
-            if not isinstance(name, six.text_type):
+            if not isinstance(name, str):
                 name = cls._handle_non_unicode_file_name(name)
 
             if '/' in name:
@@ -234,11 +231,12 @@ class LocalFolder(AbstractFolder):
                 continue
 
             if policies_manager.exclude_all_symlinks and os.path.islink(local_path):
-                reporter.symlink_skipped(local_path)
+                if reporter is not None:
+                    reporter.symlink_skipped(local_path)
                 continue
 
             if os.path.isdir(local_path):
-                name += six.u('/')
+                name += '/'
                 if policies_manager.should_exclude_directory(b2_path):
                     continue
             else:
@@ -261,8 +259,7 @@ class LocalFolder(AbstractFolder):
                 # Check that the file still exists and is accessible, since it can take a long time
                 # to iterate through large folders
                 if is_file_readable(local_path, reporter):
-                    file_mod_time = int(os.path.getmtime(local_path) * 1000)
-
+                    file_mod_time = get_file_mtime(local_path)
                     file_size = os.path.getsize(local_path)
                     version = FileVersion(local_path, b2_path, file_mod_time, 'upload', file_size)
 
@@ -281,12 +278,8 @@ class LocalFolder(AbstractFolder):
         names.
         """
         # if it's all ascii, allow it
-        if six.PY2:
-            if all(ord(c) <= 127 for c in name):
-                return name
-        else:
-            if all(b <= 127 for b in name):
-                return name
+        if all(b <= 127 for b in name):
+            return name
         raise EnvironmentEncodingError(repr(name), sys.getfilesystemencoding())
 
     def __repr__(self):
@@ -321,9 +314,15 @@ class B2Folder(AbstractFolder):
         """
         current_name = None
         current_versions = []
-        for (file_version_info, folder_name) in self.bucket.ls(
-            self.folder_name, show_versions=True, recursive=True, fetch_count=1000
+        current_file_version_info = None
+        for file_version_info, _ in self.bucket.ls(
+            self.folder_name,
+            show_versions=True,
+            recursive=True,
         ):
+            if current_file_version_info is None:
+                current_file_version_info = file_version_info
+
             assert file_version_info.file_name.startswith(self.prefix)
             if file_version_info.action == 'start':
                 continue
@@ -349,20 +348,11 @@ class B2Folder(AbstractFolder):
                 )
 
             if current_name != file_name and current_name is not None and current_versions:
-                yield File(current_name, current_versions)
+                yield B2File(current_name, current_versions)
                 current_versions = []
-            file_info = file_version_info.file_info
-            if SRC_LAST_MODIFIED_MILLIS in file_info:
-                mod_time_millis = int(file_info[SRC_LAST_MODIFIED_MILLIS])
-            else:
-                mod_time_millis = file_version_info.upload_timestamp
-            assert file_version_info.size is not None
 
             current_name = file_name
-            file_version = FileVersion(
-                file_version_info.id_, file_version_info.file_name, mod_time_millis,
-                file_version_info.action, file_version_info.size
-            )
+            file_version = B2FileVersion(file_version_info)
 
             if policies_manager.should_exclude_file_version(file_version):
                 continue
@@ -370,7 +360,7 @@ class B2Folder(AbstractFolder):
             current_versions.append(file_version)
 
         if current_name is not None and current_versions:
-            yield File(current_name, current_versions)
+            yield B2File(current_name, current_versions)
 
     def folder_type(self):
         """

@@ -8,23 +8,16 @@
 #
 ######################################################################
 
-from __future__ import division
-
 import logging
-import six
-
+import concurrent.futures as futures
 from enum import Enum, unique
 
 from ..bounded_queue_executor import BoundedQueueExecutor
+from .encryption_provider import AbstractSyncEncryptionSettingsProvider, SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER
 from .exception import InvalidArgument, IncompleteSync
 from .policy import CompareVersionMode, NewerFileSyncMode
 from .policy_manager import POLICY_MANAGER
 from .scan_policies import DEFAULT_SCAN_MANAGER
-
-try:
-    import concurrent.futures as futures
-except ImportError:
-    import futures
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +27,7 @@ def next_or_none(iterator):
     Return the next item from the iterator, or None if there are no more.
     """
     try:
-        return six.advance_iterator(iterator)
+        return next(iterator)
     except StopIteration:
         return None
 
@@ -81,7 +74,7 @@ def zip_folders(folder_a, folder_b, reporter, policies_manager=DEFAULT_SCAN_MANA
             current_b = next_or_none(iter_b)
 
 
-def count_files(local_folder, reporter):
+def count_files(local_folder, reporter, policies_manager):
     """
     Count all of the files in a local folder.
 
@@ -90,9 +83,9 @@ def count_files(local_folder, reporter):
     """
     # Don't pass in a reporter to all_files.  Broken symlinks will be reported
     # during the next pass when the source and dest files are compared.
-    for _ in local_folder.all_files(None):
-        reporter.update_local(1)
-    reporter.end_local()
+    for _ in local_folder.all_files(None, policies_manager=policies_manager):
+        reporter.update_total(1)
+    reporter.end_total()
 
 
 @unique
@@ -104,6 +97,30 @@ class KeepOrDeleteMode(Enum):
 
 
 class Synchronizer(object):
+    """
+    Copies multiple "files" from source to destination.  Optionally
+    deletes or hides destination files that the source does not have.
+
+    The synchronizer can copy files:
+
+    - From a B2 bucket to a local destination.
+    - From a local source to a B2 bucket.
+    - From one B2 bucket to another.
+    - Between different folders in the same B2 bucket.
+      It will sync only the latest versions of files.
+
+    By default, the synchronizer:
+
+    - Fails when the specified source directory doesn't exist or is empty.
+      (see ``allow_empty_source`` argument)
+    - Fails when the source is newer.
+      (see ``newer_file_mode`` argument)
+    - Doesn't delete a file if it's present on the destination but not on the source.
+      (see ``keep_days_or_delete`` and ``keep_days`` arguments)
+    - Compares files based on modification time.
+      (see ``compare_version_mode`` and ``compare_threshold`` arguments)
+    """
+
     def __init__(
         self,
         max_workers,
@@ -168,7 +185,15 @@ class Synchronizer(object):
                 'must be one of :%s' % CompareVersionMode.__members__,
             )
 
-    def sync_folders(self, source_folder, dest_folder, now_millis, reporter):
+    def sync_folders(
+        self,
+        source_folder,
+        dest_folder,
+        now_millis,
+        reporter,
+        encryption_settings_provider:
+        AbstractSyncEncryptionSettingsProvider = SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER,
+    ):
         """
         Syncs two folders.  Always ensures that every file in the
         source is also in the destination.  Deletes any file versions
@@ -178,12 +203,19 @@ class Synchronizer(object):
         :param b2sdk.sync.folder.AbstractFolder dest_folder: destination folder object
         :param int now_millis: current time in milliseconds
         :param b2sdk.sync.report.SyncReport,None reporter: progress reporter
+        :param b2sdk.v1.AbstractSyncEncryptionSettingsProvider encryption_settings_provider: encryption setting provider
         """
+        source_type = source_folder.folder_type()
+        dest_type = dest_folder.folder_type()
+
+        if source_type != 'b2' and dest_type != 'b2':
+            raise ValueError('Sync between two local folders is not supported!')
+
         # For downloads, make sure that the target directory is there.
-        if dest_folder.folder_type() == 'local' and not self.dry_run:
+        if dest_type == 'local' and not self.dry_run:
             dest_folder.ensure_present()
 
-        if source_folder.folder_type() == 'local' and not self.allow_empty_source:
+        if source_type == 'local' and not self.allow_empty_source:
             source_folder.ensure_non_empty()
 
         # Make an executor to count files and run all of the actions. This is
@@ -197,37 +229,31 @@ class Synchronizer(object):
         queue_limit = self.max_workers + 1000
         sync_executor = BoundedQueueExecutor(unbounded_executor, queue_limit=queue_limit)
 
-        # First, start the thread that counts the local files. That's the operation
-        # that should be fastest, and it provides scale for the progress reporting.
-        local_folder = None
-        if source_folder.folder_type() == 'local':
-            local_folder = source_folder
-        if dest_folder.folder_type() == 'local':
-            local_folder = dest_folder
-        if local_folder is None:
-            raise ValueError('neither folder is a local folder')
-        if reporter:
-            sync_executor.submit(count_files, local_folder, reporter)
+        if source_type == 'local' and reporter is not None:
+            # Start the thread that counts the local files. That's the operation
+            # that should be fastest, and it provides scale for the progress reporting.
+            sync_executor.submit(count_files, source_folder, reporter, self.policies_manager)
 
-        # Schedule each of the actions
-        bucket = None
-        if source_folder.folder_type() == 'b2':
-            bucket = source_folder.bucket
-        if dest_folder.folder_type() == 'b2':
-            bucket = dest_folder.bucket
-        if bucket is None:
-            raise ValueError('neither folder is a b2 folder')
-        total_files = 0
-        total_bytes = 0
+        # Bucket for scheduling actions.
+        # For bucket-to-bucket sync, the bucket for the API calls should be the destination.
+        action_bucket = None
+        if dest_type == 'b2':
+            action_bucket = dest_folder.bucket
+        elif source_type == 'b2':
+            action_bucket = source_folder.bucket
+
+        # Schedule each of the actions.
         for action in self.make_folder_sync_actions(
-            source_folder, dest_folder, now_millis, reporter, self.policies_manager
+            source_folder,
+            dest_folder,
+            now_millis,
+            reporter,
+            self.policies_manager,
+            encryption_settings_provider,
         ):
-            logging.debug('scheduling action %s on bucket %s', action, bucket)
-            sync_executor.submit(action.run, bucket, reporter, self.dry_run)
-            total_files += 1
-            total_bytes += action.get_bytes()
-        if reporter:
-            reporter.end_compare(total_files, total_bytes)
+            logging.debug('scheduling action %s on bucket %s', action, action_bucket)
+            sync_executor.submit(action.run, action_bucket, reporter, self.dry_run)
+
         # Wait for everything to finish
         sync_executor.shutdown()
         if sync_executor.get_num_exceptions() != 0:
@@ -240,6 +266,8 @@ class Synchronizer(object):
         now_millis,
         reporter,
         policies_manager=DEFAULT_SCAN_MANAGER,
+        encryption_settings_provider:
+        AbstractSyncEncryptionSettingsProvider = SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER,
     ):
         """
         Yield a sequence of actions that will sync the destination
@@ -250,6 +278,7 @@ class Synchronizer(object):
         :param int now_millis: current time in milliseconds
         :param b2sdk.v1.SyncReport reporter: reporter object
         :param policies_manager: policies manager object
+        :param b2sdk.v1.AbstractSyncEncryptionSettingsProvider encryption_settings_provider: encryption setting provider
         """
         if self.keep_days_or_delete == KeepOrDeleteMode.KEEP_BEFORE_DELETE and dest_folder.folder_type(
         ) == 'local':
@@ -258,9 +287,11 @@ class Synchronizer(object):
         source_type = source_folder.folder_type()
         dest_type = dest_folder.folder_type()
         sync_type = '%s-to-%s' % (source_type, dest_type)
-        if (source_type, dest_type) not in [('b2', 'local'), ('local', 'b2')]:
-            raise NotImplementedError("Sync support only local-to-b2 and b2-to-local")
+        if source_type != 'b2' and dest_type != 'b2':
+            raise ValueError('Sync between two local folders is not supported!')
 
+        total_files = 0
+        total_bytes = 0
         for source_file, dest_file in zip_folders(
             source_folder,
             dest_folder,
@@ -272,12 +303,12 @@ class Synchronizer(object):
             elif dest_file is None:
                 logger.debug('determined that %s is not present on destination', source_file)
 
-            if source_folder.folder_type() == 'local':
-                if source_file is not None:
-                    reporter.update_compare(1)
-            else:
-                if dest_file is not None:
-                    reporter.update_compare(1)
+            if source_file is not None:
+                if source_type == 'b2':
+                    # For buckets we don't want to count files separately as it would require
+                    # more API calls. Instead, we count them when comparing.
+                    reporter.update_total(1)
+                reporter.update_compare(1)
 
             for action in self.make_file_sync_actions(
                 sync_type,
@@ -286,8 +317,18 @@ class Synchronizer(object):
                 source_folder,
                 dest_folder,
                 now_millis,
+                encryption_settings_provider,
             ):
+                total_files += 1
+                total_bytes += action.get_bytes()
                 yield action
+
+        if reporter is not None:
+            if source_type == 'b2':
+                # For buckets we don't want to count files separately as it would require
+                # more API calls. Instead, we count them when comparing.
+                reporter.end_total()
+            reporter.end_compare(total_files, total_bytes)
 
     def make_file_sync_actions(
         self,
@@ -297,6 +338,8 @@ class Synchronizer(object):
         source_folder,
         dest_folder,
         now_millis,
+        encryption_settings_provider:
+        AbstractSyncEncryptionSettingsProvider = SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER,
     ):
         """
         Yields the sequence of actions needed to sync the two files
@@ -307,6 +350,7 @@ class Synchronizer(object):
         :param b2sdk.v1.AbstractFolder source_folder: a source folder object
         :param b2sdk.v1.AbstractFolder dest_folder: a destination folder object
         :param int now_millis: current time in milliseconds
+        :param b2sdk.v1.AbstractSyncEncryptionSettingsProvider encryption_settings_provider: encryption setting provider
         """
         delete = self.keep_days_or_delete == KeepOrDeleteMode.DELETE
         keep_days = self.keep_days
@@ -323,5 +367,6 @@ class Synchronizer(object):
             self.newer_file_mode,
             self.compare_threshold,
             self.compare_version_mode,
+            encryption_settings_provider=encryption_settings_provider,
         )
         return policy.get_all_actions()

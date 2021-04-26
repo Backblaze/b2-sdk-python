@@ -8,9 +8,10 @@
 #
 ######################################################################
 
-import six
+from typing import Any, Dict, Optional
 
 from .bucket import Bucket, BucketFactory
+from .encryption.setting import EncryptionSetting
 from .exception import NonExistentBucket, RestrictedBucket
 from .file_version import FileIdAndName
 from .large_file.services import LargeFileServices
@@ -59,8 +60,7 @@ class Services(object):
         self.emerger = Emerger(self)
 
 
-@six.add_metaclass(B2TraceMeta)
-class B2Api(object):
+class B2Api(metaclass=B2TraceMeta):
     """
     Provide file-level access to B2 services.
 
@@ -169,7 +169,13 @@ class B2Api(object):
     # buckets
 
     def create_bucket(
-        self, name, bucket_type, bucket_info=None, cors_rules=None, lifecycle_rules=None
+        self,
+        name,
+        bucket_type,
+        bucket_info=None,
+        cors_rules=None,
+        lifecycle_rules=None,
+        default_server_side_encryption: Optional[EncryptionSetting] = None,
     ):
         """
         Create a bucket.
@@ -179,6 +185,7 @@ class B2Api(object):
         :param dict bucket_info: additional bucket info to store with the bucket
         :param dict cors_rules: bucket CORS rules to store with the bucket
         :param dict lifecycle_rules: bucket lifecycle rules to store with the bucket
+        :param b2sdk.v1.EncryptionSetting default_server_side_encryption: default server side encryption settings (``None`` if unknown)
         :return: a Bucket object
         :rtype: b2sdk.v1.Bucket
         """
@@ -190,7 +197,8 @@ class B2Api(object):
             bucket_type,
             bucket_info=bucket_info,
             cors_rules=cors_rules,
-            lifecycle_rules=lifecycle_rules
+            lifecycle_rules=lifecycle_rules,
+            default_server_side_encryption=default_server_side_encryption,
         )
         bucket = self.BUCKET_FACTORY_CLASS.from_api_bucket_dict(self, response)
         assert name == bucket.name, 'API created a bucket with different name\
@@ -202,7 +210,14 @@ class B2Api(object):
         self.cache.save_bucket(bucket)
         return bucket
 
-    def download_file_by_id(self, file_id, download_dest, progress_listener=None, range_=None):
+    def download_file_by_id(
+        self,
+        file_id,
+        download_dest,
+        progress_listener=None,
+        range_=None,
+        encryption: Optional[EncryptionSetting] = None,
+    ):
         """
         Download a file with the given ID.
 
@@ -223,11 +238,16 @@ class B2Api(object):
         or any sub class of :class:`~b2sdk.v1.AbstractProgressListener`
         :param list range_: a list of two integers, the first one is a start\
         position, and the second one is the end position in the file
+        :param b2sdk.v1.EncryptionSetting encryption: encryption settings (``None`` if unknown)
         :return: context manager that returns an object that supports iter_content()
         """
         url = self.session.get_download_url_by_id(file_id)
         return self.services.download_manager.download_file_from_url(
-            url, download_dest, progress_listener, range_
+            url,
+            download_dest,
+            progress_listener,
+            range_,
+            encryption,
         )
 
     def get_bucket_by_id(self, bucket_id):
@@ -276,17 +296,18 @@ class B2Api(object):
         account_id = self.account_info.get_account_id()
         self.session.delete_bucket(account_id, bucket.id_)
 
-    def list_buckets(self, bucket_name=None):
+    def list_buckets(self, bucket_name=None, bucket_id=None):
         """
         Call ``b2_list_buckets`` and return a list of buckets.
 
-        When no bucket name is specified, returns *all* of the buckets
-        in the account.  When a bucket name is given, returns just that
+        When no bucket name nor ID is specified, returns *all* of the buckets
+        in the account.  When a bucket name or ID is given, returns just that
         bucket.  When authorized with an :term:`application key` restricted to
         one :term:`bucket`, you must specify the bucket name, or the request
         will be unauthorized.
 
         :param str bucket_name: the name of the one bucket to return
+        :param str bucket_id: the ID of the one bucket to return
         :rtype: list[b2sdk.v1.Bucket]
         """
         # Give a useful warning if the current application key does not
@@ -296,7 +317,9 @@ class B2Api(object):
         account_id = self.account_info.get_account_id()
         self.check_bucket_restrictions(bucket_name)
 
-        response = self.session.list_buckets(account_id, bucket_name=bucket_name)
+        response = self.session.list_buckets(
+            account_id, bucket_name=bucket_name, bucket_id=bucket_id
+        )
         buckets = self.BUCKET_FACTORY_CLASS.from_api_response(self, response)
 
         if bucket_name is not None:
@@ -426,14 +449,18 @@ class B2Api(object):
         )
 
     # other
-    def get_file_info(self, file_id):
+    def get_file_info(self, file_id: str) -> Dict[str, Any]:
         """
         Legacy interface which just returns whatever remote API returns.
 
         .. todo::
             get_file_info() should return a File with .delete(), copy(), rename(), read() and so on
+
+        :param str file_id: the id of the file who's info will be retrieved.
+        :return: The parsed response
+        :rtype: dict
         """
-        return self.session.get_file_info(file_id)
+        return self.session.get_file_info_by_id(file_id)
 
     def check_bucket_restrictions(self, bucket_name):
         """

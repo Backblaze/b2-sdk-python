@@ -9,19 +9,17 @@
 ######################################################################
 
 import logging
+from typing import Optional
 
-import six
-
+from b2sdk.encryption.setting import EncryptionSetting
 from b2sdk.utils import B2TraceMetaAbstract
-
 from b2sdk.transfer.emerge.executor import EmergeExecutor
 from b2sdk.transfer.emerge.planner.planner import EmergePlanner
 
 logger = logging.getLogger(__name__)
 
 
-@six.add_metaclass(B2TraceMetaAbstract)
-class Emerger(object):
+class Emerger(metaclass=B2TraceMetaAbstract):
     """
     Handle complex actions around multi source copy/uploads.
 
@@ -51,6 +49,7 @@ class Emerger(object):
         progress_listener,
         recommended_upload_part_size=None,
         continue_large_file_id=None,
+        encryption: Optional[EncryptionSetting] = None,
     ):
         """
         Create a new file (object in the cloud, really) from an iterable (list, tuple etc) of write intents.
@@ -74,6 +73,7 @@ class Emerger(object):
             file_info,
             progress_listener,
             continue_large_file_id=continue_large_file_id,
+            encryption=encryption,
         )
 
     def emerge_stream(
@@ -87,6 +87,7 @@ class Emerger(object):
         recommended_upload_part_size=None,
         continue_large_file_id=None,
         max_queue_size=DEFAULT_STREAMING_MAX_QUEUE_SIZE,
+        encryption: Optional[EncryptionSetting] = None,
     ):
         """
         Create a new file (object in the cloud, really) from a stream of write intents.
@@ -110,6 +111,7 @@ class Emerger(object):
             progress_listener,
             continue_large_file_id=continue_large_file_id,
             max_queue_size=max_queue_size,
+            encryption=encryption,
         )
 
     def get_emerge_planner(self, recommended_upload_part_size=None):

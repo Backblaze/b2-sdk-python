@@ -1,7 +1,14 @@
 *.pyc
+.codacy-coverage/
+.coverage
+.eggs/
 .idea
+.nox/
+.python-version
 b2sdk.egg-info
 build
+coverage.xml
 dist
-.eggs/
 venv
+.venv
+.vscode

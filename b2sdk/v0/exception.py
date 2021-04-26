@@ -10,7 +10,7 @@
 
 B2Error = None  # calm down, pyflakes
 
-from b2sdk.v1.exception import *
+from b2sdk.v1.exception import *  # noqa
 
 
 class DestFileNewer(B2Error):
