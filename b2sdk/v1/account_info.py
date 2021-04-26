@@ -89,7 +89,7 @@ class SqliteAccountInfo(v2.SqliteAccountInfo, AbstractAccountInfo):
         self._validate_database()
         with self._get_connection() as conn:
             self._create_tables(conn, last_upgrade_to_run)
-        super(SqliteAccountInfo, self).__init__()
+        super(v2.SqliteAccountInfo, self).__init__()
 
 
 class StubAccountInfo(v2.StubAccountInfo, AbstractAccountInfo):

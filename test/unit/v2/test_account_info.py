@@ -20,7 +20,6 @@ import pytest
 
 from .test_base import TestBase
 
-
 from .deps import B2_ACCOUNT_INFO_ENV_VAR, AbstractAccountInfo, InMemoryAccountInfo, UploadUrlPool, SqliteAccountInfo, TempDir
 from .deps_exception import CorruptAccountInfo, MissingAccountData
 
