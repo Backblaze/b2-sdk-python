@@ -11,7 +11,7 @@
 import logging
 import re
 
-from .exception import InvalidArgument
+from .exception import InvalidArgument, check_invalid_argument
 
 logger = logging.getLogger(__name__)
 
@@ -85,6 +85,12 @@ class IntegerRange(object):
         self._begin = begin
         self._end = end
 
+        if self._begin and self._begin < 0:
+            raise ValueError('begin time can not be less than 0, use None for the infinity')
+
+        if self._end and self._end < 0:
+            raise ValueError('end time can not be less than 0, use None for the infinity')
+
     def __contains__(self, item):
         ge_begin, le_end = True, True
 
@@ -139,14 +145,28 @@ class ScanPoliciesManager(object):
                 'cannot be used without exclude_file_regexes at the same time'
             )
 
-        self._exclude_dir_set = RegexSet(exclude_dir_regexes)
-        self._exclude_file_because_of_dir_set = RegexSet(
-            map(convert_dir_regex_to_dir_prefix_regex, exclude_dir_regexes)
-        )
-        self._exclude_file_set = RegexSet(exclude_file_regexes)
-        self._include_file_set = RegexSet(include_file_regexes)
+        with check_invalid_argument(
+            'exclude_dir_regexes', 'wrong regex was given for excluding directories', re.error
+        ):
+            self._exclude_dir_set = RegexSet(exclude_dir_regexes)
+            self._exclude_file_because_of_dir_set = RegexSet(
+                map(convert_dir_regex_to_dir_prefix_regex, exclude_dir_regexes)
+            )
+        with check_invalid_argument(
+            'exclude_file_regexes', 'wrong regex was given for excluding files', re.error
+        ):
+            self._exclude_file_set = RegexSet(exclude_file_regexes)
+        with check_invalid_argument(
+            'include_file_regexes', 'wrong regex was given for including files', re.error
+        ):
+            self._include_file_set = RegexSet(include_file_regexes)
         self.exclude_all_symlinks = exclude_all_symlinks
-        self._include_mod_time_range = IntegerRange(exclude_modified_before, exclude_modified_after)
+        with check_invalid_argument(
+            'exclude_modified_before,exclude_modified_after', '', ValueError
+        ):
+            self._include_mod_time_range = IntegerRange(
+                exclude_modified_before, exclude_modified_after
+            )
 
     def should_exclude_file(self, file_path):
         """

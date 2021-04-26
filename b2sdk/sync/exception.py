@@ -8,6 +8,9 @@
 #
 ######################################################################
 
+from contextlib import contextmanager
+from typing import Iterator, Type
+
 from ..exception import B2Error, B2SimpleError
 
 
@@ -74,3 +77,15 @@ class UnSyncableFilename(B2Error):
 
     def __str__(self):
         return "%s: %s" % (self.message, self.filename)
+
+
+@contextmanager
+def check_invalid_argument(parameter_name: str, message: str,
+                           *exceptions: Type[Exception]) -> Iterator[None]:
+    """Raise `InvalidArgument` in case of one of given exception was thrown."""
+    try:
+        yield
+    except exceptions as exc:
+        if not message:
+            message = str(exc)
+        raise InvalidArgument(parameter_name, message) from exc

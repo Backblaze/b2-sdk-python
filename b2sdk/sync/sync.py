@@ -96,7 +96,7 @@ class KeepOrDeleteMode(Enum):
     NO_DELETE = 303  #: keep old versions of the file, do not delete anything
 
 
-class Synchronizer(object):
+class Synchronizer:
     """
     Copies multiple "files" from source to destination.  Optionally
     deletes or hides destination files that the source does not have.

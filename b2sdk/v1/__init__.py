@@ -9,5 +9,11 @@
 ######################################################################
 
 from b2sdk._v2 import *  # noqa
-from b2sdk.v1.account_info import AbstractAccountInfo, InMemoryAccountInfo, UrlPoolAccountInfo, SqliteAccountInfo
+from b2sdk.v1.account_info import (
+    AbstractAccountInfo, InMemoryAccountInfo, UrlPoolAccountInfo, SqliteAccountInfo
+)
 from b2sdk.v1.cache import AbstractCache
+from b2sdk.v1.sync import (
+    ScanPoliciesManager, DEFAULT_SCAN_MANAGER, zip_folders, Synchronizer, AbstractFolder,
+    LocalFolder, B2Folder, parse_sync_folder
+)

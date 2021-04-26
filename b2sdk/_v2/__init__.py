@@ -172,6 +172,7 @@ from b2sdk.sync.scan_policies import DEFAULT_SCAN_MANAGER
 from b2sdk.sync.scan_policies import IntegerRange
 from b2sdk.sync.scan_policies import RegexSet
 from b2sdk.sync.scan_policies import ScanPoliciesManager
+from b2sdk.sync.scan_policies import convert_dir_regex_to_dir_prefix_regex
 from b2sdk.sync.sync import KeepOrDeleteMode
 from b2sdk.sync.sync import Synchronizer
 from b2sdk.sync.sync import zip_folders
