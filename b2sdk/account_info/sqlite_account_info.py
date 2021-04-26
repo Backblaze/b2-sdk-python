@@ -46,7 +46,7 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
         * ``file_name``, if truthy
         * ``B2_ACCOUNT_INFO_ENV_VAR``'s value, if set
         * ``~/.b2_account_info``, if it exists
-        * ``$XDG_CONFIG_HOME/b2/account_info``, if set
+        * ``$XDG_CONFIG_HOME/b2/account_info``, if XDG_CONFIG_HOME is set
         * ``~/.b2_account_info``, as default
 
         If the directory ``$XDG_CONFIG_HOME/b2`` does not exist, it is created.

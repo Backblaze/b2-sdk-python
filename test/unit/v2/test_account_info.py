@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: test/unit/v1/test_account_info.py
+# File: test/unit/v2/test_account_info.py
 #
 # Copyright 2019 Backblaze Inc. All Rights Reserved.
 #
@@ -13,40 +13,16 @@ import json
 import unittest.mock as mock
 import os
 import platform
+import shutil
 import tempfile
 
 import pytest
 
 from .test_base import TestBase
 
-from .deps import AbstractAccountInfo, InMemoryAccountInfo, UploadUrlPool, SqliteAccountInfo
+
+from .deps import B2_ACCOUNT_INFO_ENV_VAR, AbstractAccountInfo, InMemoryAccountInfo, UploadUrlPool, SqliteAccountInfo, TempDir
 from .deps_exception import CorruptAccountInfo, MissingAccountData
-
-
-class TestUploadUrlPool(TestBase):
-    def setUp(self):
-        self.pool = UploadUrlPool()
-
-    def test_take_empty(self):
-        self.assertEqual((None, None), self.pool.take('a'))
-
-    def test_put_and_take(self):
-        self.pool.put('a', 'url_a1', 'auth_token_a1')
-        self.pool.put('a', 'url_a2', 'auth_token_a2')
-        self.pool.put('b', 'url_b1', 'auth_token_b1')
-        self.assertEqual(('url_a2', 'auth_token_a2'), self.pool.take('a'))
-        self.assertEqual(('url_a1', 'auth_token_a1'), self.pool.take('a'))
-        self.assertEqual((None, None), self.pool.take('a'))
-        self.assertEqual(('url_b1', 'auth_token_b1'), self.pool.take('b'))
-        self.assertEqual((None, None), self.pool.take('b'))
-
-    def test_clear(self):
-        self.pool.put('a', 'url_a1', 'auth_token_a1')
-        self.pool.clear_for_key('a')
-        self.pool.put('b', 'url_b1', 'auth_token_b1')
-        self.assertEqual((None, None), self.pool.take('a'))
-        self.assertEqual(('url_b1', 'auth_token_b1'), self.pool.take('b'))
-        self.assertEqual((None, None), self.pool.take('b'))
 
 
 class AccountInfoBase(metaclass=ABCMeta):
@@ -69,6 +45,7 @@ class AccountInfoBase(metaclass=ABCMeta):
             100,
             'app_key',
             'realm',
+            s3_api_url='s3_api_url',
             application_key_id='key_id',
         )
         account_info.clear()
@@ -96,8 +73,15 @@ class AccountInfoBase(metaclass=ABCMeta):
 
         # The original set_auth_data
         account_info.set_auth_data(
-            'account_id', 'account_auth', 'https://api.backblazeb2.com', 'download_url', 100,
-            'app_key', 'realm'
+            'account_id',
+            'account_auth',
+            'https://api.backblazeb2.com',
+            'download_url',
+            100,
+            'app_key',
+            'realm',
+            s3_api_url='s3_api_url',
+            application_key_id='key_id',
         )
         actual = account_info.get_allowed()
         self.assertEqual(AbstractAccountInfo.DEFAULT_ALLOWED, actual, 'default allowed')
@@ -117,7 +101,8 @@ class AccountInfoBase(metaclass=ABCMeta):
             100,
             'app_key',
             'realm',
-            allowed=allowed
+            s3_api_url='s3_api_url',
+            allowed=allowed,
         )
         self.assertEqual(allowed, account_info.get_allowed())
 
@@ -186,7 +171,8 @@ class AccountInfoBase(metaclass=ABCMeta):
             100,
             'app_key',
             'realm',
-            application_key_id='key_id'
+            s3_api_url='s3_api_url',
+            application_key_id='key_id',
         )
 
         object_instances = [account_info]
@@ -210,13 +196,6 @@ class AccountInfoBase(metaclass=ABCMeta):
         self._test_account_info(check_persistence=False)
 
 
-class TestInMemoryAccountInfo(AccountInfoBase, TestBase):
-    PERSISTENCE = False
-
-    def _make_info(self):
-        return InMemoryAccountInfo()
-
-
 class TestSqliteAccountInfo(AccountInfoBase, TestBase):
     PERSISTENCE = True
 
@@ -225,6 +204,7 @@ class TestSqliteAccountInfo(AccountInfoBase, TestBase):
         self.db_path = tempfile.NamedTemporaryFile(
             prefix='tmp_b2_tests_%s__' % (self.id(),), delete=True
         ).name
+        self.home = None
 
     def setUp(self):
         try:
@@ -232,12 +212,14 @@ class TestSqliteAccountInfo(AccountInfoBase, TestBase):
         except OSError:
             pass
         print('using %s' % self.db_path)
+        self.home = tempfile.mkdtemp()
 
     def tearDown(self):
         try:
             os.unlink(self.db_path)
         except OSError:
             pass
+        shutil.rmtree(self.home)
 
     def test_corrupted(self):
         """
@@ -275,11 +257,54 @@ class TestSqliteAccountInfo(AccountInfoBase, TestBase):
     def _make_info(self):
         return self._make_sqlite_account_info()
 
-    def _make_sqlite_account_info(self, last_upgrade_to_run=None):
+    def _make_sqlite_account_info(self, env=None, last_upgrade_to_run=None):
         """
-        Returns a new StoredAccountInfo that has just read the data from the file.
+        Returns a new SqliteAccountInfo that has just read the data from the file.
+
+        :param dict env: Override Environment variables.
         """
-        return SqliteAccountInfo(file_name=self.db_path, last_upgrade_to_run=None)
+        # Override HOME to ensure hermetic tests
+        with mock.patch('os.environ', env or {'HOME': self.home}):
+            return SqliteAccountInfo(
+                file_name=self.db_path if not env else None,
+                last_upgrade_to_run=last_upgrade_to_run,
+            )
 
     def test_account_info_persistence(self):
         self._test_account_info(check_persistence=True)
+
+    def test_uses_xdg_config_home(self):
+        with TempDir() as d:
+            account_info = self._make_sqlite_account_info(
+                env={
+                    'HOME': self.home,
+                    'XDG_CONFIG_HOME': d,
+                }
+            )
+            expected_path = os.path.abspath(os.path.join(d, 'b2', 'account_info'))
+            actual_path = os.path.abspath(account_info.filename)
+            self.assertEqual(
+                expected_path, actual_path,
+                'Actual path %s is not equal to $XDG_CONFIG_HOME/b2/account_info' % (actual_path,)
+            )
+            assert os.path.exists(
+                os.path.join(d, 'b2')
+            ), 'Config folder $XDG_CONFIG_HOME/b2 was not created!'
+
+    def test_account_info_env_var_overrides_xdg_config_home(self):
+        with TempDir() as d:
+            account_info = self._make_sqlite_account_info(
+                env={
+                    'HOME': self.home,
+                    'XDG_CONFIG_HOME': d,
+                    B2_ACCOUNT_INFO_ENV_VAR: os.path.join(d, 'b2_account_info'),
+                }
+            )
+            expected_path = os.path.abspath(os.path.join(d, 'b2_account_info'))
+            actual_path = os.path.abspath(account_info.filename)
+            self.assertEqual(
+                expected_path, actual_path, 'Actual path %s is not equal to %s' % (
+                    actual_path,
+                    B2_ACCOUNT_INFO_ENV_VAR,
+                )
+            )

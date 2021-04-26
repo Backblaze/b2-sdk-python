@@ -8,8 +8,11 @@
 #
 ######################################################################
 import inspect
+import threading
+import os
 
 from b2sdk import _v2 as v2
+from b2sdk.account_info.sqlite_account_info import logger
 
 
 class OldAccountInfoMethods:
@@ -69,7 +72,24 @@ class UrlPoolAccountInfo(v2.UrlPoolAccountInfo, AbstractAccountInfo):
 
 
 class SqliteAccountInfo(v2.SqliteAccountInfo, AbstractAccountInfo):
-    pass
+    def __init__(self, file_name=None, last_upgrade_to_run=None):
+        """
+        If ``file_name`` argument is empty or ``None``, path from ``B2_ACCOUNT_INFO`` environment variable is used. If that is not available, a default of ``~/.b2_account_info`` is used.
+
+        :param str file_name: The sqlite file to use; overrides the default.
+        :param int last_upgrade_to_run: For testing only, override the auto-update on the db.
+        """
+        # use legacy env var resolution, XDG not supported
+        self.thread_local = threading.local()
+        user_account_info_path = file_name or os.environ.get(
+            v2.B2_ACCOUNT_INFO_ENV_VAR, v2.B2_ACCOUNT_INFO_DEFAULT_FILE
+        )
+        self.filename = file_name or os.path.expanduser(user_account_info_path)
+        logger.debug('%s file path to use: %s', self.__class__.__name__, self.filename)
+        self._validate_database()
+        with self._get_connection() as conn:
+            self._create_tables(conn, last_upgrade_to_run)
+        super(SqliteAccountInfo, self).__init__()
 
 
 class StubAccountInfo(v2.StubAccountInfo, AbstractAccountInfo):
