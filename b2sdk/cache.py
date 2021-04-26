@@ -26,7 +26,7 @@ class AbstractCache(metaclass=ABCMeta):
 
     @abstractmethod
     def get_bucket_name_or_none_from_bucket_id(self, bucket_id: str) -> Optional[str]:
-        return None
+        pass
 
     @abstractmethod
     def save_bucket(self, bucket):
