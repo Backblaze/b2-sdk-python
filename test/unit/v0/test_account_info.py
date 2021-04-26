@@ -151,33 +151,52 @@ class AccountInfoBase(metaclass=ABCMeta):
         bucket.name = 'my-bucket'
         bucket.id_ = 'bucket-0'
         self.assertEqual(None, account_info.get_bucket_id_or_none_from_bucket_name('my-bucket'))
+        self.assertEqual(None, account_info.get_bucket_name_or_none_from_bucket_id('bucket-0'))
         account_info.save_bucket(bucket)
         self.assertEqual(
             'bucket-0', account_info.get_bucket_id_or_none_from_bucket_name('my-bucket')
+        )
+        self.assertEqual(
+            'my-bucket', account_info.get_bucket_name_or_none_from_bucket_id('bucket-0')
         )
         if self.PERSISTENCE:
             self.assertEqual(
                 'bucket-0',
                 self._make_info().get_bucket_id_or_none_from_bucket_name('my-bucket')
             )
+            self.assertEqual(
+                'my-bucket',
+                self._make_info().get_bucket_name_or_none_from_bucket_id('bucket-0')
+            )
         account_info.remove_bucket_name('my-bucket')
         self.assertEqual(None, account_info.get_bucket_id_or_none_from_bucket_name('my-bucket'))
+        self.assertEqual(None, account_info.get_bucket_name_or_none_from_bucket_id('bucket-0'))
         if self.PERSISTENCE:
             self.assertEqual(
                 None,
                 self._make_info().get_bucket_id_or_none_from_bucket_name('my-bucket')
             )
+            self.assertEqual(
+                None,
+                self._make_info().get_bucket_name_or_none_from_bucket_id('bucket-0')
+            )
 
     def test_refresh_bucket(self):
         account_info = self._make_info()
         self.assertEqual(None, account_info.get_bucket_id_or_none_from_bucket_name('my-bucket'))
+        self.assertEqual(None, account_info.get_bucket_name_or_none_from_bucket_id('a'))
         bucket_names = {'a': 'bucket-0', 'b': 'bucket-1'}
         account_info.refresh_entire_bucket_name_cache(bucket_names.items())
         self.assertEqual('bucket-0', account_info.get_bucket_id_or_none_from_bucket_name('a'))
+        self.assertEqual('a', account_info.get_bucket_name_or_none_from_bucket_id('bucket-0'))
         if self.PERSISTENCE:
             self.assertEqual(
                 'bucket-0',
                 self._make_info().get_bucket_id_or_none_from_bucket_name('a')
+            )
+            self.assertEqual(
+                'a',
+                self._make_info().get_bucket_name_or_none_from_bucket_id('bucket-0')
             )
 
     def _test_account_info(self, check_persistence):
