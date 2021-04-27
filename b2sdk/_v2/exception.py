@@ -30,7 +30,6 @@ from b2sdk.exception import CapabilityNotAllowed
 from b2sdk.exception import CapExceeded
 from b2sdk.exception import ChecksumMismatch
 from b2sdk.exception import ClockSkew
-from b2sdk.exception import CommandError
 from b2sdk.exception import Conflict
 from b2sdk.exception import ConnectionReset
 from b2sdk.exception import DestFileNewer
@@ -67,9 +66,12 @@ from b2sdk.exception import SSECKeyIdMismatchInCopy
 from b2sdk.exception import SSECKeyError
 from b2sdk.exception import WrongEncryptionModeForBucketDefault
 from b2sdk.exception import interpret_b2_error
+from b2sdk.sync.exception import EmptyDirectory
 from b2sdk.sync.exception import EnvironmentEncodingError
 from b2sdk.sync.exception import IncompleteSync
 from b2sdk.sync.exception import InvalidArgument
+from b2sdk.sync.exception import NotADirectory
+from b2sdk.sync.exception import UnableToCreateDirectory
 from b2sdk.sync.exception import UnSyncableFilename
 from b2sdk.sync.exception import check_invalid_argument
 
@@ -94,12 +96,12 @@ __all__ = (
     'CapExceeded',
     'ChecksumMismatch',
     'ClockSkew',
-    'CommandError',
     'Conflict',
     'ConnectionReset',
     'CorruptAccountInfo',
     'DestFileNewer',
     'DuplicateBucketName',
+    'EmptyDirectory',
     'EnvironmentEncodingError',
     'FileAlreadyHidden',
     'FileNameNotAllowed',
@@ -116,6 +118,7 @@ __all__ = (
     'MissingAccountData',
     'MissingPart',
     'NonExistentBucket',
+    'NotADirectory',
     'NotAllowedByAppKeyError',
     'PartSha1Mismatch',
     'RestrictedBucket',
@@ -130,6 +133,7 @@ __all__ = (
     'UnknownError',
     'UnknownHost',
     'UnrecognizedBucketType',
+    'UnableToCreateDirectory',
     'UnSyncableFilename',
     'UnsatisfiableRange',
     'UnusableFileName',

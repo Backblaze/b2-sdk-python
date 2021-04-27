@@ -8,7 +8,7 @@
 #
 ######################################################################
 
-from ..exception import CommandError
+from .exception import InvalidArgument
 from .folder import B2Folder, LocalFolder
 
 
@@ -44,7 +44,7 @@ def _parse_bucket_and_folder(bucket_and_path, api, b2_folder_class):
     Turn 'my-bucket/foo' into B2Folder(my-bucket, foo).
     """
     if '//' in bucket_and_path:
-        raise CommandError("'//' not allowed in path names")
+        raise InvalidArgument('folder_name', "'//' not allowed in path names")
     if '/' not in bucket_and_path:
         bucket_name = bucket_and_path
         folder_name = ''
