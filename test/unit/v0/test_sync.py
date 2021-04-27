@@ -648,7 +648,7 @@ class TestParseSyncFolder(TestBase):
 
 
 class TestFolderExceptions:
-    """There is an exact copy of this class in unit/v0/test_sync.py - TODO: leave only one when migrating tests to
+    """There is an exact copy of this class in unit/v1/test_sync.py - TODO: leave only one when migrating tests to
        sync-like structure.
     """
 
