@@ -9,10 +9,14 @@
 ######################################################################
 
 from b2sdk import _v2 as v2
+from b2sdk._v2 import exception
 
 from .folder import LocalFolder, B2Folder
 
 
-# Override to use v1 version of "LocalFolder" and "B2Folder"
+# Override to use v1 version of "LocalFolder" and "B2Folder" and raise old style CommandError
 def parse_sync_folder(folder_name, api):
-    return v2.parse_sync_folder(folder_name, api, LocalFolder, B2Folder)
+    try:
+        return v2.parse_sync_folder(folder_name, api, LocalFolder, B2Folder)
+    except exception.InvalidArgument as ex:
+        raise exception.CommandError(ex.message)

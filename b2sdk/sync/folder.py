@@ -15,8 +15,7 @@ import re
 import sys
 
 from abc import ABCMeta, abstractmethod
-from b2sdk.exception import CommandError
-from .exception import EnvironmentEncodingError, UnSyncableFilename
+from .exception import EmptyDirectory, EnvironmentEncodingError, UnSyncableFilename, NotADirectory, UnableToCreateDirectory
 from .file import File, B2File, FileVersion, B2FileVersion
 from .scan_policies import DEFAULT_SCAN_MANAGER
 from ..utils import fix_windows_path_limit, get_file_mtime, is_file_readable
@@ -166,9 +165,9 @@ class LocalFolder(AbstractFolder):
             try:
                 os.mkdir(self.root)
             except OSError:
-                raise Exception('unable to create directory %s' % (self.root,))
+                raise UnableToCreateDirectory(self.root)
         elif not os.path.isdir(self.root):
-            raise Exception('%s is not a directory' % (self.root,))
+            raise NotADirectory(self.root)
 
     def ensure_non_empty(self):
         """
@@ -177,9 +176,7 @@ class LocalFolder(AbstractFolder):
         self.ensure_present()
 
         if not os.listdir(self.root):
-            raise CommandError(
-                'Directory %s is empty.  Use --allowEmptySource to sync anyway.' % (self.root,)
-            )
+            raise EmptyDirectory(self.root)
 
     @classmethod
     def _walk_relative_paths(cls, local_dir, b2_dir, reporter, policies_manager):

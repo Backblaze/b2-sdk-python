@@ -89,3 +89,21 @@ def check_invalid_argument(parameter_name: str, message: str,
         if not message:
             message = str(exc)
         raise InvalidArgument(parameter_name, message) from exc
+
+
+class BaseDirectoryError(B2SimpleError):
+    def __init__(self, path):
+        self.path = path
+        super().__init__(path)
+
+
+class EmptyDirectory(BaseDirectoryError):
+    pass
+
+
+class UnableToCreateDirectory(BaseDirectoryError):
+    pass
+
+
+class NotADirectory(BaseDirectoryError):
+    pass

@@ -30,7 +30,7 @@ from .deps import ScanPoliciesManager, DEFAULT_SCAN_MANAGER
 from .deps import Synchronizer
 from .deps import TempDir
 from .deps import parse_sync_folder
-from .deps_exception import UnSyncableFilename
+from .deps_exception import UnSyncableFilename, NotADirectory, UnableToCreateDirectory, EmptyDirectory, InvalidArgument, CommandError
 
 DAY = 86400000  # milliseconds
 TODAY = DAY * 100  # an arbitrary reference time for testing
@@ -655,6 +655,77 @@ class TestParseSyncFolder(TestBase):
     def _check_one(self, expected, to_parse):
         api = MagicMock()
         self.assertEqual(expected, str(parse_sync_folder(str(to_parse), api)))
+
+
+class TestFolderExceptions:
+    """There is an exact copy of this class in unit/v1/test_sync.py - TODO: leave only one when migrating tests to
+       sync-like structure.
+    """
+
+    @pytest.mark.parametrize(
+        'exception,msg',
+        [
+            pytest.param(NotADirectory, '.*', marks=pytest.mark.apiver(from_ver=2)),
+            pytest.param(Exception, 'is not a directory', marks=pytest.mark.apiver(to_ver=1)),
+        ],
+    )
+    def test_ensure_present_not_a_dir(self, exception, msg):
+        with TempDir() as path:
+            file = os.path.join(path, 'clearly_a_file')
+            with open(file, 'w') as f:
+                f.write(' ')
+            folder = parse_sync_folder(file, MagicMock())
+            with pytest.raises(exception, match=msg):
+                folder.ensure_present()
+
+    @pytest.mark.parametrize(
+        'exception,msg',
+        [
+            pytest.param(UnableToCreateDirectory, '.*', marks=pytest.mark.apiver(from_ver=2)),
+            pytest.param(
+                Exception, 'unable to create directory', marks=pytest.mark.apiver(to_ver=1)
+            ),
+        ],
+    )
+    def test_ensure_present_unable_to_create(self, exception, msg):
+        with TempDir() as path:
+            file = os.path.join(path, 'clearly_a_file')
+            with open('file', 'w') as f:
+                f.write(' ')
+            folder = parse_sync_folder(os.path.join(file, 'nonsense'), MagicMock())
+            with pytest.raises(exception, match=msg):
+                folder.ensure_present()
+
+    @pytest.mark.parametrize(
+        'exception,msg',
+        [
+            pytest.param(EmptyDirectory, '.*', marks=pytest.mark.apiver(from_ver=2)),
+            pytest.param(
+                CommandError,
+                'Directory .* is empty.  Use --allowEmptySource to sync anyway.',
+                marks=pytest.mark.apiver(to_ver=1)
+            ),
+        ],
+    )
+    def test_ensure_non_empty(self, exception, msg):
+        with TempDir() as path:
+            folder = parse_sync_folder(path, MagicMock())
+            with pytest.raises(exception, match=msg):
+                folder.ensure_non_empty()
+
+    @pytest.mark.parametrize(
+        'exception,msg',
+        [
+            pytest.param(InvalidArgument, '.*', marks=pytest.mark.apiver(from_ver=2)),
+            pytest.param(
+                CommandError, "'//' not allowed in path names", marks=pytest.mark.apiver(to_ver=1)
+            ),
+        ],
+    )
+    def test_double_slash_not_allowed(self, exception, msg):
+
+        with pytest.raises(exception, match=msg):
+            parse_sync_folder('b2://a//b', MagicMock())
 
 
 class TestZipFolders(TestSync):
