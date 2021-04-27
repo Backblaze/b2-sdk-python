@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 * Use proper error handling in `ScanPoliciesManager`
 
+### Changed
+* `b2sdk.v1.sync` refactored to reflect `b2sdk.sync` structure
+
 ## [1.7.0] - 2021-04-22
 
 ### Added
