@@ -17,6 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * `b2sdk.v1.sync` refactored to reflect `b2sdk.sync` structure
 * Make `B2Api.get_bucket_by_id` return populated bucket objects in v2
 
+### Removed
+* Remove `Bucket.copy_file` and `Bucket.start_large_file` 
+
 ## [1.7.0] - 2021-04-22
 
 ### Added
