@@ -12,8 +12,8 @@ from abc import abstractmethod
 import functools
 
 from b2sdk import _v2 as v2
-from b2sdk._v2 import exception
 from .scan_policies import DEFAULT_SCAN_MANAGER
+from .. import exception
 
 
 def translate_errors(func):

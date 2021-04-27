@@ -13,7 +13,7 @@ from enum import Enum
 from functools import partial
 
 from apiver_deps import B2DownloadAction, B2UploadAction, B2CopyAction, AbstractSyncEncryptionSettingsProvider, UploadSourceLocalFile
-from apiver_deps_exception import CommandError, DestFileNewer, InvalidArgument
+from apiver_deps_exception import DestFileNewer, InvalidArgument
 from b2sdk.utils import TempDir
 
 from .fixtures import *
@@ -50,6 +50,7 @@ class TestSynchronizer:
         )
         assert expected_actions == [str(a) for a in actions]
 
+    @pytest.mark.apiver(to_ver=0)
     @pytest.mark.parametrize(
         'args', [
             {
@@ -64,10 +65,28 @@ class TestSynchronizer:
             'keep_days_or_delete',
         ]
     )
-    def test_illegal_args(self, synchronizer_factory, apiver, args):
-        exceptions = defaultdict(lambda: InvalidArgument, v0=CommandError)  # noqa
+    def test_illegal_args_up_to_v0(self, synchronizer_factory, apiver, args):
+        from apiver_deps_exception import CommandError
+        with pytest.raises(CommandError):
+            synchronizer_factory(**args)
 
-        with pytest.raises(exceptions[apiver]):
+    @pytest.mark.apiver(from_ver=1)
+    @pytest.mark.parametrize(
+        'args', [
+            {
+                'newer_file_mode': IllegalEnum.ILLEGAL
+            },
+            {
+                'keep_days_or_delete': IllegalEnum.ILLEGAL
+            },
+        ],
+        ids=[
+            'newer_file_mode',
+            'keep_days_or_delete',
+        ]
+    )
+    def test_illegal_args_up_v1_and_up(self, synchronizer_factory, apiver, args):
+        with pytest.raises(InvalidArgument):
             synchronizer_factory(**args)
 
     def test_illegal(self, synchronizer):

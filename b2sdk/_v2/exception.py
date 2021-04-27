@@ -30,7 +30,6 @@ from b2sdk.exception import CapabilityNotAllowed
 from b2sdk.exception import CapExceeded
 from b2sdk.exception import ChecksumMismatch
 from b2sdk.exception import ClockSkew
-from b2sdk.exception import CommandError
 from b2sdk.exception import Conflict
 from b2sdk.exception import ConnectionReset
 from b2sdk.exception import DestFileNewer
@@ -97,7 +96,6 @@ __all__ = (
     'CapExceeded',
     'ChecksumMismatch',
     'ClockSkew',
-    'CommandError',
     'Conflict',
     'ConnectionReset',
     'CorruptAccountInfo',

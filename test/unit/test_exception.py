@@ -8,6 +8,8 @@
 #
 ######################################################################
 
+import pytest
+
 from b2sdk.exception import FileOrBucketNotFound, ResourceNotFound
 from apiver_deps_exception import (
     AlreadyFailed,
@@ -15,7 +17,6 @@ from apiver_deps_exception import (
     BadJson,
     BadUploadUrl,
     CapExceeded,
-    CommandError,
     Conflict,
     DuplicateBucketName,
     FileAlreadyHidden,
@@ -56,7 +57,9 @@ class TestExceptions:
         except AlreadyFailed as e:
             assert str(e) == 'Already failed: foo', str(e)
 
+    @pytest.mark.apiver(to_ver=1)
     def test_command_error(self):
+        from apiver_deps_exception import CommandError
         try:
             raise CommandError('foo')
         except CommandError as e:
