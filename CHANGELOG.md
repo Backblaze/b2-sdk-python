@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 * `b2sdk.v1.sync` refactored to reflect `b2sdk.sync` structure
 
+### Removed
+* Remove `Bucket.copy_file` and `Bucket.start_large_file` 
+
 ## [1.7.0] - 2021-04-22
 
 ### Added
