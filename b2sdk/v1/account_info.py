@@ -8,13 +8,14 @@
 #
 ######################################################################
 import inspect
+import logging
 import threading
 import os
 from typing import Optional
 
 from b2sdk import _v2 as v2
-from b2sdk.account_info.sqlite_account_info import logger
 
+logger = logging.getLogger(__name__)
 
 class OldAccountInfoMethods:
     def set_auth_data(
