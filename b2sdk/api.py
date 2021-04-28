@@ -315,8 +315,8 @@ class B2Api(metaclass=B2TraceMeta):
         When no bucket name nor ID is specified, returns *all* of the buckets
         in the account.  When a bucket name or ID is given, returns just that
         bucket.  When authorized with an :term:`application key` restricted to
-        one :term:`bucket`, you must specify the bucket name, or the request
-        will be unauthorized.
+        one :term:`bucket`, you must specify the bucket name or bucket id, or
+        the request will be unauthorized.
 
         :param str bucket_name: the name of the one bucket to return
         :param str bucket_id: the ID of the one bucket to return
@@ -324,7 +324,8 @@ class B2Api(metaclass=B2TraceMeta):
         """
         # Give a useful warning if the current application key does not
         # allow access to the named bucket.
-        assert not (bucket_name and bucket_id)
+        if bucket_name is not None and bucket_id is not None:
+            raise ValueError('Provide either bucket_name or bucket_id, not both')
         if bucket_name:
             self.check_bucket_name_restrictions(bucket_name)
         else:
