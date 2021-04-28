@@ -10,7 +10,7 @@
 
 from unittest.mock import MagicMock
 
-from .test_base import TestBase
+from ..test_base import TestBase
 
 from .deps import File, FileVersion
 from .deps import B2Folder

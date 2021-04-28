@@ -13,7 +13,7 @@ import requests
 import socket
 import sys
 
-from .test_base import TestBase
+from ..test_base import TestBase
 
 from .deps_exception import BadDateFormat, BadJson, BrokenPipe, B2ConnectionError, ClockSkew, ConnectionReset, ServiceError, UnknownError, UnknownHost, TooManyRequests
 from .deps import USER_AGENT

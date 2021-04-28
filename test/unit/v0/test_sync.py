@@ -19,7 +19,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from .test_base import TestBase
+from ..test_base import TestBase
 
 from .deps_exception import UnSyncableFilename, NotADirectory, UnableToCreateDirectory, EmptyDirectory, InvalidArgument, CommandError
 from .deps import FileVersionInfo

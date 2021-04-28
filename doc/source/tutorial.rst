@@ -60,6 +60,7 @@ Typical B2Api operations
    delete_bucket
    list_buckets
    get_bucket_by_name
+   get_bucket_by_id
    create_key
    list_keys
    delete_key

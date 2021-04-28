@@ -9,7 +9,7 @@
 ######################################################################
 import pytest
 
-from .test_base import TestBase
+from ..test_base import TestBase
 
 from .deps import EncryptionAlgorithm
 from .deps import EncryptionKey

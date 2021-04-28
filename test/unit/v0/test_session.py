@@ -10,7 +10,7 @@
 
 import unittest.mock as mock
 
-from .test_base import TestBase
+from ..test_base import TestBase
 
 from .deps_exception import InvalidAuthToken, Unauthorized
 from .deps import ALL_CAPABILITIES

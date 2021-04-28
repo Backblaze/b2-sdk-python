@@ -15,7 +15,7 @@ import unittest.mock as mock
 
 import pytest
 
-from .test_base import TestBase
+from ..test_base import TestBase
 
 from .deps_exception import (
     AlreadyFailed,

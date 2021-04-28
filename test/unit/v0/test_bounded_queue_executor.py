@@ -12,7 +12,7 @@ import concurrent.futures as futures
 import time
 
 from .deps import BoundedQueueExecutor
-from .test_base import TestBase
+from ..test_base import TestBase
 
 
 class TestBoundedQueueExecutor(TestBase):

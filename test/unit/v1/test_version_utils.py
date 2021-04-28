@@ -10,7 +10,7 @@
 
 import warnings
 
-from .test_base import TestBase
+from ..test_base import TestBase
 
 from .deps import rename_argument, rename_function
 

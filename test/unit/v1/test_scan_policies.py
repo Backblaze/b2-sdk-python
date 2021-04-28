@@ -8,7 +8,7 @@
 #
 ######################################################################
 
-from .test_base import TestBase
+from ..test_base import TestBase
 
 from .deps import DEFAULT_SCAN_MANAGER, ScanPoliciesManager
 from .deps_exception import InvalidArgument
