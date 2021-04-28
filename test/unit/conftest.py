@@ -91,6 +91,23 @@ def pytest_runtest_setup(item):
        def test_for_versions_from_v2_to_v4(self):
            ...
 
+    Both `from_ver` and `to_ver` are inclusive.
+
+    Providing test parameters based on apiver is also possible:
+
+    .. code-block:: python
+
+       @pytest.mark.parametrize(
+           'exc_class,exc_msg',
+           [
+               pytest.param(InvalidArgument, None, marks=pytest.mark.apiver(from_ver=2)),
+               pytest.param(re.error, "invalid something", marks=pytest.mark.apiver(to_ver=1)),
+           ],
+       )
+       def test_illegal_regex(self, exc_class, exc_msg):
+           with pytest.raises(exc_class, match=exc_msg):
+               error_raising_function()
+
     """
     for mark in item.iter_markers(name='apiver'):
         if mark.args and mark.kwargs:

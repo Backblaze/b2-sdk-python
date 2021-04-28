@@ -19,7 +19,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from .test_base import TestBase
+from ..test_base import TestBase
 
 from .deps import AbstractFolder, B2Folder, LocalFolder
 from .deps import BoundedQueueExecutor, zip_folders

@@ -250,15 +250,27 @@ class B2Api(metaclass=B2TraceMeta):
             encryption,
         )
 
-    def get_bucket_by_id(self, bucket_id):
+    def get_bucket_by_id(self, bucket_id: str) -> Bucket:
         """
-        Return a bucket object with a given ID.  Unlike ``get_bucket_by_name``, this method does not need to make any API calls.
+        Return the Bucket matching the given bucket_id.
+        :raises b2sdk.v1.exception.NonExistentBucket: if the bucket does not exist in the account
+        """
+        # Give a useful warning if the current application key does not
+        # allow access to bucket.
+        self.check_bucket_id_restrictions(bucket_id)
 
-        :param str bucket_id: a bucket ID
-        :return: a Bucket object
-        :rtype: b2sdk.v1.Bucket
-        """
-        return self.BUCKET_CLASS(self, bucket_id)
+        # First, try the cache.
+        bucket_name = self.cache.get_bucket_name_or_none_from_bucket_id(bucket_id)
+        if bucket_name is not None:
+            return self.BUCKET_CLASS(self, bucket_id, name=bucket_name)
+
+        # Second, ask the service
+        for bucket in self.list_buckets(bucket_id=bucket_id):
+            assert bucket.id_ == bucket_id
+            return bucket
+
+        # There is no such bucket.
+        raise NonExistentBucket(bucket_name)
 
     def get_bucket_by_name(self, bucket_name):
         """
@@ -271,7 +283,7 @@ class B2Api(metaclass=B2TraceMeta):
         """
         # Give a useful warning if the current application key does not
         # allow access to the named bucket.
-        self.check_bucket_restrictions(bucket_name)
+        self.check_bucket_name_restrictions(bucket_name)
 
         # First, try the cache.
         id_ = self.cache.get_bucket_id_or_none_from_bucket_name(bucket_name)
@@ -303,8 +315,8 @@ class B2Api(metaclass=B2TraceMeta):
         When no bucket name nor ID is specified, returns *all* of the buckets
         in the account.  When a bucket name or ID is given, returns just that
         bucket.  When authorized with an :term:`application key` restricted to
-        one :term:`bucket`, you must specify the bucket name, or the request
-        will be unauthorized.
+        one :term:`bucket`, you must specify the bucket name or bucket id, or
+        the request will be unauthorized.
 
         :param str bucket_name: the name of the one bucket to return
         :param str bucket_id: the ID of the one bucket to return
@@ -312,18 +324,22 @@ class B2Api(metaclass=B2TraceMeta):
         """
         # Give a useful warning if the current application key does not
         # allow access to the named bucket.
-        self.check_bucket_restrictions(bucket_name)
+        if bucket_name is not None and bucket_id is not None:
+            raise ValueError('Provide either bucket_name or bucket_id, not both')
+        if bucket_name:
+            self.check_bucket_name_restrictions(bucket_name)
+        else:
+            self.check_bucket_id_restrictions(bucket_id)
 
         account_id = self.account_info.get_account_id()
-        self.check_bucket_restrictions(bucket_name)
 
         response = self.session.list_buckets(
             account_id, bucket_name=bucket_name, bucket_id=bucket_id
         )
         buckets = self.BUCKET_FACTORY_CLASS.from_api_response(self, response)
 
-        if bucket_name is not None:
-            # If a bucket_name is specified we don't clear the cache because the other buckets could still
+        if bucket_name or bucket_id:
+            # If a bucket_name or bucket_id is specified we don't clear the cache because the other buckets could still
             # be valid. So we save the one bucket returned from the list_buckets call.
             for bucket in buckets:
                 self.cache.save_bucket(bucket)
@@ -462,19 +478,32 @@ class B2Api(metaclass=B2TraceMeta):
         """
         return self.session.get_file_info_by_id(file_id)
 
-    def check_bucket_restrictions(self, bucket_name):
+    def check_bucket_name_restrictions(self, bucket_name: str):
         """
         Check to see if the allowed field from authorize-account has a bucket restriction.
 
         If it does, checks if the bucket_name for a given api call matches that.
         If not, it raises a :py:exc:`b2sdk.v1.exception.RestrictedBucket` error.
 
-        :param str bucket_name: a bucket name
         :raises b2sdk.v1.exception.RestrictedBucket: if the account is not allowed to use this bucket
         """
-        allowed = self.account_info.get_allowed()
-        allowed_bucket_name = allowed['bucketName']
+        self._check_bucket_restrictions('bucketName', bucket_name)
 
-        if allowed_bucket_name is not None:
-            if allowed_bucket_name != bucket_name:
-                raise RestrictedBucket(allowed_bucket_name)
+    def check_bucket_id_restrictions(self, bucket_id: str):
+        """
+        Check to see if the allowed field from authorize-account has a bucket restriction.
+
+        If it does, checks if the bucket_id for a given api call matches that.
+        If not, it raises a :py:exc:`b2sdk.v1.exception.RestrictedBucket` error.
+
+        :raises b2sdk.v1.exception.RestrictedBucket: if the account is not allowed to use this bucket
+        """
+        self._check_bucket_restrictions('bucketId', bucket_id)
+
+    def _check_bucket_restrictions(self, key, value):
+        allowed = self.account_info.get_allowed()
+        allowed_bucket_identifier = allowed[key]
+
+        if allowed_bucket_identifier is not None:
+            if allowed_bucket_identifier != value:
+                raise RestrictedBucket(allowed_bucket_identifier)

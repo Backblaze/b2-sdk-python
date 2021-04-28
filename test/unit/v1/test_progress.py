@@ -9,7 +9,7 @@
 ######################################################################
 from io import BytesIO
 
-from .test_base import TestBase
+from ..test_base import TestBase
 
 from .deps import StreamWithHash
 from .deps import hex_sha1_of_bytes

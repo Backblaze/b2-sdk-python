@@ -8,7 +8,7 @@
 #
 ######################################################################
 
-from .test_base import TestBase
+from ..test_base import TestBase
 
 from .deps import B2Api
 from .deps import DummyCache

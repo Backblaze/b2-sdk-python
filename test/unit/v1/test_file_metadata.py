@@ -9,7 +9,7 @@
 ######################################################################
 
 from .deps import FileMetadata
-from .test_base import TestBase
+from ..test_base import TestBase
 
 
 def snake_to_camel(name):

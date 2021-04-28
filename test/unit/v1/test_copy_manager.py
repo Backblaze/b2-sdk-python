@@ -8,7 +8,7 @@
 #
 ######################################################################
 
-from .test_base import TestBase
+from ..test_base import TestBase
 
 from .deps_exception import InvalidAuthToken, Unauthorized, SSECKeyIdMismatchInCopy
 from .deps import MetadataDirectiveMode
