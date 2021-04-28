@@ -8,13 +8,10 @@
 #
 ######################################################################
 
-from abc import (ABCMeta, abstractmethod)
-
-import six
+from abc import ABCMeta, abstractmethod
 
 
-@six.add_metaclass(ABCMeta)
-class AbstractCache(object):
+class AbstractCache(metaclass=ABCMeta):
     def clear(self):
         self.set_bucket_name_cache(tuple())
 

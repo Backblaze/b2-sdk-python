@@ -2,13 +2,11 @@
 #
 # File: b2sdk/raw_api.py
 #
-# Copyright 2019 Backblaze Inc. All Rights Reserved.
+# Copyright 2021 Backblaze Inc. All Rights Reserved.
 #
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
-
-from __future__ import print_function
 
 import base64
 import io
@@ -20,11 +18,12 @@ import time
 import traceback
 from abc import ABCMeta, abstractmethod
 from enum import Enum, unique
-
-import six
+from logging import getLogger
+from typing import Any, Dict, Optional
 
 from .b2http import B2Http
-from .exception import UnusableFileName, InvalidMetadataDirective
+from .exception import FileOrBucketNotFound, ResourceNotFound, UnusableFileName, InvalidMetadataDirective, WrongEncryptionModeForBucketDefault
+from .encryption.setting import EncryptionAlgorithm, EncryptionMode, EncryptionSetting
 from .utils import b2_url_encode, hex_sha1_of_stream
 
 # All possible capabilities
@@ -35,6 +34,8 @@ ALL_CAPABILITIES = [
     'listBuckets',
     'writeBuckets',
     'deleteBuckets',
+    'readBucketEncryption',
+    'writeBucketEncryption',
     'listFiles',
     'readFiles',
     'shareFiles',
@@ -51,6 +52,8 @@ HEX_DIGITS_AT_END = 'hex_digits_at_end'
 # API version number to use when calling the service
 API_VERSION = 'v2'
 
+logger = getLogger(__name__)
+
 
 @unique
 class MetadataDirectiveMode(Enum):
@@ -59,8 +62,7 @@ class MetadataDirectiveMode(Enum):
     REPLACE = 402  #: ignore the source file metadata and set it to provided values
 
 
-@six.add_metaclass(ABCMeta)
-class AbstractRawApi(object):
+class AbstractRawApi(metaclass=ABCMeta):
     """
     Direct access to the B2 web apis.
     """
@@ -85,6 +87,8 @@ class AbstractRawApi(object):
         content_type=None,
         file_info=None,
         destination_bucket_id=None,
+        destination_server_side_encryption: Optional[EncryptionSetting] = None,
+        source_server_side_encryption: Optional[EncryptionSetting] = None,
     ):
         pass
 
@@ -97,6 +101,8 @@ class AbstractRawApi(object):
         large_file_id,
         part_number,
         bytes_range=None,
+        destination_server_side_encryption: Optional[EncryptionSetting] = None,
+        source_server_side_encryption: Optional[EncryptionSetting] = None,
     ):
         pass
 
@@ -110,7 +116,8 @@ class AbstractRawApi(object):
         bucket_type,
         bucket_info=None,
         cors_rules=None,
-        lifecycle_rules=None
+        lifecycle_rules=None,
+        default_server_side_encryption: Optional[EncryptionSetting] = None,
     ):
         pass
 
@@ -122,7 +129,13 @@ class AbstractRawApi(object):
         pass
 
     @abstractmethod
-    def download_file_from_url(self, account_auth_token_or_none, url, range_=None):
+    def download_file_from_url(
+        self,
+        account_auth_token_or_none,
+        url,
+        range_=None,
+        encryption: Optional[EncryptionSetting] = None,
+    ):
         pass
 
     @abstractmethod
@@ -148,7 +161,14 @@ class AbstractRawApi(object):
         pass
 
     @abstractmethod
-    def get_file_info(self, api_url, account_auth_token, file_id):
+    def get_file_info_by_id(self, api_url: str, account_auth_token: str,
+                            file_id: str) -> Dict[str, Any]:
+        pass
+
+    @abstractmethod
+    def get_file_info_by_name(
+        self, download_url: str, account_auth_token: str, bucket_name: str, file_name: str
+    ) -> Dict[str, Any]:
         pass
 
     @abstractmethod
@@ -228,7 +248,14 @@ class AbstractRawApi(object):
 
     @abstractmethod
     def start_large_file(
-        self, api_url, account_auth_token, bucket_id, file_name, content_type, file_info
+        self,
+        api_url,
+        account_auth_token,
+        bucket_id,
+        file_name,
+        content_type,
+        file_info,
+        server_side_encryption: Optional[EncryptionSetting] = None,
     ):
         pass
 
@@ -243,20 +270,36 @@ class AbstractRawApi(object):
         bucket_info=None,
         cors_rules=None,
         lifecycle_rules=None,
-        if_revision_is=None
+        if_revision_is=None,
+        default_server_side_encryption: Optional[EncryptionSetting] = None,
     ):
         pass
 
     @abstractmethod
     def upload_file(
-        self, upload_url, upload_auth_token, file_name, content_length, content_type, content_sha1,
-        file_infos, data_stream
+        self,
+        upload_url,
+        upload_auth_token,
+        file_name,
+        content_length,
+        content_type,
+        content_sha1,
+        file_infos,
+        data_stream,
+        server_side_encryption: Optional[EncryptionSetting] = None,
     ):
         pass
 
     @abstractmethod
     def upload_part(
-        self, upload_url, upload_auth_token, part_number, content_length, sha1_sum, input_stream
+        self,
+        upload_url,
+        upload_auth_token,
+        part_number,
+        content_length,
+        sha1_sum,
+        input_stream,
+        server_side_encryption: Optional[EncryptionSetting] = None,
     ):
         pass
 
@@ -287,7 +330,7 @@ class B2RawApi(AbstractRawApi):
     def __init__(self, b2_http):
         self.b2_http = b2_http
 
-    def _post_json(self, base_url, api_name, auth, **params):
+    def _post_json(self, base_url, api_name, auth, **params) -> Dict[str, Any]:
         """
         A helper method for calling an API with the given auth and params.
 
@@ -295,14 +338,17 @@ class B2RawApi(AbstractRawApi):
         :param auth: passed in Authorization header
         :param api_name: example: "b2_create_bucket"
         :param args: the rest of the parameters are passed to b2
-        :return:
+        :return: the decoded JSON response
+        :rtype: dict
         """
         url = '%s/b2api/%s/%s' % (base_url, API_VERSION, api_name)
         headers = {'Authorization': auth}
         return self.b2_http.post_json_return_json(url, headers, params)
 
     def authorize_account(self, realm_url, application_key_id, application_key):
-        auth = b'Basic ' + base64.b64encode(six.b('%s:%s' % (application_key_id, application_key)))
+        auth = b'Basic ' + base64.b64encode(
+            ('%s:%s' % (application_key_id, application_key)).encode()
+        )
         return self._post_json(realm_url, 'b2_authorize_account', auth)
 
     def cancel_large_file(self, api_url, account_auth_token, file_id):
@@ -317,18 +363,30 @@ class B2RawApi(AbstractRawApi):
         bucket_type,
         bucket_info=None,
         cors_rules=None,
-        lifecycle_rules=None
+        lifecycle_rules=None,
+        default_server_side_encryption=None,
     ):
+        kwargs = dict(
+            accountId=account_id,
+            bucketName=bucket_name,
+            bucketType=bucket_type,
+        )
+        if bucket_info is not None:
+            kwargs['bucketInfo'] = bucket_info
+        if cors_rules is not None:
+            kwargs['corsRules'] = cors_rules
+        if lifecycle_rules is not None:
+            kwargs['lifecycleRules'] = lifecycle_rules
+        if default_server_side_encryption is not None:
+            if not default_server_side_encryption.mode.can_be_set_as_bucket_default():
+                raise WrongEncryptionModeForBucketDefault(default_server_side_encryption.mode)
+            kwargs['defaultServerSideEncryption'
+                  ] = default_server_side_encryption.serialize_to_json_for_request()
         return self._post_json(
             api_url,
             'b2_create_bucket',
             account_auth_token,
-            accountId=account_id,
-            bucketName=bucket_name,
-            bucketType=bucket_type,
-            bucketInfo=bucket_info,
-            corsRules=cors_rules,
-            lifecycleRules=lifecycle_rules
+            **kwargs,
         )
 
     def create_key(
@@ -373,17 +431,30 @@ class B2RawApi(AbstractRawApi):
             applicationKeyId=application_key_id,
         )
 
-    def download_file_from_url(self, account_auth_token_or_none, url, range_=None):
+    def download_file_from_url(
+        self,
+        account_auth_token_or_none,
+        url,
+        range_=None,
+        encryption: Optional[EncryptionSetting] = None,
+    ):
         """
         Issue a streaming request for download of a file, potentially authorized.
 
-        :param account_auth_token_or_none: an optional account auth token to pass in
-        :param url: the full URL to download from
-        :param range: two-element tuple for http Range header
+        :param str account_auth_token_or_none: an optional account auth token to pass in
+        :param str url: the full URL to download from
+        :param tuple range: two-element tuple for http Range header
+        :param b2sdk.v1.EncryptionSetting encryption: encryption settings for downloading
         :return: b2_http response
         """
         request_headers = {}
         _add_range_header(request_headers, range_)
+
+        if encryption is not None:
+            assert encryption.mode in (
+                EncryptionMode.NONE, EncryptionMode.SSE_B2, EncryptionMode.SSE_C
+            )
+            encryption.add_to_download_headers(request_headers)
 
         if account_auth_token_or_none is not None:
             request_headers['Authorization'] = account_auth_token_or_none
@@ -410,8 +481,22 @@ class B2RawApi(AbstractRawApi):
             validDurationInSeconds=valid_duration_in_seconds
         )
 
-    def get_file_info(self, api_url, account_auth_token, file_id):
+    def get_file_info_by_id(self, api_url: str, account_auth_token: str,
+                            file_id: str) -> Dict[str, Any]:
         return self._post_json(api_url, 'b2_get_file_info', account_auth_token, fileId=file_id)
+
+    def get_file_info_by_name(
+        self, download_url: str, account_auth_token: str, bucket_name: str, file_name: str
+    ) -> Dict[str, Any]:
+        download_url = self.get_download_url_by_name(download_url, bucket_name, file_name)
+        try:
+            response = self.b2_http.head_content(
+                download_url, headers={"Authorization": account_auth_token}
+            )
+            return response.headers
+        except ResourceNotFound:
+            logger.debug("Resource Not Found: %s" % download_url)
+            raise FileOrBucketNotFound(bucket_name, file_name)
 
     def get_upload_url(self, api_url, account_auth_token, bucket_id):
         return self._post_json(api_url, 'b2_get_upload_url', account_auth_token, bucketId=bucket_id)
@@ -531,8 +616,21 @@ class B2RawApi(AbstractRawApi):
         )
 
     def start_large_file(
-        self, api_url, account_auth_token, bucket_id, file_name, content_type, file_info
+        self,
+        api_url,
+        account_auth_token,
+        bucket_id,
+        file_name,
+        content_type,
+        file_info,
+        server_side_encryption: Optional[EncryptionSetting] = None,
     ):
+        kwargs = {}
+        if server_side_encryption is not None:
+            assert server_side_encryption.mode in (
+                EncryptionMode.NONE, EncryptionMode.SSE_B2, EncryptionMode.SSE_C
+            )
+            kwargs['serverSideEncryption'] = server_side_encryption.serialize_to_json_for_request()
         return self._post_json(
             api_url,
             'b2_start_large_file',
@@ -540,7 +638,8 @@ class B2RawApi(AbstractRawApi):
             bucketId=bucket_id,
             fileName=file_name,
             fileInfo=file_info,
-            contentType=content_type
+            contentType=content_type,
+            **kwargs
         )
 
     def update_bucket(
@@ -553,9 +652,10 @@ class B2RawApi(AbstractRawApi):
         bucket_info=None,
         cors_rules=None,
         lifecycle_rules=None,
-        if_revision_is=None
+        if_revision_is=None,
+        default_server_side_encryption=None,
     ):
-        assert bucket_info or bucket_type
+        assert bucket_info is not None or bucket_type is not None
 
         kwargs = {}
         if if_revision_is is not None:
@@ -568,6 +668,12 @@ class B2RawApi(AbstractRawApi):
             kwargs['corsRules'] = cors_rules
         if lifecycle_rules is not None:
             kwargs['lifecycleRules'] = lifecycle_rules
+        if default_server_side_encryption is not None:
+            if default_server_side_encryption is not None:
+                if not default_server_side_encryption.mode.can_be_set_as_bucket_default():
+                    raise WrongEncryptionModeForBucketDefault(default_server_side_encryption.mode)
+                kwargs['defaultServerSideEncryption'
+                      ] = default_server_side_encryption.serialize_to_json_for_request()
 
         return self._post_json(
             api_url,
@@ -626,8 +732,16 @@ class B2RawApi(AbstractRawApi):
             raise UnusableFileName("Filename segment too long (maximum 250 bytes in utf-8).")
 
     def upload_file(
-        self, upload_url, upload_auth_token, file_name, content_length, content_type, content_sha1,
-        file_infos, data_stream
+        self,
+        upload_url,
+        upload_auth_token,
+        file_name,
+        content_length,
+        content_type,
+        content_sha1,
+        file_infos,
+        data_stream,
+        server_side_encryption: Optional[EncryptionSetting] = None,
     ):
         """
         Upload one, small file to b2.
@@ -649,15 +763,27 @@ class B2RawApi(AbstractRawApi):
             'Content-Length': str(content_length),
             'X-Bz-File-Name': b2_url_encode(file_name),
             'Content-Type': content_type,
-            'X-Bz-Content-Sha1': content_sha1
+            'X-Bz-Content-Sha1': content_sha1,
         }
-        for k, v in six.iteritems(file_infos):
+        for k, v in file_infos.items():
             headers['X-Bz-Info-' + k] = b2_url_encode(v)
+        if server_side_encryption is not None:
+            assert server_side_encryption.mode in (
+                EncryptionMode.NONE, EncryptionMode.SSE_B2, EncryptionMode.SSE_C
+            )
+            server_side_encryption.add_to_upload_headers(headers)
 
         return self.b2_http.post_content_return_json(upload_url, headers, data_stream)
 
     def upload_part(
-        self, upload_url, upload_auth_token, part_number, content_length, content_sha1, data_stream
+        self,
+        upload_url,
+        upload_auth_token,
+        part_number,
+        content_length,
+        content_sha1,
+        data_stream,
+        server_side_encryption: Optional[EncryptionSetting] = None,
     ):
         headers = {
             'Authorization': upload_auth_token,
@@ -665,6 +791,11 @@ class B2RawApi(AbstractRawApi):
             'X-Bz-Part-Number': str(part_number),
             'X-Bz-Content-Sha1': content_sha1
         }
+        if server_side_encryption is not None:
+            assert server_side_encryption.mode in (
+                EncryptionMode.NONE, EncryptionMode.SSE_B2, EncryptionMode.SSE_C
+            )
+            server_side_encryption.add_to_upload_headers(headers)
 
         return self.b2_http.post_content_return_json(upload_url, headers, data_stream)
 
@@ -679,6 +810,8 @@ class B2RawApi(AbstractRawApi):
         content_type=None,
         file_info=None,
         destination_bucket_id=None,
+        destination_server_side_encryption: Optional[EncryptionSetting] = None,
+        source_server_side_encryption: Optional[EncryptionSetting] = None,
     ):
         kwargs = {}
         if bytes_range is not None:
@@ -706,6 +839,16 @@ class B2RawApi(AbstractRawApi):
             kwargs['fileInfo'] = file_info
         if destination_bucket_id is not None:
             kwargs['destinationBucketId'] = destination_bucket_id
+        if destination_server_side_encryption is not None:
+            assert destination_server_side_encryption.mode in (
+                EncryptionMode.NONE, EncryptionMode.SSE_B2, EncryptionMode.SSE_C
+            )
+            kwargs['destinationServerSideEncryption'
+                  ] = destination_server_side_encryption.serialize_to_json_for_request()
+        if source_server_side_encryption is not None:
+            assert source_server_side_encryption.mode == EncryptionMode.SSE_C
+            kwargs['sourceServerSideEncryption'
+                  ] = source_server_side_encryption.serialize_to_json_for_request()
 
         return self._post_json(
             api_url,
@@ -724,12 +867,26 @@ class B2RawApi(AbstractRawApi):
         large_file_id,
         part_number,
         bytes_range=None,
+        destination_server_side_encryption: Optional[EncryptionSetting] = None,
+        source_server_side_encryption: Optional[EncryptionSetting] = None,
     ):
         kwargs = {}
         if bytes_range is not None:
             range_dict = {}
             _add_range_header(range_dict, bytes_range)
             kwargs['range'] = range_dict['Range']
+        if destination_server_side_encryption is not None:
+            assert destination_server_side_encryption.mode in (
+                EncryptionMode.NONE, EncryptionMode.SSE_B2, EncryptionMode.SSE_C
+            )
+            kwargs['destinationServerSideEncryption'
+                  ] = destination_server_side_encryption.serialize_to_json_for_request()
+        if source_server_side_encryption is not None:
+            assert source_server_side_encryption.mode in (
+                EncryptionMode.NONE, EncryptionMode.SSE_B2, EncryptionMode.SSE_C
+            )
+            kwargs['sourceServerSideEncryption'
+                  ] = source_server_side_encryption.serialize_to_json_for_request()
         return self._post_json(
             api_url,
             'b2_copy_part',
@@ -775,13 +932,13 @@ def test_raw_api_helper(raw_api):
     this test will break and we'll have to do something about
     it.
     """
-    application_key_id = os.environ.get('TEST_APPLICATION_KEY_ID')
+    application_key_id = os.environ.get('B2_TEST_APPLICATION_KEY_ID')
     if application_key_id is None:
-        print('TEST_APPLICATION_KEY_ID is not set.', file=sys.stderr)
+        print('B2_TEST_APPLICATION_KEY_ID is not set.', file=sys.stderr)
         sys.exit(1)
-    application_key = os.environ.get('TEST_APPLICATION_KEY')
+    application_key = os.environ.get('B2_TEST_APPLICATION_KEY')
     if application_key is None:
-        print('TEST_APPLICATION_KEY is not set.', file=sys.stderr)
+        print('B2_TEST_APPLICATION_KEY is not set.', file=sys.stderr)
         sys.exit(1)
     realm_url = 'https://api.backblazeb2.com'
 
@@ -828,6 +985,26 @@ def test_raw_api_helper(raw_api):
     bucket_id = bucket_dict['bucketId']
     first_bucket_revision = bucket_dict['revision']
 
+    ##################
+    print('b2_update_bucket')
+    sse_b2_aes = EncryptionSetting(
+        mode=EncryptionMode.SSE_B2,
+        algorithm=EncryptionAlgorithm.AES256,
+    )
+    sse_none = EncryptionSetting(mode=EncryptionMode.NONE)
+    for encryption_setting in [
+        sse_none,
+        sse_b2_aes,
+    ]:
+        bucket_dict = raw_api.update_bucket(
+            api_url,
+            account_auth_token,
+            account_id,
+            bucket_id,
+            'allPublic',
+            default_server_side_encryption=encryption_setting,
+        )
+
     # b2_list_buckets
     print('b2_list_buckets')
     bucket_list_dict = raw_api.list_buckets(api_url, account_auth_token, account_id)
@@ -841,7 +1018,7 @@ def test_raw_api_helper(raw_api):
     # b2_upload_file
     print('b2_upload_file')
     file_name = 'test.txt'
-    file_contents = six.b('hello world')
+    file_contents = b'hello world'
     file_sha1 = hex_sha1_of_stream(io.BytesIO(file_contents), len(file_contents))
     file_dict = raw_api.upload_file(
         upload_url,
@@ -852,8 +1029,15 @@ def test_raw_api_helper(raw_api):
         file_sha1,
         {'color': 'blue'},
         io.BytesIO(file_contents),
+        server_side_encryption=sse_b2_aes,
     )
+
     file_id = file_dict['fileId']
+
+    # b2_list_file_versions
+    print('b2_list_file_versions')
+    list_versions_dict = raw_api.list_file_versions(api_url, account_auth_token, bucket_id)
+    assert [file_name] == [f_dict['fileName'] for f_dict in list_versions_dict['files']]
 
     # b2_download_file_by_id with auth
     print('b2_download_file_by_id (auth)')
@@ -914,20 +1098,45 @@ def test_raw_api_helper(raw_api):
     copy_file_name = 'test_copy.txt'
     raw_api.copy_file(api_url, account_auth_token, file_id, copy_file_name)
 
+    # b2_get_file_info_by_id
+    print('b2_get_file_info_by_id')
+    file_info_dict = raw_api.get_file_info_by_id(api_url, account_auth_token, file_id)
+    assert file_info_dict['fileName'] == file_name
+
+    # b2_get_file_info_by_name
+    print('b2_get_file_info_by_name (no auth)')
+    info_headers = raw_api.get_file_info_by_name(download_url, None, bucket_name, file_name)
+    assert info_headers['x-bz-file-id'] == file_id
+
+    # b2_get_file_info_by_name
+    print('b2_get_file_info_by_name (auth)')
+    info_headers = raw_api.get_file_info_by_name(
+        download_url, account_auth_token, bucket_name, file_name
+    )
+    assert info_headers['x-bz-file-id'] == file_id
+
+    # b2_get_file_info_by_name
+    print('b2_get_file_info_by_name (download auth)')
+    info_headers = raw_api.get_file_info_by_name(
+        download_url, download_auth_token, bucket_name, file_name
+    )
+    assert info_headers['x-bz-file-id'] == file_id
+
     # b2_hide_file
     print('b2_hide_file')
     raw_api.hide_file(api_url, account_auth_token, bucket_id, file_name)
-
-    # b2_get_file_info
-    print('b2_get_file_info')
-    file_info_dict = raw_api.get_file_info(api_url, account_auth_token, file_id)
-    assert file_info_dict['fileName'] == file_name
 
     # b2_start_large_file
     print('b2_start_large_file')
     file_info = {'color': 'red'}
     large_info = raw_api.start_large_file(
-        api_url, account_auth_token, bucket_id, file_name, 'text/plain', file_info
+        api_url,
+        account_auth_token,
+        bucket_id,
+        file_name,
+        'text/plain',
+        file_info,
+        server_side_encryption=sse_b2_aes,
     )
     large_file_id = large_info['fileId']
 
@@ -939,17 +1148,21 @@ def test_raw_api_helper(raw_api):
 
     # b2_upload_part
     print('b2_upload_part')
-    part_contents = six.b('hello part')
+    part_contents = b'hello part'
     part_sha1 = hex_sha1_of_stream(io.BytesIO(part_contents), len(part_contents))
     raw_api.upload_part(
         upload_part_url, upload_path_auth, 1, len(part_contents), part_sha1,
         io.BytesIO(part_contents)
     )
 
+    # b2_copy_part
+    print('b2_copy_part')
+    raw_api.copy_part(api_url, account_auth_token, file_id, large_file_id, 2, (0, 5))
+
     # b2_list_parts
     print('b2_list_parts')
     parts_response = raw_api.list_parts(api_url, account_auth_token, large_file_id, 1, 100)
-    assert [1] == [part['partNumber'] for part in parts_response['parts']]
+    assert [1, 2] == [part['partNumber'] for part in parts_response['parts']]
 
     # b2_list_unfinished_large_files
     unfinished_list = raw_api.list_unfinished_large_files(api_url, account_auth_token, bucket_id)
@@ -957,14 +1170,13 @@ def test_raw_api_helper(raw_api):
     assert file_info == unfinished_list['files'][0]['fileInfo']
 
     # b2_finish_large_file
-    # We don't upload enough data to actually finish on, so we'll just
-    # check that the right error is returned.
     print('b2_finish_large_file')
     try:
         raw_api.finish_large_file(api_url, account_auth_token, large_file_id, [part_sha1])
         raise Exception('finish should have failed')
     except Exception as e:
         assert 'large files must have at least 2 parts' in str(e)
+    # TODO: make another attempt to finish but this time successfully
 
     # b2_update_bucket
     print('b2_update_bucket')

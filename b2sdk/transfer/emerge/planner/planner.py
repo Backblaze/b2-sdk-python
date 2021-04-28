@@ -15,8 +15,6 @@ from abc import ABCMeta, abstractmethod
 from collections import deque
 from itertools import chain
 
-import six
-
 from b2sdk.transfer.emerge.planner.part_definition import (
     CopyEmergePartDefinition,
     UploadEmergePartDefinition,
@@ -147,6 +145,8 @@ class EmergePlanner(object):
         current_end = 0
 
         upload_buffer = UploadBuffer(0)
+        first = True
+        last = False
         for intent, fragment_end in intent_fragments_iterator:
             if current_intent is None:
                 # this is a first loop run - just initialize current intent
@@ -160,6 +160,9 @@ class EmergePlanner(object):
                 # and two fragments from the same intent end up streaming into here one after the other
                 current_end = fragment_end
                 continue
+
+            if intent is None:
+                last = True
 
             # incoming intent is different - this means that now we have to decide what to do:
             # if this is a copy intent and we want to copy it server-side, then we have to
@@ -200,15 +203,27 @@ class EmergePlanner(object):
                         yield part
                     upload_buffer = UploadBuffer(current_end)
             else:
-                # this is a upload source or "small copy" source - either way we just add them to upload buffer
-                upload_buffer.append(current_intent, current_end)
-                upload_buffer_parts = list(self._buff_split(upload_buffer))
-                # we flush all parts excluding last one - we may want to extend
-                # this last part with "incoming" intent in next loop run
-                for upload_buffer_part in upload_buffer_parts[:-1]:
-                    yield self._get_upload_part(upload_buffer_part)
-                upload_buffer = upload_buffer_parts[-1]
+                if current_intent.is_copy() and first and last:
+                    # this is a single intent "small copy" - we force use of `copy_file`
+                    copy_parts = self._get_copy_parts(
+                        current_intent,
+                        start_offset=upload_buffer.end_offset,
+                        end_offset=current_end,
+                    )
+                    for part in copy_parts:
+                        yield part
+                else:
+                    # this is a upload source or "small copy" source (that is *not* single intent)
+                    # either way we just add them to upload buffer
+                    upload_buffer.append(current_intent, current_end)
+                    upload_buffer_parts = list(self._buff_split(upload_buffer))
+                    # we flush all parts excluding last one - we may want to extend
+                    # this last part with "incoming" intent in next loop run
+                    for upload_buffer_part in upload_buffer_parts[:-1]:
+                        yield self._get_upload_part(upload_buffer_part)
+                    upload_buffer = upload_buffer_parts[-1]
             current_intent = intent
+            first = False
             current_end = fragment_end
             if current_intent is None:
                 # this is a sentinel - there would be no more fragments - we have to flush upload buffer
@@ -556,8 +571,7 @@ class IntentsState(object):
         return end - start >= self.protected_intent_length
 
 
-@six.add_metaclass(ABCMeta)
-class BaseEmergePlan(object):
+class BaseEmergePlan(metaclass=ABCMeta):
     def __init__(self, emerge_parts):
         self.emerge_parts = emerge_parts
 
@@ -593,7 +607,7 @@ class EmergePlan(BaseEmergePlan):
             return None
 
         json_id = json.dumps([emerge_part.get_part_id() for emerge_part in self.emerge_parts])
-        return hashlib.sha1(json_id).hexdigest()
+        return hashlib.sha1(json_id.encode()).hexdigest()
 
 
 class StreamingEmergePlan(BaseEmergePlan):

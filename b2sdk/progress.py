@@ -9,23 +9,15 @@
 ######################################################################
 
 from abc import ABCMeta, abstractmethod
-import six
-import sys
 import time
 
-# tqdm doesn't work on 2.6 with at least some encodings
-# on sys.stderr.  See: https://github.com/Backblaze/B2_Command_Line_Tool/issues/272
-if sys.version_info < (2, 7):
-    tqdm = None  # will fall back to simple progress reporting
-else:
-    try:
-        from tqdm import tqdm  # displays a nice progress bar
-    except ImportError:
-        tqdm = None  # noqa
+try:
+    from tqdm import tqdm  # displays a nice progress bar
+except ImportError:
+    tqdm = None  # noqa
 
 
-@six.add_metaclass(ABCMeta)
-class AbstractProgressListener(object):
+class AbstractProgressListener(metaclass=ABCMeta):
     """
     Interface expected by B2Api upload and download methods to report
     on progress.
@@ -54,6 +46,9 @@ class AbstractProgressListener(object):
         Report the given number of bytes that have been transferred
         so far.  This is not a delta, it is the total number of bytes
         transferred so far.
+
+        Transfer can fail and restart from beginning so byte count can
+        decrease between calls.
 
         :param int byte_count: number of bytes have been transferred
         """
@@ -100,6 +95,8 @@ class TqdmProgressListener(AbstractProgressListener):
                 unit_scale=True,
                 leave=True,
                 miniters=1,
+                smoothing=0.1,
+                mininterval=0.2,
             )
 
     def bytes_completed(self, byte_count):

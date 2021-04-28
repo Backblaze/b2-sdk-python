@@ -10,9 +10,8 @@
 
 from abc import ABCMeta
 
-import json
 import re
-import six
+from typing import Any, Dict, Optional
 
 from .utils import camelcase_to_underscore
 
@@ -21,8 +20,7 @@ UPLOAD_TOKEN_USED_CONCURRENTLY_ERROR_MESSAGE_RE = re.compile(
 )
 
 
-@six.add_metaclass(ABCMeta)
-class B2Error(Exception):
+class B2Error(Exception, metaclass=ABCMeta):
     def __init__(self, *args, **kwargs):
         """
         Python 2 does not like it when you pass unicode as the message
@@ -35,9 +33,6 @@ class B2Error(Exception):
         # If the exception is caused by a b2 server response,
         # the server MAY have included instructions to pause the thread before issuing any more requests
         self.retry_after_seconds = None
-        if six.PY2:
-            if args and isinstance(args[0], six.text_type):
-                args = tuple([json.dumps(args[0])[1:-1]] + list(args[1:]))
         super(B2Error, self).__init__(*args, **kwargs)
 
     @property
@@ -71,8 +66,7 @@ class B2Error(Exception):
         return False
 
 
-@six.add_metaclass(ABCMeta)
-class B2SimpleError(B2Error):
+class B2SimpleError(B2Error, metaclass=ABCMeta):
     """
     A B2Error with a message prefix.
     """
@@ -81,15 +75,13 @@ class B2SimpleError(B2Error):
         return '%s: %s' % (self.prefix, super(B2SimpleError, self).__str__())
 
 
-@six.add_metaclass(ABCMeta)
-class NotAllowedByAppKeyError(B2SimpleError):
+class NotAllowedByAppKeyError(B2SimpleError, metaclass=ABCMeta):
     """
     Base class for errors caused by restrictions on an application key.
     """
 
 
-@six.add_metaclass(ABCMeta)
-class TransientErrorMixin(object):
+class TransientErrorMixin(metaclass=ABCMeta):
     def should_retry_http(self):
         return True
 
@@ -247,6 +239,22 @@ class DuplicateBucketName(B2SimpleError):
     prefix = 'Bucket name is already in use'
 
 
+class ResourceNotFound(B2SimpleError):
+    prefix = 'No such file, bucket, or endpoint'
+
+
+class FileOrBucketNotFound(ResourceNotFound):
+    def __init__(self, bucket_name=None, file_id_or_name=None):
+        super(FileOrBucketNotFound, self).__init__()
+        self.bucket_name = bucket_name
+        self.file_id_or_name = file_id_or_name
+
+    def __str__(self):
+        file_str = ('file [%s]' % self.file_id_or_name) if self.file_id_or_name else 'a file'
+        bucket_str = ('bucket [%s]' % self.bucket_name) if self.bucket_name else 'a bucket'
+        return 'Could not find %s within %s' % (file_str, bucket_str)
+
+
 class FileAlreadyHidden(B2SimpleError):
     pass
 
@@ -255,8 +263,9 @@ class FileNameNotAllowed(NotAllowedByAppKeyError):
     pass
 
 
-class FileNotPresent(B2SimpleError):
-    pass
+class FileNotPresent(FileOrBucketNotFound):
+    def __str__(self):  # overriden to retain message across prev versions
+        return "File not present%s" % (': ' + self.file_id_or_name if self.file_id_or_name else "")
 
 
 class UnusableFileName(B2SimpleError):
@@ -270,6 +279,10 @@ class UnusableFileName(B2SimpleError):
 
 
 class InvalidMetadataDirective(B2Error):
+    pass
+
+
+class SSECKeyIdMismatchInCopy(InvalidMetadataDirective):
     pass
 
 
@@ -367,8 +380,13 @@ class MissingPart(B2SimpleError):
     prefix = 'Part number has not been uploaded'
 
 
-class NonExistentBucket(B2SimpleError):
-    prefix = 'No such bucket'
+class NonExistentBucket(FileOrBucketNotFound):
+    def __str__(self):  # overriden to retain message across prev versions
+        return "No such bucket%s" % (': ' + self.bucket_name if self.bucket_name else "")
+
+
+class FileSha1Mismatch(B2SimpleError):
+    prefix = 'Upload file SHA1 mismatch'
 
 
 class PartSha1Mismatch(B2Error):
@@ -386,9 +404,19 @@ class ServiceError(TransientErrorMixin, B2Error):
     """
 
 
-class StorageCapExceeded(B2Error):
+class CapExceeded(B2Error):
     def __str__(self):
-        return 'Cannot upload files, storage cap exceeded.'
+        return 'Cap exceeded.'
+
+
+class StorageCapExceeded(CapExceeded):
+    def __str__(self):
+        return 'Cannot upload or copy files, storage cap exceeded.'
+
+
+class TransactionCapExceeded(CapExceeded):
+    def __str__(self):
+        return 'Cannot perform the operation, transaction cap exceeded.'
 
 
 class TooManyRequests(B2Error):
@@ -447,7 +475,27 @@ class UploadTokenUsedConcurrently(B2Error):
         return "More than one concurrent upload using auth token %s" % (self.token,)
 
 
-def interpret_b2_error(status, code, message, response_headers, post_params=None):
+class SSECKeyError(B2Error):
+    def __str__(self):
+        return "Wrong or no SSE-C key provided when reading a file."
+
+
+class WrongEncryptionModeForBucketDefault(B2Error):
+    def __init__(self, encryption_mode):
+        super().__init__()
+        self.encryption_mode = encryption_mode
+
+    def __str__(self):
+        return "%s cannot be used as default for a bucket." % (self.encryption_mode,)
+
+
+def interpret_b2_error(
+    status: int,
+    code: Optional[str],
+    message: Optional[str],
+    response_headers: Dict[str, Any],
+    post_params: Optional[Dict[str, Any]] = None
+) -> B2Error:
     post_params = post_params or {}
     if status == 400 and code == "already_hidden":
         return FileAlreadyHidden(post_params.get('fileName'))
@@ -462,7 +510,14 @@ def interpret_b2_error(status, code, message, response_headers, post_params=None
         # get_file_info returns 404 and "not_found"
         # download_file_by_name/download_file_by_id return 404 and "not_found"
         # but don't have post_params
-        return FileNotPresent(post_params.get('fileName'))
+        return FileNotPresent(
+            file_id_or_name=post_params.get('fileId') or post_params.get('fileName')
+        )
+    elif status == 404:
+        # often times backblaze will return cryptic error messages on invalid URLs.
+        # We should ideally only reach that case on programming error or outdated
+        # sdk versions, but to prevent user confusion we omit the message param
+        return ResourceNotFound()
     elif status == 400 and code == "duplicate_bucket_name":
         return DuplicateBucketName(post_params.get('bucketName'))
     elif status == 400 and code == "missing_part":
@@ -483,6 +538,10 @@ def interpret_b2_error(status, code, message, response_headers, post_params=None
         return Unauthorized(message, code)
     elif status == 403 and code == "storage_cap_exceeded":
         return StorageCapExceeded()
+    elif status == 403 and code == "transaction_cap_exceeded":
+        return TransactionCapExceeded()
+    elif status == 403 and code == "access_denied":
+        return SSECKeyError()
     elif status == 409:
         return Conflict()
     elif status == 416 and code == "range_not_satisfiable":

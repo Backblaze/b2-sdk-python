@@ -43,6 +43,7 @@ class OldAccountInfoMethods(object):
         realm,
         allowed=None,
         application_key_id=None,
+        s3_api_url=None,
     ):
         # we need to enumerate all the parameters and cannot just "*args, **kwargs" because
         # the deprecation decorator doesn't feel safe with the kwargs approach
@@ -56,6 +57,7 @@ class OldAccountInfoMethods(object):
             realm,
             allowed,
             application_key_id,
+            s3_api_url=s3_api_url,
         )
 
 

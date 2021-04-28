@@ -9,10 +9,12 @@
 ######################################################################
 
 import logging
-import six
+from typing import Optional
 
-from .exception import UnrecognizedBucketType
-from .file_version import FileVersionInfoFactory
+from .encryption.setting import EncryptionSetting, EncryptionSettingFactory
+from .encryption.types import EncryptionMode
+from .exception import FileNotPresent, FileOrBucketNotFound, UnexpectedCloudBehaviour, UnrecognizedBucketType
+from .file_version import FileVersionInfo, FileVersionInfoFactory
 from .progress import DoNothingProgressListener
 from .transfer.emerge.executor import AUTO_CONTENT_TYPE
 from .transfer.emerge.write_intent import WriteIntent
@@ -24,8 +26,7 @@ from .utils import b2_url_encode, validate_b2_file_name
 logger = logging.getLogger(__name__)
 
 
-@six.add_metaclass(B2TraceMeta)
-class Bucket(object):
+class Bucket(metaclass=B2TraceMeta):
     """
     Provide access to a bucket in B2: listing files, uploading and downloading.
     """
@@ -44,6 +45,9 @@ class Bucket(object):
         revision=None,
         bucket_dict=None,
         options_set=None,
+        default_server_side_encryption: EncryptionSetting = EncryptionSetting(
+            EncryptionMode.UNKNOWN
+        ),
     ):
         """
         :param b2sdk.v1.B2Api api: an API object
@@ -56,6 +60,7 @@ class Bucket(object):
         :param int revision: a bucket revision number
         :param dict bucket_dict: a dictionary which contains bucket parameters
         :param set options_set: set of bucket options strings
+        :param b2sdk.v1.EncryptionSetting default_server_side_encryption: default server side encryption settings
         """
         self.api = api
         self.id_ = id_
@@ -67,6 +72,7 @@ class Bucket(object):
         self.revision = revision
         self.bucket_dict = bucket_dict or {}
         self.options_set = options_set or set()
+        self.default_server_side_encryption = default_server_side_encryption
 
     def get_id(self):
         """
@@ -100,15 +106,18 @@ class Bucket(object):
         cors_rules=None,
         lifecycle_rules=None,
         if_revision_is=None,
+        default_server_side_encryption: Optional[EncryptionSetting] = None,
     ):
         """
         Update various bucket parameters.
+        For legacy reasons in apiver v1 it returns whatever server returned on b2_update_bucket call, v2 will change that.
 
         :param str bucket_type: a bucket type
         :param dict bucket_info: an info to store with a bucket
         :param dict cors_rules: CORS rules to store with a bucket
         :param dict lifecycle_rules: lifecycle rules to store with a bucket
         :param int if_revision_is: revision number, update the info **only if** *revision* equals to *if_revision_is*
+        :param b2sdk.v1.EncryptionSetting default_server_side_encryption: default server side encryption settings (``None`` if unknown)
         """
         account_id = self.api.account_info.get_account_id()
         return self.api.session.update_bucket(
@@ -118,7 +127,8 @@ class Bucket(object):
             bucket_info=bucket_info,
             cors_rules=cors_rules,
             lifecycle_rules=lifecycle_rules,
-            if_revision_is=if_revision_is
+            if_revision_is=if_revision_is,
+            default_server_side_encryption=default_server_side_encryption,
         )
 
     def cancel_large_file(self, file_id):
@@ -129,7 +139,14 @@ class Bucket(object):
         """
         return self.api.cancel_large_file(file_id)
 
-    def download_file_by_id(self, file_id, download_dest, progress_listener=None, range_=None):
+    def download_file_by_id(
+        self,
+        file_id,
+        download_dest,
+        progress_listener=None,
+        range_=None,
+        encryption: Optional[EncryptionSetting] = None,
+    ):
         """
         Download a file by ID.
 
@@ -145,12 +162,24 @@ class Bucket(object):
         or any sub class of :class:`~b2sdk.v1.AbstractDownloadDestination`
         :param b2sdk.v1.AbstractProgressListener, None progress_listener: a progress listener object to use, or ``None`` to not report progress
         :param tuple[int, int] range_: two integer values, start and end offsets
+        :param b2sdk.v1.EncryptionSetting encryption: encryption settings (``None`` if unknown)
         """
         return self.api.download_file_by_id(
-            file_id, download_dest, progress_listener, range_=range_
+            file_id,
+            download_dest,
+            progress_listener,
+            range_=range_,
+            encryption=encryption,
         )
 
-    def download_file_by_name(self, file_name, download_dest, progress_listener=None, range_=None):
+    def download_file_by_name(
+        self,
+        file_name,
+        download_dest,
+        progress_listener=None,
+        range_=None,
+        encryption: Optional[EncryptionSetting] = None,
+    ):
         """
         Download a file by name.
 
@@ -158,7 +187,7 @@ class Bucket(object):
 
             :ref:`Synchronizer <sync>`, a *high-performance* utility that synchronizes a local folder with a Bucket.
 
-        :param str file_id: a file ID
+        :param str file_name: a file name
         :param download_dest: an instance of the one of the following classes: \
         :class:`~b2sdk.v1.DownloadDestLocalFile`,\
         :class:`~b2sdk.v1.DownloadDestBytes`,\
@@ -167,11 +196,39 @@ class Bucket(object):
         or any sub class of :class:`~b2sdk.v1.AbstractDownloadDestination`
         :param b2sdk.v1.AbstractProgressListener, None progress_listener: a progress listener object to use, or ``None`` to not track progress
         :param tuple[int, int] range_: two integer values, start and end offsets
+        :param b2sdk.v1.EncryptionSetting encryption: encryption settings (``None`` if unknown)
         """
         url = self.api.session.get_download_url_by_name(self.name, file_name)
         return self.api.services.download_manager.download_file_from_url(
-            url, download_dest, progress_listener, range_
+            url,
+            download_dest,
+            progress_listener,
+            range_,
+            encryption=encryption,
         )
+
+    def get_file_info_by_id(self, file_id: str) -> FileVersionInfo:
+        """
+        Gets a file version's info by ID.
+
+        :param str file_id: the id of the file who's info will be retrieved.
+        :rtype: generator[b2sdk.v1.FileVersionInfo]
+        """
+        return FileVersionInfoFactory.from_api_response(self.api.get_file_info(file_id))
+
+    def get_file_info_by_name(self, file_name: str) -> FileVersionInfo:
+        """
+        Gets a file version's info by its name.
+
+        :param str file_name: the name of the file who's info will be retrieved.
+        :rtype: generator[b2sdk.v1.FileVersionInfo]
+        """
+        try:
+            return FileVersionInfoFactory.from_response_headers(
+                self.api.session.get_file_info_by_name(self.name, file_name)
+            )
+        except FileOrBucketNotFound:
+            raise FileNotPresent(bucket_name=self.name, file_id_or_name=file_name)
 
     def get_download_authorization(self, file_name_prefix, valid_duration_in_seconds):
         """
@@ -226,7 +283,7 @@ class Bucket(object):
             if start_file_name is None:
                 return
 
-    def ls(self, folder_to_list='', show_versions=False, recursive=False, fetch_count=None):
+    def ls(self, folder_to_list='', show_versions=False, recursive=False, fetch_count=10000):
         """
         Pretend that folders exist and yields the information about the files in a folder.
 
@@ -243,7 +300,7 @@ class Bucket(object):
         :param bool show_versions: when ``True`` returns info about all versions of a file,
                               when ``False``, just returns info about the most recent versions
         :param bool recursive: if ``True``, list folders recursively
-        :param int,None fetch_count: how many entries to return or ``None`` to use the default. Acceptable values: 1 - 1000
+        :param int,None fetch_count: how many entries to return or ``None`` to use the default. Acceptable values: 1 - 10000
         :rtype: generator[tuple[b2sdk.v1.FileVersionInfo, str]]
         :returns: generator of (file_version_info, folder_name) tuples
 
@@ -340,7 +397,7 @@ class Bucket(object):
 
         :param str file_name: a file name
         :param str,None content_type: the MIME type, or ``None`` to accept the default based on file extension of the B2 file name
-        :param dict,None file_infos: a file info to store with the file or ``None`` to not store anything
+        :param dict,None file_info: a file info to store with the file or ``None`` to not store anything
         """
         validate_b2_file_name(file_name)
         return self.api.services.large_file.start_large_file(
@@ -355,6 +412,7 @@ class Bucket(object):
         content_type=None,
         file_infos=None,
         progress_listener=None,
+        encryption: Optional[EncryptionSetting] = None,
     ):
         """
         Upload bytes in memory to a B2 file.
@@ -364,6 +422,8 @@ class Bucket(object):
         :param str,None content_type: the MIME type, or ``None`` to accept the default based on file extension of the B2 file name
         :param dict,None file_infos: a file info to store with the file or ``None`` to not store anything
         :param b2sdk.v1.AbstractProgressListener,None progress_listener: a progress listener object to use, or ``None`` to not track progress
+        :param b2sdk.v1.EncryptionSetting encryption: encryption settings (``None`` if unknown)
+        :rtype: generator[b2sdk.v1.FileVersion]
         """
         upload_source = UploadSourceBytes(data_bytes)
         return self.upload(
@@ -372,6 +432,7 @@ class Bucket(object):
             content_type=content_type,
             file_info=file_infos,
             progress_listener=progress_listener,
+            encryption=encryption,
         )
 
     def upload_local_file(
@@ -383,6 +444,7 @@ class Bucket(object):
         sha1_sum=None,
         min_part_size=None,
         progress_listener=None,
+        encryption: Optional[EncryptionSetting] = None,
     ):
         """
         Upload a file on local disk to a B2 file.
@@ -398,6 +460,8 @@ class Bucket(object):
         :param str,None sha1_sum: file SHA1 hash or ``None`` to compute it automatically
         :param int min_part_size: a minimum size of a part
         :param b2sdk.v1.AbstractProgressListener,None progress_listener: a progress listener object to use, or ``None`` to not report progress
+        :param b2sdk.v1.EncryptionSetting encryption: encryption settings (``None`` if unknown)
+        :rtype: b2sdk.v1.FileVersionInfo
         """
         upload_source = UploadSourceLocalFile(local_path=local_file, content_sha1=sha1_sum)
         return self.upload(
@@ -407,6 +471,7 @@ class Bucket(object):
             file_info=file_infos,
             min_part_size=min_part_size,
             progress_listener=progress_listener,
+            encryption=encryption,
         )
 
     def upload(
@@ -416,7 +481,8 @@ class Bucket(object):
         content_type=None,
         file_info=None,
         min_part_size=None,
-        progress_listener=None
+        progress_listener=None,
+        encryption: Optional[EncryptionSetting] = None,
     ):
         """
         Upload a file to B2, retrying as needed.
@@ -425,16 +491,18 @@ class Bucket(object):
         open (and re-open) the file.  The result of opening should be a binary
         file whose read() method returns bytes.
 
-        :param b2sdk.v1.UploadSource upload_source: an object that opens the source of the upload
-        :param str file_name: the file name of the new B2 file
-        :param str,None content_type: the MIME type, or ``None`` to accept the default based on file extension of the B2 file name
-        :param dict,None file_infos: a file info to store with the file or ``None`` to not store anything
-        :param int,None min_part_size: the smallest part size to use or ``None`` to determine automatically
-        :param b2sdk.v1.AbstractProgressListener,None progress_listener: a progress listener object to use, or ``None`` to not report progress
-
         The function `opener` should return a file-like object, and it
         must be possible to call it more than once in case the upload
         is retried.
+
+        :param b2sdk.v1.UploadSource upload_source: an object that opens the source of the upload
+        :param str file_name: the file name of the new B2 file
+        :param str,None content_type: the MIME type, or ``None`` to accept the default based on file extension of the B2 file name
+        :param dict,None file_info: a file info to store with the file or ``None`` to not store anything
+        :param int,None min_part_size: the smallest part size to use or ``None`` to determine automatically
+        :param b2sdk.v1.AbstractProgressListener,None progress_listener: a progress listener object to use, or ``None`` to not report progress
+        :param b2sdk.v1.EncryptionSetting encryption: encryption settings (``None`` if unknown)
+        :rtype: b2sdk.v1.FileVersionInfo
         """
         return self.create_file(
             [WriteIntent(upload_source)],
@@ -444,6 +512,7 @@ class Bucket(object):
             progress_listener=progress_listener,
             # FIXME: Bucket.upload documents wrong logic
             recommended_upload_part_size=min_part_size,
+            encryption=encryption,
         )
 
     def create_file(
@@ -455,6 +524,7 @@ class Bucket(object):
         progress_listener=None,
         recommended_upload_part_size=None,
         continue_large_file_id=None,
+        encryption: Optional[EncryptionSetting] = None,
     ):
         """
         Creates a new file in this bucket using an iterable (list, tuple etc) of remote or local sources.
@@ -476,6 +546,7 @@ class Bucket(object):
                         maximum possible part size
         :param str,None continue_large_file_id: large file id that should be selected to resume file creation
                         for multipart upload/copy, ``None`` for automatic search for this id
+        :param b2sdk.v1.EncryptionSetting encryption: encryption settings (``None`` if unknown)
         """
         return self._create_file(
             self.api.services.emerger.emerge,
@@ -486,6 +557,7 @@ class Bucket(object):
             progress_listener=progress_listener,
             continue_large_file_id=continue_large_file_id,
             recommended_upload_part_size=recommended_upload_part_size,
+            encryption=encryption,
         )
 
     def create_file_stream(
@@ -497,6 +569,7 @@ class Bucket(object):
         progress_listener=None,
         recommended_upload_part_size=None,
         continue_large_file_id=None,
+        encryption: Optional[EncryptionSetting] = None,
     ):
         """
         Creates a new file in this bucket using a stream of multiple remote or local sources.
@@ -520,6 +593,7 @@ class Bucket(object):
         :param str,None continue_large_file_id: large file id that should be selected to resume file creation
                         for multipart upload/copy, if ``None`` in multipart case it would always start a new
                         large file
+        :param b2sdk.v1.EncryptionSetting encryption: encryption settings (``None`` if unknown)
         """
         return self._create_file(
             self.api.services.emerger.emerge_stream,
@@ -530,6 +604,7 @@ class Bucket(object):
             progress_listener=progress_listener,
             continue_large_file_id=continue_large_file_id,
             recommended_upload_part_size=recommended_upload_part_size,
+            encryption=encryption,
         )
 
     def _create_file(
@@ -542,6 +617,7 @@ class Bucket(object):
         progress_listener=None,
         recommended_upload_part_size=None,
         continue_large_file_id=None,
+        encryption: Optional[EncryptionSetting] = None,
     ):
         validate_b2_file_name(file_name)
         progress_listener = progress_listener or DoNothingProgressListener()
@@ -555,6 +631,7 @@ class Bucket(object):
             progress_listener,
             recommended_upload_part_size=recommended_upload_part_size,
             continue_large_file_id=continue_large_file_id,
+            encryption=encryption,
         )
 
     def concatenate(
@@ -566,6 +643,7 @@ class Bucket(object):
         progress_listener=None,
         recommended_upload_part_size=None,
         continue_large_file_id=None,
+        encryption: Optional[EncryptionSetting] = None,
     ):
         """
         Creates a new file in this bucket by concatenating multiple remote or local sources.
@@ -584,6 +662,7 @@ class Bucket(object):
                         maximum possible part size
         :param str,None continue_large_file_id: large file id that should be selected to resume file creation
                         for multipart upload/copy, ``None`` for automatic search for this id
+        :param b2sdk.v1.EncryptionSetting encryption: encryption settings (``None`` if unknown)
         """
         return self.create_file(
             WriteIntent.wrap_sources_iterator(outbound_sources),
@@ -593,6 +672,7 @@ class Bucket(object):
             progress_listener=progress_listener,
             recommended_upload_part_size=recommended_upload_part_size,
             continue_large_file_id=continue_large_file_id,
+            encryption=encryption,
         )
 
     def concatenate_stream(
@@ -604,6 +684,7 @@ class Bucket(object):
         progress_listener=None,
         recommended_upload_part_size=None,
         continue_large_file_id=None,
+        encryption: Optional[EncryptionSetting] = None,
     ):
         """
         Creates a new file in this bucket by concatenating stream of multiple remote or local sources.
@@ -623,6 +704,7 @@ class Bucket(object):
         :param str,None continue_large_file_id: large file id that should be selected to resume file creation
                         for multipart upload/copy, if ``None`` in multipart case it would always start a new
                         large file
+        :param b2sdk.v1.EncryptionSetting encryption: encryption setting (``None`` if unknown)
         """
         return self.create_file_stream(
             WriteIntent.wrap_sources_iterator(outbound_sources_iterator),
@@ -632,6 +714,7 @@ class Bucket(object):
             progress_listener=progress_listener,
             recommended_upload_part_size=recommended_upload_part_size,
             continue_large_file_id=continue_large_file_id,
+            encryption=encryption,
         )
 
     def get_download_url(self, filename):
@@ -665,7 +748,11 @@ class Bucket(object):
         file_info=None,
         offset=0,
         length=None,
-        progress_listener=None
+        progress_listener=None,
+        destination_encryption: Optional[EncryptionSetting] = None,
+        source_encryption: Optional[EncryptionSetting] = None,
+        source_file_info: Optional[dict] = None,
+        source_content_type: Optional[str] = None,
     ):
         """
         Creates a new file in this bucket by (server-side) copying from an existing file.
@@ -683,19 +770,35 @@ class Bucket(object):
                         For large files length have to be specified to use ``b2_copy_part`` instead.
         :param b2sdk.v1.AbstractProgressListener,None progress_listener: a progress listener object to use
                         for multipart copy, or ``None`` to not report progress
+        :param b2sdk.v1.EncryptionSetting destination_encryption: encryption settings for the destination
+                        (``None`` if unknown)
+        :param b2sdk.v1.EncryptionSetting source_encryption: encryption settings for the source
+                        (``None`` if unknown)
+        :param dict,None source_file_info: source file's file_info dict, useful when copying files with SSE-C
+        :param str,None source_content_type: source file's content type, useful when copying files with SSE-C
         """
 
-        copy_source = CopySource(file_id, offset=offset, length=length)
-        if length is None:
+        copy_source = CopySource(
+            file_id,
+            offset=offset,
+            length=length,
+            encryption=source_encryption,
+            source_file_info=source_file_info,
+            source_content_type=source_content_type,
+        )
+        if not length:
             # TODO: it feels like this should be checked on lower level - eg. RawApi
             validate_b2_file_name(new_file_name)
-            return self.api.services.upload_manager.copy_file(
+            progress_listener = progress_listener or DoNothingProgressListener()
+            return self.api.services.copy_manager.copy_file(
                 copy_source,
                 new_file_name,
                 content_type=content_type,
                 file_info=file_info,
                 destination_bucket_id=self.id_,
                 progress_listener=progress_listener,
+                destination_encryption=destination_encryption,
+                source_encryption=source_encryption,
             ).result()
         else:
             return self.create_file(
@@ -704,6 +807,7 @@ class Bucket(object):
                 content_type=content_type,
                 file_info=file_info,
                 progress_listener=progress_listener,
+                encryption=destination_encryption,
             )
 
     # FIXME: this shold be deprecated
@@ -715,6 +819,8 @@ class Bucket(object):
         metadata_directive=None,
         content_type=None,
         file_info=None,
+        destination_encryption: Optional[EncryptionSetting] = None,
+        source_encryption: Optional[EncryptionSetting] = None,
     ):
         """
         Creates a new file in this bucket by (server-side) copying from an existing file.
@@ -725,6 +831,10 @@ class Bucket(object):
         :param b2sdk.v1.MetadataDirectiveMode,None metadata_directive: default is :py:attr:`b2sdk.v1.MetadataDirectiveMode.COPY`
         :param str,None content_type: content_type for the new file if metadata_directive is set to :py:attr:`b2sdk.v1.MetadataDirectiveMode.REPLACE`, default will copy the content_type of old file
         :param dict,None file_info: file_info for the new file if metadata_directive is set to :py:attr:`b2sdk.v1.MetadataDirectiveMode.REPLACE`, default will copy the file_info of old file
+        :param b2sdk.v1.EncryptionSetting destination_encryption: encryption settings for the destination
+                (``None`` if unknown)
+        :param b2sdk.v1.EncryptionSetting source_encryption: encryption settings for the source
+                (``None`` if unknown)
         """
         return self.api.session.copy_file(
             file_id,
@@ -734,6 +844,8 @@ class Bucket(object):
             content_type,
             file_info,
             self.id_,
+            destination_server_side_encryption=destination_encryption,
+            source_server_side_encryption=source_encryption,
         )
 
     def delete_file_version(self, file_id, file_name):
@@ -766,6 +878,7 @@ class Bucket(object):
         result['lifecycleRules'] = self.lifecycle_rules
         result['revision'] = self.revision
         result['options'] = self.options_set
+        result['defaultServerSideEncryption'] = self.default_server_side_encryption.as_dict()
         return result
 
     def __repr__(self):
@@ -803,27 +916,47 @@ class BucketFactory(object):
                "accountId": "4aa9865d6f00",
                "bucketInfo": {},
                "options": [],
-               "revision": 1
+               "revision": 1,
+               "defaultServerSideEncryption": {
+                   "isClientAuthorizedToRead" : true,
+                   "value": {
+                     "algorithm" : "AES256",
+                     "mode" : "SSE-B2"
+                   }
+               }
            }
 
         into a Bucket object.
 
-        :param b2sdk.v1.B2Api api: API lient
+        :param b2sdk.v1.B2Api api: API client
         :param dict bucket_dict: a dictionary with bucket properties
         :rtype: b2sdk.v1.Bucket
 
         """
+        type_ = bucket_dict['bucketType']
+        if type_ is None:
+            raise UnrecognizedBucketType(bucket_dict['bucketType'])
         bucket_name = bucket_dict['bucketName']
         bucket_id = bucket_dict['bucketId']
-        type_ = bucket_dict['bucketType']
         bucket_info = bucket_dict['bucketInfo']
         cors_rules = bucket_dict['corsRules']
         lifecycle_rules = bucket_dict['lifecycleRules']
         revision = bucket_dict['revision']
         options = set(bucket_dict['options'])
-        if type_ is None:
-            raise UnrecognizedBucketType(bucket_dict['bucketType'])
+
+        if 'defaultServerSideEncryption' not in bucket_dict:
+            raise UnexpectedCloudBehaviour('server did not provide `defaultServerSideEncryption`')
+        default_server_side_encryption = EncryptionSettingFactory.from_bucket_dict(bucket_dict)
         return cls.BUCKET_CLASS(
-            api, bucket_id, bucket_name, type_, bucket_info, cors_rules, lifecycle_rules, revision,
-            bucket_dict, options
+            api,
+            bucket_id,
+            bucket_name,
+            type_,
+            bucket_info,
+            cors_rules,
+            lifecycle_rules,
+            revision,
+            bucket_dict,
+            options,
+            default_server_side_encryption,
         )

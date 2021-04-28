@@ -8,10 +8,11 @@
 #
 ######################################################################
 
-from b2sdk.v1 import *
+from b2sdk.v1 import *  # noqa
 from b2sdk.v0.account_info import AbstractAccountInfo, InMemoryAccountInfo, UrlPoolAccountInfo, SqliteAccountInfo
 from b2sdk.v0.api import B2Api
 from b2sdk.v0.bucket import Bucket
 from b2sdk.v0.bucket import BucketFactory
-from .sync import make_folder_sync_actions
-from .sync import sync_folders
+from b2sdk.v0.sync import Synchronizer
+from b2sdk.v0.sync import make_folder_sync_actions
+from b2sdk.v0.sync import sync_folders

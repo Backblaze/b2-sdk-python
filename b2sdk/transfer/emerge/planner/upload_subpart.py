@@ -13,16 +13,13 @@ import io
 from abc import ABCMeta, abstractmethod
 from functools import partial
 
-import six
-
 from b2sdk.download_dest import DownloadDestBytes
 from b2sdk.stream.chained import StreamOpener
 from b2sdk.stream.range import wrap_with_range
 from b2sdk.utils import hex_sha1_of_unlimited_stream
 
 
-@six.add_metaclass(ABCMeta)
-class BaseUploadSubpart(object):
+class BaseUploadSubpart(metaclass=ABCMeta):
     def __init__(self, outbound_source, relative_offset, length):
         self.outbound_source = outbound_source
         self.relative_offset = relative_offset
@@ -65,12 +62,12 @@ class RemoteSourceUploadSubpart(BaseUploadSubpart):
         return CachedBytesStreamOpener(partial(self._download, emerge_execution))
 
     def _download(self, emerge_execution):
-        url = emerge_execution.session.get_download_url_by_id(self.outbound_source.file_id)
+        url = emerge_execution.services.session.get_download_url_by_id(self.outbound_source.file_id)
         absolute_offset = self.outbound_source.offset + self.relative_offset
         download_dest = DownloadDestBytes()
         range_ = (absolute_offset, absolute_offset + self.length - 1)
         emerge_execution.services.download_manager.download_file_from_url(
-            url, download_dest, range_=range_
+            url, download_dest, range_=range_, encryption=self.outbound_source.encryption
         )
         return download_dest.get_bytes_written()
 

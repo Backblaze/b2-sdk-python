@@ -13,15 +13,12 @@ import os
 from abc import abstractmethod
 from contextlib import contextmanager
 
-import six
-
 from b2sdk.stream.progress import WritingStreamWithProgress
 
-from .utils import B2TraceMetaAbstract, limit_trace_arguments
+from .utils import B2TraceMetaAbstract, limit_trace_arguments, set_file_mtime
 
 
-@six.add_metaclass(B2TraceMetaAbstract)
-class AbstractDownloadDestination(object):
+class AbstractDownloadDestination(metaclass=B2TraceMetaAbstract):
     """
     Interface to a destination for a downloaded file.
     """
@@ -47,6 +44,7 @@ class AbstractDownloadDestination(object):
 
         :param str file_id: the B2 file ID from the headers
         :param str file_name: the B2 file name from the headers
+        :param str content_length: the content length
         :param str content_type: the content type from the headers
         :param str content_sha1: the content sha1 from the headers (or ``"none"`` for large files)
         :param dict file_info: the user file info from the headers
@@ -91,15 +89,14 @@ class DownloadDestLocalFile(AbstractDownloadDestination):
         completed = False
         try:
             # Open the file and let the caller write it.
-            with open(self.local_file_path, self.MODE) as f:
+            with io.open(self.local_file_path, self.MODE) as f:
                 yield f
 
             # After it's closed, set the mod time.
             # This is an ugly hack to make the tests work.  I can't think
-            # of any other cases where os.utime might fail.
+            # of any other cases where set_file_mtime might fail.
             if self.local_file_path != os.devnull:
-                mod_time = mod_time_millis / 1000.0
-                os.utime(self.local_file_path, (mod_time, mod_time))
+                set_file_mtime(self.local_file_path, mod_time_millis)
 
             # Set the flag that means to leave the downloaded file on disk.
             completed = True

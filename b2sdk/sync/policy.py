@@ -11,11 +11,11 @@
 from abc import ABCMeta, abstractmethod
 from enum import Enum, unique
 
-import six
 import logging
 
 from ..exception import DestFileNewer
-from .action import LocalDeleteAction, B2DeleteAction, B2DownloadAction, B2HideAction, B2UploadAction
+from .encryption_provider import AbstractSyncEncryptionSettingsProvider, SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER
+from .action import LocalDeleteAction, B2CopyAction, B2DeleteAction, B2DownloadAction, B2HideAction, B2UploadAction
 from .exception import InvalidArgument
 
 ONE_DAY_IN_MS = 24 * 60 * 60 * 1000
@@ -39,8 +39,7 @@ class CompareVersionMode(Enum):
     NONE = 203  #: compare using file name only
 
 
-@six.add_metaclass(ABCMeta)
-class AbstractFileSyncPolicy(object):
+class AbstractFileSyncPolicy(metaclass=ABCMeta):
     """
     Abstract policy class.
     """
@@ -58,6 +57,8 @@ class AbstractFileSyncPolicy(object):
         newer_file_mode,
         compare_threshold,
         compare_version_mode=CompareVersionMode.MODTIME,
+        encryption_settings_provider:
+        AbstractSyncEncryptionSettingsProvider = SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER,
     ):
         """
         :param b2sdk.v1.File source_file: source file object
@@ -69,6 +70,7 @@ class AbstractFileSyncPolicy(object):
         :param b2sdk.v1.NEWER_FILE_MODES newer_file_mode: setting which determines handling for destination files newer than on the source
         :param int compare_threshold: when comparing with size or time for sync
         :param b2sdk.v1.COMPARE_VERSION_MODES compare_version_mode: how to compare source and destination files
+        :param b2sdk.v1.AbstractSyncEncryptionSettingsProvider encryption_settings_provider: encryption setting provider
         """
         self._source_file = source_file
         self._source_folder = source_folder
@@ -80,6 +82,7 @@ class AbstractFileSyncPolicy(object):
         self._dest_folder = dest_folder
         self._now_millis = now_millis
         self._transferred = False
+        self._encryption_settings_provider = encryption_settings_provider
 
     def _should_transfer(self):
         """
@@ -222,12 +225,10 @@ class DownPolicy(AbstractFileSyncPolicy):
 
     def _make_transfer_action(self):
         return B2DownloadAction(
-            self._source_file.name,
+            self._source_file,
             self._source_folder.make_full_path(self._source_file.name),
-            self._source_file.latest_version().id_,
             self._dest_folder.make_full_path(self._source_file.name),
-            self._get_source_mod_time(),
-            self._source_file.latest_version().size,
+            self._encryption_settings_provider,
         )
 
 
@@ -245,6 +246,7 @@ class UpPolicy(AbstractFileSyncPolicy):
             self._dest_folder.make_full_path(self._source_file.name),
             self._get_source_mod_time(),
             self._source_file.latest_version().size,
+            self._encryption_settings_provider,
         )
 
 
@@ -305,6 +307,61 @@ class DownAndKeepDaysPolicy(DownPolicy):
     File is synced down (from the cloud to disk) and the keepDays flag is SET.
     """
     pass
+
+
+class CopyPolicy(AbstractFileSyncPolicy):
+    """
+    File is copied (server-side).
+    """
+    DESTINATION_PREFIX = 'b2://'
+    SOURCE_PREFIX = 'b2://'
+
+    def _make_transfer_action(self):
+
+        return B2CopyAction(
+            self._source_folder.make_full_path(self._source_file.name),
+            self._source_file,
+            self._dest_folder.make_full_path(self._source_file.name),
+            self._source_folder.bucket,
+            self._dest_folder.bucket,
+            self._encryption_settings_provider,
+        )
+
+
+class CopyAndDeletePolicy(CopyPolicy):
+    """
+    File is copied (server-side) and the delete flag is SET.
+    """
+
+    def _get_hide_delete_actions(self):
+        for action in super()._get_hide_delete_actions():
+            yield action
+        for action in make_b2_delete_actions(
+            self._source_file,
+            self._dest_file,
+            self._dest_folder,
+            self._transferred,
+        ):
+            yield action
+
+
+class CopyAndKeepDaysPolicy(CopyPolicy):
+    """
+    File is copied (server-side) and the keepDays flag is SET.
+    """
+
+    def _get_hide_delete_actions(self):
+        for action in super()._get_hide_delete_actions():
+            yield action
+        for action in make_b2_keep_days_actions(
+            self._source_file,
+            self._dest_file,
+            self._dest_folder,
+            self._transferred,
+            self._keep_days,
+            self._now_millis,
+        ):
+            yield action
 
 
 def make_b2_delete_note(version, index, transferred):
