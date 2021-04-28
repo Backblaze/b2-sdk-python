@@ -9,6 +9,7 @@
 ######################################################################
 
 from abc import ABCMeta, abstractmethod
+from typing import Optional
 
 
 class AbstractCache(metaclass=ABCMeta):
@@ -21,6 +22,10 @@ class AbstractCache(metaclass=ABCMeta):
 
     @abstractmethod
     def get_bucket_name_or_none_from_allowed(self):
+        pass
+
+    @abstractmethod
+    def get_bucket_name_or_none_from_bucket_id(self, bucket_id: str) -> Optional[str]:
         pass
 
     @abstractmethod
@@ -41,6 +46,9 @@ class DummyCache(AbstractCache):
     """
 
     def get_bucket_id_or_none_from_bucket_name(self, name):
+        return None
+
+    def get_bucket_name_or_none_from_bucket_id(self, bucket_id: str) -> Optional[str]:
         return None
 
     def get_bucket_name_or_none_from_allowed(self):
@@ -65,6 +73,12 @@ class InMemoryCache(AbstractCache):
     def get_bucket_id_or_none_from_bucket_name(self, name):
         return self.name_id_map.get(name)
 
+    def get_bucket_name_or_none_from_bucket_id(self, bucket_id: str) -> Optional[str]:
+        for name, cached_id_ in self.name_id_map.items():
+            if cached_id_ == bucket_id:
+                return name
+        return None
+
     def get_bucket_name_or_none_from_allowed(self):
         return self.bucket_name
 
@@ -85,6 +99,9 @@ class AuthInfoCache(AbstractCache):
 
     def get_bucket_id_or_none_from_bucket_name(self, name):
         return self.info.get_bucket_id_or_none_from_bucket_name(name)
+
+    def get_bucket_name_or_none_from_bucket_id(self, bucket_id) -> Optional[str]:
+        return self.info.get_bucket_name_or_none_from_bucket_id(bucket_id)
 
     def get_bucket_name_or_none_from_allowed(self):
         return self.info.get_bucket_name_or_none_from_allowed()

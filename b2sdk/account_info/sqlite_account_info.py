@@ -13,6 +13,7 @@ import logging
 import os
 import stat
 import threading
+from typing import Optional
 
 from .exception import (CorruptAccountInfo, MissingAccountData)
 from .upload_url_pool import UrlPoolAccountInfo
@@ -359,6 +360,20 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
     def get_allowed(self):
         """
         Return 'allowed' dictionary info.
+        Example:
+
+        .. code-block:: python
+
+            {
+                "bucketId": null,
+                "bucketName": null,
+                "capabilities": [
+                    "listKeys",
+                    "writeKeys"
+                ],
+                "namePrefix": null
+            }
+
         The 'allowed' column was not in the original schema, so it may be NULL.
 
         :rtype: dict
@@ -411,11 +426,17 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
             conn.execute('DELETE FROM bucket WHERE bucket_name = ?;', (bucket_name,))
 
     def get_bucket_id_or_none_from_bucket_name(self, bucket_name):
+        return self._safe_query(
+            'SELECT bucket_id FROM bucket WHERE bucket_name = ?;', (bucket_name,)
+        )
+
+    def get_bucket_name_or_none_from_bucket_id(self, bucket_id: str) -> Optional[str]:
+        return self._safe_query('SELECT bucket_name FROM bucket WHERE bucket_id = ?;', (bucket_id,))
+
+    def _safe_query(self, query, params):
         try:
             with self._get_connection() as conn:
-                cursor = conn.execute(
-                    'SELECT bucket_id FROM bucket WHERE bucket_name = ?;', (bucket_name,)
-                )
+                cursor = conn.execute(query, params)
                 return cursor.fetchone()[0]
         except TypeError:  # TypeError: 'NoneType' object is unsubscriptable
             return None

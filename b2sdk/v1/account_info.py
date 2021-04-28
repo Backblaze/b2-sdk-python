@@ -10,6 +10,7 @@
 import inspect
 import threading
 import os
+from typing import Optional
 
 from b2sdk import _v2 as v2
 from b2sdk.account_info.sqlite_account_info import logger
@@ -61,6 +62,12 @@ class AbstractAccountInfo(OldAccountInfoMethods, v2.AbstractAccountInfo):
         :rtype: str
         """
         # Removed @abstractmethod decorators
+
+    def get_bucket_name_or_none_from_bucket_id(self, bucket_id: str) -> Optional[str]:
+        """
+        Look up the bucket name for the given bucket id.
+        """
+        # Removed @abstractmethod decorator
 
 
 class InMemoryAccountInfo(v2.InMemoryAccountInfo, AbstractAccountInfo):

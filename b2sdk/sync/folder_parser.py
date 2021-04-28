@@ -8,11 +8,11 @@
 #
 ######################################################################
 
-from ..exception import CommandError
+from .exception import InvalidArgument
 from .folder import B2Folder, LocalFolder
 
 
-def parse_sync_folder(folder_name, api):
+def parse_sync_folder(folder_name, api, local_folder_class=LocalFolder, b2_folder_class=B2Folder):
     """
     Take either a local path, or a B2 path, and returns a Folder
     object for it.
@@ -25,22 +25,26 @@ def parse_sync_folder(folder_name, api):
     :param folder_name: a name of the folder, either local or remote
     :type folder_name: str
     :param api: an API object
-    :type api: b2sdk.api.B2Api
+    :type api: :class:`~b2sdk.v1.B2Api`
+    :param local_folder_class: class to handle local folders
+    :type local_folder_class: `~b2sdk.v1.AbstractFolder`
+    :param b2_folder_class: class to handle B2 folders
+    :type b2_folder_class: `~b2sdk.v1.AbstractFolder`
     """
     if folder_name.startswith('b2://'):
-        return _parse_bucket_and_folder(folder_name[5:], api)
+        return _parse_bucket_and_folder(folder_name[5:], api, b2_folder_class)
     elif folder_name.startswith('b2:') and folder_name[3].isalnum():
-        return _parse_bucket_and_folder(folder_name[3:], api)
+        return _parse_bucket_and_folder(folder_name[3:], api, b2_folder_class)
     else:
-        return LocalFolder(folder_name)
+        return local_folder_class(folder_name)
 
 
-def _parse_bucket_and_folder(bucket_and_path, api):
+def _parse_bucket_and_folder(bucket_and_path, api, b2_folder_class):
     """
     Turn 'my-bucket/foo' into B2Folder(my-bucket, foo).
     """
     if '//' in bucket_and_path:
-        raise CommandError("'//' not allowed in path names")
+        raise InvalidArgument('folder_name', "'//' not allowed in path names")
     if '/' not in bucket_and_path:
         bucket_name = bucket_and_path
         folder_name = ''
@@ -48,4 +52,4 @@ def _parse_bucket_and_folder(bucket_and_path, api):
         (bucket_name, folder_name) = bucket_and_path.split('/', 1)
     if folder_name.endswith('/'):
         folder_name = folder_name[:-1]
-    return B2Folder(bucket_name, folder_name, api)
+    return b2_folder_class(bucket_name, folder_name, api)

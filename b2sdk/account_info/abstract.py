@@ -8,6 +8,7 @@
 #
 ######################################################################
 from abc import abstractmethod
+from typing import Optional
 
 from b2sdk.account_info import exception
 from b2sdk.raw_api import ALL_CAPABILITIES
@@ -89,6 +90,12 @@ class AbstractAccountInfo(metaclass=B2TraceMetaAbstract):
         :param str bucket_name: a bucket name
         :return bucket ID or None:
         :rtype: str, None
+        """
+
+    @abstractmethod
+    def get_bucket_name_or_none_from_bucket_id(self, bucket_id: str) -> Optional[str]:
+        """
+        Look up the bucket name for the given bucket id.
         """
 
     @abstractmethod
