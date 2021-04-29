@@ -47,7 +47,6 @@ class OldAccountInfoMethods:
             s3_kwargs = dict(s3_api_url=s3_api_url)
         else:
             s3_kwargs = {}
-        print(s3_kwargs)
         if allowed is None:
             allowed = self.DEFAULT_ALLOWED
         assert self.allowed_is_valid(allowed)
