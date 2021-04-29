@@ -8,12 +8,17 @@
 #
 ######################################################################
 
+from .bucket import Bucket, BucketFactory
 from b2sdk import _v2 as v2
 
 
 # override to use legacy no-request method of creating a bucket from bucket_id and retain `check_bucket_restrictions`
 # public API method
+# and to use v1.Bucket
 class B2Api(v2.B2Api):
+    BUCKET_FACTORY_CLASS = staticmethod(BucketFactory)
+    BUCKET_CLASS = staticmethod(Bucket)
+
     def get_bucket_by_id(self, bucket_id):
         """
         Return a bucket object with a given ID.  Unlike ``get_bucket_by_name``, this method does not need to make any API calls.
