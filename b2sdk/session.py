@@ -37,6 +37,7 @@ class B2Session(object):
         A facade that supplies the correct api_url and account_auth_token
         to methods of underlying raw_api and reauthorizes if necessary.
     """
+    SQLITE_ACCOUNT_INFO_CLASS = staticmethod(SqliteAccountInfo)
 
     def __init__(self, account_info=None, cache=None, raw_api=None):
         """
@@ -65,7 +66,7 @@ class B2Session(object):
 
         self.raw_api = raw_api or B2RawApi(B2Http())
         if account_info is None:
-            account_info = SqliteAccountInfo()
+            account_info = self.SQLITE_ACCOUNT_INFO_CLASS()
             if cache is None:
                 cache = AuthInfoCache(account_info)
         if cache is None:
@@ -119,7 +120,8 @@ class B2Session(object):
             auth_token=response['authorizationToken'],
             api_url=response['apiUrl'],
             download_url=response['downloadUrl'],
-            minimum_part_size=response['recommendedPartSize'],
+            absolute_minimum_part_size=response['absoluteMinimumPartSize'],
+            recommended_part_size=response['recommendedPartSize'],
             application_key=application_key,
             realm=realm,
             s3_api_url=response['s3ApiUrl'],

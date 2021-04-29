@@ -82,6 +82,7 @@ class B2Api(metaclass=B2TraceMeta):
     """
     BUCKET_FACTORY_CLASS = staticmethod(BucketFactory)
     BUCKET_CLASS = staticmethod(Bucket)
+    SESSION_CLASS = staticmethod(B2Session)
 
     def __init__(
         self,
@@ -117,7 +118,7 @@ class B2Api(metaclass=B2TraceMeta):
         :param int max_upload_workers: a number of upload threads, default is 10
         :param int max_copy_workers: a number of copy threads, default is 10
         """
-        self.session = B2Session(account_info=account_info, cache=cache, raw_api=raw_api)
+        self.session = self.SESSION_CLASS(account_info=account_info, cache=cache, raw_api=raw_api)
         self.services = Services(
             self.session,
             max_upload_workers=max_upload_workers,

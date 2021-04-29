@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 * `b2sdk.v1.sync` refactored to reflect `b2sdk.sync` structure
 * Make `B2Api.get_bucket_by_id` return populated bucket objects in v2
+* Add proper support of `recommended_part_size` and `absolute_minimum_part_size` in `AccountInfo`
+* Refactored `minimum_part_size` to `recommended_part_size` (tha value used stays the same)
 
 ### Removed
 * Remove `Bucket.copy_file` and `Bucket.start_large_file` 

@@ -55,20 +55,22 @@ class InMemoryAccountInfo(UrlPoolAccountInfo):
         self._auth_token = None
         self._buckets = {}
         self._download_url = None
-        self._minimum_part_size = None
+        self._recommended_part_size = None
+        self._absolute_minimum_part_size = None
         self._realm = None
         self._s3_api_url = None
 
     def _set_auth_data(
-        self, account_id, auth_token, api_url, download_url, minimum_part_size, application_key,
-        realm, s3_api_url, allowed, application_key_id
+        self, account_id, auth_token, api_url, download_url, recommended_part_size,
+        absolute_minimum_part_size, application_key, realm, s3_api_url, allowed, application_key_id
     ):
         self._account_id = account_id
         self._application_key_id = application_key_id
         self._auth_token = auth_token
         self._api_url = api_url
         self._download_url = download_url
-        self._minimum_part_size = minimum_part_size
+        self._absolute_minimum_part_size = absolute_minimum_part_size
+        self._recommended_part_size = recommended_part_size
         self._application_key = application_key
         self._realm = realm
         self._s3_api_url = s3_api_url
@@ -118,8 +120,12 @@ class InMemoryAccountInfo(UrlPoolAccountInfo):
         return self._download_url
 
     @_raise_missing_if_result_is_none
-    def get_minimum_part_size(self):
-        return self._minimum_part_size
+    def get_recommended_part_size(self):
+        return self._recommended_part_size
+
+    @_raise_missing_if_result_is_none
+    def get_absolute_minimum_part_size(self):
+        return self._absolute_minimum_part_size
 
     @_raise_missing_if_result_is_none
     def get_realm(self):

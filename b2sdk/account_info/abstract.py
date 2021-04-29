@@ -189,9 +189,18 @@ class AbstractAccountInfo(metaclass=B2TraceMetaAbstract):
         """
 
     @abstractmethod
-    def get_minimum_part_size(self):
+    def get_recommended_part_size(self):
         """
-        Return the minimum number of bytes in a part of a large file.
+        Return the recommended number of bytes in a part of a large file.
+
+        :return: number of bytes
+        :rtype: int
+        """
+
+    @abstractmethod
+    def get_absolute_minimum_part_size(self):
+        """
+        Return the absolute minimum number of bytes in a part of a large file.
 
         :return: number of bytes
         :rtype: int
@@ -216,7 +225,15 @@ class AbstractAccountInfo(metaclass=B2TraceMetaAbstract):
         """
 
     @limit_trace_arguments(
-        only=['self', 'api_url', 'download_url', 'minimum_part_size', 'realm', 's3_api_url']
+        only=[
+            'self',
+            'api_url',
+            'download_url',
+            'recommended_part_size',
+            'absolute_minimum_part_size',
+            'realm',
+            's3_api_url',
+        ]
     )
     def set_auth_data(
         self,
@@ -224,18 +241,45 @@ class AbstractAccountInfo(metaclass=B2TraceMetaAbstract):
         auth_token,
         api_url,
         download_url,
-        minimum_part_size,
+        recommended_part_size,
+        absolute_minimum_part_size,
         application_key,
         realm,
         s3_api_url,
-        allowed=None,
-        application_key_id=None
+        allowed,
+        application_key_id,
     ):
         """
         Check permission correctness and stores the results of ``b2_authorize_account``.
 
-        The allowed structure is the one returned by ``b2_authorize_account`` with an addition of
-        a bucketName field.  For keys with bucket restrictions, the name of the bucket is looked
+        The allowed structure is the one returned by ``b2_authorize_account``, e.g.
+
+        .. code-block:: python
+
+           {
+             "absoluteMinimumPartSize": 5000000,
+             "accountId": "YOUR_ACCOUNT_ID",
+             "allowed": {
+               "bucketId": "BUCKET_ID",
+               "bucketName": "BUCKET_NAME",
+               "capabilities": [
+                 "listBuckets",
+                 "listFiles",
+                 "readFiles",
+                 "shareFiles",
+                 "writeFiles",
+                 "deleteFiles"
+               ],
+               "namePrefix": null
+             },
+             "apiUrl": "https://apiNNN.backblazeb2.com",
+             "authorizationToken": "4_0022623512fc8f80000000001_0186e431_d18d02_acct_tH7VW03boebOXayIc43-sxptpfA=",
+             "downloadUrl": "https://f002.backblazeb2.com",
+             "recommendedPartSize": 100000000,
+             "s3ApiUrl": "https://s3.us-west-NNN.backblazeb2.com"
+           }
+
+        For keys with bucket restrictions, the name of the bucket is looked
         up and stored as well.  The console_tool does everything by bucket name, so it's convenient
         to have the restricted bucket name handy.
 
@@ -243,7 +287,8 @@ class AbstractAccountInfo(metaclass=B2TraceMetaAbstract):
         :param str auth_token: user authentication token
         :param str api_url: an API URL
         :param str download_url: path download URL
-        :param int minimum_part_size: minimum size of the file part
+        :param int recommended_part_size: recommended size of a file part
+        :param int absolute_minimum_part_size: minimum size of a file part
         :param str application_key: application key
         :param str realm: a realm to authorize account in
         :param dict allowed: the structure to use for old account info that was saved without 'allowed'
@@ -258,8 +303,9 @@ class AbstractAccountInfo(metaclass=B2TraceMetaAbstract):
         assert self.allowed_is_valid(allowed)
 
         self._set_auth_data(
-            account_id, auth_token, api_url, download_url, minimum_part_size, application_key,
-            realm, s3_api_url, allowed, application_key_id
+            account_id, auth_token, api_url, download_url, recommended_part_size,
+            absolute_minimum_part_size, application_key, realm, s3_api_url, allowed,
+            application_key_id
         )
 
     @classmethod
@@ -283,8 +329,8 @@ class AbstractAccountInfo(metaclass=B2TraceMetaAbstract):
     # TODO: make a decorator for set_auth_data()
     @abstractmethod
     def _set_auth_data(
-        self, account_id, auth_token, api_url, download_url, minimum_part_size, application_key,
-        realm, s3_api_url, allowed, application_key_id
+        self, account_id, auth_token, api_url, download_url, recommended_part_size,
+        absolute_minimum_part_size, application_key, realm, s3_api_url, allowed, application_key_id
     ):
         """
         Actually store the auth data.  Can assume that 'allowed' is present and valid.

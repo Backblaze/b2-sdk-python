@@ -33,7 +33,8 @@ class StubAccountInfo(AbstractAccountInfo):
         self.api_url = None
         self.auth_token = None
         self.download_url = None
-        self.minimum_part_size = None
+        self.absolute_minimum_part_size = None
+        self.recommended_part_size = None
         self.realm = None
         self.application_key_id = None
         self._large_file_uploads = collections.defaultdict(list)
@@ -44,14 +45,25 @@ class StubAccountInfo(AbstractAccountInfo):
             del self.buckets[bucket_id]
 
     def _set_auth_data(
-        self, account_id, auth_token, api_url, download_url, minimum_part_size, application_key,
-        realm, s3_api_url, allowed, application_key_id
+        self,
+        account_id,
+        auth_token,
+        api_url,
+        download_url,
+        recommended_part_size,
+        absolute_minimum_part_size,
+        application_key,
+        realm,
+        s3_api_url,
+        allowed,
+        application_key_id,
     ):
         self.account_id = account_id
         self.auth_token = auth_token
         self.api_url = api_url
         self.download_url = download_url
-        self.minimum_part_size = minimum_part_size
+        self.recommended_part_size = recommended_part_size
+        self.absolute_minimum_part_size = absolute_minimum_part_size
         self.application_key = application_key
         self.realm = realm
         self.s3_api_url = s3_api_url
@@ -97,8 +109,11 @@ class StubAccountInfo(AbstractAccountInfo):
     def get_download_url(self):
         return self.download_url
 
-    def get_minimum_part_size(self):
-        return self.minimum_part_size
+    def get_recommended_part_size(self):
+        return self.recommended_part_size
+
+    def get_absolute_minimum_part_size(self):
+        return self.absolute_minimum_part_size
 
     def get_realm(self):
         return self.realm
