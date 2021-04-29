@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 * `BasicSyncEncryptionSettingsProvider` supports different settings sets for reading and writing
+* Refactored AccountInfo tests to a single file using pytest
 
 ### Fixed
 * Fix clearing cache during `authorize_account`
