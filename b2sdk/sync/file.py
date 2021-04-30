@@ -34,7 +34,7 @@ class AbstractFile(ABC):
         )
 
     @abstractmethod
-    def latest_version(self) -> 'AbstractFileVersion':
+    def latest_version(self) -> 'AbstractSyncFileVersion':
         """
         Return the latest file version.
         """
@@ -62,18 +62,18 @@ class B2File(LocalFile):
     Hold information about one file in a folder in B2 cloud.
     """
 
-    def __init__(self, name, versions: List['B2FileVersion']):
+    def __init__(self, name, versions: List['B2SyncFileVersion']):
         """
         :param str name: a relative file name
-        :param List[B2FileVersion] versions: a list of file versions
+        :param List[B2SyncFileVersion] versions: a list of file versions
         """
         super().__init__(name, versions)
 
-    def latest_version(self) -> 'B2FileVersion':
+    def latest_version(self) -> 'B2SyncFileVersion':
         return super().latest_version()
 
 
-class AbstractFileVersion(ABC):
+class AbstractSyncFileVersion(ABC):
     def __repr__(self):
         return '%s(%s, %s, %s, %s)' % (
             self.__class__.__name__,
@@ -109,7 +109,7 @@ class AbstractFileVersion(ABC):
         pass
 
 
-class LocalSyncFileVersion(AbstractFileVersion):
+class LocalSyncFileVersion(AbstractSyncFileVersion):
     """
     Hold information about one version of a file.
     """
@@ -157,7 +157,7 @@ class LocalSyncFileVersion(AbstractFileVersion):
         return self._size
 
 
-class B2FileVersion(AbstractFileVersion):
+class B2SyncFileVersion(AbstractSyncFileVersion):
     __slots__ = [
         'file_version'
     ]  # in a typical use case there is a lot of these object in memory, hence __slots__

@@ -14,7 +14,6 @@ from functools import partial
 
 from apiver_deps import B2DownloadAction, B2UploadAction, B2CopyAction, AbstractSyncEncryptionSettingsProvider, UploadSourceLocalFile
 from apiver_deps_exception import DestFileNewer, InvalidArgument
-from b2sdk.utils import TempDir
 
 from .fixtures import *
 

@@ -16,7 +16,7 @@ import sys
 
 from abc import ABCMeta, abstractmethod
 from .exception import EmptyDirectory, EnvironmentEncodingError, UnSyncableFilename, NotADirectory, UnableToCreateDirectory
-from .file import LocalFile, B2File, LocalSyncFileVersion, B2FileVersion
+from .file import LocalFile, B2File, LocalSyncFileVersion, B2SyncFileVersion
 from .scan_policies import DEFAULT_SCAN_MANAGER
 from ..utils import fix_windows_path_limit, get_file_mtime, is_file_readable
 
@@ -351,7 +351,7 @@ class B2Folder(AbstractFolder):
                 current_versions = []
 
             current_name = file_name
-            b2_file_version = B2FileVersion(file_version)
+            b2_file_version = B2SyncFileVersion(file_version)
 
             if policies_manager.should_exclude_file_version(b2_file_version):
                 continue

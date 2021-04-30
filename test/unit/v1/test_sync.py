@@ -447,10 +447,10 @@ class TestB2Folder(TestFolder):
 
         self.assertEqual(
             [
-                "B2File(inner/a.txt, [B2FileVersion('a2', 'inner/a.txt', 2000, 'upload'), "
-                "B2FileVersion('a1', 'inner/a.txt', 1000, 'upload')])",
-                "B2File(inner/b.txt, [B2FileVersion('b2', 'inner/b.txt', 1999, 'upload'), "
-                "B2FileVersion('b1', 'inner/b.txt', 1001, 'upload')])",
+                "B2File(inner/a.txt, [B2SyncFileVersion('a2', 'inner/a.txt', 2000, 'upload'), "
+                "B2SyncFileVersion('a1', 'inner/a.txt', 1000, 'upload')])",
+                "B2File(inner/b.txt, [B2SyncFileVersion('b2', 'inner/b.txt', 1999, 'upload'), "
+                "B2SyncFileVersion('b1', 'inner/b.txt', 1001, 'upload')])",
             ], [
                 str(f) for f in folder.all_files(self.reporter)
                 if f.name in ('inner/a.txt', 'inner/b.txt')
@@ -464,8 +464,8 @@ class TestB2Folder(TestFolder):
         folder = self.prepare_folder(use_file_versions_info=True)
         self.assertEqual(
             [
-                "B2File(inner/b.txt, [B2FileVersion('b2', 'inner/b.txt', 1999, 'upload'), "
-                "B2FileVersion('b1', 'inner/b.txt', 1001, 'upload')])",
+                "B2File(inner/b.txt, [B2SyncFileVersion('b2', 'inner/b.txt', 1999, 'upload'), "
+                "B2SyncFileVersion('b1', 'inner/b.txt', 1001, 'upload')])",
             ], [
                 str(f) for f in folder.all_files(self.reporter, policies_manager=polices_manager)
                 if f.name in ('inner/a.txt', 'inner/b.txt')
