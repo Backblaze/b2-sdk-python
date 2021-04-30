@@ -14,7 +14,7 @@ from typing import Optional
 from .encryption.setting import EncryptionSetting, EncryptionSettingFactory
 from .encryption.types import EncryptionMode
 from .exception import FileNotPresent, FileOrBucketNotFound, UnexpectedCloudBehaviour, UnrecognizedBucketType
-from .file_version import FileVersionInfo, FileVersionInfoFactory
+from .file_version import FileVersion, FileVersionFactory
 from .progress import DoNothingProgressListener
 from .transfer.emerge.executor import AUTO_CONTENT_TYPE
 from .transfer.emerge.write_intent import WriteIntent
@@ -207,16 +207,16 @@ class Bucket(metaclass=B2TraceMeta):
             encryption=encryption,
         )
 
-    def get_file_info_by_id(self, file_id: str) -> FileVersionInfo:
+    def get_file_info_by_id(self, file_id: str) -> FileVersion:
         """
         Gets a file version's info by ID.
 
         :param str file_id: the id of the file who's info will be retrieved.
         :rtype: generator[b2sdk.v1.FileVersionInfo]
         """
-        return FileVersionInfoFactory.from_api_response(self.api.get_file_info(file_id))
+        return FileVersionFactory.from_api_response(self.api.get_file_info(file_id))
 
-    def get_file_info_by_name(self, file_name: str) -> FileVersionInfo:
+    def get_file_info_by_name(self, file_name: str) -> FileVersion:
         """
         Gets a file version's info by its name.
 
@@ -224,7 +224,7 @@ class Bucket(metaclass=B2TraceMeta):
         :rtype: generator[b2sdk.v1.FileVersionInfo]
         """
         try:
-            return FileVersionInfoFactory.from_response_headers(
+            return FileVersionFactory.from_response_headers(
                 self.api.session.get_file_info_by_name(self.name, file_name)
             )
         except FileOrBucketNotFound:
@@ -273,7 +273,7 @@ class Bucket(metaclass=B2TraceMeta):
             )
 
             for entry in response['files']:
-                file_version_info = FileVersionInfoFactory.from_api_response(entry)
+                file_version_info = FileVersionFactory.from_api_response(entry)
                 if file_version_info.file_name != file_name:
                     # All versions for the requested file name have been listed.
                     return
@@ -333,7 +333,7 @@ class Bucket(metaclass=B2TraceMeta):
             else:
                 response = session.list_file_names(self.id_, start_file_name, fetch_count, prefix)
             for entry in response['files']:
-                file_version_info = FileVersionInfoFactory.from_api_response(entry)
+                file_version_info = FileVersionFactory.from_api_response(entry)
                 if not file_version_info.file_name.startswith(prefix):
                     # We're past the files we care about
                     return
@@ -725,7 +725,7 @@ class Bucket(metaclass=B2TraceMeta):
         :rtype: b2sdk.v1.FileVersionInfo
         """
         response = self.api.session.hide_file(self.id_, file_name)
-        return FileVersionInfoFactory.from_api_response(response)
+        return FileVersionFactory.from_api_response(response)
 
     def copy(
         self,

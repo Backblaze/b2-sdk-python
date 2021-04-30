@@ -14,7 +14,7 @@ import datetime
 from .encryption.setting import EncryptionSetting, EncryptionSettingFactory
 
 
-class FileVersionInfo(object):
+class FileVersion(object):
     """
     A structure which represents a version of a file (in B2 cloud).
 
@@ -114,7 +114,7 @@ class FileVersionInfo(object):
         return True
 
 
-class FileVersionInfoFactory(object):
+class FileVersionFactory(object):
     """
     Construct :py:class:`b2sdk.v1.FileVersionInfo` objects from various structures.
     """
@@ -171,7 +171,7 @@ class FileVersionInfoFactory(object):
         file_info = file_info_dict.get('fileInfo')
         server_side_encryption = EncryptionSettingFactory.from_file_version_dict(file_info_dict)
 
-        return FileVersionInfo(
+        return FileVersion(
             id_,
             file_name,
             size,
@@ -186,7 +186,7 @@ class FileVersionInfoFactory(object):
 
     @classmethod
     def from_cancel_large_file_response(cls, response):
-        return FileVersionInfo(
+        return FileVersion(
             response['fileId'],
             response['fileName'],
             0,  # size
@@ -199,7 +199,7 @@ class FileVersionInfoFactory(object):
 
     @classmethod
     def from_response_headers(cls, headers):
-        return FileVersionInfo(
+        return FileVersion(
             id_=headers.get('x-bz-file-id'),
             file_name=headers.get('x-bz-file-name'),
             size=headers.get('content-length'),
