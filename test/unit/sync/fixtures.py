@@ -10,9 +10,15 @@
 
 import pytest
 
-from apiver_deps import AbstractFolder, File, B2File, FileVersion, B2FileVersion, FileVersionInfo
+import apiver_deps
+from apiver_deps import AbstractFolder, File, B2File, B2FileVersion, FileVersionInfo
 from apiver_deps import CompareVersionMode, NewerFileSyncMode, KeepOrDeleteMode
 from apiver_deps import DEFAULT_SCAN_MANAGER, Synchronizer
+
+if apiver_deps.V <= 1:
+    from apiver_deps import FileVersion as VFileVersion
+else:
+    from apiver_deps import LocalFileVersion as VFileVersion
 
 
 class FakeFolder(AbstractFolder):
@@ -60,18 +66,18 @@ class FakeFolder(AbstractFolder):
 
 def local_file(name, mod_times, size=10):
     """
-    Makes a File object for a local file, with one FileVersion for
+    Makes a File object for a local file, with one VFileVersion for
     each modification time given in mod_times.
     """
     versions = [
-        FileVersion('/dir/%s' % (name,), name, mod_time, 'upload', size) for mod_time in mod_times
+        VFileVersion('/dir/%s' % (name,), name, mod_time, 'upload', size) for mod_time in mod_times
     ]
     return File(name, versions)
 
 
 def b2_file(name, mod_times, size=10):
     """
-    Makes a File object for a b2 file, with one FileVersion for
+    Makes a File object for a b2 file, with one VFileVersion for
     each modification time given in mod_times.
 
     Positive modification times are uploads, and negative modification
@@ -84,9 +90,9 @@ def b2_file(name, mod_times, size=10):
         File(
             'a.txt',
             [
-               FileVersion('id_a_300', 'a.txt', 300, 'upload'),
-               FileVersion('id_a_200', 'a.txt', 200, 'hide'),
-               FileVersion('id_a_100', 'a.txt', 100, 'upload')
+               LocalFileVersion('id_a_300', 'a.txt', 300, 'upload'),
+               LocalFileVersion('id_a_200', 'a.txt', 200, 'hide'),
+               LocalFileVersion('id_a_100', 'a.txt', 100, 'upload')
             ]
         )
     """

@@ -27,15 +27,15 @@ class File(object):
 
     __slots__ = ['name', 'versions']
 
-    def __init__(self, name, versions: List['FileVersion']):
+    def __init__(self, name, versions: List['LocalFileVersion']):
         """
         :param str name: a relative file name
-        :param List[FileVersion] versions: a list of file versions
+        :param List[LocalFileVersion] versions: a list of file versions
         """
         self.name = name
         self.versions = versions
 
-    def latest_version(self) -> 'FileVersion':
+    def latest_version(self) -> 'LocalFileVersion':
         """
         Return the latest file version.
         """
@@ -65,7 +65,7 @@ class B2File(File):
         return super().latest_version()
 
 
-class FileVersion(object):
+class LocalFileVersion(object):
     """
     Hold information about one version of a file.
     """
@@ -102,7 +102,7 @@ class FileVersion(object):
         )
 
 
-class B2FileVersion(FileVersion):
+class B2FileVersion(LocalFileVersion):
     __slots__ = [
         'file_version_info'
     ]  # in a typical use case there is a lot of these object in memory, hence __slots__
