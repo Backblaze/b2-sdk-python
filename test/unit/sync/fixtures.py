@@ -92,9 +92,9 @@ def b2_file(name, mod_times, size=10):
         File(
             'a.txt',
             [
-               LocalFileVersion('id_a_300', 'a.txt', 300, 'upload'),
-               LocalFileVersion('id_a_200', 'a.txt', 200, 'hide'),
-               LocalFileVersion('id_a_100', 'a.txt', 100, 'upload')
+               LocalSyncFileVersion('id_a_300', 'a.txt', 300, 'upload'),
+               LocalSyncFileVersion('id_a_200', 'a.txt', 200, 'hide'),
+               LocalSyncFileVersion('id_a_100', 'a.txt', 100, 'upload')
             ]
         )
     """

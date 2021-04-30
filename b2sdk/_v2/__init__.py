@@ -146,7 +146,7 @@ from b2sdk.sync.exception import EnvironmentEncodingError
 from b2sdk.sync.exception import IncompleteSync
 from b2sdk.sync.exception import InvalidArgument
 from b2sdk.sync.file import AbstractFile, LocalFile, B2File
-from b2sdk.sync.file import LocalFileVersion, B2FileVersion
+from b2sdk.sync.file import LocalSyncFileVersion, B2FileVersion
 from b2sdk.sync.folder import AbstractFolder
 from b2sdk.sync.folder import B2Folder
 from b2sdk.sync.folder import LocalFolder

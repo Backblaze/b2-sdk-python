@@ -45,15 +45,15 @@ class LocalFile(AbstractFile):
     Hold information about one file in a local folder.
     """
 
-    def __init__(self, name, versions: List['LocalFileVersion']):
+    def __init__(self, name, versions: List['LocalSyncFileVersion']):
         """
         :param str name: a relative file name
-        :param List[LocalFileVersion] versions: a list of file versions
+        :param List[LocalSyncFileVersion] versions: a list of file versions
         """
         self.name = name
         self.versions = versions
 
-    def latest_version(self) -> 'LocalFileVersion':
+    def latest_version(self) -> 'LocalSyncFileVersion':
         return self.versions[0]
 
 
@@ -109,7 +109,7 @@ class AbstractFileVersion(ABC):
         pass
 
 
-class LocalFileVersion(AbstractFileVersion):
+class LocalSyncFileVersion(AbstractFileVersion):
     """
     Hold information about one version of a file.
     """

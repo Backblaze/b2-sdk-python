@@ -16,7 +16,7 @@ import sys
 
 from abc import ABCMeta, abstractmethod
 from .exception import EmptyDirectory, EnvironmentEncodingError, UnSyncableFilename, NotADirectory, UnableToCreateDirectory
-from .file import LocalFile, B2File, LocalFileVersion, B2FileVersion
+from .file import LocalFile, B2File, LocalSyncFileVersion, B2FileVersion
 from .scan_policies import DEFAULT_SCAN_MANAGER
 from ..utils import fix_windows_path_limit, get_file_mtime, is_file_readable
 
@@ -258,7 +258,7 @@ class LocalFolder(AbstractFolder):
                 if is_file_readable(local_path, reporter):
                     file_mod_time = get_file_mtime(local_path)
                     file_size = os.path.getsize(local_path)
-                    version = LocalFileVersion(
+                    version = LocalSyncFileVersion(
                         local_path, b2_path, file_mod_time, 'upload', file_size
                     )
 

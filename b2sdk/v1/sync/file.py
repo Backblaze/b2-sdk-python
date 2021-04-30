@@ -8,12 +8,7 @@
 #
 ######################################################################
 
-from abc import abstractmethod
-import functools
-
 from b2sdk import _v2 as v2
-from .scan_policies import DEFAULT_SCAN_MANAGER
-from .. import exception
 
-FileVersion = v2.LocalFileVersion
+FileVersion = v2.LocalSyncFileVersion
 File = v2.LocalFile
