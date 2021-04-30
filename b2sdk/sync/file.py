@@ -8,13 +8,14 @@
 #
 ######################################################################
 
+from abc import ABC, abstractmethod
 from typing import List
 
 from ..file_version import FileVersion
 from ..raw_api import SRC_LAST_MODIFIED_MILLIS
 
 
-class File(object):
+class AbstractFile(ABC):
     """
     Hold information about one file in a folder.
 
@@ -27,6 +28,23 @@ class File(object):
 
     __slots__ = ['name', 'versions']
 
+    def __repr__(self):
+        return '%s(%s, [%s])' % (
+            self.__class__.__name__, self.name, ', '.join(repr(v) for v in self.versions)
+        )
+
+    @abstractmethod
+    def latest_version(self) -> 'AbstractFileVersion':
+        """
+        Return the latest file version.
+        """
+
+
+class LocalFile(AbstractFile):
+    """
+    Hold information about one file in a local folder.
+    """
+
     def __init__(self, name, versions: List['LocalFileVersion']):
         """
         :param str name: a relative file name
@@ -36,23 +54,13 @@ class File(object):
         self.versions = versions
 
     def latest_version(self) -> 'LocalFileVersion':
-        """
-        Return the latest file version.
-        """
         return self.versions[0]
 
-    def __repr__(self):
-        return '%s(%s, [%s])' % (
-            self.__class__.__name__, self.name, ', '.join(repr(v) for v in self.versions)
-        )
 
-
-class B2File(File):
+class B2File(LocalFile):
     """
     Hold information about one file in a folder in B2 cloud.
     """
-
-    __slots__ = ['name', 'versions']
 
     def __init__(self, name, versions: List['B2FileVersion']):
         """
@@ -65,12 +73,48 @@ class B2File(File):
         return super().latest_version()
 
 
-class LocalFileVersion(object):
+class AbstractFileVersion(ABC):
+    def __repr__(self):
+        return '%s(%s, %s, %s, %s)' % (
+            self.__class__.__name__,
+            repr(self.id_),
+            repr(self.name),
+            repr(self.mod_time),
+            repr(self.action),
+        )
+
+    @property
+    @abstractmethod
+    def id_(self):
+        pass
+
+    @property
+    @abstractmethod
+    def name(self):
+        pass
+
+    @property
+    @abstractmethod
+    def mod_time(self):
+        pass
+
+    @property
+    @abstractmethod
+    def action(self):
+        pass
+
+    @property
+    @abstractmethod
+    def size(self):
+        pass
+
+
+class LocalFileVersion(AbstractFileVersion):
     """
     Hold information about one version of a file.
     """
 
-    __slots__ = ['id_', 'name', 'mod_time', 'action', 'size']
+    __slots__ = ['_id', '_name', '_mod_time', '_action', '_size']
 
     def __init__(self, id_, file_name, mod_time, action, size):
         """
@@ -86,23 +130,34 @@ class LocalFileVersion(object):
         :param size: a file size
         :type size: int
         """
-        self.id_ = id_
-        self.name = file_name
-        self.mod_time = mod_time
-        self.action = action
-        self.size = size
+        self._id = id_
+        self._name = file_name
+        self._mod_time = mod_time
+        self._action = action
+        self._size = size
 
-    def __repr__(self):
-        return '%s(%s, %s, %s, %s)' % (
-            self.__class__.__name__,
-            repr(self.id_),
-            repr(self.name),
-            repr(self.mod_time),
-            repr(self.action),
-        )
+    @property
+    def id_(self):
+        return self._id
+
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def mod_time(self):
+        return self._mod_time
+
+    @property
+    def action(self):
+        return self._action
+
+    @property
+    def size(self):
+        return self._size
 
 
-class B2FileVersion(LocalFileVersion):
+class B2FileVersion(AbstractFileVersion):
     __slots__ = [
         'file_version'
     ]  # in a typical use case there is a lot of these object in memory, hence __slots__

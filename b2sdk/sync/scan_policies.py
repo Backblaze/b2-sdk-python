@@ -193,7 +193,7 @@ class ScanPoliciesManager(object):
         decide if it should be excluded from the scan.
 
         :param file_version: the file version object
-        :type: b2sdk.v1.LocalFileVersion
+        :type: b2sdk.v1.AbstractFileVersion
         :return: True if excluded.
         :rtype: bool
         """
