@@ -264,7 +264,7 @@ class B2DownloadAction(AbstractAction):
 
         encryption = self.encryption_settings_provider.get_setting_for_download(
             bucket=bucket,
-            file_version_info=self.source_file.latest_version().file_version_info,
+            file_version=self.source_file.latest_version().file_version,
         )
 
         bucket.download_file_by_id(
@@ -352,12 +352,12 @@ class B2CopyAction(AbstractAction):
 
         source_encryption = self.encryption_settings_provider.get_source_setting_for_copy(
             bucket=self.source_bucket,
-            source_file_version_info=self.source_file.latest_version().file_version_info,
+            source_file_version=self.source_file.latest_version().file_version,
         )
 
         destination_encryption = self.encryption_settings_provider.get_destination_setting_for_copy(
             bucket=self.destination_bucket,
-            source_file_version_info=self.source_file.latest_version().file_version_info,
+            source_file_version=self.source_file.latest_version().file_version,
             dest_b2_file_name=self.dest_b2_file_name,
         )
 
@@ -368,8 +368,8 @@ class B2CopyAction(AbstractAction):
             progress_listener=progress_listener,
             destination_encryption=destination_encryption,
             source_encryption=source_encryption,
-            source_file_info=self.source_file.latest_version().file_version_info.file_info,
-            source_content_type=self.source_file.latest_version().file_version_info.content_type,
+            source_file_info=self.source_file.latest_version().file_version.file_info,
+            source_content_type=self.source_file.latest_version().file_version.content_type,
         )
 
     def do_report(self, bucket, reporter):

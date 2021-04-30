@@ -104,32 +104,32 @@ class LocalFileVersion(object):
 
 class B2FileVersion(LocalFileVersion):
     __slots__ = [
-        'file_version_info'
+        'file_version'
     ]  # in a typical use case there is a lot of these object in memory, hence __slots__
 
     # and properties
 
-    def __init__(self, file_version_info: FileVersion):
-        self.file_version_info = file_version_info
+    def __init__(self, file_version: FileVersion):
+        self.file_version = file_version
 
     @property
     def id_(self):
-        return self.file_version_info.id_
+        return self.file_version.id_
 
     @property
     def name(self):
-        return self.file_version_info.file_name
+        return self.file_version.file_name
 
     @property
     def mod_time(self):
-        if SRC_LAST_MODIFIED_MILLIS in self.file_version_info.file_info:
-            return int(self.file_version_info.file_info[SRC_LAST_MODIFIED_MILLIS])
-        return self.file_version_info.upload_timestamp
+        if SRC_LAST_MODIFIED_MILLIS in self.file_version.file_info:
+            return int(self.file_version.file_info[SRC_LAST_MODIFIED_MILLIS])
+        return self.file_version.upload_timestamp
 
     @property
     def action(self):
-        return self.file_version_info.action
+        return self.file_version.action
 
     @property
     def size(self):
-        return self.file_version_info.size
+        return self.file_version.size

@@ -273,11 +273,11 @@ class Bucket(metaclass=B2TraceMeta):
             )
 
             for entry in response['files']:
-                file_version_info = FileVersionFactory.from_api_response(entry)
-                if file_version_info.file_name != file_name:
+                file_version = FileVersionFactory.from_api_response(entry)
+                if file_version.file_name != file_name:
                     # All versions for the requested file name have been listed.
                     return
-                yield file_version_info
+                yield file_version
             start_file_name = response['nextFileName']
             start_file_id = response['nextFileId']
             if start_file_name is None:
@@ -302,7 +302,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param bool recursive: if ``True``, list folders recursively
         :param int,None fetch_count: how many entries to return or ``None`` to use the default. Acceptable values: 1 - 10000
         :rtype: generator[tuple[b2sdk.v1.FileVersionInfo, str]]
-        :returns: generator of (file_version_info, folder_name) tuples
+        :returns: generator of (file_version, folder_name) tuples
 
         .. note::
             In case of `recursive=True`, folder_name is returned only for first file in the folder.
@@ -333,15 +333,15 @@ class Bucket(metaclass=B2TraceMeta):
             else:
                 response = session.list_file_names(self.id_, start_file_name, fetch_count, prefix)
             for entry in response['files']:
-                file_version_info = FileVersionFactory.from_api_response(entry)
-                if not file_version_info.file_name.startswith(prefix):
+                file_version = FileVersionFactory.from_api_response(entry)
+                if not file_version.file_name.startswith(prefix):
                     # We're past the files we care about
                     return
-                after_prefix = file_version_info.file_name[len(prefix):]
+                after_prefix = file_version.file_name[len(prefix):]
                 if '/' not in after_prefix or recursive:
                     # This is not a folder, so we'll print it out and
                     # continue on.
-                    yield file_version_info, None
+                    yield file_version, None
                     current_dir = None
                 else:
                     # This is a folder.  If it's different than the folder
@@ -351,7 +351,7 @@ class Bucket(metaclass=B2TraceMeta):
                     folder_with_slash = after_prefix.split('/')[0] + '/'
                     if folder_with_slash != current_dir:
                         folder_name = prefix + folder_with_slash
-                        yield file_version_info, folder_name
+                        yield file_version, folder_name
                         current_dir = folder_with_slash
             if response['nextFileName'] is None:
                 # The response says there are no more files in the bucket,
