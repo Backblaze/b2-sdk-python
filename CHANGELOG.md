@@ -16,6 +16,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 * `b2sdk.v1.sync` refactored to reflect `b2sdk.sync` structure
 * Make `B2Api.get_bucket_by_id` return populated bucket objects in v2
+* `FileVersion` renamed to `LocalFileVersion`
+* `File` renamed to `LocalFile` and introduced `AbstractFile` as a basis for it 
+* `file_version_info` parameter renamed everywhere to `file_version`  
+* `FileVersionInfo` renamed to `FileVersion`
+* `FileVersionInfoFactory` renamed to `FileVersionFactory` 
 
 ### Removed
 * Remove `Bucket.copy_file` and `Bucket.start_large_file` 
