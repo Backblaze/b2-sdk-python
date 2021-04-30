@@ -12,6 +12,7 @@ from b2sdk import _v2 as v2
 from .account_info import SqliteAccountInfo
 
 
+# Override to use legacy signature of account_info.set_auth_data, especially the minimum_part_size argument
 class B2Session(v2.B2Session):
     SQLITE_ACCOUNT_INFO_CLASS = staticmethod(SqliteAccountInfo)
 
