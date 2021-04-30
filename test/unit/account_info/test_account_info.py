@@ -13,11 +13,12 @@ import json
 import unittest.mock as mock
 import os
 import platform
+import shutil
 import tempfile
 
 import pytest
 
-from apiver_deps import AbstractAccountInfo, InMemoryAccountInfo, UploadUrlPool, SqliteAccountInfo
+from apiver_deps import AbstractAccountInfo, InMemoryAccountInfo, UploadUrlPool, SqliteAccountInfo, TempDir, B2_ACCOUNT_INFO_ENV_VAR
 from apiver_deps_exception import CorruptAccountInfo, MissingAccountData
 
 from .fixtures import *
@@ -297,12 +298,14 @@ class TestSqliteAccountInfo(AccountInfoBase):
             os.unlink(self.db_path)
         except OSError:
             pass
-        print('using %s' % self.db_path)
+        self.home = tempfile.mkdtemp()
+
         yield
         try:
             os.unlink(self.db_path)
         except OSError:
             pass
+        shutil.rmtree(self.home)
 
     def test_corrupted(self):
         """
@@ -340,8 +343,67 @@ class TestSqliteAccountInfo(AccountInfoBase):
     def _make_info(self):
         return self._make_sqlite_account_info()
 
-    def _make_sqlite_account_info(self, last_upgrade_to_run=None):
+    def _make_sqlite_account_info(self, env=None, last_upgrade_to_run=None):
         """
         Returns a new SqliteAccountInfo that has just read the data from the file.
+
+        :param dict env: Override Environment variables.
         """
-        return SqliteAccountInfo(file_name=self.db_path, last_upgrade_to_run=None)
+        # Override HOME to ensure hermetic tests
+        with mock.patch('os.environ', env or {'HOME': self.home}):
+            return SqliteAccountInfo(
+                file_name=self.db_path if not env else None,
+                last_upgrade_to_run=last_upgrade_to_run,
+            )
+
+    def test_uses_default(self):
+        account_info = self._make_sqlite_account_info(
+            env={
+                'HOME': self.home,
+            }
+        )
+        actual_path = os.path.abspath(account_info.filename)
+        assert os.path.join(self.home, '.b2_account_info') == actual_path
+
+    def test_uses_xdg_config_home(self, apiver):
+        with TempDir() as d:
+            account_info = self._make_sqlite_account_info(
+                env={
+                    'HOME': self.home,
+                    'XDG_CONFIG_HOME': d,
+                }
+            )
+            if apiver in ['v0', 'v1']:
+                expected_path = os.path.abspath(os.path.join(self.home, '.b2_account_info'))
+            else:
+                assert os.path.exists(os.path.join(d, 'b2'))
+                expected_path = os.path.abspath(os.path.join(d, 'b2', 'account_info'))
+            actual_path = os.path.abspath(account_info.filename)
+            assert expected_path == actual_path
+
+    def test_uses_existing_file_and_ignores_xdg(self):
+        with TempDir() as d:
+            default_db_file_location = os.path.join(self.home, '.b2_account_info')
+            open(default_db_file_location, 'a').close()
+            account_info = self._make_sqlite_account_info(
+                env={
+                    'HOME': self.home,
+                    'XDG_CONFIG_HOME': d,
+                }
+            )
+            assert not os.path.exists(os.path.join(d, 'b2'))
+            actual_path = os.path.abspath(account_info.filename)
+            assert default_db_file_location == actual_path
+
+    def test_account_info_env_var_overrides_xdg_config_home(self):
+        with TempDir() as d:
+            account_info = self._make_sqlite_account_info(
+                env={
+                    'HOME': self.home,
+                    'XDG_CONFIG_HOME': d,
+                    B2_ACCOUNT_INFO_ENV_VAR: os.path.join(d, 'b2_account_info'),
+                }
+            )
+            expected_path = os.path.abspath(os.path.join(d, 'b2_account_info'))
+            actual_path = os.path.abspath(account_info.filename)
+            assert expected_path == actual_path

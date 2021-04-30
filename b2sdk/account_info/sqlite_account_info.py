@@ -40,17 +40,43 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
 
     def __init__(self, file_name=None, last_upgrade_to_run=None):
         """
-        If ``file_name`` argument is empty or ``None``, path from ``B2_ACCOUNT_INFO`` environment variable is used. If that is not available, a default of ``~/.b2_account_info`` is used.
+        Initialize SqliteAccountInfo.
+
+        The exact algorithm used to determine the location of the database file is not API in any sense.
+        If the location of the database file is required (for cleanup, etc), do not assume a specific resolution:
+        instead, use ``self.filename`` to get the actual resolved location.
+
+        SqliteAccountInfo currently checks locations in the following order:
+        * ``file_name``, if truthy
+        * ``B2_ACCOUNT_INFO_ENV_VAR``'s value, if set
+        * ``~/.b2_account_info``, if it exists
+        * ``$XDG_CONFIG_HOME/b2/account_info``, if XDG_CONFIG_HOME is set
+        * ``~/.b2_account_info``, as default
+
+        If the directory ``$XDG_CONFIG_HOME/b2`` does not exist, it is created.
 
         :param str file_name: The sqlite file to use; overrides the default.
         :param int last_upgrade_to_run: For testing only, override the auto-update on the db.
         """
         self.thread_local = threading.local()
-        user_account_info_path = file_name or os.environ.get(
-            B2_ACCOUNT_INFO_ENV_VAR, B2_ACCOUNT_INFO_DEFAULT_FILE
-        )
-        self.filename = file_name or os.path.expanduser(user_account_info_path)
+
+        if file_name:
+            user_account_info_path = file_name
+        elif B2_ACCOUNT_INFO_ENV_VAR in os.environ:
+            user_account_info_path = os.environ[B2_ACCOUNT_INFO_ENV_VAR]
+        elif os.path.exists(os.path.expanduser(B2_ACCOUNT_INFO_DEFAULT_FILE)):
+            user_account_info_path = B2_ACCOUNT_INFO_DEFAULT_FILE
+        elif 'XDG_CONFIG_HOME' in os.environ:
+            config_home = os.environ['XDG_CONFIG_HOME']
+            user_account_info_path = os.path.join(config_home, 'b2', 'account_info')
+            if not os.path.exists(os.path.join(config_home, 'b2')):
+                os.makedirs(os.path.join(config_home, 'b2'), mode=0o755)
+        else:
+            user_account_info_path = B2_ACCOUNT_INFO_DEFAULT_FILE
+
+        self.filename = os.path.expanduser(user_account_info_path)
         logger.debug('%s file path to use: %s', self.__class__.__name__, self.filename)
+
         self._validate_database(last_upgrade_to_run)
         with self._get_connection() as conn:
             self._create_tables(conn, last_upgrade_to_run)
