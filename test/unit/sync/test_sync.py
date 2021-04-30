@@ -717,7 +717,7 @@ class TestSynchronizer:
         assert provider.get_setting_for_download.mock_calls == [
             mock.call(
                 bucket=bucket,
-                file_version_info=mock.ANY,
+                file_version=mock.ANY,
             )
         ]
 
@@ -800,14 +800,14 @@ class TestSynchronizer:
         assert provider.get_source_setting_for_copy.mock_calls == [
             mock.call(
                 bucket='fake_bucket',
-                source_file_version_info=mock.ANY,
+                source_file_version=mock.ANY,
             )
         ]
 
         assert provider.get_destination_setting_for_copy.mock_calls == [
             mock.call(
                 bucket='fake_bucket',
-                source_file_version_info=mock.ANY,
+                source_file_version=mock.ANY,
                 dest_b2_file_name='folder/directory/a.txt',
             )
         ]

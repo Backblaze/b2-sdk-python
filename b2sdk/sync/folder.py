@@ -313,19 +313,19 @@ class B2Folder(AbstractFolder):
         """
         current_name = None
         current_versions = []
-        current_file_version_info = None
-        for file_version_info, _ in self.bucket.ls(
+        current_file_version = None
+        for file_version, _ in self.bucket.ls(
             self.folder_name,
             show_versions=True,
             recursive=True,
         ):
-            if current_file_version_info is None:
-                current_file_version_info = file_version_info
+            if current_file_version is None:
+                current_file_version = file_version
 
-            assert file_version_info.file_name.startswith(self.prefix)
-            if file_version_info.action == 'start':
+            assert file_version.file_name.startswith(self.prefix)
+            if file_version.action == 'start':
                 continue
-            file_name = file_version_info.file_name[len(self.prefix):]
+            file_name = file_version.file_name[len(self.prefix):]
 
             if policies_manager.should_exclude_file(file_name):
                 continue
@@ -351,12 +351,12 @@ class B2Folder(AbstractFolder):
                 current_versions = []
 
             current_name = file_name
-            file_version = B2FileVersion(file_version_info)
+            b2_file_version = B2FileVersion(file_version)
 
-            if policies_manager.should_exclude_file_version(file_version):
+            if policies_manager.should_exclude_file_version(b2_file_version):
                 continue
 
-            current_versions.append(file_version)
+            current_versions.append(b2_file_version)
 
         if current_name is not None and current_versions:
             yield B2File(current_name, current_versions)
