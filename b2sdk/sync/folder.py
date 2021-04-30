@@ -16,7 +16,7 @@ import sys
 
 from abc import ABCMeta, abstractmethod
 from .exception import EmptyDirectory, EnvironmentEncodingError, UnSyncableFilename, NotADirectory, UnableToCreateDirectory
-from .file import File, B2File, LocalFileVersion, B2FileVersion
+from .file import LocalFile, B2File, LocalFileVersion, B2FileVersion
 from .scan_policies import DEFAULT_SCAN_MANAGER
 from ..utils import fix_windows_path_limit, get_file_mtime, is_file_readable
 
@@ -265,7 +265,7 @@ class LocalFolder(AbstractFolder):
                     if policies_manager.should_exclude_file_version(version):
                         continue
 
-                    yield File(b2_path, [version])
+                    yield LocalFile(b2_path, [version])
 
     @classmethod
     def _handle_non_unicode_file_name(cls, name):

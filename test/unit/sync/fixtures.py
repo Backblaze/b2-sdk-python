@@ -11,7 +11,7 @@
 import pytest
 
 import apiver_deps
-from apiver_deps import AbstractFolder, File, B2File, B2FileVersion
+from apiver_deps import AbstractFolder, LocalFile, B2File, B2FileVersion
 from apiver_deps import CompareVersionMode, NewerFileSyncMode, KeepOrDeleteMode
 from apiver_deps import DEFAULT_SCAN_MANAGER, Synchronizer
 
@@ -68,13 +68,13 @@ class FakeFolder(AbstractFolder):
 
 def local_file(name, mod_times, size=10):
     """
-    Makes a File object for a local file, with one VFileVersion for
+    Makes a LocalFile object for a local file, with one VFileVersion for
     each modification time given in mod_times.
     """
     versions = [
         VFileVersion('/dir/%s' % (name,), name, mod_time, 'upload', size) for mod_time in mod_times
     ]
-    return File(name, versions)
+    return LocalFile(name, versions)
 
 
 def b2_file(name, mod_times, size=10):

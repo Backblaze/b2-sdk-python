@@ -18,6 +18,6 @@ from b2sdk.v1.cache import AbstractCache
 from b2sdk.v1.file_version import FileVersionInfo
 from b2sdk.v1.sync import (
     ScanPoliciesManager, DEFAULT_SCAN_MANAGER, zip_folders, Synchronizer, AbstractFolder,
-    LocalFolder, B2Folder, parse_sync_folder, FileVersion
+    LocalFolder, B2Folder, parse_sync_folder, FileVersion, File
 )
 from b2sdk.v1.api import B2Api

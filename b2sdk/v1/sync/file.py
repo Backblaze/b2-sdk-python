@@ -16,3 +16,4 @@ from .scan_policies import DEFAULT_SCAN_MANAGER
 from .. import exception
 
 FileVersion = v2.LocalFileVersion
+File = v2.LocalFile
