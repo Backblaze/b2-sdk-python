@@ -18,10 +18,26 @@ import tempfile
 
 import pytest
 
-from apiver_deps import AbstractAccountInfo, InMemoryAccountInfo, UploadUrlPool, SqliteAccountInfo, TempDir, B2_ACCOUNT_INFO_ENV_VAR
+from apiver_deps import (
+    AbstractAccountInfo,
+    InMemoryAccountInfo,
+    UploadUrlPool,
+    SqliteAccountInfo,
+    TempDir,
+    B2_ACCOUNT_INFO_ENV_VAR,
+    XDG_CONFIG_HOME_ENV_VAR,
+)
 from apiver_deps_exception import CorruptAccountInfo, MissingAccountData
 
 from .fixtures import *
+
+
+class WindowsSafeTempDir(TempDir):
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        try:
+            super().__exit__(exc_type, exc_val, exc_tb)
+        except OSError:
+            pass
 
 
 class TestAccountInfo:
@@ -301,11 +317,11 @@ class TestSqliteAccountInfo(AccountInfoBase):
         self.home = tempfile.mkdtemp()
 
         yield
-        try:
-            os.unlink(self.db_path)
-        except OSError:
-            pass
-        shutil.rmtree(self.home)
+        for cleanup_method in [lambda: os.unlink(self.db_path), lambda: shutil.rmtree(self.home)]:
+            try:
+                cleanup_method
+            except OSError:
+                pass
 
     def test_corrupted(self):
         """
@@ -360,17 +376,19 @@ class TestSqliteAccountInfo(AccountInfoBase):
         account_info = self._make_sqlite_account_info(
             env={
                 'HOME': self.home,
+                'USERPROFILE': self.home,
             }
         )
         actual_path = os.path.abspath(account_info.filename)
         assert os.path.join(self.home, '.b2_account_info') == actual_path
 
     def test_uses_xdg_config_home(self, apiver):
-        with TempDir() as d:
+        with WindowsSafeTempDir() as d:
             account_info = self._make_sqlite_account_info(
                 env={
                     'HOME': self.home,
-                    'XDG_CONFIG_HOME': d,
+                    'USERPROFILE': self.home,
+                    XDG_CONFIG_HOME_ENV_VAR: d,
                 }
             )
             if apiver in ['v0', 'v1']:
@@ -382,25 +400,27 @@ class TestSqliteAccountInfo(AccountInfoBase):
             assert expected_path == actual_path
 
     def test_uses_existing_file_and_ignores_xdg(self):
-        with TempDir() as d:
+        with WindowsSafeTempDir() as d:
             default_db_file_location = os.path.join(self.home, '.b2_account_info')
             open(default_db_file_location, 'a').close()
             account_info = self._make_sqlite_account_info(
                 env={
                     'HOME': self.home,
-                    'XDG_CONFIG_HOME': d,
+                    'USERPROFILE': self.home,
+                    XDG_CONFIG_HOME_ENV_VAR: d,
                 }
             )
-            assert not os.path.exists(os.path.join(d, 'b2'))
             actual_path = os.path.abspath(account_info.filename)
             assert default_db_file_location == actual_path
+            assert not os.path.exists(os.path.join(d, 'b2'))
 
     def test_account_info_env_var_overrides_xdg_config_home(self):
-        with TempDir() as d:
+        with WindowsSafeTempDir() as d:
             account_info = self._make_sqlite_account_info(
                 env={
                     'HOME': self.home,
-                    'XDG_CONFIG_HOME': d,
+                    'USERPROFILE': self.home,
+                    XDG_CONFIG_HOME_ENV_VAR: d,
                     B2_ACCOUNT_INFO_ENV_VAR: os.path.join(d, 'b2_account_info'),
                 }
             )

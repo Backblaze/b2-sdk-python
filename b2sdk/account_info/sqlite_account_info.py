@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)
 
 B2_ACCOUNT_INFO_ENV_VAR = 'B2_ACCOUNT_INFO'
 B2_ACCOUNT_INFO_DEFAULT_FILE = '~/.b2_account_info'
+XDG_CONFIG_HOME_ENV_VAR = 'XDG_CONFIG_HOME'
 
 DEFAULT_ABSOLUTE_MINIMUM_PART_SIZE = 5000000  # this value is used ONLY in migrating db, and in v1 wrapper, it is not
 # meant to be a default for other applications
@@ -47,13 +48,14 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
         instead, use ``self.filename`` to get the actual resolved location.
 
         SqliteAccountInfo currently checks locations in the following order:
-        * ``file_name``, if truthy
-        * ``B2_ACCOUNT_INFO_ENV_VAR``'s value, if set
-        * ``~/.b2_account_info``, if it exists
-        * ``$XDG_CONFIG_HOME/b2/account_info``, if XDG_CONFIG_HOME is set
-        * ``~/.b2_account_info``, as default
 
-        If the directory ``$XDG_CONFIG_HOME/b2`` does not exist, it is created.
+        * ``file_name``, if truthy
+        * ``{B2_ACCOUNT_INFO_ENV_VAR}`` env var's value, if set
+        * ``{B2_ACCOUNT_INFO_DEFAULT_FILE}``, if it exists
+        * ``{XDG_CONFIG_HOME_ENV_VAR}/b2/account_info``, if ``{XDG_CONFIG_HOME_ENV_VAR}`` env var is set
+        * ``{B2_ACCOUNT_INFO_DEFAULT_FILE}``, as default
+
+        If the directory ``{XDG_CONFIG_HOME_ENV_VAR}/b2`` does not exist (and is needed), it is created.
 
         :param str file_name: The sqlite file to use; overrides the default.
         :param int last_upgrade_to_run: For testing only, override the auto-update on the db.
@@ -66,8 +68,8 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
             user_account_info_path = os.environ[B2_ACCOUNT_INFO_ENV_VAR]
         elif os.path.exists(os.path.expanduser(B2_ACCOUNT_INFO_DEFAULT_FILE)):
             user_account_info_path = B2_ACCOUNT_INFO_DEFAULT_FILE
-        elif 'XDG_CONFIG_HOME' in os.environ:
-            config_home = os.environ['XDG_CONFIG_HOME']
+        elif XDG_CONFIG_HOME_ENV_VAR in os.environ:
+            config_home = os.environ[XDG_CONFIG_HOME_ENV_VAR]
             user_account_info_path = os.path.join(config_home, 'b2', 'account_info')
             if not os.path.exists(os.path.join(config_home, 'b2')):
                 os.makedirs(os.path.join(config_home, 'b2'), mode=0o755)
@@ -81,6 +83,16 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
         with self._get_connection() as conn:
             self._create_tables(conn, last_upgrade_to_run)
         super(SqliteAccountInfo, self).__init__()
+
+    # dirty trick to use parameters in the docstring
+    if getattr(__init__, '__doc__', None):  # don't break when using `python -oo`
+        __init__.__doc__ = __init__.__doc__.format(
+            **dict(
+                B2_ACCOUNT_INFO_ENV_VAR=B2_ACCOUNT_INFO_ENV_VAR,
+                B2_ACCOUNT_INFO_DEFAULT_FILE=B2_ACCOUNT_INFO_DEFAULT_FILE,
+                XDG_CONFIG_HOME_ENV_VAR=XDG_CONFIG_HOME_ENV_VAR,
+            )
+        )
 
     def _validate_database(self, last_upgrade_to_run=None):
         """
