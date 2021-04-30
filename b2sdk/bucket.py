@@ -410,7 +410,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param dict,None file_infos: a file info to store with the file or ``None`` to not store anything
         :param b2sdk.v1.AbstractProgressListener,None progress_listener: a progress listener object to use, or ``None`` to not track progress
         :param b2sdk.v1.EncryptionSetting encryption: encryption settings (``None`` if unknown)
-        :rtype: generator[b2sdk.v1.FileVersion]
+        :rtype: b2sdk.v1.FileVersionInfo
         """
         upload_source = UploadSourceBytes(data_bytes)
         return self.upload(

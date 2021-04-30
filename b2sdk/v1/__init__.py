@@ -17,6 +17,6 @@ from b2sdk.v1.bucket import Bucket, BucketFactory
 from b2sdk.v1.cache import AbstractCache
 from b2sdk.v1.sync import (
     ScanPoliciesManager, DEFAULT_SCAN_MANAGER, zip_folders, Synchronizer, AbstractFolder,
-    LocalFolder, B2Folder, parse_sync_folder
+    LocalFolder, B2Folder, parse_sync_folder, FileVersion
 )
 from b2sdk.v1.api import B2Api
