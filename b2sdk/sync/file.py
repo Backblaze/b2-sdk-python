@@ -10,7 +10,7 @@
 
 from typing import List
 
-from ..file_version import FileVersionInfo
+from ..file_version import FileVersion
 from ..raw_api import SRC_LAST_MODIFIED_MILLIS
 
 
@@ -109,7 +109,7 @@ class B2FileVersion(LocalFileVersion):
 
     # and properties
 
-    def __init__(self, file_version_info: FileVersionInfo):
+    def __init__(self, file_version_info: FileVersion):
         self.file_version_info = file_version_info
 
     @property

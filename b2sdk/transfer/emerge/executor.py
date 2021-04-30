@@ -15,7 +15,7 @@ from typing import Optional
 
 from b2sdk.encryption.setting import EncryptionSetting
 from b2sdk.exception import MaxFileSizeExceeded
-from b2sdk.file_version import FileVersionInfoFactory
+from b2sdk.file_version import FileVersionFactory
 from b2sdk.transfer.outbound.large_file_upload_state import LargeFileUploadState
 from b2sdk.transfer.outbound.upload_source import UploadSourceStream
 from b2sdk.utils import interruptible_get_result
@@ -200,7 +200,7 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
 
         # Finish the large file
         response = self.services.session.finish_large_file(file_id, part_sha1_array)
-        return FileVersionInfoFactory.from_api_response(response)
+        return FileVersionFactory.from_api_response(response)
 
     def _execute_step(self, execution_step):
         semaphore = self._semaphore
