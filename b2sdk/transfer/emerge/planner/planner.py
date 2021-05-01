@@ -106,8 +106,7 @@ class EmergePlanner(object):
     ):
         # TODO: add support for getting `min_part_size` and `max_part_size` from account info
         if recommended_upload_part_size is None:
-            # TODO: change `get_minimum_part_size` to correct name
-            recommended_upload_part_size = account_info.get_minimum_part_size()
+            recommended_upload_part_size = account_info.get_recommended_part_size()
         if min_part_size is None and recommended_upload_part_size < cls.DEFAULT_MIN_PART_SIZE:
             min_part_size = recommended_upload_part_size
         if max_part_size is None and recommended_upload_part_size > cls.DEFAULT_MAX_PART_SIZE:

@@ -44,3 +44,14 @@ class TestDatabseMigrations:
         new_account_info = self.sqlite_account_info_factory(file_name=old_account_info.filename)
 
         assert '' == new_account_info.get_s3_api_url()
+
+    def test_migrate_to_4(self):
+        old_account_info = self.sqlite_account_info_factory(schema_0=True)
+        old_account_info.set_auth_data_with_schema_0_for_test(**self.account_info_default_data)
+        new_account_info = self.sqlite_account_info_factory(file_name=old_account_info.filename)
+
+        with new_account_info._get_connection() as conn:
+            sizes = conn.execute(
+                "SELECT recommended_part_size, absolute_minimum_part_size from account"
+            ).fetchone()
+        assert (100, 5000000) == sizes

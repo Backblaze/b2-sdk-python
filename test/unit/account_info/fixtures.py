@@ -27,12 +27,26 @@ def account_info_default_data_schema_0():
 
 
 @pytest.fixture
-def account_info_default_data(account_info_default_data_schema_0):
+def account_info_default_data(account_info_default_data_schema_0, apiver):
+    if apiver in ['v0', 'v1']:
+        return dict(
+            allowed=None,
+            application_key_id='application_key_id',
+            s3_api_url='https://s3.us-west-000.backblazeb2.xyz:8180',
+            **account_info_default_data_schema_0,
+        )
     return dict(
         allowed=None,
         application_key_id='application_key_id',
         s3_api_url='https://s3.us-west-000.backblazeb2.xyz:8180',
-        **account_info_default_data_schema_0,
+        account_id='account_id',
+        auth_token='account_auth',
+        api_url='https://api000.backblazeb2.xyz:8180',
+        download_url='https://f000.backblazeb2.xyz:8180',
+        recommended_part_size=100,
+        absolute_minimum_part_size=50,
+        application_key='app_key',
+        realm='dev',
     )
 
 

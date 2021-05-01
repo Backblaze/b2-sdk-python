@@ -8,14 +8,16 @@
 #
 ######################################################################
 
-from .bucket import Bucket, BucketFactory
 from b2sdk import _v2 as v2
+from .bucket import Bucket, BucketFactory
+from .session import B2Session
 
 
 # override to use legacy no-request method of creating a bucket from bucket_id and retain `check_bucket_restrictions`
 # public API method
 # and to use v1.Bucket
 class B2Api(v2.B2Api):
+    SESSION_CLASS = staticmethod(B2Session)
     BUCKET_FACTORY_CLASS = staticmethod(BucketFactory)
     BUCKET_CLASS = staticmethod(Bucket)
 

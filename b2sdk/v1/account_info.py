@@ -7,13 +7,28 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+
+from abc import abstractmethod
 import inspect
 from typing import Optional
 
 from b2sdk import _v2 as v2
+from b2sdk.account_info.sqlite_account_info import DEFAULT_ABSOLUTE_MINIMUM_PART_SIZE
+from b2sdk.utils import limit_trace_arguments
 
 
+# Retain legacy get_minimum_part_size and facilitate for optional s3_api_url
 class OldAccountInfoMethods:
+    @limit_trace_arguments(
+        only=[
+            'self',
+            'api_url',
+            'download_url',
+            'minimum_part_size',
+            'realm',
+            's3_api_url',
+        ]
+    )
     def set_auth_data(
         self,
         account_id,
@@ -27,28 +42,64 @@ class OldAccountInfoMethods:
         application_key_id=None,
         s3_api_url=None,
     ):
-        if 's3_api_url' in inspect.getfullargspec(self._set_auth_data).args:
-            super().set_auth_data(
-                account_id,
-                auth_token,
-                api_url,
-                download_url,
-                minimum_part_size,
-                application_key,
-                realm,
-                s3_api_url,
-                allowed=allowed,
-                application_key_id=application_key_id
-            )
-        else:
-            if allowed is None:
-                allowed = self.DEFAULT_ALLOWED
-            assert self.allowed_is_valid(allowed)
 
-            self._set_auth_data(
-                account_id, auth_token, api_url, download_url, minimum_part_size, application_key,
-                realm, allowed, application_key_id
-            )
+        if 's3_api_url' in inspect.getfullargspec(self._set_auth_data).args:
+            s3_kwargs = dict(s3_api_url=s3_api_url)
+        else:
+            s3_kwargs = {}
+        if allowed is None:
+            allowed = self.DEFAULT_ALLOWED
+        assert self.allowed_is_valid(allowed)
+
+        self._set_auth_data(
+            account_id=account_id,
+            auth_token=auth_token,
+            api_url=api_url,
+            download_url=download_url,
+            minimum_part_size=minimum_part_size,
+            application_key=application_key,
+            realm=realm,
+            allowed=allowed,
+            application_key_id=application_key_id,
+            **s3_kwargs,
+        )
+
+
+# translate legacy "minimum_part_size" to new style "recommended_part_size"
+class MinimumPartSizeTranslator:
+    def _set_auth_data(
+        self,
+        account_id,
+        auth_token,
+        api_url,
+        download_url,
+        minimum_part_size,
+        application_key,
+        realm,
+        s3_api_url=None,
+        allowed=None,
+        application_key_id=None
+    ):
+        if 's3_api_url' in inspect.getfullargspec(super()._set_auth_data).args:
+            s3_kwargs = dict(s3_api_url=s3_api_url)
+        else:
+            s3_kwargs = {}
+        return super()._set_auth_data(
+            account_id=account_id,
+            auth_token=auth_token,
+            api_url=api_url,
+            download_url=download_url,
+            recommended_part_size=minimum_part_size,
+            absolute_minimum_part_size=DEFAULT_ABSOLUTE_MINIMUM_PART_SIZE,
+            application_key=application_key,
+            realm=realm,
+            allowed=allowed,
+            application_key_id=application_key_id,
+            **s3_kwargs,
+        )
+
+    def get_minimum_part_size(self):
+        return self.get_recommended_part_size()
 
 
 class AbstractAccountInfo(OldAccountInfoMethods, v2.AbstractAccountInfo):
@@ -66,18 +117,59 @@ class AbstractAccountInfo(OldAccountInfoMethods, v2.AbstractAccountInfo):
         """
         # Removed @abstractmethod decorator
 
+    def get_recommended_part_size(self):
+        """
+        Return the recommended number of bytes in a part of a large file.
 
-class InMemoryAccountInfo(v2.InMemoryAccountInfo, AbstractAccountInfo):
+        :return: number of bytes
+        :rtype: int
+        """
+        # Removed @abstractmethod decorator
+
+    def get_absolute_minimum_part_size(self):
+        """
+        Return the absolute minimum number of bytes in a part of a large file.
+
+        :return: number of bytes
+        :rtype: int
+        """
+        # Removed @abstractmethod decorator
+
+    @abstractmethod
+    def get_minimum_part_size(self):
+        """
+        Return the minimum number of bytes in a part of a large file.
+
+        :return: number of bytes
+        :rtype: int
+        """
+        # This stays abstract in v1
+
+    @abstractmethod
+    def _set_auth_data(
+        self, account_id, auth_token, api_url, download_url, minimum_part_size, application_key,
+        realm, s3_api_url, allowed, application_key_id
+    ):
+        """
+        Actually store the auth data.  Can assume that 'allowed' is present and valid.
+
+        All of the information returned by ``b2_authorize_account`` is saved, because all of it is
+        needed at some point.
+        """
+        # Keep the old signature
+
+
+class InMemoryAccountInfo(MinimumPartSizeTranslator, OldAccountInfoMethods, v2.InMemoryAccountInfo):
     pass
 
 
-class UrlPoolAccountInfo(v2.UrlPoolAccountInfo, AbstractAccountInfo):
+class UrlPoolAccountInfo(OldAccountInfoMethods, v2.UrlPoolAccountInfo):
     pass
 
 
-class SqliteAccountInfo(v2.SqliteAccountInfo, AbstractAccountInfo):
+class SqliteAccountInfo(MinimumPartSizeTranslator, OldAccountInfoMethods, v2.SqliteAccountInfo):
     pass
 
 
-class StubAccountInfo(v2.StubAccountInfo, AbstractAccountInfo):
+class StubAccountInfo(MinimumPartSizeTranslator, OldAccountInfoMethods, v2.StubAccountInfo):
     pass

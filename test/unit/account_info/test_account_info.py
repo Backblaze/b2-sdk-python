@@ -110,7 +110,7 @@ class AccountInfoBase(metaclass=ABCMeta):
         returns a new object of AccountInfo class which should be tested
         """
 
-    def test_clear(self, account_info_default_data):
+    def test_clear(self, account_info_default_data, apiver):
         account_info = self._make_info()
         account_info.set_auth_data(**account_info_default_data)
         account_info.clear()
@@ -128,10 +128,17 @@ class AccountInfoBase(metaclass=ABCMeta):
         with pytest.raises(MissingAccountData):
             account_info.get_realm()
         with pytest.raises(MissingAccountData):
-            account_info.get_minimum_part_size()
-        with pytest.raises(MissingAccountData):
             account_info.get_application_key_id()
         assert not account_info.is_same_key('key_id', 'realm')
+
+        if apiver in ['v0', 'v1']:
+            with pytest.raises(MissingAccountData):
+                account_info.get_minimum_part_size()
+        else:
+            with pytest.raises(MissingAccountData):
+                account_info.get_recommended_part_size()
+            with pytest.raises(MissingAccountData):
+                account_info.get_absolute_minimum_part_size()
 
     def test_set_auth_data_compatibility(self, account_info_default_data):
         account_info = self._make_info()
@@ -207,7 +214,7 @@ class AccountInfoBase(metaclass=ABCMeta):
             assert 'a' == self._make_info().get_bucket_name_or_none_from_bucket_id('bucket-0')
 
     @pytest.mark.apiver(to_ver=1)
-    def _test_account_info_up_to_v1(self):
+    def test_account_info_up_to_v1(self):
         account_info = self._make_info()
         account_info.set_auth_data(
             'account_id',
@@ -237,14 +244,15 @@ class AccountInfoBase(metaclass=ABCMeta):
             assert not info2.is_same_key('another_key_id', 'another_realm')
 
     @pytest.mark.apiver(from_ver=2)
-    def _test_account_info_v2(self):
+    def test_account_info_v2(self):
         account_info = self._make_info()
         account_info.set_auth_data(
             account_id='account_id',
             auth_token='account_auth',
             api_url='https://api.backblazeb2.com',
             download_url='download_url',
-            minimum_part_size=100,
+            recommended_part_size=100,
+            absolute_minimum_part_size=50,
             application_key='app_key',
             realm='realm',
             s3_api_url='s3_api_url',
@@ -262,7 +270,8 @@ class AccountInfoBase(metaclass=ABCMeta):
             assert 'app_key' == info2.get_application_key()
             assert 'key_id' == info2.get_application_key_id()
             assert 'realm' == info2.get_realm()
-            assert 100 == info2.get_minimum_part_size()
+            assert 100 == info2.get_recommended_part_size()
+            assert 50 == info2.get_absolute_minimum_part_size()
             assert info2.is_same_key('key_id', 'realm')
             assert not info2.is_same_key('key_id', 'another_realm')
             assert not info2.is_same_key('another_key_id', 'realm')
