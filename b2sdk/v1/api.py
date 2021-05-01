@@ -9,12 +9,14 @@
 ######################################################################
 
 from .bucket import Bucket, BucketFactory
+from .file_version import FileVersionInfo, file_version_info_from_id_and_name
 from b2sdk import _v2 as v2
 
 
 # override to use legacy no-request method of creating a bucket from bucket_id and retain `check_bucket_restrictions`
 # public API method
 # and to use v1.Bucket
+# and to retain cancel_large_file return type
 class B2Api(v2.B2Api):
     BUCKET_FACTORY_CLASS = staticmethod(BucketFactory)
     BUCKET_CLASS = staticmethod(Bucket)
@@ -40,3 +42,7 @@ class B2Api(v2.B2Api):
         :raises b2sdk.v1.exception.RestrictedBucket: if the account is not allowed to use this bucket
         """
         self.check_bucket_name_restrictions(bucket_name)
+
+    def cancel_large_file(self, file_id: str) -> FileVersionInfo:
+        file_id_and_name = super().cancel_large_file(file_id)
+        return file_version_info_from_id_and_name(file_id_and_name)

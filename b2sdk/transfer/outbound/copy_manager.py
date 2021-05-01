@@ -207,7 +207,7 @@ class CopyManager(metaclass=B2TraceMetaAbstract):
                 destination_server_side_encryption=destination_encryption,
                 source_server_side_encryption=source_encryption,
             )
-            file_info = FileVersionFactory.from_api_response(response)
+            file_info = FileVersionFactory.from_api_response(self.services.api, response)
             if progress_listener is not None:
                 progress_listener.bytes_completed(file_info.size)
 

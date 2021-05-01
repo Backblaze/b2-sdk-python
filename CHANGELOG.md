@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * `file_version_info` parameter renamed everywhere to `file_version`  
 * `FileVersionInfo` renamed to `FileVersion`
 * `FileVersionInfoFactory` renamed to `FileVersionFactory` 
+* `FileVersion` has a mandatory `api` parameter 
 
 ### Removed
 * Remove `Bucket.copy_file` and `Bucket.start_large_file` 

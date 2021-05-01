@@ -98,6 +98,14 @@ def b2_file(name, mod_times, size=10):
             ]
         )
     """
+    if apiver_deps.V <= 1:
+        mandatory_kwargs = {}
+    else:
+        mandatory_kwargs = {
+            'api': None,
+            'content_md5': 'content_md5',
+            'server_side_encryption': None,
+        }
     versions = [
         B2SyncFileVersion(
             VFileVersionInfo(
@@ -109,6 +117,7 @@ def b2_file(name, mod_times, size=10):
                 file_info={'in_b2': 'yes'},
                 content_type='text/plain',
                 content_sha1='content_sha1',
+                **mandatory_kwargs,
             )
         ) for mod_time in mod_times
     ]  # yapf disable

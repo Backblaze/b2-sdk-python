@@ -8,7 +8,6 @@
 #
 ######################################################################
 
-from typing import Optional
 import datetime
 
 from .encryption.setting import EncryptionSetting, EncryptionSettingFactory
@@ -35,23 +34,15 @@ class FileVersion(object):
     LS_ENTRY_TEMPLATE = '%83s  %6s  %10s  %8s  %9d  %s'  # order is file_id, action, date, time, size, name
 
     __slots__ = [
-        'id_', 'file_name', 'size', 'content_type', 'content_sha1', 'content_md5', 'file_info',
-        'upload_timestamp', 'action', 'server_side_encryption'
+        'id_', 'api', 'file_name', 'size', 'content_type', 'content_sha1', 'content_md5',
+        'file_info', 'upload_timestamp', 'action', 'server_side_encryption'
     ]
 
     def __init__(
-        self,
-        id_,
-        file_name,
-        size,
-        content_type,
-        content_sha1,
-        file_info,
-        upload_timestamp,
-        action,
-        content_md5=None,
-        server_side_encryption: Optional[EncryptionSetting] = None,  # TODO: make it mandatory in v2
+        self, api, id_, file_name, size, content_type, content_sha1, file_info, upload_timestamp,
+        action, content_md5, server_side_encryption: EncryptionSetting
     ):
+        self.api = api
         self.id_ = id_
         self.file_name = file_name
         self.size = size
@@ -120,7 +111,7 @@ class FileVersionFactory(object):
     """
 
     @classmethod
-    def from_api_response(cls, file_info_dict, force_action=None):
+    def from_api_response(cls, api, file_info_dict, force_action=None):
         """
         Turn this:
 
@@ -172,6 +163,7 @@ class FileVersionFactory(object):
         server_side_encryption = EncryptionSettingFactory.from_file_version_dict(file_info_dict)
 
         return FileVersion(
+            api,
             id_,
             file_name,
             size,
@@ -185,21 +177,9 @@ class FileVersionFactory(object):
         )
 
     @classmethod
-    def from_cancel_large_file_response(cls, response):
+    def from_response_headers(cls, api, headers):
         return FileVersion(
-            response['fileId'],
-            response['fileName'],
-            0,  # size
-            'unknown',
-            'none',
-            {},
-            0,  # upload timestamp
-            'cancel'
-        )
-
-    @classmethod
-    def from_response_headers(cls, headers):
-        return FileVersion(
+            api=api,
             id_=headers.get('x-bz-file-id'),
             file_name=headers.get('x-bz-file-name'),
             size=headers.get('content-length'),
@@ -208,6 +188,7 @@ class FileVersionFactory(object):
             file_info=None,
             upload_timestamp=headers.get('x-bz-upload-timestamp'),
             action=None,
+            content_md5=None,
             server_side_encryption=EncryptionSettingFactory.from_response_headers(headers),
         )
 
@@ -216,15 +197,16 @@ class FileIdAndName(object):
     """
     A structure which represents a B2 cloud file with just `file_name` and `fileId` attributes.
 
-    Used to return data from calls to :py:meth:`b2sdk.v1.Bucket.delete_file_version`.
-
-    :ivar str ~.file_id: ``fileId``
-    :ivar str ~.file_name: full file name (with path)
+    Used to return data from calls to b2_delete_file_version and b2_cancel_large_file.
     """
 
-    def __init__(self, file_id, file_name):
+    def __init__(self, file_id: str, file_name: str):
         self.file_id = file_id
         self.file_name = file_name
+
+    @classmethod
+    def from_cancel_or_delete_response(cls, response):
+        return cls(response['fileId'], response['fileName'])
 
     def as_dict(self):
         """ represents the object as a dict which looks almost exactly like the raw api output for delete_file_version """

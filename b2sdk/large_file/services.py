@@ -11,7 +11,7 @@
 from typing import Optional
 
 from b2sdk.encryption.setting import EncryptionSetting
-from b2sdk.file_version import FileVersionFactory
+from b2sdk.file_version import FileIdAndName
 from b2sdk.large_file.part import PartFactory
 from b2sdk.large_file.unfinished_large_file import UnfinishedLargeFile
 
@@ -104,12 +104,9 @@ class LargeFileServices(object):
         )
 
     # delete/cancel
-    def cancel_large_file(self, file_id):
+    def cancel_large_file(self, file_id: str) -> FileIdAndName:
         """
         Cancel a large file upload.
-
-        :param str file_id: a file ID
-        :rtype: None
         """
         response = self.services.session.cancel_large_file(file_id)
-        return FileVersionFactory.from_cancel_large_file_response(response)
+        return FileIdAndName.from_cancel_or_delete_response(response)
