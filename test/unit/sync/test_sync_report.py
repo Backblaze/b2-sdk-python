@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: test/unit/v1/test_sync_report.py
+# File: test/unit/v0/test_sync_report.py
 #
 # Copyright 2019 Backblaze Inc. All Rights Reserved.
 #
@@ -10,12 +10,10 @@
 
 from unittest.mock import MagicMock
 
-from ..test_base import TestBase
-
-from .deps import SyncReport
+from apiver_deps import SyncReport
 
 
-class TestSyncReport(TestBase):
+class TestSyncReport:
     def test_bad_terminal(self):
         stdout = MagicMock()
         stdout.write = MagicMock(
