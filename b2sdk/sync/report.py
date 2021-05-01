@@ -251,30 +251,6 @@ class SyncReport:
     def symlink_skipped(self, path):
         pass
 
-    @property
-    def local_file_count(self):
-        # TODO: Deprecated. Should be removed in v2
-        return self.total_count
-
-    @local_file_count.setter
-    def local_file_count(self, value):
-        # TODO: Deprecated. Should be removed in v2
-        self.total_count = value
-
-    @property
-    def local_done(self):
-        # TODO: Deprecated. Should be removed in v2
-        return self.total_done
-
-    @local_done.setter
-    def local_done(self, value):
-        # TODO: Deprecated. Should be removed in v2
-        self.total_done = value
-
-    # TODO: Deprecated. Should be removed in v2
-    update_local = update_total
-    end_local = end_total
-
 
 class SyncFileReporter(AbstractProgressListener):
     """

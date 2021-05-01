@@ -23,6 +23,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Fix FileVersion.size and FileVersion.mod_time_millis type ambiguity
 * Old buckets (from past tests) are cleaned up before running integration tests in a single thread
 
+### Removed
+* Remove deprecated `SyncReport` methods 
+
 ## [1.9.0] - 2021-06-07
 
 ### Added
