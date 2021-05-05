@@ -327,10 +327,10 @@ class B2Api(metaclass=B2TraceMeta):
         # allow access to the named bucket.
         if bucket_name is not None and bucket_id is not None:
             raise ValueError('Provide either bucket_name or bucket_id, not both')
-        if bucket_name:
-            self.check_bucket_name_restrictions(bucket_name)
-        else:
+        if bucket_id:
             self.check_bucket_id_restrictions(bucket_id)
+        else:
+            self.check_bucket_name_restrictions(bucket_name)
 
         account_id = self.account_info.get_account_id()
 
