@@ -180,7 +180,9 @@ class TestApi(TestBase):
         bucket2 = self.api.create_bucket('bucket2', 'allPrivate')
         key = self.api.create_key(['listBuckets'], 'key1', bucket_id=bucket1.id_)
         self.api.authorize_account('production', key['applicationKeyId'], key['applicationKey'])
-        with self.assertRaises(RestrictedBucket):
+        with self.assertRaises(
+            RestrictedBucket, 'Application key is restricted to bucket: bucket1'
+        ):
             self.api.list_buckets(bucket_name=bucket2.name)
 
     def test_list_buckets_with_restriction_and_no_name(self):
@@ -189,8 +191,21 @@ class TestApi(TestBase):
         self.api.create_bucket('bucket2', 'allPrivate')
         key = self.api.create_key(['listBuckets'], 'key1', bucket_id=bucket1.id_)
         self.api.authorize_account('production', key['applicationKeyId'], key['applicationKey'])
-        with self.assertRaises(RestrictedBucket):
+        with self.assertRaises(
+            RestrictedBucket, 'Application key is restricted to bucket: bucket1'
+        ):
             self.api.list_buckets()
+
+    def test_list_buckets_with_restriction_and_wrong_id(self):
+        self._authorize_account()
+        bucket1 = self.api.create_bucket('bucket1', 'allPrivate')
+        self.api.create_bucket('bucket2', 'allPrivate')
+        key = self.api.create_key(['listBuckets'], 'key1', bucket_id=bucket1.id_)
+        self.api.authorize_account('production', key['applicationKeyId'], key['applicationKey'])
+        with self.assertRaises(
+            RestrictedBucket, 'Application key is restricted to bucket: %s' % (bucket1.id_,)
+        ):
+            self.api.list_buckets(bucket_id='not the one bound to the key')
 
     def _authorize_account(self):
         self.api.authorize_account('production', self.application_key_id, self.master_key)
