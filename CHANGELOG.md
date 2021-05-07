@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 * Add `__slots__` and `__eq__` to `FileVersionInfo` for memory usage optimization and ease of testing
 * Add support for SSE-C server-side encryption mode
+* Add support for `XDG_CONFIG_HOME` for determining the location of `SqliteAccountInfo` db file
 
 ### Changed
 * `BasicSyncEncryptionSettingsProvider` supports different settings sets for reading and writing

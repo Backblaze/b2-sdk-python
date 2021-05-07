@@ -10,11 +10,15 @@
 
 from abc import abstractmethod
 import inspect
+import logging
+import os
 from typing import Optional
 
 from b2sdk import _v2 as v2
 from b2sdk.account_info.sqlite_account_info import DEFAULT_ABSOLUTE_MINIMUM_PART_SIZE
 from b2sdk.utils import limit_trace_arguments
+
+logger = logging.getLogger(__name__)
 
 
 # Retain legacy get_minimum_part_size and facilitate for optional s3_api_url
@@ -168,7 +172,18 @@ class UrlPoolAccountInfo(OldAccountInfoMethods, v2.UrlPoolAccountInfo):
 
 
 class SqliteAccountInfo(MinimumPartSizeTranslator, OldAccountInfoMethods, v2.SqliteAccountInfo):
-    pass
+    def __init__(self, file_name=None, last_upgrade_to_run=None):
+        """
+        If ``file_name`` argument is empty or ``None``, path from ``B2_ACCOUNT_INFO`` environment variable is used. If that is not available, a default of ``~/.b2_account_info`` is used.
+
+        :param str file_name: The sqlite file to use; overrides the default.
+        :param int last_upgrade_to_run: For testing only, override the auto-update on the db.
+        """
+        # use legacy env var resolution, XDG not supported
+        file_name = file_name or os.environ.get(
+            v2.B2_ACCOUNT_INFO_ENV_VAR, v2.B2_ACCOUNT_INFO_DEFAULT_FILE
+        )
+        super().__init__(file_name=file_name, last_upgrade_to_run=last_upgrade_to_run)
 
 
 class StubAccountInfo(MinimumPartSizeTranslator, OldAccountInfoMethods, v2.StubAccountInfo):
