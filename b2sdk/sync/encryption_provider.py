@@ -32,8 +32,6 @@ class AbstractSyncEncryptionSettingsProvider(metaclass=ABCMeta):
     ) -> Optional[EncryptionSetting]:
         """
         Return an EncryptionSetting for uploading an object or None if server should decide.
-
-        WARNING: the signature of this method is not final yet and not part of the public interface
         """
 
     @abstractmethod
@@ -44,8 +42,6 @@ class AbstractSyncEncryptionSettingsProvider(metaclass=ABCMeta):
     ) -> Optional[EncryptionSetting]:
         """
         Return an EncryptionSetting for a source of copying an object or None if not required
-
-        WARNING: the signature of this method is not final yet and not part of the public interface
         """
 
     @abstractmethod
@@ -58,8 +54,6 @@ class AbstractSyncEncryptionSettingsProvider(metaclass=ABCMeta):
     ) -> Optional[EncryptionSetting]:
         """
         Return an EncryptionSetting for a destination for copying an object or None if server should decide
-
-        WARNING: the signature of this method is not final yet and not part of the public interface
         """
 
     @abstractmethod
@@ -70,8 +64,6 @@ class AbstractSyncEncryptionSettingsProvider(metaclass=ABCMeta):
     ) -> Optional[EncryptionSetting]:
         """
         Return an EncryptionSetting for downloading an object from, or None if not required
-
-        WARNING: the signature of this method is not final yet and not part of the public interface
         """
 
 
@@ -101,8 +93,6 @@ class BasicSyncEncryptionSettingsProvider(AbstractSyncEncryptionSettingsProvider
     """
     Basic encryption setting provider that supports exactly one encryption setting per bucket for reading
     and one encryption setting per bucket for writing
-
-    WARNING: This class can be used by B2CLI for SSE-B2, but it's still in development
     """
 
     def __init__(

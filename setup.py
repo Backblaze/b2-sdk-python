@@ -104,7 +104,10 @@ setup(
     extras_require={
         'doc':
             [
-                'sphinx', 'sphinx-autobuild', 'sphinx_rtd_theme', 'sphinxcontrib-plantuml',
+                'sphinx<4.0',  # sphinx>=4.0 doesn't support Python 3.5
+                'sphinx-autobuild',
+                'sphinx_rtd_theme',
+                'sphinxcontrib-plantuml',
                 'sadisplay'
             ],
     },

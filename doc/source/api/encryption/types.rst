@@ -1,6 +1,6 @@
 .. _encryption_types:
 
-:mod:`b2sdk.encryption.types`
-=============================
+Encryption Types
+================
 
 .. automodule:: b2sdk.encryption.types

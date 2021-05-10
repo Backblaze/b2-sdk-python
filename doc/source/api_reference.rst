@@ -33,6 +33,8 @@ Public API
    api/transfer/emerge/write_intent
    api/transfer/outbound/outbound_source
    api/download_dest
+   api/encryption/setting
+   api/encryption/types
 
 .. _api_internal:
 
@@ -62,9 +64,6 @@ Internal API
    api/internal/sync/policy_manager
    api/internal/sync/scan_policies
    api/internal/sync/sync
-   api/internal/sync/encryption_provider
-   api/internal/encryption/setting
-   api/internal/encryption/types
    api/internal/transfer/inbound/downloader/abstract
    api/internal/transfer/inbound/downloader/parallel
    api/internal/transfer/inbound/downloader/range
