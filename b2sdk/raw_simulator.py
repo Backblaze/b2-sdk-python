@@ -414,21 +414,28 @@ class BucketSimulator(object):
             default_server_side_encryption = EncryptionSetting(mode=EncryptionMode.NONE)
         self.default_server_side_encryption = default_server_side_encryption
 
+    def _check_capability(self, capability)
+        return capability in self.api.auth_token_to_key[account_auth_token].get_allowed()['capabilities']
+
+    @property
+    def is_allowed_to_read_bucket_encryption_setting(self):
+        return self._check_capability('readBucketEncryption')
+
+    @property
+    def is_allowed_to_read_bucket_file_retention(self):
+        return self._check_capability('readBucketRetentions')
+
     def bucket_dict(self, account_auth_token):
         default_sse = {'isClientAuthorizedToRead': False}
-        is_allowed_to_read_bucket_encryption_setting = 'readBucketEncryption' in self.api.auth_token_to_key[
-            account_auth_token].get_allowed()['capabilities']
         logger.debug(
             'authtoken %s is %sallowed to read encryption setting of %s' % (
                 account_auth_token,
-                not is_allowed_to_read_bucket_encryption_setting and 'not ' or '',
+                not self.is_allowed_to_read_bucket_encryption_setting and 'not ' or '',
                 self,
             )
         )
-        if is_allowed_to_read_bucket_encryption_setting:
-            default_sse = {
-                'isClientAuthorizedToRead': True,
-            }
+        if self.is_allowed_to_read_bucket_encryption_setting:
+            default_sse['isClientAuthorizedToRead'] = True
             default_sse['value'] = {'mode': self.default_server_side_encryption.mode.value}
             if self.default_server_side_encryption.algorithm is not None:
                 default_sse['value']['algorithm'
