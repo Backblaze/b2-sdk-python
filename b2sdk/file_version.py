@@ -12,6 +12,7 @@ from typing import Optional
 import datetime
 
 from .encryption.setting import EncryptionSetting, EncryptionSettingFactory
+from .file_lock import FileRetentionSetting, LegalHoldSerializer
 
 
 class FileVersionInfo(object):
@@ -35,8 +36,18 @@ class FileVersionInfo(object):
     LS_ENTRY_TEMPLATE = '%83s  %6s  %10s  %8s  %9d  %s'  # order is file_id, action, date, time, size, name
 
     __slots__ = [
-        'id_', 'file_name', 'size', 'content_type', 'content_sha1', 'content_md5', 'file_info',
-        'upload_timestamp', 'action', 'server_side_encryption'
+        'id_',
+        'file_name',
+        'size',
+        'content_type',
+        'content_sha1',
+        'content_md5',
+        'file_info',
+        'upload_timestamp',
+        'action',
+        'server_side_encryption',
+        'legal_hold',
+        'file_retention',
     ]
 
     def __init__(
@@ -51,6 +62,8 @@ class FileVersionInfo(object):
         action,
         content_md5=None,
         server_side_encryption: Optional[EncryptionSetting] = None,  # TODO: make it mandatory in v2
+        legal_hold: Optional[bool] = None,
+        file_retention: Optional[FileRetentionSetting] = None,
     ):
         self.id_ = id_
         self.file_name = file_name
@@ -62,6 +75,8 @@ class FileVersionInfo(object):
         self.upload_timestamp = upload_timestamp
         self.action = action
         self.server_side_encryption = server_side_encryption
+        self.legal_hold = legal_hold
+        self.file_retention = file_retention
 
     def as_dict(self):
         """ represents the object as a dict which looks almost exactly like the raw api output for upload/list """
@@ -69,6 +84,7 @@ class FileVersionInfo(object):
             'fileId': self.id_,
             'fileName': self.file_name,
             'fileInfo': self.file_info,
+            'legalHold': self.legal_hold,
         }
         if self.size is not None:
             result['size'] = self.size
@@ -84,6 +100,8 @@ class FileVersionInfo(object):
             result['contentMd5'] = self.content_md5
         if self.server_side_encryption is not None:  # this is for backward compatibility of interface only, b2sdk always sets it
             result['serverSideEncryption'] = self.server_side_encryption.as_dict()
+        if self.file_retention is not None:  # this is for backward compatibility of interface only, b2sdk always sets it
+            result['fileRetention'] = self.file_retention.as_dict()
         return result
 
     def format_ls_entry(self):
@@ -170,6 +188,11 @@ class FileVersionInfoFactory(object):
         content_md5 = file_info_dict.get('contentMd5')
         file_info = file_info_dict.get('fileInfo')
         server_side_encryption = EncryptionSettingFactory.from_file_version_dict(file_info_dict)
+        file_retention = FileRetentionSetting.from_file_retention_dict(
+            file_info_dict.get('fileRetention')
+        )
+
+        legal_hold = LegalHoldSerializer.from_server(file_info_dict.get('legalHold'))
 
         return FileVersionInfo(
             id_,
@@ -182,6 +205,8 @@ class FileVersionInfoFactory(object):
             action,
             content_md5,
             server_side_encryption,
+            legal_hold,
+            file_retention,
         )
 
     @classmethod
