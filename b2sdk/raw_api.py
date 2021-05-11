@@ -24,6 +24,7 @@ from typing import Any, Dict, Optional
 from .b2http import B2Http
 from .exception import FileOrBucketNotFound, ResourceNotFound, UnusableFileName, InvalidMetadataDirective, WrongEncryptionModeForBucketDefault
 from .encryption.setting import EncryptionAlgorithm, EncryptionMode, EncryptionSetting
+from .file_lock import BucketRetentionSetting, FileRetentionSetting, RetentionMode, RetentionPeriod
 from .utils import b2_url_encode, hex_sha1_of_stream
 
 # All possible capabilities
@@ -118,6 +119,7 @@ class AbstractRawApi(metaclass=ABCMeta):
         cors_rules=None,
         lifecycle_rules=None,
         default_server_side_encryption: Optional[EncryptionSetting] = None,
+        is_file_lock_enabled: Optional[bool] = None,
     ):
         pass
 
@@ -272,6 +274,7 @@ class AbstractRawApi(metaclass=ABCMeta):
         lifecycle_rules=None,
         if_revision_is=None,
         default_server_side_encryption: Optional[EncryptionSetting] = None,
+        default_retention: Optional[BucketRetentionSetting] = None,
     ):
         pass
 
@@ -364,7 +367,8 @@ class B2RawApi(AbstractRawApi):
         bucket_info=None,
         cors_rules=None,
         lifecycle_rules=None,
-        default_server_side_encryption=None,
+        default_server_side_encryption: Optional[EncryptionSetting] = None,
+        is_file_lock_enabled: Optional[bool] = None,
     ):
         kwargs = dict(
             accountId=account_id,
@@ -382,6 +386,8 @@ class B2RawApi(AbstractRawApi):
                 raise WrongEncryptionModeForBucketDefault(default_server_side_encryption.mode)
             kwargs['defaultServerSideEncryption'
                   ] = default_server_side_encryption.serialize_to_json_for_request()
+        if is_file_lock_enabled is not None:
+            kwargs['fileLockConfiguration'] = {'isFileLockEnabled': is_file_lock_enabled}
         return self._post_json(
             api_url,
             'b2_create_bucket',
@@ -653,7 +659,8 @@ class B2RawApi(AbstractRawApi):
         cors_rules=None,
         lifecycle_rules=None,
         if_revision_is=None,
-        default_server_side_encryption=None,
+        default_server_side_encryption: Optional[EncryptionSetting] = None,
+        default_retention: Optional[BucketRetentionSetting] = None,
     ):
         assert bucket_info is not None or bucket_type is not None
 
@@ -674,6 +681,8 @@ class B2RawApi(AbstractRawApi):
                     raise WrongEncryptionModeForBucketDefault(default_server_side_encryption.mode)
                 kwargs['defaultServerSideEncryption'
                       ] = default_server_side_encryption.serialize_to_json_for_request()
+        if default_retention is not None:
+            kwargs['defaultRetention'] = default_retention.serialize_to_json_for_request()
 
         return self._post_json(
             api_url,
