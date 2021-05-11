@@ -11,6 +11,8 @@
 from typing import Optional
 import enum
 
+# TODO: write __repr__ and __eq__ methods for the classes below
+
 
 @enum.unique
 class RetentionMode(enum.Enum):
@@ -24,13 +26,6 @@ RETENTION_MODES_REQUIRING_PERIODS = frozenset({RetentionMode.COMPLIANCE, Retenti
 
 
 class RetentionPeriod:
-    """
-    "period": {
-      "duration": 2,
-      "unit": "years"
-    }
-    """
-
     def __init__(self, years: Optional[int] = None, days: Optional[int] = None):
         assert (years is None) != (days is None)
         if years is not None:
@@ -43,10 +38,14 @@ class RetentionPeriod:
     @classmethod
     def from_period_dict(cls, period_dict):
         """
-        {
-            "duration": 2,
-            "unit": "years"
-        }
+        Build a RetentionPeriod from an object returned by the server, such as:
+
+        .. code-block ::
+        
+            {
+                "duration": 2,
+                "unit": "years"
+            }
         """
         return cls(**{period_dict['unit']: period_dict['duration']})
 
@@ -138,16 +137,6 @@ class LegalHoldSerializer:
 
 
 class BucketRetentionSetting:
-    """
-    "defaultRetention": {
-        "mode": "compliance",
-        "period": {
-          "duration": 7,
-          "unit": "days"
-        }
-      }
-    """
-
     def __init__(self, mode: RetentionMode, period: Optional[RetentionPeriod]):
         if mode in RETENTION_MODES_REQUIRING_PERIODS and period is None:
             raise ValueError('must specify period for retention mode %s' % (mode,))
@@ -156,44 +145,40 @@ class BucketRetentionSetting:
 
     @classmethod
     def from_bucket_retention_dict(cls, retention_dict: dict):
+        """
+        Build a BucketRetentionSetting from an object returned by the server, such as:
+
+        .. code-block::
+
+            {
+                "mode": "compliance",
+                "period": {
+                    "duration": 7,
+                    "unit": "days"
+                }
+            }
+
+        """
         period = retention_dict['period']
         if period is not None:
             period = RetentionPeriod.from_period_dict(period)
         return cls(RetentionMode(retention_dict['mode'] or 'none'), period)
 
     def as_dict(self):
-        if self.period is None:
-            period_repr = None
-        else:
-            period_repr = self.period.as_dict()
-        return {
+        result = {
             'mode': self.mode.value,
-            'period': period_repr,
         }
+        if self.period is not None:
+            result['period'] = self.period.as_dict()
+        return result
+
+    def serialize_to_json_for_request(self):
+        if self.mode == RetentionMode.UNKNOWN:
+            raise ValueError('cannot use an unknown file lock configuration in requests')
+        return self.as_dict()
 
 
 class FileLockConfiguration:
-    """
-    "fileLockConfiguration": {
-        "isClientAuthorizedToRead": true,
-        "value": {
-          "defaultRetention": {
-            "mode": "governance",
-            "period": {
-              "duration": 2,
-              "unit": "years"
-            }
-          },
-          "isFileLockEnabled": true
-        }
-      }
-
-      "fileLockConfiguration": {
-        "isClientAuthorizedToRead": false,
-        "value": null
-      }
-    """
-
     def __init__(
         self,
         default_retention: BucketRetentionSetting,
@@ -204,6 +189,32 @@ class FileLockConfiguration:
 
     @classmethod
     def from_bucket_dict(cls, bucket_dict):
+        """
+        Build a FileLockConfiguration from an object returned by server, such as:
+
+        .. code-block::
+            {
+                "isClientAuthorizedToRead": true,
+                "value": {
+                    "defaultRetention": {
+                        "mode": "governance",
+                        "period": {
+                            "duration": 2,
+                            "unit": "years"
+                        }
+                    },
+                  "isFileLockEnabled": true
+                }
+            }
+
+            or
+
+            {
+                "isClientAuthorizedToRead": false,
+                "value": null
+            }
+        """
+
         if bucket_dict['fileLockConfiguration']['value'] is None:
             return cls(UNKNOWN_BUCKET_RETENTION, None)
         retention = BucketRetentionSetting.from_bucket_retention_dict(
@@ -211,11 +222,6 @@ class FileLockConfiguration:
         )
         is_file_lock_enabled = bucket_dict['fileLockConfiguration']['value']['isFileLockEnabled']
         return cls(retention, is_file_lock_enabled)
-
-    def serialize_to_json_for_request(self):
-        if self.is_file_lock_enabled is None:
-            raise ValueError('cannot use an unknown file lock configuration in requests')
-        return self.as_dict()
 
     def as_dict(self):
         return {
