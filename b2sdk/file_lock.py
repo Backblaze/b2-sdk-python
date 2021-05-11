@@ -86,7 +86,7 @@ class FileRetentionSetting:
         if retention_dict['value'] is None:
             return cls(RetentionMode.UNKNOWN, None)
         return cls(
-            RetentionMode(retention_dict['value']['mode'] or 'none'),
+            RetentionMode(retention_dict['value']['mode']),
             retention_dict['value']['retainUntilTimestamp'],
         )
 
@@ -162,7 +162,7 @@ class BucketRetentionSetting:
         period = retention_dict['period']
         if period is not None:
             period = RetentionPeriod.from_period_dict(period)
-        return cls(RetentionMode(retention_dict['mode'] or 'none'), period)
+        return cls(RetentionMode(retention_dict['mode']), period)
 
     def as_dict(self):
         result = {
@@ -203,7 +203,7 @@ class FileLockConfiguration:
                             "unit": "years"
                         }
                     },
-                  "isFileLockEnabled": true
+                    "isFileLockEnabled": true
                 }
             }
 
