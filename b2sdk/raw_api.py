@@ -683,11 +683,10 @@ class B2RawApi(AbstractRawApi):
         if lifecycle_rules is not None:
             kwargs['lifecycleRules'] = lifecycle_rules
         if default_server_side_encryption is not None:
-            if default_server_side_encryption is not None:
-                if not default_server_side_encryption.mode.can_be_set_as_bucket_default():
-                    raise WrongEncryptionModeForBucketDefault(default_server_side_encryption.mode)
-                kwargs['defaultServerSideEncryption'
-                      ] = default_server_side_encryption.serialize_to_json_for_request()
+            if not default_server_side_encryption.mode.can_be_set_as_bucket_default():
+                raise WrongEncryptionModeForBucketDefault(default_server_side_encryption.mode)
+            kwargs['defaultServerSideEncryption'
+                  ] = default_server_side_encryption.serialize_to_json_for_request()
         if default_retention is not None:
             kwargs['defaultRetention'] = default_retention.serialize_to_json_for_request()
 
