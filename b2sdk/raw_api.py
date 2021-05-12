@@ -24,7 +24,7 @@ from typing import Any, Dict, Optional
 from .b2http import B2Http
 from .exception import FileOrBucketNotFound, ResourceNotFound, UnusableFileName, InvalidMetadataDirective, WrongEncryptionModeForBucketDefault
 from .encryption.setting import EncryptionAlgorithm, EncryptionMode, EncryptionSetting
-from .file_lock import BucketRetentionSetting, FileRetentionSetting, RetentionMode, RetentionPeriod
+from .file_lock import BucketRetentionSetting, FileRetentionSetting, NO_RETENTION_FILE_SETTING, RetentionMode, RetentionPeriod
 from .utils import b2_url_encode, hex_sha1_of_stream
 
 # All possible capabilities
@@ -1027,7 +1027,12 @@ def test_raw_api_helper(raw_api):
         account_id, int(time.time()), random.randint(1000, 9999)
     )
     bucket_dict = raw_api.create_bucket(
-        api_url, account_auth_token, account_id, bucket_name, 'allPublic'
+        api_url,
+        account_auth_token,
+        account_id,
+        bucket_name,
+        'allPublic',
+        is_file_lock_enabled=True,
     )
     bucket_id = bucket_dict['bucketId']
     first_bucket_revision = bucket_dict['revision']
@@ -1039,9 +1044,13 @@ def test_raw_api_helper(raw_api):
         algorithm=EncryptionAlgorithm.AES256,
     )
     sse_none = EncryptionSetting(mode=EncryptionMode.NONE)
-    for encryption_setting in [
-        sse_none,
-        sse_b2_aes,
+    for encryption_setting, default_retention in [
+        (
+            sse_none,
+            BucketRetentionSetting(mode=RetentionMode.GOVERNANCE, period=RetentionPeriod(days=1))
+        ),
+        (sse_b2_aes, None),
+        (sse_b2_aes, BucketRetentionSetting(RetentionMode.NONE)),
     ]:
         bucket_dict = raw_api.update_bucket(
             api_url,
@@ -1050,6 +1059,7 @@ def test_raw_api_helper(raw_api):
             bucket_id,
             'allPublic',
             default_server_side_encryption=encryption_setting,
+            default_retention=default_retention,
         )
 
     # b2_list_buckets
@@ -1233,7 +1243,10 @@ def test_raw_api_helper(raw_api):
         account_id,
         bucket_id,
         'allPrivate',
-        bucket_info={'color': 'blue'}
+        bucket_info={'color': 'blue'},
+        default_retention=BucketRetentionSetting(
+            mode=RetentionMode.GOVERNANCE, period=RetentionPeriod(days=1)
+        ),
     )
     assert first_bucket_revision < updated_bucket['revision']
 
@@ -1259,6 +1272,16 @@ def _clean_and_delete_bucket(raw_api, api_url, account_auth_token, account_id, b
         action = version_dict['action']
         if action in ['hide', 'upload']:
             print('b2_delete_file', file_name, action)
+            if action == 'upload' and version_dict[
+                'fileRetention'] and version_dict['fileRetention']['value']['mode'] is not None:
+                raw_api.update_file_retention(
+                    api_url,
+                    account_auth_token,
+                    file_id,
+                    file_name,
+                    NO_RETENTION_FILE_SETTING,
+                    bypass_governance=True
+                )
             raw_api.delete_file_version(api_url, account_auth_token, file_id, file_name)
         else:
             print('b2_cancel_large_file', file_name)
