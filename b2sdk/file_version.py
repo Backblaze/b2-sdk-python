@@ -9,7 +9,6 @@
 ######################################################################
 
 from typing import Optional
-import datetime
 
 from .encryption.setting import EncryptionSetting, EncryptionSettingFactory
 
@@ -32,7 +31,6 @@ class FileVersionInfo(object):
     :vartype ~.upload_timestamp: int or None
     :ivar str ~.action: ``"upload"``, ``"hide"`` or ``"delete"``
     """
-    LS_ENTRY_TEMPLATE = '%83s  %6s  %10s  %8s  %9d  %s'  # order is file_id, action, date, time, size, name
 
     __slots__ = [
         'id_', 'file_name', 'size', 'content_type', 'content_sha1', 'content_md5', 'file_info',
@@ -85,26 +83,6 @@ class FileVersionInfo(object):
         if self.server_side_encryption is not None:  # this is for backward compatibility of interface only, b2sdk always sets it
             result['serverSideEncryption'] = self.server_side_encryption.as_dict()
         return result
-
-    def format_ls_entry(self):
-        """ legacy method, to be removed in v2: formats a `ls` entry for b2 command line tool """
-        dt = datetime.datetime.utcfromtimestamp(self.upload_timestamp / 1000)
-        date_str = dt.strftime('%Y-%m-%d')
-        time_str = dt.strftime('%H:%M:%S')
-        size = self.size or 0  # required if self.action == 'hide'
-        return self.LS_ENTRY_TEMPLATE % (
-            self.id_,
-            self.action,
-            date_str,
-            time_str,
-            size,
-            self.file_name,
-        )
-
-    @classmethod
-    def format_folder_ls_entry(cls, name):
-        """ legacy method, to be removed in v2: formats a `ls` "folder" consistently with format_ls_entry() """
-        return cls.LS_ENTRY_TEMPLATE % ('-', '-', '-', '-', 0, name)
 
     def __eq__(self, other):
         sentry = object()
