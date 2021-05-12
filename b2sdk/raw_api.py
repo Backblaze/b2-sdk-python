@@ -292,6 +292,18 @@ class AbstractRawApi(metaclass=ABCMeta):
         pass
 
     @abstractmethod
+    def update_file_retention(
+        self,
+        api_url,
+        account_auth_token,
+        file_id,
+        file_name,
+        file_retention: FileRetentionSetting,
+        bypass_governance: bool = False,
+    ):
+        pass
+
+    @abstractmethod
     def upload_file(
         self,
         upload_url,
@@ -702,6 +714,27 @@ class B2RawApi(AbstractRawApi):
             account_auth_token,
             accountId=account_id,
             bucketId=bucket_id,
+            **kwargs
+        )
+
+    def update_file_retention(
+        self,
+        api_url,
+        account_auth_token,
+        file_id,
+        file_name,
+        file_retention,
+        bypass_governance=False
+    ):
+        kwargs = {}
+        kwargs['fileRetention'] = file_retention.serialize_to_json_for_request()
+        return self._post_json(
+            api_url,
+            'b2_update_file_retention',
+            account_auth_token,
+            fileId=file_id,
+            fileName=file_name,
+            bypassGovernance=bypass_governance,
             **kwargs
         )
 
