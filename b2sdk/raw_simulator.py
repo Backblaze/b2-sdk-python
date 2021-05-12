@@ -414,7 +414,7 @@ class BucketSimulator(object):
             default_server_side_encryption = EncryptionSetting(mode=EncryptionMode.NONE)
         self.default_server_side_encryption = default_server_side_encryption
 
-    def _check_capability(self, capability)
+    def _check_capability(self, capability):
         return capability in self.api.auth_token_to_key[account_auth_token].get_allowed()['capabilities']
 
     @property
