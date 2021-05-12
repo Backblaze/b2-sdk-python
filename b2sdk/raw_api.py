@@ -387,7 +387,7 @@ class B2RawApi(AbstractRawApi):
             kwargs['defaultServerSideEncryption'
                   ] = default_server_side_encryption.serialize_to_json_for_request()
         if is_file_lock_enabled is not None:
-            kwargs['fileLockConfiguration'] = {'isFileLockEnabled': is_file_lock_enabled}
+            kwargs['fileLockEnabled'] = is_file_lock_enabled
         return self._post_json(
             api_url,
             'b2_create_bucket',
