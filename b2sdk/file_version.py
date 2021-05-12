@@ -188,11 +188,9 @@ class FileVersionInfoFactory(object):
         content_md5 = file_info_dict.get('contentMd5')
         file_info = file_info_dict.get('fileInfo')
         server_side_encryption = EncryptionSettingFactory.from_file_version_dict(file_info_dict)
-        file_retention = FileRetentionSetting.from_file_retention_dict(
-            file_info_dict.get('fileRetention')
-        )
+        file_retention = FileRetentionSetting.from_file_version_dict(file_info_dict)
 
-        legal_hold = LegalHoldSerializer.from_server(file_info_dict.get('legalHold'))
+        legal_hold = LegalHoldSerializer.from_server(file_info_dict)
 
         return FileVersionInfo(
             id_,

@@ -11,7 +11,10 @@
 from typing import Optional
 import enum
 
+from .exception import UnexpectedCloudBehaviour
 # TODO: write __repr__ and __eq__ methods for the classes below
+
+ACTIONS_WITHOUT_LOCK_SETTINGS = frozenset(['hide', 'folder'])
 
 
 @enum.unique
@@ -64,25 +67,43 @@ class FileRetentionSetting:
         self.retain_until = retain_until
 
     @classmethod
-    def from_file_retention_dict(cls, retention_dict: dict):
+    def from_file_version_dict(cls, file_version_dict: dict):
         """
-        Returns FileRetentionSetting for the given retention_dict retrieved from the api. E.g.
+        Returns FileRetentionSetting for the given file_version_dict retrieved from the api. E.g.
 
         .. code-block ::
 
             {
-                "isClientAuthorizedToRead": false,
-                "value": null
+                "action": "upload",
+                "fileRetention": {
+                    "isClientAuthorizedToRead": false,
+                    "value": null
+                },
+                ...
             }
 
             {
-                "isClientAuthorizedToRead": true,
-                "value": {
-                  "mode": "governance",
-                  "retainUntilTimestamp": 1628942493000
-                }
+                "action": "upload",
+                "fileRetention": {
+                    "isClientAuthorizedToRead": true,
+                    "value": {
+                      "mode": "governance",
+                      "retainUntilTimestamp": 1628942493000
+                    }
+                },
+                ...
             }
         """
+        if 'fileRetention' not in file_version_dict:
+            if file_version_dict['action'] not in ACTIONS_WITHOUT_LOCK_SETTINGS:
+                raise UnexpectedCloudBehaviour(
+                    'No fileRetention provided for file version with action=%s' %
+                    (file_version_dict['action'])
+                )
+            return NO_RETENTION_FILE_SETTING
+
+        retention_dict = file_version_dict['fileRetention']
+
         if retention_dict['value'] is None:
             return cls(RetentionMode.UNKNOWN, None)
         return cls(
@@ -114,7 +135,15 @@ class FileRetentionSetting:
 
 class LegalHoldSerializer:
     @classmethod
-    def from_server(cls, legal_hold_dict) -> Optional[bool]:
+    def from_server(cls, file_version_dict) -> Optional[bool]:
+        if 'legalHold' not in file_version_dict:
+            if file_version_dict['action'] not in ACTIONS_WITHOUT_LOCK_SETTINGS:
+                raise UnexpectedCloudBehaviour(
+                    'legalHold not provided for file version with action=%s' %
+                    (file_version_dict['action'])
+                )
+            return None
+        legal_hold_dict = file_version_dict['legalHold']
         if legal_hold_dict['value'] is None:
             return None
         if legal_hold_dict['value'] == 'on':
