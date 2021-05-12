@@ -57,7 +57,7 @@ class RetentionPeriod:
 
 
 class FileRetentionSetting:
-    def __init__(self, mode: RetentionMode, retain_until: Optional[int]):
+    def __init__(self, mode: RetentionMode, retain_until: Optional[int] = None):
         if mode in RETENTION_MODES_REQUIRING_PERIODS and retain_until is None:
             raise ValueError('must specify retain_until for retention mode %s' % (mode,))
         self.mode = mode
@@ -137,7 +137,7 @@ class LegalHoldSerializer:
 
 
 class BucketRetentionSetting:
-    def __init__(self, mode: RetentionMode, period: Optional[RetentionPeriod]):
+    def __init__(self, mode: RetentionMode, period: Optional[RetentionPeriod] = None):
         if mode in RETENTION_MODES_REQUIRING_PERIODS and period is None:
             raise ValueError('must specify period for retention mode %s' % (mode,))
         self.mode = mode
@@ -230,7 +230,7 @@ class FileLockConfiguration:
         }
 
 
-UNKNOWN_BUCKET_RETENTION = BucketRetentionSetting(RetentionMode.UNKNOWN, None)
+UNKNOWN_BUCKET_RETENTION = BucketRetentionSetting(RetentionMode.UNKNOWN)
 UNKNOWN_FILE_LOCK_CONFIGURATION = FileLockConfiguration(UNKNOWN_BUCKET_RETENTION, None)
-NO_RETENTION_BUCKET_SETTING = BucketRetentionSetting(RetentionMode.NONE, None)
-NO_RETENTION_FILE_SETTING = FileRetentionSetting(RetentionMode.NONE, None)
+NO_RETENTION_BUCKET_SETTING = BucketRetentionSetting(RetentionMode.NONE)
+NO_RETENTION_FILE_SETTING = FileRetentionSetting(RetentionMode.NONE)
