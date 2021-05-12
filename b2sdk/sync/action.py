@@ -264,7 +264,7 @@ class B2DownloadAction(AbstractAction):
 
         encryption = self.encryption_settings_provider.get_setting_for_download(
             bucket=bucket,
-            file_version_info=self.source_path.selected_version,
+            file_version=self.source_path.selected_version,
         )
 
         bucket.download_file_by_id(
@@ -352,12 +352,12 @@ class B2CopyAction(AbstractAction):
 
         source_encryption = self.encryption_settings_provider.get_source_setting_for_copy(
             bucket=self.source_bucket,
-            source_file_version_info=self.source_path.selected_version,
+            source_file_version=self.source_path.selected_version,
         )
 
         destination_encryption = self.encryption_settings_provider.get_destination_setting_for_copy(
             bucket=self.destination_bucket,
-            source_file_version_info=self.source_path.selected_version,
+            source_file_version=self.source_path.selected_version,
             dest_b2_file_name=self.dest_b2_file_name,
         )
 

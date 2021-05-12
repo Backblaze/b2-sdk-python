@@ -12,6 +12,7 @@ from b2sdk import _v2 as v2
 from b2sdk._v2 import exception as v2_exception
 from .file_to_path_translator import make_files_from_paths, make_paths_from_files
 from .scan_policies import DEFAULT_SCAN_MANAGER
+from .encryption_provider import AbstractSyncEncryptionSettingsProvider, wrap_if_necessary
 from ..exception import DestFileNewer
 
 
@@ -21,6 +22,7 @@ def zip_folders(folder_a, folder_b, reporter, policies_manager=DEFAULT_SCAN_MANA
 
 
 # Override to change "policies_manager" default arguments
+# and to wrap encryption_settings_providers in argument name translators
 class Synchronizer(v2.Synchronizer):
     def __init__(
         self,
@@ -50,7 +52,7 @@ class Synchronizer(v2.Synchronizer):
     ):
         return super()._make_folder_sync_actions(
             source_folder, dest_folder, now_millis, reporter, policies_manager,
-            encryption_settings_provider
+            wrap_if_necessary(encryption_settings_provider)
         )
 
     # override to retain a public method
@@ -84,7 +86,7 @@ class Synchronizer(v2.Synchronizer):
             source_folder,
             dest_folder,
             now_millis,
-            encryption_settings_provider,
+            wrap_if_necessary(encryption_settings_provider),
         )
 
     # override to raise old style DestFileNewer exceptions
@@ -118,7 +120,7 @@ class Synchronizer(v2.Synchronizer):
                 source_folder,
                 dest_folder,
                 now_millis,
-                encryption_settings_provider,
+                wrap_if_necessary(encryption_settings_provider),
             )
         except v2_exception.DestFileNewer as ex:
             dest_file, source_file = make_files_from_paths(ex.dest_path, ex.source_path, sync_type)
