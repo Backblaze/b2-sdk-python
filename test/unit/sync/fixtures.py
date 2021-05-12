@@ -10,7 +10,8 @@
 
 import pytest
 
-from apiver_deps import AbstractFolder, B2SyncPath, LocalSyncPath, FileVersionInfo
+import apiver_deps
+from apiver_deps import AbstractFolder, B2SyncPath, LocalSyncPath
 from apiver_deps import CompareVersionMode, NewerFileSyncMode, KeepOrDeleteMode
 from apiver_deps import DEFAULT_SCAN_MANAGER, Synchronizer
 
@@ -79,18 +80,6 @@ def b2_file(name, mod_times, size=10):
     Positive modification times are uploads, and negative modification
     times are hides.  It's a hack, but it works.
 
-        b2_file('a.txt', [300, -200, 100])
-
-    Is the same as:
-
-        File(
-            'a.txt',
-            [
-               FileVersion('id_a_300', 'a.txt', 300, 'upload'),
-               FileVersion('id_a_200', 'a.txt', 200, 'hide'),
-               FileVersion('id_a_100', 'a.txt', 100, 'upload')
-            ]
-        )
     """
     versions = [
         VFileVersion(
