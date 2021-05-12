@@ -14,6 +14,7 @@ from typing import Optional
 from .encryption.setting import EncryptionSetting, EncryptionSettingFactory
 from .encryption.types import EncryptionMode
 from .exception import FileNotPresent, FileOrBucketNotFound, UnexpectedCloudBehaviour, UnrecognizedBucketType
+from .file_lock import BucketRetentionSetting, UNKNOWN_BUCKET_RETENTION, FileLockConfiguration
 from .file_version import FileVersionInfo, FileVersionInfoFactory
 from .progress import DoNothingProgressListener
 from .transfer.emerge.executor import AUTO_CONTENT_TYPE
@@ -48,6 +49,8 @@ class Bucket(metaclass=B2TraceMeta):
         default_server_side_encryption: EncryptionSetting = EncryptionSetting(
             EncryptionMode.UNKNOWN
         ),
+        default_retention: BucketRetentionSetting = UNKNOWN_BUCKET_RETENTION,
+        is_file_lock_enabled: Optional[bool] = None,
     ):
         """
         :param b2sdk.v1.B2Api api: an API object
@@ -61,6 +64,8 @@ class Bucket(metaclass=B2TraceMeta):
         :param dict bucket_dict: a dictionary which contains bucket parameters
         :param set options_set: set of bucket options strings
         :param b2sdk.v1.EncryptionSetting default_server_side_encryption: default server side encryption settings
+        :param b2sdk.v1.BucketRetentionSetting default_retention: default retention setting
+        :param bool is_file_lock_enabled: whether file locking is enabled or not
         """
         self.api = api
         self.id_ = id_
@@ -73,6 +78,8 @@ class Bucket(metaclass=B2TraceMeta):
         self.bucket_dict = bucket_dict or {}
         self.options_set = options_set or set()
         self.default_server_side_encryption = default_server_side_encryption
+        self.default_retention = default_retention
+        self.is_file_lock_enabled = is_file_lock_enabled
 
     def get_id(self):
         """
@@ -107,6 +114,8 @@ class Bucket(metaclass=B2TraceMeta):
         lifecycle_rules=None,
         if_revision_is=None,
         default_server_side_encryption: Optional[EncryptionSetting] = None,
+        default_retention: Optional[BucketRetentionSetting] = None,
+        # is_file_lock_enabled = None,  TODO: establish how to properly send it to B2 cloud
     ):
         """
         Update various bucket parameters.
@@ -129,6 +138,8 @@ class Bucket(metaclass=B2TraceMeta):
             lifecycle_rules=lifecycle_rules,
             if_revision_is=if_revision_is,
             default_server_side_encryption=default_server_side_encryption,
+            # default_retention=default_retention,  TODO: implement in session and raw_api
+            # is_file_lock_enabled=is_file_lock_enabled,  TODO: establish how to properly send it to B2 cloud and implement in session and raw_api
         )
 
     def cancel_large_file(self, file_id):
@@ -828,6 +839,9 @@ class Bucket(metaclass=B2TraceMeta):
         result['revision'] = self.revision
         result['options'] = self.options_set
         result['defaultServerSideEncryption'] = self.default_server_side_encryption.as_dict()
+        result['isFileLockEnabled'] = self.is_file_lock_enabled
+        result['defaultRetention'] = self.default_retention.as_dict()
+
         return result
 
     def __repr__(self):
@@ -872,7 +886,17 @@ class BucketFactory(object):
                      "algorithm" : "AES256",
                      "mode" : "SSE-B2"
                    }
-               }
+               },
+               "fileLockConfiguration": {
+                   "isClientAuthorizedToRead": true, 
+                   "value": {
+                       "defaultRetention": {
+                           "mode": null,
+                           "period": null
+                        }, 
+                        "isFileLockEnabled": false
+                    }
+              }
            }
 
         into a Bucket object.
@@ -896,6 +920,7 @@ class BucketFactory(object):
         if 'defaultServerSideEncryption' not in bucket_dict:
             raise UnexpectedCloudBehaviour('server did not provide `defaultServerSideEncryption`')
         default_server_side_encryption = EncryptionSettingFactory.from_bucket_dict(bucket_dict)
+        file_lock_configuration = FileLockConfiguration.from_bucket_dict(bucket_dict)
         return cls.BUCKET_CLASS(
             api,
             bucket_id,
@@ -908,4 +933,6 @@ class BucketFactory(object):
             bucket_dict,
             options,
             default_server_side_encryption,
+            file_lock_configuration.default_retention,
+            file_lock_configuration.is_file_lock_enabled,
         )
