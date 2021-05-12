@@ -63,8 +63,8 @@ from b2sdk.utils import trace_call
 # data classes
 
 from b2sdk.file_version import FileIdAndName
-from b2sdk.file_version import FileVersionInfo
-from b2sdk.file_version import FileVersionInfoFactory
+from b2sdk.file_version import FileVersion
+from b2sdk.file_version import FileVersionFactory
 from b2sdk.large_file.part import Part
 from b2sdk.large_file.unfinished_large_file import UnfinishedLargeFile
 

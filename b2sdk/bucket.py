@@ -21,7 +21,7 @@ from .file_lock import (
     UNKNOWN_BUCKET_RETENTION,
     LegalHold,
 )
-from .file_version import FileVersionInfo, FileVersionInfoFactory
+from .file_version import FileVersion, FileVersionFactory
 from .progress import DoNothingProgressListener
 from .transfer.emerge.executor import AUTO_CONTENT_TYPE
 from .transfer.emerge.write_intent import WriteIntent
@@ -39,7 +39,7 @@ class Bucket(metaclass=B2TraceMeta):
     """
 
     DEFAULT_CONTENT_TYPE = AUTO_CONTENT_TYPE
-    FILE_VERSION_FACTORY = staticmethod(FileVersionInfoFactory)
+    FILE_VERSION_FACTORY = staticmethod(FileVersionFactory)
 
     def __init__(
         self,
@@ -224,7 +224,7 @@ class Bucket(metaclass=B2TraceMeta):
             encryption=encryption,
         )
 
-    def get_file_info_by_id(self, file_id: str) -> FileVersionInfo:
+    def get_file_info_by_id(self, file_id: str) -> FileVersion:
         """
         Gets a file version's info by ID.
 
@@ -233,7 +233,7 @@ class Bucket(metaclass=B2TraceMeta):
         """
         return self.FILE_VERSION_FACTORY.from_api_response(self.api.get_file_info(file_id))
 
-    def get_file_info_by_name(self, file_name: str) -> FileVersionInfo:
+    def get_file_info_by_name(self, file_name: str) -> FileVersion:
         """
         Gets a file version's info by its name.
 

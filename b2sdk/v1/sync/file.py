@@ -10,7 +10,7 @@
 
 from typing import List
 
-from b2sdk._v2 import FileVersionInfo  # TODO: change to importing from b2sdk.v1 after merging with master
+from b2sdk.v1 import FileVersionInfo
 from b2sdk.raw_api import SRC_LAST_MODIFIED_MILLIS
 
 
@@ -55,14 +55,14 @@ class B2File(File):
 
     __slots__ = ['name', 'versions']
 
-    def __init__(self, name, versions: List['B2FileVersion']):
+    def __init__(self, name, versions: List['FileVersion']):
         """
         :param str name: a relative file name
-        :param List[B2FileVersion] versions: a list of file versions
+        :param List[FileVersion] versions: a list of file versions
         """
         super().__init__(name, versions)
 
-    def latest_version(self) -> 'B2FileVersion':
+    def latest_version(self) -> 'FileVersion':
         return super().latest_version()
 
 

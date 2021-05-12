@@ -464,8 +464,8 @@ class TestB2Folder(TestFolder):
     #     folder = self.prepare_folder(use_file_versions_info=True)
     #     self.assertEqual(
     #         [
-    #             "B2File(inner/b.txt, [B2FileVersion('b2', 'inner/b.txt', 1999, 'upload'), "
-    #             "B2FileVersion('b1', 'inner/b.txt', 1001, 'upload')])",
+    #             "B2File(inner/b.txt, [FileVersion('b2', 'inner/b.txt', 1999, 'upload'), "
+    #             "FileVersion('b1', 'inner/b.txt', 1001, 'upload')])",
     #         ], [
     #             str(f) for f in folder.all_files(self.reporter, policies_manager=polices_manager)
     #             if f.relative_path in ('inner/a.txt', 'inner/b.txt')

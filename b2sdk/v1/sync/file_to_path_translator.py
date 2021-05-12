@@ -12,7 +12,7 @@ from typing import Tuple
 
 from b2sdk import _v2 as v2
 from .file import File, B2File, FileVersion, B2FileVersion
-from ..file_version import file_version_info_from_new_file_version_info
+from ..file_version import file_version_info_from_new_file_version
 
 
 # The goal is to create v1.File objects together with v1.FileVersion objects from v2.SyncPath objects
@@ -33,7 +33,7 @@ def make_files_from_paths(
 
 def _translate_b2_path_to_file(path: v2.B2SyncPath) -> B2File:
     versions = [
-        B2FileVersion(file_version_info_from_new_file_version_info(version))
+        B2FileVersion(file_version_info_from_new_file_version(version))
         for version in path.all_versions
     ]
     return B2File(path.relative_path, versions)
