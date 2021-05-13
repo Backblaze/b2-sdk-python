@@ -25,7 +25,7 @@ class AbstractSyncPath(ABC):
         self.size = size
 
     @abstractmethod
-    def is_visible(self):
+    def is_visible(self) -> bool:
         """Is the path visible/not deleted on it's storage"""
 
     def __repr__(self):
@@ -37,7 +37,7 @@ class AbstractSyncPath(ABC):
 class LocalSyncPath(AbstractSyncPath):
     __slots__ = ['relative_path', 'mod_time', 'size']
 
-    def is_visible(self):
+    def is_visible(self) -> bool:
         return True
 
 
@@ -52,15 +52,15 @@ class B2SyncPath(AbstractSyncPath):
         self.all_versions = all_versions
         self.relative_path = relative_path
 
-    def is_visible(self):
+    def is_visible(self) -> bool:
         return self.selected_version.action != 'hide'
 
     @property
-    def mod_time(self):
+    def mod_time(self) -> int:
         return self.selected_version.mod_time_millis
 
     @property
-    def size(self):
+    def size(self) -> int:
         return self.selected_version.size
 
     def __repr__(self):

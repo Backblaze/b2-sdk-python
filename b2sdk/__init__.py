@@ -23,7 +23,7 @@ logging.getLogger('urllib3.connectionpool').addFilter(UrllibWarningFilter())
 
 import b2sdk.version
 __version__ = b2sdk.version.VERSION
-assert __version__  # PEP-0396
+# assert __version__  # PEP-0396
 
 # https://github.com/crsmithdev/arrow/issues/612 - To get rid of the ArrowParseWarning messages in 0.14.3 onward.
 try:
