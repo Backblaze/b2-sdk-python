@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Cleanup sync errors related to directories
 * Use proper error handling in `ScanPoliciesManager`
 * Application key restriction message reverted to previous form
+* Added missing apiver wrappers for FileVersionInfo
 
 ### Changed
 * `b2sdk.v1.sync` refactored to reflect `b2sdk.sync` structure
