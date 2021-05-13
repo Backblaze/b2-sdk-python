@@ -153,6 +153,7 @@ class FileSimulator(object):
         upload_timestamp,
         range_=None,
         server_side_encryption: Optional[EncryptionSetting] = None,
+        file_retention: Optional[FileRetentionSetting] = None,
     ):
         if action == 'hide':
             assert server_side_encryption is None
@@ -174,6 +175,7 @@ class FileSimulator(object):
         self.upload_timestamp = upload_timestamp
         self.range_ = range_
         self.server_side_encryption = server_side_encryption
+        self.file_retention = file_retention
 
         if action == 'start':
             self.parts = []
@@ -210,6 +212,20 @@ class FileSimulator(object):
             'x-bz-file-id': self.file_id,
             'x-bz-file-name': self.name,
         }
+
+        if account_auth_token_or_none is not None:
+            not_permitted = []
+
+            if not self.is_allowed_to_read_file_retention(account_auth_token_or_none):
+                not_permitted.append('X-Bz-File-Retention-Mode')
+                not_permitted.append('X-Bz-File-Retain-Until-Timestamp')
+            else:
+                if self.file_retention is not None:
+                    self.file_retention.add_to_to_upload_headers(headers)
+
+            if not_permitted:
+                headers['X-Bz-Client-Unauthorized-To-Read'] = ','.join(not_permitted)
+
         if range_ is not None:
             headers['Content-Range'] = 'bytes %d-%d/%d' % (
                 range_[0], range_[0] + content_length, len(self.data_bytes)
@@ -234,6 +250,7 @@ class FileSimulator(object):
         if self.server_side_encryption is not None:
             result['serverSideEncryption'
                   ] = self.server_side_encryption.serialize_to_json_for_request()
+        result['fileRetention'] = self._file_retention_dict(account_auth_token)
         return result
 
     def as_list_files_dict(self, account_auth_token):
@@ -250,6 +267,7 @@ class FileSimulator(object):
         if self.server_side_encryption is not None:
             result['serverSideEncryption'
                   ] = self.server_side_encryption.serialize_to_json_for_request()
+        result['fileRetention'] = self._file_retention_dict(account_auth_token)
         return result
 
     def is_allowed_to_read_file_retention(self, account_auth_token):
@@ -271,7 +289,21 @@ class FileSimulator(object):
         if self.server_side_encryption is not None:
             result['serverSideEncryption'
                   ] = self.server_side_encryption.serialize_to_json_for_request()
+        result['fileRetention'] = self._file_retention_dict(account_auth_token)
         return result
+
+    def _file_retention_dict(self, account_auth_token):
+        if not self.is_allowed_to_read_file_retention(account_auth_token):
+            return UNKNOWN_FILE_LOCK_CONFIGURATION
+
+        file_lock_configuration = {'isClientAuthorizedToRead': True}
+        if self.file_retention is None:
+            file_lock_configuration['value'] = {'mode': None}
+        else:
+            file_lock_configuration['value'] = {'mode': self.file_retention.mode.value}
+            if self.file_retention.period is not None:
+                file_lock_configuration['value']['period'] = self.file_retention.period
+        return file_lock_configuration
 
     def add_part(self, part_number, part):
         while len(self.parts) < part_number + 1:
