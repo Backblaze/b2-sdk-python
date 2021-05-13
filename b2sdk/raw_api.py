@@ -1036,6 +1036,10 @@ def test_raw_api_helper(raw_api):
     bucket_name = 'test-raw-api-%s-%d-%d' % (
         account_id, int(time.time()), random.randint(1000, 9999)
     )
+
+    # very verbose http debug
+    #import http.client; http.client.HTTPConnection.debuglevel = 1
+
     bucket_dict = raw_api.create_bucket(
         api_url,
         account_auth_token,
@@ -1075,6 +1079,7 @@ def test_raw_api_helper(raw_api):
     # b2_list_buckets
     print('b2_list_buckets')
     bucket_list_dict = raw_api.list_buckets(api_url, account_auth_token, account_id)
+    #print(bucket_list_dict)
 
     # b2_get_upload_url
     print('b2_get_upload_url')
