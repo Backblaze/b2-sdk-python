@@ -1297,8 +1297,8 @@ class RawSimulator(AbstractRawApi):
         destination_bucket_id=None,
         destination_server_side_encryption=None,
         source_server_side_encryption=None,
-        legal_hold: Optional[bool] = None,
         file_retention: Optional[FileRetentionSetting] = None,
+        legal_hold: Optional[bool] = None,
     ):
         bucket_id = self.file_id_to_bucket_id[source_file_id]
         bucket = self._get_bucket_by_id(bucket_id)
@@ -1492,8 +1492,8 @@ class RawSimulator(AbstractRawApi):
         content_type,
         file_info,
         server_side_encryption: Optional[EncryptionSetting] = None,
-        legal_hold: Optional[bool] = None,
         file_retention: Optional[FileRetentionSetting] = None,
+        legal_hold: Optional[bool] = None,
     ):
         bucket = self._get_bucket_by_id(bucket_id)
         self._assert_account_auth(api_url, account_auth_token, bucket.account_id, 'writeFiles')
@@ -1548,8 +1548,8 @@ class RawSimulator(AbstractRawApi):
         file_infos,
         data_stream,
         server_side_encryption: Optional[EncryptionSetting] = None,
-        legal_hold: Optional[bool] = None,
         file_retention: Optional[FileRetentionSetting] = None,
+        legal_hold: Optional[bool] = None,
     ):
         with ConcurrentUsedAuthTokenGuard(
             self.currently_used_auth_tokens[upload_auth_token], upload_auth_token

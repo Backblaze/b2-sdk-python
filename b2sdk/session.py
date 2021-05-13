@@ -288,8 +288,8 @@ class B2Session(object):
         content_type,
         file_info,
         server_side_encryption: Optional[EncryptionSetting] = None,
-        legal_hold: Optional[bool] = None,
         file_retention: Optional[FileRetentionSetting] = None,
+        legal_hold: Optional[bool] = None,
     ):
         return self._wrap_default_token(
             self.raw_api.start_large_file,
@@ -298,8 +298,8 @@ class B2Session(object):
             content_type,
             file_info,
             server_side_encryption,
-            legal_hold=legal_hold,
             file_retention=file_retention,
+            legal_hold=legal_hold,
         )
 
     def update_bucket(
@@ -337,8 +337,8 @@ class B2Session(object):
         file_infos,
         data_stream,
         server_side_encryption: Optional[EncryptionSetting] = None,
-        legal_hold: Optional[bool] = None,
         file_retention: Optional[FileRetentionSetting] = None,
+        legal_hold: Optional[bool] = None,
     ):
         return self._wrap_token(
             self.raw_api.upload_file,
@@ -351,8 +351,8 @@ class B2Session(object):
             file_infos,
             data_stream,
             server_side_encryption,
-            legal_hold=legal_hold,
             file_retention=file_retention,
+            legal_hold=legal_hold,
         )
 
     def upload_part(
@@ -394,8 +394,8 @@ class B2Session(object):
         destination_bucket_id=None,
         destination_server_side_encryption: Optional[EncryptionSetting] = None,
         source_server_side_encryption: Optional[EncryptionSetting] = None,
-        legal_hold: Optional[bool] = None,
         file_retention: Optional[FileRetentionSetting] = None,
+        legal_hold: Optional[bool] = None,
     ):
         return self._wrap_default_token(
             self.raw_api.copy_file,
@@ -408,8 +408,8 @@ class B2Session(object):
             destination_bucket_id=destination_bucket_id,
             destination_server_side_encryption=destination_server_side_encryption,
             source_server_side_encryption=source_server_side_encryption,
-            legal_hold=legal_hold,
             file_retention=file_retention,
+            legal_hold=legal_hold,
         )
 
     def copy_part(
