@@ -37,7 +37,9 @@ class FileVersionInfo(v2.FileVersionInfo):
         return cls.LS_ENTRY_TEMPLATE % ('-', '-', '-', '-', 0, name)
 
 
-def file_version_info_from_new_file_version_info(file_version: v2.FileVersionInfo):
+def file_version_info_from_new_file_version_info(
+    file_version: v2.FileVersionInfo
+) -> FileVersionInfo:
     return FileVersionInfo(
         **{att_name: getattr(file_version, att_name)
            for att_name in FileVersionInfo.__slots__}
