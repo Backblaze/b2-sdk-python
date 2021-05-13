@@ -218,7 +218,7 @@ class FileSimulator(object):
             headers['x-bz-info-' + key] = value
         return headers
 
-    def as_upload_result(self):
+    def as_upload_result(self, account_auth_token):
         result = dict(
             fileId=self.file_id,
             fileName=self.name,
@@ -236,7 +236,7 @@ class FileSimulator(object):
                   ] = self.server_side_encryption.serialize_to_json_for_request()
         return result
 
-    def as_list_files_dict(self):
+    def as_list_files_dict(self, account_auth_token):
         result = dict(
             fileId=self.file_id,
             fileName=self.name,
@@ -258,7 +258,7 @@ class FileSimulator(object):
     def is_allowed_to_read_file_legal_hold(self, account_auth_token):
         return self.bucket._check_capability(account_auth_token, 'readFileLegalHolds')
 
-    def as_start_large_file_result(self):
+    def as_start_large_file_result(self, account_auth_token):
         result = dict(
             fileId=self.file_id,
             fileName=self.name,
@@ -524,13 +524,13 @@ class BucketSimulator(object):
             )
         )
 
-    def finish_large_file(self, file_id, part_sha1_array):
+    def finish_large_file(self, account_auth_token, file_id, part_sha1_array):
         file_sim = self.file_id_to_file[file_id]
         file_sim.finish(part_sha1_array)
-        return file_sim.as_upload_result()
+        return file_sim.as_upload_result(account_auth_token)
 
-    def get_file_info_by_id(self, file_id):
-        return self.file_id_to_file[file_id].as_upload_result()
+    def get_file_info_by_id(self, account_auth_token, file_id):
+        return self.file_id_to_file[file_id].as_upload_result(account_auth_token)
 
     def get_file_info_by_name(self, account_auth_token, file_name):
         for ((name, id), file) in self.file_name_and_id_to_file.items():
@@ -551,7 +551,7 @@ class BucketSimulator(object):
         )
         return dict(bucketId=self.bucket_id, uploadUrl=upload_url, authorizationToken=upload_url)
 
-    def hide_file(self, file_name):
+    def hide_file(self, account_auth_token, file_name):
         file_id = self._next_file_id()
         file_sim = self.FILE_SIMULATOR_CLASS(
             self.account_id, self, file_id, 'hide', file_name, None, "none", {}, b'',
@@ -559,7 +559,7 @@ class BucketSimulator(object):
         )
         self.file_id_to_file[file_id] = file_sim
         self.file_name_and_id_to_file[file_sim.sort_key()] = file_sim
-        return file_sim.as_list_files_dict()
+        return file_sim.as_list_files_dict(account_auth_token)
 
     def copy_file(
         self,
@@ -616,6 +616,7 @@ class BucketSimulator(object):
 
     def list_file_names(
         self,
+        account_auth_token,
         start_file_name=None,
         max_file_count=None,
         prefix=None,
@@ -636,7 +637,7 @@ class BucketSimulator(object):
                 prev_file_name = file_name
                 file_sim = self.file_name_and_id_to_file[key]
                 if file_sim.is_visible():
-                    result_files.append(file_sim.as_list_files_dict())
+                    result_files.append(file_sim.as_list_files_dict(account_auth_token))
                     if len(result_files) == max_file_count:
                         next_file_name = file_sim.name + ' '
                         break
@@ -644,6 +645,7 @@ class BucketSimulator(object):
 
     def list_file_versions(
         self,
+        account_auth_token,
         start_file_name=None,
         start_file_id=None,
         max_file_count=None,
@@ -666,7 +668,7 @@ class BucketSimulator(object):
                 file_sim = self.file_name_and_id_to_file[key]
                 if prefix is not None and not file_name.startswith(prefix):
                     break
-                result_files.append(file_sim.as_list_files_dict())
+                result_files.append(file_sim.as_list_files_dict(account_auth_token))
                 if len(result_files) == max_file_count:
                     next_file_name = file_sim.name
                     next_file_id = str(int(file_id) + 1)
@@ -706,6 +708,7 @@ class BucketSimulator(object):
 
     def start_large_file(
         self,
+        account_auth_token,
         file_name,
         content_type,
         file_info,
@@ -721,7 +724,7 @@ class BucketSimulator(object):
         )  # yapf: disable
         self.file_id_to_file[file_id] = file_sim
         self.file_name_and_id_to_file[file_sim.sort_key()] = file_sim
-        return file_sim.as_start_large_file_result()
+        return file_sim.as_start_large_file_result(account_auth_token)
 
     def _update_bucket(
         self,
@@ -792,7 +795,7 @@ class BucketSimulator(object):
         )
         self.file_id_to_file[file_id] = file_sim
         self.file_name_and_id_to_file[file_sim.sort_key()] = file_sim
-        return file_sim.as_upload_result()
+        return file_sim.as_upload_result(upload_auth_token)
 
     def upload_part(
         self,
@@ -1140,7 +1143,7 @@ class RawSimulator(AbstractRawApi):
         bucket_id = self.file_id_to_bucket_id[file_id]
         bucket = self._get_bucket_by_id(bucket_id)
         self._assert_account_auth(api_url, account_auth_token, bucket.account_id, 'writeFiles')
-        return bucket.finish_large_file(file_id, part_sha1_array)
+        return bucket.finish_large_file(account_auth_token, file_id, part_sha1_array)
 
     def get_download_authorization(
         self, api_url, account_auth_token, bucket_id, file_name_prefix, valid_duration_in_seconds
@@ -1173,18 +1176,18 @@ class RawSimulator(AbstractRawApi):
     def get_upload_url(self, api_url, account_auth_token, bucket_id):
         bucket = self._get_bucket_by_id(bucket_id)
         self._assert_account_auth(api_url, account_auth_token, bucket.account_id, 'writeFiles')
-        return self._get_bucket_by_id(bucket_id).get_upload_url()
+        return self._get_bucket_by_id(bucket_id).get_upload_url(account_auth_token)
 
     def get_upload_part_url(self, api_url, account_auth_token, file_id):
         bucket_id = self.file_id_to_bucket_id[file_id]
         bucket = self._get_bucket_by_id(bucket_id)
         self._assert_account_auth(api_url, account_auth_token, bucket.account_id, 'writeFiles')
-        return self._get_bucket_by_id(bucket_id).get_upload_part_url(file_id)
+        return self._get_bucket_by_id(bucket_id).get_upload_part_url(account_auth_token, file_id)
 
     def hide_file(self, api_url, account_auth_token, bucket_id, file_name):
         bucket = self._get_bucket_by_id(bucket_id)
         self._assert_account_auth(api_url, account_auth_token, bucket.account_id, 'writeFiles')
-        response = bucket.hide_file(file_name)
+        response = bucket.hide_file(account_auth_token, file_name)
         self.file_id_to_bucket_id[response['fileId']] = bucket_id
         return response
 
@@ -1226,7 +1229,7 @@ class RawSimulator(AbstractRawApi):
 
         dest_bucket.file_id_to_file[copy_file_sim.file_id] = copy_file_sim
         dest_bucket.file_name_and_id_to_file[copy_file_sim.sort_key()] = copy_file_sim
-        return copy_file_sim.as_upload_result()
+        return copy_file_sim.as_upload_result(account_auth_token)
 
     def copy_part(
         self,
@@ -1318,7 +1321,7 @@ class RawSimulator(AbstractRawApi):
             bucket_id=bucket_id,
             file_name=prefix,
         )
-        return bucket.list_file_names(start_file_name, max_file_count, prefix)
+        return bucket.list_file_names(account_auth_token, start_file_name, max_file_count, prefix)
 
     def list_file_versions(
         self,
@@ -1339,7 +1342,13 @@ class RawSimulator(AbstractRawApi):
             bucket_id=bucket_id,
             file_name=prefix,
         )
-        return bucket.list_file_versions(start_file_name, start_file_id, max_file_count, prefix)
+        return bucket.list_file_versions(
+            account_auth_token,
+            start_file_name,
+            start_file_id,
+            max_file_count,
+            prefix,
+        )
 
     def list_keys(
         self,
@@ -1389,6 +1398,7 @@ class RawSimulator(AbstractRawApi):
         bucket = self._get_bucket_by_id(bucket_id)
         self._assert_account_auth(api_url, account_auth_token, bucket.account_id, 'writeFiles')
         result = bucket.start_large_file(
+            account_auth_token,
             file_name,
             content_type,
             file_info,
