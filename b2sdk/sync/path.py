@@ -45,7 +45,8 @@ class B2SyncPath(AbstractSyncPath):
     __slots__ = ['relative_path', 'selected_version', 'all_versions']
 
     def __init__(
-        self, relative_path: str, selected_version: FileVersionInfo, all_versions: List[FileVersionInfo]
+        self, relative_path: str, selected_version: FileVersionInfo,
+        all_versions: List[FileVersionInfo]
     ):
         self.selected_version = selected_version
         self.all_versions = all_versions

@@ -29,7 +29,7 @@ RELATIVE_PATH_MATCHER = re.compile(
     r"([/\\]\.\.[/\\])|" + # abc/../xyz or abc\..\xyz or abc\../xyz or abc/..\xyz
     r"([/\\]\.[/\\])|" +   # abc/./xyz or abc\.\xyz or abc\./xyz or abc/.\xyz
     r"([/\\]\.\.)$|" +     # abc/.. or abc\..
-    r"([/\\]\.)$|" +       # abc/. or abc\. 
+    r"([/\\]\.)$|" +       # abc/. or abc\.
     r"^(\.\.)$|" +         # just ".."
     r"([/\\][/\\])|" +     # abc\/xyz or abc/\xyz or abc//xyz or abc\\xyz
     r"^(\.)$"              # just "."
