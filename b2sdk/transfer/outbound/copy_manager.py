@@ -14,6 +14,7 @@ from typing import Optional
 
 from b2sdk.encryption.setting import EncryptionMode, EncryptionSetting, SSE_C_KEY_ID_FILE_INFO_KEY_NAME
 from b2sdk.exception import AlreadyFailed, SSECKeyIdMismatchInCopy
+from b2sdk.file_lock import FileRetentionSetting
 from b2sdk.file_version import FileVersionInfoFactory
 from b2sdk.raw_api import MetadataDirectiveMode
 from b2sdk.utils import B2TraceMetaAbstract
@@ -73,6 +74,8 @@ class CopyManager(metaclass=B2TraceMetaAbstract):
         progress_listener,
         destination_encryption: Optional[EncryptionSetting] = None,
         source_encryption: Optional[EncryptionSetting] = None,
+        legal_hold: Optional[bool] = None,
+        file_retention: Optional[FileRetentionSetting] = None,
     ):
         # Run small copies in the same thread pool as large file copies,
         # so that they share resources during a sync.
@@ -86,6 +89,8 @@ class CopyManager(metaclass=B2TraceMetaAbstract):
             progress_listener=progress_listener,
             destination_encryption=destination_encryption,
             source_encryption=source_encryption,
+            legal_hold=legal_hold,
+            file_retention=file_retention,
         )
 
     def copy_part(
@@ -173,6 +178,8 @@ class CopyManager(metaclass=B2TraceMetaAbstract):
         progress_listener,
         destination_encryption: Optional[EncryptionSetting],
         source_encryption: Optional[EncryptionSetting],
+        legal_hold: Optional[bool] = None,
+        file_retention: Optional[FileRetentionSetting] = None,
     ):
         with progress_listener:
             progress_listener.set_total_bytes(copy_source.get_content_length() or 0)
@@ -206,6 +213,8 @@ class CopyManager(metaclass=B2TraceMetaAbstract):
                 destination_bucket_id=destination_bucket_id,
                 destination_server_side_encryption=destination_encryption,
                 source_server_side_encryption=source_encryption,
+                legal_hold=legal_hold,
+                file_retention=file_retention,
             )
             file_info = FileVersionInfoFactory.from_api_response(response)
             if progress_listener is not None:

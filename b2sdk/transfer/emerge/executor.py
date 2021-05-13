@@ -15,6 +15,7 @@ from typing import Optional
 
 from b2sdk.encryption.setting import EncryptionSetting
 from b2sdk.exception import MaxFileSizeExceeded
+from b2sdk.file_lock import FileRetentionSetting, NO_RETENTION_FILE_SETTING
 from b2sdk.file_version import FileVersionInfoFactory
 from b2sdk.transfer.outbound.large_file_upload_state import LargeFileUploadState
 from b2sdk.transfer.outbound.upload_source import UploadSourceStream
@@ -38,6 +39,8 @@ class EmergeExecutor(object):
         continue_large_file_id=None,
         max_queue_size=None,
         encryption: Optional[EncryptionSetting] = None,
+        legal_hold: Optional[bool] = None,
+        file_retention: Optional[FileRetentionSetting] = None,
     ):
         if emerge_plan.is_large_file():
             execution = LargeFileEmergeExecution(
@@ -47,7 +50,9 @@ class EmergeExecutor(object):
                 content_type,
                 file_info,
                 progress_listener,
-                encryption,
+                encryption=encryption,
+                file_retention=file_retention,
+                legal_hold=legal_hold,
                 continue_large_file_id=continue_large_file_id,
                 max_queue_size=max_queue_size,
             )
@@ -61,7 +66,9 @@ class EmergeExecutor(object):
                 content_type,
                 file_info,
                 progress_listener,
-                encryption,
+                encryption=encryption,
+                file_retention=file_retention,
+                legal_hold=legal_hold,
             )
         return execution.execute_plan(emerge_plan)
 
@@ -78,6 +85,8 @@ class BaseEmergeExecution(metaclass=ABCMeta):
         file_info,
         progress_listener,
         encryption: Optional[EncryptionSetting] = None,
+        legal_hold: Optional[bool] = None,
+        file_retention: Optional[FileRetentionSetting] = None,
     ):
         self.services = services
         self.bucket_id = bucket_id
@@ -86,6 +95,8 @@ class BaseEmergeExecution(metaclass=ABCMeta):
         self.file_info = file_info
         self.progress_listener = progress_listener
         self.encryption = encryption
+        self.legal_hold = legal_hold
+        self.file_retention = file_retention
 
     @abstractmethod
     def execute_plan(self, emerge_plan):
@@ -115,6 +126,8 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
         file_info,
         progress_listener,
         encryption: Optional[EncryptionSetting] = None,
+        legal_hold: Optional[bool] = None,
+        file_retention: Optional[FileRetentionSetting] = None,
         continue_large_file_id=None,
         max_queue_size=None,
     ):
@@ -125,7 +138,9 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
             content_type,
             file_info,
             progress_listener,
-            encryption,
+            encryption=encryption,
+            legal_hold=legal_hold,
+            file_retention=file_retention,
         )
         self.continue_large_file_id = continue_large_file_id
         self.max_queue_size = max_queue_size
@@ -135,6 +150,7 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
 
     def execute_plan(self, emerge_plan):
         total_length = emerge_plan.get_total_length()
+        encryption = self.encryption
         encryption = self.encryption
 
         if total_length is not None and total_length > self.MAX_LARGE_FILE_SIZE:
@@ -158,6 +174,8 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
             file_info,
             self.continue_large_file_id,
             encryption=encryption,
+            legal_hold=self.legal_hold,
+            file_retention=self.file_retention,
             emerge_parts_dict=emerge_parts_dict,
         )
 
@@ -171,7 +189,9 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
                 self.file_name,
                 content_type,
                 file_info,
-                encryption,
+                encryption=encryption,
+                legal_hold=self.legal_hold,
+                file_retention=self.file_retention,
             )
         file_id = unfinished_file.file_id
 
@@ -224,6 +244,8 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
         file_info,
         continue_large_file_id,
         encryption: EncryptionSetting,
+        legal_hold,
+        file_retention: FileRetentionSetting,
         emerge_parts_dict=None,
     ):
         if 'listFiles' not in self.services.session.account_info.get_allowed()['capabilities']:
@@ -237,7 +259,6 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
                 bucket_id,
                 continue_large_file_id,
                 prefix=file_name,
-                encryption=encryption,
             )
             if unfinished_file.file_info != file_info:
                 raise ValueError(
@@ -255,6 +276,8 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
                 file_info,
                 emerge_parts_dict,
                 encryption,
+                legal_hold,
+                file_retention,
             )
         elif emerge_parts_dict is not None:
             unfinished_file, finished_parts = self._match_unfinished_file_if_possible(
@@ -263,12 +286,22 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
                 file_info,
                 emerge_parts_dict,
                 encryption,
+                legal_hold,
+                file_retention,
             )
         return unfinished_file, finished_parts
 
     def _find_unfinished_file_by_plan_id(
-        self, bucket_id, file_name, file_info, emerge_parts_dict, encryption: EncryptionSetting
+        self,
+        bucket_id,
+        file_name,
+        file_info,
+        emerge_parts_dict,
+        encryption: EncryptionSetting,
+        legal_hold,
+        file_retention: FileRetentionSetting,
     ):
+        file_retention = file_retention or NO_RETENTION_FILE_SETTING
         assert 'plan_id' in file_info
         best_match_file = None
         best_match_parts = {}
@@ -278,7 +311,16 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
         ):
             if file_.file_info != file_info:
                 continue
+            # FIXME: encryption is None ???
             if encryption is None or file_.encryption != encryption:
+                continue
+            if bool(legal_hold) != file_.legal_hold:
+                # when `file_.legal_hold is None` it means that `legal_hold` is unknown and we skip
+                continue
+            if file_retention != file_.file_retention:
+                # if `file_.file_retention` is UNKNOWN then we skip - lib user can still
+                # pass UKNOWN file_retention here - but raw_api/server won't allow it
+                # and we don't check it here
                 continue
             finished_parts = {}
             for part in self.services.large_file.list_parts(file_.file_id):
@@ -307,6 +349,8 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
         file_info,
         emerge_parts_dict,
         encryption: EncryptionSetting,
+        legal_hold,
+        file_retention: FileRetentionSetting,
     ):
         """
         Find an unfinished file that may be used to resume a large file upload.  The
@@ -315,6 +359,7 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
 
         This is only possible if the application key being used allows ``listFiles`` access.
         """
+        file_retention = file_retention or NO_RETENTION_FILE_SETTING
         for file_ in self.services.large_file.list_unfinished_large_files(
             bucket_id, prefix=file_name
         ):
@@ -322,7 +367,16 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
                 continue
             if file_.file_info != file_info:
                 continue
+            # FIXME: what if `encryption is None` - match ANY encryption? :)
             if encryption is not None and encryption != file_.encryption:
+                continue
+            if bool(legal_hold) != file_.legal_hold:
+                # when `file_.legal_hold is None` it means that `legal_hold` is unknown and we skip
+                continue
+            if file_retention != file_.file_retention:
+                # if `file_.file_retention` is UNKNOWN then we skip - lib user can still
+                # pass UKNOWN file_retention here - but raw_api/server won't allow it
+                # and we don't check it here
                 continue
             files_match = True
             finished_parts = {}
@@ -456,6 +510,8 @@ class CopyFileExecutionStep(BaseExecutionStep):
             progress_listener=execution.progress_listener,
             destination_encryption=execution.encryption,
             source_encryption=self.copy_source_range.encryption,
+            legal_hold=execution.legal_hold,
+            file_retention=execution.file_retention,
         )
 
 
@@ -509,7 +565,9 @@ class UploadFileExecutionStep(BaseExecutionStep):
             execution.content_type or execution.DEFAULT_CONTENT_TYPE,
             execution.file_info or {},
             execution.progress_listener,
-            execution.encryption,
+            encryption=execution.encryption,
+            legal_hold=execution.legal_hold,
+            file_retention=execution.file_retention,
         )
 
 
