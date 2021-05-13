@@ -501,7 +501,20 @@ class BucketSimulator(object):
                                     ] = self.default_server_side_encryption.algorithm.value
         else:
             default_sse['value'] = {'mode': EncryptionMode.UNKNOWN}
-        logger.debug('default sse returned is: %s', default_sse)
+
+        if self.is_allowed_to_read_bucket_retention(account_auth_token):
+            file_lock_configuration = {
+                'isClientAuthorizedToRead': True,
+                'value': {
+                    'defaultRetention': {
+                        'mode': self.default_retention.mode.value,
+                        'period': self.default_retention.period,
+                    },
+                    'isFileLockEnabled': self.is_file_lock_enabled,
+                },
+            }  # yapf: disable
+        else:
+            file_lock_configuration = {'isClientAuthorizedToRead': False, 'value': None}
         return dict(
             accountId=self.account_id,
             bucketName=self.bucket_name,
@@ -513,6 +526,7 @@ class BucketSimulator(object):
             options=self.options_set,
             revision=self.revision,
             defaultServerSideEncryption=default_sse,
+            fileLockConfiguration=file_lock_configuration,
         )
 
     def cancel_large_file(self, file_id):
@@ -797,8 +811,9 @@ class BucketSimulator(object):
         bucket_info=None,
         cors_rules=None,
         lifecycle_rules=None,
-        if_revision_is=None,
-        default_server_side_encryption=None,
+        if_revision_is: Optional[int] = None,
+        default_server_side_encryption: Optional[EncryptionSetting] = None,
+        default_retention: Optional[BucketRetentionSetting] = None,
     ):
         if if_revision_is is not None and self.revision != if_revision_is:
             raise Conflict()
@@ -813,6 +828,8 @@ class BucketSimulator(object):
             self.lifecycle_rules = lifecycle_rules
         if default_server_side_encryption is not None:
             self.default_server_side_encryption = default_server_side_encryption
+        if default_retention:
+            self.default_retention = default_retention
         self.revision += 1
         return self.bucket_dict(self.api.current_token)
 
@@ -1500,7 +1517,8 @@ class RawSimulator(AbstractRawApi):
         cors_rules=None,
         lifecycle_rules=None,
         if_revision_is=None,
-        default_server_side_encryption=None,
+        default_server_side_encryption: Optional[EncryptionSetting] = None,
+        default_retention: Optional[BucketRetentionSetting] = None,
     ):
         assert bucket_type or bucket_info or cors_rules or lifecycle_rules or default_server_side_encryption
         bucket = self._get_bucket_by_id(bucket_id)
@@ -1512,6 +1530,7 @@ class RawSimulator(AbstractRawApi):
             lifecycle_rules=lifecycle_rules,
             if_revision_is=if_revision_is,
             default_server_side_encryption=default_server_side_encryption,
+            default_retention=default_retention,
         )
 
     def upload_file(
