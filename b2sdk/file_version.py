@@ -12,6 +12,7 @@ from typing import Optional
 
 from .encryption.setting import EncryptionSetting, EncryptionSettingFactory
 from .file_lock import FileRetentionSetting, LegalHold
+from .raw_api import SRC_LAST_MODIFIED_MILLIS
 
 
 class FileVersionInfo(object):
@@ -46,6 +47,7 @@ class FileVersionInfo(object):
         'server_side_encryption',
         'legal_hold',
         'file_retention',
+        'mod_time_millis',
     ]
 
     def __init__(
@@ -78,6 +80,11 @@ class FileVersionInfo(object):
         self.server_side_encryption = server_side_encryption
         self.legal_hold = legal_hold
         self.file_retention = file_retention
+
+        if SRC_LAST_MODIFIED_MILLIS in self.file_info:
+            self.mod_time_millis = int(self.file_info[SRC_LAST_MODIFIED_MILLIS])
+        else:
+            self.mod_time_millis = self.upload_timestamp
 
     def as_dict(self):
         """ represents the object as a dict which looks almost exactly like the raw api output for upload/list """
