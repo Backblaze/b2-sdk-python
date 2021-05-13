@@ -12,7 +12,8 @@ from unittest.mock import MagicMock
 
 from ..test_base import TestBase
 
-from .deps import File, FileVersion
+from .deps import FileVersionInfo
+from .deps import LocalSyncPath, B2SyncPath
 from .deps import B2Folder
 from .deps import make_b2_keep_days_actions
 
@@ -56,12 +57,22 @@ class TestMakeB2KeepDaysActions(TestBase):
         )
 
     def check_one_answer(self, has_source, id_relative_date_action_list, expected_actions):
-        source_file = File('a', []) if has_source else None
+        source_file = LocalSyncPath('a', 100, 10) if has_source else None
         dest_file_versions = [
-            FileVersion(id_, 'a', self.today + relative_date * self.one_day_millis, action, 100)
-            for (id_, relative_date, action) in id_relative_date_action_list
+            FileVersionInfo(
+                id_=id_,
+                file_name='folder/' + 'a',
+                upload_timestamp=self.today + relative_date * self.one_day_millis,
+                action=action,
+                size=100,
+                file_info={},
+                content_type='text/plain',
+                content_sha1='content_sha1',
+            ) for (id_, relative_date, action) in id_relative_date_action_list
         ]
-        dest_file = File('a', dest_file_versions)
+        dest_file = B2SyncPath(
+            'a', selected_version=dest_file_versions[0], all_versions=dest_file_versions
+        ) if dest_file_versions else None
         bucket = MagicMock()
         api = MagicMock()
         api.get_bucket_by_name.return_value = bucket
