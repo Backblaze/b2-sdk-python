@@ -576,7 +576,12 @@ class BucketSimulator(object):
 
         return copy_file_sim
 
-    def list_file_names(self, start_file_name=None, max_file_count=None, prefix=None):
+    def list_file_names(
+        self,
+        start_file_name=None,
+        max_file_count=None,
+        prefix=None,
+    ):
         assert prefix is None or start_file_name is None or start_file_name.startswith(prefix
                                                                                       ), locals()
         start_file_name = start_file_name or ''

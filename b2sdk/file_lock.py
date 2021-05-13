@@ -44,7 +44,7 @@ class RetentionPeriod:
         Build a RetentionPeriod from an object returned by the server, such as:
 
         .. code-block ::
-        
+
             {
                 "duration": 2,
                 "unit": "years"
@@ -260,7 +260,7 @@ class FileLockConfiguration:
     def as_dict(self):
         return {
             "defaultRetention": self.default_retention.as_dict(),
-            "isFileLockEnabled": self.is_file_lock_enabled
+            "isFileLockEnabled": self.is_file_lock_enabled,
         }
 
 
