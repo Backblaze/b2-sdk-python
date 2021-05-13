@@ -199,21 +199,21 @@ class B2RequestTimeoutDuringUpload(B2RequestTimeout):
 
 
 class DestFileNewer(B2Error):
-    def __init__(self, dest_file, source_file, dest_prefix, source_prefix):
+    def __init__(self, dest_path, source_path, dest_prefix, source_prefix):
         super(DestFileNewer, self).__init__()
-        self.dest_file = dest_file
-        self.source_file = source_file
+        self.dest_path = dest_path
+        self.source_path = source_path
         self.dest_prefix = dest_prefix
         self.source_prefix = source_prefix
 
     def __str__(self):
         return 'source file is older than destination: %s%s with a time of %s cannot be synced to %s%s with a time of %s, unless a valid newer_file_mode is provided' % (
             self.source_prefix,
-            self.source_file.name,
-            self.source_file.latest_version().mod_time,
+            self.source_path.name,
+            self.source_path.latest_version().mod_time,
             self.dest_prefix,
-            self.dest_file.name,
-            self.dest_file.latest_version().mod_time,
+            self.dest_path.name,
+            self.dest_path.latest_version().mod_time,
         )
 
     def should_retry_http(self):

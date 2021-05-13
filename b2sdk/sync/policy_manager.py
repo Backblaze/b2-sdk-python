@@ -26,9 +26,9 @@ class SyncPolicyManager(object):
     def get_policy(
         self,
         sync_type,
-        source_file: AbstractSyncPath,
+        source_path: AbstractSyncPath,
         source_folder,
-        dest_file: AbstractSyncPath,
+        dest_path: AbstractSyncPath,
         dest_folder,
         now_millis,
         delete,
@@ -42,9 +42,9 @@ class SyncPolicyManager(object):
         Return a policy object.
 
         :param str sync_type: synchronization type
-        :param b2sdk.v1.AbstractSyncPath source_file: source file
+        :param b2sdk.v1.AbstractSyncPath source_path: source file
         :param str source_folder: a source folder path
-        :param b2sdk.v1.AbstractSyncPath dest_file: destination file
+        :param b2sdk.v1.AbstractSyncPath dest_path: destination file
         :param str dest_folder: a destination folder path
         :param int now_millis: current time in milliseconds
         :param bool delete: delete policy
@@ -57,9 +57,9 @@ class SyncPolicyManager(object):
         """
         policy_class = self.get_policy_class(sync_type, delete, keep_days)
         return policy_class(
-            source_file,
+            source_path,
             source_folder,
-            dest_file,
+            dest_path,
             dest_folder,
             now_millis,
             keep_days,

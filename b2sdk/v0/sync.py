@@ -41,7 +41,7 @@ class Synchronizer(SynchronizerV1):
             for i in super(Synchronizer, self).make_file_sync_actions(*args, **kwargs):
                 yield i
         except DestFileNewerV1 as e:
-            raise DestFileNewer(e.dest_file, e.source_file, e.dest_prefix, e.source_prefix)
+            raise DestFileNewer(e.dest_path, e.source_path, e.dest_prefix, e.source_prefix)
 
     def sync_folders(self, *args, **kwargs):
         try:

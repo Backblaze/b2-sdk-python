@@ -292,18 +292,18 @@ class Synchronizer:
 
         total_files = 0
         total_bytes = 0
-        for source_file, dest_file in zip_folders(
+        for source_path, dest_path in zip_folders(
             source_folder,
             dest_folder,
             reporter,
             policies_manager,
         ):
-            if source_file is None:
-                logger.debug('determined that %s is not present on source', dest_file)
-            elif dest_file is None:
-                logger.debug('determined that %s is not present on destination', source_file)
+            if source_path is None:
+                logger.debug('determined that %s is not present on source', dest_path)
+            elif dest_path is None:
+                logger.debug('determined that %s is not present on destination', source_path)
 
-            if source_file is not None:
+            if source_path is not None:
                 if source_type == 'b2':
                     # For buckets we don't want to count files separately as it would require
                     # more API calls. Instead, we count them when comparing.
@@ -312,8 +312,8 @@ class Synchronizer:
 
             for action in self.make_file_sync_actions(
                 sync_type,
-                source_file,
-                dest_file,
+                source_path,
+                dest_path,
                 source_folder,
                 dest_folder,
                 now_millis,
@@ -333,8 +333,8 @@ class Synchronizer:
     def make_file_sync_actions(
         self,
         sync_type,
-        source_file,
-        dest_file,
+        source_path,
+        dest_path,
         source_folder,
         dest_folder,
         now_millis,
@@ -345,8 +345,8 @@ class Synchronizer:
         Yields the sequence of actions needed to sync the two files
 
         :param str sync_type: synchronization type
-        :param b2sdk.v1.AbstractSyncPath source_file: source file object
-        :param b2sdk.v1.AbstractSyncPath dest_file: destination file object
+        :param b2sdk.v1.AbstractSyncPath source_path: source file object
+        :param b2sdk.v1.AbstractSyncPath dest_path: destination file object
         :param b2sdk.v1.AbstractFolder source_folder: a source folder object
         :param b2sdk.v1.AbstractFolder dest_folder: a destination folder object
         :param int now_millis: current time in milliseconds
@@ -357,9 +357,9 @@ class Synchronizer:
 
         policy = POLICY_MANAGER.get_policy(
             sync_type,
-            source_file,
+            source_path,
             source_folder,
-            dest_file,
+            dest_path,
             dest_folder,
             now_millis,
             delete,
