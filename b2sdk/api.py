@@ -180,7 +180,6 @@ class B2Api(metaclass=B2TraceMeta):
         default_server_side_encryption: Optional[EncryptionSetting] = None,
         default_retention: Optional[BucketRetentionSetting] = None,
         is_file_lock_enabled: Optional[bool] = None,
-
     ):
         """
         Create a bucket.

@@ -661,8 +661,8 @@ class B2RawApi(AbstractRawApi):
         content_type,
         file_info,
         server_side_encryption: Optional[EncryptionSetting] = None,
-        legal_hold: Optional[bool] = None,
         file_retention: Optional[FileRetentionSetting] = None,
+        legal_hold: Optional[bool] = None,
     ):
         kwargs = {}
         if server_side_encryption is not None:
@@ -807,8 +807,8 @@ class B2RawApi(AbstractRawApi):
         file_infos,
         data_stream,
         server_side_encryption: Optional[EncryptionSetting] = None,
-        legal_hold: Optional[bool] = None,
         file_retention: Optional[FileRetentionSetting] = None,
+        legal_hold: Optional[bool] = None,
     ):
         """
         Upload one, small file to b2.
@@ -881,8 +881,8 @@ class B2RawApi(AbstractRawApi):
         destination_bucket_id=None,
         destination_server_side_encryption: Optional[EncryptionSetting] = None,
         source_server_side_encryption: Optional[EncryptionSetting] = None,
-        legal_hold: Optional[bool] = None,
         file_retention: Optional[FileRetentionSetting] = None,
+        legal_hold: Optional[bool] = None,
     ):
         kwargs = {}
         if bytes_range is not None:
