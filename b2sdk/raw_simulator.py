@@ -447,6 +447,7 @@ class BucketSimulator(object):
         lifecycle_rules=None,
         options_set=None,
         default_server_side_encryption=None,
+        is_file_lock_enabled: Optional[bool] = None,
     ):
         assert bucket_type in ['allPrivate', 'allPublic']
         self.api = api
@@ -1074,6 +1075,7 @@ class RawSimulator(AbstractRawApi):
         cors_rules=None,
         lifecycle_rules=None,
         default_server_side_encryption: Optional[EncryptionSetting] = None,
+        is_file_lock_enabled: Optional[bool] = None,
     ):
         if not re.match(r'^[-a-zA-Z0-9]*$', bucket_name):
             raise BadJson('illegal bucket name: ' + bucket_name)
@@ -1092,6 +1094,7 @@ class RawSimulator(AbstractRawApi):
             lifecycle_rules,
             # watch out for options!
             default_server_side_encryption=default_server_side_encryption,
+            is_file_lock_enabled=is_file_lock_enabled,
         )
         self.bucket_name_to_bucket[bucket_name] = bucket
         self.bucket_id_to_bucket[bucket_id] = bucket
