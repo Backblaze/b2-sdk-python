@@ -153,7 +153,6 @@ class FileSimulator(object):
         range_=None,
         server_side_encryption: Optional[EncryptionSetting] = None,
     ):
-        logger.debug('FileSimulator called with sse=%s', server_side_encryption)
         if action == 'hide':
             assert server_side_encryption is None
         else:
@@ -427,13 +426,6 @@ class BucketSimulator(object):
 
     def bucket_dict(self, account_auth_token):
         default_sse = {'isClientAuthorizedToRead': False}
-        logger.debug(
-            'authtoken %s is %sallowed to read encryption setting of %s' % (
-                account_auth_token,
-                not self.is_allowed_to_read_bucket_encryption_setting and 'not ' or '',
-                self,
-            )
-        )
         if self.is_allowed_to_read_bucket_encryption_setting:
             default_sse['isClientAuthorizedToRead'] = True
             default_sse['value'] = {'mode': self.default_server_side_encryption.mode.value}
@@ -564,7 +556,6 @@ class BucketSimulator(object):
 
         destination_bucket = self.api.bucket_id_to_bucket.get(destination_bucket_id, self)
         sse = destination_server_side_encryption or self.default_server_side_encryption
-        logger.debug('setting encryption to %s', sse)
         copy_file_sim = self.FILE_SIMULATOR_CLASS(
             self.account_id,
             destination_bucket,
@@ -681,7 +672,6 @@ class BucketSimulator(object):
         sse = server_side_encryption or self.default_server_side_encryption
         if sse:  # FIXME: remove this part when RawApi<->Encryption adapters are implemented properly
             file_info = sse.add_key_id_to_file_info(file_info)
-        logger.debug('setting encryption to %s', sse)
         file_sim = self.FILE_SIMULATOR_CLASS(
             self.account_id, self, file_id, 'start', file_name, content_type, 'none',
             file_info, None, next(self.upload_timestamp_counter), server_side_encryption=sse,
@@ -743,7 +733,6 @@ class BucketSimulator(object):
         encryption = server_side_encryption or self.default_server_side_encryption
         if encryption:  # FIXME: remove this part when RawApi<->Encryption adapters are implemented properly
             file_infos = encryption.add_key_id_to_file_info(file_infos)
-        logger.debug('setting encryption to %s', encryption)
 
         file_sim = self.FILE_SIMULATOR_CLASS(
             self.account_id,
