@@ -561,6 +561,20 @@ class BucketSimulator(object):
         self.file_name_and_id_to_file[file_sim.sort_key()] = file_sim
         return file_sim.as_list_files_dict(account_auth_token)
 
+    def update_file_retention(
+        self,
+        account_auth_token,
+        file_id,
+        file_name,
+        file_retention: FileRetentionSetting,
+        bypass_governance: bool = False,
+    ):
+        file_sim = self.file_id_to_file[file_id]
+        assert self.is_file_lock_enabled
+        assert file_sim.name == file_name
+        # TODO: check bypass etc
+        file_sim.file_retention = file_retention
+
     def copy_file(
         self,
         file_id,
@@ -1086,6 +1100,21 @@ class RawSimulator(AbstractRawApi):
         bucket = self._get_bucket_by_id(bucket_id)
         self._assert_account_auth(api_url, account_auth_token, bucket.account_id, 'deleteFiles')
         return bucket.delete_file_version(file_id, file_name)
+
+    def update_file_retention(
+        self,
+        api_url,
+        account_auth_token,
+        file_id,
+        file_name,
+        file_retention: FileRetentionSetting,
+        bypass_governance: bool = False,
+    ):
+        bucket_id = self.file_id_to_bucket_id[file_id]
+        bucket = self._get_bucket_by_id(bucket_id)
+        return bucket.update_file_retention(
+            account_auth_token, file_id, file_name, file_retention, bypass_governance
+        )
 
     def delete_bucket(self, api_url, account_auth_token, account_id, bucket_id):
         self._assert_account_auth(api_url, account_auth_token, account_id, 'deleteBuckets')
