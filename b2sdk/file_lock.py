@@ -104,10 +104,15 @@ class FileRetentionSetting:
 
         retention_dict = file_version_dict['fileRetention']
 
-        if retention_dict['value'] is None:
+        if not retention_dict['isClientAuthorizedToRead']:
             return cls(RetentionMode.UNKNOWN, None)
+
+        mode = retention_dict['value']['mode']
+        if mode is None:
+            return NO_RETENTION_FILE_SETTING
+
         return cls(
-            RetentionMode(retention_dict['value']['mode']),
+            RetentionMode(mode),
             retention_dict['value']['retainUntilTimestamp'],
         )
 
@@ -244,7 +249,7 @@ class FileLockConfiguration:
             }
         """
 
-        if bucket_dict['fileLockConfiguration']['value'] is None:
+        if not bucket_dict['fileLockConfiguration']['isClientAuthorizedToRead']:
             return cls(UNKNOWN_BUCKET_RETENTION, None)
         retention = BucketRetentionSetting.from_bucket_retention_dict(
             bucket_dict['fileLockConfiguration']['value']['defaultRetention']
