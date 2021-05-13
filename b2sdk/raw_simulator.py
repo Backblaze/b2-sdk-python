@@ -154,6 +154,7 @@ class FileSimulator(object):
         range_=None,
         server_side_encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
+        legal_hold: Optional[bool] = None,
     ):
         if action == 'hide':
             assert server_side_encryption is None
@@ -176,6 +177,7 @@ class FileSimulator(object):
         self.range_ = range_
         self.server_side_encryption = server_side_encryption
         self.file_retention = file_retention
+        self.legal_hold = legal_hold
 
         if action == 'start':
             self.parts = []
@@ -223,6 +225,11 @@ class FileSimulator(object):
                 if self.file_retention is not None:
                     self.file_retention.add_to_to_upload_headers(headers)
 
+            if not self.is_allowed_to_read_file_legal_hold(account_auth_token_or_none):
+                not_permitted.append('X-Bz-File-Legal-Hold')
+            else:
+                headers['X-Bz-File-Legal-Hold'] = self.legal_hold and 'on' or 'off'
+
             if not_permitted:
                 headers['X-Bz-Client-Unauthorized-To-Read'] = ','.join(not_permitted)
 
@@ -251,6 +258,7 @@ class FileSimulator(object):
             result['serverSideEncryption'
                   ] = self.server_side_encryption.serialize_to_json_for_request()
         result['fileRetention'] = self._file_retention_dict(account_auth_token)
+        result['legalHold'] = self._legal_hold_dict(account_auth_token)
         return result
 
     def as_list_files_dict(self, account_auth_token):
@@ -268,6 +276,7 @@ class FileSimulator(object):
             result['serverSideEncryption'
                   ] = self.server_side_encryption.serialize_to_json_for_request()
         result['fileRetention'] = self._file_retention_dict(account_auth_token)
+        result['legalHold'] = self._legal_hold_dict(account_auth_token)
         return result
 
     def is_allowed_to_read_file_retention(self, account_auth_token):
@@ -290,6 +299,7 @@ class FileSimulator(object):
             result['serverSideEncryption'
                   ] = self.server_side_encryption.serialize_to_json_for_request()
         result['fileRetention'] = self._file_retention_dict(account_auth_token)
+        result['legalHold'] = self._legal_hold_dict(account_auth_token)
         return result
 
     def _file_retention_dict(self, account_auth_token):
@@ -304,6 +314,14 @@ class FileSimulator(object):
             if self.file_retention.period is not None:
                 file_lock_configuration['value']['period'] = self.file_retention.period
         return file_lock_configuration
+
+    def _legal_hold_dict(self, account_auth_token):
+        if not self.is_allowed_to_read_file_legal_hold(account_auth_token):
+            return UNKNOWN_FILE_LOCK_CONFIGURATION
+        return {
+            'isClientAuthorizedToRead': True,
+            'value': self.legal_hold and 'on' or 'off',
+        }
 
     def add_part(self, part_number, part):
         while len(self.parts) < part_number + 1:
