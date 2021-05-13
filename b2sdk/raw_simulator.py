@@ -215,7 +215,7 @@ class FileSimulator(object):
             'x-bz-file-name': self.name,
         }
 
-        if account_auth_token_or_none is not None:
+        if account_auth_token_or_none is not None and self.bucket.is_file_lock_enabled:
             not_permitted = []
 
             if not self.is_allowed_to_read_file_retention(account_auth_token_or_none):
