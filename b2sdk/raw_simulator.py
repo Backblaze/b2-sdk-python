@@ -192,7 +192,7 @@ class FileSimulator(object):
         """
         return (self.name, self.file_id)
 
-    def as_download_headers(self, range_=None):
+    def as_download_headers(self, account_auth_token_or_none, range_=None):
         if self.data_bytes is None:
             content_length = 0
         elif range_ is not None:
@@ -347,9 +347,9 @@ FakeRequest = collections.namedtuple('FakeRequest', 'url headers')
 
 
 class FakeResponse(object):
-    def __init__(self, file_sim, url, range_=None):
+    def __init__(self, account_auth_token_or_none, file_sim, url, range_=None):
         self.data_bytes = file_sim.data_bytes
-        self.headers = file_sim.as_download_headers(range_)
+        self.headers = file_sim.as_download_headers(account_auth_token_or_none, range_)
         self.url = url
         self.range_ = range_
         if range_ is not None:
@@ -484,16 +484,27 @@ class BucketSimulator(object):
         return dict(fileId=file_id, fileName=file_name, uploadTimestamp=file_sim.upload_timestamp)
 
     def download_file_by_id(
-        self, file_id, url, range_=None, encryption: Optional[EncryptionSetting] = None
+        self,
+        account_auth_token_or_none,
+        file_id,
+        url,
+        range_=None,
+        encryption: Optional[EncryptionSetting] = None,
     ):
         file_sim = self.file_id_to_file[file_id]
         file_sim.check_encryption(encryption)
-        return self._download_file_sim(file_sim, url, range_=range_)
+        return self._download_file_sim(account_auth_token_or_none, file_sim, url, range_=range_)
 
     def download_file_by_name(
-        self, file_name, url, range_=None, encryption: Optional[EncryptionSetting] = None
+        self,
+        account_auth_token_or_none,
+        file_name,
+        url,
+        range_=None,
+        encryption: Optional[EncryptionSetting] = None,
     ):
-        files = self.list_file_names(file_name, 1)['files']
+        files = self.list_file_names(self.api.current_token, file_name,
+                                     1)['files']  # token is not important here
         if len(files) == 0:
             raise FileNotPresent(file_id_or_name=file_name)
         file_dict = files[0]
@@ -501,10 +512,17 @@ class BucketSimulator(object):
             raise FileNotPresent(file_id_or_name=file_name)
         file_sim = self.file_name_and_id_to_file[(file_name, file_dict['fileId'])]
         file_sim.check_encryption(encryption)
-        return self._download_file_sim(file_sim, url, range_=range_)
+        return self._download_file_sim(account_auth_token_or_none, file_sim, url, range_=range_)
 
-    def _download_file_sim(self, file_sim, url, range_=None):
-        return ResponseContextManager(self.RESPONSE_CLASS(file_sim, url, range_))
+    def _download_file_sim(self, account_auth_token_or_none, file_sim, url, range_=None):
+        return ResponseContextManager(
+            self.RESPONSE_CLASS(
+                account_auth_token_or_none,
+                file_sim,
+                url,
+                range_,
+            )
+        )
 
     def finish_large_file(self, file_id, part_sha1_array):
         file_sim = self.file_id_to_file[file_id]
@@ -514,10 +532,10 @@ class BucketSimulator(object):
     def get_file_info_by_id(self, file_id):
         return self.file_id_to_file[file_id].as_upload_result()
 
-    def get_file_info_by_name(self, file_name):
+    def get_file_info_by_name(self, account_auth_token, file_name):
         for ((name, id), file) in self.file_name_and_id_to_file.items():
             if file_name == name:
-                return file.as_download_headers()
+                return file.as_download_headers(account_auth_token_or_none=account_auth_token)
         raise FileNotPresent(file_id_or_name=file_name, bucket_name=self.bucket_name)
 
     def get_upload_url(self, account_auth_token):
@@ -1091,12 +1109,20 @@ class RawSimulator(AbstractRawApi):
             bucket_id = self.file_id_to_bucket_id[file_id]
             bucket = self._get_bucket_by_id(bucket_id)
             return bucket.download_file_by_id(
-                file_id, range_=range_, url=url, encryption=encryption
+                account_auth_token_or_none,
+                file_id,
+                range_=range_,
+                url=url,
+                encryption=encryption,
             )
         elif bucket_name is not None and file_name is not None:
             bucket = self._get_bucket_by_name(bucket_name)
             return bucket.download_file_by_name(
-                b2_url_decode(file_name), range_=range_, url=url, encryption=encryption
+                account_auth_token_or_none,
+                b2_url_decode(file_name),
+                range_=range_,
+                url=url,
+                encryption=encryption,
             )
         else:
             assert False
@@ -1137,11 +1163,11 @@ class RawSimulator(AbstractRawApi):
     def get_file_info_by_id(self, api_url, account_auth_token, file_id):
         bucket_id = self.file_id_to_bucket_id[file_id]
         bucket = self._get_bucket_by_id(bucket_id)
-        return bucket.get_file_info_by_id(file_id)
+        return bucket.get_file_info_by_id(account_auth_token, file_id)
 
     def get_file_info_by_name(self, api_url, account_auth_token, bucket_name, file_name):
         bucket = self._get_bucket_by_name(bucket_name)
-        info = bucket.get_file_info_by_name(file_name)
+        info = bucket.get_file_info_by_name(account_auth_token, file_name)
         return info
 
     def get_upload_url(self, api_url, account_auth_token, bucket_id):
