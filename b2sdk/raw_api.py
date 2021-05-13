@@ -96,6 +96,8 @@ class AbstractRawApi(metaclass=ABCMeta):
         destination_bucket_id=None,
         destination_server_side_encryption: Optional[EncryptionSetting] = None,
         source_server_side_encryption: Optional[EncryptionSetting] = None,
+        legal_hold: Optional[bool] = None,
+        file_retention: Optional[FileRetentionSetting] = None,
     ):
         pass
 
@@ -264,6 +266,8 @@ class AbstractRawApi(metaclass=ABCMeta):
         content_type,
         file_info,
         server_side_encryption: Optional[EncryptionSetting] = None,
+        legal_hold: Optional[bool] = None,
+        file_retention: Optional[FileRetentionSetting] = None,
     ):
         pass
 
@@ -308,6 +312,8 @@ class AbstractRawApi(metaclass=ABCMeta):
         file_infos,
         data_stream,
         server_side_encryption: Optional[EncryptionSetting] = None,
+        legal_hold: Optional[bool] = None,
+        file_retention: Optional[FileRetentionSetting] = None,
     ):
         pass
 
@@ -648,6 +654,8 @@ class B2RawApi(AbstractRawApi):
         content_type,
         file_info,
         server_side_encryption: Optional[EncryptionSetting] = None,
+        legal_hold: Optional[bool] = None,
+        file_retention: Optional[FileRetentionSetting] = None,
     ):
         kwargs = {}
         if server_side_encryption is not None:
@@ -655,6 +663,9 @@ class B2RawApi(AbstractRawApi):
                 EncryptionMode.NONE, EncryptionMode.SSE_B2, EncryptionMode.SSE_C
             )
             kwargs['serverSideEncryption'] = server_side_encryption.serialize_to_json_for_request()
+
+        # FIXME: implement `legal_hold` and `file_retention`
+
         return self._post_json(
             api_url,
             'b2_start_large_file',
@@ -789,6 +800,8 @@ class B2RawApi(AbstractRawApi):
         file_infos,
         data_stream,
         server_side_encryption: Optional[EncryptionSetting] = None,
+        legal_hold: Optional[bool] = None,
+        file_retention: Optional[FileRetentionSetting] = None,
     ):
         """
         Upload one, small file to b2.
@@ -819,6 +832,8 @@ class B2RawApi(AbstractRawApi):
                 EncryptionMode.NONE, EncryptionMode.SSE_B2, EncryptionMode.SSE_C
             )
             server_side_encryption.add_to_upload_headers(headers)
+
+        # FIXME: implement `legal_hold` and `file_retention`
 
         return self.b2_http.post_content_return_json(upload_url, headers, data_stream)
 
@@ -859,6 +874,8 @@ class B2RawApi(AbstractRawApi):
         destination_bucket_id=None,
         destination_server_side_encryption: Optional[EncryptionSetting] = None,
         source_server_side_encryption: Optional[EncryptionSetting] = None,
+        legal_hold: Optional[bool] = None,
+        file_retention: Optional[FileRetentionSetting] = None,
     ):
         kwargs = {}
         if bytes_range is not None:
@@ -896,6 +913,8 @@ class B2RawApi(AbstractRawApi):
             assert source_server_side_encryption.mode == EncryptionMode.SSE_C
             kwargs['sourceServerSideEncryption'
                   ] = source_server_side_encryption.serialize_to_json_for_request()
+
+        # FIXME: implement `legal_hold` and `file_retention`
 
         return self._post_json(
             api_url,

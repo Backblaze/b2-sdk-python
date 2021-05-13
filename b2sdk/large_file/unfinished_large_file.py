@@ -9,6 +9,7 @@
 ######################################################################
 
 from b2sdk.encryption.setting import EncryptionSettingFactory
+from b2sdk.file_lock import FileRetentionSetting, LegalHoldSerializer
 
 
 class UnfinishedLargeFile(object):
@@ -34,6 +35,9 @@ class UnfinishedLargeFile(object):
         self.content_type = file_dict['contentType']
         self.file_info = file_dict['fileInfo']
         self.encryption = EncryptionSettingFactory.from_file_version_dict(file_dict)
+        self.file_retention = FileRetentionSetting.from_file_version_dict(file_dict)
+
+        self.legal_hold = LegalHoldSerializer.from_server(file_dict)
 
     def __repr__(self):
         return '<%s %s %s>' % (self.__class__.__name__, self.bucket_id, self.file_name)

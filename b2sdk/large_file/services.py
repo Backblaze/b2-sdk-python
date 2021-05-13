@@ -11,6 +11,7 @@
 from typing import Optional
 
 from b2sdk.encryption.setting import EncryptionSetting
+from b2sdk.file_lock import FileRetentionSetting
 from b2sdk.file_version import FileVersionInfoFactory
 from b2sdk.large_file.part import PartFactory
 from b2sdk.large_file.unfinished_large_file import UnfinishedLargeFile
@@ -84,6 +85,8 @@ class LargeFileServices(object):
         content_type=None,
         file_info=None,
         encryption: Optional[EncryptionSetting] = None,
+        legal_hold: Optional[bool] = None,
+        file_retention: Optional[FileRetentionSetting] = None,
     ):
         """
         Start a large file transfer.
@@ -92,6 +95,8 @@ class LargeFileServices(object):
         :param str,None content_type: the MIME type, or ``None`` to accept the default based on file extension of the B2 file name
         :param dict,None file_info: a file info to store with the file or ``None`` to not store anything
         :param b2sdk.v1.EncryptionSetting encryption: encryption settings (``None`` if unknown)
+        :param bool legal_hold: legal hold setting
+        :param b2sdk.v1.FileRetentionSetting file_retention: file retention setting
         """
         return UnfinishedLargeFile(
             self.services.session.start_large_file(
@@ -100,6 +105,8 @@ class LargeFileServices(object):
                 content_type,
                 file_info,
                 server_side_encryption=encryption,
+                legal_hold=legal_hold,
+                file_retention=file_retention,
             )
         )
 

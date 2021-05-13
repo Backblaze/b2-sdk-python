@@ -758,7 +758,7 @@ class BucketSimulator(object):
         file_sim = self.file_id_to_file[file_id]
         return file_sim.list_parts(start_part_number, max_part_count)
 
-    def list_unfinished_large_files(self, start_file_id=None, max_file_count=None, prefix=None):
+    def list_unfinished_large_files(self, account_auth_token, start_file_id=None, max_file_count=None, prefix=None):
         start_file_id = start_file_id or self.FIRST_FILE_ID
         max_file_count = max_file_count or 100
         all_unfinished_ids = set(
@@ -767,15 +767,9 @@ class BucketSimulator(object):
             (prefix is None or v.name.startswith(prefix))
         )
         ids_in_order = sorted(all_unfinished_ids, reverse=True)
+
         file_dict_list = [
-            dict(
-                fileId=file_sim.file_id,
-                fileName=file_sim.name,
-                accountId=file_sim.account_id,
-                bucketId=file_sim.bucket.bucket_id,
-                contentType=file_sim.content_type,
-                fileInfo=file_sim.file_info
-            )
+            file_sim.as_start_large_file_result(account_auth_token)
             for file_sim in (
                 self.file_id_to_file[file_id] for file_id in ids_in_order[:max_file_count]
             )
@@ -1303,6 +1297,8 @@ class RawSimulator(AbstractRawApi):
         destination_bucket_id=None,
         destination_server_side_encryption=None,
         source_server_side_encryption=None,
+        legal_hold: Optional[bool] = None,
+        file_retention: Optional[FileRetentionSetting] = None,
     ):
         bucket_id = self.file_id_to_bucket_id[source_file_id]
         bucket = self._get_bucket_by_id(bucket_id)
@@ -1328,6 +1324,9 @@ class RawSimulator(AbstractRawApi):
 
         dest_bucket.file_id_to_file[copy_file_sim.file_id] = copy_file_sim
         dest_bucket.file_name_and_id_to_file[copy_file_sim.sort_key()] = copy_file_sim
+
+        # FIXME: implement `legal_hold` and `file_retention`
+
         return copy_file_sim.as_upload_result(account_auth_token)
 
     def copy_part(
@@ -1482,7 +1481,7 @@ class RawSimulator(AbstractRawApi):
         )
         start_file_id = start_file_id or ''
         max_file_count = max_file_count or 100
-        return bucket.list_unfinished_large_files(start_file_id, max_file_count, prefix)
+        return bucket.list_unfinished_large_files(account_auth_token, start_file_id, max_file_count, prefix)
 
     def start_large_file(
         self,
@@ -1493,6 +1492,8 @@ class RawSimulator(AbstractRawApi):
         content_type,
         file_info,
         server_side_encryption: Optional[EncryptionSetting] = None,
+        legal_hold: Optional[bool] = None,
+        file_retention: Optional[FileRetentionSetting] = None,
     ):
         bucket = self._get_bucket_by_id(bucket_id)
         self._assert_account_auth(api_url, account_auth_token, bucket.account_id, 'writeFiles')
@@ -1504,6 +1505,9 @@ class RawSimulator(AbstractRawApi):
             server_side_encryption,
         )
         self.file_id_to_bucket_id[result['fileId']] = bucket_id
+
+        # FIXME: implement `legal_hold` and `file_retention`
+
         return result
 
     def update_bucket(
@@ -1544,6 +1548,8 @@ class RawSimulator(AbstractRawApi):
         file_infos,
         data_stream,
         server_side_encryption: Optional[EncryptionSetting] = None,
+        legal_hold: Optional[bool] = None,
+        file_retention: Optional[FileRetentionSetting] = None,
     ):
         with ConcurrentUsedAuthTokenGuard(
             self.currently_used_auth_tokens[upload_auth_token], upload_auth_token
@@ -1574,6 +1580,9 @@ class RawSimulator(AbstractRawApi):
             )
             file_id = response['fileId']
             self.file_id_to_bucket_id[file_id] = bucket_id
+
+        # FIXME: implement `legal_hold` and `file_retention`
+
         return response
 
     def upload_part(

@@ -14,7 +14,12 @@ from typing import Optional
 from .encryption.setting import EncryptionSetting, EncryptionSettingFactory
 from .encryption.types import EncryptionMode
 from .exception import FileNotPresent, FileOrBucketNotFound, UnexpectedCloudBehaviour, UnrecognizedBucketType
-from .file_lock import BucketRetentionSetting, UNKNOWN_BUCKET_RETENTION, FileLockConfiguration
+from .file_lock import (
+    BucketRetentionSetting,
+    FileLockConfiguration,
+    FileRetentionSetting,
+    UNKNOWN_BUCKET_RETENTION,
+)
 from .file_version import FileVersionInfo, FileVersionInfoFactory
 from .progress import DoNothingProgressListener
 from .transfer.emerge.executor import AUTO_CONTENT_TYPE
@@ -115,7 +120,6 @@ class Bucket(metaclass=B2TraceMeta):
         if_revision_is=None,
         default_server_side_encryption: Optional[EncryptionSetting] = None,
         default_retention: Optional[BucketRetentionSetting] = None,
-        # is_file_lock_enabled = None,  TODO: establish how to properly send it to B2 cloud
     ):
         """
         Update various bucket parameters.
@@ -127,6 +131,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param dict lifecycle_rules: lifecycle rules to store with a bucket
         :param int if_revision_is: revision number, update the info **only if** *revision* equals to *if_revision_is*
         :param b2sdk.v1.EncryptionSetting default_server_side_encryption: default server side encryption settings (``None`` if unknown)
+        :param b2sdk.v1.BucketRetentionSetting default_retention: bucket default retention setting
         """
         account_id = self.api.account_info.get_account_id()
         return self.api.session.update_bucket(
@@ -138,8 +143,7 @@ class Bucket(metaclass=B2TraceMeta):
             lifecycle_rules=lifecycle_rules,
             if_revision_is=if_revision_is,
             default_server_side_encryption=default_server_side_encryption,
-            # default_retention=default_retention,  TODO: implement in session and raw_api
-            # is_file_lock_enabled=is_file_lock_enabled,  TODO: establish how to properly send it to B2 cloud and implement in session and raw_api
+            default_retention=default_retention,
         )
 
     def cancel_large_file(self, file_id):
@@ -411,6 +415,8 @@ class Bucket(metaclass=B2TraceMeta):
         file_infos=None,
         progress_listener=None,
         encryption: Optional[EncryptionSetting] = None,
+        legal_hold: Optional[bool] = None,
+        file_retention: Optional[FileRetentionSetting] = None,
     ):
         """
         Upload bytes in memory to a B2 file.
@@ -421,6 +427,8 @@ class Bucket(metaclass=B2TraceMeta):
         :param dict,None file_infos: a file info to store with the file or ``None`` to not store anything
         :param b2sdk.v1.AbstractProgressListener,None progress_listener: a progress listener object to use, or ``None`` to not track progress
         :param b2sdk.v1.EncryptionSetting encryption: encryption settings (``None`` if unknown)
+        :param bool legal_hold: legal hold setting
+        :param b2sdk.v1.FileRetentionSetting file_retention: file retention setting
         :rtype: generator[b2sdk.v1.FileVersion]
         """
         upload_source = UploadSourceBytes(data_bytes)
@@ -431,6 +439,8 @@ class Bucket(metaclass=B2TraceMeta):
             file_info=file_infos,
             progress_listener=progress_listener,
             encryption=encryption,
+            legal_hold=legal_hold,
+            file_retention=file_retention,
         )
 
     def upload_local_file(
@@ -443,6 +453,8 @@ class Bucket(metaclass=B2TraceMeta):
         min_part_size=None,
         progress_listener=None,
         encryption: Optional[EncryptionSetting] = None,
+        legal_hold: Optional[bool] = None,
+        file_retention: Optional[FileRetentionSetting] = None,
     ):
         """
         Upload a file on local disk to a B2 file.
@@ -459,6 +471,8 @@ class Bucket(metaclass=B2TraceMeta):
         :param int min_part_size: a minimum size of a part
         :param b2sdk.v1.AbstractProgressListener,None progress_listener: a progress listener object to use, or ``None`` to not report progress
         :param b2sdk.v1.EncryptionSetting encryption: encryption settings (``None`` if unknown)
+        :param bool legal_hold: legal hold setting
+        :param b2sdk.v1.FileRetentionSetting file_retention: file retention setting
         :rtype: b2sdk.v1.FileVersionInfo
         """
         upload_source = UploadSourceLocalFile(local_path=local_file, content_sha1=sha1_sum)
@@ -470,6 +484,8 @@ class Bucket(metaclass=B2TraceMeta):
             min_part_size=min_part_size,
             progress_listener=progress_listener,
             encryption=encryption,
+            legal_hold=legal_hold,
+            file_retention=file_retention,
         )
 
     def upload(
@@ -481,6 +497,8 @@ class Bucket(metaclass=B2TraceMeta):
         min_part_size=None,
         progress_listener=None,
         encryption: Optional[EncryptionSetting] = None,
+        legal_hold: Optional[bool] = None,
+        file_retention: Optional[FileRetentionSetting] = None,
     ):
         """
         Upload a file to B2, retrying as needed.
@@ -500,6 +518,8 @@ class Bucket(metaclass=B2TraceMeta):
         :param int,None min_part_size: the smallest part size to use or ``None`` to determine automatically
         :param b2sdk.v1.AbstractProgressListener,None progress_listener: a progress listener object to use, or ``None`` to not report progress
         :param b2sdk.v1.EncryptionSetting encryption: encryption settings (``None`` if unknown)
+        :param bool legal_hold: legal hold setting
+        :param b2sdk.v1.FileRetentionSetting file_retention: file retention setting
         :rtype: b2sdk.v1.FileVersionInfo
         """
         return self.create_file(
@@ -511,6 +531,8 @@ class Bucket(metaclass=B2TraceMeta):
             # FIXME: Bucket.upload documents wrong logic
             recommended_upload_part_size=min_part_size,
             encryption=encryption,
+            legal_hold=legal_hold,
+            file_retention=file_retention,
         )
 
     def create_file(
@@ -523,6 +545,8 @@ class Bucket(metaclass=B2TraceMeta):
         recommended_upload_part_size=None,
         continue_large_file_id=None,
         encryption: Optional[EncryptionSetting] = None,
+        legal_hold: Optional[bool] = None,
+        file_retention: Optional[FileRetentionSetting] = None,
     ):
         """
         Creates a new file in this bucket using an iterable (list, tuple etc) of remote or local sources.
@@ -545,6 +569,8 @@ class Bucket(metaclass=B2TraceMeta):
         :param str,None continue_large_file_id: large file id that should be selected to resume file creation
                         for multipart upload/copy, ``None`` for automatic search for this id
         :param b2sdk.v1.EncryptionSetting encryption: encryption settings (``None`` if unknown)
+        :param bool legal_hold: legal hold setting
+        :param b2sdk.v1.FileRetentionSetting file_retention: file retention setting
         """
         return self._create_file(
             self.api.services.emerger.emerge,
@@ -556,6 +582,8 @@ class Bucket(metaclass=B2TraceMeta):
             continue_large_file_id=continue_large_file_id,
             recommended_upload_part_size=recommended_upload_part_size,
             encryption=encryption,
+            legal_hold=legal_hold,
+            file_retention=file_retention,
         )
 
     def create_file_stream(
@@ -568,6 +596,8 @@ class Bucket(metaclass=B2TraceMeta):
         recommended_upload_part_size=None,
         continue_large_file_id=None,
         encryption: Optional[EncryptionSetting] = None,
+        legal_hold: Optional[bool] = None,
+        file_retention: Optional[FileRetentionSetting] = None,
     ):
         """
         Creates a new file in this bucket using a stream of multiple remote or local sources.
@@ -592,6 +622,8 @@ class Bucket(metaclass=B2TraceMeta):
                         for multipart upload/copy, if ``None`` in multipart case it would always start a new
                         large file
         :param b2sdk.v1.EncryptionSetting encryption: encryption settings (``None`` if unknown)
+        :param bool legal_hold: legal hold setting
+        :param b2sdk.v1.FileRetentionSetting file_retention: file retention setting
         """
         return self._create_file(
             self.api.services.emerger.emerge_stream,
@@ -603,6 +635,8 @@ class Bucket(metaclass=B2TraceMeta):
             continue_large_file_id=continue_large_file_id,
             recommended_upload_part_size=recommended_upload_part_size,
             encryption=encryption,
+            legal_hold=legal_hold,
+            file_retention=file_retention,
         )
 
     def _create_file(
@@ -616,6 +650,8 @@ class Bucket(metaclass=B2TraceMeta):
         recommended_upload_part_size=None,
         continue_large_file_id=None,
         encryption: Optional[EncryptionSetting] = None,
+        legal_hold: Optional[bool] = None,
+        file_retention: Optional[FileRetentionSetting] = None,
     ):
         validate_b2_file_name(file_name)
         progress_listener = progress_listener or DoNothingProgressListener()
@@ -630,6 +666,8 @@ class Bucket(metaclass=B2TraceMeta):
             recommended_upload_part_size=recommended_upload_part_size,
             continue_large_file_id=continue_large_file_id,
             encryption=encryption,
+            legal_hold=legal_hold,
+            file_retention=file_retention,
         )
 
     def concatenate(
@@ -642,6 +680,8 @@ class Bucket(metaclass=B2TraceMeta):
         recommended_upload_part_size=None,
         continue_large_file_id=None,
         encryption: Optional[EncryptionSetting] = None,
+        legal_hold: Optional[bool] = None,
+        file_retention: Optional[FileRetentionSetting] = None,
     ):
         """
         Creates a new file in this bucket by concatenating multiple remote or local sources.
@@ -661,6 +701,8 @@ class Bucket(metaclass=B2TraceMeta):
         :param str,None continue_large_file_id: large file id that should be selected to resume file creation
                         for multipart upload/copy, ``None`` for automatic search for this id
         :param b2sdk.v1.EncryptionSetting encryption: encryption settings (``None`` if unknown)
+        :param bool legal_hold: legal hold setting
+        :param b2sdk.v1.FileRetentionSetting file_retention: file retention setting
         """
         return self.create_file(
             WriteIntent.wrap_sources_iterator(outbound_sources),
@@ -671,6 +713,8 @@ class Bucket(metaclass=B2TraceMeta):
             recommended_upload_part_size=recommended_upload_part_size,
             continue_large_file_id=continue_large_file_id,
             encryption=encryption,
+            legal_hold=legal_hold,
+            file_retention=file_retention,
         )
 
     def concatenate_stream(
@@ -683,6 +727,8 @@ class Bucket(metaclass=B2TraceMeta):
         recommended_upload_part_size=None,
         continue_large_file_id=None,
         encryption: Optional[EncryptionSetting] = None,
+        legal_hold: Optional[bool] = None,
+        file_retention: Optional[FileRetentionSetting] = None,
     ):
         """
         Creates a new file in this bucket by concatenating stream of multiple remote or local sources.
@@ -703,6 +749,8 @@ class Bucket(metaclass=B2TraceMeta):
                         for multipart upload/copy, if ``None`` in multipart case it would always start a new
                         large file
         :param b2sdk.v1.EncryptionSetting encryption: encryption setting (``None`` if unknown)
+        :param bool legal_hold: legal hold setting
+        :param b2sdk.v1.FileRetentionSetting file_retention: file retention setting
         """
         return self.create_file_stream(
             WriteIntent.wrap_sources_iterator(outbound_sources_iterator),
@@ -713,6 +761,8 @@ class Bucket(metaclass=B2TraceMeta):
             recommended_upload_part_size=recommended_upload_part_size,
             continue_large_file_id=continue_large_file_id,
             encryption=encryption,
+            legal_hold=legal_hold,
+            file_retention=file_retention,
         )
 
     def get_download_url(self, filename):
@@ -751,6 +801,8 @@ class Bucket(metaclass=B2TraceMeta):
         source_encryption: Optional[EncryptionSetting] = None,
         source_file_info: Optional[dict] = None,
         source_content_type: Optional[str] = None,
+        legal_hold: Optional[bool] = None,
+        file_retention: Optional[FileRetentionSetting] = None,
     ):
         """
         Creates a new file in this bucket by (server-side) copying from an existing file.
@@ -774,6 +826,8 @@ class Bucket(metaclass=B2TraceMeta):
                         (``None`` if unknown)
         :param dict,None source_file_info: source file's file_info dict, useful when copying files with SSE-C
         :param str,None source_content_type: source file's content type, useful when copying files with SSE-C
+        :param bool legal_hold: legal hold setting for the new file.
+        :param b2sdk.v1.FileRetentionSetting file_retention: file retention setting for the new file.
         """
 
         copy_source = CopySource(
@@ -797,6 +851,8 @@ class Bucket(metaclass=B2TraceMeta):
                 progress_listener=progress_listener,
                 destination_encryption=destination_encryption,
                 source_encryption=source_encryption,
+                legal_hold=legal_hold,
+                file_retention=file_retention,
             ).result()
         else:
             return self.create_file(
@@ -806,6 +862,8 @@ class Bucket(metaclass=B2TraceMeta):
                 file_info=file_info,
                 progress_listener=progress_listener,
                 encryption=destination_encryption,
+                legal_hold=legal_hold,
+                file_retention=file_retention,
             )
 
     def delete_file_version(self, file_id, file_name):
