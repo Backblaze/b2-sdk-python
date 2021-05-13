@@ -61,14 +61,14 @@ def zip_folders(folder_a, folder_b, reporter, policies_manager=DEFAULT_SCAN_MANA
         elif current_b is None:
             yield (current_a, None)
             current_a = next_or_none(iter_a)
-        elif current_a.name < current_b.name:
+        elif current_a.relative_path < current_b.relative_path:
             yield (current_a, None)
             current_a = next_or_none(iter_a)
-        elif current_b.name < current_a.name:
+        elif current_b.relative_path < current_a.relative_path:
             yield (None, current_b)
             current_b = next_or_none(iter_b)
         else:
-            assert current_a.name == current_b.name
+            assert current_a.relative_path == current_b.relative_path
             yield (current_a, current_b)
             current_a = next_or_none(iter_a)
             current_b = next_or_none(iter_b)

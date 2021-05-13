@@ -232,7 +232,7 @@ class B2DownloadAction(AbstractAction):
 
         :rtype: int
         """
-        return self.source_path.latest_version().size
+        return self.source_path.size
 
     def _ensure_directory_existence(self):
         parent_dir = os.path.dirname(self.local_full_path)
@@ -264,11 +264,11 @@ class B2DownloadAction(AbstractAction):
 
         encryption = self.encryption_settings_provider.get_setting_for_download(
             bucket=bucket,
-            file_version_info=self.source_path.latest_version().file_version_info,
+            file_version_info=self.source_path.selected_version,
         )
 
         bucket.download_file_by_id(
-            self.source_path.latest_version().id_,
+            self.source_path.selected_version.id_,
             download_dest,
             progress_listener,
             encryption=encryption,
@@ -289,13 +289,13 @@ class B2DownloadAction(AbstractAction):
         :type bucket: b2sdk.bucket.Bucket
         :param reporter: a place to report errors
         """
-        reporter.print_completion('dnload ' + self.source_path.name)
+        reporter.print_completion('dnload ' + self.source_path.relative_path)
 
     def __str__(self):
         return (
             'b2_download(%s, %s, %s, %d)' % (
-                self.b2_file_name, self.source_path.latest_version().id_, self.local_full_path,
-                self.source_path.latest_version().mod_time
+                self.b2_file_name, self.source_path.selected_version.id_, self.local_full_path,
+                self.source_path.mod_time
             )
         )
 
@@ -335,7 +335,7 @@ class B2CopyAction(AbstractAction):
 
         :rtype: int
         """
-        return self.source_path.latest_version().size
+        return self.source_path.size
 
     def do_action(self, bucket, reporter):
         """
@@ -352,24 +352,24 @@ class B2CopyAction(AbstractAction):
 
         source_encryption = self.encryption_settings_provider.get_source_setting_for_copy(
             bucket=self.source_bucket,
-            source_file_version_info=self.source_path.latest_version().file_version_info,
+            source_file_version_info=self.source_path.selected_version,
         )
 
         destination_encryption = self.encryption_settings_provider.get_destination_setting_for_copy(
             bucket=self.destination_bucket,
-            source_file_version_info=self.source_path.latest_version().file_version_info,
+            source_file_version_info=self.source_path.selected_version,
             dest_b2_file_name=self.dest_b2_file_name,
         )
 
         bucket.copy(
-            self.source_path.latest_version().id_,
+            self.source_path.selected_version.id_,
             self.dest_b2_file_name,
             length=self.source_path.size,
             progress_listener=progress_listener,
             destination_encryption=destination_encryption,
             source_encryption=source_encryption,
-            source_file_info=self.source_path.latest_version().file_version_info.file_info,
-            source_content_type=self.source_path.latest_version().file_version_info.content_type,
+            source_file_info=self.source_path.selected_version.file_info,
+            source_content_type=self.source_path.selected_version.content_type,
         )
 
     def do_report(self, bucket, reporter):
@@ -380,13 +380,13 @@ class B2CopyAction(AbstractAction):
         :type bucket: b2sdk.bucket.Bucket
         :param reporter: a place to report errors
         """
-        reporter.print_completion('copy ' + self.source_path.name)
+        reporter.print_completion('copy ' + self.source_path.relative_path)
 
     def __str__(self):
         return (
             'b2_copy(%s, %s, %s, %d)' % (
-                self.b2_file_name, self.source_path.latest_version().id_, self.dest_b2_file_name,
-                self.source_path.latest_version().mod_time
+                self.b2_file_name, self.source_path.selected_version.id_, self.dest_b2_file_name,
+                self.source_path.mod_time
             )
         )
 

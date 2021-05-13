@@ -209,11 +209,11 @@ class DestFileNewer(B2Error):
     def __str__(self):
         return 'source file is older than destination: %s%s with a time of %s cannot be synced to %s%s with a time of %s, unless a valid newer_file_mode is provided' % (
             self.source_prefix,
-            self.source_path.name,
-            self.source_path.latest_version().mod_time,
+            self.source_path.relative_path,
+            self.source_path.mod_time,
             self.dest_prefix,
-            self.dest_path.name,
-            self.dest_path.latest_version().mod_time,
+            self.dest_path.relative_path,
+            self.dest_path.mod_time,
         )
 
     def should_retry_http(self):

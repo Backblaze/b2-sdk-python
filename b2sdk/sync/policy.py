@@ -133,14 +133,14 @@ class AbstractFileSyncPolicy(metaclass=ABCMeta):
         # Compare using modification time
         elif compare_version_mode == CompareVersionMode.MODTIME:
             # Get the modification time of the latest versions
-            source_mod_time = source_path.latest_version().mod_time
-            dest_mod_time = dest_path.latest_version().mod_time
+            source_mod_time = source_path.mod_time
+            dest_mod_time = dest_path.mod_time
             diff_mod_time = abs(source_mod_time - dest_mod_time)
             compare_threshold_exceeded = diff_mod_time > compare_threshold
 
             logger.debug(
                 'File %s: source time %s, dest time %s, diff %s, threshold %s, diff > threshold %s',
-                source_path.name,
+                source_path.relative_path,
                 source_mod_time,
                 dest_mod_time,
                 diff_mod_time,
@@ -167,14 +167,14 @@ class AbstractFileSyncPolicy(metaclass=ABCMeta):
         # Compare using file size
         elif compare_version_mode == CompareVersionMode.SIZE:
             # Get file size of the latest versions
-            source_size = source_path.latest_version().size
-            dest_size = dest_path.latest_version().size
+            source_size = source_path.size
+            dest_size = dest_path.size
             diff_size = abs(source_size - dest_size)
             compare_threshold_exceeded = diff_size > compare_threshold
 
             logger.debug(
                 'File %s: source size %s, dest size %s, diff %s, threshold %s, diff > threshold %s',
-                source_path.name,
+                source_path.relative_path,
                 source_size,
                 dest_size,
                 diff_size,
@@ -207,7 +207,7 @@ class AbstractFileSyncPolicy(metaclass=ABCMeta):
         return []
 
     def _get_source_mod_time(self):
-        return self._source_path.latest_version().mod_time
+        return self._source_path.mod_time
 
     @abstractmethod
     def _make_transfer_action(self):
@@ -226,8 +226,8 @@ class DownPolicy(AbstractFileSyncPolicy):
     def _make_transfer_action(self):
         return B2DownloadAction(
             self._source_path,
-            self._source_folder.make_full_path(self._source_path.name),
-            self._dest_folder.make_full_path(self._source_path.name),
+            self._source_folder.make_full_path(self._source_path.relative_path),
+            self._dest_folder.make_full_path(self._source_path.relative_path),
             self._encryption_settings_provider,
         )
 
@@ -241,11 +241,11 @@ class UpPolicy(AbstractFileSyncPolicy):
 
     def _make_transfer_action(self):
         return B2UploadAction(
-            self._source_folder.make_full_path(self._source_path.name),
-            self._source_path.name,
-            self._dest_folder.make_full_path(self._source_path.name),
+            self._source_folder.make_full_path(self._source_path.relative_path),
+            self._source_path.relative_path,
+            self._dest_folder.make_full_path(self._source_path.relative_path),
             self._get_source_mod_time(),
-            self._source_path.latest_version().size,
+            self._source_path.size,
             self._encryption_settings_provider,
         )
 
@@ -299,7 +299,10 @@ class DownAndDeletePolicy(DownPolicy):
         ):
             # Local files have either 0 or 1 versions.  If the file is there,
             # it must have exactly 1 version.
-            yield LocalDeleteAction(self._dest_path.name, self._dest_path.versions[0].id_)
+            yield LocalDeleteAction(
+                self._dest_path.relative_path,
+                self._dest_folder.make_full_path(self._dest_path.relative_path)
+            )
 
 
 class DownAndKeepDaysPolicy(DownPolicy):
@@ -319,9 +322,9 @@ class CopyPolicy(AbstractFileSyncPolicy):
     def _make_transfer_action(self):
 
         return B2CopyAction(
-            self._source_folder.make_full_path(self._source_path.name),
+            self._source_folder.make_full_path(self._source_path.relative_path),
             self._source_path,
-            self._dest_folder.make_full_path(self._source_path.name),
+            self._dest_folder.make_full_path(self._source_path.relative_path),
             self._source_folder.bucket,
             self._dest_folder.bucket,
             self._encryption_settings_provider,
@@ -393,12 +396,12 @@ def make_b2_delete_actions(source_path, dest_path, dest_folder, transferred):
         # B2 does not really store folders, so there is no need to hide
         # them or delete them
         return
-    for version_index, version in enumerate(dest_path.versions):
+    for version_index, version in enumerate(dest_path.all_versions):
         keep = (version_index == 0) and (source_path is not None) and not transferred
         if not keep:
             yield B2DeleteAction(
-                dest_path.name,
-                dest_folder.make_full_path(dest_path.name),
+                dest_path.relative_path,
+                dest_folder.make_full_path(dest_path.relative_path),
                 version.id_,
                 make_b2_delete_note(version, version_index, transferred),
             )
@@ -429,9 +432,9 @@ def make_b2_keep_days_actions(
         # B2 does not really store folders, so there is no need to hide
         # them or delete them
         return
-    for version_index, version in enumerate(dest_path.versions):
+    for version_index, version in enumerate(dest_path.all_versions):
         # How old is this version?
-        age_days = (now_millis - version.mod_time) / ONE_DAY_IN_MS
+        age_days = (now_millis - version.mod_time_millis) / ONE_DAY_IN_MS
 
         # Mostly, the versions are ordered by time, newest first,
         # BUT NOT ALWAYS. The mod time we have is the src_last_modified_millis
@@ -447,7 +450,9 @@ def make_b2_keep_days_actions(
 
         # Do we need to hide this version?
         if version_index == 0 and source_path is None and version.action == 'upload':
-            yield B2HideAction(dest_path.name, dest_folder.make_full_path(dest_path.name))
+            yield B2HideAction(
+                dest_path.relative_path, dest_folder.make_full_path(dest_path.relative_path)
+            )
 
         # Can we start deleting? Once we start deleting, all older
         # versions will also be deleted.
@@ -458,8 +463,8 @@ def make_b2_keep_days_actions(
         # Delete this version
         if deleting:
             yield B2DeleteAction(
-                dest_path.name,
-                dest_folder.make_full_path(dest_path.name),
+                dest_path.relative_path,
+                dest_folder.make_full_path(dest_path.relative_path),
                 version.id_,
                 make_b2_delete_note(version, version_index, transferred),
             )
