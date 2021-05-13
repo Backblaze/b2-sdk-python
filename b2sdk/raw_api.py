@@ -723,8 +723,8 @@ class B2RawApi(AbstractRawApi):
         account_auth_token,
         file_id,
         file_name,
-        file_retention,
-        bypass_governance=False
+        file_retention: FileRetentionSetting,
+        bypass_governance: bool = False,
     ):
         kwargs = {}
         kwargs['fileRetention'] = file_retention.serialize_to_json_for_request()
