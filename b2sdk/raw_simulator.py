@@ -37,6 +37,7 @@ from .exception import (
     UnsatisfiableRange,
     SSECKeyError,
 )
+from .file_lock import BucketRetentionSetting, FileRetentionSetting, NO_RETENTION_BUCKET_SETTING, UNKNOWN_FILE_LOCK_CONFIGURATION
 from .raw_api import AbstractRawApi, HEX_DIGITS_AT_END, MetadataDirectiveMode, ALL_CAPABILITIES
 from .utils import (
     b2_url_decode,
@@ -251,6 +252,12 @@ class FileSimulator(object):
                   ] = self.server_side_encryption.serialize_to_json_for_request()
         return result
 
+    def is_allowed_to_read_file_retention(self, account_auth_token):
+        return self.bucket._check_capability(account_auth_token, 'readFileRetentions')
+
+    def is_allowed_to_read_file_legal_hold(self, account_auth_token):
+        return self.bucket._check_capability(account_auth_token, 'readFileLegalHolds')
+
     def as_start_large_file_result(self):
         result = dict(
             fileId=self.file_id,
@@ -412,21 +419,30 @@ class BucketSimulator(object):
         if default_server_side_encryption is None:
             default_server_side_encryption = EncryptionSetting(mode=EncryptionMode.NONE)
         self.default_server_side_encryption = default_server_side_encryption
+        self.is_file_lock_enabled = is_file_lock_enabled
+        self.default_retention = NO_RETENTION_BUCKET_SETTING
 
-    def _check_capability(self, capability):
-        return capability in self.api.auth_token_to_key[account_auth_token].get_allowed()['capabilities']
+    def is_allowed_to_read_bucket_encryption_setting(self, account_auth_token):
+        return self._check_capability(account_auth_token, 'readBucketEncryption')
 
-    @property
-    def is_allowed_to_read_bucket_encryption_setting(self):
-        return self._check_capability('readBucketEncryption')
+    def is_allowed_to_read_bucket_retention(self, account_auth_token):
+        return self._check_capability(account_auth_token, 'readBucketRetentions')
 
-    @property
-    def is_allowed_to_read_bucket_file_retention(self):
-        return self._check_capability('readBucketRetentions')
+    def _check_capability(self, account_auth_token, capability):
+        try:
+            key = self.api.auth_token_to_key[account_auth_token]
+        except KeyError:
+            # looks like it's an upload token
+            # fortunately BucketSimulator makes it easy to retrieve the true account_auth_token
+            # from an upload url
+            real_auth_token = account_auth_token.split('/')[-1]
+            key = self.api.auth_token_to_key[real_auth_token]
+        capabilities = key.get_allowed()['capabilities']
+        return capability in capabilities
 
     def bucket_dict(self, account_auth_token):
         default_sse = {'isClientAuthorizedToRead': False}
-        if self.is_allowed_to_read_bucket_encryption_setting:
+        if self.is_allowed_to_read_bucket_encryption_setting(account_auth_token):
             default_sse['isClientAuthorizedToRead'] = True
             default_sse['value'] = {'mode': self.default_server_side_encryption.mode.value}
             if self.default_server_side_encryption.algorithm is not None:
@@ -504,13 +520,17 @@ class BucketSimulator(object):
                 return file.as_download_headers()
         raise FileNotPresent(file_id_or_name=file_name, bucket_name=self.bucket_name)
 
-    def get_upload_url(self):
+    def get_upload_url(self, account_auth_token):
         upload_id = next(self.upload_url_counter)
-        upload_url = 'https://upload.example.com/%s/%s' % (self.bucket_id, upload_id)
+        upload_url = 'https://upload.example.com/%s/%d/%s' % (
+            self.bucket_id, upload_id, account_auth_token
+        )
         return dict(bucketId=self.bucket_id, uploadUrl=upload_url, authorizationToken=upload_url)
 
-    def get_upload_part_url(self, file_id):
-        upload_url = 'https://upload.example.com/part/%s/%d' % (file_id, random.randint(1, 10**9))
+    def get_upload_part_url(self, account_auth_token, file_id):
+        upload_url = 'https://upload.example.com/part/%s/%d/%s' % (
+            file_id, random.randint(1, 10**9), account_auth_token
+        )
         return dict(bucketId=self.bucket_id, uploadUrl=upload_url, authorizationToken=upload_url)
 
     def hide_file(self, file_name):
