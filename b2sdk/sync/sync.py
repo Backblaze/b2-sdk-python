@@ -345,8 +345,8 @@ class Synchronizer:
         Yields the sequence of actions needed to sync the two files
 
         :param str sync_type: synchronization type
-        :param b2sdk.v1.File source_file: source file object
-        :param b2sdk.v1.File dest_file: destination file object
+        :param b2sdk.v1.AbstractSyncPath source_file: source file object
+        :param b2sdk.v1.AbstractSyncPath dest_file: destination file object
         :param b2sdk.v1.AbstractFolder source_folder: a source folder object
         :param b2sdk.v1.AbstractFolder dest_folder: a destination folder object
         :param int now_millis: current time in milliseconds
