@@ -141,7 +141,7 @@ class FileSimulator(object):
     def __init__(
         self,
         account_id,
-        bucket_id,
+        bucket,
         file_id,
         action,
         name,
@@ -159,7 +159,7 @@ class FileSimulator(object):
         else:
             assert server_side_encryption is not None
         self.account_id = account_id
-        self.bucket_id = bucket_id
+        self.bucket = bucket
         self.file_id = file_id
         self.action = action
         self.name = name
@@ -223,7 +223,7 @@ class FileSimulator(object):
             fileId=self.file_id,
             fileName=self.name,
             accountId=self.account_id,
-            bucketId=self.bucket_id,
+            bucketId=self.bucket.bucket_id,
             contentLength=len(self.data_bytes) if self.data_bytes is not None else 0,
             contentType=self.content_type,
             contentSha1=self.content_sha1,
@@ -257,7 +257,7 @@ class FileSimulator(object):
             fileId=self.file_id,
             fileName=self.name,
             accountId=self.account_id,
-            bucketId=self.bucket_id,
+            bucketId=self.bucket.bucket_id,
             contentType=self.content_type,
             fileInfo=self.file_info,
             uploadTimestamp=self.upload_timestamp,
@@ -524,7 +524,7 @@ class BucketSimulator(object):
     def hide_file(self, file_name):
         file_id = self._next_file_id()
         file_sim = self.FILE_SIMULATOR_CLASS(
-            self.account_id, self.bucket_id, file_id, 'hide', file_name, None, "none", {}, b'',
+            self.account_id, self, file_id, 'hide', file_name, None, "none", {}, b'',
             next(self.upload_timestamp_counter)
         )
         self.file_id_to_file[file_id] = file_sim
@@ -562,12 +562,12 @@ class BucketSimulator(object):
 
         data_bytes = get_bytes_range(file_sim.data_bytes, bytes_range)
 
-        destination_bucket_id = destination_bucket_id or self.bucket_id
+        destination_bucket = self.api.bucket_id_to_bucket.get(destination_bucket_id, self)
         sse = destination_server_side_encryption or self.default_server_side_encryption
         logger.debug('setting encryption to %s', sse)
         copy_file_sim = self.FILE_SIMULATOR_CLASS(
             self.account_id,
-            destination_bucket_id,
+            destination_bucket,
             new_file_id,
             'copy',
             new_file_name,
@@ -657,7 +657,7 @@ class BucketSimulator(object):
                 fileId=file_sim.file_id,
                 fileName=file_sim.name,
                 accountId=file_sim.account_id,
-                bucketId=file_sim.bucket_id,
+                bucketId=file_sim.bucket.bucket_id,
                 contentType=file_sim.content_type,
                 fileInfo=file_sim.file_info
             )
@@ -683,7 +683,7 @@ class BucketSimulator(object):
             file_info = sse.add_key_id_to_file_info(file_info)
         logger.debug('setting encryption to %s', sse)
         file_sim = self.FILE_SIMULATOR_CLASS(
-            self.account_id, self.bucket_id, file_id, 'start', file_name, content_type, 'none',
+            self.account_id, self, file_id, 'start', file_name, content_type, 'none',
             file_info, None, next(self.upload_timestamp_counter), server_side_encryption=sse,
         )  # yapf: disable
         self.file_id_to_file[file_id] = file_sim
@@ -747,7 +747,7 @@ class BucketSimulator(object):
 
         file_sim = self.FILE_SIMULATOR_CLASS(
             self.account_id,
-            self.bucket_id,
+            self,
             file_id,
             'upload',
             file_name,
