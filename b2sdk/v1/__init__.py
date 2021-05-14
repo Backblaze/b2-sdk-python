@@ -19,5 +19,5 @@ from b2sdk.v1.file_version import FileVersionInfo
 from b2sdk.v1.session import B2Session
 from b2sdk.v1.sync import (
     ScanPoliciesManager, DEFAULT_SCAN_MANAGER, zip_folders, Synchronizer, AbstractFolder,
-    LocalFolder, B2Folder, parse_sync_folder
+    LocalFolder, B2Folder, parse_sync_folder, File, B2File, FileVersion, B2FileVersion
 )
