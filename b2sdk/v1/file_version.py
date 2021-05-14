@@ -41,8 +41,21 @@ def file_version_info_from_new_file_version_info(
     file_version: v2.FileVersionInfo
 ) -> FileVersionInfo:
     return FileVersionInfo(
-        **{att_name: getattr(file_version, att_name)
-           for att_name in FileVersionInfo.__slots__}
+        **{
+            att_name: getattr(file_version, att_name)
+            for att_name in [
+                'id_',
+                'file_name',
+                'size',
+                'content_type',
+                'content_sha1',
+                'file_info',
+                'upload_timestamp',
+                'action',
+                'content_md5',
+                'server_side_encryption',
+            ]
+        }
     )
 
 
