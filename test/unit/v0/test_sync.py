@@ -745,18 +745,18 @@ class TestZipFolders(TestSync):
         self.assertEqual([], list(zip_folders(folder_a, folder_b, self.reporter)))
 
     def test_one_empty(self):
-        file_a1 = LocalSyncPath("a.txt", 100, 10)
+        file_a1 = LocalSyncPath("a.txt", "a.txt", 100, 10)
         folder_a = FakeFolder('b2', [file_a1])
         folder_b = FakeFolder('b2', [])
         self.assertEqual([(file_a1, None)], list(zip_folders(folder_a, folder_b, self.reporter)))
 
     def test_two(self):
-        file_a1 = simple_b2_sync_path_from_local(LocalSyncPath("a.txt", 100, 10))
-        file_a2 = simple_b2_sync_path_from_local(LocalSyncPath("b.txt", 100, 10))
-        file_a3 = simple_b2_sync_path_from_local(LocalSyncPath("d.txt", 100, 10))
-        file_a4 = simple_b2_sync_path_from_local(LocalSyncPath("f.txt", 100, 10))
-        file_b1 = simple_b2_sync_path_from_local(LocalSyncPath("b.txt", 200, 10))
-        file_b2 = simple_b2_sync_path_from_local(LocalSyncPath("e.txt", 200, 10))
+        file_a1 = simple_b2_sync_path_from_local(LocalSyncPath("a.txt", "a.txt", 100, 10))
+        file_a2 = simple_b2_sync_path_from_local(LocalSyncPath("b.txt", "b.txt", 100, 10))
+        file_a3 = simple_b2_sync_path_from_local(LocalSyncPath("d.txt", "d.txt", 100, 10))
+        file_a4 = simple_b2_sync_path_from_local(LocalSyncPath("f.txt", "f.txt", 100, 10))
+        file_b1 = simple_b2_sync_path_from_local(LocalSyncPath("b.txt", "b.txt", 200, 10))
+        file_b2 = simple_b2_sync_path_from_local(LocalSyncPath("e.txt", "e.txt", 200, 10))
         folder_a = FakeFolder('b2', [file_a1, file_a2, file_a3, file_a4])
         folder_b = FakeFolder('b2', [file_b1, file_b2])
         self.assertEqual(
@@ -827,7 +827,7 @@ def local_file(name, mod_time, size=10):
     Makes a File object for a b2 file, with one FileVersion for
     each modification time given in mod_times.
     """
-    return LocalSyncPath(name, mod_time, size)
+    return LocalSyncPath(name, name, mod_time, size)
 
 
 class TestExclusions(TestSync):

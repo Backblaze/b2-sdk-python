@@ -63,7 +63,7 @@ def local_file(name, mod_times, size=10):
     Makes a File object for a local file, with one FileVersion for
     each modification time given in mod_times.
     """
-    return LocalSyncPath(name, mod_times[0], size)
+    return LocalSyncPath(name, name, mod_times[0], size)
 
 
 def b2_file(name, mod_times, size=10):
