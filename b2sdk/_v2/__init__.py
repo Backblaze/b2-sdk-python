@@ -164,7 +164,7 @@ from b2sdk.sync.folder import AbstractFolder
 from b2sdk.sync.folder import B2Folder
 from b2sdk.sync.folder import LocalFolder
 from b2sdk.sync.folder_parser import parse_sync_folder
-from b2sdk.sync.path import B2SyncPath, LocalSyncPath
+from b2sdk.sync.path import AbstractSyncPath, B2SyncPath, LocalSyncPath
 from b2sdk.sync.policy import AbstractFileSyncPolicy
 from b2sdk.sync.policy import CompareVersionMode
 from b2sdk.sync.policy import NewerFileSyncMode

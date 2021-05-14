@@ -9,7 +9,10 @@
 ######################################################################
 
 from b2sdk import _v2 as v2
+from b2sdk._v2 import exception as v2_exception
+from .file_to_path_translator import make_files_from_paths, make_paths_from_files
 from .scan_policies import DEFAULT_SCAN_MANAGER
+from ..exception import DestFileNewer
 
 
 # Override to change "policies_manager" default argument
@@ -83,3 +86,40 @@ class Synchronizer(v2.Synchronizer):
             now_millis,
             encryption_settings_provider,
         )
+
+    # override to raise old style DestFileNewer exceptions
+    def _make_file_sync_actions(
+        self,
+        sync_type,
+        source_path,
+        dest_path,
+        source_folder,
+        dest_folder,
+        now_millis,
+        encryption_settings_provider: v2.AbstractSyncEncryptionSettingsProvider = v2.
+        SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER,
+    ):
+        """
+        Yields the sequence of actions needed to sync the two files
+
+        :param str sync_type: synchronization type
+        :param b2sdk.v1.AbstractSyncPath source_path: source file object
+        :param b2sdk.v1.AbstractSyncPath dest_path: destination file object
+        :param b2sdk.v1.AbstractFolder source_folder: a source folder object
+        :param b2sdk.v1.AbstractFolder dest_folder: a destination folder object
+        :param int now_millis: current time in milliseconds
+        :param b2sdk.v1.AbstractSyncEncryptionSettingsProvider encryption_settings_provider: encryption setting provider
+        """
+        try:
+            yield from super()._make_file_sync_actions(
+                sync_type,
+                source_path,
+                dest_path,
+                source_folder,
+                dest_folder,
+                now_millis,
+                encryption_settings_provider,
+            )
+        except v2_exception.DestFileNewer as ex:
+            dest_file, source_file = make_files_from_paths(ex.dest_path, ex.source_path, sync_type)
+            raise DestFileNewer(dest_file, source_file, ex.dest_prefix, ex.source_prefix)
