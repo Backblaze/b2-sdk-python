@@ -178,8 +178,7 @@ class LocalFolder(AbstractFolder):
         if not os.listdir(self.root):
             raise EmptyDirectory(self.root)
 
-    @classmethod
-    def _walk_relative_paths(cls, local_dir, b2_dir, reporter, policies_manager):
+    def _walk_relative_paths(self, local_dir, b2_dir, reporter, policies_manager):
         """
         Yield a File object for each of the files anywhere under this folder, in the
         order they would appear in B2, unless the path is excluded by policies manager.
@@ -212,7 +211,7 @@ class LocalFolder(AbstractFolder):
             # If the file name is not valid, based on the file system
             # encoding, then listdir() will return un-decoded str/bytes.
             if not isinstance(name, str):
-                name = cls._handle_non_unicode_file_name(name)
+                name = self._handle_non_unicode_file_name(name)
 
             if '/' in name:
                 raise UnSyncableFilename(
@@ -248,7 +247,7 @@ class LocalFolder(AbstractFolder):
         # the sort key, is the first thing in the triple.
         for (name, local_path, b2_path) in sorted(names):
             if name.endswith('/'):
-                for subdir_file in cls._walk_relative_paths(
+                for subdir_file in self._walk_relative_paths(
                     local_path, b2_path, reporter, policies_manager
                 ):
                     yield subdir_file
@@ -263,7 +262,10 @@ class LocalFolder(AbstractFolder):
                     #     continue
 
                     yield LocalSyncPath(
-                        relative_path=b2_path, mod_time=file_mod_time, size=file_size
+                        absolute_path=self.make_full_path(b2_path),
+                        relative_path=b2_path,
+                        mod_time=file_mod_time,
+                        size=file_size,
                     )
 
     @classmethod
