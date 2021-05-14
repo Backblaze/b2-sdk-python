@@ -310,7 +310,7 @@ class Synchronizer:
                     reporter.update_total(1)
                 reporter.update_compare(1)
 
-            for action in self.make_file_sync_actions(
+            for action in self._make_file_sync_actions(
                 sync_type,
                 source_path,
                 dest_path,
@@ -330,7 +330,7 @@ class Synchronizer:
                 reporter.end_total()
             reporter.end_compare(total_files, total_bytes)
 
-    def make_file_sync_actions(
+    def _make_file_sync_actions(
         self,
         sync_type,
         source_path,

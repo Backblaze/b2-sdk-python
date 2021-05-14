@@ -49,3 +49,37 @@ class Synchronizer(v2.Synchronizer):
             source_folder, dest_folder, now_millis, reporter, policies_manager,
             encryption_settings_provider
         )
+
+    # override to retain a public method
+    def make_file_sync_actions(
+        self,
+        sync_type,
+        source_file,
+        dest_file,
+        source_folder,
+        dest_folder,
+        now_millis,
+        encryption_settings_provider: v2.AbstractSyncEncryptionSettingsProvider = v2.
+        SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER,
+    ):
+        """
+        Yields the sequence of actions needed to sync the two files
+
+        :param str sync_type: synchronization type
+        :param b2sdk.v1.File source_file: source file object
+        :param b2sdk.v1.File dest_file: destination file object
+        :param b2sdk.v1.AbstractFolder source_folder: a source folder object
+        :param b2sdk.v1.AbstractFolder dest_folder: a destination folder object
+        :param int now_millis: current time in milliseconds
+        :param b2sdk.v1.AbstractSyncEncryptionSettingsProvider encryption_settings_provider: encryption setting provider
+        """
+        dest_path, source_path = make_paths_from_files(dest_file, source_file, sync_type)
+        return self._make_file_sync_actions(
+            sync_type,
+            source_path,
+            dest_path,
+            source_folder,
+            dest_folder,
+            now_millis,
+            encryption_settings_provider,
+        )
