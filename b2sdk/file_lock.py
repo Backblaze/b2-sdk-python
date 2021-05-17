@@ -182,36 +182,57 @@ class FileRetentionSetting:
             self.__class__.__name__, repr(self.mode.value), repr(self.retain_until)
         )
 
-class LegalHoldSerializer:
+
+@enum.unique
+class LegalHold(enum.Enum):
+    """Information about legalHold switch in a file."""
+
+    ON = 'on'
+    OFF = 'off'
+    UNSET = None  # this is the server default, as for now it is functionally equivalent to OFF
+    UNKNOWN = 'unknown'  # This one is used if the client is not authorized to read retention settings
+
+    def __bool__(self):
+        if self is LegalHold.UNKNOWN:
+            raise ValueError("Cannot determine the boolean value of an unknown Legal Hold")
+        return self is LegalHold.ON  # UNSET == FALSE for boolean determination
+
     @classmethod
-    def from_server(cls, file_version_dict) -> Optional[bool]:
+    def from_file_version_dict(cls, file_version_dict: dict) -> 'LegalHold':
         if 'legalHold' not in file_version_dict:
             if file_version_dict['action'] not in ACTIONS_WITHOUT_LOCK_SETTINGS:
                 raise UnexpectedCloudBehaviour(
                     'legalHold not provided for file version with action=%s' %
                     (file_version_dict['action'])
                 )
-            return None
-        legal_hold_dict = file_version_dict['legalHold']
-        if legal_hold_dict['value'] is None:
-            return None
-        if legal_hold_dict['value'] == 'on':
-            return True
-        elif legal_hold_dict['value'] == 'off':
-            return False
-        raise ValueError('Unknown legal hold value: %s' % (legal_hold_dict['value'],))
+            return cls.UNSET
+        if not file_version_dict['legalHold']['isClientAuthorizedToRead']:
+            return cls.UNKNOWN
+        return cls.from_string_or_none(file_version_dict['legalHold']['value'])
 
     @classmethod
-    def to_server(cls, bool_value: Optional[bool]) -> str:
-        if bool_value is None:
-            raise ValueError('Cannot use unknown legal hold in requests')
-        if bool_value:
-            return 'on'
-        return 'off'
+    def from_string_or_none(cls, string: Optional[str]) -> 'LegalHold':
+        return cls(string)
 
     @classmethod
-    def add_to_upload_headers(cls, bool_value: Optional[bool], headers):
-        headers['X-Bz-File-Legal-Hold'] = cls.to_server(bool_value)
+    def from_response_headers(cls, headers) -> 'LegalHold':
+        legal_hold_header = 'X-Bz-File-Legal-Hold'
+        if legal_hold_header in headers:
+            return cls(headers['X-Bz-File-Legal-Hold'])
+        if 'X-Bz-Client-Unauthorized-To-Read' in headers and legal_hold_header in headers[
+            'X-Bz-Client-Unauthorized-To-Read'].split(','):
+            return cls.UNKNOWN
+        return cls.UNSET  # the bucket is not file-lock-enabled or the header is missing for any other reason
+
+    def to_server(self) -> str:
+        if self is self.__class__.UNKNOWN:
+            raise ValueError('Cannot use an unknown legal hold in requests')
+        if self:
+            return self.__class__.ON.value
+        return self.__class__.OFF.value
+
+    def add_to_upload_headers(self, headers):
+        headers['X-Bz-File-Legal-Hold'] = self.to_server()
 
 
 class BucketRetentionSetting:
