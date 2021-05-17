@@ -13,7 +13,7 @@ from typing import Any, Dict, Optional
 from .bucket import Bucket, BucketFactory
 from .encryption.setting import EncryptionSetting
 from .exception import NonExistentBucket, RestrictedBucket
-from .file_lock import BucketRetentionSetting, FileRetentionSetting, LegalHold
+from .file_lock import FileRetentionSetting, LegalHold
 from .file_version import FileIdAndName
 from .large_file.services import LargeFileServices
 from .raw_api import API_VERSION
@@ -178,7 +178,6 @@ class B2Api(metaclass=B2TraceMeta):
         cors_rules=None,
         lifecycle_rules=None,
         default_server_side_encryption: Optional[EncryptionSetting] = None,
-        default_retention: Optional[BucketRetentionSetting] = None,
         is_file_lock_enabled: Optional[bool] = None,
     ):
         """
@@ -190,7 +189,6 @@ class B2Api(metaclass=B2TraceMeta):
         :param dict cors_rules: bucket CORS rules to store with the bucket
         :param dict lifecycle_rules: bucket lifecycle rules to store with the bucket
         :param b2sdk.v1.EncryptionSetting default_server_side_encryption: default server side encryption settings (``None`` if unknown)
-        :param b2sdk.v1.BucketRetentionSetting default_retention: default retention setting
         :param bool is_file_lock_enabled: boolean value specifies whether bucket is File Lock-enabled
         :return: a Bucket object
         :rtype: b2sdk.v1.Bucket
@@ -214,12 +212,6 @@ class B2Api(metaclass=B2TraceMeta):
                                              than requested: %s != %s' % (
             bucket_type, bucket.type_
         )
-        if default_retention is not None:
-            # server does not support setting default retention on create
-            # so we provide convinient helper for it
-            bucket = self.BUCKET_FACTORY_CLASS.from_api_bucket_dict(
-                self, bucket.update(default_retention=default_retention)
-            )
         self.cache.save_bucket(bucket)
         return bucket
 
