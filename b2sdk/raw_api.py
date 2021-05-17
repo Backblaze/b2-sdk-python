@@ -674,7 +674,11 @@ class B2RawApi(AbstractRawApi):
             )
             kwargs['serverSideEncryption'] = server_side_encryption.serialize_to_json_for_request()
 
-        # FIXME: implement `legal_hold` and `file_retention`
+        if legal_hold is not None:
+            kwargs['legalHold'] = legal_hold.to_server()
+
+        if file_retention is not None:
+            kwargs['fileRetention'] = file_retention.serialize_to_json_for_request()
 
         return self._post_json(
             api_url,
@@ -742,15 +746,38 @@ class B2RawApi(AbstractRawApi):
     ):
         kwargs = {}
         kwargs['fileRetention'] = file_retention.serialize_to_json_for_request()
-        return self._post_json(
-            api_url,
-            'b2_update_file_retention',
-            account_auth_token,
-            fileId=file_id,
-            fileName=file_name,
-            bypassGovernance=bypass_governance,
-            **kwargs
-        )
+        try:
+            return self._post_json(
+                api_url,
+                'b2_update_file_retention',
+                account_auth_token,
+                fileId=file_id,
+                fileName=file_name,
+                bypassGovernance=bypass_governance,
+                **kwargs
+            )
+        except AccessDenied:
+            raise RetentionWriteError
+
+    def update_file_legal_hold(
+        self,
+        api_url,
+        account_auth_token,
+        file_id,
+        file_name,
+        legal_hold: LegalHold,
+    ):
+        try:
+            return self._post_json(
+                api_url,
+                'b2_update_file_legal_hold',
+                account_auth_token,
+                fileId=file_id,
+                fileName=file_name,
+                legalHold=legal_hold.to_server(),
+            )
+        except AccessDenied:
+            raise RetentionWriteError
 
     def unprintable_to_hex(self, string):
         """
@@ -843,7 +870,11 @@ class B2RawApi(AbstractRawApi):
             )
             server_side_encryption.add_to_upload_headers(headers)
 
-        # FIXME: implement `legal_hold` and `file_retention`
+        if legal_hold is not None:
+            legal_hold.add_to_upload_headers(headers)
+
+        if file_retention is not None:
+            file_retention.add_to_to_upload_headers(headers)
 
         return self.b2_http.post_content_return_json(upload_url, headers, data_stream)
 
@@ -924,7 +955,11 @@ class B2RawApi(AbstractRawApi):
             kwargs['sourceServerSideEncryption'
                   ] = source_server_side_encryption.serialize_to_json_for_request()
 
-        # FIXME: implement `legal_hold` and `file_retention`
+        if legal_hold is not None:
+            kwargs['legalHold'] = legal_hold.to_server()
+
+        if file_retention is not None:
+            kwargs['fileRetention'] = file_retention.serialize_to_json_for_request()
 
 
         try:

@@ -531,3 +531,31 @@ class B2Session(object):
         response = f(upload_url, upload_auth_token, *args, **kwargs)
         self.account_info.put_large_file_upload_url(file_id, upload_url, upload_auth_token)
         return response
+
+    def update_file_retention(
+        self,
+        file_id,
+        file_name,
+        file_retention: FileRetentionSetting,
+        bypass_governance: bool = False,
+    ):
+        return self._wrap_default_token(
+            self.raw_api.update_file_retention,
+            file_id,
+            file_name,
+            file_retention,
+            bypass_governance,
+        )
+
+    def update_file_legal_hold(
+        self,
+        file_id,
+        file_name,
+        legal_hold: LegalHold,
+    ):
+        return self._wrap_default_token(
+            self.raw_api.update_file_legal_hold,
+            file_id,
+            file_name,
+            legal_hold,
+        )

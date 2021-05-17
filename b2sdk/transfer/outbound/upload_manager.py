@@ -94,6 +94,8 @@ class UploadManager(metaclass=B2TraceMetaAbstract):
             file_info,
             progress_listener,
             encryption,
+            file_retention,
+            legal_hold,
         )
         return f
 
