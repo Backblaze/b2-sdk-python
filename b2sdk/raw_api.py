@@ -498,7 +498,7 @@ class B2RawApi(AbstractRawApi):
         try:
             return self.b2_http.get_content(url, request_headers)
         except AccessDenied:
-            raise SSECKeyError
+            raise SSECKeyError()
 
     def finish_large_file(self, api_url, account_auth_token, file_id, part_sha1_array):
         return self._post_json(
@@ -757,7 +757,7 @@ class B2RawApi(AbstractRawApi):
                 **kwargs
             )
         except AccessDenied:
-            raise RetentionWriteError
+            raise RetentionWriteError()
 
     def update_file_legal_hold(
         self,
@@ -777,7 +777,7 @@ class B2RawApi(AbstractRawApi):
                 legalHold=legal_hold.to_server(),
             )
         except AccessDenied:
-            raise RetentionWriteError
+            raise RetentionWriteError()
 
     def unprintable_to_hex(self, string):
         """
@@ -971,7 +971,7 @@ class B2RawApi(AbstractRawApi):
                 **kwargs
             )
         except AccessDenied:
-            raise SSECKeyError
+            raise SSECKeyError()
 
     def copy_part(
         self,
@@ -1012,7 +1012,7 @@ class B2RawApi(AbstractRawApi):
                 **kwargs
             )
         except AccessDenied:
-            raise SSECKeyError
+            raise SSECKeyError()
 
 
 def test_raw_api():
