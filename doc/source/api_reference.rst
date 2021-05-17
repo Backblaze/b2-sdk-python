@@ -25,6 +25,7 @@ Public API
    api/api
    api/exception
    api/bucket
+   api/file_lock
    api/data_classes
    api/enums
    api/progress
