@@ -19,6 +19,7 @@ from .file_lock import (
     FileLockConfiguration,
     FileRetentionSetting,
     UNKNOWN_BUCKET_RETENTION,
+    LegalHold,
 )
 from .file_version import FileVersionInfo, FileVersionInfoFactory
 from .progress import DoNothingProgressListener
@@ -416,7 +417,7 @@ class Bucket(metaclass=B2TraceMeta):
         progress_listener=None,
         encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
-        legal_hold: Optional[bool] = None,
+        legal_hold: Optional[LegalHold] = None,
     ):
         """
         Upload bytes in memory to a B2 file.
@@ -454,7 +455,7 @@ class Bucket(metaclass=B2TraceMeta):
         progress_listener=None,
         encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
-        legal_hold: Optional[bool] = None,
+        legal_hold: Optional[LegalHold] = None,
     ):
         """
         Upload a file on local disk to a B2 file.
@@ -498,7 +499,7 @@ class Bucket(metaclass=B2TraceMeta):
         progress_listener=None,
         encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
-        legal_hold: Optional[bool] = None,
+        legal_hold: Optional[LegalHold] = None,
     ):
         """
         Upload a file to B2, retrying as needed.
@@ -546,7 +547,7 @@ class Bucket(metaclass=B2TraceMeta):
         continue_large_file_id=None,
         encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
-        legal_hold: Optional[bool] = None,
+        legal_hold: Optional[LegalHold] = None,
     ):
         """
         Creates a new file in this bucket using an iterable (list, tuple etc) of remote or local sources.
@@ -597,7 +598,7 @@ class Bucket(metaclass=B2TraceMeta):
         continue_large_file_id=None,
         encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
-        legal_hold: Optional[bool] = None,
+        legal_hold: Optional[LegalHold] = None,
     ):
         """
         Creates a new file in this bucket using a stream of multiple remote or local sources.
@@ -651,7 +652,7 @@ class Bucket(metaclass=B2TraceMeta):
         continue_large_file_id=None,
         encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
-        legal_hold: Optional[bool] = None,
+        legal_hold: Optional[LegalHold] = None,
     ):
         validate_b2_file_name(file_name)
         progress_listener = progress_listener or DoNothingProgressListener()
@@ -681,7 +682,7 @@ class Bucket(metaclass=B2TraceMeta):
         continue_large_file_id=None,
         encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
-        legal_hold: Optional[bool] = None,
+        legal_hold: Optional[LegalHold] = None,
     ):
         """
         Creates a new file in this bucket by concatenating multiple remote or local sources.
@@ -728,7 +729,7 @@ class Bucket(metaclass=B2TraceMeta):
         continue_large_file_id=None,
         encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
-        legal_hold: Optional[bool] = None,
+        legal_hold: Optional[LegalHold] = None,
     ):
         """
         Creates a new file in this bucket by concatenating stream of multiple remote or local sources.
@@ -802,7 +803,7 @@ class Bucket(metaclass=B2TraceMeta):
         source_file_info: Optional[dict] = None,
         source_content_type: Optional[str] = None,
         file_retention: Optional[FileRetentionSetting] = None,
-        legal_hold: Optional[bool] = None,
+        legal_hold: Optional[LegalHold] = None,
     ):
         """
         Creates a new file in this bucket by (server-side) copying from an existing file.

@@ -37,7 +37,7 @@ from .exception import (
     UnsatisfiableRange,
     SSECKeyError,
 )
-from .file_lock import BucketRetentionSetting, FileRetentionSetting, NO_RETENTION_BUCKET_SETTING, UNKNOWN_FILE_LOCK_CONFIGURATION
+from .file_lock import BucketRetentionSetting, FileRetentionSetting, NO_RETENTION_BUCKET_SETTING, UNKNOWN_FILE_LOCK_CONFIGURATION, LegalHold
 from .raw_api import AbstractRawApi, HEX_DIGITS_AT_END, MetadataDirectiveMode, ALL_CAPABILITIES
 from .utils import (
     b2_url_decode,
@@ -154,7 +154,7 @@ class FileSimulator(object):
         range_=None,
         server_side_encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
-        legal_hold: Optional[bool] = None,
+        legal_hold: LegalHold = LegalHold.UNSET,
     ):
         if action == 'hide':
             assert server_side_encryption is None
@@ -177,7 +177,7 @@ class FileSimulator(object):
         self.range_ = range_
         self.server_side_encryption = server_side_encryption
         self.file_retention = file_retention
-        self.legal_hold = legal_hold
+        self.legal_hold = legal_hold if legal_hold is not None else LegalHold.UNSET
 
         if action == 'start':
             self.parts = []
@@ -320,7 +320,7 @@ class FileSimulator(object):
             return UNKNOWN_FILE_LOCK_CONFIGURATION
         return {
             'isClientAuthorizedToRead': True,
-            'value': self.legal_hold and 'on' or 'off',
+            'value': self.legal_hold.value,
         }
 
     def add_part(self, part_number, part):
@@ -1298,7 +1298,7 @@ class RawSimulator(AbstractRawApi):
         destination_server_side_encryption=None,
         source_server_side_encryption=None,
         file_retention: Optional[FileRetentionSetting] = None,
-        legal_hold: Optional[bool] = None,
+        legal_hold: Optional[LegalHold] = None,
     ):
         bucket_id = self.file_id_to_bucket_id[source_file_id]
         bucket = self._get_bucket_by_id(bucket_id)
@@ -1493,7 +1493,7 @@ class RawSimulator(AbstractRawApi):
         file_info,
         server_side_encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
-        legal_hold: Optional[bool] = None,
+        legal_hold: Optional[LegalHold] = None,
     ):
         bucket = self._get_bucket_by_id(bucket_id)
         self._assert_account_auth(api_url, account_auth_token, bucket.account_id, 'writeFiles')
@@ -1549,7 +1549,7 @@ class RawSimulator(AbstractRawApi):
         data_stream,
         server_side_encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
-        legal_hold: Optional[bool] = None,
+        legal_hold: Optional[LegalHold] = None,
     ):
         with ConcurrentUsedAuthTokenGuard(
             self.currently_used_auth_tokens[upload_auth_token], upload_auth_token

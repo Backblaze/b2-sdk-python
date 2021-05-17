@@ -15,7 +15,7 @@ from typing import Optional
 
 from b2sdk.encryption.setting import EncryptionSetting
 from b2sdk.exception import MaxFileSizeExceeded
-from b2sdk.file_lock import FileRetentionSetting, NO_RETENTION_FILE_SETTING
+from b2sdk.file_lock import FileRetentionSetting, LegalHold, NO_RETENTION_FILE_SETTING
 from b2sdk.file_version import FileVersionInfoFactory
 from b2sdk.transfer.outbound.large_file_upload_state import LargeFileUploadState
 from b2sdk.transfer.outbound.upload_source import UploadSourceStream
@@ -40,7 +40,7 @@ class EmergeExecutor(object):
         max_queue_size=None,
         encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
-        legal_hold: Optional[bool] = None,
+        legal_hold: Optional[LegalHold] = None,
     ):
         if emerge_plan.is_large_file():
             execution = LargeFileEmergeExecution(
@@ -86,7 +86,7 @@ class BaseEmergeExecution(metaclass=ABCMeta):
         progress_listener,
         encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
-        legal_hold: Optional[bool] = None,
+        legal_hold: Optional[LegalHold] = None,
     ):
         self.services = services
         self.bucket_id = bucket_id
@@ -127,7 +127,7 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
         progress_listener,
         encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
-        legal_hold: Optional[bool] = None,
+        legal_hold: Optional[LegalHold] = None,
         continue_large_file_id=None,
         max_queue_size=None,
     ):
@@ -245,7 +245,7 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
         continue_large_file_id,
         encryption: EncryptionSetting,
         file_retention: Optional[FileRetentionSetting] = None,
-        legal_hold: Optional[bool] = None,
+        legal_hold: Optional[LegalHold] = None,
         emerge_parts_dict=None,
     ):
         if 'listFiles' not in self.services.session.account_info.get_allowed()['capabilities']:
@@ -299,7 +299,7 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
         emerge_parts_dict,
         encryption: EncryptionSetting,
         file_retention: Optional[FileRetentionSetting] = None,
-        legal_hold: Optional[bool] = None,
+        legal_hold: Optional[LegalHold] = None,
     ):
         file_retention = file_retention or NO_RETENTION_FILE_SETTING
         assert 'plan_id' in file_info
@@ -314,8 +314,9 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
             # FIXME: encryption is None ???
             if encryption is None or file_.encryption != encryption:
                 continue
-            if bool(legal_hold) != file_.legal_hold:
-                # when `file_.legal_hold is None` it means that `legal_hold` is unknown and we skip
+            if (legal_hold or LegalHold.UNSET) != file_.legal_hold:
+                # Uploading and not providing legal_hold means that server's response about that file version will have
+                # legal_hold=LegalHold.UNSET
                 continue
             if file_retention != file_.file_retention:
                 # if `file_.file_retention` is UNKNOWN then we skip - lib user can still
@@ -350,7 +351,7 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
         emerge_parts_dict,
         encryption: EncryptionSetting,
         file_retention: Optional[FileRetentionSetting] = None,
-        legal_hold: Optional[bool] = None,
+        legal_hold: Optional[LegalHold] = None,
     ):
         """
         Find an unfinished file that may be used to resume a large file upload.  The
@@ -370,8 +371,9 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
             # FIXME: what if `encryption is None` - match ANY encryption? :)
             if encryption is not None and encryption != file_.encryption:
                 continue
-            if bool(legal_hold) != file_.legal_hold:
-                # when `file_.legal_hold is None` it means that `legal_hold` is unknown and we skip
+            if (legal_hold or LegalHold.UNSET) != file_.legal_hold:
+                # Uploading and not providing legal_hold means that server's response about that file version will have
+                # legal_hold=LegalHold.UNSET
                 continue
             if file_retention != file_.file_retention:
                 # if `file_.file_retention` is UNKNOWN then we skip - lib user can still

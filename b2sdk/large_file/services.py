@@ -11,7 +11,7 @@
 from typing import Optional
 
 from b2sdk.encryption.setting import EncryptionSetting
-from b2sdk.file_lock import FileRetentionSetting
+from b2sdk.file_lock import FileRetentionSetting, LegalHold
 from b2sdk.file_version import FileVersionInfoFactory
 from b2sdk.large_file.part import PartFactory
 from b2sdk.large_file.unfinished_large_file import UnfinishedLargeFile
@@ -85,7 +85,7 @@ class LargeFileServices(object):
         content_type=None,
         file_info=None,
         encryption: Optional[EncryptionSetting] = None,
-        legal_hold: Optional[bool] = None,
+        legal_hold: Optional[LegalHold] = None,
         file_retention: Optional[FileRetentionSetting] = None,
     ):
         """

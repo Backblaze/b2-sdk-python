@@ -19,7 +19,7 @@ from b2sdk.b2http import B2Http
 from b2sdk.cache import AuthInfoCache, DummyCache
 from b2sdk.encryption.setting import EncryptionSetting
 from b2sdk.exception import (InvalidAuthToken, Unauthorized)
-from b2sdk.file_lock import BucketRetentionSetting, FileRetentionSetting
+from b2sdk.file_lock import BucketRetentionSetting, FileRetentionSetting, LegalHold
 from b2sdk.raw_api import ALL_CAPABILITIES, B2RawApi
 
 logger = logging.getLogger(__name__)
@@ -289,7 +289,7 @@ class B2Session(object):
         file_info,
         server_side_encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
-        legal_hold: Optional[bool] = None,
+        legal_hold: Optional[LegalHold] = None,
     ):
         return self._wrap_default_token(
             self.raw_api.start_large_file,
@@ -338,7 +338,7 @@ class B2Session(object):
         data_stream,
         server_side_encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
-        legal_hold: Optional[bool] = None,
+        legal_hold: Optional[LegalHold] = None,
     ):
         return self._wrap_token(
             self.raw_api.upload_file,
@@ -395,7 +395,7 @@ class B2Session(object):
         destination_server_side_encryption: Optional[EncryptionSetting] = None,
         source_server_side_encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
-        legal_hold: Optional[bool] = None,
+        legal_hold: Optional[LegalHold] = None,
     ):
         return self._wrap_default_token(
             self.raw_api.copy_file,

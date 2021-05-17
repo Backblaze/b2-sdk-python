@@ -19,7 +19,7 @@ from b2sdk.exception import (
     B2Error,
     MaxRetriesExceeded,
 )
-from b2sdk.file_lock import FileRetentionSetting
+from b2sdk.file_lock import FileRetentionSetting, LegalHold
 from b2sdk.file_version import FileVersionInfoFactory
 from b2sdk.stream.progress import ReadingStreamWithProgress
 from b2sdk.stream.hashing import StreamWithHash
@@ -82,8 +82,8 @@ class UploadManager(metaclass=B2TraceMetaAbstract):
         file_info,
         progress_listener,
         encryption: Optional[EncryptionSetting] = None,
-        legal_hold: Optional[bool] = None,
         file_retention: Optional[FileRetentionSetting] = None,
+        legal_hold: Optional[LegalHold] = None,
     ):
         f = self.get_thread_pool().submit(
             self._upload_small_file,
@@ -209,8 +209,8 @@ class UploadManager(metaclass=B2TraceMetaAbstract):
         file_info,
         progress_listener,
         encryption: Optional[EncryptionSetting] = None,
-        legal_hold: Optional[bool] = None,
         file_retention: Optional[FileRetentionSetting] = None,
+        legal_hold: Optional[LegalHold] = None,
     ):
         content_length = upload_source.get_content_length()
         exception_info_list = []
@@ -239,8 +239,8 @@ class UploadManager(metaclass=B2TraceMetaAbstract):
                             file_info,
                             input_stream,
                             server_side_encryption=encryption,  # todo: client side encryption
-                            legal_hold=legal_hold,
                             file_retention=file_retention,
+                            legal_hold=legal_hold,
                         )
                         if content_sha1 == HEX_DIGITS_AT_END:
                             content_sha1 = input_stream.hash
