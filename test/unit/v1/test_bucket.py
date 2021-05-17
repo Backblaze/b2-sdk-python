@@ -44,6 +44,7 @@ from .deps import UploadSourceBytes
 from .deps import hex_sha1_of_bytes, TempDir
 from .deps import EncryptionAlgorithm, EncryptionSetting, EncryptionMode, EncryptionKey, SSE_NONE, SSE_B2_AES
 from .deps import CopySource, UploadSourceLocalFile, WriteIntent
+from .deps import FileRetentionSetting, LegalHold, RetentionMode, NO_RETENTION_FILE_SETTING
 
 SSE_C_AES = EncryptionSetting(
     mode=EncryptionMode.SSE_C,
@@ -600,6 +601,23 @@ class TestCopyFile(TestCaseWithBucket):
         expected = [('hello_new.txt', 11, 'copy', None)]
         self.assertBucketContents(expected, '', show_versions=True)
 
+    def test_copy_retention(self):
+        for data in [self._make_data(self.simulator.MIN_PART_SIZE * 3), b'hello']:
+            for length in [None, len(data)]:
+                with self.subTest(real_length=len(data), length=length):
+                    file_id = self.bucket.upload_bytes(data, 'original_file').id_
+                    resulting_file_version = self.bucket.copy(
+                        file_id,
+                        'copied_file',
+                        file_retention=FileRetentionSetting(RetentionMode.COMPLIANCE, 100),
+                        legal_hold=LegalHold.ON
+                    )
+                    self.assertEqual(
+                        FileRetentionSetting(RetentionMode.COMPLIANCE, 100),
+                        resulting_file_version.file_retention
+                    )
+                    self.assertEqual(LegalHold.ON, resulting_file_version.legal_hold)
+
     def test_copy_encryption(self):
         data = b'hello_world'
         a = self.bucket.upload_bytes(data, 'a')
@@ -737,6 +755,16 @@ class TestUpload(TestCaseWithBucket):
         self._check_file_contents('file1', data)
         self.assertEqual(file_info.server_side_encryption, SSE_NONE)
 
+    def test_upload_bytes_file_retention(self):
+        data = b'hello world'
+        retention = FileRetentionSetting(RetentionMode.COMPLIANCE, 150)
+        file_info = self.bucket.upload_bytes(
+            data, 'file1', file_retention=retention, legal_hold=LegalHold.ON
+        )
+        self._check_file_contents('file1', data)
+        self.assertEqual(retention, file_info.file_retention)
+        self.assertEqual(LegalHold.ON, file_info.legal_hold)
+
     def test_upload_bytes_sse_b2(self):
         data = b'hello world'
         file_info = self.bucket.upload_bytes(data, 'file1', encryption=SSE_B2_AES)
@@ -768,6 +796,23 @@ class TestUpload(TestCaseWithBucket):
             self.assertTrue(isinstance(file_info, FileVersionInfo))
             self.assertEqual(SSE_C_AES_NO_SECRET, file_info.server_side_encryption)
             self._check_file_contents('file1', data)
+
+    def test_upload_local_file_retention(self):
+        with TempDir() as d:
+            path = os.path.join(d, 'file1')
+            data = b'hello world'
+            write_file(path, data)
+            retention = FileRetentionSetting(RetentionMode.COMPLIANCE, 150)
+            file_info = self.bucket.upload_local_file(
+                path,
+                'file1',
+                encryption=SSE_C_AES,
+                file_retention=retention,
+                legal_hold=LegalHold.ON
+            )
+            self._check_file_contents('file1', data)
+            self.assertEqual(retention, file_info.file_retention)
+            self.assertEqual(LegalHold.ON, file_info.legal_hold)
 
     def test_upload_bytes_progress(self):
         data = b'hello world'
