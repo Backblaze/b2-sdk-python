@@ -220,10 +220,7 @@ class TestApi(TestBase):
         created_file = bucket.upload_bytes(b'hello world', 'file')
         self.assertEqual(created_file.file_retention, NO_RETENTION_FILE_SETTING)
         new_retention = FileRetentionSetting(RetentionMode.COMPLIANCE, 100)
-        file_id_name_retention = self.api.update_file_retention(
-            created_file.id_, created_file.file_name, new_retention
-        )
-        self.assertEqual(new_retention, file_id_name_retention.file_retention)
+        self.api.update_file_retention(created_file.id_, created_file.file_name, new_retention)
         file_version = bucket.get_file_info_by_id(created_file.id_)
         self.assertEqual(new_retention, file_version.file_retention)
 
@@ -233,9 +230,6 @@ class TestApi(TestBase):
         created_file = bucket.upload_bytes(b'hello world', 'file')
         self.assertEqual(created_file.legal_hold, LegalHold.UNSET)
         new_legal_hold = LegalHold.ON
-        file_id_name_hold = self.api.update_file_legal_hold(
-            created_file.id_, created_file.file_name, new_legal_hold
-        )
-        self.assertEqual(new_legal_hold, file_id_name_hold.legal_hold)
+        self.api.update_file_legal_hold(created_file.id_, created_file.file_name, new_legal_hold)
         file_version = bucket.get_file_info_by_id(created_file.id_)
         self.assertEqual(new_legal_hold, file_version.legal_hold)
