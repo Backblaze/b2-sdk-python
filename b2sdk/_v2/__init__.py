@@ -71,6 +71,7 @@ from b2sdk.large_file.unfinished_large_file import UnfinishedLargeFile
 # file lock
 
 from b2sdk.file_lock import BucketRetentionSetting
+from b2sdk.file_lock import FileLockConfiguration
 from b2sdk.file_lock import FileRetentionSetting
 from b2sdk.file_lock import LegalHold
 from b2sdk.file_lock import NO_RETENTION_BUCKET_SETTING
@@ -79,6 +80,7 @@ from b2sdk.file_lock import RetentionMode
 from b2sdk.file_lock import RetentionPeriod
 from b2sdk.file_lock import UNKNOWN_BUCKET_RETENTION
 from b2sdk.file_lock import UNKNOWN_FILE_LOCK_CONFIGURATION
+from b2sdk.file_lock import UNKNOWN_FILE_RETENTION_SETTING
 
 # progress reporting
 

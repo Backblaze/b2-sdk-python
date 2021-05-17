@@ -18,11 +18,11 @@ ACTIONS_WITHOUT_LOCK_SETTINGS = frozenset(['hide', 'folder'])
 
 @enum.unique
 class RetentionMode(enum.Enum):
-    """Modes for retention settings in files and buckets"""
-    GOVERNANCE = "governance"  # retention settings for files in this mode can be modified by clients with appropriate application key capabilities
-    COMPLIANCE = "compliance"  # retention settings for files in this mode can only be modified by extending the retention dates by clients with appropriate application key capabilities
-    NONE = None
-    UNKNOWN = "unknown"  # This one is used if the client is not authorized to read retention settings
+    """Enum class representing retention modes set in files and buckets"""
+    GOVERNANCE = "governance"  #: retention settings for files in this mode can be modified by clients with appropriate application key capabilities
+    COMPLIANCE = "compliance"  #: retention settings for files in this mode can only be modified by extending the retention dates by clients with appropriate application key capabilities
+    NONE = None  #: retention not set
+    UNKNOWN = "unknown"  #: the client is not authorized to read retention settings
 
 
 RETENTION_MODES_REQUIRING_PERIODS = frozenset({RetentionMode.COMPLIANCE, RetentionMode.GOVERNANCE})
@@ -33,6 +33,7 @@ class RetentionPeriod:
     KNOWN_UNITS = ['days', 'years']
 
     def __init__(self, years: Optional[int] = None, days: Optional[int] = None):
+        """Create a retention period, provide exactly one of: days, years"""
         assert (years is None) != (days is None)
         if years is not None:
             self.duration = years
@@ -185,20 +186,23 @@ class FileRetentionSetting:
 
 @enum.unique
 class LegalHold(enum.Enum):
-    """Information about legalHold switch in a file."""
+    """Enum holding information about legalHold switch in a file."""
 
-    ON = 'on'
-    OFF = 'off'
-    UNSET = None  # this is the server default, as for now it is functionally equivalent to OFF
-    UNKNOWN = 'unknown'  # This one is used if the client is not authorized to read retention settings
+    ON = 'on'  #: legal hold set to "on"
+    OFF = 'off'  #: legal hold set to "off"
+    UNSET = None  #: server default, as for now it is functionally equivalent to OFF
+    UNKNOWN = 'unknown'  #: the client is not authorized to read legal hold settings
 
     def is_on(self):
+        """Is the legalHold switch on?"""
         return self is LegalHold.ON
 
     def is_off(self):
+        """Is the legalHold switch off or left as default (which also means off)?"""
         return self is LegalHold.OFF or self is LegalHold.UNSET
 
     def is_unknown(self):
+        """Is the legalHold switch unknown?"""
         return self is LegalHold.UNKNOWN
 
     @classmethod
@@ -319,6 +323,7 @@ class FileLockConfiguration:
         Build a FileLockConfiguration from an object returned by server, such as:
 
         .. code-block::
+
             {
                 "isClientAuthorizedToRead": true,
                 "value": {
@@ -367,7 +372,12 @@ class FileLockConfiguration:
 
 
 UNKNOWN_BUCKET_RETENTION = BucketRetentionSetting(RetentionMode.UNKNOWN)
+"""Commonly used "unknown" default bucket retention setting"""
 UNKNOWN_FILE_LOCK_CONFIGURATION = FileLockConfiguration(UNKNOWN_BUCKET_RETENTION, None)
+"""Commonly used "unknown" bucket file lock setting"""
 NO_RETENTION_BUCKET_SETTING = BucketRetentionSetting(RetentionMode.NONE)
+"""Commonly used "no retention" default bucket retention"""
 NO_RETENTION_FILE_SETTING = FileRetentionSetting(RetentionMode.NONE)
+"""Commonly used "no retention" file setting"""
 UNKNOWN_FILE_RETENTION_SETTING = FileRetentionSetting(RetentionMode.UNKNOWN)
+"""Commonly used "unknown" file retention setting"""
