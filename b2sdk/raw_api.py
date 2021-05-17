@@ -954,7 +954,6 @@ class B2RawApi(AbstractRawApi):
         if file_retention is not None:
             kwargs['fileRetention'] = file_retention.serialize_to_json_for_request()
 
-
         try:
             return self._post_json(
                 api_url,
