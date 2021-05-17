@@ -25,6 +25,8 @@ class Bucket(v2.Bucket):
         file_info=None,
         destination_encryption: Optional[v2.EncryptionSetting] = None,
         source_encryption: Optional[v2.EncryptionSetting] = None,
+        file_retention: Optional[v2.FileRetentionSetting] = None,
+        legal_hold: Optional[v2.LegalHold] = None,
     ):
         """
         Creates a new file in this bucket by (server-side) copying from an existing file.
@@ -39,6 +41,8 @@ class Bucket(v2.Bucket):
                 (``None`` if unknown)
         :param b2sdk.v1.EncryptionSetting source_encryption: encryption settings for the source
                 (``None`` if unknown)
+        :param b2sdk.v1.FileRetentionSetting file_retention: retention setting for the new file
+        :param bool legal_hold: legalHold setting for the new file
         """
         return self.api.session.copy_file(
             file_id,
@@ -50,19 +54,35 @@ class Bucket(v2.Bucket):
             self.id_,
             destination_server_side_encryption=destination_encryption,
             source_server_side_encryption=source_encryption,
+            file_retention=file_retention,
+            legal_hold=legal_hold,
         )
 
-    def start_large_file(self, file_name, content_type=None, file_info=None):
+    def start_large_file(
+        self,
+        file_name,
+        content_type=None,
+        file_info=None,
+        file_retention: Optional[v2.FileRetentionSetting] = None,
+        legal_hold: Optional[v2.LegalHold] = None,
+    ):
         """
         Start a large file transfer.
 
         :param str file_name: a file name
         :param str,None content_type: the MIME type, or ``None`` to accept the default based on file extension of the B2 file name
         :param dict,None file_info: a file info to store with the file or ``None`` to not store anything
+        :param b2sdk.v1.FileRetentionSetting file_retention: retention setting for the new file
+        :param bool legal_hold: legalHold setting for the new file
         """
         validate_b2_file_name(file_name)
         return self.api.services.large_file.start_large_file(
-            self.id_, file_name, content_type=content_type, file_info=file_info
+            self.id_,
+            file_name,
+            content_type=content_type,
+            file_info=file_info,
+            file_retention=file_retention,
+            legal_hold=legal_hold,
         )
 
 
