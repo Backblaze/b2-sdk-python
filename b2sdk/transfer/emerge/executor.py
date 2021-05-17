@@ -314,10 +314,15 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
             # FIXME: encryption is None ???
             if encryption is None or file_.encryption != encryption:
                 continue
-            if (legal_hold or LegalHold.UNSET) != file_.legal_hold:
-                # Uploading and not providing legal_hold means that server's response about that file version will have
-                # legal_hold=LegalHold.UNSET
+
+            if legal_hold is None:
+                if LegalHold.UNSET != file_.legal_hold:
+                    # Uploading and not providing legal_hold means that server's response about that file version
+                    # will have legal_hold=LegalHold.UNSET
+                    continue
+            elif legal_hold != file_.legal_hold:
                 continue
+
             if file_retention != file_.file_retention:
                 # if `file_.file_retention` is UNKNOWN then we skip - lib user can still
                 # pass UKNOWN file_retention here - but raw_api/server won't allow it
@@ -371,10 +376,15 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
             # FIXME: what if `encryption is None` - match ANY encryption? :)
             if encryption is not None and encryption != file_.encryption:
                 continue
-            if (legal_hold or LegalHold.UNSET) != file_.legal_hold:
-                # Uploading and not providing legal_hold means that server's response about that file version will have
-                # legal_hold=LegalHold.UNSET
+
+            if legal_hold is None:
+                if LegalHold.UNSET != file_.legal_hold:
+                    # Uploading and not providing legal_hold means that server's response about that file version
+                    # will have legal_hold=LegalHold.UNSET
+                    continue
+            elif legal_hold != file_.legal_hold:
                 continue
+
             if file_retention != file_.file_retention:
                 # if `file_.file_retention` is UNKNOWN then we skip - lib user can still
                 # pass UKNOWN file_retention here - but raw_api/server won't allow it
