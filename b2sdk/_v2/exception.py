@@ -11,6 +11,7 @@
 from b2sdk.account_info.exception import AccountInfoError
 from b2sdk.account_info.exception import CorruptAccountInfo
 from b2sdk.account_info.exception import MissingAccountData
+from b2sdk.exception import AccessDenied
 from b2sdk.exception import AlreadyFailed
 from b2sdk.exception import B2ConnectionError
 from b2sdk.exception import B2Error
@@ -49,6 +50,7 @@ from b2sdk.exception import NonExistentBucket
 from b2sdk.exception import NotAllowedByAppKeyError
 from b2sdk.exception import PartSha1Mismatch
 from b2sdk.exception import RestrictedBucket
+from b2sdk.exception import RetentionWriteError
 from b2sdk.exception import ServiceError
 from b2sdk.exception import StorageCapExceeded
 from b2sdk.exception import TooManyRequests
@@ -76,6 +78,7 @@ from b2sdk.sync.exception import UnSyncableFilename
 from b2sdk.sync.exception import check_invalid_argument
 
 __all__ = (
+    'AccessDenied',
     'AccountInfoError',
     'AlreadyFailed',
     'B2ConnectionError',
@@ -122,6 +125,7 @@ __all__ = (
     'NotAllowedByAppKeyError',
     'PartSha1Mismatch',
     'RestrictedBucket',
+    'RetentionWriteError',
     'ServiceError',
     'StorageCapExceeded',
     'TooManyRequests',
