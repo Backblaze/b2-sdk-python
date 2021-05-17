@@ -192,10 +192,14 @@ class LegalHold(enum.Enum):
     UNSET = None  # this is the server default, as for now it is functionally equivalent to OFF
     UNKNOWN = 'unknown'  # This one is used if the client is not authorized to read retention settings
 
-    def __bool__(self):
-        if self is LegalHold.UNKNOWN:
-            raise ValueError("Cannot determine the boolean value of an unknown Legal Hold")
-        return self is LegalHold.ON  # UNSET == FALSE for boolean determination
+    def is_on(self):
+        return self is LegalHold.ON
+
+    def is_off(self):
+        return self is LegalHold.OFF or self is LegalHold.UNSET
+
+    def is_unknown(self):
+        return self is LegalHold.UNKNOWN
 
     @classmethod
     def from_file_version_dict(cls, file_version_dict: dict) -> 'LegalHold':
@@ -233,6 +237,15 @@ class LegalHold(enum.Enum):
 
     def add_to_upload_headers(self, headers):
         headers['X-Bz-File-Legal-Hold'] = self.to_server()
+
+    def to_dict_repr(self):
+        if self.is_on():
+            return True
+        elif self.is_off():
+            return False
+        elif self.is_unknown():
+            return self.value
+        raise ValueError('Unrepresentable value')
 
 
 class BucketRetentionSetting:

@@ -85,8 +85,9 @@ class FileVersionInfo(object):
             'fileId': self.id_,
             'fileName': self.file_name,
             'fileInfo': self.file_info,
-            'legalHold': bool(self.legal_hold) if self.legal_hold is not None else None,
+            'legalHold': self.legal_hold.to_dict_repr() if self.legal_hold is not None else None,
         }
+
         if self.size is not None:
             result['size'] = self.size
         if self.upload_timestamp is not None:
