@@ -96,8 +96,8 @@ class AbstractRawApi(metaclass=ABCMeta):
         destination_bucket_id=None,
         destination_server_side_encryption: Optional[EncryptionSetting] = None,
         source_server_side_encryption: Optional[EncryptionSetting] = None,
-        legal_hold: Optional[LegalHold] = None,
         file_retention: Optional[FileRetentionSetting] = None,
+        legal_hold: Optional[LegalHold] = None,
     ):
         pass
 
@@ -266,8 +266,8 @@ class AbstractRawApi(metaclass=ABCMeta):
         content_type,
         file_info,
         server_side_encryption: Optional[EncryptionSetting] = None,
-        legal_hold: Optional[LegalHold] = None,
         file_retention: Optional[FileRetentionSetting] = None,
+        legal_hold: Optional[LegalHold] = None,
     ):
         pass
 
@@ -312,8 +312,8 @@ class AbstractRawApi(metaclass=ABCMeta):
         file_infos,
         data_stream,
         server_side_encryption: Optional[EncryptionSetting] = None,
-        legal_hold: Optional[LegalHold] = None,
         file_retention: Optional[FileRetentionSetting] = None,
+        legal_hold: Optional[LegalHold] = None,
     ):
         pass
 

@@ -85,8 +85,8 @@ class LargeFileServices(object):
         content_type=None,
         file_info=None,
         encryption: Optional[EncryptionSetting] = None,
-        legal_hold: Optional[LegalHold] = None,
         file_retention: Optional[FileRetentionSetting] = None,
+        legal_hold: Optional[LegalHold] = None,
     ):
         """
         Start a large file transfer.
@@ -105,8 +105,8 @@ class LargeFileServices(object):
                 content_type,
                 file_info,
                 server_side_encryption=encryption,
-                legal_hold=legal_hold,
                 file_retention=file_retention,
+                legal_hold=legal_hold,
             )
         )
 
