@@ -12,11 +12,11 @@ B2Error = None  # calm down, pyflakes
 
 from b2sdk.v1.exception import *  # noqa
 
-v2DestFileNewer = DestFileNewer
+v1DestFileNewer = DestFileNewer
 
 
 # override to retain old style __str__
-class DestFileNewer(v2DestFileNewer):
+class DestFileNewer(v1DestFileNewer):
     def __str__(self):
         return 'source file is older than destination: %s%s with a time of %s cannot be synced to %s%s with a time of %s, unless --skipNewer or --replaceNewer is provided' % (
             self.source_prefix,
