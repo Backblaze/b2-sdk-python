@@ -311,13 +311,17 @@ class FileSimulator(object):
             file_lock_configuration['value'] = {'mode': None}
         else:
             file_lock_configuration['value'] = {'mode': self.file_retention.mode.value}
-            if self.file_retention.period is not None:
-                file_lock_configuration['value']['period'] = self.file_retention.period
+            if self.file_retention.retain_until is not None:
+                file_lock_configuration['value']['retainUntilTimestamp'
+                                                ] = self.file_retention.retain_until
         return file_lock_configuration
 
     def _legal_hold_dict(self, account_auth_token):
         if not self.is_allowed_to_read_file_legal_hold(account_auth_token):
-            return UNKNOWN_FILE_LOCK_CONFIGURATION
+            return {
+                'isClientAuthorizedToRead': False,
+                'value': None,
+            }
         return {
             'isClientAuthorizedToRead': True,
             'value': self.legal_hold.value,
