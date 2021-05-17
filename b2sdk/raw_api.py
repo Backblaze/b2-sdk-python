@@ -24,7 +24,7 @@ from typing import Any, Dict, Optional
 from .b2http import B2Http
 from .exception import FileOrBucketNotFound, ResourceNotFound, UnusableFileName, InvalidMetadataDirective, WrongEncryptionModeForBucketDefault
 from .encryption.setting import EncryptionAlgorithm, EncryptionMode, EncryptionSetting
-from .file_lock import BucketRetentionSetting, FileRetentionSetting, NO_RETENTION_FILE_SETTING, RetentionMode, RetentionPeriod
+from .file_lock import BucketRetentionSetting, FileRetentionSetting, NO_RETENTION_FILE_SETTING, RetentionMode, RetentionPeriod, LegalHold
 from .utils import b2_url_encode, hex_sha1_of_stream
 
 # All supported realms
@@ -103,7 +103,7 @@ class AbstractRawApi(metaclass=ABCMeta):
         destination_bucket_id=None,
         destination_server_side_encryption: Optional[EncryptionSetting] = None,
         source_server_side_encryption: Optional[EncryptionSetting] = None,
-        legal_hold: Optional[bool] = None,
+        legal_hold: Optional[LegalHold] = None,
         file_retention: Optional[FileRetentionSetting] = None,
     ):
         pass
@@ -273,7 +273,7 @@ class AbstractRawApi(metaclass=ABCMeta):
         content_type,
         file_info,
         server_side_encryption: Optional[EncryptionSetting] = None,
-        legal_hold: Optional[bool] = None,
+        legal_hold: Optional[LegalHold] = None,
         file_retention: Optional[FileRetentionSetting] = None,
     ):
         pass
@@ -319,7 +319,7 @@ class AbstractRawApi(metaclass=ABCMeta):
         file_infos,
         data_stream,
         server_side_encryption: Optional[EncryptionSetting] = None,
-        legal_hold: Optional[bool] = None,
+        legal_hold: Optional[LegalHold] = None,
         file_retention: Optional[FileRetentionSetting] = None,
     ):
         pass
@@ -662,7 +662,7 @@ class B2RawApi(AbstractRawApi):
         file_info,
         server_side_encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
-        legal_hold: Optional[bool] = None,
+        legal_hold: Optional[LegalHold] = None,
     ):
         kwargs = {}
         if server_side_encryption is not None:
@@ -808,7 +808,7 @@ class B2RawApi(AbstractRawApi):
         data_stream,
         server_side_encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
-        legal_hold: Optional[bool] = None,
+        legal_hold: Optional[LegalHold] = None,
     ):
         """
         Upload one, small file to b2.
@@ -882,7 +882,7 @@ class B2RawApi(AbstractRawApi):
         destination_server_side_encryption: Optional[EncryptionSetting] = None,
         source_server_side_encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
-        legal_hold: Optional[bool] = None,
+        legal_hold: Optional[LegalHold] = None,
     ):
         kwargs = {}
         if bytes_range is not None:
@@ -960,15 +960,18 @@ class B2RawApi(AbstractRawApi):
             )
             kwargs['sourceServerSideEncryption'
                   ] = source_server_side_encryption.serialize_to_json_for_request()
-        return self._post_json(
-            api_url,
-            'b2_copy_part',
-            account_auth_token,
-            sourceFileId=source_file_id,
-            largeFileId=large_file_id,
-            partNumber=part_number,
-            **kwargs
-        )
+        try:
+            return self._post_json(
+                api_url,
+                'b2_copy_part',
+                account_auth_token,
+                sourceFileId=source_file_id,
+                largeFileId=large_file_id,
+                partNumber=part_number,
+                **kwargs
+            )
+        except AccessDenied:
+            raise SSECKeyError
 
 
 def test_raw_api():
