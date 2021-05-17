@@ -460,9 +460,20 @@ class UploadTokenUsedConcurrently(B2Error):
         return "More than one concurrent upload using auth token %s" % (self.token,)
 
 
-class SSECKeyError(B2Error):
+class AccessDenied(B2Error):
+    def __str__(self):
+        return "This call with these parameters is not allowed for this auth token"
+
+
+class SSECKeyError(AccessDenied):
     def __str__(self):
         return "Wrong or no SSE-C key provided when reading a file."
+
+
+class RetentionWriteError(AccessDenied):
+    def __str__(self):
+        return "Auth token not authorized to write retention or file already in 'compliance' mode or " \
+               "bypassGovernance=true parameter missing"
 
 
 class WrongEncryptionModeForBucketDefault(B2Error):
@@ -526,7 +537,7 @@ def interpret_b2_error(
     elif status == 403 and code == "transaction_cap_exceeded":
         return TransactionCapExceeded()
     elif status == 403 and code == "access_denied":
-        return SSECKeyError()
+        return AccessDenied()
     elif status == 409:
         return Conflict()
     elif status == 416 and code == "range_not_satisfiable":
