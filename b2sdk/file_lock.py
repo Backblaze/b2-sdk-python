@@ -12,23 +12,26 @@ from typing import Optional
 import enum
 
 from .exception import UnexpectedCloudBehaviour
-# TODO: write __repr__ and __eq__ methods for the classes below
 
 ACTIONS_WITHOUT_LOCK_SETTINGS = frozenset(['hide', 'folder'])
 
 
 @enum.unique
 class RetentionMode(enum.Enum):
-    COMPLIANCE = "compliance"  # TODO: docs
-    GOVERNANCE = "governance"  # TODO: docs
+    """Modes for retention settings in files and buckets"""
+    GOVERNANCE = "governance"  # retention settings for files in this mode can be modified by clients with appropriate application key capabilities
+    COMPLIANCE = "compliance"  # retention settings for files in this mode can only be modified by extending the retention dates by clients with appropriate application key capabilities
     NONE = None
-    UNKNOWN = "unknown"
+    UNKNOWN = "unknown"  # This one is used if the client is not authorized to read retention settings
 
 
 RETENTION_MODES_REQUIRING_PERIODS = frozenset({RetentionMode.COMPLIANCE, RetentionMode.GOVERNANCE})
 
 
 class RetentionPeriod:
+    """Represent a time period (either in days or in years) that is used as a default for bucket retention"""
+    KNOWN_UNITS = ['days', 'years']
+
     def __init__(self, years: Optional[int] = None, days: Optional[int] = None):
         assert (years is None) != (days is None)
         if years is not None:
@@ -50,6 +53,7 @@ class RetentionPeriod:
                 "unit": "years"
             }
         """
+        assert period_dict['unit'] in cls.KNOWN_UNITS
         return cls(**{period_dict['unit']: period_dict['duration']})
 
     def as_dict(self):
@@ -58,8 +62,18 @@ class RetentionPeriod:
             "unit": self.unit,
         }
 
+    def __repr__(self):
+        return '%s(%s %s)' % (self.__class__.__name__, self.duration, self.unit)
+
+    def __eq__(self, other):
+        if not isinstance(other, RetentionPeriod):
+            return NotImplemented
+        return self.unit == other.unit and self.duration == other.duration
+
 
 class FileRetentionSetting:
+    """Represent file retention settings, i.e. whether the file is retained, in which mode and until when"""
+
     def __init__(self, mode: RetentionMode, retain_until: Optional[int] = None):
         if mode in RETENTION_MODES_REQUIRING_PERIODS and retain_until is None:
             raise ValueError('must specify retain_until for retention mode %s' % (mode,))
@@ -67,7 +81,7 @@ class FileRetentionSetting:
         self.retain_until = retain_until
 
     @classmethod
-    def from_file_version_dict(cls, file_version_dict: dict):
+    def from_file_version_dict(cls, file_version_dict: dict) -> 'FileRetentionSetting':
         """
         Returns FileRetentionSetting for the given file_version_dict retrieved from the api. E.g.
 
@@ -101,20 +115,41 @@ class FileRetentionSetting:
                     (file_version_dict['action'])
                 )
             return NO_RETENTION_FILE_SETTING
+        file_retention_dict = file_version_dict['fileRetention']
 
-        retention_dict = file_version_dict['fileRetention']
-
-        if not retention_dict['isClientAuthorizedToRead']:
+        if not file_retention_dict['isClientAuthorizedToRead']:
             return cls(RetentionMode.UNKNOWN, None)
 
-        mode = retention_dict['value']['mode']
+        return cls.from_file_retention_value_dict(file_retention_dict['value'])
+
+    @classmethod
+    def from_file_retention_value_dict(
+        cls, file_retention_value_dict: dict
+    ) -> 'FileRetentionSetting':
+
+        mode = file_retention_value_dict['mode']
         if mode is None:
             return NO_RETENTION_FILE_SETTING
 
         return cls(
             RetentionMode(mode),
-            retention_dict['value']['retainUntilTimestamp'],
+            file_retention_value_dict['retainUntilTimestamp'],
         )
+
+    @classmethod
+    def from_response_headers(cls, headers) -> 'FileRetentionSetting':
+        retention_mode_header = 'X-Bz-File-Retention-Mode'
+        retain_until_header = 'X-Bz-File-Retention-Mode'
+        if retention_mode_header in headers:
+            if retain_until_header in headers:
+                retain_until = int(headers[retain_until_header])
+            else:
+                retain_until = None
+            return cls(RetentionMode(headers[retention_mode_header]), retain_until)
+        if 'X-Bz-Client-Unauthorized-To-Read' in headers and retention_mode_header in headers[
+            'X-Bz-Client-Unauthorized-To-Read'].split(','):
+            return UNKNOWN_FILE_RETENTION_SETTING
+        return NO_RETENTION_FILE_SETTING  # the bucket is not file-lock-enabled or the file is has no retention set
 
     def serialize_to_json_for_request(self):
         if self.mode is RetentionMode.UNKNOWN:
@@ -135,8 +170,17 @@ class FileRetentionSetting:
             self.mode.value
         )  # mode = NONE is not supported by the server at the
         # moment, but it should be
-        headers['X-Bz-File-Retention-Retain-Until-Timestamp'] = self.retain_until
+        headers['X-Bz-File-Retention-Retain-Until-Timestamp'] = str(self.retain_until)
 
+    def __eq__(self, other):
+        if not isinstance(other, FileRetentionSetting):
+            return NotImplemented
+        return self.mode == other.mode and self.retain_until == other.retain_until
+
+    def __repr__(self):
+        return '%s(%s, %s)' % (
+            self.__class__.__name__, repr(self.mode.value), repr(self.retain_until)
+        )
 
 class LegalHoldSerializer:
     @classmethod
@@ -171,6 +215,9 @@ class LegalHoldSerializer:
 
 
 class BucketRetentionSetting:
+    """Represent bucket's default file retention settings, i.e. whether the files should be retained, in which mode
+       and for how long"""
+
     def __init__(self, mode: RetentionMode, period: Optional[RetentionPeriod] = None):
         if mode in RETENTION_MODES_REQUIRING_PERIODS and period is None:
             raise ValueError('must specify period for retention mode %s' % (mode,))
@@ -211,8 +258,19 @@ class BucketRetentionSetting:
             raise ValueError('cannot use an unknown file lock configuration in requests')
         return self.as_dict()
 
+    def __eq__(self, other):
+        if not isinstance(other, BucketRetentionSetting):
+            return NotImplemented
+        return self.mode == other.mode and self.period == other.period
+
+    def __repr__(self):
+        return '%s(%s, %s)' % (self.__class__.__name__, repr(self.mode.value), repr(self.period))
+
 
 class FileLockConfiguration:
+    """Represent bucket's file lock configuration, i.e. whether the file lock mechanism is enabled and default
+    file retention"""
+
     def __init__(
         self,
         default_retention: BucketRetentionSetting,
@@ -263,8 +321,19 @@ class FileLockConfiguration:
             "isFileLockEnabled": self.is_file_lock_enabled,
         }
 
+    def __eq__(self, other):
+        if not isinstance(other, FileLockConfiguration):
+            return NotImplemented
+        return self.default_retention == other.default_retention and self.is_file_lock_enabled == other.is_file_lock_enabled
+
+    def __repr__(self):
+        return '%s(%s, %s)' % (
+            self.__class__.__name__, repr(self.default_retention), repr(self.is_file_lock_enabled)
+        )
+
 
 UNKNOWN_BUCKET_RETENTION = BucketRetentionSetting(RetentionMode.UNKNOWN)
 UNKNOWN_FILE_LOCK_CONFIGURATION = FileLockConfiguration(UNKNOWN_BUCKET_RETENTION, None)
 NO_RETENTION_BUCKET_SETTING = BucketRetentionSetting(RetentionMode.NONE)
 NO_RETENTION_FILE_SETTING = FileRetentionSetting(RetentionMode.NONE)
+UNKNOWN_FILE_RETENTION_SETTING = FileRetentionSetting(RetentionMode.UNKNOWN)
