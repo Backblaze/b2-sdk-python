@@ -27,11 +27,17 @@ class TestSynchronizer:
         ILLEGAL = 5100
 
     @pytest.fixture(autouse=True)
-    def setup(self, folder_factory, mocker):
+    def setup(self, folder_factory, mocker, apiver):
         self.folder_factory = folder_factory
         self.local_folder_factory = partial(folder_factory, 'local')
         self.b2_folder_factory = partial(folder_factory, 'b2')
         self.reporter = mocker.MagicMock()
+        self.apiver = apiver
+
+    def _make_folder_sync_actions(self, synchronizer, *args, **kwargs):
+        if self.apiver in ['v0', 'v1']:
+            return synchronizer.make_folder_sync_actions(*args, **kwargs)
+        return synchronizer._make_folder_sync_actions(*args, **kwargs)
 
     def assert_folder_sync_actions(self, synchronizer, src_folder, dst_folder, expected_actions):
         """
@@ -40,8 +46,10 @@ class TestSynchronizer:
 
         The source and destination files may have multiple versions.
         """
+
         actions = list(
-            synchronizer.make_folder_sync_actions(
+            self._make_folder_sync_actions(
+                synchronizer,
                 src_folder,
                 dst_folder,
                 TODAY,
@@ -699,8 +707,13 @@ class TestSynchronizer:
         provider = TstEncryptionSettingsProvider(encryption, encryption)
         download_action = next(
             iter(
-                synchronizer.make_folder_sync_actions(
-                    remote, local, TODAY, self.reporter, encryption_settings_provider=provider
+                self._make_folder_sync_actions(
+                    synchronizer,
+                    remote,
+                    local,
+                    TODAY,
+                    self.reporter,
+                    encryption_settings_provider=provider
                 )
             )
         )
@@ -734,8 +747,13 @@ class TestSynchronizer:
         provider = TstEncryptionSettingsProvider(encryption, encryption)
         upload_action = next(
             iter(
-                synchronizer.make_folder_sync_actions(
-                    local, remote, TODAY, self.reporter, encryption_settings_provider=provider
+                self._make_folder_sync_actions(
+                    synchronizer,
+                    local,
+                    remote,
+                    TODAY,
+                    self.reporter,
+                    encryption_settings_provider=provider
                 )
             )
         )
@@ -778,8 +796,13 @@ class TestSynchronizer:
         provider = TstEncryptionSettingsProvider(source_encryption, destination_encryption)
         copy_action = next(
             iter(
-                synchronizer.make_folder_sync_actions(
-                    src, dst, TODAY, self.reporter, encryption_settings_provider=provider
+                self._make_folder_sync_actions(
+                    synchronizer,
+                    src,
+                    dst,
+                    TODAY,
+                    self.reporter,
+                    encryption_settings_provider=provider
                 )
             )
         )

@@ -15,8 +15,11 @@ from enum import Enum, unique
 from ..bounded_queue_executor import BoundedQueueExecutor
 from .encryption_provider import AbstractSyncEncryptionSettingsProvider, SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER
 from .exception import InvalidArgument, IncompleteSync
+from .folder import AbstractFolder
+from .path import AbstractSyncPath
 from .policy import CompareVersionMode, NewerFileSyncMode
-from .policy_manager import POLICY_MANAGER
+from .policy_manager import POLICY_MANAGER, SyncPolicyManager
+from .report import SyncReport
 from .scan_policies import DEFAULT_SCAN_MANAGER
 
 logger = logging.getLogger(__name__)
@@ -243,7 +246,7 @@ class Synchronizer:
             action_bucket = source_folder.bucket
 
         # Schedule each of the actions.
-        for action in self.make_folder_sync_actions(
+        for action in self._make_folder_sync_actions(
             source_folder,
             dest_folder,
             now_millis,
@@ -259,13 +262,13 @@ class Synchronizer:
         if sync_executor.get_num_exceptions() != 0:
             raise IncompleteSync('sync is incomplete')
 
-    def make_folder_sync_actions(
+    def _make_folder_sync_actions(
         self,
-        source_folder,
-        dest_folder,
-        now_millis,
-        reporter,
-        policies_manager=DEFAULT_SCAN_MANAGER,
+        source_folder: AbstractFolder,
+        dest_folder: AbstractFolder,
+        now_millis: int,
+        reporter: SyncReport,
+        policies_manager: SyncPolicyManager = DEFAULT_SCAN_MANAGER,
         encryption_settings_provider:
         AbstractSyncEncryptionSettingsProvider = SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER,
     ):
@@ -277,7 +280,7 @@ class Synchronizer:
         :param b2sdk.v1.AbstractFolder dest_folder: destination folder object
         :param int now_millis: current time in milliseconds
         :param b2sdk.v1.SyncReport reporter: reporter object
-        :param policies_manager: policies manager object
+        :param b2sdk.v1.SyncPolicyManager policies_manager: policies manager object
         :param b2sdk.v1.AbstractSyncEncryptionSettingsProvider encryption_settings_provider: encryption setting provider
         """
         if self.keep_days_or_delete == KeepOrDeleteMode.KEEP_BEFORE_DELETE and dest_folder.folder_type(
@@ -332,12 +335,12 @@ class Synchronizer:
 
     def _make_file_sync_actions(
         self,
-        sync_type,
-        source_path,
-        dest_path,
-        source_folder,
-        dest_folder,
-        now_millis,
+        sync_type: str,
+        source_path: AbstractSyncPath,
+        dest_path: AbstractSyncPath,
+        source_folder: AbstractFolder,
+        dest_folder: AbstractFolder,
+        now_millis: int,
         encryption_settings_provider:
         AbstractSyncEncryptionSettingsProvider = SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER,
     ):

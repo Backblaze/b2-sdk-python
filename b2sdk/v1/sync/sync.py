@@ -48,7 +48,7 @@ class Synchronizer(v2.Synchronizer):
         policies_manager=DEFAULT_SCAN_MANAGER,
         encryption_settings_provider=v2.SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER,
     ):
-        return super().make_folder_sync_actions(
+        return super()._make_folder_sync_actions(
             source_folder, dest_folder, now_millis, reporter, policies_manager,
             encryption_settings_provider
         )

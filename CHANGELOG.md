@@ -28,7 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Refactored `minimum_part_size` to `recommended_part_size` (tha value used stays the same)
 * Encryption settings, types and providers are now part of the public API
 * Refactored `sync.file.*File` and `sync.file.*FileVersion` to `sync.path.*SyncPath`
-* `Synchronizer.make_file_sync_actions` is now private
+* `Synchronizer.make_file_sync_actions` and `Synchronizer.make_folder_sync_actions` are now private
 
 ### Removed
 * Remove `Bucket.copy_file` and `Bucket.start_large_file` 
