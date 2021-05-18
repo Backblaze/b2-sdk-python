@@ -235,7 +235,7 @@ class LegalHold(enum.Enum):
     def to_server(self) -> str:
         if self is self.__class__.UNKNOWN:
             raise ValueError('Cannot use an unknown legal hold in requests')
-        if self:
+        if self.is_on():
             return self.__class__.ON.value
         return self.__class__.OFF.value
 
