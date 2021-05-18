@@ -233,7 +233,7 @@ class LegalHold(enum.Enum):
         return cls.UNSET  # the bucket is not file-lock-enabled or the header is missing for any other reason
 
     def to_server(self) -> str:
-        if self is self.__class__.UNKNOWN:
+        if self.is_unknown():
             raise ValueError('Cannot use an unknown legal hold in requests')
         if self.is_on():
             return self.__class__.ON.value
@@ -244,11 +244,11 @@ class LegalHold(enum.Enum):
 
     def to_dict_repr(self):
         if self.is_on():
-            return True
+            return self.__class__.ON.value
         elif self.is_off():
-            return False
+            return self.__class__.OFF.value
         elif self.is_unknown():
-            return self.value
+            return self.__class__.UNKNOWN.value
         raise ValueError('Unrepresentable value')
 
 
