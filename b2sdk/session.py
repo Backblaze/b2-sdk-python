@@ -19,7 +19,7 @@ from b2sdk.b2http import B2Http
 from b2sdk.cache import AuthInfoCache, DummyCache
 from b2sdk.encryption.setting import EncryptionSetting
 from b2sdk.exception import (InvalidAuthToken, Unauthorized)
-from b2sdk.raw_api import ALL_CAPABILITIES, B2RawApi
+from b2sdk.raw_api import ALL_CAPABILITIES, B2RawApi, REALM_URLS
 
 logger = logging.getLogger(__name__)
 
@@ -105,7 +105,7 @@ class B2Session(object):
         :param str application_key: user's :term:`application key`
         """
         # Authorize
-        realm_url = self.account_info.REALM_URLS.get(realm, realm)
+        realm_url = REALM_URLS.get(realm, realm)
         response = self.raw_api.authorize_account(realm_url, application_key_id, application_key)
         account_id = response['accountId']
         allowed = response['allowed']
