@@ -140,7 +140,7 @@ class FileRetentionSetting:
     @classmethod
     def from_response_headers(cls, headers) -> 'FileRetentionSetting':
         retention_mode_header = 'X-Bz-File-Retention-Mode'
-        retain_until_header = 'X-Bz-File-Retention-Mode'
+        retain_until_header = 'X-Bz-File-Retention-Retain-Until-Timestamp'
         if retention_mode_header in headers:
             if retain_until_header in headers:
                 retain_until = int(headers[retain_until_header])
