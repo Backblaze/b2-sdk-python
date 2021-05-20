@@ -12,6 +12,7 @@ import logging
 from typing import Optional
 
 from b2sdk.encryption.setting import EncryptionSetting
+from b2sdk.file_lock import FileRetentionSetting, LegalHold
 from b2sdk.utils import B2TraceMetaAbstract
 from b2sdk.transfer.emerge.executor import EmergeExecutor
 from b2sdk.transfer.emerge.planner.planner import EmergePlanner
@@ -50,6 +51,8 @@ class Emerger(metaclass=B2TraceMetaAbstract):
         recommended_upload_part_size=None,
         continue_large_file_id=None,
         encryption: Optional[EncryptionSetting] = None,
+        file_retention: Optional[FileRetentionSetting] = None,
+        legal_hold: Optional[LegalHold] = None,
     ):
         """
         Create a new file (object in the cloud, really) from an iterable (list, tuple etc) of write intents.
@@ -74,6 +77,8 @@ class Emerger(metaclass=B2TraceMetaAbstract):
             progress_listener,
             continue_large_file_id=continue_large_file_id,
             encryption=encryption,
+            file_retention=file_retention,
+            legal_hold=legal_hold,
         )
 
     def emerge_stream(
@@ -88,6 +93,8 @@ class Emerger(metaclass=B2TraceMetaAbstract):
         continue_large_file_id=None,
         max_queue_size=DEFAULT_STREAMING_MAX_QUEUE_SIZE,
         encryption: Optional[EncryptionSetting] = None,
+        file_retention: Optional[FileRetentionSetting] = None,
+        legal_hold: Optional[LegalHold] = None,
     ):
         """
         Create a new file (object in the cloud, really) from a stream of write intents.
@@ -112,6 +119,8 @@ class Emerger(metaclass=B2TraceMetaAbstract):
             continue_large_file_id=continue_large_file_id,
             max_queue_size=max_queue_size,
             encryption=encryption,
+            file_retention=file_retention,
+            legal_hold=legal_hold,
         )
 
     def get_emerge_planner(self, recommended_upload_part_size=None):

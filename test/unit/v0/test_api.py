@@ -13,6 +13,7 @@ from ..test_base import TestBase
 from .deps import B2Api
 from .deps import DummyCache
 from .deps import InMemoryAccountInfo
+from .deps import LegalHold, FileRetentionSetting, RetentionMode, NO_RETENTION_FILE_SETTING
 from .deps import RawSimulator
 from .deps_exception import RestrictedBucket
 
@@ -46,6 +47,18 @@ class TestApi(TestBase):
                     'value': {
                         'mode': 'none'
                     },
+                },
+            'fileLockConfiguration':
+                {
+                    'isClientAuthorizedToRead': True,
+                    'value':
+                        {
+                            'defaultRetention': {
+                                'mode': None,
+                                'period': None
+                            },
+                            'isFileLockEnabled': None
+                        }
                 },
         }  # yapf: off
         assert delete_output == expected, delete_output
@@ -143,3 +156,23 @@ class TestApi(TestBase):
 
     def _authorize_account(self):
         self.api.authorize_account('production', self.application_key_id, self.master_key)
+
+    def test_update_file_retention(self):
+        self._authorize_account()
+        bucket = self.api.create_bucket('bucket1', 'allPrivate', is_file_lock_enabled=True)
+        created_file = bucket.upload_bytes(b'hello world', 'file')
+        self.assertEqual(created_file.file_retention, NO_RETENTION_FILE_SETTING)
+        new_retention = FileRetentionSetting(RetentionMode.COMPLIANCE, 100)
+        self.api.update_file_retention(created_file.id_, created_file.file_name, new_retention)
+        file_version = bucket.get_file_info_by_id(created_file.id_)
+        self.assertEqual(new_retention, file_version.file_retention)
+
+    def test_update_legal_hold(self):
+        self._authorize_account()
+        bucket = self.api.create_bucket('bucket1', 'allPrivate', is_file_lock_enabled=True)
+        created_file = bucket.upload_bytes(b'hello world', 'file')
+        self.assertEqual(created_file.legal_hold, LegalHold.UNSET)
+        new_legal_hold = LegalHold.ON
+        self.api.update_file_legal_hold(created_file.id_, created_file.file_name, new_legal_hold)
+        file_version = bucket.get_file_info_by_id(created_file.id_)
+        self.assertEqual(new_legal_hold, file_version.legal_hold)

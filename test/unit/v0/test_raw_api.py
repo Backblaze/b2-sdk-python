@@ -17,6 +17,7 @@ from .deps import EncryptionMode
 from .deps import EncryptionSetting
 from .deps import B2RawApi
 from .deps import B2Http
+from .deps import BucketRetentionSetting, RetentionPeriod, RetentionMode
 from .deps_exception import UnusableFileName, WrongEncryptionModeForBucketDefault
 
 # Unicode characters for testing filenames.  (0x0394 is a letter Delta.)
@@ -118,15 +119,24 @@ class TestUpdateBucket(BucketTestBase):
         with pytest.raises(AssertionError):
             self.raw_api.update_bucket('test', 'account_auth_token', 'account_id', 'bucket_id')
 
-    @pytest.mark.parametrize('bucket_type,bucket_info', ((None, {}), ('allPublic', None)))
-    def test_assertion_not_raises(self, bucket_type, bucket_info):
+    @pytest.mark.parametrize(
+        'bucket_type,bucket_info,default_retention', (
+            (None, {}, None),
+            (
+                'allPublic', None,
+                BucketRetentionSetting(RetentionMode.COMPLIANCE, RetentionPeriod(years=1))
+            ),
+        )
+    )
+    def test_assertion_not_raises(self, bucket_type, bucket_info, default_retention):
         self.raw_api.update_bucket(
             'test',
             'account_auth_token',
             'account_id',
             'bucket_id',
             bucket_type=bucket_type,
-            bucket_info=bucket_info
+            bucket_info=bucket_info,
+            default_retention=default_retention,
         )
 
     @pytest.mark.parametrize(

@@ -44,6 +44,7 @@ from .deps import UploadSourceBytes
 from .deps import hex_sha1_of_bytes, TempDir
 from .deps import EncryptionAlgorithm, EncryptionSetting, EncryptionMode, EncryptionKey, SSE_NONE, SSE_B2_AES
 from .deps import CopySource, UploadSourceLocalFile, WriteIntent
+from .deps import FileRetentionSetting, LegalHold, RetentionMode, NO_RETENTION_FILE_SETTING
 
 SSE_C_AES = EncryptionSetting(
     mode=EncryptionMode.SSE_C,
@@ -294,11 +295,56 @@ class TestGetFileInfo(TestCaseWithBucket):
         info = self.bucket.get_file_info_by_name('a')
 
         self.assertIsInstance(info, FileVersionInfo)
-        expected = (a_id, 'a', 11, None, 'b2/x-auto', 'none')
-        actual = (
-            info.id_, info.file_name, info.size, info.action, info.content_type,
-            info.server_side_encryption.mode.value
+        expected = (
+            a_id, 'a', 11, None, 'b2/x-auto', 'none', NO_RETENTION_FILE_SETTING, LegalHold.UNSET
         )
+        actual = (
+            info.id_,
+            info.file_name,
+            info.size,
+            info.action,
+            info.content_type,
+            info.server_side_encryption.mode.value,
+            info.file_retention,
+            info.legal_hold,
+        )
+        self.assertEqual(expected, actual)
+
+    def test_version_by_name_file_lock(self):
+        bucket = self.api.create_bucket(
+            'my-bucket-with-file-lock', 'allPublic', is_file_lock_enabled=True
+        )
+        data = b'hello world'
+        legal_hold = LegalHold.ON
+        file_retention = FileRetentionSetting(RetentionMode.COMPLIANCE, 100)
+
+        bucket.upload_bytes(data, 'a', file_retention=file_retention, legal_hold=legal_hold)
+
+        file_version = bucket.get_file_info_by_name('a')
+
+        actual = (file_version.legal_hold, file_version.file_retention)
+        self.assertEqual((legal_hold, file_retention), actual)
+
+        low_perm_account_info = StubAccountInfo()
+        low_perm_api = B2Api(low_perm_account_info, raw_api=self.simulator)
+        low_perm_key_resp = self.api.create_key(
+            key_name='lowperm', capabilities=[
+                'listKeys',
+                'listBuckets',
+                'listFiles',
+                'readFiles',
+            ]
+        )
+
+        low_perm_api.authorize_account(
+            'production', low_perm_key_resp['applicationKeyId'], low_perm_key_resp['applicationKey']
+        )
+        low_perm_bucket = low_perm_api.get_bucket_by_name('my-bucket-with-file-lock')
+
+        file_version = low_perm_bucket.get_file_info_by_name('a')
+
+        actual = (file_version.legal_hold, file_version.file_retention)
+        expected = (LegalHold.UNKNOWN, FileRetentionSetting(RetentionMode.UNKNOWN))
         self.assertEqual(expected, actual)
 
     def test_version_by_id(self):
@@ -600,6 +646,23 @@ class TestCopyFile(TestCaseWithBucket):
         expected = [('hello_new.txt', 11, 'copy', None)]
         self.assertBucketContents(expected, '', show_versions=True)
 
+    def test_copy_retention(self):
+        for data in [self._make_data(self.simulator.MIN_PART_SIZE * 3), b'hello']:
+            for length in [None, len(data)]:
+                with self.subTest(real_length=len(data), length=length):
+                    file_id = self.bucket.upload_bytes(data, 'original_file').id_
+                    resulting_file_version = self.bucket.copy(
+                        file_id,
+                        'copied_file',
+                        file_retention=FileRetentionSetting(RetentionMode.COMPLIANCE, 100),
+                        legal_hold=LegalHold.ON
+                    )
+                    self.assertEqual(
+                        FileRetentionSetting(RetentionMode.COMPLIANCE, 100),
+                        resulting_file_version.file_retention
+                    )
+                    self.assertEqual(LegalHold.ON, resulting_file_version.legal_hold)
+
     def test_copy_encryption(self):
         data = b'hello_world'
         a = self.bucket.upload_bytes(data, 'a')
@@ -737,6 +800,16 @@ class TestUpload(TestCaseWithBucket):
         self._check_file_contents('file1', data)
         self.assertEqual(file_info.server_side_encryption, SSE_NONE)
 
+    def test_upload_bytes_file_retention(self):
+        data = b'hello world'
+        retention = FileRetentionSetting(RetentionMode.COMPLIANCE, 150)
+        file_info = self.bucket.upload_bytes(
+            data, 'file1', file_retention=retention, legal_hold=LegalHold.ON
+        )
+        self._check_file_contents('file1', data)
+        self.assertEqual(retention, file_info.file_retention)
+        self.assertEqual(LegalHold.ON, file_info.legal_hold)
+
     def test_upload_bytes_sse_b2(self):
         data = b'hello world'
         file_info = self.bucket.upload_bytes(data, 'file1', encryption=SSE_B2_AES)
@@ -768,6 +841,23 @@ class TestUpload(TestCaseWithBucket):
             self.assertTrue(isinstance(file_info, FileVersionInfo))
             self.assertEqual(SSE_C_AES_NO_SECRET, file_info.server_side_encryption)
             self._check_file_contents('file1', data)
+
+    def test_upload_local_file_retention(self):
+        with TempDir() as d:
+            path = os.path.join(d, 'file1')
+            data = b'hello world'
+            write_file(path, data)
+            retention = FileRetentionSetting(RetentionMode.COMPLIANCE, 150)
+            file_info = self.bucket.upload_local_file(
+                path,
+                'file1',
+                encryption=SSE_C_AES,
+                file_retention=retention,
+                legal_hold=LegalHold.ON
+            )
+            self._check_file_contents('file1', data)
+            self.assertEqual(retention, file_info.file_retention)
+            self.assertEqual(LegalHold.ON, file_info.legal_hold)
 
     def test_upload_bytes_progress(self):
         data = b'hello world'

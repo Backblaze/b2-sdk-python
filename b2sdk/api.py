@@ -13,6 +13,7 @@ from typing import Any, Dict, Optional
 from .bucket import Bucket, BucketFactory
 from .encryption.setting import EncryptionSetting
 from .exception import NonExistentBucket, RestrictedBucket
+from .file_lock import FileRetentionSetting, LegalHold
 from .file_version import FileIdAndName
 from .large_file.services import LargeFileServices
 from .raw_api import API_VERSION
@@ -177,6 +178,7 @@ class B2Api(metaclass=B2TraceMeta):
         cors_rules=None,
         lifecycle_rules=None,
         default_server_side_encryption: Optional[EncryptionSetting] = None,
+        is_file_lock_enabled: Optional[bool] = None,
     ):
         """
         Create a bucket.
@@ -187,6 +189,7 @@ class B2Api(metaclass=B2TraceMeta):
         :param dict cors_rules: bucket CORS rules to store with the bucket
         :param dict lifecycle_rules: bucket lifecycle rules to store with the bucket
         :param b2sdk.v1.EncryptionSetting default_server_side_encryption: default server side encryption settings (``None`` if unknown)
+        :param bool is_file_lock_enabled: boolean value specifies whether bucket is File Lock-enabled
         :return: a Bucket object
         :rtype: b2sdk.v1.Bucket
         """
@@ -200,6 +203,7 @@ class B2Api(metaclass=B2TraceMeta):
             cors_rules=cors_rules,
             lifecycle_rules=lifecycle_rules,
             default_server_side_encryption=default_server_side_encryption,
+            is_file_lock_enabled=is_file_lock_enabled,
         )
         bucket = self.BUCKET_FACTORY_CLASS.from_api_bucket_dict(self, response)
         assert name == bucket.name, 'API created a bucket with different name\
@@ -249,6 +253,32 @@ class B2Api(metaclass=B2TraceMeta):
             progress_listener,
             range_,
             encryption,
+        )
+
+    def update_file_retention(
+        self,
+        file_id: str,
+        file_name: str,
+        file_retention: FileRetentionSetting,
+        bypass_governance: bool = False,
+    ):
+        self.session.update_file_retention(
+            file_id,
+            file_name,
+            file_retention,
+            bypass_governance,
+        )
+
+    def update_file_legal_hold(
+        self,
+        file_id: str,
+        file_name: str,
+        legal_hold: LegalHold,
+    ):
+        self.session.update_file_legal_hold(
+            file_id,
+            file_name,
+            legal_hold,
         )
 
     def get_bucket_by_id(self, bucket_id: str) -> Bucket:
