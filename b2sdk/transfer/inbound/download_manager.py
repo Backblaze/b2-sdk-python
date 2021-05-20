@@ -19,7 +19,6 @@ from b2sdk.exception import (
     ChecksumMismatch,
     InvalidRange,
     TruncatedOutput,
-    UnexpectedCloudBehaviour,
 )
 from b2sdk.raw_api import SRC_LAST_MODIFIED_MILLIS
 from b2sdk.utils import B2TraceMetaAbstract
@@ -93,8 +92,7 @@ class DownloadManager(metaclass=B2TraceMetaAbstract):
         ) as response:
             metadata = FileMetadata.from_response(response)
             if range_ is not None:
-                if 'Content-Range' not in response.headers:
-                    raise UnexpectedCloudBehaviour('Content-Range header was expected')
+                # 2021-05-20: unfortunately for a read of a complete object server does not return the 'Content-Range' header
                 if (range_[1] - range_[0] + 1) != metadata.content_length:
                     raise InvalidRange(metadata.content_length, range_)
 
