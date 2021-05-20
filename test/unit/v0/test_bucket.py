@@ -282,8 +282,56 @@ class TestGetFileInfo(TestCaseWithBucket):
         info = self.bucket.get_file_info_by_name('a')
 
         self.assertIsInstance(info, FileVersionInfo)
-        expected = (a_id, 'a', 11, None, 'b2/x-auto')
-        actual = (info.id_, info.file_name, info.size, info.action, info.content_type)
+        expected = (
+            a_id, 'a', 11, None, 'b2/x-auto', 'none', NO_RETENTION_FILE_SETTING, LegalHold.UNSET
+        )
+        actual = (
+            info.id_,
+            info.file_name,
+            info.size,
+            info.action,
+            info.content_type,
+            info.server_side_encryption.mode.value,
+            info.file_retention,
+            info.legal_hold,
+        )
+        self.assertEqual(expected, actual)
+
+    def test_version_by_name_file_lock(self):
+        bucket = self.api.create_bucket(
+            'my-bucket-with-file-lock', 'allPublic', is_file_lock_enabled=True
+        )
+        data = b'hello world'
+        legal_hold = LegalHold.ON
+        file_retention = FileRetentionSetting(RetentionMode.COMPLIANCE, 100)
+
+        bucket.upload_bytes(data, 'a', file_retention=file_retention, legal_hold=legal_hold)
+
+        file_version = bucket.get_file_info_by_name('a')
+
+        actual = (file_version.legal_hold, file_version.file_retention)
+        self.assertEqual((legal_hold, file_retention), actual)
+
+        low_perm_account_info = StubAccountInfo()
+        low_perm_api = B2Api(low_perm_account_info, raw_api=self.simulator)
+        low_perm_key_resp = self.api.create_key(
+            key_name='lowperm', capabilities=[
+                'listKeys',
+                'listBuckets',
+                'listFiles',
+                'readFiles',
+            ]
+        )
+
+        low_perm_api.authorize_account(
+            'production', low_perm_key_resp['applicationKeyId'], low_perm_key_resp['applicationKey']
+        )
+        low_perm_bucket = low_perm_api.get_bucket_by_name('my-bucket-with-file-lock')
+
+        file_version = low_perm_bucket.get_file_info_by_name('a')
+
+        actual = (file_version.legal_hold, file_version.file_retention)
+        expected = (LegalHold.UNKNOWN, FileRetentionSetting(RetentionMode.UNKNOWN))
         self.assertEqual(expected, actual)
 
     def test_version_by_id(self):
