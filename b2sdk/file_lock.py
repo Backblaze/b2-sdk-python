@@ -67,8 +67,6 @@ class RetentionPeriod:
         return '%s(%s %s)' % (self.__class__.__name__, self.duration, self.unit)
 
     def __eq__(self, other):
-        if not isinstance(other, RetentionPeriod):
-            return NotImplemented
         return self.unit == other.unit and self.duration == other.duration
 
 
@@ -174,8 +172,6 @@ class FileRetentionSetting:
         headers['X-Bz-File-Retention-Retain-Until-Timestamp'] = str(self.retain_until)
 
     def __eq__(self, other):
-        if not isinstance(other, FileRetentionSetting):
-            return NotImplemented
         return self.mode == other.mode and self.retain_until == other.retain_until
 
     def __repr__(self):
@@ -297,8 +293,6 @@ class BucketRetentionSetting:
         return self.as_dict()
 
     def __eq__(self, other):
-        if not isinstance(other, BucketRetentionSetting):
-            return NotImplemented
         return self.mode == other.mode and self.period == other.period
 
     def __repr__(self):
@@ -361,8 +355,6 @@ class FileLockConfiguration:
         }
 
     def __eq__(self, other):
-        if not isinstance(other, FileLockConfiguration):
-            return NotImplemented
         return self.default_retention == other.default_retention and self.is_file_lock_enabled == other.is_file_lock_enabled
 
     def __repr__(self):
