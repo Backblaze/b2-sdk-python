@@ -16,9 +16,6 @@ from .abstract import AbstractAccountInfo
 
 
 class StubAccountInfo(AbstractAccountInfo):
-
-    REALM_URLS = {'production': 'http://production.example.com'}
-
     def __init__(self):
         self._clear_stub_account_fields()
 

@@ -23,6 +23,8 @@ logger = logging.getLogger(__name__)
 
 # Retain legacy get_minimum_part_size and facilitate for optional s3_api_url
 class OldAccountInfoMethods:
+    REALM_URLS = v2.REALM_URLS
+
     @limit_trace_arguments(
         only=[
             'self',
@@ -187,4 +189,4 @@ class SqliteAccountInfo(MinimumPartSizeTranslator, OldAccountInfoMethods, v2.Sql
 
 
 class StubAccountInfo(MinimumPartSizeTranslator, OldAccountInfoMethods, v2.StubAccountInfo):
-    pass
+    REALM_URLS = {'production': 'http://production.example.com'}

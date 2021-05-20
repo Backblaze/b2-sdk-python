@@ -28,12 +28,6 @@ class AbstractAccountInfo(metaclass=B2TraceMetaAbstract):
     safe against multiple processes running at the same time.
     """
 
-    REALM_URLS = {
-        'production': 'https://api.backblazeb2.com',
-        'dev': 'http://api.backblazeb2.xyz:8180',
-        'staging': 'https://api.backblaze.net',
-    }
-
     # The 'allowed' structure to use for old account info that was saved without 'allowed'.
     DEFAULT_ALLOWED = dict(
         bucketId=None,

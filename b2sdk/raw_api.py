@@ -26,6 +26,13 @@ from .exception import FileOrBucketNotFound, ResourceNotFound, UnusableFileName,
 from .encryption.setting import EncryptionAlgorithm, EncryptionMode, EncryptionSetting
 from .utils import b2_url_encode, hex_sha1_of_stream
 
+# All supported realms
+REALM_URLS = {
+    'production': 'https://api.backblazeb2.com',
+    'dev': 'http://api.backblazeb2.xyz:8180',
+    'staging': 'https://api.backblaze.net',
+}
+
 # All possible capabilities
 ALL_CAPABILITIES = [
     'listKeys',
@@ -936,11 +943,14 @@ def test_raw_api_helper(raw_api):
     if application_key_id is None:
         print('B2_TEST_APPLICATION_KEY_ID is not set.', file=sys.stderr)
         sys.exit(1)
+
     application_key = os.environ.get('B2_TEST_APPLICATION_KEY')
     if application_key is None:
         print('B2_TEST_APPLICATION_KEY is not set.', file=sys.stderr)
         sys.exit(1)
-    realm_url = 'https://api.backblazeb2.com'
+
+    realm = os.environ.get('B2_TEST_ENVIRONMENT', 'production')
+    realm_url = REALM_URLS.get(realm, realm)
 
     # b2_authorize_account
     print('b2_authorize_account')
