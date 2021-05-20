@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Application key restriction message reverted to previous form
 * Added missing apiver wrappers for FileVersionInfo
 * Fix crash when Content-Range header is missing
+* Pin dependency versions appropriately
 
 ### Changed
 * `b2sdk.v1.sync` refactored to reflect `b2sdk.sync` structure
