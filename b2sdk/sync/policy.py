@@ -300,8 +300,6 @@ class DownAndDeletePolicy(DownPolicy):
         if self._dest_path is not None and (
             self._source_path is None or not self._source_path.is_visible()
         ):
-            # Local files have either 0 or 1 versions.  If the file is there,
-            # it must have exactly 1 version.
             yield LocalDeleteAction(
                 self._dest_path.relative_path,
                 self._dest_folder.make_full_path(self._dest_path.relative_path)
