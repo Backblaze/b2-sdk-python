@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.0] - 2021-05-21
+
 ### Added
 * Add `get_bucket_name_or_none_from_bucket_id` to `AccountInfo` and `Cache`
 * Add possibility to change realm during integration tests
@@ -17,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Application key restriction message reverted to previous form
 * Added missing apiver wrappers for FileVersionInfo
 * Fix crash when Content-Range header is missing
+* Pin dependency versions appropriately
 
 ### Changed
 * `b2sdk.v1.sync` refactored to reflect `b2sdk.sync` structure
@@ -180,7 +183,8 @@ has changed.
 ### Added
 Initial official release of SDK as a separate package (until now it was a part of B2 CLI)
 
-[Unreleased]: https://github.com/Backblaze/b2-sdk-python/compare/v1.7.0...HEAD
+[Unreleased]: https://github.com/Backblaze/b2-sdk-python/compare/v1.8.0...HEAD
+[1.8.0]: https://github.com/Backblaze/b2-sdk-python/compare/v1.7.0...v1.8.0
 [1.7.0]: https://github.com/Backblaze/b2-sdk-python/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/Backblaze/b2-sdk-python/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/Backblaze/b2-sdk-python/compare/v1.4.0...v1.5.0
