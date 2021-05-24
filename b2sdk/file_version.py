@@ -127,7 +127,7 @@ class FileVersionFactory(object):
     """
 
     @classmethod
-    def from_api_response(cls, file_info_dict, force_action=None):
+    def from_api_response(cls, file_version_dict, force_action=None):
         """
         Turn this:
 
@@ -160,26 +160,26 @@ class FileVersionFactory(object):
         into a :py:class:`b2sdk.v1.FileVersionInfo` object.
 
         """
-        assert file_info_dict.get('action') is None or force_action is None, \
+        assert file_version_dict.get('action') is None or force_action is None, \
             'action was provided by both info_dict and function argument'
-        action = file_info_dict.get('action') or force_action
-        file_name = file_info_dict['fileName']
-        id_ = file_info_dict['fileId']
-        if 'size' in file_info_dict:
-            size = file_info_dict['size']
-        elif 'contentLength' in file_info_dict:
-            size = file_info_dict['contentLength']
+        action = file_version_dict.get('action') or force_action
+        file_name = file_version_dict['fileName']
+        id_ = file_version_dict['fileId']
+        if 'size' in file_version_dict:
+            size = file_version_dict['size']
+        elif 'contentLength' in file_version_dict:
+            size = file_version_dict['contentLength']
         else:
             raise ValueError('no size or contentLength')
-        upload_timestamp = file_info_dict.get('uploadTimestamp')
-        content_type = file_info_dict.get('contentType')
-        content_sha1 = file_info_dict.get('contentSha1')
-        content_md5 = file_info_dict.get('contentMd5')
-        file_info = file_info_dict.get('fileInfo')
-        server_side_encryption = EncryptionSettingFactory.from_file_version_dict(file_info_dict)
-        file_retention = FileRetentionSetting.from_file_version_dict(file_info_dict)
+        upload_timestamp = file_version_dict.get('uploadTimestamp')
+        content_type = file_version_dict.get('contentType')
+        content_sha1 = file_version_dict.get('contentSha1')
+        content_md5 = file_version_dict.get('contentMd5')
+        file_info = file_version_dict.get('fileInfo')
+        server_side_encryption = EncryptionSettingFactory.from_file_version_dict(file_version_dict)
+        file_retention = FileRetentionSetting.from_file_version_dict(file_version_dict)
 
-        legal_hold = LegalHold.from_file_version_dict(file_info_dict)
+        legal_hold = LegalHold.from_file_version_dict(file_version_dict)
 
         return FileVersion(
             id_,

@@ -226,7 +226,7 @@ class Bucket(metaclass=B2TraceMeta):
 
     def get_file_info_by_id(self, file_id: str) -> FileVersion:
         """
-        Gets a file version's info by ID.
+        Gets a file version's by ID.
 
         :param str file_id: the id of the file who's info will be retrieved.
         :rtype: generator[b2sdk.v1.FileVersionInfo]
@@ -235,7 +235,7 @@ class Bucket(metaclass=B2TraceMeta):
 
     def get_file_info_by_name(self, file_name: str) -> FileVersion:
         """
-        Gets a file version's info by its name.
+        Gets a file version's by its name.
 
         :param str file_name: the name of the file who's info will be retrieved.
         :rtype: generator[b2sdk.v1.FileVersionInfo]
