@@ -835,14 +835,14 @@ class TestSynchronizer:
 
         assert provider.get_source_setting_for_copy.mock_calls == [
             mock.call(
-                bucket='fake_bucket',
+                bucket=mock.ANY,
                 **{file_version_kwarg: mock.ANY},
             )
         ]
 
         assert provider.get_destination_setting_for_copy.mock_calls == [
             mock.call(
-                bucket='fake_bucket',
+                bucket=mock.ANY,
                 dest_b2_file_name='folder/directory/a.txt',
                 **additional_kwargs,
                 **{file_version_kwarg: mock.ANY},

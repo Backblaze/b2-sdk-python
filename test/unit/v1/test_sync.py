@@ -15,7 +15,7 @@ import sys
 import threading
 import time
 import unittest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, ANY
 
 import pytest
 
@@ -208,53 +208,53 @@ class TestFolder(TestSync):
         files = self.all_files(polices_manager)
         self.assert_filtered_files(files, expected_list)
 
-    # def test_exclude_modified_before_in_range(self):  TODO: revisit after refactoring ScanPoliciesManager
-    #     expected_list = [
-    #         'hello/a/1',
-    #         'hello/a/2',
-    #         'hello/b',
-    #         'hello0',
-    #         'inner/a.bin',
-    #         'inner/a.txt',
-    #         'inner/b.bin',
-    #         'inner/b.txt',
-    #         'inner/more/a.bin',
-    #         'inner/more/a.txt',
-    #         '\u81ea\u7531',
-    #     ]
-    #     polices_manager = ScanPoliciesManager(exclude_modified_before=TODAY - 100)
-    #     files = self.all_files(polices_manager)
-    #     self.assert_filtered_files(files, expected_list)
-    #
-    # def test_exclude_modified_before_exact(self):
-    #     expected_list = [
-    #         'hello/a/1',
-    #         'hello/a/2',
-    #         'hello/b',
-    #         'hello0',
-    #         'inner/a.bin',
-    #         'inner/a.txt',
-    #         'inner/b.bin',
-    #         'inner/b.txt',
-    #         'inner/more/a.bin',
-    #         'inner/more/a.txt',
-    #         '\u81ea\u7531',
-    #     ]
-    #     polices_manager = ScanPoliciesManager(exclude_modified_before=TODAY)
-    #     files = self.all_files(polices_manager)
-    #     self.assert_filtered_files(files, expected_list)
-    #
-    # def test_exclude_modified_after_in_range(self):
-    #     expected_list = ['.dot_file', 'hello.']
-    #     polices_manager = ScanPoliciesManager(exclude_modified_after=TODAY - 100)
-    #     files = self.all_files(polices_manager)
-    #     self.assert_filtered_files(files, expected_list)
-    #
-    # def test_exclude_modified_after_exact(self):
-    #     expected_list = ['.dot_file', 'hello.']
-    #     polices_manager = ScanPoliciesManager(exclude_modified_after=TODAY - DAY)
-    #     files = self.all_files(polices_manager)
-    #     self.assert_filtered_files(files, expected_list)
+    def test_exclude_modified_before_in_range(self):
+        expected_list = [
+            'hello/a/1',
+            'hello/a/2',
+            'hello/b',
+            'hello0',
+            'inner/a.bin',
+            'inner/a.txt',
+            'inner/b.bin',
+            'inner/b.txt',
+            'inner/more/a.bin',
+            'inner/more/a.txt',
+            '\u81ea\u7531',
+        ]
+        polices_manager = ScanPoliciesManager(exclude_modified_before=TODAY - 100)
+        files = self.all_files(polices_manager)
+        self.assert_filtered_files(files, expected_list)
+
+    def test_exclude_modified_before_exact(self):
+        expected_list = [
+            'hello/a/1',
+            'hello/a/2',
+            'hello/b',
+            'hello0',
+            'inner/a.bin',
+            'inner/a.txt',
+            'inner/b.bin',
+            'inner/b.txt',
+            'inner/more/a.bin',
+            'inner/more/a.txt',
+            '\u81ea\u7531',
+        ]
+        polices_manager = ScanPoliciesManager(exclude_modified_before=TODAY)
+        files = self.all_files(polices_manager)
+        self.assert_filtered_files(files, expected_list)
+
+    def test_exclude_modified_after_in_range(self):
+        expected_list = ['.dot_file', 'hello.']
+        polices_manager = ScanPoliciesManager(exclude_modified_after=TODAY - 100)
+        files = self.all_files(polices_manager)
+        self.assert_filtered_files(files, expected_list)
+
+    def test_exclude_modified_after_exact(self):
+        expected_list = ['.dot_file', 'hello.']
+        polices_manager = ScanPoliciesManager(exclude_modified_after=TODAY - DAY)
+        files = self.all_files(polices_manager)
+        self.assert_filtered_files(files, expected_list)
 
 
 class TestLocalFolder(TestFolder):
@@ -445,45 +445,40 @@ class TestB2Folder(TestFolder):
         folder = self.prepare_folder(prepare_files=False)
         self.assertEqual([], list(folder.all_files(self.reporter)))
 
-    # def test_multiple_versions(self):  TODO: a soon-to-be-submitted PR will solve the name collisions that cause this test to fail
-    #     # Test two files, to cover the yield within the loop, and the yield without.
-    #     folder = self.prepare_folder(use_file_versions_info=True)
-    #
-    #     self.assertEqual(
-    #         [
-    #             'B2SyncPath(inner/a.txt, [FileVersionInfo("inner/a.txt", 2000, 200),'
-    #             ' FileVersionInfo("inner/a.txt", 1000, 100)])',
-    #             'B2SyncPath(inner/b.txt, [FileVersionInfo("inner/b.txt", 1999, 200),'
-    #             ' FileVersionInfo("inner/b.txt", 1001, 100)])'
-    #         ], [
-    #             str(f) for f in folder.all_files(self.reporter)
-    #             if f.relative_path in ('inner/a.txt', 'inner/b.txt')
-    #         ]
-    #     )
+    def test_multiple_versions(self):
+        # Test two files, to cover the yield within the loop, and the yield without.
+        folder = self.prepare_folder(use_file_versions_info=True)
 
-    # def test_exclude_modified_multiple_versions(self):  TODO: revisit after refactoring ScanPoliciesManager
-    #     polices_manager = ScanPoliciesManager(
-    #         exclude_modified_before=1001, exclude_modified_after=1999
-    #     )
-    #     folder = self.prepare_folder(use_file_versions_info=True)
-    #     self.assertEqual(
-    #         [
-    #             "B2File(inner/b.txt, [FileVersion('b2', 'inner/b.txt', 1999, 'upload'), "
-    #             "FileVersion('b1', 'inner/b.txt', 1001, 'upload')])",
-    #         ], [
-    #             str(f) for f in folder.all_files(self.reporter, policies_manager=polices_manager)
-    #             if f.relative_path in ('inner/a.txt', 'inner/b.txt')
-    #         ]
-    #     )
+        self.assertEqual(
+            [
+                "B2SyncPath(inner/a.txt, [('a2', 2000, 'upload'), ('a1', 1000, 'upload')])",
+                "B2SyncPath(inner/b.txt, [('b2', 1999, 'upload'), ('b1', 1001, 'upload')])"
+            ], [
+                str(f) for f in folder.all_files(self.reporter)
+                if f.relative_path in ('inner/a.txt', 'inner/b.txt')
+            ]
+        )
 
-    # def test_exclude_modified_all_versions(self):  TODO: revisit after refactoring ScanPoliciesManager
-    #     polices_manager = ScanPoliciesManager(
-    #         exclude_modified_before=1500, exclude_modified_after=1500
-    #     )
-    #     folder = self.prepare_folder(use_file_versions_info=True)
-    #     self.assertEqual(
-    #         [], list(folder.all_files(self.reporter, policies_manager=polices_manager))
-    #     )
+    def test_exclude_modified_multiple_versions(self):
+        polices_manager = ScanPoliciesManager(
+            exclude_modified_before=1001, exclude_modified_after=1999
+        )
+        folder = self.prepare_folder(use_file_versions_info=True)
+        self.assertEqual(
+            ["B2SyncPath(inner/b.txt, [('b2', 1999, 'upload'), ('b1', 1001, 'upload')])"], [
+                str(f) for f in folder.all_files(self.reporter, policies_manager=polices_manager)
+                if f.relative_path in ('inner/a.txt', 'inner/b.txt')
+            ]
+        )
+
+    def test_exclude_modified_all_versions(self):
+        polices_manager = ScanPoliciesManager(
+            exclude_modified_before=1500, exclude_modified_after=1500
+        )
+        folder = self.prepare_folder(use_file_versions_info=True)
+        self.assertEqual(
+            [], list(folder.all_files(self.reporter, policies_manager=polices_manager))
+        )
 
     # Path names not allowed to be sync'd on Windows
     NOT_SYNCD_ON_WINDOWS = [
@@ -802,7 +797,7 @@ class TestZipFolders(TestSync):
         folder_a.all_files = MagicMock(return_value=iter([]))
         folder_b.all_files = MagicMock(return_value=iter([]))
         self.assertEqual([], list(zip_folders(folder_a, folder_b, self.reporter)))
-        folder_a.all_files.assert_called_once_with(self.reporter, DEFAULT_SCAN_MANAGER)
+        folder_a.all_files.assert_called_once_with(self.reporter, ANY)
         folder_b.all_files.assert_called_once_with(self.reporter)
 
 
@@ -903,8 +898,8 @@ class TestExclusions(TestSync):
     def test_file_exclusions_with_delete(self):
         expected_actions = [
             'b2_upload(/dir/a.txt, folder/a.txt, 100)',
-            'b2_delete(folder/b.txt.incl, /dir/b.txt.incl, )',
-            'b2_delete(folder/c.txt, /dir/c.txt, )',
+            'b2_delete(folder/b.txt.incl, id_b_100, )',
+            'b2_delete(folder/c.txt, id_c_100, )',
             'b2_upload(/dir/d/d.txt, folder/d/d.txt, 100)',
             'b2_upload(/dir/e/e.incl, folder/e/e.incl, 100)',
         ]
@@ -919,8 +914,8 @@ class TestExclusions(TestSync):
     def test_file_exclusions_inclusions_with_delete(self):
         expected_actions = [
             'b2_upload(/dir/a.txt, folder/a.txt, 100)',
-            'b2_delete(folder/b.txt.incl, /dir/b.txt.incl, )',
-            'b2_delete(folder/c.txt, /dir/c.txt, )',
+            'b2_delete(folder/b.txt.incl, id_b_100, )',
+            'b2_delete(folder/c.txt, id_c_100, )',
             'b2_upload(/dir/d/d.txt, folder/d/d.txt, 100)',
             'b2_upload(/dir/e/e.incl, folder/e/e.incl, 100)',
             'b2_upload(/dir/b.txt.incl, folder/b.txt.incl, 100)',
