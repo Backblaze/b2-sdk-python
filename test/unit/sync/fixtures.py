@@ -10,9 +10,15 @@
 
 import pytest
 
-from apiver_deps import AbstractFolder, B2SyncPath, LocalSyncPath, FileVersionInfo
+import apiver_deps
+from apiver_deps import AbstractFolder, B2SyncPath, LocalSyncPath
 from apiver_deps import CompareVersionMode, NewerFileSyncMode, KeepOrDeleteMode
 from apiver_deps import DEFAULT_SCAN_MANAGER, Synchronizer
+
+if apiver_deps.V <= 1:
+    from apiver_deps import FileVersionInfo as VFileVersion
+else:
+    from apiver_deps import FileVersion as VFileVersion
 
 
 class FakeFolder(AbstractFolder):
@@ -74,21 +80,9 @@ def b2_file(name, mod_times, size=10):
     Positive modification times are uploads, and negative modification
     times are hides.  It's a hack, but it works.
 
-        b2_file('a.txt', [300, -200, 100])
-
-    Is the same as:
-
-        File(
-            'a.txt',
-            [
-               FileVersion('id_a_300', 'a.txt', 300, 'upload'),
-               FileVersion('id_a_200', 'a.txt', 200, 'hide'),
-               FileVersion('id_a_100', 'a.txt', 100, 'upload')
-            ]
-        )
     """
     versions = [
-        FileVersionInfo(
+        VFileVersion(
             id_='id_%s_%d' % (name[0], abs(mod_time)),
             file_name='folder/' + name,
             upload_timestamp=abs(mod_time),

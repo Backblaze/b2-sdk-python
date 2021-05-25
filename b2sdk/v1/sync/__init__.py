@@ -8,6 +8,7 @@
 #
 ######################################################################
 
+from .encryption_provider import *
 from .file import *
 from .folder import *
 from .folder_parser import *
