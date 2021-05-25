@@ -320,11 +320,7 @@ class B2Folder(AbstractFolder):
         last_ignored_dir = None
         current_versions = []
         current_file_version = None
-        for file_version, _ in self.bucket.ls(
-            self.folder_name,
-            show_versions=True,
-            recursive=True,
-        ):
+        for file_version in self.get_file_versions():
             if current_file_version is None:
                 current_file_version = file_version
 
@@ -365,6 +361,14 @@ class B2Folder(AbstractFolder):
                 selected_version=current_versions[0],
                 all_versions=current_versions
             )
+
+    def get_file_versions(self):
+        for file_version, _ in self.bucket.ls(
+            self.folder_name,
+            show_versions=True,
+            recursive=True,
+        ):
+            yield file_version
 
     def _validate_file_name(self, file_name):
         # Do not allow relative paths in file names
