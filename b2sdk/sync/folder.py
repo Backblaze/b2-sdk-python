@@ -132,8 +132,7 @@ class LocalFolder(AbstractFolder):
         :param reporter: a place to report errors
         :param policies_manager: a policy manager object, default is DEFAULT_SCAN_MANAGER
         """
-        for file_object in self._walk_relative_paths(self.root, '', reporter, policies_manager):
-            yield file_object
+        yield from self._walk_relative_paths(self.root, '', reporter, policies_manager)
 
     def make_full_path(self, file_name):
         """
@@ -233,10 +232,7 @@ class LocalFolder(AbstractFolder):
 
             if os.path.isdir(local_path):
                 name += '/'
-                if policies_manager.should_exclude_directory(b2_path):
-                    continue
-            else:
-                if policies_manager.should_exclude_file(b2_path):
+                if policies_manager.should_exclude_local_directory(b2_path):
                     continue
 
             names.append((name, local_path, b2_path))
@@ -258,15 +254,17 @@ class LocalFolder(AbstractFolder):
                     file_mod_time = get_file_mtime(local_path)
                     file_size = os.path.getsize(local_path)
 
-                    # if policies_manager.should_exclude_file_version(version):  TODO: fix method name
-                    #     continue
-
-                    yield LocalSyncPath(
+                    local_sync_path = LocalSyncPath(
                         absolute_path=self.make_full_path(b2_path),
                         relative_path=b2_path,
                         mod_time=file_mod_time,
                         size=file_size,
                     )
+
+                    if policies_manager.should_exclude_local_path(local_sync_path):
+                        continue
+
+                    yield local_sync_path
 
     @classmethod
     def _handle_non_unicode_file_name(cls, name):
@@ -284,6 +282,12 @@ class LocalFolder(AbstractFolder):
 
     def __repr__(self):
         return 'LocalFolder(%s)' % (self.root,)
+
+
+def b2_parent_dir(file_name):
+    if '/' not in file_name:
+        return ''
+    return file_name.rsplit('/', 1)[0]
 
 
 class B2Folder(AbstractFolder):
@@ -313,6 +317,7 @@ class B2Folder(AbstractFolder):
         :param policies_manager: a policies manager object, default is DEFAULT_SCAN_MANAGER
         """
         current_name = None
+        last_ignored_dir = None
         current_versions = []
         current_file_version = None
         for file_version, _ in self.bucket.ls(
@@ -327,25 +332,21 @@ class B2Folder(AbstractFolder):
             if file_version.action == 'start':
                 continue
             file_name = file_version.file_name[len(self.prefix):]
-
-            if policies_manager.should_exclude_file(file_name):
+            if last_ignored_dir is not None and file_name.startswith(last_ignored_dir + '/'):
                 continue
 
-            # Do not allow relative paths in file names
-            if RELATIVE_PATH_MATCHER.search(file_name):
-                raise UnSyncableFilename(
-                    "sync does not support file names that include relative paths", file_name
-                )
-            # Do not allow absolute paths in file names
-            if ABSOLUTE_PATH_MATCHER.search(file_name):
-                raise UnSyncableFilename(
-                    "sync does not support file names with absolute paths", file_name
-                )
-            # On Windows, do not allow drive letters in file names
-            if platform.system() == "Windows" and DRIVE_MATCHER.search(file_name):
-                raise UnSyncableFilename(
-                    "sync does not support file names with drive letters", file_name
-                )
+            dir_name = b2_parent_dir(file_name)
+
+            if policies_manager.should_exclude_b2_directory(dir_name):
+                last_ignored_dir = dir_name
+                continue
+            else:
+                last_ignored_dir = None
+
+            if policies_manager.should_exclude_b2_file_version(file_version, file_name):
+                continue
+
+            self._validate_file_name(file_name)
 
             if current_name != file_name and current_name is not None and current_versions:
                 yield B2SyncPath(
@@ -356,10 +357,6 @@ class B2Folder(AbstractFolder):
                 current_versions = []
 
             current_name = file_name
-
-            # if policies_manager.should_exclude_file_version(file_version):  TODO: adjust method name
-            #     continue
-
             current_versions.append(file_version)
 
         if current_name is not None and current_versions:
@@ -367,6 +364,23 @@ class B2Folder(AbstractFolder):
                 relative_path=current_name,
                 selected_version=current_versions[0],
                 all_versions=current_versions
+            )
+
+    def _validate_file_name(self, file_name):
+        # Do not allow relative paths in file names
+        if RELATIVE_PATH_MATCHER.search(file_name):
+            raise UnSyncableFilename(
+                "sync does not support file names that include relative paths", file_name
+            )
+        # Do not allow absolute paths in file names
+        if ABSOLUTE_PATH_MATCHER.search(file_name):
+            raise UnSyncableFilename(
+                "sync does not support file names with absolute paths", file_name
+            )
+        # On Windows, do not allow drive letters in file names
+        if platform.system() == "Windows" and DRIVE_MATCHER.search(file_name):
+            raise UnSyncableFilename(
+                "sync does not support file names with drive letters", file_name
             )
 
     def folder_type(self):
