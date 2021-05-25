@@ -11,14 +11,16 @@
 from b2sdk import _v2 as v2
 from b2sdk._v2 import exception as v2_exception
 from .file_to_path_translator import make_files_from_paths, make_paths_from_files
-from .scan_policies import DEFAULT_SCAN_MANAGER
-from .encryption_provider import AbstractSyncEncryptionSettingsProvider, wrap_if_necessary
+from .scan_policies import DEFAULT_SCAN_MANAGER, wrap_if_necessary as scan_wrap_if_necessary
+from .encryption_provider import wrap_if_necessary as encryption_wrap_if_necessary
 from ..exception import DestFileNewer
 
 
 # Override to change "policies_manager" default argument
 def zip_folders(folder_a, folder_b, reporter, policies_manager=DEFAULT_SCAN_MANAGER):
-    return v2.zip_folders(folder_a, folder_b, reporter, policies_manager=policies_manager)
+    return v2.zip_folders(
+        folder_a, folder_b, reporter, policies_manager=scan_wrap_if_necessary(policies_manager)
+    )
 
 
 # Override to change "policies_manager" default arguments
@@ -37,8 +39,8 @@ class Synchronizer(v2.Synchronizer):
         keep_days=None,
     ):
         super().__init__(
-            max_workers, policies_manager, dry_run, allow_empty_source, newer_file_mode,
-            keep_days_or_delete, compare_version_mode, compare_threshold, keep_days
+            max_workers, scan_wrap_if_necessary(policies_manager), dry_run, allow_empty_source,
+            newer_file_mode, keep_days_or_delete, compare_version_mode, compare_threshold, keep_days
         )
 
     def make_folder_sync_actions(
@@ -51,8 +53,9 @@ class Synchronizer(v2.Synchronizer):
         encryption_settings_provider=v2.SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER,
     ):
         return super()._make_folder_sync_actions(
-            source_folder, dest_folder, now_millis, reporter, policies_manager,
-            wrap_if_necessary(encryption_settings_provider)
+            source_folder, dest_folder, now_millis, reporter,
+            scan_wrap_if_necessary(policies_manager),
+            encryption_wrap_if_necessary(encryption_settings_provider)
         )
 
     # override to retain a public method
@@ -86,7 +89,7 @@ class Synchronizer(v2.Synchronizer):
             source_folder,
             dest_folder,
             now_millis,
-            wrap_if_necessary(encryption_settings_provider),
+            encryption_wrap_if_necessary(encryption_settings_provider),
         )
 
     # override to raise old style DestFileNewer exceptions
@@ -120,7 +123,7 @@ class Synchronizer(v2.Synchronizer):
                 source_folder,
                 dest_folder,
                 now_millis,
-                wrap_if_necessary(encryption_settings_provider),
+                encryption_wrap_if_necessary(encryption_settings_provider),
             )
         except v2_exception.DestFileNewer as ex:
             dest_file, source_file = make_files_from_paths(ex.dest_path, ex.source_path, sync_type)

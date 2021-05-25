@@ -8,10 +8,18 @@
 #
 ######################################################################
 
+import re
+from typing import Optional, Union, Iterable
+
+from .file import B2FileVersion
+from ..file_version import file_version_info_from_new_file_version
+from .file_to_path_translator import _translate_local_path_to_file
 from b2sdk import _v2 as v2
 from b2sdk._v2 import exception as v2_exception  # noqa
 
 
+# Override to retain old exceptions in __init__
+# and to provide interface for new should_exclude_* methods
 class ScanPoliciesManager(v2.ScanPoliciesManager):
     """
     Policy object used when scanning folders for syncing, used to decide
@@ -28,26 +36,30 @@ class ScanPoliciesManager(v2.ScanPoliciesManager):
 
     def __init__(
         self,
-        exclude_dir_regexes=tuple(),
-        exclude_file_regexes=tuple(),
-        include_file_regexes=tuple(),
-        exclude_all_symlinks=False,
-        exclude_modified_before=None,
-        exclude_modified_after=None,
+        exclude_dir_regexes: Iterable[Union[str, re.Pattern]] = tuple(),
+        exclude_file_regexes: Iterable[Union[str, re.Pattern]] = tuple(),
+        include_file_regexes: Iterable[Union[str, re.Pattern]] = tuple(),
+        exclude_all_symlinks: bool = False,
+        exclude_modified_before: Optional[int] = None,
+        exclude_modified_after: Optional[int] = None,
+        exclude_uploaded_before: Optional[int] = None,
+        exclude_uploaded_after: Optional[int] = None,
     ):
         """
-        :param exclude_dir_regexes: a tuple of regexes to exclude directories
-        :type exclude_dir_regexes: tuple
-        :param exclude_file_regexes: a tuple of regexes to exclude files
-        :type exclude_file_regexes: tuple
-        :param include_file_regexes: a tuple of regexes to include files
-        :type include_file_regexes: tuple
+        :param exclude_dir_regexes: regexes to exclude directories
+        :param exclude_file_regexes: regexes to exclude files
+        :param include_file_regexes: regexes to include files
         :param exclude_all_symlinks: if True, exclude all symlinks
-        :type exclude_all_symlinks: bool
-        :param exclude_modified_before: optionally exclude file versions modified before (in millis)
-        :type exclude_modified_before: int, optional
-        :param exclude_modified_after: optionally exclude file versions modified after (in millis)
-        :type exclude_modified_after: int, optional
+        :param exclude_modified_before: optionally exclude file versions (both local and b2) modified before (in millis)
+        :param exclude_modified_after: optionally exclude file versions (both local and b2) modified after (in millis)
+        :param exclude_uploaded_before: optionally exclude b2 file versions uploaded before (in millis)
+        :param exclude_uploaded_after: optionally exclude b2 file versions uploaded after (in millis)
+
+        The regex matching priority for a given path is:
+        1) the path is always excluded if it's dir matches `exclude_dir_regexes`, if not then
+        2) the path is always included if it matches `include_file_regexes`, if not then
+        3) the path is excluded if it matches `exclude_file_regexes`, if not then
+        4) the path is included
         """
         if include_file_regexes and not exclude_file_regexes:
             raise v2_exception.InvalidArgument(
@@ -65,6 +77,91 @@ class ScanPoliciesManager(v2.ScanPoliciesManager):
         self._include_mod_time_range = v2.IntegerRange(
             exclude_modified_before, exclude_modified_after
         )
+        with v2_exception.check_invalid_argument(
+            'exclude_uploaded_before,exclude_uploaded_after', '', ValueError
+        ):
+            self._include_upload_time_range = v2.IntegerRange(
+                exclude_uploaded_before, exclude_uploaded_after
+            )
+
+    def should_exclude_file(self, file_path):
+        """
+        Given the full path of a file, decide if it should be excluded from the scan.
+
+        :param file_path: the path of the file, relative to the root directory
+                          being scanned.
+        :type: str
+        :return: True if excluded.
+        :rtype: bool
+        """
+        exclude_because_of_dir = self._exclude_file_because_of_dir_set.matches(file_path)
+        exclude_because_of_file = (
+            self._exclude_file_set.matches(file_path) and
+            not self._include_file_set.matches(file_path)
+        )
+        return exclude_because_of_dir or exclude_because_of_file
+
+    def should_exclude_file_version(self, file_version):
+        """
+        Given the modification time of a file version,
+        decide if it should be excluded from the scan.
+
+        :param file_version: the file version object
+        :type: b2sdk.v1.FileVersion
+        :return: True if excluded.
+        :rtype: bool
+        """
+        return file_version.mod_time not in self._include_mod_time_range
+
+    def should_exclude_directory(self, dir_path):
+        """
+        Given the full path of a directory, decide if all of the files in it should be
+        excluded from the scan.
+
+        :param dir_path: the path of the directory, relative to the root directory
+                         being scanned.  The path will never end in '/'.
+        :type dir_path: str
+        :return: True if excluded.
+        """
+        return self._exclude_dir_set.matches(dir_path)
+
+
+class ScanPoliciesManagerWrapper(v2.ScanPoliciesManager):
+    def __init__(self, scan_policies_manager: ScanPoliciesManager):
+        self.scan_policies_manager = scan_policies_manager
+        self.exclude_all_symlinks = scan_policies_manager.exclude_all_symlinks
+
+    def __repr__(self):
+        return "%s(%s)" % (
+            self.__class__.__name__,
+            self.scan_policies_manager,
+        )
+
+    def should_exclude_local_path(self, local_path: v2.LocalSyncPath):
+        if self.scan_policies_manager.should_exclude_file_version(
+            _translate_local_path_to_file(local_path).latest_version()
+        ):
+            return True
+        return self.scan_policies_manager.should_exclude_file(local_path.relative_path)
+
+    def should_exclude_b2_file_version(self, file_version: v2.FileVersion, relative_path: str):
+        if self.scan_policies_manager.should_exclude_file_version(
+            B2FileVersion(file_version_info_from_new_file_version(file_version))
+        ):
+            return True
+        return self.scan_policies_manager.should_exclude_file(relative_path)
+
+    def should_exclude_b2_directory(self, dir_path):
+        return self.scan_policies_manager.should_exclude_directory(dir_path)
+
+    def should_exclude_local_directory(self, dir_path):
+        return self.scan_policies_manager.should_exclude_directory(dir_path)
+
+
+def wrap_if_necessary(scan_policies_manager):
+    if hasattr(scan_policies_manager, 'should_exclude_file'):
+        return ScanPoliciesManagerWrapper(scan_policies_manager)
+    return scan_policies_manager
 
 
 DEFAULT_SCAN_MANAGER = ScanPoliciesManager()
