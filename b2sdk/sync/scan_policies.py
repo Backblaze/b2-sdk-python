@@ -10,8 +10,11 @@
 
 import logging
 import re
+from typing import Optional, Union, Iterable
 
 from .exception import InvalidArgument, check_invalid_argument
+from .path import LocalSyncPath
+from ..file_version import FileVersion
 
 logger = logging.getLogger(__name__)
 
@@ -118,26 +121,30 @@ class ScanPoliciesManager(object):
 
     def __init__(
         self,
-        exclude_dir_regexes=tuple(),
-        exclude_file_regexes=tuple(),
-        include_file_regexes=tuple(),
-        exclude_all_symlinks=False,
-        exclude_modified_before=None,
-        exclude_modified_after=None,
+        exclude_dir_regexes: Iterable[Union[str, re.Pattern]] = tuple(),
+        exclude_file_regexes: Iterable[Union[str, re.Pattern]] = tuple(),
+        include_file_regexes: Iterable[Union[str, re.Pattern]] = tuple(),
+        exclude_all_symlinks: bool = False,
+        exclude_modified_before: Optional[int] = None,
+        exclude_modified_after: Optional[int] = None,
+        exclude_uploaded_before: Optional[int] = None,
+        exclude_uploaded_after: Optional[int] = None,
     ):
         """
-        :param exclude_dir_regexes: a tuple of regexes to exclude directories
-        :type exclude_dir_regexes: tuple
-        :param exclude_file_regexes: a tuple of regexes to exclude files
-        :type exclude_file_regexes: tuple
-        :param include_file_regexes: a tuple of regexes to include files
-        :type include_file_regexes: tuple
+        :param exclude_dir_regexes: regexes to exclude directories
+        :param exclude_file_regexes: regexes to exclude files
+        :param include_file_regexes: regexes to include files
         :param exclude_all_symlinks: if True, exclude all symlinks
-        :type exclude_all_symlinks: bool
-        :param exclude_modified_before: optionally exclude file versions modified before (in millis)
-        :type exclude_modified_before: int, optional
-        :param exclude_modified_after: optionally exclude file versions modified after (in millis)
-        :type exclude_modified_after: int, optional
+        :param exclude_modified_before: optionally exclude file versions (both local and b2) modified before (in millis)
+        :param exclude_modified_after: optionally exclude file versions (both local and b2) modified after (in millis)
+        :param exclude_uploaded_before: optionally exclude b2 file versions uploaded before (in millis)
+        :param exclude_uploaded_after: optionally exclude b2 file versions uploaded after (in millis)
+
+        The regex matching priority for a given path is:
+        1) the path is always excluded if it's dir matches `exclude_dir_regexes`, if not then
+        2) the path is always included if it matches `include_file_regexes`, if not then
+        3) the path is excluded if it matches `exclude_file_regexes`, if not then
+        4) the path is included
         """
         if include_file_regexes and not exclude_file_regexes:
             raise InvalidArgument(
@@ -167,50 +174,54 @@ class ScanPoliciesManager(object):
             self._include_mod_time_range = IntegerRange(
                 exclude_modified_before, exclude_modified_after
             )
+        with check_invalid_argument(
+            'exclude_uploaded_before,exclude_uploaded_after', '', ValueError
+        ):
+            self._include_upload_time_range = IntegerRange(
+                exclude_uploaded_before, exclude_uploaded_after
+            )
 
-    def should_exclude_file(self, file_path):
-        """
-        Given the full path of a file, decide if it should be excluded from the scan.
+    def _should_exclude_relative_path(self, relative_path: str):
+        if self._include_file_set.matches(relative_path):
+            return False
+        return self._exclude_file_set.matches(relative_path)
 
-        :param file_path: the path of the file, relative to the root directory
-                          being scanned.
-        :type: str
-        :return: True if excluded.
-        :rtype: bool
+    def should_exclude_local_path(self, local_path: LocalSyncPath):
         """
-        # TODO: In v2 this should accept `b2sdk.v1.File`.
-        #  It requires some refactoring to be done first.
-        exclude_because_of_dir = self._exclude_file_because_of_dir_set.matches(file_path)
-        exclude_because_of_file = (
-            self._exclude_file_set.matches(file_path) and
-            not self._include_file_set.matches(file_path)
-        )
-        return exclude_because_of_dir or exclude_because_of_file
+        Whether a local path should be excluded from the Sync or not.
+        Checks both for mod_time exclusion conditions and relative path conditions.
 
-    def should_exclude_file_version(self, file_version):
+        This method assumes that the directory holding the `path_` has already been checked for exclusion.
         """
-        Given the modification time of a file version,
-        decide if it should be excluded from the scan.
+        if local_path.mod_time not in self._include_mod_time_range:
+            return True
+        return self._should_exclude_relative_path(local_path.relative_path)
 
-        :param file_version: the file version object
-        :type: b2sdk.v1.FileVersion
-        :return: True if excluded.
-        :rtype: bool
+    def should_exclude_b2_file_version(self, file_version: FileVersion, relative_path: str):
         """
-        return file_version.mod_time not in self._include_mod_time_range
+        Whether a b2 file version should be excluded from the Sync or not.
+        Checks both for mod_time exclusion conditions and relative path conditions.
 
-    def should_exclude_directory(self, dir_path):
+        This method assumes that the directory holding the `path_` has already been checked for exclusion.
         """
-        Given the full path of a directory, decide if all of the files in it should be
-        excluded from the scan.
+        if file_version.upload_timestamp not in self._include_upload_time_range:
+            return True
+        if file_version.mod_time_millis not in self._include_mod_time_range:
+            return True
+        return self._should_exclude_relative_path(relative_path)
 
-        :param dir_path: the path of the directory, relative to the root directory
-                         being scanned.  The path will never end in '/'.
-        :type dir_path: str
-        :return: True if excluded.
+    def should_exclude_b2_directory(self, dir_path: str):
         """
-        # TODO: In v2 this should accept `b2sdk.v1.AbstractFolder`.
-        #  It requires some refactoring to be done first.
+        Given the path of a directory, relative to the sync point,
+        decide if all of the files in it should be excluded from the scan.
+        """
+        return self._exclude_dir_set.matches(dir_path)
+
+    def should_exclude_local_directory(self, dir_path: str):
+        """
+        Given the path of a directory, relative to the sync point,
+        decide if all of the files in it should be excluded from the scan.
+        """
         return self._exclude_dir_set.matches(dir_path)
 
 

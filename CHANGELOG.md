@@ -6,10 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+* `ScanPoliciesManager` is able to filter b2 files by upload timestamp
+
 ### Changed
 * `Synchronizer.make_file_sync_actions` and `Synchronizer.make_folder_sync_actions` were made private in v2 interface
 * Refactored `sync.file.*File` and `sync.file.*FileVersion` to `sync.path.*SyncPath`
 * Refactored `FileVersionInfo` to `FileVersion`
+* `ScanPoliciesManager` exclusion interface changed
 
 ## [1.8.0] - 2021-05-21
 
