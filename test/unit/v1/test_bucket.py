@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: test/unit/v1/test_bucket.py
+# File: test/unit/bucket/test_bucket.py
 #
 # Copyright 2019 Backblaze Inc. All Rights Reserved.
 #

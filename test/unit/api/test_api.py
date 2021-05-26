@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: test/unit/v1/test_api.py
+# File: test/unit/api/test_api.py
 #
 # Copyright 2021 Backblaze Inc. All Rights Reserved.
 #
@@ -8,23 +8,26 @@
 #
 ######################################################################
 
+import pytest
+
 from ..test_base import TestBase
 
-from .deps import B2Api
-from .deps import DummyCache
-from .deps import EncryptionAlgorithm
-from .deps import EncryptionMode
-from .deps import EncryptionSetting
-from .deps import FileRetentionSetting
-from .deps import InMemoryAccountInfo
-from .deps import LegalHold
-from .deps import RawSimulator
-from .deps import RetentionMode
-from .deps import NO_RETENTION_FILE_SETTING
-from .deps_exception import RestrictedBucket
+from apiver_deps import B2Api
+from apiver_deps import DummyCache
+from apiver_deps import EncryptionAlgorithm
+from apiver_deps import EncryptionMode
+from apiver_deps import EncryptionSetting
+from apiver_deps import FileRetentionSetting
+from apiver_deps import InMemoryAccountInfo
+from apiver_deps import LegalHold
+from apiver_deps import RawSimulator
+from apiver_deps import RetentionMode
+from apiver_deps import NO_RETENTION_FILE_SETTING
+from apiver_deps_exception import RestrictedBucket
 
 
-class TestApi(TestBase):
+class TestApi:
+    @pytest.fixture(autouse=True)
     def setUp(self):
         self.account_info = InMemoryAccountInfo()
         self.cache = DummyCache()
@@ -32,26 +35,59 @@ class TestApi(TestBase):
         self.api = B2Api(self.account_info, self.cache, self.raw_api)
         (self.application_key_id, self.master_key) = self.raw_api.create_account()
 
-    def test_list_buckets(self):
+    @pytest.mark.parametrize(
+        'expected_delete_bucket_output',
+        [
+            pytest.param(None, marks=pytest.mark.apiver(from_ver=1)),
+            pytest.param(
+                {
+                    'accountId': 'account-0',
+                    'bucketName': 'bucket2',
+                    'bucketId': 'bucket_1',
+                    'bucketType': 'allPrivate',
+                    'bucketInfo': {},
+                    'corsRules': [],
+                    'lifecycleRules': [],
+                    'options': set(),
+                    'revision': 1,
+                    'defaultServerSideEncryption':
+                        {
+                            'isClientAuthorizedToRead': True,
+                            'value': {
+                                'mode': 'none'
+                            },
+                        },
+                    'fileLockConfiguration':
+                        {
+                            'isClientAuthorizedToRead': True,
+                            'value':
+                                {
+                                    'defaultRetention': {
+                                        'mode': None,
+                                        'period': None
+                                    },
+                                    'isFileLockEnabled': None
+                                }
+                        },
+                },
+                marks=pytest.mark.apiver(to_ver=0)
+            ),
+        ],
+    )
+    def test_list_buckets(self, expected_delete_bucket_output):
         self._authorize_account()
         self.api.create_bucket('bucket1', 'allPrivate')
         bucket2 = self.api.create_bucket('bucket2', 'allPrivate')
         delete_output = self.api.delete_bucket(bucket2)
-        assert delete_output is None, delete_output
+        assert delete_output == expected_delete_bucket_output
         self.api.create_bucket('bucket3', 'allPrivate')
-        self.assertEqual(
-            ['bucket1', 'bucket3'],
-            [b.name for b in self.api.list_buckets()],
-        )
+        assert [b.name for b in self.api.list_buckets()] == ['bucket1', 'bucket3']
 
     def test_list_buckets_with_name(self):
         self._authorize_account()
         self.api.create_bucket('bucket1', 'allPrivate')
         self.api.create_bucket('bucket2', 'allPrivate')
-        self.assertEqual(
-            ['bucket1'],
-            [b.name for b in self.api.list_buckets(bucket_name='bucket1')],
-        )
+        assert [b.name for b in self.api.list_buckets(bucket_name='bucket1')] == ['bucket1']
 
     def test_buckets_with_encryption(self):
         self._authorize_account()
@@ -94,15 +130,9 @@ class TestApi(TestBase):
             for b in self.api.list_buckets()  # scan again with new key
         }
 
-        self.assertEqual(
-            buckets['bucket1'].default_server_side_encryption,
-            unknown_encryption,
-        )
+        assert buckets['bucket1'].default_server_side_encryption == unknown_encryption
 
-        self.assertEqual(
-            buckets['bucket2'].default_server_side_encryption,
-            unknown_encryption,
-        )
+        assert buckets['bucket2'].default_server_side_encryption == unknown_encryption
 
     def _check_if_bucket_is_encrypted(self, bucket_name, should_be_encrypted):
         buckets = {b.name: b for b in self.api.list_buckets()}
@@ -116,32 +146,17 @@ class TestApi(TestBase):
         )
         no_encryption = EncryptionSetting(mode=EncryptionMode.NONE,)
         if not should_be_encrypted:
-            self.assertEqual(
-                bucket.default_server_side_encryption,
-                no_encryption,
-            )
+            assert bucket.default_server_side_encryption == no_encryption
         else:
-            self.assertEqual(
-                bucket.default_server_side_encryption,
-                sse_b2_aes,
-            )
-            self.assertEqual(
-                bucket.default_server_side_encryption.mode,
-                EncryptionMode.SSE_B2,
-            )
-            self.assertEqual(
-                bucket.default_server_side_encryption.algorithm,
-                EncryptionAlgorithm.AES256,
-            )
+            assert bucket.default_server_side_encryption == sse_b2_aes
+            assert bucket.default_server_side_encryption.mode == EncryptionMode.SSE_B2
+            assert bucket.default_server_side_encryption.algorithm == EncryptionAlgorithm.AES256
 
     def test_list_buckets_with_id(self):
         self._authorize_account()
         bucket = self.api.create_bucket('bucket1', 'allPrivate')
         self.api.create_bucket('bucket2', 'allPrivate')
-        self.assertEqual(
-            ['bucket1'],
-            [b.name for b in self.api.list_buckets(bucket_id=bucket.id_)],
-        )
+        assert [b.name for b in self.api.list_buckets(bucket_id=bucket.id_)] == ['bucket1']
 
     def test_reauthorize_with_app_key(self):
         # authorize and create a key
@@ -163,20 +178,14 @@ class TestApi(TestBase):
         self.api.create_bucket('bucket2', 'allPrivate')
         key = self.api.create_key(['listBuckets'], 'key1', bucket_id=bucket1.id_)
         self.api.authorize_account('production', key['applicationKeyId'], key['applicationKey'])
-        self.assertEqual(
-            ['bucket1'],
-            [b.name for b in self.api.list_buckets(bucket_name=bucket1.name)],
-        )
+        assert [b.name for b in self.api.list_buckets(bucket_name=bucket1.name)] == ['bucket1']
 
     def test_get_bucket_by_name_with_bucket_restriction(self):
         self._authorize_account()
         bucket1 = self.api.create_bucket('bucket1', 'allPrivate')
         key = self.api.create_key(['listBuckets'], 'key1', bucket_id=bucket1.id_)
         self.api.authorize_account('production', key['applicationKeyId'], key['applicationKey'])
-        self.assertEqual(
-            bucket1.id_,
-            self.api.get_bucket_by_name('bucket1').id_,
-        )
+        assert self.api.get_bucket_by_name('bucket1').id_ == bucket1.id_
 
     def test_list_buckets_with_restriction_and_wrong_name(self):
         self._authorize_account()
@@ -184,10 +193,9 @@ class TestApi(TestBase):
         bucket2 = self.api.create_bucket('bucket2', 'allPrivate')
         key = self.api.create_key(['listBuckets'], 'key1', bucket_id=bucket1.id_)
         self.api.authorize_account('production', key['applicationKeyId'], key['applicationKey'])
-        with self.assertRaises(
-            RestrictedBucket, 'Application key is restricted to bucket: bucket1'
-        ):
+        with pytest.raises(RestrictedBucket) as excinfo:
             self.api.list_buckets(bucket_name=bucket2.name)
+        assert str(excinfo.value) == 'Application key is restricted to bucket: bucket1'
 
     def test_list_buckets_with_restriction_and_no_name(self):
         self._authorize_account()
@@ -195,10 +203,9 @@ class TestApi(TestBase):
         self.api.create_bucket('bucket2', 'allPrivate')
         key = self.api.create_key(['listBuckets'], 'key1', bucket_id=bucket1.id_)
         self.api.authorize_account('production', key['applicationKeyId'], key['applicationKey'])
-        with self.assertRaises(
-            RestrictedBucket, 'Application key is restricted to bucket: bucket1'
-        ):
+        with pytest.raises(RestrictedBucket) as excinfo:
             self.api.list_buckets()
+        assert str(excinfo.value) == 'Application key is restricted to bucket: bucket1'
 
     def test_list_buckets_with_restriction_and_wrong_id(self):
         self._authorize_account()
@@ -206,10 +213,9 @@ class TestApi(TestBase):
         self.api.create_bucket('bucket2', 'allPrivate')
         key = self.api.create_key(['listBuckets'], 'key1', bucket_id=bucket1.id_)
         self.api.authorize_account('production', key['applicationKeyId'], key['applicationKey'])
-        with self.assertRaises(
-            RestrictedBucket, 'Application key is restricted to bucket: %s' % (bucket1.id_,)
-        ):
+        with pytest.raises(RestrictedBucket) as excinfo:
             self.api.list_buckets(bucket_id='not the one bound to the key')
+        assert str(excinfo.value) == 'Application key is restricted to bucket: %s' % (bucket1.id_,)
 
     def _authorize_account(self):
         self.api.authorize_account('production', self.application_key_id, self.master_key)
@@ -218,18 +224,18 @@ class TestApi(TestBase):
         self._authorize_account()
         bucket = self.api.create_bucket('bucket1', 'allPrivate', is_file_lock_enabled=True)
         created_file = bucket.upload_bytes(b'hello world', 'file')
-        self.assertEqual(created_file.file_retention, NO_RETENTION_FILE_SETTING)
+        assert created_file.file_retention == NO_RETENTION_FILE_SETTING
         new_retention = FileRetentionSetting(RetentionMode.COMPLIANCE, 100)
         self.api.update_file_retention(created_file.id_, created_file.file_name, new_retention)
         file_version = bucket.get_file_info_by_id(created_file.id_)
-        self.assertEqual(new_retention, file_version.file_retention)
+        assert new_retention == file_version.file_retention
 
     def test_update_legal_hold(self):
         self._authorize_account()
         bucket = self.api.create_bucket('bucket1', 'allPrivate', is_file_lock_enabled=True)
         created_file = bucket.upload_bytes(b'hello world', 'file')
-        self.assertEqual(created_file.legal_hold, LegalHold.UNSET)
+        assert created_file.legal_hold == LegalHold.UNSET
         new_legal_hold = LegalHold.ON
         self.api.update_file_legal_hold(created_file.id_, created_file.file_name, new_legal_hold)
         file_version = bucket.get_file_info_by_id(created_file.id_)
-        self.assertEqual(new_legal_hold, file_version.legal_hold)
+        assert new_legal_hold == file_version.legal_hold
