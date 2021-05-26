@@ -10,13 +10,13 @@
 
 import pytest
 
-from ..test_base import TestBase
-
+import apiver_deps
 from apiver_deps import B2Api
 from apiver_deps import DummyCache
 from apiver_deps import EncryptionAlgorithm
 from apiver_deps import EncryptionMode
 from apiver_deps import EncryptionSetting
+from apiver_deps import FileIdAndName
 from apiver_deps import FileRetentionSetting
 from apiver_deps import InMemoryAccountInfo
 from apiver_deps import LegalHold
@@ -24,6 +24,11 @@ from apiver_deps import RawSimulator
 from apiver_deps import RetentionMode
 from apiver_deps import NO_RETENTION_FILE_SETTING
 from apiver_deps_exception import RestrictedBucket
+
+if apiver_deps.V <= 1:
+    from apiver_deps import FileVersionInfo as VFileVersion
+else:
+    from apiver_deps import FileVersion as VFileVersion
 
 
 class TestApi:
@@ -239,3 +244,32 @@ class TestApi:
         self.api.update_file_legal_hold(created_file.id_, created_file.file_name, new_legal_hold)
         file_version = bucket.get_file_info_by_id(created_file.id_)
         assert new_legal_hold == file_version.legal_hold
+
+    @pytest.mark.apiver(from_ver=2)
+    def test_cancel_large_file_v2(self):
+        self._authorize_account()
+        bucket = self.api.create_bucket('bucket1', 'allPrivate')
+        unfinished_large_file = self.api.services.large_file.start_large_file(
+            bucket.id_, 'a_large_file'
+        )
+        cancel_result = self.api.cancel_large_file(unfinished_large_file.file_id)
+        assert cancel_result == FileIdAndName('9999', 'a_large_file')
+
+    @pytest.mark.apiver(to_ver=1)
+    def test_cancel_large_file_v1(self):
+        self._authorize_account()
+        bucket = self.api.create_bucket('bucket1', 'allPrivate')
+        unfinished_large_file = self.api.services.large_file.start_large_file(
+            bucket.id_, 'a_large_file'
+        )
+        cancel_result = self.api.cancel_large_file(unfinished_large_file.file_id)
+        assert cancel_result == VFileVersion(
+            id_='9999',
+            file_name='a_large_file',
+            size=0,
+            content_type='unknown',
+            content_sha1='none',
+            file_info={},
+            upload_timestamp=0,
+            action='cancel',
+        )

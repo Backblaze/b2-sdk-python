@@ -12,7 +12,7 @@ from typing import Optional
 
 from b2sdk.encryption.setting import EncryptionSetting
 from b2sdk.file_lock import FileRetentionSetting, LegalHold
-from b2sdk.file_version import FileVersionFactory
+from b2sdk.file_version import FileIdAndName
 from b2sdk.large_file.part import PartFactory
 from b2sdk.large_file.unfinished_large_file import UnfinishedLargeFile
 
@@ -95,7 +95,7 @@ class LargeFileServices(object):
         :param str,None content_type: the MIME type, or ``None`` to accept the default based on file extension of the B2 file name
         :param dict,None file_info: a file info to store with the file or ``None`` to not store anything
         :param b2sdk.v1.EncryptionSetting encryption: encryption settings (``None`` if unknown)
-        :param bool legal_hold: legal hold setting
+        :param b2sdk.v1.LegalHold legal_hold: legal hold setting
         :param b2sdk.v1.FileRetentionSetting file_retention: file retention setting
         """
         return UnfinishedLargeFile(
@@ -111,12 +111,9 @@ class LargeFileServices(object):
         )
 
     # delete/cancel
-    def cancel_large_file(self, file_id):
+    def cancel_large_file(self, file_id: str) -> FileIdAndName:
         """
         Cancel a large file upload.
-
-        :param str file_id: a file ID
-        :rtype: None
         """
         response = self.services.session.cancel_large_file(file_id)
-        return FileVersionFactory.from_cancel_large_file_response(response)
+        return FileIdAndName.from_cancel_or_delete_response(response)

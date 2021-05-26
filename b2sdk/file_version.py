@@ -120,6 +120,12 @@ class FileVersion:
                 return False
         return True
 
+    def __repr__(self):
+        return '%s(%s)' % (
+            self.__class__.__name__,
+            ', '.join(repr(getattr(self, attr)) for attr in self.__slots__)
+        )
+
 
 class FileVersionFactory(object):
     """
@@ -197,19 +203,6 @@ class FileVersionFactory(object):
         )
 
     @classmethod
-    def from_cancel_large_file_response(cls, response):
-        return FileVersion(
-            response['fileId'],
-            response['fileName'],
-            0,  # size
-            'unknown',
-            'none',
-            {},
-            0,  # upload timestamp
-            'cancel'
-        )
-
-    @classmethod
     def from_response_headers(cls, headers):
         return FileVersion(
             id_=headers.get('x-bz-file-id'),
@@ -230,16 +223,23 @@ class FileIdAndName(object):
     """
     A structure which represents a B2 cloud file with just `file_name` and `fileId` attributes.
 
-    Used to return data from calls to :py:meth:`b2sdk.v1.Bucket.delete_file_version`.
-
-    :ivar str ~.file_id: ``fileId``
-    :ivar str ~.file_name: full file name (with path)
+    Used to return data from calls to b2_delete_file_version and b2_cancel_large_file.
     """
 
-    def __init__(self, file_id, file_name):
+    def __init__(self, file_id: str, file_name: str):
         self.file_id = file_id
         self.file_name = file_name
+
+    @classmethod
+    def from_cancel_or_delete_response(cls, response):
+        return cls(response['fileId'], response['fileName'])
 
     def as_dict(self):
         """ represents the object as a dict which looks almost exactly like the raw api output for delete_file_version """
         return {'action': 'delete', 'fileId': self.file_id, 'fileName': self.file_name}
+
+    def __eq__(self, other):
+        return (self.file_id == other.file_id and self.file_name == other.file_name)
+
+    def __repr__(self):
+        return '%s(%s, %s)' % (self.__class__.__name__, repr(self.file_id), repr(self.file_name))

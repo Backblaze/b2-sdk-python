@@ -77,3 +77,16 @@ class FileVersionInfoFactory(v2.FileVersionFactory):
     from_response_headers = translate_single_file_version(
         v2.FileVersionFactory.from_response_headers
     )
+
+
+def file_version_info_from_id_and_name(file_id_and_name: v2.FileIdAndName):
+    return FileVersionInfo(
+        id_=file_id_and_name.file_id,
+        file_name=file_id_and_name.file_name,
+        size=0,
+        content_type='unknown',
+        content_sha1='none',
+        file_info={},
+        upload_timestamp=0,
+        action='cancel',
+    )

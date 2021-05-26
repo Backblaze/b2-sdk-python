@@ -394,28 +394,22 @@ class B2Api(metaclass=B2TraceMeta):
         )
 
     # delete/cancel
-    def cancel_large_file(self, file_id):
+    def cancel_large_file(self, file_id: str) -> FileIdAndName:
         """
         Cancel a large file upload.
-
-        :param str file_id: a file ID
-        :rtype: None
         """
         return self.services.large_file.cancel_large_file(file_id)
 
-    def delete_file_version(self, file_id, file_name):
+    def delete_file_version(self, file_id: str, file_name: str) -> FileIdAndName:
         """
         Permanently and irrevocably delete one version of a file.
-
-        :param str file_id: a file ID
-        :param str file_name: a file name
-        :rtype: FileIdAndName
         """
         # filename argument is not first, because one day it may become optional
         response = self.session.delete_file_version(file_id, file_name)
-        assert response['fileId'] == file_id
-        assert response['fileName'] == file_name
-        return FileIdAndName(file_id, file_name)
+        file_id_and_name = FileIdAndName.from_cancel_or_delete_response(response)
+        assert file_id_and_name.file_id == file_id
+        assert file_id_and_name.file_name == file_name
+        return file_id_and_name
 
     # download
     def get_download_url_for_fileid(self, file_id):
