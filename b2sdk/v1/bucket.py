@@ -8,15 +8,14 @@
 #
 ######################################################################
 
+from .file_version import FileVersionInfoFactory
 from typing import Optional
-
-from .file_version import translate_single_file_version, FileVersionInfoFactory
 from b2sdk import _v2 as v2
 from b2sdk.utils import validate_b2_file_name
 
 
 # Overridden to retain the obsolete copy_file and start_large_file methods
-# and to return old style FileVersionInfo
+# and to return old style FILE_VERSION_FACTORY
 class Bucket(v2.Bucket):
     FILE_VERSION_FACTORY = staticmethod(FileVersionInfoFactory)
 
@@ -89,10 +88,6 @@ class Bucket(v2.Bucket):
             file_retention=file_retention,
             legal_hold=legal_hold,
         )
-
-    create_file = translate_single_file_version(v2.Bucket.create_file)
-    create_file_stream = translate_single_file_version(v2.Bucket.create_file_stream)
-    copy = translate_single_file_version(v2.Bucket.copy)
 
 
 class BucketFactory(v2.BucketFactory):

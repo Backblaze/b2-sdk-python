@@ -20,7 +20,6 @@ from b2sdk.exception import (
     MaxRetriesExceeded,
 )
 from b2sdk.file_lock import FileRetentionSetting, LegalHold
-from b2sdk.file_version import FileVersionFactory
 from b2sdk.stream.progress import ReadingStreamWithProgress
 from b2sdk.stream.hashing import StreamWithHash
 from b2sdk.raw_api import HEX_DIGITS_AT_END
@@ -248,7 +247,10 @@ class UploadManager(metaclass=B2TraceMetaAbstract):
                             content_sha1 = input_stream.hash
                         assert content_sha1 == response[
                             'contentSha1'], '%s != %s' % (content_sha1, response['contentSha1'])
-                        return FileVersionFactory.from_api_response(response)
+                        return self.services.api.file_version_factory().from_api_response(
+                            self.services.api,
+                            response,
+                        )
 
                 except B2Error as e:
                     if not e.should_retry_upload():

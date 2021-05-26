@@ -15,7 +15,6 @@ from typing import Optional
 from b2sdk.encryption.setting import EncryptionMode, EncryptionSetting, SSE_C_KEY_ID_FILE_INFO_KEY_NAME
 from b2sdk.exception import AlreadyFailed, SSECKeyIdMismatchInCopy
 from b2sdk.file_lock import FileRetentionSetting, LegalHold
-from b2sdk.file_version import FileVersionFactory
 from b2sdk.raw_api import MetadataDirectiveMode
 from b2sdk.utils import B2TraceMetaAbstract
 
@@ -216,11 +215,14 @@ class CopyManager(metaclass=B2TraceMetaAbstract):
                 legal_hold=legal_hold,
                 file_retention=file_retention,
             )
-            file_info = FileVersionFactory.from_api_response(response)
+            file_version = self.services.api.file_version_factory().from_api_response(
+                self.services.api,
+                response,
+            )
             if progress_listener is not None:
-                progress_listener.bytes_completed(file_info.size)
+                progress_listener.bytes_completed(file_version.size)
 
-        return file_info
+        return file_version
 
     @classmethod
     def establish_sse_c_file_metadata(

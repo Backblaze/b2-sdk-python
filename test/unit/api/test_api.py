@@ -272,4 +272,5 @@ class TestApi:
             file_info={},
             upload_timestamp=0,
             action='cancel',
+            api=self.api,
         )

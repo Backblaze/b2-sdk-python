@@ -45,15 +45,16 @@ def url_for_api(info, api_name):
 class Services(object):
     """ Gathers objects that provide high level logic over raw api usage. """
 
-    def __init__(self, session, max_upload_workers=10, max_copy_workers=10):
+    def __init__(self, api, max_upload_workers=10, max_copy_workers=10):
         """
         Initialize Services object using given session.
 
-        :param b2sdk.v1.Session session:
+        :param b2sdk.v1.B2Api api:
         :param int max_upload_workers: a number of upload threads
         :param int max_copy_workers: a number of copy threads
         """
-        self.session = session
+        self.api = api
+        self.session = api.session
         self.large_file = LargeFileServices(self)
         self.download_manager = DownloadManager(self)
         self.upload_manager = UploadManager(self, max_upload_workers=max_upload_workers)
@@ -84,6 +85,11 @@ class B2Api(metaclass=B2TraceMeta):
     BUCKET_FACTORY_CLASS = staticmethod(BucketFactory)
     BUCKET_CLASS = staticmethod(Bucket)
     SESSION_CLASS = staticmethod(B2Session)
+
+    @classmethod
+    def file_version_factory(cls):
+        # sadly, combining @property and @classmethod does not work well for python version lower than 3.9
+        return cls.BUCKET_CLASS.FILE_VERSION_FACTORY
 
     def __init__(
         self,
@@ -121,7 +127,7 @@ class B2Api(metaclass=B2TraceMeta):
         """
         self.session = self.SESSION_CLASS(account_info=account_info, cache=cache, raw_api=raw_api)
         self.services = Services(
-            self.session,
+            self,
             max_upload_workers=max_upload_workers,
             max_copy_workers=max_copy_workers,
         )

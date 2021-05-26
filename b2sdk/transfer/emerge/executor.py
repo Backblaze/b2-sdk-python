@@ -16,7 +16,6 @@ from typing import Optional
 from b2sdk.encryption.setting import EncryptionSetting
 from b2sdk.exception import MaxFileSizeExceeded
 from b2sdk.file_lock import FileRetentionSetting, LegalHold, NO_RETENTION_FILE_SETTING
-from b2sdk.file_version import FileVersionFactory
 from b2sdk.transfer.outbound.large_file_upload_state import LargeFileUploadState
 from b2sdk.transfer.outbound.upload_source import UploadSourceStream
 from b2sdk.utils import interruptible_get_result
@@ -151,7 +150,6 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
     def execute_plan(self, emerge_plan):
         total_length = emerge_plan.get_total_length()
         encryption = self.encryption
-        encryption = self.encryption
 
         if total_length is not None and total_length > self.MAX_LARGE_FILE_SIZE:
             raise MaxFileSizeExceeded(total_length, self.MAX_LARGE_FILE_SIZE)
@@ -220,7 +218,10 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
 
         # Finish the large file
         response = self.services.session.finish_large_file(file_id, part_sha1_array)
-        return FileVersionFactory.from_api_response(response)
+        return self.services.api.file_version_factory().from_api_response(
+            self.services.api,
+            response,
+        )
 
     def _execute_step(self, execution_step):
         semaphore = self._semaphore

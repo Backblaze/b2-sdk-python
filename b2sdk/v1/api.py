@@ -47,4 +47,4 @@ class B2Api(v2.B2Api):
 
     def cancel_large_file(self, file_id: str) -> FileVersionInfo:
         file_id_and_name = super().cancel_large_file(file_id)
-        return file_version_info_from_id_and_name(file_id_and_name)
+        return file_version_info_from_id_and_name(file_id_and_name, self)
