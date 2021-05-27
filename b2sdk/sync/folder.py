@@ -17,7 +17,8 @@ import sys
 from abc import ABCMeta, abstractmethod
 from .exception import EmptyDirectory, EnvironmentEncodingError, UnSyncableFilename, NotADirectory, UnableToCreateDirectory
 from .path import B2SyncPath, LocalSyncPath
-from .scan_policies import DEFAULT_SCAN_MANAGER
+from .report import SyncReport
+from .scan_policies import DEFAULT_SCAN_MANAGER, ScanPoliciesManager
 from ..utils import fix_windows_path_limit, get_file_mtime, is_file_readable
 
 DRIVE_MATCHER = re.compile(r"^([A-Za-z]):([/\\])")
@@ -86,19 +87,14 @@ class AbstractFolder(metaclass=ABCMeta):
         """
 
 
-def join_b2_path(b2_dir, b2_name):
+def join_b2_path(relative_dir_path: str, file_name: str):
     """
     Like os.path.join, but for B2 file names where the root directory is called ''.
-
-    :param b2_dir: a directory path
-    :type b2_dir: str
-    :param b2_name: a file name
-    :type b2_name: str
     """
-    if b2_dir == '':
-        return b2_name
+    if relative_dir_path == '':
+        return file_name
     else:
-        return b2_dir + '/' + b2_name
+        return relative_dir_path + '/' + file_name
 
 
 class LocalFolder(AbstractFolder):
@@ -177,16 +173,15 @@ class LocalFolder(AbstractFolder):
         if not os.listdir(self.root):
             raise EmptyDirectory(self.root)
 
-    def _walk_relative_paths(self, local_dir, b2_dir, reporter, policies_manager):
+    def _walk_relative_paths(
+        self, local_dir: str, relative_dir_path: str, reporter: SyncReport,
+        policies_manager: ScanPoliciesManager
+    ):
         """
         Yield a File object for each of the files anywhere under this folder, in the
         order they would appear in B2, unless the path is excluded by policies manager.
 
-        :param local_dir: the local directory to list files in
-        :param b2_dir: the B2 path of this directory, or '' if at the root
-        :param reporter: a place to report errors
-        :param policies_manager: a manager for polices scan results
-        :return:
+        :param relative_dir_path: the path of this dir relative to the sync point, or '' if at sync point
         """
         if not isinstance(local_dir, str):
             raise ValueError('folder path should be unicode: %s' % repr(local_dir))
@@ -204,7 +199,7 @@ class LocalFolder(AbstractFolder):
         #    a0.txt
         #
         # This is because in Unicode '.' comes before '/', which comes before '0'.
-        names = []  # list of (name, local_path, b2_path)
+        names = []  # list of (name, local_path, relative_file_path)
         for name in os.listdir(local_dir):
             # We expect listdir() to return unicode if dir_path is unicode.
             # If the file name is not valid, based on the file system
@@ -219,7 +214,9 @@ class LocalFolder(AbstractFolder):
                 )
 
             local_path = os.path.join(local_dir, name)
-            b2_path = join_b2_path(b2_dir, name)
+            relative_file_path = join_b2_path(
+                relative_dir_path, name
+            )  # file path relative to the sync point
 
             # Skip broken symlinks or other inaccessible files
             if not is_file_readable(local_path, reporter):
@@ -232,19 +229,19 @@ class LocalFolder(AbstractFolder):
 
             if os.path.isdir(local_path):
                 name += '/'
-                if policies_manager.should_exclude_local_directory(b2_path):
+                if policies_manager.should_exclude_local_directory(relative_file_path):
                     continue
 
-            names.append((name, local_path, b2_path))
+            names.append((name, local_path, relative_file_path))
 
         # Yield all of the answers.
         #
         # Sorting the list of triples puts them in the right order because 'name',
         # the sort key, is the first thing in the triple.
-        for (name, local_path, b2_path) in sorted(names):
+        for (name, local_path, relative_file_path) in sorted(names):
             if name.endswith('/'):
                 for subdir_file in self._walk_relative_paths(
-                    local_path, b2_path, reporter, policies_manager
+                    local_path, relative_file_path, reporter, policies_manager
                 ):
                     yield subdir_file
             else:
@@ -255,8 +252,8 @@ class LocalFolder(AbstractFolder):
                     file_size = os.path.getsize(local_path)
 
                     local_sync_path = LocalSyncPath(
-                        absolute_path=self.make_full_path(b2_path),
-                        relative_path=b2_path,
+                        absolute_path=self.make_full_path(relative_file_path),
+                        relative_path=relative_file_path,
                         mod_time=file_mod_time,
                         size=file_size,
                     )
@@ -309,12 +306,11 @@ class B2Folder(AbstractFolder):
         self.bucket = api.get_bucket_by_name(bucket_name)
         self.prefix = '' if self.folder_name == '' else self.folder_name + '/'
 
-    def all_files(self, reporter, policies_manager=DEFAULT_SCAN_MANAGER):
+    def all_files(
+        self, reporter: SyncReport, policies_manager: ScanPoliciesManager = DEFAULT_SCAN_MANAGER
+    ):
         """
         Yield all files.
-
-        :param reporter: a place to report errors
-        :param policies_manager: a policies manager object, default is DEFAULT_SCAN_MANAGER
         """
         current_name = None
         last_ignored_dir = None
