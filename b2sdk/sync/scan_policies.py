@@ -18,6 +18,11 @@ from ..file_version import FileVersion
 
 logger = logging.getLogger(__name__)
 
+try:  # python 3.5 and 3.6 compatibility
+    regex_class = re.Pattern
+except AttributeError:
+    regex_class = re._pattern_type
+
 
 class RegexSet(object):
     """
@@ -121,9 +126,9 @@ class ScanPoliciesManager(object):
 
     def __init__(
         self,
-        exclude_dir_regexes: Iterable[Union[str, re.Pattern]] = tuple(),
-        exclude_file_regexes: Iterable[Union[str, re.Pattern]] = tuple(),
-        include_file_regexes: Iterable[Union[str, re.Pattern]] = tuple(),
+        exclude_dir_regexes: Iterable[Union[str, regex_class]] = tuple(),
+        exclude_file_regexes: Iterable[Union[str, regex_class]] = tuple(),
+        include_file_regexes: Iterable[Union[str, regex_class]] = tuple(),
         exclude_all_symlinks: bool = False,
         exclude_modified_before: Optional[int] = None,
         exclude_modified_after: Optional[int] = None,
