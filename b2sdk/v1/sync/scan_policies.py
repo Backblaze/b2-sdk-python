@@ -99,12 +99,11 @@ class ScanPoliciesManager(v2.ScanPoliciesManager):
         :return: True if excluded.
         :rtype: bool
         """
-        exclude_because_of_dir = self._exclude_file_because_of_dir_set.matches(file_path)
-        exclude_because_of_file = (
-            self._exclude_file_set.matches(file_path) and
-            not self._include_file_set.matches(file_path)
-        )
-        return exclude_because_of_dir or exclude_because_of_file
+        if self._exclude_file_because_of_dir_set.matches(file_path):
+            return True
+        if self._include_file_set.matches(file_path):
+            return False
+        return self._exclude_file_set.matches(file_path)
 
     def should_exclude_file_version(self, file_version):
         """

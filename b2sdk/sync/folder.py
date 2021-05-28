@@ -324,13 +324,13 @@ class B2Folder(AbstractFolder):
             if file_version.action == 'start':
                 continue
             file_name = file_version.file_name[len(self.prefix):]
-            if last_ignored_dir is not None and file_name.startswith(last_ignored_dir + '/'):
+            if last_ignored_dir is not None and file_name.startswith(last_ignored_dir):
                 continue
 
             dir_name = b2_parent_dir(file_name)
 
             if policies_manager.should_exclude_b2_directory(dir_name):
-                last_ignored_dir = dir_name
+                last_ignored_dir = dir_name + '/'
                 continue
             else:
                 last_ignored_dir = None

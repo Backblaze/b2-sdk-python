@@ -194,7 +194,6 @@ class ScanPoliciesManager(object):
     def should_exclude_local_path(self, local_path: LocalSyncPath):
         """
         Whether a local path should be excluded from the Sync or not.
-        Checks both for mod_time exclusion conditions and relative path conditions.
 
         This method assumes that the directory holding the `path_` has already been checked for exclusion.
         """
@@ -205,7 +204,6 @@ class ScanPoliciesManager(object):
     def should_exclude_b2_file_version(self, file_version: FileVersion, relative_path: str):
         """
         Whether a b2 file version should be excluded from the Sync or not.
-        Checks both for mod_time exclusion conditions and relative path conditions.
 
         This method assumes that the directory holding the `path_` has already been checked for exclusion.
         """
