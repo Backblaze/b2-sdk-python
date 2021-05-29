@@ -21,7 +21,7 @@ from .file_lock import (
     UNKNOWN_BUCKET_RETENTION,
     LegalHold,
 )
-from .file_version import FileVersionInfo, FileVersionInfoFactory
+from .file_version import FileVersion, FileVersionFactory
 from .progress import DoNothingProgressListener
 from .transfer.emerge.executor import AUTO_CONTENT_TYPE
 from .transfer.emerge.write_intent import WriteIntent
@@ -39,7 +39,7 @@ class Bucket(metaclass=B2TraceMeta):
     """
 
     DEFAULT_CONTENT_TYPE = AUTO_CONTENT_TYPE
-    FILE_VERSION_FACTORY = staticmethod(FileVersionInfoFactory)
+    FILE_VERSION_FACTORY = staticmethod(FileVersionFactory)
 
     def __init__(
         self,
@@ -224,18 +224,18 @@ class Bucket(metaclass=B2TraceMeta):
             encryption=encryption,
         )
 
-    def get_file_info_by_id(self, file_id: str) -> FileVersionInfo:
+    def get_file_info_by_id(self, file_id: str) -> FileVersion:
         """
-        Gets a file version's info by ID.
+        Gets a file version's by ID.
 
         :param str file_id: the id of the file who's info will be retrieved.
         :rtype: generator[b2sdk.v1.FileVersionInfo]
         """
         return self.FILE_VERSION_FACTORY.from_api_response(self.api.get_file_info(file_id))
 
-    def get_file_info_by_name(self, file_name: str) -> FileVersionInfo:
+    def get_file_info_by_name(self, file_name: str) -> FileVersion:
         """
-        Gets a file version's info by its name.
+        Gets a file version's by its name.
 
         :param str file_name: the name of the file who's info will be retrieved.
         :rtype: generator[b2sdk.v1.FileVersionInfo]
@@ -290,11 +290,11 @@ class Bucket(metaclass=B2TraceMeta):
             )
 
             for entry in response['files']:
-                file_version_info = self.FILE_VERSION_FACTORY.from_api_response(entry)
-                if file_version_info.file_name != file_name:
+                file_version = self.FILE_VERSION_FACTORY.from_api_response(entry)
+                if file_version.file_name != file_name:
                     # All versions for the requested file name have been listed.
                     return
-                yield file_version_info
+                yield file_version
             start_file_name = response['nextFileName']
             start_file_id = response['nextFileId']
             if start_file_name is None:
@@ -319,7 +319,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param bool recursive: if ``True``, list folders recursively
         :param int,None fetch_count: how many entries to return or ``None`` to use the default. Acceptable values: 1 - 10000
         :rtype: generator[tuple[b2sdk.v1.FileVersionInfo, str]]
-        :returns: generator of (file_version_info, folder_name) tuples
+        :returns: generator of (file_version, folder_name) tuples
 
         .. note::
             In case of `recursive=True`, folder_name is returned only for first file in the folder.
@@ -350,15 +350,15 @@ class Bucket(metaclass=B2TraceMeta):
             else:
                 response = session.list_file_names(self.id_, start_file_name, fetch_count, prefix)
             for entry in response['files']:
-                file_version_info = self.FILE_VERSION_FACTORY.from_api_response(entry)
-                if not file_version_info.file_name.startswith(prefix):
+                file_version = self.FILE_VERSION_FACTORY.from_api_response(entry)
+                if not file_version.file_name.startswith(prefix):
                     # We're past the files we care about
                     return
-                after_prefix = file_version_info.file_name[len(prefix):]
+                after_prefix = file_version.file_name[len(prefix):]
                 if '/' not in after_prefix or recursive:
                     # This is not a folder, so we'll print it out and
                     # continue on.
-                    yield file_version_info, None
+                    yield file_version, None
                     current_dir = None
                 else:
                     # This is a folder.  If it's different than the folder
@@ -368,7 +368,7 @@ class Bucket(metaclass=B2TraceMeta):
                     folder_with_slash = after_prefix.split('/')[0] + '/'
                     if folder_with_slash != current_dir:
                         folder_name = prefix + folder_with_slash
-                        yield file_version_info, folder_name
+                        yield file_version, folder_name
                         current_dir = folder_with_slash
             if response['nextFileName'] is None:
                 # The response says there are no more files in the bucket,
@@ -948,12 +948,12 @@ class BucketFactory(object):
                    }
                },
                "fileLockConfiguration": {
-                   "isClientAuthorizedToRead": true, 
+                   "isClientAuthorizedToRead": true,
                    "value": {
                        "defaultRetention": {
                            "mode": null,
                            "period": null
-                        }, 
+                        },
                         "isFileLockEnabled": false
                     }
               }

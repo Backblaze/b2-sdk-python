@@ -12,9 +12,10 @@ from typing import Optional
 
 from .encryption.setting import EncryptionSetting, EncryptionSettingFactory
 from .file_lock import FileRetentionSetting, LegalHold
+from .raw_api import SRC_LAST_MODIFIED_MILLIS
 
 
-class FileVersionInfo(object):
+class FileVersion:
     """
     A structure which represents a version of a file (in B2 cloud).
 
@@ -46,6 +47,7 @@ class FileVersionInfo(object):
         'server_side_encryption',
         'legal_hold',
         'file_retention',
+        'mod_time_millis',
     ]
 
     def __init__(
@@ -78,6 +80,11 @@ class FileVersionInfo(object):
         self.server_side_encryption = server_side_encryption
         self.legal_hold = legal_hold
         self.file_retention = file_retention
+
+        if SRC_LAST_MODIFIED_MILLIS in self.file_info:
+            self.mod_time_millis = int(self.file_info[SRC_LAST_MODIFIED_MILLIS])
+        else:
+            self.mod_time_millis = self.upload_timestamp
 
     def as_dict(self):
         """ represents the object as a dict which looks almost exactly like the raw api output for upload/list """
@@ -114,13 +121,13 @@ class FileVersionInfo(object):
         return True
 
 
-class FileVersionInfoFactory(object):
+class FileVersionFactory(object):
     """
     Construct :py:class:`b2sdk.v1.FileVersionInfo` objects from various structures.
     """
 
     @classmethod
-    def from_api_response(cls, file_info_dict, force_action=None):
+    def from_api_response(cls, file_version_dict, force_action=None):
         """
         Turn this:
 
@@ -153,28 +160,28 @@ class FileVersionInfoFactory(object):
         into a :py:class:`b2sdk.v1.FileVersionInfo` object.
 
         """
-        assert file_info_dict.get('action') is None or force_action is None, \
+        assert file_version_dict.get('action') is None or force_action is None, \
             'action was provided by both info_dict and function argument'
-        action = file_info_dict.get('action') or force_action
-        file_name = file_info_dict['fileName']
-        id_ = file_info_dict['fileId']
-        if 'size' in file_info_dict:
-            size = file_info_dict['size']
-        elif 'contentLength' in file_info_dict:
-            size = file_info_dict['contentLength']
+        action = file_version_dict.get('action') or force_action
+        file_name = file_version_dict['fileName']
+        id_ = file_version_dict['fileId']
+        if 'size' in file_version_dict:
+            size = file_version_dict['size']
+        elif 'contentLength' in file_version_dict:
+            size = file_version_dict['contentLength']
         else:
             raise ValueError('no size or contentLength')
-        upload_timestamp = file_info_dict.get('uploadTimestamp')
-        content_type = file_info_dict.get('contentType')
-        content_sha1 = file_info_dict.get('contentSha1')
-        content_md5 = file_info_dict.get('contentMd5')
-        file_info = file_info_dict.get('fileInfo')
-        server_side_encryption = EncryptionSettingFactory.from_file_version_dict(file_info_dict)
-        file_retention = FileRetentionSetting.from_file_version_dict(file_info_dict)
+        upload_timestamp = file_version_dict.get('uploadTimestamp')
+        content_type = file_version_dict.get('contentType')
+        content_sha1 = file_version_dict.get('contentSha1')
+        content_md5 = file_version_dict.get('contentMd5')
+        file_info = file_version_dict.get('fileInfo')
+        server_side_encryption = EncryptionSettingFactory.from_file_version_dict(file_version_dict)
+        file_retention = FileRetentionSetting.from_file_version_dict(file_version_dict)
 
-        legal_hold = LegalHold.from_file_version_dict(file_info_dict)
+        legal_hold = LegalHold.from_file_version_dict(file_version_dict)
 
-        return FileVersionInfo(
+        return FileVersion(
             id_,
             file_name,
             size,
@@ -191,7 +198,7 @@ class FileVersionInfoFactory(object):
 
     @classmethod
     def from_cancel_large_file_response(cls, response):
-        return FileVersionInfo(
+        return FileVersion(
             response['fileId'],
             response['fileName'],
             0,  # size
@@ -204,7 +211,7 @@ class FileVersionInfoFactory(object):
 
     @classmethod
     def from_response_headers(cls, headers):
-        return FileVersionInfo(
+        return FileVersion(
             id_=headers.get('x-bz-file-id'),
             file_name=headers.get('x-bz-file-name'),
             size=headers.get('content-length'),

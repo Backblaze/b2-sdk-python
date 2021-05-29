@@ -58,9 +58,9 @@ Internal API
    api/internal/stream/wrapper
    api/internal/sync/action
    api/internal/sync/exception
-   api/internal/sync/file
    api/internal/sync/folder
    api/internal/sync/folder_parser
+   api/internal/sync/path
    api/internal/sync/policy
    api/internal/sync/policy_manager
    api/internal/sync/scan_policies

@@ -12,7 +12,7 @@ from typing import Optional
 
 from b2sdk.encryption.setting import EncryptionSetting
 from b2sdk.file_lock import FileRetentionSetting, LegalHold
-from b2sdk.file_version import FileVersionInfoFactory
+from b2sdk.file_version import FileVersionFactory
 from b2sdk.large_file.part import PartFactory
 from b2sdk.large_file.unfinished_large_file import UnfinishedLargeFile
 
@@ -119,4 +119,4 @@ class LargeFileServices(object):
         :rtype: None
         """
         response = self.services.session.cancel_large_file(file_id)
-        return FileVersionInfoFactory.from_cancel_large_file_response(response)
+        return FileVersionFactory.from_cancel_large_file_response(response)

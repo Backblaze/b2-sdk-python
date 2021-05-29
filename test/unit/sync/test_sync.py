@@ -27,11 +27,17 @@ class TestSynchronizer:
         ILLEGAL = 5100
 
     @pytest.fixture(autouse=True)
-    def setup(self, folder_factory, mocker):
+    def setup(self, folder_factory, mocker, apiver):
         self.folder_factory = folder_factory
         self.local_folder_factory = partial(folder_factory, 'local')
         self.b2_folder_factory = partial(folder_factory, 'b2')
         self.reporter = mocker.MagicMock()
+        self.apiver = apiver
+
+    def _make_folder_sync_actions(self, synchronizer, *args, **kwargs):
+        if self.apiver in ['v0', 'v1']:
+            return synchronizer.make_folder_sync_actions(*args, **kwargs)
+        return synchronizer._make_folder_sync_actions(*args, **kwargs)
 
     def assert_folder_sync_actions(self, synchronizer, src_folder, dst_folder, expected_actions):
         """
@@ -40,8 +46,10 @@ class TestSynchronizer:
 
         The source and destination files may have multiple versions.
         """
+
         actions = list(
-            synchronizer.make_folder_sync_actions(
+            self._make_folder_sync_actions(
+                synchronizer,
                 src_folder,
                 dst_folder,
                 TODAY,
@@ -689,7 +697,7 @@ class TestSynchronizer:
     # FIXME: rewrite this test to not use mock.call checks when all of Synchronizers tests are rewritten to test_bucket
     # style - i.e. with simulated api and fake files returned from methods. Then, checking EncryptionSetting used for
     # transmission will be done by the underlying simulator.
-    def test_encryption_b2_to_local(self, synchronizer_factory):
+    def test_encryption_b2_to_local(self, synchronizer_factory, apiver):
         local = self.local_folder_factory()
         remote = self.b2_folder_factory(('directory/b.txt', [100]))
         synchronizer = synchronizer_factory()
@@ -699,8 +707,13 @@ class TestSynchronizer:
         provider = TstEncryptionSettingsProvider(encryption, encryption)
         download_action = next(
             iter(
-                synchronizer.make_folder_sync_actions(
-                    remote, local, TODAY, self.reporter, encryption_settings_provider=provider
+                self._make_folder_sync_actions(
+                    synchronizer,
+                    remote,
+                    local,
+                    TODAY,
+                    self.reporter,
+                    encryption_settings_provider=provider
                 )
             )
         )
@@ -714,12 +727,17 @@ class TestSynchronizer:
             mock.call.download_file_by_id('id_d_100', mock.ANY, mock.ANY, encryption=encryption),
         ]
 
-        assert provider.get_setting_for_download.mock_calls == [
-            mock.call(
+        if apiver in ['v0', 'v1']:
+            file_version_kwarg = 'file_version_info'
+        else:
+            file_version_kwarg = 'file_version'
+
+        provider.get_setting_for_download.assert_has_calls(
+            [mock.call(
                 bucket=bucket,
-                file_version_info=mock.ANY,
-            )
-        ]
+                **{file_version_kwarg: mock.ANY},
+            )]
+        )
 
     # FIXME: rewrite this test to not use mock.call checks when all of Synchronizers tests are rewritten to test_bucket
     # style - i.e. with simulated api and fake files returned from methods. Then, checking EncryptionSetting used for
@@ -734,8 +752,13 @@ class TestSynchronizer:
         provider = TstEncryptionSettingsProvider(encryption, encryption)
         upload_action = next(
             iter(
-                synchronizer.make_folder_sync_actions(
-                    local, remote, TODAY, self.reporter, encryption_settings_provider=provider
+                self._make_folder_sync_actions(
+                    synchronizer,
+                    local,
+                    remote,
+                    TODAY,
+                    self.reporter,
+                    encryption_settings_provider=provider
                 )
             )
         )
@@ -767,7 +790,7 @@ class TestSynchronizer:
     # FIXME: rewrite this test to not use mock.call checks when all of Synchronizers tests are rewritten to test_bucket
     # style - i.e. with simulated api and fake files returned from methods. Then, checking EncryptionSetting used for
     # transmission will be done by the underlying simulator.
-    def test_encryption_b2_to_b2(self, synchronizer_factory):
+    def test_encryption_b2_to_b2(self, synchronizer_factory, apiver):
         src = self.b2_folder_factory(('directory/a.txt', [100]))
         dst = self.b2_folder_factory()
         synchronizer = synchronizer_factory()
@@ -778,8 +801,13 @@ class TestSynchronizer:
         provider = TstEncryptionSettingsProvider(source_encryption, destination_encryption)
         copy_action = next(
             iter(
-                synchronizer.make_folder_sync_actions(
-                    src, dst, TODAY, self.reporter, encryption_settings_provider=provider
+                self._make_folder_sync_actions(
+                    synchronizer,
+                    src,
+                    dst,
+                    TODAY,
+                    self.reporter,
+                    encryption_settings_provider=provider
                 )
             )
         )
@@ -797,18 +825,27 @@ class TestSynchronizer:
                 destination_encryption=destination_encryption
             )
         ]
+
+        if apiver in ['v0', 'v1']:
+            file_version_kwarg = 'source_file_version_info'
+            additional_kwargs = {'target_file_info': None}
+        else:
+            file_version_kwarg = 'source_file_version'
+            additional_kwargs = {}
+
         assert provider.get_source_setting_for_copy.mock_calls == [
             mock.call(
-                bucket='fake_bucket',
-                source_file_version_info=mock.ANY,
+                bucket=mock.ANY,
+                **{file_version_kwarg: mock.ANY},
             )
         ]
 
         assert provider.get_destination_setting_for_copy.mock_calls == [
             mock.call(
-                bucket='fake_bucket',
-                source_file_version_info=mock.ANY,
+                bucket=mock.ANY,
                 dest_b2_file_name='folder/directory/a.txt',
+                **additional_kwargs,
+                **{file_version_kwarg: mock.ANY},
             )
         ]
 

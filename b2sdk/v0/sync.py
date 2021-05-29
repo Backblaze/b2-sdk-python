@@ -36,9 +36,9 @@ class Synchronizer(SynchronizerV1):
         except InvalidArgument as e:
             raise CommandError('--%s %s' % (e.parameter_name, e.message))
 
-    def make_file_sync_actions(self, *args, **kwargs):
+    def _make_file_sync_actions(self, *args, **kwargs):
         try:
-            for i in super(Synchronizer, self).make_file_sync_actions(*args, **kwargs):
+            for i in super(Synchronizer, self)._make_file_sync_actions(*args, **kwargs):
                 yield i
         except DestFileNewerV1 as e:
             raise DestFileNewer(e.dest_file, e.source_file, e.dest_prefix, e.source_prefix)

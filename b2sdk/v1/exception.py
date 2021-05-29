@@ -9,6 +9,7 @@
 ######################################################################
 
 from b2sdk._v2.exception import *  # noqa
+v2DestFileNewer = DestFileNewer
 
 
 # This exception class is deprecated and should not be used in new designs
@@ -25,3 +26,22 @@ class CommandError(B2Error):
 
     def __str__(self):
         return self.message
+
+
+class DestFileNewer(v2DestFileNewer):
+    def __init__(self, dest_file, source_file, dest_prefix, source_prefix):
+        super(v2DestFileNewer, self).__init__()
+        self.dest_file = dest_file
+        self.source_file = source_file
+        self.dest_prefix = dest_prefix
+        self.source_prefix = source_prefix
+
+    def __str__(self):
+        return 'source file is older than destination: %s%s with a time of %s cannot be synced to %s%s with a time of %s, unless a valid newer_file_mode is provided' % (
+            self.source_prefix,
+            self.source_file.name,
+            self.source_file.latest_version().mod_time,
+            self.dest_prefix,
+            self.dest_file.name,
+            self.dest_file.latest_version().mod_time,
+        )

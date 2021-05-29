@@ -12,7 +12,7 @@ from abc import abstractmethod
 import functools
 
 from b2sdk import _v2 as v2
-from .scan_policies import DEFAULT_SCAN_MANAGER
+from .scan_policies import DEFAULT_SCAN_MANAGER, wrap_if_necessary
 from .. import exception
 
 
@@ -40,11 +40,16 @@ class AbstractFolder(v2.AbstractFolder):
         pass
 
 
+# override to retain "policies_manager" default argument,
+# and wrap policies_manager
 class B2Folder(v2.B2Folder, AbstractFolder):
-    pass
+    def all_files(self, reporter, policies_manager=DEFAULT_SCAN_MANAGER):
+        return super().all_files(reporter, wrap_if_necessary(policies_manager))
 
 
-# "policies_manager" default argument and translate nice errors to old style Exceptions and CommandError
+# override to retain "policies_manager" default argument,
+# translate nice errors to old style Exceptions and CommandError
+# and wrap policies_manager
 class LocalFolder(v2.LocalFolder, AbstractFolder):
     @translate_errors
     def ensure_present(self):
@@ -53,3 +58,6 @@ class LocalFolder(v2.LocalFolder, AbstractFolder):
     @translate_errors
     def ensure_non_empty(self):
         return super().ensure_non_empty()
+
+    def all_files(self, reporter, policies_manager=DEFAULT_SCAN_MANAGER):
+        return super().all_files(reporter, wrap_if_necessary(policies_manager))

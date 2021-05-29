@@ -15,7 +15,7 @@ from b2sdk import _v2 as v2
 
 
 # override to retain old formatting methods
-class FileVersionInfo(v2.FileVersionInfo):
+class FileVersionInfo(v2.FileVersion):
     LS_ENTRY_TEMPLATE = '%83s  %6s  %10s  %8s  %9d  %s'  # order is file_id, action, date, time, size, name
 
     def format_ls_entry(self):
@@ -37,30 +37,43 @@ class FileVersionInfo(v2.FileVersionInfo):
         return cls.LS_ENTRY_TEMPLATE % ('-', '-', '-', '-', 0, name)
 
 
-def file_version_info_from_new_file_version_info(
-    file_version: v2.FileVersionInfo
-) -> FileVersionInfo:
+def file_version_info_from_new_file_version(file_version: v2.FileVersion) -> FileVersionInfo:
     return FileVersionInfo(
-        **{att_name: getattr(file_version, att_name)
-           for att_name in FileVersionInfo.__slots__}
+        **{
+            att_name: getattr(file_version, att_name)
+            for att_name in [
+                'id_',
+                'file_name',
+                'size',
+                'content_type',
+                'content_sha1',
+                'file_info',
+                'upload_timestamp',
+                'action',
+                'content_md5',
+                'server_side_encryption',
+                'legal_hold',
+                'file_retention',
+            ]
+        }
     )
 
 
 def translate_single_file_version(func):
     @functools.wraps(func)
     def inner(*a, **kw):
-        return file_version_info_from_new_file_version_info(func(*a, **kw))
+        return file_version_info_from_new_file_version(func(*a, **kw))
 
     return inner
 
 
 # override to return old style FileVersionInfo
-class FileVersionInfoFactory(v2.FileVersionInfoFactory):
+class FileVersionInfoFactory(v2.FileVersionFactory):
 
-    from_api_response = translate_single_file_version(v2.FileVersionInfoFactory.from_api_response)
+    from_api_response = translate_single_file_version(v2.FileVersionFactory.from_api_response)
     from_cancel_large_file_response = translate_single_file_version(
-        v2.FileVersionInfoFactory.from_cancel_large_file_response
+        v2.FileVersionFactory.from_cancel_large_file_response
     )
     from_response_headers = translate_single_file_version(
-        v2.FileVersionInfoFactory.from_response_headers
+        v2.FileVersionFactory.from_response_headers
     )

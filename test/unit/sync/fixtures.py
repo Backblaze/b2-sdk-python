@@ -8,91 +8,41 @@
 #
 ######################################################################
 
+from unittest import mock
+
 import pytest
 
-from apiver_deps import AbstractFolder, File, B2File, FileVersion, B2FileVersion, FileVersionInfo
+import apiver_deps
+from apiver_deps import AbstractFolder, B2Folder, LocalFolder, B2SyncPath, LocalSyncPath
 from apiver_deps import CompareVersionMode, NewerFileSyncMode, KeepOrDeleteMode
 from apiver_deps import DEFAULT_SCAN_MANAGER, Synchronizer
 
-
-class FakeFolder(AbstractFolder):
-    def __init__(self, f_type, files=None):
-        if files is None:
-            files = []
-
-        self.f_type = f_type
-        self.files = files
-
-    @property
-    def bucket_name(self):
-        if self.f_type != 'b2':
-            raise ValueError('FakeFolder with type!=b2 does not have a bucket name')
-        return 'fake_bucket_name'
-
-    @property
-    def bucket(self):
-        if self.f_type != 'b2':
-            raise ValueError('FakeFolder with type!=b2 does not have a bucket')
-        return 'fake_bucket'  # WARNING: this is supposed to be a Bucket object, not a string
-
-    def all_files(self, reporter, policies_manager=DEFAULT_SCAN_MANAGER):
-        for single_file in self.files:
-            if single_file.name.endswith('/'):
-                if policies_manager.should_exclude_directory(single_file.name):
-                    continue
-            else:
-                if policies_manager.should_exclude_file(single_file.name):
-                    continue
-            yield single_file
-
-    def folder_type(self):
-        return self.f_type
-
-    def make_full_path(self, name):
-        if self.f_type == 'local':
-            return '/dir/' + name
-        else:
-            return 'folder/' + name
-
-    def __str__(self):
-        return '%s(%s, %s)' % (self.__class__.__name__, self.f_type, self.make_full_path(''))
+if apiver_deps.V <= 1:
+    from apiver_deps import FileVersionInfo as VFileVersion
+else:
+    from apiver_deps import FileVersion as VFileVersion
 
 
-def local_file(name, mod_times, size=10):
-    """
-    Makes a File object for a local file, with one FileVersion for
-    each modification time given in mod_times.
-    """
-    versions = [
-        FileVersion('/dir/%s' % (name,), name, mod_time, 'upload', size) for mod_time in mod_times
-    ]
-    return File(name, versions)
+class FakeB2Folder(B2Folder):
+    def __init__(self, test_files):
+        self.file_versions = []
+        for test_file in test_files:
+            self.file_versions.extend(self._file_versions(*test_file))
+        super().__init__('test-bucket', 'folder', mock.MagicMock())
 
+    def get_file_versions(self):
+        yield from iter(self.file_versions)
 
-def b2_file(name, mod_times, size=10):
-    """
-    Makes a File object for a b2 file, with one FileVersion for
-    each modification time given in mod_times.
+    def _file_versions(self, name, mod_times, size=10):
+        """
+        Makes FileVersion objects.
 
-    Positive modification times are uploads, and negative modification
-    times are hides.  It's a hack, but it works.
+        Positive modification times are uploads, and negative modification
+        times are hides.  It's a hack, but it works.
 
-        b2_file('a.txt', [300, -200, 100])
-
-    Is the same as:
-
-        File(
-            'a.txt',
-            [
-               FileVersion('id_a_300', 'a.txt', 300, 'upload'),
-               FileVersion('id_a_200', 'a.txt', 200, 'hide'),
-               FileVersion('id_a_100', 'a.txt', 100, 'upload')
-            ]
-        )
-    """
-    versions = [
-        B2FileVersion(
-            FileVersionInfo(
+        """
+        return [
+            VFileVersion(
                 id_='id_%s_%d' % (name[0], abs(mod_time)),
                 file_name='folder/' + name,
                 upload_timestamp=abs(mod_time),
@@ -101,24 +51,41 @@ def b2_file(name, mod_times, size=10):
                 file_info={'in_b2': 'yes'},
                 content_type='text/plain',
                 content_sha1='content_sha1',
-            )
-        ) for mod_time in mod_times
-    ]  # yapf disable
-    return B2File(name, versions)
+            ) for mod_time in mod_times
+        ]  # yapf disable
+
+
+class FakeLocalFolder(LocalFolder):
+    def __init__(self, test_files):
+        super().__init__('folder')
+        self.local_sync_paths = [self._local_sync_path(*test_file) for test_file in test_files]
+
+    def all_files(self, reporter, policies_manager=DEFAULT_SCAN_MANAGER):
+        for single_path in self.local_sync_paths:
+            if single_path.relative_path.endswith('/'):
+                if policies_manager.should_exclude_b2_directory(single_path.relative_path):
+                    continue
+            else:
+                if policies_manager.should_exclude_local_path(single_path):
+                    continue
+            yield single_path
+
+    def make_full_path(self, name):
+        return '/dir/' + name
+
+    def _local_sync_path(self, name, mod_times, size=10):
+        """
+        Makes a LocalSyncPath object for a local file.
+        """
+        return LocalSyncPath(name, name, mod_times[0], size)
 
 
 @pytest.fixture(scope='session')
 def folder_factory():
     def get_folder(f_type, *files):
-        def get_files():
-            nonlocal files
-            for file in files:
-                if f_type == 'local':
-                    yield local_file(*file)
-                else:
-                    yield b2_file(*file)
-
-        return FakeFolder(f_type, list(get_files()))
+        if f_type == 'b2':
+            return FakeB2Folder(files)
+        return FakeLocalFolder(files)
 
     return get_folder
 

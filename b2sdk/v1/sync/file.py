@@ -1,8 +1,8 @@
 ######################################################################
 #
-# File: b2sdk/sync/file.py
+# File: b2sdk/v1/sync/file.py
 #
-# Copyright 2019 Backblaze Inc. All Rights Reserved.
+# Copyright 2021 Backblaze Inc. All Rights Reserved.
 #
 # License https://www.backblaze.com/using_b2_code.html
 #
@@ -10,10 +10,11 @@
 
 from typing import List
 
-from ..file_version import FileVersionInfo
-from ..raw_api import SRC_LAST_MODIFIED_MILLIS
+from b2sdk.v1 import FileVersionInfo
+from b2sdk.raw_api import SRC_LAST_MODIFIED_MILLIS
 
 
+# This whole module is here to retain legacy classes so they can be used in retained legacy exception
 class File(object):
     """
     Hold information about one file in a folder.
@@ -54,14 +55,14 @@ class B2File(File):
 
     __slots__ = ['name', 'versions']
 
-    def __init__(self, name, versions: List['B2FileVersion']):
+    def __init__(self, name, versions: List['FileVersion']):
         """
         :param str name: a relative file name
-        :param List[B2FileVersion] versions: a list of file versions
+        :param List[FileVersion] versions: a list of file versions
         """
         super().__init__(name, versions)
 
-    def latest_version(self) -> 'B2FileVersion':
+    def latest_version(self) -> 'FileVersion':
         return super().latest_version()
 
 

@@ -206,7 +206,7 @@ class EncryptionSettingFactory:
     # if not authorized to read:
     #    isClientAuthorizedToRead is False and there is no value, so no mode
     #
-    # BUT file_version_info (get_file_info, list_file_versions, upload_file etc)
+    # BUT file_version (get_file_info, list_file_versions, upload_file etc)
     # if the file is encrypted, then
     #     "serverSideEncryption": {"algorithm": "AES256", "mode": "SSE-B2"},
     #     or

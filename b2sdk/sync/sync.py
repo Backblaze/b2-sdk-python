@@ -15,8 +15,11 @@ from enum import Enum, unique
 from ..bounded_queue_executor import BoundedQueueExecutor
 from .encryption_provider import AbstractSyncEncryptionSettingsProvider, SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER
 from .exception import InvalidArgument, IncompleteSync
+from .folder import AbstractFolder
+from .path import AbstractSyncPath
 from .policy import CompareVersionMode, NewerFileSyncMode
-from .policy_manager import POLICY_MANAGER
+from .policy_manager import POLICY_MANAGER, SyncPolicyManager
+from .report import SyncReport
 from .scan_policies import DEFAULT_SCAN_MANAGER
 
 logger = logging.getLogger(__name__)
@@ -61,14 +64,14 @@ def zip_folders(folder_a, folder_b, reporter, policies_manager=DEFAULT_SCAN_MANA
         elif current_b is None:
             yield (current_a, None)
             current_a = next_or_none(iter_a)
-        elif current_a.name < current_b.name:
+        elif current_a.relative_path < current_b.relative_path:
             yield (current_a, None)
             current_a = next_or_none(iter_a)
-        elif current_b.name < current_a.name:
+        elif current_b.relative_path < current_a.relative_path:
             yield (None, current_b)
             current_b = next_or_none(iter_b)
         else:
-            assert current_a.name == current_b.name
+            assert current_a.relative_path == current_b.relative_path
             yield (current_a, current_b)
             current_a = next_or_none(iter_a)
             current_b = next_or_none(iter_b)
@@ -243,7 +246,7 @@ class Synchronizer:
             action_bucket = source_folder.bucket
 
         # Schedule each of the actions.
-        for action in self.make_folder_sync_actions(
+        for action in self._make_folder_sync_actions(
             source_folder,
             dest_folder,
             now_millis,
@@ -259,13 +262,13 @@ class Synchronizer:
         if sync_executor.get_num_exceptions() != 0:
             raise IncompleteSync('sync is incomplete')
 
-    def make_folder_sync_actions(
+    def _make_folder_sync_actions(
         self,
-        source_folder,
-        dest_folder,
-        now_millis,
-        reporter,
-        policies_manager=DEFAULT_SCAN_MANAGER,
+        source_folder: AbstractFolder,
+        dest_folder: AbstractFolder,
+        now_millis: int,
+        reporter: SyncReport,
+        policies_manager: SyncPolicyManager = DEFAULT_SCAN_MANAGER,
         encryption_settings_provider:
         AbstractSyncEncryptionSettingsProvider = SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER,
     ):
@@ -277,7 +280,7 @@ class Synchronizer:
         :param b2sdk.v1.AbstractFolder dest_folder: destination folder object
         :param int now_millis: current time in milliseconds
         :param b2sdk.v1.SyncReport reporter: reporter object
-        :param policies_manager: policies manager object
+        :param b2sdk.v1.SyncPolicyManager policies_manager: policies manager object
         :param b2sdk.v1.AbstractSyncEncryptionSettingsProvider encryption_settings_provider: encryption setting provider
         """
         if self.keep_days_or_delete == KeepOrDeleteMode.KEEP_BEFORE_DELETE and dest_folder.folder_type(
@@ -292,28 +295,28 @@ class Synchronizer:
 
         total_files = 0
         total_bytes = 0
-        for source_file, dest_file in zip_folders(
+        for source_path, dest_path in zip_folders(
             source_folder,
             dest_folder,
             reporter,
             policies_manager,
         ):
-            if source_file is None:
-                logger.debug('determined that %s is not present on source', dest_file)
-            elif dest_file is None:
-                logger.debug('determined that %s is not present on destination', source_file)
+            if source_path is None:
+                logger.debug('determined that %s is not present on source', dest_path)
+            elif dest_path is None:
+                logger.debug('determined that %s is not present on destination', source_path)
 
-            if source_file is not None:
+            if source_path is not None:
                 if source_type == 'b2':
                     # For buckets we don't want to count files separately as it would require
                     # more API calls. Instead, we count them when comparing.
                     reporter.update_total(1)
                 reporter.update_compare(1)
 
-            for action in self.make_file_sync_actions(
+            for action in self._make_file_sync_actions(
                 sync_type,
-                source_file,
-                dest_file,
+                source_path,
+                dest_path,
                 source_folder,
                 dest_folder,
                 now_millis,
@@ -330,14 +333,14 @@ class Synchronizer:
                 reporter.end_total()
             reporter.end_compare(total_files, total_bytes)
 
-    def make_file_sync_actions(
+    def _make_file_sync_actions(
         self,
-        sync_type,
-        source_file,
-        dest_file,
-        source_folder,
-        dest_folder,
-        now_millis,
+        sync_type: str,
+        source_path: AbstractSyncPath,
+        dest_path: AbstractSyncPath,
+        source_folder: AbstractFolder,
+        dest_folder: AbstractFolder,
+        now_millis: int,
         encryption_settings_provider:
         AbstractSyncEncryptionSettingsProvider = SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER,
     ):
@@ -345,8 +348,8 @@ class Synchronizer:
         Yields the sequence of actions needed to sync the two files
 
         :param str sync_type: synchronization type
-        :param b2sdk.v1.File source_file: source file object
-        :param b2sdk.v1.File dest_file: destination file object
+        :param b2sdk.v1.AbstractSyncPath source_path: source file object
+        :param b2sdk.v1.AbstractSyncPath dest_path: destination file object
         :param b2sdk.v1.AbstractFolder source_folder: a source folder object
         :param b2sdk.v1.AbstractFolder dest_folder: a destination folder object
         :param int now_millis: current time in milliseconds
@@ -357,9 +360,9 @@ class Synchronizer:
 
         policy = POLICY_MANAGER.get_policy(
             sync_type,
-            source_file,
+            source_path,
             source_folder,
-            dest_file,
+            dest_path,
             dest_folder,
             now_millis,
             delete,
