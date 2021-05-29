@@ -282,9 +282,13 @@ class LocalFolder(AbstractFolder):
 
 
 def b2_parent_dir(file_name):
-    if '/' not in file_name:
+    # Various Parent dir getting method have been tested, and this one seems to be the faste
+    # After dropping python 3.9 support: refactor this use the "match" syntax
+    try:
+        dir_name, _ = file_name.rsplit('/', 1)
+    except ValueError:
         return ''
-    return file_name.rsplit('/', 1)[0]
+    return dir_name
 
 
 class B2Folder(AbstractFolder):
