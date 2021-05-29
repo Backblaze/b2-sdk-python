@@ -44,6 +44,13 @@ class LocalSyncPath(AbstractSyncPath):
     def is_visible(self) -> bool:
         return True
 
+    def __eq__(self, other):
+        return (
+            self.absolute_path == other.absolute_path and
+            self.relative_path == other.relative_path and self.mod_time == other.mod_time and
+            self.size == other.size
+        )
+
 
 class B2SyncPath(AbstractSyncPath):
     __slots__ = ['relative_path', 'selected_version', 'all_versions']
@@ -75,4 +82,11 @@ class B2SyncPath(AbstractSyncPath):
                     repr(fv.action),
                 ) for fv in self.all_versions
             )
+        )
+
+    def __eq__(self, other):
+        return (
+            self.relative_path == other.relative_path and
+            self.selected_version == other.selected_version and
+            self.all_versions == other.all_versions
         )
