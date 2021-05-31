@@ -434,7 +434,7 @@ class B2Api(metaclass=B2TraceMeta):
         :param str bucket_name: a bucket name
         :param str file_name: a file name
         """
-        self.check_bucket_restrictions(bucket_name)
+        self.check_bucket_name_restrictions(bucket_name)
         return '%s/file/%s/%s' % (
             self.account_info.get_download_url(), bucket_name, b2_url_encode(file_name)
         )

@@ -61,3 +61,17 @@ class TestApi(TestBase):
         self.cache.save_bucket(Bucket(api=self.api, name='bucket_name', id_='bucket_id'))
         read_bucket = self.api.get_bucket_by_id('bucket_id')
         assert read_bucket.name == 'bucket_name'
+
+    def test_get_download_url_for_file_name(self):
+        self._authorize_account()
+
+        download_url = self.api.get_download_url_for_file_name('bucket1', 'some-file.txt')
+
+        assert download_url == 'http://download.example.com/file/bucket1/some-file.txt'
+
+    def test_get_download_url_for_fileid(self):
+        self._authorize_account()
+
+        download_url = self.api.get_download_url_for_fileid('file-id')
+
+        assert download_url == 'http://download.example.com/b2api/v2/b2_download_file_by_id?fileId=file-id'
