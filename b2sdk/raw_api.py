@@ -25,7 +25,7 @@ from .b2http import B2Http
 from .exception import FileOrBucketNotFound, ResourceNotFound, UnusableFileName, InvalidMetadataDirective, WrongEncryptionModeForBucketDefault, AccessDenied, SSECKeyError, RetentionWriteError
 from .encryption.setting import EncryptionAlgorithm, EncryptionMode, EncryptionSetting
 from .file_lock import BucketRetentionSetting, FileRetentionSetting, NO_RETENTION_FILE_SETTING, RetentionMode, RetentionPeriod, LegalHold
-from .utils import b2_url_encode, hex_sha1_of_stream
+from .utils import b2_url_encode, hex_sha1_of_stream, FILE_INFO_HEADER_PREFIX
 
 # All supported realms
 REALM_URLS = {
@@ -863,7 +863,7 @@ class B2RawApi(AbstractRawApi):
             'X-Bz-Content-Sha1': content_sha1,
         }
         for k, v in file_infos.items():
-            headers['X-Bz-Info-' + k] = b2_url_encode(v)
+            headers[FILE_INFO_HEADER_PREFIX + k] = b2_url_encode(v)
         if server_side_encryption is not None:
             assert server_side_encryption.mode in (
                 EncryptionMode.NONE, EncryptionMode.SSE_B2, EncryptionMode.SSE_C

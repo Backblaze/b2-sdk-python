@@ -18,6 +18,8 @@ import time
 import threading
 from contextlib import contextmanager
 
+from requests.structures import CaseInsensitiveDict
+
 from .b2http import ResponseContextManager
 from .encryption.setting import EncryptionMode, EncryptionSetting
 from .exception import (
@@ -44,6 +46,7 @@ from .utils import (
     b2_url_encode,
     ConcurrentUsedAuthTokenGuard,
     hex_sha1_of_bytes,
+    FILE_INFO_HEADER_PREFIX,
 )
 from .stream.hashing import StreamWithHash
 
@@ -206,14 +209,18 @@ class FileSimulator(object):
                 content_length = range_[1] - range_[0] + 1
         else:
             content_length = len(self.data_bytes)
-        headers = {
-            'content-length': content_length,
-            'content-type': self.content_type,
-            'x-bz-content-sha1': self.content_sha1,
-            'x-bz-upload-timestamp': self.upload_timestamp,
-            'x-bz-file-id': self.file_id,
-            'x-bz-file-name': self.name,
-        }
+        headers = CaseInsensitiveDict(
+            {
+                'content-length': content_length,
+                'content-type': self.content_type,
+                'x-bz-content-sha1': self.content_sha1,
+                'x-bz-upload-timestamp': self.upload_timestamp,
+                'x-bz-file-id': self.file_id,
+                'x-bz-file-name': self.name,
+            }
+        )
+        for key, value in self.file_info.items():
+            headers[FILE_INFO_HEADER_PREFIX + key] = value
 
         if account_auth_token_or_none is not None and self.bucket.is_file_lock_enabled:
             not_permitted = []
@@ -233,12 +240,27 @@ class FileSimulator(object):
             if not_permitted:
                 headers['X-Bz-Client-Unauthorized-To-Read'] = ','.join(not_permitted)
 
+        if self.server_side_encryption is not None:
+            if self.server_side_encryption.mode == EncryptionMode.SSE_B2:
+                headers['X-Bz-Server-Side-Encryption'] = self.server_side_encryption.algorithm.value
+            elif self.server_side_encryption.mode == EncryptionMode.SSE_C:
+                headers['X-Bz-Server-Side-Encryption-Customer-Algorithm'
+                       ] = self.server_side_encryption.algorithm.value
+                headers['X-Bz-Server-Side-Encryption-Customer-Key-Md5'
+                       ] = self.server_side_encryption.key.key_md5()
+            elif self.server_side_encryption.mode in (EncryptionMode.NONE, EncryptionMode.UNKNOWN):
+                pass
+            else:
+                raise ValueError(
+                    'Unsupported encryption mode: %s' % (self.server_side_encryption.mode,)
+                )
+
         if range_ is not None:
             headers['Content-Range'] = 'bytes %d-%d/%d' % (
                 range_[0], range_[0] + content_length, len(self.data_bytes)
             )  # yapf: disable
         for key, value in self.file_info.items():
-            headers['x-bz-info-' + key] = value
+            headers[FILE_INFO_HEADER_PREFIX + key] = value
         return headers
 
     def as_upload_result(self, account_auth_token):
@@ -419,7 +441,7 @@ class FakeResponse(object):
 
     @property
     def request(self):
-        headers = {}
+        headers = CaseInsensitiveDict()
         if self.range_ is not None:
             headers['Range'] = '%s-%s' % self.range_
         return FakeRequest(self.url, headers)

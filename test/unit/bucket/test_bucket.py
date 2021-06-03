@@ -546,8 +546,12 @@ class TestListVersions(TestCaseWithBucket):
 
         actual = [info.server_side_encryption for info in self.bucket.list_file_versions('a')][0]
         self.assertEqual(SSE_NONE, actual)  # bucket default
+        actual = self.bucket.get_file_info_by_name('a').server_side_encryption
+        self.assertEqual(SSE_NONE, actual)  # bucket default
 
         actual = [info.server_side_encryption for info in self.bucket.list_file_versions('b')][0]
+        self.assertEqual(SSE_B2_AES, actual)  # explicitly requested sse-b2
+        actual = self.bucket.get_file_info_by_name('b').server_side_encryption
         self.assertEqual(SSE_B2_AES, actual)  # explicitly requested sse-b2
 
         # actual = [info.server_side_encryption for info in self.bucket.list_file_versions('c')][0]
@@ -555,8 +559,12 @@ class TestListVersions(TestCaseWithBucket):
 
         actual = [info.server_side_encryption for info in self.bucket.list_file_versions('d')][0]
         self.assertEqual(SSE_B2_AES, actual)  # explicitly requested sse-b2
+        actual = self.bucket.get_file_info_by_name('d').server_side_encryption
+        self.assertEqual(SSE_B2_AES, actual)  # explicitly requested sse-b2
 
         actual = [info.server_side_encryption for info in self.bucket.list_file_versions('e')][0]
+        self.assertEqual(SSE_C_AES_NO_SECRET, actual)  # explicitly requested sse-c
+        actual = self.bucket.get_file_info_by_name('e').server_side_encryption
         self.assertEqual(SSE_C_AES_NO_SECRET, actual)  # explicitly requested sse-c
 
 

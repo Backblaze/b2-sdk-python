@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 * Fix call to incorrect internal api in `B2Api.get_download_url_for_file_name`
+* Fix EncryptionSetting.from_response_headers
 
 ## [1.8.0] - 2021-05-21
 

@@ -21,6 +21,10 @@ from urllib.parse import quote, unquote_plus
 
 from logfury.v0_1 import DefaultTraceAbstractMeta, DefaultTraceMeta, limit_trace_arguments, disable_trace, trace_call
 
+# File info header prefix
+FILE_INFO_HEADER_PREFIX = 'X-Bz-Info-'
+FILE_INFO_HEADER_PREFIX_LOWER = FILE_INFO_HEADER_PREFIX.lower()
+
 
 def interruptible_get_result(future):
     """

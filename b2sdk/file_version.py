@@ -11,6 +11,7 @@
 from .encryption.setting import EncryptionSetting, EncryptionSettingFactory
 from .file_lock import FileRetentionSetting, LegalHold, NO_RETENTION_FILE_SETTING
 from .raw_api import SRC_LAST_MODIFIED_MILLIS
+from .utils import FILE_INFO_HEADER_PREFIX_LOWER
 if False:
     from .api import B2Api
 
@@ -204,6 +205,12 @@ class FileVersionFactory(object):
         )
 
     def from_response_headers(self, headers):
+        file_info = {}
+        prefix_len = len(FILE_INFO_HEADER_PREFIX_LOWER)
+        for header_name, header_value in headers.items():
+            if header_name[:prefix_len].lower() == FILE_INFO_HEADER_PREFIX_LOWER:
+                file_info_key = header_name[prefix_len:]
+                file_info[file_info_key] = header_value
         return FileVersion(
             api=self.api,
             id_=headers.get('x-bz-file-id'),
@@ -211,7 +218,7 @@ class FileVersionFactory(object):
             size=headers.get('content-length'),
             content_type=headers.get('content-type'),
             content_sha1=headers.get('x-bz-content-sha1'),
-            file_info=None,
+            file_info=file_info,
             upload_timestamp=headers.get('x-bz-upload-timestamp'),
             action=None,
             content_md5=None,
