@@ -1191,8 +1191,8 @@ class DownloadTestsBase(object):
 
     def setUp(self):
         super(DownloadTestsBase, self).setUp()
-        self.file_info = self.bucket.upload_bytes(self.DATA.encode(), 'file1')
-        self.encrypted_file_info = self.bucket.upload_bytes(
+        self.file_version = self.bucket.upload_bytes(self.DATA.encode(), 'file1')
+        self.encrypted_file_version = self.bucket.upload_bytes(
             self.DATA.encode(), 'enc_file1', encryption=SSE_C_AES
         )
         if apiver_deps.V <= 1:
@@ -1287,13 +1287,13 @@ class DownloadTests(DownloadTestsBase):
             'fileInfo': {},
             'fileName': 'file1'
         }
-        ret = self.bucket.download_file_by_id(self.file_info.id_, self.download_dest)
+        ret = self.bucket.download_file_by_id(self.file_version.id_, self.download_dest)
         assert ret == expected
-        ret = self.bucket.download_file_by_name(self.file_info.file_name, self.download_dest)
+        ret = self.bucket.download_file_by_name(self.file_version.file_name, self.download_dest)
         assert ret == expected
 
     def test_download_by_id_no_progress(self):
-        self.download_file_by_id(self.file_info.id_)
+        self.download_file_by_id(self.file_version.id_)
         self._verify(self.DATA, check_progress_listener=False)
 
     def test_download_by_name_no_progress(self):
@@ -1305,18 +1305,18 @@ class DownloadTests(DownloadTestsBase):
         self._verify(self.DATA)
 
     def test_download_by_id_progress(self):
-        self.download_file_by_id(self.file_info.id_, progress_listener=self.progress_listener)
+        self.download_file_by_id(self.file_version.id_, progress_listener=self.progress_listener)
         self._verify(self.DATA)
 
     def test_download_by_id_progress_partial(self):
         self.download_file_by_id(
-            self.file_info.id_, progress_listener=self.progress_listener, range_=(3, 9)
+            self.file_version.id_, progress_listener=self.progress_listener, range_=(3, 9)
         )
         self._verify('defghij')
 
     def test_download_by_id_progress_exact_range(self):
         self.download_file_by_id(
-            self.file_info.id_, progress_listener=self.progress_listener, range_=(0, 18)
+            self.file_version.id_, progress_listener=self.progress_listener, range_=(0, 18)
         )
         self._verify(self.DATA)
 
@@ -1326,7 +1326,7 @@ class DownloadTests(DownloadTestsBase):
             msg='A range of 0-19 was requested (size of 20), but cloud could only serve 19 of that',
         ):
             self.download_file_by_id(
-                self.file_info.id_,
+                self.file_version.id_,
                 progress_listener=self.progress_listener,
                 range_=(0, 19),
             )
@@ -1351,7 +1351,7 @@ class DownloadTests(DownloadTestsBase):
             data = b'12345678901234567890'
             write_file(path, data)
             self.download_file_by_id(
-                self.file_info.id_,
+                self.file_version.id_,
                 download_dest,
                 progress_listener=self.progress_listener,
                 range_=(3, 9),
@@ -1379,7 +1379,7 @@ class DownloadTests(DownloadTestsBase):
             with io.open(path, 'rb+') as file:
                 file.seek(3)
                 self.download_file_by_id(
-                    self.file_info.id_,
+                    self.file_version.id_,
                     v2_file=file,
                     progress_listener=self.progress_listener,
                     range_=(3, 9),
@@ -1421,7 +1421,7 @@ class DownloadTests(DownloadTestsBase):
             data = b'12345678901234567890'
             write_file(path, data)
             self.download_file_by_id(
-                self.file_info.id_,
+                self.file_version.id_,
                 download_dest,
                 progress_listener=self.progress_listener,
                 range_=(3, 9),
@@ -1454,7 +1454,7 @@ class DownloadTests(DownloadTestsBase):
             with io.open(path, 'rb+') as file:
                 file.seek(7)
                 self.download_file_by_id(
-                    self.file_info.id_,
+                    self.file_version.id_,
                     v2_file=file,
                     progress_listener=self.progress_listener,
                     range_=(3, 9),
@@ -1462,12 +1462,12 @@ class DownloadTests(DownloadTestsBase):
             self._check_local_file_contents(path, b'1234567defghij567890')
 
     def test_download_by_id_no_progress_encryption(self):
-        self.download_file_by_id(self.encrypted_file_info.id_, encryption=SSE_C_AES)
+        self.download_file_by_id(self.encrypted_file_version.id_, encryption=SSE_C_AES)
         self._verify(self.DATA, check_progress_listener=False)
 
     def test_download_by_id_no_progress_wrong_encryption(self):
         with self.assertRaises(SSECKeyError):
-            self.download_file_by_id(self.encrypted_file_info.id_, encryption=SSE_C_AES_2)
+            self.download_file_by_id(self.encrypted_file_version.id_, encryption=SSE_C_AES_2)
 
     def _check_local_file_contents(self, path, expected_contents):
         with open(path, 'rb') as f:
@@ -1482,7 +1482,7 @@ class EmptyFileDownloadScenarioMixin(object):
     """ use with DownloadTests, but not for TestDownloadParallel as it does not like empty files """
 
     def test_download_by_name_empty_file(self):
-        self.file_info = self.bucket.upload_bytes(b'', 'empty')
+        self.file_version = self.bucket.upload_bytes(b'', 'empty')
         self.download_file_by_name('empty', progress_listener=self.progress_listener)
         self._verify('')
 
@@ -1567,7 +1567,7 @@ class TestDownloadParallelALotOfStreams(DownloadTestsBase, TestCaseWithBucket):
         ]
 
     def test_download_by_id_progress_monotonic(self):
-        self.download_file_by_id(self.file_info.id_, progress_listener=self.progress_listener)
+        self.download_file_by_id(self.file_version.id_, progress_listener=self.progress_listener)
         self._verify(self.DATA)
 
 
