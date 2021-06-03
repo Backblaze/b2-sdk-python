@@ -70,6 +70,12 @@ class RangeOfInputStream(ReadOnlyStreamMixin, StreamWithLengthWrapper):
         self.relative_pos += len(data)
         return data
 
+    def close(self):
+        super().close()
+        # TODO: change the use cases of this class to close the file objects passed to it, instead of having
+        # RangeOfInputStream close it's members upon garbage collection
+        self.stream.close()
+
 
 def wrap_with_range(stream, stream_length, range_offset, range_length):
     if range_offset == 0 and range_length == stream_length:
