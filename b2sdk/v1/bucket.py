@@ -8,14 +8,18 @@
 #
 ######################################################################
 
+from .download_dest import AbstractDownloadDestination
+from .file_metadata import FileMetadata
 from .file_version import FileVersionInfoFactory
-from typing import Optional
+from typing import Optional, overload, Tuple
 from b2sdk import _v2 as v2
 from b2sdk.utils import validate_b2_file_name
 
 
 # Overridden to retain the obsolete copy_file and start_large_file methods
-# and to return old style FILE_VERSION_FACTORY attribute
+# and to retain old style FILE_VERSION_FACTORY attribute
+# and to retain old style download_file_by_name signature
+# and to retain old style download_file_by_id signature (allowing for the new one as well)
 class Bucket(v2.Bucket):
     FILE_VERSION_FACTORY = staticmethod(FileVersionInfoFactory)
 
@@ -88,6 +92,123 @@ class Bucket(v2.Bucket):
             file_retention=file_retention,
             legal_hold=legal_hold,
         )
+
+    def download_file_by_name(
+        self,
+        file_name: str,
+        download_dest: AbstractDownloadDestination,
+        progress_listener: Optional[v2.AbstractProgressListener] = None,
+        range_: Optional[Tuple[int, int]] = None,
+        encryption: Optional[v2.EncryptionSetting] = None,
+        allow_seeking: bool = True,
+    ):
+        """
+        Download a file by name.
+
+        .. seealso::
+
+            :ref:`Synchronizer <sync>`, a *high-performance* utility that synchronizes a local folder with a Bucket.
+
+        :param str file_name: a file name
+        :param download_dest: an instance of the one of the following classes: \
+        :class:`~b2sdk.v1.DownloadDestLocalFile`,\
+        :class:`~b2sdk.v1.DownloadDestBytes`,\
+        :class:`~b2sdk.v1.PreSeekedDownloadDest`,\
+        or any sub class of :class:`~b2sdk.v1.AbstractDownloadDestination`
+        :param progress_listener: a progress listener object to use, or ``None`` to not track progress
+        :param range_: two integer values, start and end offsets
+        :param encryption: encryption settings (``None`` if unknown)
+        """
+        try:
+            downloaded_file = super().download_file_by_name(
+                file_name=file_name,
+                progress_listener=progress_listener,
+                range_=range_,
+                encryption=encryption,
+                allow_seeking=allow_seeking
+            )
+        except ValueError as ex:
+            if ex.args == ('no strategy suitable for download was found!',):
+                raise AssertionError('no strategy suitable for download was found!')
+            raise
+        return download_file_and_return_info_dict(downloaded_file, download_dest, range_)
+
+    @overload
+    def download_file_by_id(
+        self,
+        file_id: str,
+        download_dest: AbstractDownloadDestination = None,
+        progress_listener: Optional[v2.AbstractProgressListener] = None,
+        range_: Optional[Tuple[int, int]] = None,
+        encryption: Optional[v2.EncryptionSetting] = None,
+        allow_seeking: bool = True,
+    ) -> dict:
+        ...
+
+    @overload
+    def download_file_by_id(
+        self,
+        file_id: str,
+        progress_listener: Optional[v2.AbstractProgressListener] = None,
+        range_: Optional[Tuple[int, int]] = None,
+        encryption: Optional[v2.EncryptionSetting] = None,
+        allow_seeking: bool = True,
+    ) -> v2.DownloadedFile:
+        ...
+
+    def download_file_by_id(
+        self,
+        file_id: str,
+        download_dest: Optional[AbstractDownloadDestination] = None,
+        progress_listener: Optional[v2.AbstractProgressListener] = None,
+        range_: Optional[Tuple[int, int]] = None,
+        encryption: Optional[v2.EncryptionSetting] = None,
+        allow_seeking: bool = True,
+    ):
+        """
+        Download a file by ID.
+
+        .. note::
+          download_file_by_id actually belongs in :py:class:`b2sdk.v1.B2Api`, not in :py:class:`b2sdk.v1.Bucket`; we just provide a convenient redirect here
+
+        :param file_id: a file ID
+        :param download_dest: an instance of the one of the following classes: \
+        :class:`~b2sdk.v1.DownloadDestLocalFile`,\
+        :class:`~b2sdk.v1.DownloadDestBytes`,\
+        :class:`~b2sdk.v1.PreSeekedDownloadDest`,\
+        or any sub class of :class:`~b2sdk.v1.AbstractDownloadDestination`
+        :param progress_listener: a progress listener object to use, or ``None`` to not report progress
+        :param range_: two integer values, start and end offsets
+        :param encryption: encryption settings (``None`` if unknown)
+        :param allow_seeking: if true, download strategies requiring seeking on the download destination will be
+                              taken into account
+        """
+        return self.api.download_file_by_id(
+            file_id,
+            download_dest,
+            progress_listener,
+            range_=range_,
+            encryption=encryption,
+            allow_seeking=allow_seeking,
+        )
+
+
+def download_file_and_return_info_dict(
+    downloaded_file: v2.DownloadedFile, download_dest: AbstractDownloadDestination,
+    range_: Optional[Tuple[int, int]]
+):
+    with download_dest.make_file_context(
+        file_id=downloaded_file.file_version.id_,
+        file_name=downloaded_file.file_version.file_name,
+        content_length=downloaded_file.file_version.size,
+        content_type=downloaded_file.file_version.content_type,
+        content_sha1=downloaded_file.file_version.content_sha1,
+        file_info=downloaded_file.file_version.file_info,
+        mod_time_millis=downloaded_file.file_version.mod_time_millis,
+        range_=range_,
+    ) as file:
+        downloaded_file.save(file)
+        return FileMetadata.from_file_version(downloaded_file.file_version).as_info_dict()
 
 
 class BucketFactory(v2.BucketFactory):
