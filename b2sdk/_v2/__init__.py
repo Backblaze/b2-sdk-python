@@ -116,11 +116,7 @@ from b2sdk.stream import WritingStreamWithProgress
 
 # source / destination
 
-from b2sdk.download_dest import AbstractDownloadDestination
-from b2sdk.download_dest import DownloadDestBytes
-from b2sdk.download_dest import DownloadDestLocalFile
-from b2sdk.download_dest import DownloadDestProgressWrapper
-from b2sdk.download_dest import PreSeekedDownloadDest
+from b2sdk.transfer.inbound.downloaded_file import DownloadedFile
 
 from b2sdk.transfer.outbound.outbound_source import OutboundTransferSource
 from b2sdk.transfer.outbound.copy_source import CopySource
@@ -136,7 +132,6 @@ from b2sdk.transfer.emerge.write_intent import WriteIntent
 # trasfer
 
 from b2sdk.transfer.inbound.downloader.abstract import AbstractDownloader
-from b2sdk.transfer.inbound.file_metadata import FileMetadata
 from b2sdk.transfer.outbound.large_file_upload_state import LargeFileUploadState
 from b2sdk.transfer.inbound.downloader.parallel import AbstractDownloaderThread
 from b2sdk.transfer.inbound.downloader.parallel import FirstPartDownloaderThread
