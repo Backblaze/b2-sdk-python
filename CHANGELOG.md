@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * `FileVersion` has a mandatory `api` parameter in v2
 * `B2Folder` holds a handle to B2Api 
 * `Bucket` unit tests for v1 and v2 are now common
+* `download_file_*` methods refactored to allow for inspecting FileVersion before downloading the whole file
 
 ### Fixed
 * Fix call to incorrect internal api in `B2Api.get_download_url_for_file_name`

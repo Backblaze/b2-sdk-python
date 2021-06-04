@@ -53,16 +53,18 @@ class ParallelDownloader(AbstractDownloader):
         self.min_part_size = min_part_size
         super(ParallelDownloader, self).__init__(*args, **kwargs)
 
-    def is_suitable(self, metadata, progress_listener):
+    def is_suitable(self, file_version, allow_seeking):
+        if not super().is_suitable(file_version, allow_seeking):
+            return False
         return self._get_number_of_streams(
-            metadata.content_length
-        ) >= 2 and metadata.content_length >= 2 * self.min_part_size
+            file_version.size
+        ) >= 2 and file_version.size >= 2 * self.min_part_size
 
     def _get_number_of_streams(self, content_length):
         return min(self.max_streams, content_length // self.min_part_size) or 1
 
     def download(
-        self, file, response, metadata, session, encryption: Optional[EncryptionSetting] = None
+        self, file, response, file_version, session, encryption: Optional[EncryptionSetting] = None
     ):
         """
         Download a file from given url using parallel download sessions and stores it in the given download_destination.
@@ -71,14 +73,14 @@ class ParallelDownloader(AbstractDownloader):
         :param response: the response of the first request made to the cloud service with download intent
         :return:
         """
-        remote_range = self._get_remote_range(response, metadata)
+        remote_range = self._get_remote_range(response, file_version)
         actual_size = remote_range.size()
         start_file_position = file.tell()
         parts_to_download = list(
             gen_parts(
                 remote_range,
                 Range(start_file_position, start_file_position + actual_size - 1),
-                part_count=self._get_number_of_streams(metadata.content_length),
+                part_count=self._get_number_of_streams(file_version.size),
             )
         )
 
@@ -101,7 +103,7 @@ class ParallelDownloader(AbstractDownloader):
 
         # At this point the hasher already consumed the data until the end of first stream.
         # Consume the rest of the file to complete the hashing process
-        self._finish_hashing(first_part, file, hasher, metadata.content_length)
+        self._finish_hashing(first_part, file, hasher, file_version.size)
 
         return bytes_written, hasher.hexdigest()
 

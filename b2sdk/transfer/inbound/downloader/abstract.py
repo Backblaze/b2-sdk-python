@@ -18,6 +18,9 @@ from .range import Range
 
 
 class AbstractDownloader(metaclass=B2TraceMetaAbstract):
+
+    REQUIRES_SEEKING = True
+
     def __init__(
         self,
         force_chunk_size=None,
@@ -41,33 +44,34 @@ class AbstractDownloader(metaclass=B2TraceMetaAbstract):
         return aligned
 
     @classmethod
-    def _get_remote_range(cls, response, metadata):
+    def _get_remote_range(cls, response, file_version):
         """
         Get a range from response or original request (as appropriate).
 
         :param response: requests.Response of initial request
-        :param metadata: metadata dict of the target file
+        :param file_version: b2sdk.v1.FileVersionInfo
         :return: a range object
         """
         raw_range_header = response.request.headers.get('Range')  # 'bytes 0-11'
         if raw_range_header is None:
-            return Range(0, 0 if metadata.content_length == 0 else metadata.content_length - 1)
+            return Range(0, 0 if file_version.size == 0 else file_version.size - 1)
         return Range.from_header(raw_range_header)
 
-    @abstractmethod
-    def is_suitable(self, metadata, progress_listener):
+    def is_suitable(self, file_version, allow_seeking):
         """
-        Analyze metadata (possibly against options passed earlier to constructor
+        Analyze file_version (possibly against options passed earlier to constructor
         to find out whether the given download request should be handled by this downloader).
         """
-        pass
+        if self.REQUIRES_SEEKING and not allow_seeking:
+            return False
+        return True
 
     @abstractmethod
     def download(
         self,
         file,
         response,
-        metadata,
+        file_version,
         session,
         encryption: Optional[EncryptionSetting] = None,
     ):

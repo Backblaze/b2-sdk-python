@@ -11,21 +11,17 @@
 import logging
 from typing import Optional
 
-from b2sdk.download_dest import DownloadDestProgressWrapper
 from b2sdk.encryption.setting import EncryptionSetting
 from b2sdk.progress import DoNothingProgressListener
 
 from b2sdk.exception import (
-    ChecksumMismatch,
     InvalidRange,
-    TruncatedOutput,
 )
-from b2sdk.raw_api import SRC_LAST_MODIFIED_MILLIS
 from b2sdk.utils import B2TraceMetaAbstract
 
+from .downloaded_file import DownloadedFile
 from .downloader.parallel import ParallelDownloader
 from .downloader.simple import SimpleDownloader
-from .file_metadata import FileMetadata
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +57,6 @@ class DownloadManager(metaclass=B2TraceMetaAbstract):
                 min_chunk_size=self.MIN_CHUNK_SIZE,
                 max_chunk_size=self.MAX_CHUNK_SIZE,
             ),
-            # IOTDownloader(),  # TODO: curl -s httpbin.org/get | tee /dev/stderr 2>ble | sha1sum | cut -c -40
             SimpleDownloader(
                 min_chunk_size=self.MIN_CHUNK_SIZE,
                 max_chunk_size=self.MAX_CHUNK_SIZE,
@@ -71,80 +66,38 @@ class DownloadManager(metaclass=B2TraceMetaAbstract):
     def download_file_from_url(
         self,
         url,
-        download_dest,
         progress_listener=None,
         range_=None,
         encryption: Optional[EncryptionSetting] = None,
-    ):
+        allow_seeking=True,
+    ) -> DownloadedFile:
         """
         :param url: url from which the file should be downloaded
-        :param download_dest: where to put the file when it is downloaded
-        :param progress_listener: where to notify about progress downloading
+        :param progress_listener: where to notify about downloading progress
         :param range_: 2-element tuple containing data of http Range header
         :param b2sdk.v1.EncryptionSetting encryption: encryption setting (``None`` if unknown)
+        :param bool allow_seeking: if False, download strategies that rely on seeking to write data
+                                   (parallel strategies) will be discarded.
         """
         progress_listener = progress_listener or DoNothingProgressListener()
-        download_dest = DownloadDestProgressWrapper(download_dest, progress_listener)
         with self.services.session.download_file_from_url(
             url,
             range_=range_,
             encryption=encryption,
         ) as response:
-            metadata = FileMetadata.from_response(response)
+            file_version = self.services.api.file_version_factory.from_response_headers(
+                response.headers
+            )
             if range_ is not None:
                 # 2021-05-20: unfortunately for a read of a complete object server does not return the 'Content-Range' header
-                if (range_[1] - range_[0] + 1) != metadata.content_length:
-                    raise InvalidRange(metadata.content_length, range_)
+                if (range_[1] - range_[0] + 1) != file_version.size:
+                    raise InvalidRange(file_version.size, range_)
 
-            mod_time_millis = int(
-                metadata.file_info.get(
-                    SRC_LAST_MODIFIED_MILLIS,
-                    response.headers['x-bz-upload-timestamp'],
-                )
-            )
+            for strategy in self.strategies:
 
-            with download_dest.make_file_context(
-                metadata.file_id,
-                metadata.file_name,
-                metadata.content_length,
-                metadata.content_type,
-                metadata.content_sha1,
-                metadata.file_info,
-                mod_time_millis,
-                range_=range_,
-            ) as file:
-
-                for strategy in self.strategies:
-                    if strategy.is_suitable(metadata, progress_listener):
-                        bytes_read, actual_sha1 = strategy.download(
-                            file,
-                            response,
-                            metadata,
-                            self.services.session,
-                            encryption=encryption,
-                        )
-                        break
-                else:
-                    assert False, 'no strategy suitable for download was found!'
-
-                self._validate_download(
-                    range_, bytes_read, actual_sha1, metadata
-                )  # raises exceptions
-                return metadata.as_info_dict()
-
-    @classmethod
-    def _validate_download(cls, range_, bytes_read, actual_sha1, metadata):
-        if range_ is None:
-            if bytes_read != metadata.content_length:
-                raise TruncatedOutput(bytes_read, metadata.content_length)
-
-            if metadata.content_sha1 != 'none' and actual_sha1 != metadata.content_sha1:
-                raise ChecksumMismatch(
-                    checksum_type='sha1',
-                    expected=metadata.content_sha1,
-                    actual=actual_sha1,
-                )
-        else:
-            desired_length = range_[1] - range_[0] + 1
-            if bytes_read != desired_length:
-                raise TruncatedOutput(bytes_read, desired_length)
+                if strategy.is_suitable(file_version, allow_seeking):
+                    return DownloadedFile(
+                        file_version, strategy, range_, response, encryption, self.services.session,
+                        progress_listener
+                    )
+            raise ValueError('no strategy suitable for download was found!')
