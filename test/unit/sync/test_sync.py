@@ -723,9 +723,9 @@ class TestSynchronizer:
             except:
                 pass
 
-        assert bucket.mock_calls == [
-            mock.call.download_file_by_id('id_d_100', mock.ANY, mock.ANY, encryption=encryption),
-        ]
+        assert bucket.mock_calls[0] == mock.call.download_file_by_id(
+            'id_d_100', progress_listener=mock.ANY, encryption=encryption
+        )
 
         if apiver in ['v0', 'v1']:
             file_version_kwarg = 'file_version_info'

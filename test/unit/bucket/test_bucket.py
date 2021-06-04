@@ -7,7 +7,7 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
-
+import io
 from io import BytesIO
 import os
 import platform
@@ -17,6 +17,7 @@ import pytest
 
 from ..test_base import TestBase
 
+import apiver_deps
 from apiver_deps_exception import (
     AlreadyFailed,
     B2Error,
@@ -30,9 +31,13 @@ from apiver_deps_exception import (
     FileSha1Mismatch,
     SSECKeyError,
 )
+if apiver_deps.V <= 1:
+    from apiver_deps import DownloadDestBytes, PreSeekedDownloadDest
+else:
+    DownloadDestBytes, PreSeekedDownloadDest = None, None  # these classes are not present, thus not needed, in v2
 from apiver_deps import B2Api
+from apiver_deps import DownloadedFile
 from apiver_deps import LargeFileUploadState
-from apiver_deps import DownloadDestBytes, PreSeekedDownloadDest
 from apiver_deps import MetadataDirectiveMode
 from apiver_deps import Part
 from apiver_deps import AbstractProgressListener
@@ -44,7 +49,6 @@ from apiver_deps import hex_sha1_of_bytes, TempDir
 from apiver_deps import EncryptionAlgorithm, EncryptionSetting, EncryptionMode, EncryptionKey, SSE_NONE, SSE_B2_AES
 from apiver_deps import CopySource, UploadSourceLocalFile, WriteIntent
 from apiver_deps import FileRetentionSetting, LegalHold, RetentionMode, NO_RETENTION_FILE_SETTING
-import apiver_deps
 if apiver_deps.V <= 1:
     from apiver_deps import FileVersionInfo as VFileVersionInfo
 else:
@@ -308,7 +312,7 @@ class TestGetFileInfo(TestCaseWithBucket):
 
         self.assertIsInstance(info, VFileVersionInfo)
         expected = (
-            a_id, 'a', 11, None, 'b2/x-auto', 'none', NO_RETENTION_FILE_SETTING, LegalHold.UNSET
+            a_id, 'a', 11, 'upload', 'b2/x-auto', 'none', NO_RETENTION_FILE_SETTING, LegalHold.UNSET
         )
         actual = (
             info.id_,
@@ -1083,10 +1087,20 @@ class TestUpload(TestCaseWithBucket):
         )
 
     def _check_file_contents(self, file_name, expected_contents):
-        download = DownloadDestBytes()
+        contents = self._download_file(file_name)
+        self.assertEqual(expected_contents, contents)
+
+    def _download_file(self, file_name):
         with FileSimulator.dont_check_encryption():
-            self.bucket.download_file_by_name(file_name, download)
-        self.assertEqual(expected_contents, download.get_bytes_written())
+            if apiver_deps.V <= 1:
+                download = DownloadDestBytes()
+                self.bucket.download_file_by_name(file_name, download)
+                return download.get_bytes_written()
+            else:
+                with io.BytesIO() as bytes_io:
+                    downloaded_file = self.bucket.download_file_by_name(file_name)
+                    downloaded_file.save(bytes_io)
+                    return bytes_io.getvalue()
 
 
 class TestConcatenate(TestCaseWithBucket):
@@ -1172,9 +1186,6 @@ class TestCreateFileStream(TestConcatenate):
         )
 
 
-# Downloads
-
-
 class DownloadTestsBase(object):
     DATA = NotImplemented
 
@@ -1184,11 +1195,16 @@ class DownloadTestsBase(object):
         self.encrypted_file_info = self.bucket.upload_bytes(
             self.DATA.encode(), 'enc_file1', encryption=SSE_C_AES
         )
-        self.download_dest = DownloadDestBytes()
+        if apiver_deps.V <= 1:
+            self.download_dest = DownloadDestBytes()
+            self.bytes_io = None
+        else:
+            self.download_dest = None
+            self.bytes_io = io.BytesIO()
         self.progress_listener = StubProgressListener()
 
     def _verify(self, expected_result, check_progress_listener=True):
-        assert self.download_dest.get_bytes_written() == expected_result.encode()
+        self._assert_downloaded_data(expected_result)
         if check_progress_listener:
             valid, reason = self.progress_listener.is_valid_reason(
                 check_closed=False,
@@ -1197,45 +1213,110 @@ class DownloadTestsBase(object):
             )
             assert valid, reason
 
+    def _assert_downloaded_data(self, expected_result):
+        if apiver_deps.V <= 1:
+            assert self.download_dest.get_bytes_written() == expected_result.encode()
+        else:
+            assert self.bytes_io.getvalue() == expected_result.encode()
+
+    def download_file_by_id(self, file_id, v1_download_dest=None, v2_file=None, **kwargs):
+        if apiver_deps.V <= 1:
+            self.bucket.download_file_by_id(
+                file_id, v1_download_dest or self.download_dest, **kwargs
+            )
+        else:
+            self.bucket.download_file_by_id(file_id, **kwargs).save(v2_file or self.bytes_io)
+
+    def download_file_by_name(self, file_name, download_dest=None, **kwargs):
+        if apiver_deps.V <= 1:
+            self.bucket.download_file_by_name(
+                file_name, download_dest or self.download_dest, **kwargs
+            )
+        else:
+            self.bucket.download_file_by_name(file_name, **kwargs).save(self.bytes_io)
+
+
+class TestDownloadException(DownloadTestsBase, TestCaseWithBucket):
+    DATA = 'some data'
+
+    def test_download_file_by_name(self):
+        if apiver_deps.V <= 1:
+            exception_class = AssertionError
+        else:
+            exception_class = ValueError
+        with mock.patch.object(self.bucket.api.services.download_manager, 'strategies', new=[]):
+            with pytest.raises(exception_class) as exc_info:
+                self.download_file_by_name(self.file_version.file_name)
+            assert str(exc_info.value) == 'no strategy suitable for download was found!'
+
 
 class DownloadTests(DownloadTestsBase):
     DATA = 'abcdefghijklmnopqrs'
 
+    @pytest.mark.apiver(from_ver=2)
+    def test_v2_return_types(self):
+        download_kwargs = {
+            'range_': (7, 18),
+            'encryption': SSE_C_AES,
+            'progress_listener': self.progress_listener,
+        }
+        file_version = self.bucket.upload_bytes(
+            self.DATA.encode(), 'enc_file2', encryption=SSE_C_AES
+        )
+        file_version.size = 12  # we're only downloading a part of the file
+        other_properties = {
+            'file_version': file_version,
+        }
+        ret = self.bucket.download_file_by_id(file_version.id_, **download_kwargs)
+        assert isinstance(ret, DownloadedFile), type(ret)
+        for attr_name, expected_value in {**download_kwargs, **other_properties}.items():
+            assert getattr(ret, attr_name) == expected_value, attr_name
+
+        ret = self.bucket.download_file_by_name(file_version.file_name, **download_kwargs)
+        assert isinstance(ret, DownloadedFile), type(ret)
+        for attr_name, expected_value in {**download_kwargs, **other_properties}.items():
+            assert getattr(ret, attr_name) == expected_value, attr_name
+
+    @pytest.mark.apiver(to_ver=1)
+    def test_v1_return_types(self):
+        expected = {
+            'contentLength': 19,
+            'contentSha1': '893e69ff0109f3459c4243013b3de8b12b41a30e',
+            'contentType': 'b2/x-auto',
+            'fileId': '9999',
+            'fileInfo': {},
+            'fileName': 'file1'
+        }
+        ret = self.bucket.download_file_by_id(self.file_info.id_, self.download_dest)
+        assert ret == expected
+        ret = self.bucket.download_file_by_name(self.file_info.file_name, self.download_dest)
+        assert ret == expected
+
     def test_download_by_id_no_progress(self):
-        self.bucket.download_file_by_id(self.file_info.id_, self.download_dest)
+        self.download_file_by_id(self.file_info.id_)
         self._verify(self.DATA, check_progress_listener=False)
 
     def test_download_by_name_no_progress(self):
-        self.bucket.download_file_by_name('file1', self.download_dest)
+        self.download_file_by_name('file1')
         self._verify(self.DATA, check_progress_listener=False)
 
     def test_download_by_name_progress(self):
-        self.bucket.download_file_by_name(
-            'file1', self.download_dest, progress_listener=self.progress_listener
-        )
+        self.download_file_by_name('file1', progress_listener=self.progress_listener)
         self._verify(self.DATA)
 
     def test_download_by_id_progress(self):
-        self.bucket.download_file_by_id(
-            self.file_info.id_, self.download_dest, progress_listener=self.progress_listener
-        )
+        self.download_file_by_id(self.file_info.id_, progress_listener=self.progress_listener)
         self._verify(self.DATA)
 
     def test_download_by_id_progress_partial(self):
-        self.bucket.download_file_by_id(
-            self.file_info.id_,
-            self.download_dest,
-            progress_listener=self.progress_listener,
-            range_=(3, 9)
+        self.download_file_by_id(
+            self.file_info.id_, progress_listener=self.progress_listener, range_=(3, 9)
         )
         self._verify('defghij')
 
     def test_download_by_id_progress_exact_range(self):
-        self.bucket.download_file_by_id(
-            self.file_info.id_,
-            self.download_dest,
-            progress_listener=self.progress_listener,
-            range_=(0, 18)
+        self.download_file_by_id(
+            self.file_info.id_, progress_listener=self.progress_listener, range_=(0, 18)
         )
         self._verify(self.DATA)
 
@@ -1244,14 +1325,14 @@ class DownloadTests(DownloadTestsBase):
             InvalidRange,
             msg='A range of 0-19 was requested (size of 20), but cloud could only serve 19 of that',
         ):
-            self.bucket.download_file_by_id(
+            self.download_file_by_id(
                 self.file_info.id_,
-                self.download_dest,
-                self.progress_listener,
+                progress_listener=self.progress_listener,
                 range_=(0, 19),
             )
 
-    def test_download_by_id_progress_partial_inplace_overwrite(self):
+    @pytest.mark.apiver(to_ver=1)
+    def test_download_by_id_progress_partial_inplace_overwrite_v1(self):
         # LOCAL is
         # 12345678901234567890
         #
@@ -1269,7 +1350,7 @@ class DownloadTests(DownloadTestsBase):
             download_dest = PreSeekedDownloadDest(seek_target=3, local_file_path=path)
             data = b'12345678901234567890'
             write_file(path, data)
-            self.bucket.download_file_by_id(
+            self.download_file_by_id(
                 self.file_info.id_,
                 download_dest,
                 progress_listener=self.progress_listener,
@@ -1277,7 +1358,46 @@ class DownloadTests(DownloadTestsBase):
             )
             self._check_local_file_contents(path, b'123defghij1234567890')
 
-    def test_download_by_id_progress_partial_shifted_overwrite(self):
+    @pytest.mark.apiver(from_ver=2)
+    def test_download_by_id_progress_partial_inplace_overwrite_v2(self):
+        # LOCAL is
+        # 12345678901234567890
+        #
+        # and then:
+        #
+        # abcdefghijklmnopqrs
+        #    |||||||
+        #    |||||||
+        #    vvvvvvv
+        #
+        # 123defghij1234567890
+
+        with TempDir() as d:
+            path = os.path.join(d, 'file2')
+            data = b'12345678901234567890'
+            write_file(path, data)
+            with io.open(path, 'rb+') as file:
+                file.seek(3)
+                self.download_file_by_id(
+                    self.file_info.id_,
+                    v2_file=file,
+                    progress_listener=self.progress_listener,
+                    range_=(3, 9),
+                )
+            self._check_local_file_contents(path, b'123defghij1234567890')
+
+    @pytest.mark.apiver(from_ver=2)
+    def test_download_update_mtime_v2(self):
+        with TempDir() as d:
+            file_version = self.bucket.upload_bytes(
+                self.DATA.encode(), 'file1', file_infos={'src_last_modified_millis': '1000'}
+            )
+            path = os.path.join(d, 'file2')
+            self.bucket.download_file_by_id(file_version.id_).save_to(path)
+            assert pytest.approx(1, rel=0.001) == os.path.getmtime(path)
+
+    @pytest.mark.apiver(to_ver=1)
+    def test_download_by_id_progress_partial_shifted_overwrite_v1(self):
         # LOCAL is
         # 12345678901234567890
         #
@@ -1300,7 +1420,7 @@ class DownloadTests(DownloadTestsBase):
             download_dest = PreSeekedDownloadDest(seek_target=7, local_file_path=path)
             data = b'12345678901234567890'
             write_file(path, data)
-            self.bucket.download_file_by_id(
+            self.download_file_by_id(
                 self.file_info.id_,
                 download_dest,
                 progress_listener=self.progress_listener,
@@ -1308,17 +1428,46 @@ class DownloadTests(DownloadTestsBase):
             )
             self._check_local_file_contents(path, b'1234567defghij567890')
 
+    @pytest.mark.apiver(from_ver=2)
+    def test_download_by_id_progress_partial_shifted_overwrite_v2(self):
+        # LOCAL is
+        # 12345678901234567890
+        #
+        # and then:
+        #
+        # abcdefghijklmnopqrs
+        #    |||||||
+        #    \\\\\\\
+        #     \\\\\\\
+        #      \\\\\\\
+        #       \\\\\\\
+        #        \\\\\\\
+        #        |||||||
+        #        vvvvvvv
+        #
+        # 1234567defghij567890
+
+        with TempDir() as d:
+            path = os.path.join(d, 'file2')
+            data = b'12345678901234567890'
+            write_file(path, data)
+            with io.open(path, 'rb+') as file:
+                file.seek(7)
+                self.download_file_by_id(
+                    self.file_info.id_,
+                    v2_file=file,
+                    progress_listener=self.progress_listener,
+                    range_=(3, 9),
+                )
+            self._check_local_file_contents(path, b'1234567defghij567890')
+
     def test_download_by_id_no_progress_encryption(self):
-        self.bucket.download_file_by_id(
-            self.encrypted_file_info.id_, self.download_dest, encryption=SSE_C_AES
-        )
+        self.download_file_by_id(self.encrypted_file_info.id_, encryption=SSE_C_AES)
         self._verify(self.DATA, check_progress_listener=False)
 
     def test_download_by_id_no_progress_wrong_encryption(self):
         with self.assertRaises(SSECKeyError):
-            self.bucket.download_file_by_id(
-                self.encrypted_file_info.id_, self.download_dest, encryption=SSE_C_AES_2
-            )
+            self.download_file_by_id(self.encrypted_file_info.id_, encryption=SSE_C_AES_2)
 
     def _check_local_file_contents(self, path, expected_contents):
         with open(path, 'rb') as f:
@@ -1334,11 +1483,47 @@ class EmptyFileDownloadScenarioMixin(object):
 
     def test_download_by_name_empty_file(self):
         self.file_info = self.bucket.upload_bytes(b'', 'empty')
-        self.bucket.download_file_by_name('empty', self.download_dest, self.progress_listener)
+        self.download_file_by_name('empty', progress_listener=self.progress_listener)
         self._verify('')
 
 
 # actual tests
+
+# test choosing strategy
+
+
+@pytest.mark.apiver(from_ver=2)
+class TestChooseStrategy(TestCaseWithBucket):
+    def test_choose_strategy(self):
+        file_version = self.bucket.upload_bytes(b'hello world' * 8, 'file1')
+        parallel_downloader = ParallelDownloader(
+            force_chunk_size=1,
+            max_streams=32,
+            min_part_size=16,
+        )
+        simple_downloader = self.bucket.api.services.download_manager.strategies[1]
+        self.bucket.api.services.download_manager.strategies = [
+            parallel_downloader,
+            simple_downloader,
+        ]
+        downloaded_file = self.bucket.download_file_by_id(file_version.id_, allow_seeking=True)
+        assert downloaded_file.strategy == parallel_downloader
+
+        downloaded_file = self.bucket.download_file_by_id(file_version.id_, allow_seeking=False)
+        assert downloaded_file.strategy == simple_downloader
+
+        downloaded_file = self.bucket.download_file_by_name(
+            file_version.file_name, allow_seeking=True
+        )
+        assert downloaded_file.strategy == parallel_downloader
+
+        downloaded_file = self.bucket.download_file_by_name(
+            file_version.file_name, allow_seeking=False
+        )
+        assert downloaded_file.strategy == simple_downloader
+
+
+# Default tests
 
 
 class TestDownloadDefault(DownloadTests, EmptyFileDownloadScenarioMixin, TestCaseWithBucket):
@@ -1382,9 +1567,7 @@ class TestDownloadParallelALotOfStreams(DownloadTestsBase, TestCaseWithBucket):
         ]
 
     def test_download_by_id_progress_monotonic(self):
-        self.bucket.download_file_by_id(
-            self.file_info.id_, self.download_dest, self.progress_listener
-        )
+        self.download_file_by_id(self.file_info.id_, progress_listener=self.progress_listener)
         self._verify(self.DATA)
 
 

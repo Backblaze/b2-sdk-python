@@ -27,7 +27,6 @@ from b2sdk.exception import (
 )
 from b2sdk.utils import set_file_mtime
 
-
 logger = logging.getLogger(__name__)
 
 
