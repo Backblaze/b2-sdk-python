@@ -218,10 +218,7 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
 
         # Finish the large file
         response = self.services.session.finish_large_file(file_id, part_sha1_array)
-        return self.services.api.file_version_factory().from_api_response(
-            self.services.api,
-            response,
-        )
+        return self.services.api.file_version_factory.from_api_response(response)
 
     def _execute_step(self, execution_step):
         semaphore = self._semaphore

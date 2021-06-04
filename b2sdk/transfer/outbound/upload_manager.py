@@ -247,10 +247,7 @@ class UploadManager(metaclass=B2TraceMetaAbstract):
                             content_sha1 = input_stream.hash
                         assert content_sha1 == response[
                             'contentSha1'], '%s != %s' % (content_sha1, response['contentSha1'])
-                        return self.services.api.file_version_factory().from_api_response(
-                            self.services.api,
-                            response,
-                        )
+                        return self.services.api.file_version_factory.from_api_response(response)
 
                 except B2Error as e:
                     if not e.should_retry_upload():

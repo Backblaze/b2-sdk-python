@@ -14,7 +14,7 @@ from .bucket import Bucket, BucketFactory
 from .encryption.setting import EncryptionSetting
 from .exception import NonExistentBucket, RestrictedBucket
 from .file_lock import FileRetentionSetting, LegalHold
-from .file_version import FileIdAndName
+from .file_version import FileIdAndName, FileVersionFactory
 from .large_file.services import LargeFileServices
 from .raw_api import API_VERSION
 from .session import B2Session
@@ -85,11 +85,7 @@ class B2Api(metaclass=B2TraceMeta):
     BUCKET_FACTORY_CLASS = staticmethod(BucketFactory)
     BUCKET_CLASS = staticmethod(Bucket)
     SESSION_CLASS = staticmethod(B2Session)
-
-    @classmethod
-    def file_version_factory(cls):
-        # sadly, combining @property and @classmethod does not work well for python version lower than 3.9
-        return cls.BUCKET_CLASS.FILE_VERSION_FACTORY
+    FILE_VERSION_FACTORY_CLASS = staticmethod(FileVersionFactory)
 
     def __init__(
         self,
@@ -126,6 +122,7 @@ class B2Api(metaclass=B2TraceMeta):
         :param int max_copy_workers: a number of copy threads, default is 10
         """
         self.session = self.SESSION_CLASS(account_info=account_info, cache=cache, raw_api=raw_api)
+        self.file_version_factory = self.FILE_VERSION_FACTORY_CLASS(self)
         self.services = Services(
             self,
             max_upload_workers=max_upload_workers,
@@ -412,10 +409,7 @@ class B2Api(metaclass=B2TraceMeta):
         """
         # filename argument is not first, because one day it may become optional
         response = self.session.delete_file_version(file_id, file_name)
-        file_id_and_name = FileIdAndName.from_cancel_or_delete_response(response)
-        assert file_id_and_name.file_id == file_id
-        assert file_id_and_name.file_name == file_name
-        return file_id_and_name
+        return FileIdAndName.from_cancel_or_delete_response(response)
 
     # download
     def get_download_url_for_fileid(self, file_id):

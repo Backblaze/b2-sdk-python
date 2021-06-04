@@ -11,6 +11,8 @@
 from .encryption.setting import EncryptionSetting, EncryptionSettingFactory
 from .file_lock import FileRetentionSetting, LegalHold, NO_RETENTION_FILE_SETTING
 from .raw_api import SRC_LAST_MODIFIED_MILLIS
+if False:
+    from .api import B2Api
 
 
 class FileVersion:
@@ -51,7 +53,7 @@ class FileVersion:
 
     def __init__(
         self,
-        api,
+        api: 'B2Api',
         id_,
         file_name,
         size,
@@ -128,8 +130,10 @@ class FileVersionFactory(object):
     Construct :py:class:`b2sdk.v1.FileVersionInfo` objects from various structures.
     """
 
-    @classmethod
-    def from_api_response(cls, api, file_version_dict, force_action=None):
+    def __init__(self, api: 'B2Api'):
+        self.api = api
+
+    def from_api_response(self, file_version_dict, force_action=None):
         """
         Turn this:
 
@@ -184,7 +188,7 @@ class FileVersionFactory(object):
         legal_hold = LegalHold.from_file_version_dict(file_version_dict)
 
         return FileVersion(
-            api,
+            self.api,
             id_,
             file_name,
             size,
@@ -199,10 +203,9 @@ class FileVersionFactory(object):
             legal_hold,
         )
 
-    @classmethod
-    def from_response_headers(cls, api, headers):
+    def from_response_headers(self, headers):
         return FileVersion(
-            api=api,
+            api=self.api,
             id_=headers.get('x-bz-file-id'),
             file_name=headers.get('x-bz-file-name'),
             size=headers.get('content-length'),

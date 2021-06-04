@@ -215,10 +215,7 @@ class CopyManager(metaclass=B2TraceMetaAbstract):
                 legal_hold=legal_hold,
                 file_retention=file_retention,
             )
-            file_version = self.services.api.file_version_factory().from_api_response(
-                self.services.api,
-                response,
-            )
+            file_version = self.services.api.file_version_factory.from_api_response(response)
             if progress_listener is not None:
                 progress_listener.bytes_completed(file_version.size)
 

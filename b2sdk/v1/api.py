@@ -10,7 +10,7 @@
 
 from b2sdk import _v2 as v2
 from .bucket import Bucket, BucketFactory
-from .file_version import FileVersionInfo, file_version_info_from_id_and_name
+from .file_version import FileVersionInfo, FileVersionInfoFactory, file_version_info_from_id_and_name
 from .session import B2Session
 
 
@@ -22,6 +22,7 @@ class B2Api(v2.B2Api):
     SESSION_CLASS = staticmethod(B2Session)
     BUCKET_FACTORY_CLASS = staticmethod(BucketFactory)
     BUCKET_CLASS = staticmethod(Bucket)
+    FILE_VERSION_FACTORY_CLASS = staticmethod(FileVersionInfoFactory)
 
     def get_bucket_by_id(self, bucket_id):
         """
