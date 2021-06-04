@@ -12,7 +12,6 @@ from abc import ABCMeta, abstractmethod
 
 import logging
 import os
-from ..download_dest import DownloadDestLocalFile
 from .encryption_provider import AbstractSyncEncryptionSettingsProvider
 from ..bucket import Bucket
 
@@ -260,19 +259,18 @@ class B2DownloadAction(AbstractAction):
 
         # Download the file to a .tmp file
         download_path = self.local_full_path + '.b2.sync.tmp'
-        download_dest = DownloadDestLocalFile(download_path)
 
         encryption = self.encryption_settings_provider.get_setting_for_download(
             bucket=bucket,
             file_version=self.source_path.selected_version,
         )
 
-        bucket.download_file_by_id(
+        downloaded_file = bucket.download_file_by_id(
             self.source_path.selected_version.id_,
-            download_dest,
-            progress_listener,
+            progress_listener=progress_listener,
             encryption=encryption,
         )
+        downloaded_file.save_to(download_path)
 
         # Move the file into place
         try:
