@@ -71,7 +71,7 @@ class FileVersion:
         self.api = api
         self.id_ = id_
         self.file_name = file_name
-        self.size = size
+        self.size = size and int(size)
         self.content_type = content_type
         self.content_sha1 = content_sha1
         self.content_md5 = content_md5
@@ -85,7 +85,7 @@ class FileVersion:
         if SRC_LAST_MODIFIED_MILLIS in self.file_info:
             self.mod_time_millis = int(self.file_info[SRC_LAST_MODIFIED_MILLIS])
         else:
-            self.mod_time_millis = self.upload_timestamp
+            self.mod_time_millis = self.upload_timestamp and int(self.upload_timestamp)
 
     def as_dict(self):
         """ represents the object as a dict which looks almost exactly like the raw api output for upload/list """
@@ -220,7 +220,7 @@ class FileVersionFactory(object):
             content_sha1=headers.get('x-bz-content-sha1'),
             file_info=file_info,
             upload_timestamp=headers.get('x-bz-upload-timestamp'),
-            action=None,
+            action='upload',
             content_md5=None,
             server_side_encryption=EncryptionSettingFactory.from_response_headers(headers),
             file_retention=FileRetentionSetting.from_response_headers(headers),

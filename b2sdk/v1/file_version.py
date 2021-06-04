@@ -42,7 +42,7 @@ class FileVersionInfo(v2.FileVersion):
     ):
         self.id_ = id_
         self.file_name = file_name
-        self.size = size
+        self.size = size and int(size)
         self.content_type = content_type
         self.content_sha1 = content_sha1
         self.content_md5 = content_md5
@@ -57,7 +57,7 @@ class FileVersionInfo(v2.FileVersion):
         if SRC_LAST_MODIFIED_MILLIS in self.file_info:
             self.mod_time_millis = int(self.file_info[SRC_LAST_MODIFIED_MILLIS])
         else:
-            self.mod_time_millis = self.upload_timestamp
+            self.mod_time_millis = self.upload_timestamp and int(self.upload_timestamp)
 
     @property
     def api(self):
