@@ -50,7 +50,6 @@ Internal API
    api/internal/b2http
    api/internal/utils
    api/internal/cache
-   api/internal/download_dest
    api/internal/stream/chained
    api/internal/stream/hashing
    api/internal/stream/progress

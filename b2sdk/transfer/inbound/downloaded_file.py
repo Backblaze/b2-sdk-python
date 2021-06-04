@@ -121,8 +121,7 @@ class DownloadedFile:
         """
         Read data from B2 cloud and write it to a file-like object
         :param file: a file-like object
-        :param mod_time_callback: a callable accepting a single argument: the mod time of the downloaded file
-                                  in milliseconds
+        :param mod_time_callback: a callable accepting a single argument: the mod time of the downloaded file in milliseconds
         """
         if self.progress_listener:
             file = WritingStreamWithProgress(file, self.progress_listener)
