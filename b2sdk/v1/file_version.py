@@ -20,20 +20,7 @@ from . import api as v1api
 # Override to retain legacy class name, __init__ signature, slots
 # and old formatting methods
 class FileVersionInfo(v2.FileVersion):
-    __slots__ = [
-        'id_',
-        'file_name',
-        'size',
-        'content_type',
-        'content_sha1',
-        'content_md5',
-        'file_info',
-        'upload_timestamp',
-        'action',
-        'server_side_encryption',
-        'mod_time_millis',
-        '_api',
-    ]
+    __slots__ = ['_api']
 
     LS_ENTRY_TEMPLATE = '%83s  %6s  %10s  %8s  %9d  %s'  # order is file_id, action, date, time, size, name
 
