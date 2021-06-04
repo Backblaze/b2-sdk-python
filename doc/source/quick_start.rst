@@ -210,32 +210,27 @@ By id
 
 .. code-block:: python
 
-    >>> from b2sdk.v2 import DownloadDestLocalFile
     >>> from b2sdk.v2 import DoNothingProgressListener
 
     >>> local_file_path = '/home/user1/b2_example/new2.pdf'
     >>> file_id = '4_z5485a1682662eb3e60980d10_f1195145f42952533_d20190403_m130258_c002_v0001111_t0002'
-    >>> download_dest = DownloadDestLocalFile(local_file_path)
     >>> progress_listener = DoNothingProgressListener()
 
-    >>> b2_api.download_file_by_id(file_id, download_dest, progress_listener)
-    {'fileId': '4_z5485a1682662eb3e60980d10_f1195145f42952533_d20190403_m130258_c002_v0001111_t0002',
-     'fileName': 'som2.pdf',
-     'contentType': 'application/pdf',
-     'contentLength': 1870579,
-     'contentSha1': 'd821849a70922e87c2b0786c0be7266b89d87df0',
-     'fileInfo': {'src_last_modified_millis': '1550988084299'}}
+    >>> downloaded_file = b2_api.download_file_by_id(file_id, progress_listener)  # only the headers
+        # and the beginning of the file is downloaded at this stage
 
-    >>> print('File name:   ', download_dest.file_name)
+    >>> print('File name:   ', downloaded_file.download_version.file_name)
     File name:    som2.pdf
-    >>> print('File id:     ', download_dest.file_id)
+    >>> print('File id:     ', downloaded_file.download_version.id_)
     File id:      4_z5485a1682662eb3e60980d10_f1195145f42952533_d20190403_m130258_c002_v0001111_t0002
-    >>> print('File size:   ', download_dest.content_length)
+    >>> print('File size:   ', downloaded_file.download_version.size)
     File size:    1870579
-    >>> print('Content type:', download_dest.content_type)
+    >>> print('Content type:', downloaded_file.download_version.content_type)
     Content type: application/pdf
-    >>> print('Content sha1:', download_dest.content_sha1)
+    >>> print('Content sha1:', downloaded_file.download_version.content_sha1)
     Content sha1: d821849a70922e87c2b0786c0be7266b89d87df0
+
+    >>> downloaded_file.save_to(local_file_path)  # this downloads the whole file
 
 By name
 -------
@@ -245,14 +240,8 @@ By name
     >>> bucket = b2_api.get_bucket_by_name(bucket_name)
     >>> b2_file_name = 'dummy_new.pdf'
     >>> local_file_name = '/home/user1/b2_example/new3.pdf'
-    >>> download_dest = DownloadDestLocalFile(local_file_name)
-    >>> bucket.download_file_by_name(b2_file_name, download_dest)
-    {'fileId': '4_z5485a1682662eb3e60980d10_f113f963288e711a6_d20190404_m065910_c002_v0001095_t0044',
-     'fileName': 'dummy_new.pdf',
-     'contentType': 'application/pdf',
-     'contentLength': 1870579,
-     'contentSha1': 'd821849a70922e87c2b0786c0be7266b89d87df0',
-     'fileInfo': {'how': 'good-file'}}
+    >>> downloaded_file = bucket.download_file_by_name(b2_file_name)
+    >>> downloaded_file.save_to(local_file_path)
 
 
 Downloading encrypted files

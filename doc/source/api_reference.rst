@@ -28,13 +28,13 @@ Public API
    api/bucket
    api/file_lock
    api/data_classes
+   api/downloaded_file
    api/enums
    api/progress
    api/sync
    api/utils
    api/transfer/emerge/write_intent
    api/transfer/outbound/outbound_source
-   api/download_dest
    api/encryption/setting
    api/encryption/types
 
