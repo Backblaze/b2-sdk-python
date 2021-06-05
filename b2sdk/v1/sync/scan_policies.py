@@ -12,7 +12,7 @@ import re
 from typing import Optional, Union, Iterable
 
 from .file import B2FileVersion
-from ..file_version import file_version_info_from_new_file_version
+from ..file_version import FileVersionInfo
 from .file_to_path_translator import _translate_local_path_to_file
 from b2sdk import _v2 as v2
 from b2sdk._v2 import exception as v2_exception  # noqa
@@ -148,10 +148,8 @@ class ScanPoliciesManagerWrapper(v2.ScanPoliciesManager):
             return True
         return self.scan_policies_manager.should_exclude_file(local_path.relative_path)
 
-    def should_exclude_b2_file_version(self, file_version: v2.FileVersion, relative_path: str):
-        if self.scan_policies_manager.should_exclude_file_version(
-            B2FileVersion(file_version_info_from_new_file_version(file_version))
-        ):
+    def should_exclude_b2_file_version(self, file_version: FileVersionInfo, relative_path: str):
+        if self.scan_policies_manager.should_exclude_file_version(B2FileVersion(file_version)):
             return True
         return self.scan_policies_manager.should_exclude_file(relative_path)
 

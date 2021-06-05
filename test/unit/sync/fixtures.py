@@ -41,6 +41,14 @@ class FakeB2Folder(B2Folder):
         times are hides.  It's a hack, but it works.
 
         """
+        if apiver_deps.V <= 1:
+            mandatory_kwargs = {}
+        else:
+            mandatory_kwargs = {
+                'api': None,
+                'content_md5': 'content_md5',
+                'server_side_encryption': None,
+            }
         return [
             VFileVersion(
                 id_='id_%s_%d' % (name[0], abs(mod_time)),
@@ -51,6 +59,7 @@ class FakeB2Folder(B2Folder):
                 file_info={'in_b2': 'yes'},
                 content_type='text/plain',
                 content_sha1='content_sha1',
+                **mandatory_kwargs,
             ) for mod_time in mod_times
         ]  # yapf disable
 
