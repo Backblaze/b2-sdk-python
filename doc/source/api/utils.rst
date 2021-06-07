@@ -11,5 +11,6 @@ B2 Utility functions
 .. autofunction:: b2sdk.v1.hex_sha1_of_bytes
 
 .. autoclass:: b2sdk.v1.TempDir()
+   :inherited-members:
    :special-members: __enter__, __exit__
 

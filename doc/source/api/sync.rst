@@ -199,14 +199,17 @@ Public API classes
 ==================
 
 .. autoclass:: b2sdk.v1.ScanPoliciesManager()
+   :inherited-members:
    :special-members: __init__
    :members:
 
 .. autoclass:: b2sdk.v1.Synchronizer()
+   :inherited-members:
    :special-members: __init__
    :members:
 
 .. autoclass:: b2sdk.v1.SyncReport()
+   :inherited-members:
    :special-members: __init__
    :members:
 
@@ -218,6 +221,7 @@ Sync Encryption Settings Providers
 
 
 .. autoclass:: b2sdk.v1.AbstractSyncEncryptionSettingsProvider()
+   :inherited-members:
    :members:
 
 

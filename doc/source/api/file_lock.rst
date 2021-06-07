@@ -10,6 +10,7 @@ File locks
     :special-members: __init__
 
 .. autoclass:: b2sdk.v1.RetentionMode()
+    :inherited-members:
     :members:
 
 .. autoclass:: b2sdk.v1.BucketRetentionSetting()
@@ -17,6 +18,7 @@ File locks
     :special-members: __init__
 
 .. autoclass:: b2sdk.v1.RetentionPeriod()
+    :inherited-members:
     :special-members: __init__
 
 .. autoclass:: b2sdk.v1.FileLockConfiguration()
