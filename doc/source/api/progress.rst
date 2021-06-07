@@ -10,6 +10,7 @@ Progress reporters
    include info about sync progress
 
 .. autoclass:: b2sdk.v1.AbstractProgressListener
+   :inherited-members:
    :members:
 
 .. autoclass:: b2sdk.v1.TqdmProgressListener

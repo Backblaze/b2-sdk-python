@@ -5,6 +5,7 @@ Download destination
    Concrete classes described in this chapter implement methods defined in ``AbstractDownloadDestination``
 
 .. autoclass:: b2sdk.v1.AbstractDownloadDestination
+   :inherited-members:
    :members:
 
 .. autoclass:: b2sdk.v1.DownloadDestLocalFile()
