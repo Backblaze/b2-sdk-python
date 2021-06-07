@@ -13,12 +13,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 * `Synchronizer.make_file_sync_actions` and `Synchronizer.make_folder_sync_actions` were made private in v2 interface
-* Refactored `sync.file.*File` and `sync.file.*FileVersion` to `sync.path.*SyncPath`
-* Refactored `FileVersionInfo` to `FileVersion`
-* `ScanPoliciesManager` exclusion interface changed
+* Refactored `sync.file.*File` and `sync.file.*FileVersion` to `sync.path.*SyncPath` in v2
+* Refactored `FileVersionInfo` to `FileVersion` in v2
+* `ScanPoliciesManager` exclusion interface changed in v2
 * `B2Api` unittests for v0, v1 and v2 are now common
 * `B2Api.cancel_large_file` returns a `FileIdAndName` object instead of a `FileVersion` object in v2
-* `FileVersion` has a mandatory `api` parameter 
+* `FileVersion` has a mandatory `api` parameter in v2
 * `B2Folder` holds a handle to B2Api 
 * `Bucket` unit tests for v1 and v2 are now common
 
