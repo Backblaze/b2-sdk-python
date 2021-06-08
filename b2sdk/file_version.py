@@ -8,11 +8,11 @@
 #
 ######################################################################
 
-from typing import Optional
-
 from .encryption.setting import EncryptionSetting, EncryptionSettingFactory
-from .file_lock import FileRetentionSetting, LegalHold
+from .file_lock import FileRetentionSetting, LegalHold, NO_RETENTION_FILE_SETTING
 from .raw_api import SRC_LAST_MODIFIED_MILLIS
+if False:
+    from .api import B2Api
 
 
 class FileVersion:
@@ -36,6 +36,7 @@ class FileVersion:
 
     __slots__ = [
         'id_',
+        'api',
         'file_name',
         'size',
         'content_type',
@@ -52,6 +53,7 @@ class FileVersion:
 
     def __init__(
         self,
+        api: 'B2Api',
         id_,
         file_name,
         size,
@@ -60,14 +62,12 @@ class FileVersion:
         file_info,
         upload_timestamp,
         action,
-        content_md5=None,
-        server_side_encryption: Optional[EncryptionSetting] = None,  # TODO: make it mandatory in v2
-        file_retention: Optional[
-            FileRetentionSetting
-        ] = None,  # TODO: in v2 change the default value to NO_RETENTION_FILE_SETTING
-        legal_hold: Optional[LegalHold
-                            ] = None,  # TODO: in v2 change the default value to LegalHold.UNSET
+        content_md5,
+        server_side_encryption: EncryptionSetting,
+        file_retention: FileRetentionSetting = NO_RETENTION_FILE_SETTING,
+        legal_hold: LegalHold = LegalHold.UNSET,
     ):
+        self.api = api
         self.id_ = id_
         self.file_name = file_name
         self.size = size
@@ -93,6 +93,8 @@ class FileVersion:
             'fileName': self.file_name,
             'fileInfo': self.file_info,
             'legalHold': self.legal_hold.to_dict_repr() if self.legal_hold is not None else None,
+            'serverSideEncryption': self.server_side_encryption.as_dict(),
+            'fileRetention': self.file_retention.as_dict(),
         }
 
         if self.size is not None:
@@ -107,10 +109,6 @@ class FileVersion:
             result['contentSha1'] = self.content_sha1
         if self.content_md5 is not None:
             result['contentMd5'] = self.content_md5
-        if self.server_side_encryption is not None:  # this is for backward compatibility of interface only, b2sdk always sets it
-            result['serverSideEncryption'] = self.server_side_encryption.as_dict()
-        if self.file_retention is not None:  # this is for backward compatibility of interface only, b2sdk always sets it
-            result['fileRetention'] = self.file_retention.as_dict()
         return result
 
     def __eq__(self, other):
@@ -120,14 +118,22 @@ class FileVersion:
                 return False
         return True
 
+    def __repr__(self):
+        return '%s(%s)' % (
+            self.__class__.__name__,
+            ', '.join(repr(getattr(self, attr)) for attr in self.__slots__)
+        )
+
 
 class FileVersionFactory(object):
     """
     Construct :py:class:`b2sdk.v1.FileVersionInfo` objects from various structures.
     """
 
-    @classmethod
-    def from_api_response(cls, file_version_dict, force_action=None):
+    def __init__(self, api: 'B2Api'):
+        self.api = api
+
+    def from_api_response(self, file_version_dict, force_action=None):
         """
         Turn this:
 
@@ -182,6 +188,7 @@ class FileVersionFactory(object):
         legal_hold = LegalHold.from_file_version_dict(file_version_dict)
 
         return FileVersion(
+            self.api,
             id_,
             file_name,
             size,
@@ -196,22 +203,9 @@ class FileVersionFactory(object):
             legal_hold,
         )
 
-    @classmethod
-    def from_cancel_large_file_response(cls, response):
+    def from_response_headers(self, headers):
         return FileVersion(
-            response['fileId'],
-            response['fileName'],
-            0,  # size
-            'unknown',
-            'none',
-            {},
-            0,  # upload timestamp
-            'cancel'
-        )
-
-    @classmethod
-    def from_response_headers(cls, headers):
-        return FileVersion(
+            api=self.api,
             id_=headers.get('x-bz-file-id'),
             file_name=headers.get('x-bz-file-name'),
             size=headers.get('content-length'),
@@ -220,6 +214,7 @@ class FileVersionFactory(object):
             file_info=None,
             upload_timestamp=headers.get('x-bz-upload-timestamp'),
             action=None,
+            content_md5=None,
             server_side_encryption=EncryptionSettingFactory.from_response_headers(headers),
             file_retention=FileRetentionSetting.from_response_headers(headers),
             legal_hold=LegalHold.from_response_headers(headers),
@@ -230,16 +225,23 @@ class FileIdAndName(object):
     """
     A structure which represents a B2 cloud file with just `file_name` and `fileId` attributes.
 
-    Used to return data from calls to :py:meth:`b2sdk.v1.Bucket.delete_file_version`.
-
-    :ivar str ~.file_id: ``fileId``
-    :ivar str ~.file_name: full file name (with path)
+    Used to return data from calls to b2_delete_file_version and b2_cancel_large_file.
     """
 
-    def __init__(self, file_id, file_name):
+    def __init__(self, file_id: str, file_name: str):
         self.file_id = file_id
         self.file_name = file_name
+
+    @classmethod
+    def from_cancel_or_delete_response(cls, response):
+        return cls(response['fileId'], response['fileName'])
 
     def as_dict(self):
         """ represents the object as a dict which looks almost exactly like the raw api output for delete_file_version """
         return {'action': 'delete', 'fileId': self.file_id, 'fileName': self.file_name}
+
+    def __eq__(self, other):
+        return (self.file_id == other.file_id and self.file_name == other.file_name)
+
+    def __repr__(self):
+        return '%s(%s, %s)' % (self.__class__.__name__, repr(self.file_id), repr(self.file_name))

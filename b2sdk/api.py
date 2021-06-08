@@ -14,7 +14,7 @@ from .bucket import Bucket, BucketFactory
 from .encryption.setting import EncryptionSetting
 from .exception import NonExistentBucket, RestrictedBucket
 from .file_lock import FileRetentionSetting, LegalHold
-from .file_version import FileIdAndName
+from .file_version import FileIdAndName, FileVersionFactory
 from .large_file.services import LargeFileServices
 from .raw_api import API_VERSION
 from .session import B2Session
@@ -45,15 +45,16 @@ def url_for_api(info, api_name):
 class Services(object):
     """ Gathers objects that provide high level logic over raw api usage. """
 
-    def __init__(self, session, max_upload_workers=10, max_copy_workers=10):
+    def __init__(self, api, max_upload_workers=10, max_copy_workers=10):
         """
         Initialize Services object using given session.
 
-        :param b2sdk.v1.Session session:
+        :param b2sdk.v1.B2Api api:
         :param int max_upload_workers: a number of upload threads
         :param int max_copy_workers: a number of copy threads
         """
-        self.session = session
+        self.api = api
+        self.session = api.session
         self.large_file = LargeFileServices(self)
         self.download_manager = DownloadManager(self)
         self.upload_manager = UploadManager(self, max_upload_workers=max_upload_workers)
@@ -84,6 +85,7 @@ class B2Api(metaclass=B2TraceMeta):
     BUCKET_FACTORY_CLASS = staticmethod(BucketFactory)
     BUCKET_CLASS = staticmethod(Bucket)
     SESSION_CLASS = staticmethod(B2Session)
+    FILE_VERSION_FACTORY_CLASS = staticmethod(FileVersionFactory)
 
     def __init__(
         self,
@@ -120,8 +122,9 @@ class B2Api(metaclass=B2TraceMeta):
         :param int max_copy_workers: a number of copy threads, default is 10
         """
         self.session = self.SESSION_CLASS(account_info=account_info, cache=cache, raw_api=raw_api)
+        self.file_version_factory = self.FILE_VERSION_FACTORY_CLASS(self)
         self.services = Services(
-            self.session,
+            self,
             max_upload_workers=max_upload_workers,
             max_copy_workers=max_copy_workers,
         )
@@ -394,28 +397,19 @@ class B2Api(metaclass=B2TraceMeta):
         )
 
     # delete/cancel
-    def cancel_large_file(self, file_id):
+    def cancel_large_file(self, file_id: str) -> FileIdAndName:
         """
         Cancel a large file upload.
-
-        :param str file_id: a file ID
-        :rtype: None
         """
         return self.services.large_file.cancel_large_file(file_id)
 
-    def delete_file_version(self, file_id, file_name):
+    def delete_file_version(self, file_id: str, file_name: str) -> FileIdAndName:
         """
         Permanently and irrevocably delete one version of a file.
-
-        :param str file_id: a file ID
-        :param str file_name: a file name
-        :rtype: FileIdAndName
         """
         # filename argument is not first, because one day it may become optional
         response = self.session.delete_file_version(file_id, file_name)
-        assert response['fileId'] == file_id
-        assert response['fileName'] == file_name
-        return FileIdAndName(file_id, file_name)
+        return FileIdAndName.from_cancel_or_delete_response(response)
 
     # download
     def get_download_url_for_fileid(self, file_id):

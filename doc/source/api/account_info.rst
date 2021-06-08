@@ -47,6 +47,7 @@ SqliteAccountInfo
 =================
 
 .. autoclass:: b2sdk.v1.SqliteAccountInfo()
+   :inherited-members:
    :no-members:
    :special-members: __init__
 
@@ -90,6 +91,7 @@ AccountInfo interface
 =====================
 
 .. autoclass:: b2sdk.v1.AbstractAccountInfo()
+   :inherited-members:
    :private-members:
    :exclude-members: _abc_cache, _abc_negative_cache, _abc_negative_cache_version, _abc_registry
 
@@ -98,6 +100,7 @@ AccountInfo helper classes
 ==========================
 
 .. autoclass:: b2sdk.v1.UrlPoolAccountInfo()
+   :inherited-members:
    :no-members:
    :members: BUCKET_UPLOAD_POOL_CLASS, LARGE_FILE_UPLOAD_POOL_CLASS
 
@@ -105,6 +108,7 @@ AccountInfo helper classes
       This class is not part of the public interface. To find out how to safely use it, read :ref:`this <semantic_versioning>`.
 
 .. autoclass:: b2sdk.account_info.upload_url_pool.UploadUrlPool()
+   :inherited-members:
    :private-members:
 
    .. caution::

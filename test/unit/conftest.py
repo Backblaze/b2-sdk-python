@@ -108,6 +108,22 @@ def pytest_runtest_setup(item):
            with pytest.raises(exc_class, match=exc_msg):
                error_raising_function()
 
+    If a test is merked with "apiver" multiple times, it will be skipped if at least one of the apiver conditions
+    cause it to be skipped. E.g. if a test module is marked with
+
+    .. code-block:: python
+
+       pytestmark = [pytest.mark.apiver(from_ver=1)]
+
+    and a test function is marked with
+
+    .. code-block:: python
+
+       @pytest.mark.apiver(to_ver=1)
+       def test_function(self):
+           ...
+
+    the test function will be run only for apiver=v1
     """
     for mark in item.iter_markers(name='apiver'):
         if mark.args and mark.kwargs:
