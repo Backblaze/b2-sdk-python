@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+* Add running CLI unit and integration tests in CI
+
 ## [1.9.0] - 2021-06-07
 
 ### Added
@@ -31,7 +34,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Add `get_bucket_name_or_none_from_bucket_id` to `AccountInfo` and `Cache`
 * Add possibility to change realm during integration tests
 * Add support for "file locks": file retention, legal hold and default bucket retention
-* Add running CLI unit and integration tests in CI
 
 ### Fixed
 * Cleanup sync errors related to directories
