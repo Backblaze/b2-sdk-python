@@ -257,7 +257,7 @@ class FileSimulator(object):
 
         if range_ is not None:
             headers['Content-Range'] = 'bytes %d-%d/%d' % (
-                range_[0], range_[0] + content_length, len(self.data_bytes)
+                range_[0], range_[0] + content_length - 1, len(self.data_bytes)
             )  # yapf: disable
         for key, value in self.file_info.items():
             headers[FILE_INFO_HEADER_PREFIX + key] = value
