@@ -162,7 +162,6 @@ class Bucket(metaclass=B2TraceMeta):
         progress_listener: Optional[AbstractProgressListener] = None,
         range_: Optional[Tuple[int, int]] = None,
         encryption: Optional[EncryptionSetting] = None,
-        allow_seeking: bool = True,
     ) -> DownloadedFile:
         """
         Download a file by ID.
@@ -174,15 +173,12 @@ class Bucket(metaclass=B2TraceMeta):
         :param progress_listener: a progress listener object to use, or ``None`` to not track progress
         :param range_: two integer values, start and end offsets
         :param encryption: encryption settings (``None`` if unknown)
-        :param allow_seeking: if true, download strategies requiring seeking on the download destination will be
-                              taken into account
         """
         return self.api.download_file_by_id(
             file_id,
             progress_listener,
             range_=range_,
             encryption=encryption,
-            allow_seeking=allow_seeking,
         )
 
     def download_file_by_name(
@@ -191,7 +187,6 @@ class Bucket(metaclass=B2TraceMeta):
         progress_listener: Optional[AbstractProgressListener] = None,
         range_: Optional[Tuple[int, int]] = None,
         encryption: Optional[EncryptionSetting] = None,
-        allow_seeking: bool = True,
     ) -> DownloadedFile:
         """
         Download a file by name.
@@ -204,8 +199,6 @@ class Bucket(metaclass=B2TraceMeta):
         :param progress_listener: a progress listener object to use, or ``None`` to not track progress
         :param range_: two integer values, start and end offsets
         :param encryption: encryption settings (``None`` if unknown)
-        :param allow_seeking: if true, download strategies requiring seeking on the download destination will be
-                              taken into account
         """
         url = self.api.session.get_download_url_by_name(self.name, file_name)
         return self.api.services.download_manager.download_file_from_url(
@@ -213,7 +206,6 @@ class Bucket(metaclass=B2TraceMeta):
             progress_listener,
             range_,
             encryption=encryption,
-            allow_seeking=allow_seeking,
         )
 
     def get_file_info_by_id(self, file_id: str) -> FileVersion:
@@ -230,7 +222,6 @@ class Bucket(metaclass=B2TraceMeta):
         Gets a file version's by its name.
 
         :param str file_name: the name of the file who's info will be retrieved.
-        :rtype: generator[b2sdk.v1.FileVersionInfo]
         """
         try:
             return self.api.file_version_factory.from_response_headers(

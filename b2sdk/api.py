@@ -14,7 +14,7 @@ from .bucket import Bucket, BucketFactory
 from .encryption.setting import EncryptionSetting
 from .exception import NonExistentBucket, RestrictedBucket
 from .file_lock import FileRetentionSetting, LegalHold
-from .file_version import FileIdAndName, FileVersionFactory
+from .file_version import FileIdAndName, FileVersionFactory, FileVersion
 from .large_file.services import LargeFileServices
 from .raw_api import API_VERSION
 from .progress import AbstractProgressListener
@@ -226,7 +226,6 @@ class B2Api(metaclass=B2TraceMeta):
         progress_listener: Optional[AbstractProgressListener] = None,
         range_: Optional[Tuple[int, int]] = None,
         encryption: Optional[EncryptionSetting] = None,
-        allow_seeking: bool = True,
     ) -> DownloadedFile:
         """
         Download a file with the given ID.
@@ -236,8 +235,6 @@ class B2Api(metaclass=B2TraceMeta):
         :param range_: a list of two integers, the first one is a start\
         position, and the second one is the end position in the file
         :param encryption: encryption settings (``None`` if unknown)
-        :param allow_seeking: if true, download strategies requiring seeking on the download destination will be
-                              taken into account
         """
         url = self.session.get_download_url_by_id(file_id)
         return self.services.download_manager.download_file_from_url(
@@ -245,7 +242,6 @@ class B2Api(metaclass=B2TraceMeta):
             progress_listener,
             range_,
             encryption,
-            allow_seeking,
         )
 
     def update_file_retention(

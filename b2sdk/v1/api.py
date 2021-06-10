@@ -62,7 +62,6 @@ class B2Api(v2.B2Api):
         progress_listener: Optional[v2.AbstractProgressListener] = None,
         range_: Optional[Tuple[int, int]] = None,
         encryption: Optional[v2.EncryptionSetting] = None,
-        allow_seeking: bool = True,
     ) -> dict:
         ...
 
@@ -73,7 +72,6 @@ class B2Api(v2.B2Api):
         progress_listener: Optional[v2.AbstractProgressListener] = None,
         range_: Optional[Tuple[int, int]] = None,
         encryption: Optional[v2.EncryptionSetting] = None,
-        allow_seeking: bool = True,
     ) -> v2.DownloadedFile:
         ...
 
@@ -84,7 +82,6 @@ class B2Api(v2.B2Api):
         progress_listener: Optional[v2.AbstractProgressListener] = None,
         range_: Optional[Tuple[int, int]] = None,
         encryption: Optional[v2.EncryptionSetting] = None,
-        allow_seeking: bool = True,
     ):
         """
         Download a file with the given ID.
@@ -106,22 +103,19 @@ class B2Api(v2.B2Api):
         :param range_: a list of two integers, the first one is a start\
         position, and the second one is the end position in the file
         :param encryption: encryption settings (``None`` if unknown)
-        :param allow_seeking: if true, download strategies requiring seeking on the download destination will be
-                              taken into account
         """
-        try:
-            downloaded_file = super().download_file_by_id(
-                file_id=file_id,
-                progress_listener=progress_listener,
-                range_=range_,
-                encryption=encryption,
-                allow_seeking=allow_seeking,
-            )
-        except ValueError as ex:
-            if ex.args == ('no strategy suitable for download was found!',):
-                raise AssertionError('no strategy suitable for download was found!')
-            raise
+        downloaded_file = super().download_file_by_id(
+            file_id=file_id,
+            progress_listener=progress_listener,
+            range_=range_,
+            encryption=encryption,
+        )
         if download_dest is not None:
-            return download_file_and_return_info_dict(downloaded_file, download_dest, range_)
+            try:
+                return download_file_and_return_info_dict(downloaded_file, download_dest, range_)
+            except ValueError as ex:
+                if ex.args == ('no strategy suitable for download was found!',):
+                    raise AssertionError('no strategy suitable for download was found!')
+                raise
         else:
             return downloaded_file

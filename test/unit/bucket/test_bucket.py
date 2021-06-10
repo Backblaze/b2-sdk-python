@@ -1506,21 +1506,22 @@ class TestChooseStrategy(TestCaseWithBucket):
             parallel_downloader,
             simple_downloader,
         ]
-        downloaded_file = self.bucket.download_file_by_id(file_version.id_, allow_seeking=True)
-        assert downloaded_file.strategy == parallel_downloader
+        with io.BytesIO() as bytes_io:
+            downloaded_file = self.bucket.download_file_by_id(file_version.id_)
+            downloaded_file.save(bytes_io, allow_seeking=True)
+            assert downloaded_file.download_strategy == parallel_downloader
 
-        downloaded_file = self.bucket.download_file_by_id(file_version.id_, allow_seeking=False)
-        assert downloaded_file.strategy == simple_downloader
+            downloaded_file = self.bucket.download_file_by_id(file_version.id_)
+            downloaded_file.save(bytes_io, allow_seeking=False)
+            assert downloaded_file.download_strategy == simple_downloader
 
-        downloaded_file = self.bucket.download_file_by_name(
-            file_version.file_name, allow_seeking=True
-        )
-        assert downloaded_file.strategy == parallel_downloader
+            downloaded_file = self.bucket.download_file_by_name(file_version.file_name)
+            downloaded_file.save(bytes_io, allow_seeking=True)
+            assert downloaded_file.download_strategy == parallel_downloader
 
-        downloaded_file = self.bucket.download_file_by_name(
-            file_version.file_name, allow_seeking=False
-        )
-        assert downloaded_file.strategy == simple_downloader
+            downloaded_file = self.bucket.download_file_by_name(file_version.file_name)
+            downloaded_file.save(bytes_io, allow_seeking=False)
+            assert downloaded_file.download_strategy == simple_downloader
 
 
 # Default tests

@@ -100,7 +100,6 @@ class Bucket(v2.Bucket):
         progress_listener: Optional[v2.AbstractProgressListener] = None,
         range_: Optional[Tuple[int, int]] = None,
         encryption: Optional[v2.EncryptionSetting] = None,
-        allow_seeking: bool = True,
     ):
         """
         Download a file by name.
@@ -119,19 +118,18 @@ class Bucket(v2.Bucket):
         :param range_: two integer values, start and end offsets
         :param encryption: encryption settings (``None`` if unknown)
         """
+        downloaded_file = super().download_file_by_name(
+            file_name=file_name,
+            progress_listener=progress_listener,
+            range_=range_,
+            encryption=encryption,
+        )
         try:
-            downloaded_file = super().download_file_by_name(
-                file_name=file_name,
-                progress_listener=progress_listener,
-                range_=range_,
-                encryption=encryption,
-                allow_seeking=allow_seeking
-            )
+            return download_file_and_return_info_dict(downloaded_file, download_dest, range_)
         except ValueError as ex:
             if ex.args == ('no strategy suitable for download was found!',):
                 raise AssertionError('no strategy suitable for download was found!')
             raise
-        return download_file_and_return_info_dict(downloaded_file, download_dest, range_)
 
     @overload
     def download_file_by_id(
@@ -141,7 +139,6 @@ class Bucket(v2.Bucket):
         progress_listener: Optional[v2.AbstractProgressListener] = None,
         range_: Optional[Tuple[int, int]] = None,
         encryption: Optional[v2.EncryptionSetting] = None,
-        allow_seeking: bool = True,
     ) -> dict:
         ...
 
@@ -152,7 +149,6 @@ class Bucket(v2.Bucket):
         progress_listener: Optional[v2.AbstractProgressListener] = None,
         range_: Optional[Tuple[int, int]] = None,
         encryption: Optional[v2.EncryptionSetting] = None,
-        allow_seeking: bool = True,
     ) -> v2.DownloadedFile:
         ...
 
@@ -163,7 +159,6 @@ class Bucket(v2.Bucket):
         progress_listener: Optional[v2.AbstractProgressListener] = None,
         range_: Optional[Tuple[int, int]] = None,
         encryption: Optional[v2.EncryptionSetting] = None,
-        allow_seeking: bool = True,
     ):
         """
         Download a file by ID.
@@ -180,8 +175,6 @@ class Bucket(v2.Bucket):
         :param progress_listener: a progress listener object to use, or ``None`` to not report progress
         :param range_: two integer values, start and end offsets
         :param encryption: encryption settings (``None`` if unknown)
-        :param allow_seeking: if true, download strategies requiring seeking on the download destination will be
-                              taken into account
         """
         return self.api.download_file_by_id(
             file_id,
@@ -189,7 +182,6 @@ class Bucket(v2.Bucket):
             progress_listener,
             range_=range_,
             encryption=encryption,
-            allow_seeking=allow_seeking,
         )
 
 

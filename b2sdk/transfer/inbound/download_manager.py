@@ -69,15 +69,12 @@ class DownloadManager(metaclass=B2TraceMetaAbstract):
         progress_listener=None,
         range_=None,
         encryption: Optional[EncryptionSetting] = None,
-        allow_seeking=True,
     ) -> DownloadedFile:
         """
         :param url: url from which the file should be downloaded
         :param progress_listener: where to notify about downloading progress
         :param range_: 2-element tuple containing data of http Range header
         :param b2sdk.v1.EncryptionSetting encryption: encryption setting (``None`` if unknown)
-        :param bool allow_seeking: if False, download strategies that rely on seeking to write data
-                                   (parallel strategies) will be discarded.
         """
         progress_listener = progress_listener or DoNothingProgressListener()
         with self.services.session.download_file_from_url(
@@ -93,11 +90,11 @@ class DownloadManager(metaclass=B2TraceMetaAbstract):
                 if (range_[1] - range_[0] + 1) != file_version.size:
                     raise InvalidRange(file_version.size, range_)
 
-            for strategy in self.strategies:
-
-                if strategy.is_suitable(file_version, allow_seeking):
-                    return DownloadedFile(
-                        file_version, strategy, range_, response, encryption, self.services.session,
-                        progress_listener
-                    )
-            raise ValueError('no strategy suitable for download was found!')
+            return DownloadedFile(
+                file_version=file_version,
+                download_manager=self,
+                range_=range_,
+                response=response,
+                encryption=encryption,
+                progress_listener=progress_listener,
+            )
