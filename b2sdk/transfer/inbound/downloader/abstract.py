@@ -12,9 +12,8 @@ from abc import abstractmethod
 from typing import Optional
 
 from b2sdk.utils import B2TraceMetaAbstract
+from b2sdk.utils.range_ import Range
 from b2sdk.encryption.setting import EncryptionSetting
-
-from .range import Range
 
 
 class AbstractDownloader(metaclass=B2TraceMetaAbstract):

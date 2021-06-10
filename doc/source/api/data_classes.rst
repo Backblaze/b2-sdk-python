@@ -14,3 +14,7 @@ Data classes
 
 .. autoclass:: b2sdk.v1.Part
    :no-members:
+
+.. autoclass:: b2sdk.v1.Range
+   :no-members:
+   :special-members: __init__

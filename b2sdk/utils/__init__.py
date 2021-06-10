@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: b2sdk/utils.py
+# File: b2sdk/utils/__init__.py
 #
 # Copyright 2019 Backblaze Inc. All Rights Reserved.
 #

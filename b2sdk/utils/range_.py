@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: b2sdk/transfer/inbound/downloader/range.py
+# File: b2sdk/utils/range_.py
 #
 # Copyright 2020 Backblaze Inc. All Rights Reserved.
 #
@@ -26,7 +26,9 @@ class Range(object):
 
         raw_range_header example: 'bytes=0-11'
         """
-        offsets = tuple(int(i) for i in raw_range_header.replace('bytes=', '').split('-'))
+        offsets = tuple(
+            int(i) for i in raw_range_header.replace('bytes', '').strip('= ').split('-')
+        )
         return cls(*offsets)
 
     def size(self):
@@ -48,3 +50,6 @@ class Range(object):
 
     def __repr__(self):
         return '%s(%d, %d)' % (self.__class__.__name__, self.start, self.end)
+
+    def __eq__(self, other):
+        return self.start == other.start and self.end == other.end

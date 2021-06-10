@@ -16,8 +16,8 @@ import queue
 import threading
 
 from .abstract import AbstractDownloader
-from .range import Range
 from b2sdk.encryption.setting import EncryptionSetting
+from b2sdk.utils.range_ import Range
 
 logger = logging.getLogger(__name__)
 
