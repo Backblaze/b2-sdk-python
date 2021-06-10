@@ -15,7 +15,7 @@ from typing import Optional, Tuple
 from requests.models import Response
 
 from ...encryption.setting import EncryptionSetting
-from ...file_version import FileVersion
+from ...file_version import DownloadVersion
 from ...progress import AbstractProgressListener
 from ...stream.progress import WritingStreamWithProgress
 
@@ -82,14 +82,14 @@ class MtimeUpdatedFile(io.IOBase):
 class DownloadedFile:
     def __init__(
         self,
-        file_version: FileVersion,
+        download_version: DownloadVersion,
         download_manager: 'DownloadManager',
         range_: Optional[Tuple[int, int]],
         response: Response,
         encryption: Optional[EncryptionSetting],
         progress_listener: AbstractProgressListener,
     ):
-        self.file_version = file_version
+        self.download_version = download_version
         self.download_manager = download_manager
         self.range_ = range_
         self.progress_listener = progress_listener
@@ -99,13 +99,13 @@ class DownloadedFile:
 
     def _validate_download(self, bytes_read, actual_sha1):
         if self.range_ is None:
-            if bytes_read != self.file_version.size:
-                raise TruncatedOutput(bytes_read, self.file_version.size)
+            if bytes_read != self.download_version.size:
+                raise TruncatedOutput(bytes_read, self.download_version.size)
 
-            if self.file_version.content_sha1 != 'none' and actual_sha1 != self.file_version.content_sha1:
+            if self.download_version.content_sha1 != 'none' and actual_sha1 != self.download_version.content_sha1:
                 raise ChecksumMismatch(
                     checksum_type='sha1',
-                    expected=self.file_version.content_sha1,
+                    expected=self.download_version.content_sha1,
                     actual=actual_sha1,
                 )
         else:
@@ -126,10 +126,10 @@ class DownloadedFile:
             if self.range_ is not None:
                 total_bytes = self.range_[1] - self.range_[0] + 1
             else:
-                total_bytes = self.file_version.size
+                total_bytes = self.download_version.size
             self.progress_listener.set_total_bytes(total_bytes)
         for strategy in self.download_manager.strategies:
-            if strategy.is_suitable(self.file_version, allow_seeking):
+            if strategy.is_suitable(self.download_version, allow_seeking):
                 break
         else:
             raise ValueError('no strategy suitable for download was found!')
@@ -137,7 +137,7 @@ class DownloadedFile:
         bytes_read, actual_sha1 = strategy.download(
             file,
             response=self.response,
-            file_version=self.file_version,
+            download_version=self.download_version,
             session=self.download_manager.services.session,
             encryption=self.encryption,
         )
@@ -153,6 +153,6 @@ class DownloadedFile:
                               (parallel strategies) will be discarded.
         """
         with MtimeUpdatedFile(
-            path_, mod_time_millis=self.file_version.mod_time_millis, mode=mode
+            path_, mod_time_millis=self.download_version.mod_time_millis, mode=mode
         ) as file:
             self.save(file, allow_seeking=allow_seeking)

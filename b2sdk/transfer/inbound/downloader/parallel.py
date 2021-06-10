@@ -9,14 +9,19 @@
 ######################################################################
 
 from abc import abstractmethod
+from io import IOBase
 from typing import Optional
 import logging
 import hashlib
 import queue
 import threading
 
+from requests.models import Response
+
 from .abstract import AbstractDownloader
 from b2sdk.encryption.setting import EncryptionSetting
+from b2sdk.file_version import DownloadVersion
+from b2sdk.session import B2Session
 from b2sdk.utils.range_ import Range
 
 logger = logging.getLogger(__name__)
@@ -53,34 +58,35 @@ class ParallelDownloader(AbstractDownloader):
         self.min_part_size = min_part_size
         super(ParallelDownloader, self).__init__(*args, **kwargs)
 
-    def is_suitable(self, file_version, allow_seeking):
-        if not super().is_suitable(file_version, allow_seeking):
+    def is_suitable(self, download_version: DownloadVersion, allow_seeking: bool):
+        if not super().is_suitable(download_version, allow_seeking):
             return False
         return self._get_number_of_streams(
-            file_version.size
-        ) >= 2 and file_version.size >= 2 * self.min_part_size
+            download_version.content_length
+        ) >= 2 and download_version.content_length >= 2 * self.min_part_size
 
     def _get_number_of_streams(self, content_length):
         return min(self.max_streams, content_length // self.min_part_size) or 1
 
     def download(
-        self, file, response, file_version, session, encryption: Optional[EncryptionSetting] = None
+        self,
+        file: IOBase,
+        response: Response,
+        download_version: DownloadVersion,
+        session: B2Session,
+        encryption: Optional[EncryptionSetting] = None,
     ):
         """
         Download a file from given url using parallel download sessions and stores it in the given download_destination.
-
-        :param file: an opened file-like object to write to
-        :param response: the response of the first request made to the cloud service with download intent
-        :return:
         """
-        remote_range = self._get_remote_range(response, file_version)
+        remote_range = self._get_remote_range(response, download_version)
         actual_size = remote_range.size()
         start_file_position = file.tell()
         parts_to_download = list(
             gen_parts(
                 remote_range,
                 Range(start_file_position, start_file_position + actual_size - 1),
-                part_count=self._get_number_of_streams(file_version.size),
+                part_count=self._get_number_of_streams(download_version.content_length),
             )
         )
 
@@ -103,7 +109,7 @@ class ParallelDownloader(AbstractDownloader):
 
         # At this point the hasher already consumed the data until the end of first stream.
         # Consume the rest of the file to complete the hashing process
-        self._finish_hashing(first_part, file, hasher, file_version.size)
+        self._finish_hashing(first_part, file, hasher, download_version.content_length)
 
         return bytes_written, hasher.hexdigest()
 

@@ -37,12 +37,14 @@ else:
     DownloadDestBytes, PreSeekedDownloadDest = None, None  # these classes are not present, thus not needed, in v2
 from apiver_deps import B2Api
 from apiver_deps import DownloadedFile
+from apiver_deps import DownloadVersion
 from apiver_deps import LargeFileUploadState
 from apiver_deps import MetadataDirectiveMode
 from apiver_deps import Part
 from apiver_deps import AbstractProgressListener
 from apiver_deps import StubAccountInfo, RawSimulator, BucketSimulator, FakeResponse, FileSimulator
 from apiver_deps import ParallelDownloader
+from apiver_deps import Range
 from apiver_deps import SimpleDownloader
 from apiver_deps import UploadSourceBytes
 from apiver_deps import hex_sha1_of_bytes, TempDir
@@ -310,15 +312,15 @@ class TestGetFileInfo(TestCaseWithBucket):
 
         info = self.bucket.get_file_info_by_name('a')
 
-        self.assertIsInstance(info, VFileVersionInfo)
-        expected = (
-            a_id, 'a', 11, 'upload', 'b2/x-auto', 'none', NO_RETENTION_FILE_SETTING, LegalHold.UNSET
-        )
+        if apiver_deps.V <= 1:
+            self.assertIsInstance(info, VFileVersionInfo)
+        else:
+            self.assertIsInstance(info, DownloadVersion)
+        expected = (a_id, 'a', 11, 'b2/x-auto', 'none', NO_RETENTION_FILE_SETTING, LegalHold.UNSET)
         actual = (
             info.id_,
             info.file_name,
             info.size,
-            info.action,
             info.content_type,
             info.server_side_encryption.mode.value,
             info.file_retention,
@@ -1263,9 +1265,28 @@ class DownloadTests(DownloadTestsBase):
         file_version = self.bucket.upload_bytes(
             self.DATA.encode(), 'enc_file2', encryption=SSE_C_AES
         )
-        file_version.size = 12  # we're only downloading a part of the file
         other_properties = {
-            'file_version': file_version,
+            'download_version':
+                DownloadVersion(
+                    api=self.api,
+                    id_=file_version.id_,
+                    file_name=file_version.file_name,
+                    size=len(self.DATA),
+                    content_type=file_version.content_type,
+                    content_sha1=file_version.content_sha1,
+                    file_info=file_version.file_info,
+                    upload_timestamp=file_version.upload_timestamp,
+                    server_side_encryption=file_version.server_side_encryption,
+                    range_=Range(7, 18),
+                    content_disposition=None,
+                    content_length=12,
+                    content_language=None,
+                    expires=None,
+                    cache_control=None,
+                    content_encoding=None,
+                    file_retention=file_version.file_retention,
+                    legal_hold=file_version.legal_hold,
+                ),
         }
         ret = self.bucket.download_file_by_id(file_version.id_, **download_kwargs)
         assert isinstance(ret, DownloadedFile), type(ret)

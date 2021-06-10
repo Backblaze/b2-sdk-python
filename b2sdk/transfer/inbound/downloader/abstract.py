@@ -9,8 +9,13 @@
 ######################################################################
 
 from abc import abstractmethod
+from io import IOBase
 from typing import Optional
 
+from requests.models import Response
+
+from b2sdk.file_version import DownloadVersion
+from b2sdk.session import B2Session
 from b2sdk.utils import B2TraceMetaAbstract
 from b2sdk.utils.range_ import Range
 from b2sdk.encryption.setting import EncryptionSetting
@@ -43,22 +48,21 @@ class AbstractDownloader(metaclass=B2TraceMetaAbstract):
         return aligned
 
     @classmethod
-    def _get_remote_range(cls, response, file_version):
+    def _get_remote_range(cls, response: Response, download_version: DownloadVersion):
         """
         Get a range from response or original request (as appropriate).
 
         :param response: requests.Response of initial request
-        :param file_version: b2sdk.v1.FileVersionInfo
+        :param download_version: b2sdk.v1.DownloadVersion
         :return: a range object
         """
-        raw_range_header = response.request.headers.get('Range')  # 'bytes 0-11'
-        if raw_range_header is None:
-            return Range(0, 0 if file_version.size == 0 else file_version.size - 1)
-        return Range.from_header(raw_range_header)
+        if 'Range' in response.request.headers:
+            return Range.from_header(response.request.headers['Range'])
+        return download_version.range_
 
-    def is_suitable(self, file_version, allow_seeking):
+    def is_suitable(self, download_version: DownloadVersion, allow_seeking: bool):
         """
-        Analyze file_version (possibly against options passed earlier to constructor
+        Analyze download_version (possibly against options passed earlier to constructor
         to find out whether the given download request should be handled by this downloader).
         """
         if self.REQUIRES_SEEKING and not allow_seeking:
@@ -68,10 +72,10 @@ class AbstractDownloader(metaclass=B2TraceMetaAbstract):
     @abstractmethod
     def download(
         self,
-        file,
-        response,
-        file_version,
-        session,
+        file: IOBase,
+        response: Response,
+        download_version: DownloadVersion,
+        session: B2Session,
         encryption: Optional[EncryptionSetting] = None,
     ):
         """

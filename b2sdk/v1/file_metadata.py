@@ -8,7 +8,7 @@
 #
 ######################################################################
 
-from ..file_version import FileVersion
+import b2sdk._v2 as v2
 
 
 class FileMetadata(object):
@@ -56,12 +56,12 @@ class FileMetadata(object):
         return content_sha1
 
     @classmethod
-    def from_file_version(cls, file_version: FileVersion):
+    def from_download_version(cls, download_version: v2.DownloadVersion):
         return cls(
-            file_id=file_version.id_,
-            file_name=file_version.file_name,
-            content_type=file_version.content_type,
-            content_length=file_version.size,
-            content_sha1=file_version.content_sha1,
-            file_info=file_version.file_info,
+            file_id=download_version.id_,
+            file_name=download_version.file_name,
+            content_type=download_version.content_type,
+            content_length=download_version.content_length,
+            content_sha1=download_version.content_sha1,
+            file_info=download_version.file_info,
         )

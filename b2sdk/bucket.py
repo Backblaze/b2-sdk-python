@@ -21,7 +21,7 @@ from .file_lock import (
     UNKNOWN_BUCKET_RETENTION,
     LegalHold,
 )
-from .file_version import FileVersion
+from .file_version import DownloadVersion, FileVersion
 from .progress import AbstractProgressListener, DoNothingProgressListener
 from .transfer.emerge.executor import AUTO_CONTENT_TYPE
 from .transfer.emerge.write_intent import WriteIntent
@@ -217,14 +217,14 @@ class Bucket(metaclass=B2TraceMeta):
         """
         return self.api.file_version_factory.from_api_response(self.api.get_file_info(file_id))
 
-    def get_file_info_by_name(self, file_name: str) -> FileVersion:
+    def get_file_info_by_name(self, file_name: str) -> DownloadVersion:
         """
-        Gets a file version's by its name.
+        Gets a file's DownloadVersion by name.
 
         :param str file_name: the name of the file who's info will be retrieved.
         """
         try:
-            return self.api.file_version_factory.from_response_headers(
+            return self.api.download_version_factory.from_response_headers(
                 self.api.session.get_file_info_by_name(self.name, file_name)
             )
         except FileOrBucketNotFound:

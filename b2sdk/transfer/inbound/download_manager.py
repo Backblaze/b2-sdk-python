@@ -82,16 +82,16 @@ class DownloadManager(metaclass=B2TraceMetaAbstract):
             range_=range_,
             encryption=encryption,
         ) as response:
-            file_version = self.services.api.file_version_factory.from_response_headers(
+            download_version = self.services.api.download_version_factory.from_response_headers(
                 response.headers
             )
             if range_ is not None:
                 # 2021-05-20: unfortunately for a read of a complete object server does not return the 'Content-Range' header
-                if (range_[1] - range_[0] + 1) != file_version.size:
-                    raise InvalidRange(file_version.size, range_)
+                if (range_[1] - range_[0] + 1) != download_version.content_length:
+                    raise InvalidRange(download_version.content_length, range_)
 
             return DownloadedFile(
-                file_version=file_version,
+                download_version=download_version,
                 download_manager=self,
                 range_=range_,
                 response=response,

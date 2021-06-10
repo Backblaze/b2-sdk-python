@@ -14,7 +14,7 @@ from .bucket import Bucket, BucketFactory
 from .encryption.setting import EncryptionSetting
 from .exception import NonExistentBucket, RestrictedBucket
 from .file_lock import FileRetentionSetting, LegalHold
-from .file_version import FileIdAndName, FileVersionFactory, FileVersion
+from .file_version import DownloadVersionFactory, FileIdAndName, FileVersionFactory, FileVersion
 from .large_file.services import LargeFileServices
 from .raw_api import API_VERSION
 from .progress import AbstractProgressListener
@@ -88,6 +88,7 @@ class B2Api(metaclass=B2TraceMeta):
     BUCKET_CLASS = staticmethod(Bucket)
     SESSION_CLASS = staticmethod(B2Session)
     FILE_VERSION_FACTORY_CLASS = staticmethod(FileVersionFactory)
+    DOWNLOAD_VERSION_FACTORY_CLASS = staticmethod(DownloadVersionFactory)
 
     def __init__(
         self,
@@ -125,6 +126,7 @@ class B2Api(metaclass=B2TraceMeta):
         """
         self.session = self.SESSION_CLASS(account_info=account_info, cache=cache, raw_api=raw_api)
         self.file_version_factory = self.FILE_VERSION_FACTORY_CLASS(self)
+        self.download_version_factory = self.DOWNLOAD_VERSION_FACTORY_CLASS(self)
         self.services = Services(
             self,
             max_upload_workers=max_upload_workers,

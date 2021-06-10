@@ -10,7 +10,7 @@
 
 from .download_dest import AbstractDownloadDestination
 from .file_metadata import FileMetadata
-from .file_version import FileVersionInfoFactory
+from .file_version import FileVersionInfo, FileVersionInfoFactory, file_version_info_from_download_version
 from typing import Optional, overload, Tuple
 from b2sdk import _v2 as v2
 from b2sdk.utils import validate_b2_file_name
@@ -20,6 +20,7 @@ from b2sdk.utils import validate_b2_file_name
 # and to retain old style FILE_VERSION_FACTORY attribute
 # and to retain old style download_file_by_name signature
 # and to retain old style download_file_by_id signature (allowing for the new one as well)
+# and to retain old style get_file_info_by_name return type
 class Bucket(v2.Bucket):
     FILE_VERSION_FACTORY = staticmethod(FileVersionInfoFactory)
 
@@ -184,23 +185,26 @@ class Bucket(v2.Bucket):
             encryption=encryption,
         )
 
+    def get_file_info_by_name(self, file_name: str) -> FileVersionInfo:
+        return file_version_info_from_download_version(super().get_file_info_by_name(file_name))
+
 
 def download_file_and_return_info_dict(
     downloaded_file: v2.DownloadedFile, download_dest: AbstractDownloadDestination,
     range_: Optional[Tuple[int, int]]
 ):
     with download_dest.make_file_context(
-        file_id=downloaded_file.file_version.id_,
-        file_name=downloaded_file.file_version.file_name,
-        content_length=downloaded_file.file_version.size,
-        content_type=downloaded_file.file_version.content_type,
-        content_sha1=downloaded_file.file_version.content_sha1,
-        file_info=downloaded_file.file_version.file_info,
-        mod_time_millis=downloaded_file.file_version.mod_time_millis,
+        file_id=downloaded_file.download_version.id_,
+        file_name=downloaded_file.download_version.file_name,
+        content_length=downloaded_file.download_version.size,
+        content_type=downloaded_file.download_version.content_type,
+        content_sha1=downloaded_file.download_version.content_sha1,
+        file_info=downloaded_file.download_version.file_info,
+        mod_time_millis=downloaded_file.download_version.mod_time_millis,
         range_=range_,
     ) as file:
         downloaded_file.save(file)
-        return FileMetadata.from_file_version(downloaded_file.file_version).as_info_dict()
+        return FileMetadata.from_download_version(downloaded_file.download_version).as_info_dict()
 
 
 class BucketFactory(v2.BucketFactory):
