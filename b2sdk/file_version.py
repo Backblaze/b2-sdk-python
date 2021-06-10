@@ -8,33 +8,26 @@
 #
 ######################################################################
 
+import email.utils as email_utils
+from datetime import datetime
+from typing import Dict, Optional, Union
+
 from .encryption.setting import EncryptionSetting, EncryptionSettingFactory
 from .file_lock import FileRetentionSetting, LegalHold, NO_RETENTION_FILE_SETTING
 from .raw_api import SRC_LAST_MODIFIED_MILLIS
 from .utils import FILE_INFO_HEADER_PREFIX_LOWER
+from .utils.range_ import Range
+
 if False:
     from .api import B2Api
 
 
-class FileVersion:
+class BaseFileVersion:
     """
-    A structure which represents a version of a file (in B2 cloud).
+    Base class for representing file metadata in B2 cloud.
 
-    :ivar str ~.id\_: ``fileId``
-    :ivar str ~.file_name: full file name (with path)
-    :ivar ~.size: size in bytes, can be ``None`` (unknown)
-    :vartype ~.size: int or None
-    :ivar str ~.content_type: RFC 822 content type, for example ``"application/octet-stream"``
-    :ivar ~.content_sha1: sha1 checksum of the entire file, can be ``None`` (unknown) if it is a large file uploaded by a client which did not provide it
-    :vartype ~.content_sha1: str or None
-    :ivar ~.content_md5: md5 checksum of the file, can be ``None`` (unknown)
-    :vartype ~.content_md5: str or None
-    :ivar dict ~.file_info: file info dict
-    :ivar ~.upload_timestamp: in milliseconds since :abbr:`epoch (1970-01-01 00:00:00)`. Can be ``None`` (unknown).
-    :vartype ~.upload_timestamp: int or None
-    :ivar str ~.action: ``"upload"``, ``"hide"`` or ``"delete"``
+    :ivar size - size of the whole file (for "upload" markers)
     """
-
     __slots__ = [
         'id_',
         'api',
@@ -42,10 +35,8 @@ class FileVersion:
         'size',
         'content_type',
         'content_sha1',
-        'content_md5',
         'file_info',
         'upload_timestamp',
-        'action',
         'server_side_encryption',
         'legal_hold',
         'file_retention',
@@ -55,15 +46,13 @@ class FileVersion:
     def __init__(
         self,
         api: 'B2Api',
-        id_,
-        file_name,
-        size,
-        content_type,
-        content_sha1,
-        file_info,
-        upload_timestamp,
-        action,
-        content_md5,
+        id_: str,
+        file_name: str,
+        size: Union[int, None, str],
+        content_type: Optional[str],
+        content_sha1: Optional[str],
+        file_info: Dict[str, str],
+        upload_timestamp: int,
         server_side_encryption: EncryptionSetting,
         file_retention: FileRetentionSetting = NO_RETENTION_FILE_SETTING,
         legal_hold: LegalHold = LegalHold.UNSET,
@@ -74,10 +63,8 @@ class FileVersion:
         self.size = size and int(size)
         self.content_type = content_type
         self.content_sha1 = content_sha1
-        self.content_md5 = content_md5
         self.file_info = file_info or {}
         self.upload_timestamp = upload_timestamp
-        self.action = action
         self.server_side_encryption = server_side_encryption
         self.legal_hold = legal_hold
         self.file_retention = file_retention
@@ -114,7 +101,7 @@ class FileVersion:
 
     def __eq__(self, other):
         sentry = object()
-        for attr in self.__slots__:
+        for attr in self._all_slots():
             if getattr(self, attr) != getattr(other, attr, sentry):
                 return False
         return True
@@ -122,13 +109,129 @@ class FileVersion:
     def __repr__(self):
         return '%s(%s)' % (
             self.__class__.__name__,
-            ', '.join(repr(getattr(self, attr)) for attr in self.__slots__)
+            ', '.join(repr(getattr(self, attr)) for attr in self._all_slots())
+        )
+
+    def _all_slots(self):
+        """Return all slots for an object (for it's class and all parent classes). Useful in auxiliary methods."""
+        all_slots = []
+        for klass in self.__class__.__mro__[-1::-1]:
+            all_slots.extend(getattr(klass, '__slots__', []))
+        return all_slots
+
+
+class FileVersion(BaseFileVersion):
+    """
+    A structure which represents a version of a file (in B2 cloud).
+
+    :ivar str ~.id\_: ``fileId``
+    :ivar str ~.file_name: full file name (with path)
+    :ivar ~.size: size in bytes, can be ``None`` (unknown)
+    :ivar str ~.content_type: RFC 822 content type, for example ``"application/octet-stream"``
+    :ivar ~.upload_timestamp: in milliseconds since :abbr:`epoch (1970-01-01 00:00:00)`. Can be ``None`` (unknown).
+    :ivar str ~.action: ``"upload"``, ``"hide"`` or ``"delete"``
+    """
+
+    __slots__ = [
+        'content_md5',
+        'action',
+    ]
+
+    def __init__(
+        self,
+        api: 'B2Api',
+        id_: str,
+        file_name: str,
+        size: Union[int, None, str],
+        content_type: Optional[str],
+        content_sha1: Optional[str],
+        file_info: Dict[str, str],
+        upload_timestamp: int,
+        action: str,
+        content_md5: Optional[str],
+        server_side_encryption: EncryptionSetting,
+        file_retention: FileRetentionSetting = NO_RETENTION_FILE_SETTING,
+        legal_hold: LegalHold = LegalHold.UNSET,
+    ):
+        self.content_md5 = content_md5
+        self.action = action
+
+        super().__init__(
+            api=api,
+            id_=id_,
+            file_name=file_name,
+            size=size,
+            content_type=content_type,
+            content_sha1=content_sha1,
+            file_info=file_info,
+            upload_timestamp=upload_timestamp,
+            server_side_encryption=server_side_encryption,
+            file_retention=file_retention,
+            legal_hold=legal_hold,
+        )
+
+
+class DownloadVersion(BaseFileVersion):
+    """
+    A structure which represents metadata of an initialized download
+    """
+    __slots__ = [
+        'range_',
+        'content_disposition',
+        'content_length',
+        'content_language',
+        'expires',
+        'cache_control',
+        'content_encoding',
+    ]
+
+    def __init__(
+        self,
+        api: 'B2Api',
+        id_: str,
+        file_name: str,
+        size: int,
+        content_type: Optional[str],
+        content_sha1: Optional[str],
+        file_info: Dict[str, str],
+        upload_timestamp: int,
+        server_side_encryption: EncryptionSetting,
+        range_: Range,
+        content_disposition: Optional[str],
+        content_length: int,
+        content_language: Optional[str],
+        expires: Optional[datetime],
+        cache_control: Optional[str],
+        content_encoding: Optional[str],
+        file_retention: FileRetentionSetting = NO_RETENTION_FILE_SETTING,
+        legal_hold: LegalHold = LegalHold.UNSET,
+    ):
+        self.range_ = range_
+        self.content_disposition = content_disposition
+        self.content_length = content_length
+        self.content_language = content_language
+        self.expires = expires
+        self.cache_control = cache_control
+        self.content_encoding = content_encoding
+
+        super().__init__(
+            api=api,
+            id_=id_,
+            file_name=file_name,
+            size=size,
+            content_type=content_type,
+            content_sha1=content_sha1,
+            file_info=file_info,
+            upload_timestamp=upload_timestamp,
+            server_side_encryption=server_side_encryption,
+            file_retention=file_retention,
+            legal_hold=legal_hold,
         )
 
 
 class FileVersionFactory(object):
     """
-    Construct :py:class:`b2sdk.v1.FileVersionInfo` objects from various structures.
+    Construct :py:class:`b2sdk.v1.FileVersion` objects from api responses.
     """
 
     def __init__(self, api: 'B2Api'):
@@ -204,6 +307,23 @@ class FileVersionFactory(object):
             legal_hold,
         )
 
+
+class DownloadVersionFactory(object):
+    """
+    Construct :py:class:`b2sdk.v1.DownloadVersion` objects from download headers.
+    """
+
+    def __init__(self, api: 'B2Api'):
+        self.api = api
+
+    @classmethod
+    def range_and_size_from_header(cls, header):
+        raw_range, raw_size = header.split('/')
+        range_ = Range.from_header(raw_range)
+        size = int(raw_size)
+
+        return range_, size
+
     def from_response_headers(self, headers):
         file_info = {}
         prefix_len = len(FILE_INFO_HEADER_PREFIX_LOWER)
@@ -211,18 +331,35 @@ class FileVersionFactory(object):
             if header_name[:prefix_len].lower() == FILE_INFO_HEADER_PREFIX_LOWER:
                 file_info_key = header_name[prefix_len:]
                 file_info[file_info_key] = header_value
-        return FileVersion(
+        if 'Expires' not in headers:
+            expires = None
+        else:
+            expires = datetime(*email_utils.parsedate(headers['expires']))
+
+        if 'Content-Range' in headers:
+            range_, size = self.range_and_size_from_header(headers['Content-Range'])
+            content_length = int(headers['Content-Length'])
+        else:
+            size = content_length = int(headers['Content-Length'])
+            range_ = Range(0, max(size - 1, 0))
+
+        return DownloadVersion(
             api=self.api,
             id_=headers.get('x-bz-file-id'),
             file_name=headers.get('x-bz-file-name'),
-            size=headers.get('content-length'),
+            size=size,
             content_type=headers.get('content-type'),
             content_sha1=headers.get('x-bz-content-sha1'),
             file_info=file_info,
             upload_timestamp=headers.get('x-bz-upload-timestamp'),
-            action='upload',
-            content_md5=None,
             server_side_encryption=EncryptionSettingFactory.from_response_headers(headers),
+            range_=range_,
+            content_disposition=headers.get('Content-Disposition'),
+            content_length=content_length,
+            content_language=headers.get('Content-Language'),
+            expires=expires,
+            cache_control=headers.get('Cache-Control'),
+            content_encoding=headers.get('Content-Encoding'),
             file_retention=FileRetentionSetting.from_response_headers(headers),
             legal_hold=LegalHold.from_response_headers(headers),
         )

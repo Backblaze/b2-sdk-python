@@ -5,6 +5,9 @@ Data classes
    :inherited-members:
    :special-members: __dict__
 
+.. autoclass:: b2sdk.v1.DownloadVersion
+   :inherited-members:
+
 .. autoclass:: b2sdk.v1.FileIdAndName
    :inherited-members:
    :special-members: __dict__
