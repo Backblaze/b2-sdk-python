@@ -14,7 +14,7 @@ from .bucket import Bucket, BucketFactory
 from .encryption.setting import EncryptionSetting
 from .exception import NonExistentBucket, RestrictedBucket
 from .file_lock import FileRetentionSetting, LegalHold
-from .file_version import DownloadVersionFactory, FileIdAndName, FileVersionFactory, FileVersion
+from .file_version import DownloadVersionFactory, FileIdAndName, FileVersionFactory
 from .large_file.services import LargeFileServices
 from .raw_api import API_VERSION
 from .progress import AbstractProgressListener
