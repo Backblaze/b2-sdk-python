@@ -122,7 +122,7 @@ def integration(session):
     session.run('pytest', '-s', *session.posargs, 'test/integration')
 
 
-@nox.session(python=PYTHON_VERSIONS)
+@nox.session(python=PYTHON_DEFAULT_VERSION)
 def cleanup_old_buckets(session):
     """Remove buckets from previous test runs."""
     install_myself(session)
