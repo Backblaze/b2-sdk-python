@@ -99,8 +99,8 @@ class DownloadedFile:
 
     def _validate_download(self, bytes_read, actual_sha1):
         if self.range_ is None:
-            if bytes_read != self.download_version.size:
-                raise TruncatedOutput(bytes_read, self.download_version.size)
+            if bytes_read != self.download_version.content_length:
+                raise TruncatedOutput(bytes_read, self.download_version.content_length)
 
             if self.download_version.content_sha1 != 'none' and actual_sha1 != self.download_version.content_sha1:
                 raise ChecksumMismatch(
@@ -126,7 +126,7 @@ class DownloadedFile:
             if self.range_ is not None:
                 total_bytes = self.range_[1] - self.range_[0] + 1
             else:
-                total_bytes = self.download_version.size
+                total_bytes = self.download_version.content_length
             self.progress_listener.set_total_bytes(total_bytes)
         for strategy in self.download_manager.strategies:
             if strategy.is_suitable(self.download_version, allow_seeking):
