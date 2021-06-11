@@ -14,6 +14,7 @@ import pathlib
 import random
 import string
 import time
+from typing import Optional
 from unittest import mock
 
 import pytest
@@ -26,6 +27,7 @@ BUCKET_NAME_CHARS = string.ascii_letters + string.digits + '-'
 BUCKET_NAME_LENGTH = 50
 ONE_HOUR_MILLIS = 60 * 60 * 1000
 BUCKET_CREATED_AT_MILLIS = 'created_at_millis'
+GENERAL_BUCKET_NAME_PREFIX = 'sdktst'
 
 
 def bucket_name_part(length):
@@ -50,32 +52,34 @@ def hash_file(path_):
     return hash_.digest()
 
 
+def _authorize(b2_auth_data):
+    info = InMemoryAccountInfo()
+    b2_api = B2Api(info)
+    b2_api.authorize_account("production", *b2_auth_data)
+    return b2_api, info
+
+
 class TestLargeFile:
-
-    general_bucket_name_prefix = 'sdktst'
-
     @pytest.fixture(autouse=True)
-    def save_settings(self, b2_auth_data):
+    def save_settings(self, dont_cleanup_old_buckets, b2_auth_data):
+        type(self).dont_cleanup_old_buckets = dont_cleanup_old_buckets
         type(self).b2_auth_data = b2_auth_data
 
     @classmethod
     def setup_class(cls):
-        cls.this_run_bucket_name_prefix = cls.general_bucket_name_prefix + bucket_name_part(8)
+        cls.this_run_bucket_name_prefix = GENERAL_BUCKET_NAME_PREFIX + bucket_name_part(8)
 
     @classmethod
     def teardown_class(cls):
-        cls.clean_buckets()
+        BucketCleaner(
+            cls.dont_cleanup_old_buckets,
+            *cls.b2_auth_data,
+            current_run_prefix=cls.this_run_bucket_name_prefix
+        ).cleanup_buckets()
 
     @pytest.fixture(autouse=True)
     def setup_method(self):
-        self.b2_api, self.info = self._authorize(self.b2_auth_data)
-
-    @classmethod
-    def _authorize(cls, b2_auth_data):
-        info = InMemoryAccountInfo()
-        b2_api = B2Api(info)
-        b2_api.authorize_account("production", *b2_auth_data)
-        return b2_api, info
+        self.b2_api, self.info = _authorize(self.b2_auth_data)
 
     def generate_bucket_name(self):
         return self.this_run_bucket_name_prefix + bucket_name_part(
@@ -135,23 +139,37 @@ class TestLargeFile:
                     bucket.download_file_by_name('large_file').save_to(target_large_file)
                     assert hash_file(source_large_file) == hash_file(target_large_file)
 
-    @classmethod
-    def _should_remove_bucket(cls, bucket):
-        if bucket.name.startswith(cls.this_run_bucket_name_prefix):
+
+class BucketCleaner:
+    def __init__(
+        self,
+        dont_cleanup_old_buckets: bool,
+        b2_application_key_id: str,
+        b2_application_key: str,
+        current_run_prefix: Optional[str] = None
+    ):
+        self.current_run_prefix = current_run_prefix
+        self.dont_cleanup_old_buckets = dont_cleanup_old_buckets
+        self.b2_application_key_id = b2_application_key_id
+        self.b2_application_key = b2_application_key
+
+    def _should_remove_bucket(self, bucket: Bucket):
+        if self.current_run_prefix and bucket.name.startswith(self.current_run_prefix):
             return True
-        if bucket.name.startswith(cls.general_bucket_name_prefix):
+        if self.dont_cleanup_old_buckets:
+            return False
+        if bucket.name.startswith(GENERAL_BUCKET_NAME_PREFIX):
             if BUCKET_CREATED_AT_MILLIS in bucket.bucket_info:
                 if int(bucket.bucket_info[BUCKET_CREATED_AT_MILLIS]
                       ) < current_time_millis() - ONE_HOUR_MILLIS:
                     return True
         return False
 
-    @classmethod
-    def clean_buckets(cls):
-        b2_api, _ = cls._authorize(cls.b2_auth_data)
+    def cleanup_buckets(self):
+        b2_api, _ = _authorize((self.b2_application_key_id, self.b2_application_key))
         buckets = b2_api.list_buckets()
         for bucket in buckets:
-            if not cls._should_remove_bucket(bucket):
+            if not self._should_remove_bucket(bucket):
                 print('Skipping bucket removal:', bucket.name)
             else:
                 print('Trying to remove bucket:', bucket.name)

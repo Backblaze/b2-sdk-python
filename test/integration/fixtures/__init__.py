@@ -11,15 +11,12 @@
 import os
 
 import pytest
+from .. import get_b2_auth_data
 
 
 @pytest.fixture
 def b2_auth_data():
-    application_key_id = os.environ.get('B2_TEST_APPLICATION_KEY_ID')
-    if application_key_id is None:
-        pytest.fail('B2_TEST_APPLICATION_KEY_ID is not set.')
-
-    application_key = os.environ.get('B2_TEST_APPLICATION_KEY')
-    if application_key is None:
-        pytest.fail('B2_TEST_APPLICATION_KEY is not set.')
-    return application_key_id, application_key
+    try:
+        return get_b2_auth_data()
+    except ValueError as ex:
+        pytest.fail(ex.args[0])
