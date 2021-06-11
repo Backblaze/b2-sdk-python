@@ -46,10 +46,10 @@ jobs:
         run: nox -vs build
   cleanup_buckets:
     needs: lint
+    if: ${{ secrets.B2_TEST_APPLICATION_KEY != '' && secrets.B2_TEST_APPLICATION_KEY_ID != '' }}
     env:
       B2_TEST_APPLICATION_KEY: ${{ secrets.B2_TEST_APPLICATION_KEY }}
       B2_TEST_APPLICATION_KEY_ID: ${{ secrets.B2_TEST_APPLICATION_KEY_ID }}
-    if: ${{ env.B2_TEST_APPLICATION_KEY != '' && env.B2_TEST_APPLICATION_KEY_ID != '' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
