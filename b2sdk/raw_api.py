@@ -1015,7 +1015,7 @@ class B2RawApi(AbstractRawApi):
             raise SSECKeyError()
 
 
-def test_raw_api():
+def test_raw_api(cleanup_old_buckets):
     """
     Exercise the code in B2RawApi by making each call once, just
     to make sure the parameters are passed in, and the result is
@@ -1030,25 +1030,14 @@ def test_raw_api():
     """
     try:
         raw_api = B2RawApi(B2Http())
-        test_raw_api_helper(raw_api)
+        test_raw_api_helper(raw_api, cleanup_old_buckets)
         return 0
     except Exception:
         traceback.print_exc(file=sys.stdout)
         return 1
 
 
-def test_raw_api_helper(raw_api):
-    """
-    Try each of the calls to the raw api.  Raise an
-    exception if anything goes wrong.
-
-    This uses a Backblaze account that is just for this test.
-    The account uses the free level of service, which should
-    be enough to run this test a reasonable number of times
-    each day.  If somebody abuses the account for other things,
-    this test will break and we'll have to do something about
-    it.
-    """
+def authorize_raw_api(raw_api):
     application_key_id = os.environ.get('B2_TEST_APPLICATION_KEY_ID')
     if application_key_id is None:
         print('B2_TEST_APPLICATION_KEY_ID is not set.', file=sys.stderr)
@@ -1061,10 +1050,25 @@ def test_raw_api_helper(raw_api):
 
     realm = os.environ.get('B2_TEST_ENVIRONMENT', 'production')
     realm_url = REALM_URLS.get(realm, realm)
+    auth_dict = raw_api.authorize_account(realm_url, application_key_id, application_key)
+    return auth_dict
 
+
+def test_raw_api_helper(raw_api, cleanup_old_buckets):
+    """
+    Try each of the calls to the raw api.  Raise an
+    exception if anything goes wrong.
+
+    This uses a Backblaze account that is just for this test.
+    The account uses the free level of service, which should
+    be enough to run this test a reasonable number of times
+    each day.  If somebody abuses the account for other things,
+    this test will break and we'll have to do something about
+    it.
+    """
     # b2_authorize_account
     print('b2_authorize_account')
-    auth_dict = raw_api.authorize_account(realm_url, application_key_id, application_key)
+    auth_dict = authorize_raw_api(raw_api)
     account_id = auth_dict['accountId']
     account_auth_token = auth_dict['authorizationToken']
     api_url = auth_dict['apiUrl']
@@ -1331,13 +1335,33 @@ def test_raw_api_helper(raw_api):
     # Clean up this test.
     _clean_and_delete_bucket(raw_api, api_url, account_auth_token, account_id, bucket_id)
 
-    # Clean up from old tests. Empty and delete any buckets more than an hour old.
+    if cleanup_old_buckets:
+        # Clean up from old tests. Empty and delete any buckets more than an hour old.
+        _cleanup_old_buckets(raw_api, auth_dict, bucket_list_dict)
+
+
+def cleanup_old_buckets():
+    raw_api = B2RawApi(B2Http())
+    auth_dict = authorize_raw_api(raw_api)
+    bucket_list_dict = raw_api.list_buckets(
+        auth_dict['apiUrl'], auth_dict['authorizationToken'], auth_dict['accountId']
+    )
+    _cleanup_old_buckets(raw_api, auth_dict, bucket_list_dict)
+
+
+def _cleanup_old_buckets(raw_api, auth_dict, bucket_list_dict):
     for bucket_dict in bucket_list_dict['buckets']:
         bucket_id = bucket_dict['bucketId']
         bucket_name = bucket_dict['bucketName']
         if _should_delete_bucket(bucket_name):
             print('cleaning up old bucket: ' + bucket_name)
-            _clean_and_delete_bucket(raw_api, api_url, account_auth_token, account_id, bucket_id)
+            _clean_and_delete_bucket(
+                raw_api,
+                auth_dict['apiUrl'],
+                auth_dict['authorizationToken'],
+                auth_dict['accountId'],
+                bucket_id,
+            )
 
 
 def _clean_and_delete_bucket(raw_api, api_url, account_auth_token, account_id, bucket_id):

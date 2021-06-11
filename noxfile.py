@@ -123,6 +123,14 @@ def integration(session):
 
 
 @nox.session(python=PYTHON_VERSIONS)
+def cleanup_old_buckets(session):
+    """Remove buckets from previous test runs."""
+    install_myself(session)
+    session.install(*REQUIREMENTS_TEST)
+    session.run('python', '-m', 'test.integration.cleanup_buckets')
+
+
+@nox.session(python=PYTHON_VERSIONS)
 def test(session):
     """Run all tests."""
     if session.python:
