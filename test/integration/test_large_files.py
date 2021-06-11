@@ -43,7 +43,9 @@ def current_time_millis():
 
 def hash_file(path_):
     hash_ = hashlib.sha1()
-    with open(path_, 'rb') as file_to_hash:
+    with open(
+        str(path_), 'rb'
+    ) as file_to_hash:  # TODO: remove str() after dropping python 3.5 support
         while True:
             data = file_to_hash.read(65536)
             if not data:
@@ -131,12 +133,18 @@ class TestLargeFile:
                 with TempDir() as temp_dir:
                     temp_dir = pathlib.Path(temp_dir)
                     source_large_file = pathlib.Path(temp_dir) / 'source_large_file'
-                    with open(source_large_file, 'wb') as large_file:
+                    with open(
+                        str(source_large_file), 'wb'
+                    ) as large_file:  # TODO: remove str() after dropping python 3.5 support
                         self.write_zeros(large_file, bytes_to_write)
-                    bucket.upload_local_file(source_large_file, 'large_file')
+                    bucket.upload_local_file(
+                        str(source_large_file), 'large_file'
+                    )  # TODO: remove str() after dropping python 3.5 support
                     target_large_file = pathlib.Path(temp_dir) / 'target_large_file'
 
-                    bucket.download_file_by_name('large_file').save_to(target_large_file)
+                    bucket.download_file_by_name('large_file').save_to(
+                        str(target_large_file)
+                    )  # TODO: remove str() after dropping python 3.5 support
                     assert hash_file(source_large_file) == hash_file(target_large_file)
 
 
