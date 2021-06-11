@@ -15,7 +15,7 @@ from apiver_deps import (
 
 class TestLegalHold:
     def test_to_dict_repr(self):
-        assert 'on' == LegalHold.ON.to_dict_repr()
-        assert 'off' == LegalHold.OFF.to_dict_repr()
-        assert 'off' == LegalHold.UNSET.to_dict_repr()
-        assert 'unknown' == LegalHold.UNKNOWN.to_dict_repr()
+        assert LegalHold.ON.to_dict_repr() == 'on'
+        assert LegalHold.OFF.to_dict_repr() == 'off'
+        assert LegalHold.UNSET.to_dict_repr() is None
+        assert LegalHold.UNKNOWN.to_dict_repr() == 'unknown'

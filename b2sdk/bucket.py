@@ -215,7 +215,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param str file_id: the id of the file who's info will be retrieved.
         :rtype: generator[b2sdk.v1.FileVersionInfo]
         """
-        return self.api.file_version_factory.from_api_response(self.api.get_file_info(file_id))
+        return self.api.get_file_info(file_id)
 
     def get_file_info_by_name(self, file_name: str) -> DownloadVersion:
         """

@@ -8,7 +8,7 @@
 #
 ######################################################################
 
-from typing import Optional, overload, Tuple
+from typing import Any, Dict, Optional, overload, Tuple
 
 from .download_dest import AbstractDownloadDestination
 from b2sdk import _v2 as v2
@@ -22,11 +22,20 @@ from .session import B2Session
 # and to use v1.Bucket
 # and to retain cancel_large_file return type
 # and to retain old style download_file_by_id signature (allowing for the new one as well) and exception
+# and to retain old style get_file_info return type
 class B2Api(v2.B2Api):
     SESSION_CLASS = staticmethod(B2Session)
     BUCKET_FACTORY_CLASS = staticmethod(BucketFactory)
     BUCKET_CLASS = staticmethod(Bucket)
     FILE_VERSION_FACTORY_CLASS = staticmethod(FileVersionInfoFactory)
+
+    def get_file_info(self, file_id: str) -> Dict[str, Any]:
+        """
+        Gets info about file version.
+
+        :param str file_id: the id of the file who's info will be retrieved.
+        """
+        return self.session.get_file_info_by_id(file_id)
 
     def get_bucket_by_id(self, bucket_id):
         """

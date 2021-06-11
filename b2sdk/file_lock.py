@@ -239,12 +239,10 @@ class LegalHold(enum.Enum):
         headers['X-Bz-File-Legal-Hold'] = self.to_server()
 
     def to_dict_repr(self):
-        if self.is_on():
-            return self.__class__.ON.value
-        elif self.is_off():
-            return self.__class__.OFF.value
-        elif self.is_unknown():
-            return self.__class__.UNKNOWN.value
+        if self in (
+            self.__class__.ON, self.__class__.OFF, self.__class__.UNSET, self.__class__.UNKNOWN
+        ):
+            return self.value
         raise ValueError('Unrepresentable value')
 
 

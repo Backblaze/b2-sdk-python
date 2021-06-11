@@ -40,6 +40,43 @@ class TestApi:
         self.api = B2Api(self.account_info, self.cache, self.raw_api)
         (self.application_key_id, self.master_key) = self.raw_api.create_account()
 
+    def test_get_file_info(self):
+        self._authorize_account()
+        bucket = self.api.create_bucket('bucket1', 'allPrivate')
+        created_file = bucket.upload_bytes(b'hello world', 'file')
+
+        result = self.api.get_file_info(created_file.id_)
+
+        if apiver_deps.V <= 1:
+            assert result == {
+                'accountId': 'account-0',
+                'action': 'upload',
+                'bucketId': 'bucket_0',
+                'contentLength': 11,
+                'contentSha1': '2aae6c35c94fcfb415dbe95f408b9ce91ee846ed',
+                'contentType': 'b2/x-auto',
+                'fileId': '9999',
+                'fileInfo': {},
+                'fileName': 'file',
+                'fileRetention': {
+                    'isClientAuthorizedToRead': True,
+                    'value': {
+                        'mode': None
+                    }
+                },
+                'legalHold': {
+                    'isClientAuthorizedToRead': True,
+                    'value': None
+                },
+                'serverSideEncryption': {
+                    'mode': 'none'
+                },
+                'uploadTimestamp': 5000
+            }
+        else:
+            assert isinstance(result, VFileVersion)
+            assert result == created_file
+
     @pytest.mark.parametrize(
         'expected_delete_bucket_output',
         [

@@ -79,8 +79,8 @@ class BaseFileVersion:
             'fileId': self.id_,
             'fileName': self.file_name,
             'fileInfo': self.file_info,
-            'legalHold': self.legal_hold.to_dict_repr() if self.legal_hold is not None else None,
             'serverSideEncryption': self.server_side_encryption.as_dict(),
+            'legalHold': self.legal_hold.to_dict_repr(),
             'fileRetention': self.file_retention.as_dict(),
         }
 

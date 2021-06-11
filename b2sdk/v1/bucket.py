@@ -17,10 +17,11 @@ from b2sdk.utils import validate_b2_file_name
 
 
 # Overridden to retain the obsolete copy_file and start_large_file methods
-# and to retain old style FILE_VERSION_FACTORY attribute
+# and to return old style FILE_VERSION_FACTORY attribute
 # and to retain old style download_file_by_name signature
 # and to retain old style download_file_by_id signature (allowing for the new one as well)
 # and to retain old style get_file_info_by_name return type
+# and to to adjust to old style B2Api.get_file_info return type
 class Bucket(v2.Bucket):
     FILE_VERSION_FACTORY = staticmethod(FileVersionInfoFactory)
 
@@ -187,6 +188,14 @@ class Bucket(v2.Bucket):
 
     def get_file_info_by_name(self, file_name: str) -> FileVersionInfo:
         return file_version_info_from_download_version(super().get_file_info_by_name(file_name))
+
+    def get_file_info_by_id(self, file_id: str) -> FileVersionInfo:
+        """
+        Gets a file version's by ID.
+
+        :param str file_id: the id of the file who's info will be retrieved.
+        """
+        return self.api.file_version_factory.from_api_response(self.api.get_file_info(file_id))
 
 
 def download_file_and_return_info_dict(
