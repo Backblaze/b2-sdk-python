@@ -534,7 +534,7 @@ class BucketSimulator(object):
                 'value': {
                     'defaultRetention': {
                         'mode': self.default_retention.mode.value,
-                        'period': self.default_retention.period,
+                        'period': self.default_retention.period.as_dict() if self.default_retention.period else None,
                     },
                     'isFileLockEnabled': self.is_file_lock_enabled,
                 },

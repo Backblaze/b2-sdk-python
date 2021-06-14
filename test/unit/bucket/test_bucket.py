@@ -33,9 +33,12 @@ from apiver_deps_exception import (
 )
 if apiver_deps.V <= 1:
     from apiver_deps import DownloadDestBytes, PreSeekedDownloadDest
+    from apiver_deps import FileVersionInfo as VFileVersionInfo
 else:
     DownloadDestBytes, PreSeekedDownloadDest = None, None  # these classes are not present, thus not needed, in v2
+    from apiver_deps import FileVersion as VFileVersionInfo
 from apiver_deps import B2Api
+from apiver_deps import Bucket
 from apiver_deps import DownloadedFile
 from apiver_deps import DownloadVersion
 from apiver_deps import LargeFileUploadState
@@ -50,11 +53,8 @@ from apiver_deps import UploadSourceBytes
 from apiver_deps import hex_sha1_of_bytes, TempDir
 from apiver_deps import EncryptionAlgorithm, EncryptionSetting, EncryptionMode, EncryptionKey, SSE_NONE, SSE_B2_AES
 from apiver_deps import CopySource, UploadSourceLocalFile, WriteIntent
-from apiver_deps import FileRetentionSetting, LegalHold, RetentionMode, NO_RETENTION_FILE_SETTING
-if apiver_deps.V <= 1:
-    from apiver_deps import FileVersionInfo as VFileVersionInfo
-else:
-    from apiver_deps import FileVersion as VFileVersionInfo
+from apiver_deps import BucketRetentionSetting, FileRetentionSetting, LegalHold, RetentionMode, RetentionPeriod, \
+    NO_RETENTION_FILE_SETTING
 
 pytestmark = [pytest.mark.apiver(from_ver=1)]
 
@@ -828,6 +828,110 @@ class TestCopyFile(TestCaseWithBucket):
         return actual_bucket.upload_bytes(data, 'hello.txt').id_
 
 
+class TestUpdate(TestCaseWithBucket):
+    def test_update(self):
+        result = self.bucket.update(
+            bucket_type='allPrivate',
+            bucket_info={'info': 'o'},
+            cors_rules={'andrea': 'corr'},
+            lifecycle_rules={'life': 'is life'},
+            default_server_side_encryption=SSE_B2_AES,
+            default_retention=BucketRetentionSetting(
+                RetentionMode.COMPLIANCE, RetentionPeriod(years=7)
+            ),
+        )
+        if apiver_deps.V <= 1:
+            self.assertEqual(
+                {
+                    'accountId': 'account-0',
+                    'bucketId': 'bucket_0',
+                    'bucketInfo': {
+                        'info': 'o'
+                    },
+                    'bucketName': 'my-bucket',
+                    'bucketType': 'allPrivate',
+                    'corsRules': {
+                        'andrea': 'corr'
+                    },
+                    'defaultServerSideEncryption':
+                        {
+                            'isClientAuthorizedToRead': True,
+                            'value': {
+                                'algorithm': 'AES256',
+                                'mode': 'SSE-B2'
+                            }
+                        },
+                    'fileLockConfiguration':
+                        {
+                            'isClientAuthorizedToRead': True,
+                            'value':
+                                {
+                                    'defaultRetention':
+                                        {
+                                            'mode': 'compliance',
+                                            'period': {
+                                                'unit': 'years',
+                                                'duration': 7
+                                            }
+                                        },
+                                    'isFileLockEnabled': None
+                                }
+                        },
+                    'lifecycleRules': {
+                        'life': 'is life'
+                    },
+                    'options': set(),
+                    'revision': 2
+                }, result
+            )
+        else:
+            self.assertIsInstance(result, Bucket)
+            for attr_name, attr_value in {
+                'id_':
+                    self.bucket.id_,
+                'name':
+                    self.bucket.name,
+                'type_':
+                    'allPrivate',
+                'bucket_info': {
+                    'info': 'o'
+                },
+                'cors_rules': {
+                    'andrea': 'corr'
+                },
+                'lifecycle_rules': {
+                    'life': 'is life'
+                },
+                'options_set':
+                    set(),
+                'default_server_side_encryption':
+                    SSE_B2_AES,
+                'default_retention':
+                    BucketRetentionSetting(RetentionMode.COMPLIANCE, RetentionPeriod(years=7)),
+            }.items():
+                self.assertEqual(attr_value, getattr(result, attr_name), attr_name)
+
+    def test_update_if_revision_is(self):
+        current_revision = self.bucket.revision
+        self.bucket.update(
+            lifecycle_rules={'life': 'is life'},
+            if_revision_is=current_revision,
+        )
+        updated_bucket = self.api.get_bucket_by_name(self.bucket.name)
+        self.assertEqual({'life': 'is life'}, updated_bucket.lifecycle_rules)
+
+        try:
+            self.bucket.update(
+                lifecycle_rules={'another': 'life'},
+                if_revision_is=current_revision,  # this is now the old revision
+            )
+        except Exception:
+            pass
+
+        not_updated_bucket = self.api.get_bucket_by_name(self.bucket.name)
+        self.assertEqual({'life': 'is life'}, not_updated_bucket.lifecycle_rules)
+
+
 class TestUpload(TestCaseWithBucket):
     def test_upload_bytes(self):
         data = b'hello world'
@@ -1137,7 +1241,6 @@ class TestConcatenate(TestCaseWithBucket):
 
     def test_create_remote_encryption(self):
         for data in [b'hello_world', self._make_data(self.simulator.MIN_PART_SIZE * 3)]:
-
             f1_id = self.bucket.upload_bytes(data, 'f1', encryption=SSE_C_AES).id_
             f2_id = self.bucket.upload_bytes(data, 'f1', encryption=SSE_C_AES_2).id_
             with TempDir() as d:

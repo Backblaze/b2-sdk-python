@@ -115,17 +115,16 @@ class Bucket(metaclass=B2TraceMeta):
 
     def update(
         self,
-        bucket_type=None,
-        bucket_info=None,
-        cors_rules=None,
-        lifecycle_rules=None,
-        if_revision_is=None,
+        bucket_type: Optional[str] = None,
+        bucket_info: Optional[dict] = None,
+        cors_rules: Optional[dict] = None,
+        lifecycle_rules: Optional[dict] = None,
+        if_revision_is: Optional[int] = None,
         default_server_side_encryption: Optional[EncryptionSetting] = None,
         default_retention: Optional[BucketRetentionSetting] = None,
     ):
         """
         Update various bucket parameters.
-        For legacy reasons in apiver v1 it returns whatever server returned on b2_update_bucket call, v2 will change that.
 
         :param str bucket_type: a bucket type
         :param dict bucket_info: an info to store with a bucket
@@ -136,16 +135,19 @@ class Bucket(metaclass=B2TraceMeta):
         :param b2sdk.v1.BucketRetentionSetting default_retention: bucket default retention setting
         """
         account_id = self.api.account_info.get_account_id()
-        return self.api.session.update_bucket(
-            account_id,
-            self.id_,
-            bucket_type=bucket_type,
-            bucket_info=bucket_info,
-            cors_rules=cors_rules,
-            lifecycle_rules=lifecycle_rules,
-            if_revision_is=if_revision_is,
-            default_server_side_encryption=default_server_side_encryption,
-            default_retention=default_retention,
+        return BucketFactory.from_api_bucket_dict(
+            self.api,
+            self.api.session.update_bucket(
+                account_id,
+                self.id_,
+                bucket_type=bucket_type,
+                bucket_info=bucket_info,
+                cors_rules=cors_rules,
+                lifecycle_rules=lifecycle_rules,
+                if_revision_is=if_revision_is,
+                default_server_side_encryption=default_server_side_encryption,
+                default_retention=default_retention,
+            )
         )
 
     def cancel_large_file(self, file_id):
