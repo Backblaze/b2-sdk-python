@@ -1000,11 +1000,11 @@ class BucketSimulator(object):
 
 class RawSimulator(AbstractRawApi):
     """
-    Implement the same interface as B2RawApi by simulating all of the
+    Implement the same interface as B2RawHTTPApi by simulating all of the
     calls and keeping state in memory.
 
     The intended use for this class is for unit tests that test things
-    built on top of B2RawApi.
+    built on top of B2RawHTTPApi.
     """
 
     BUCKET_SIMULATOR_CLASS = BucketSimulator

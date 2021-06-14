@@ -20,7 +20,7 @@ from b2sdk.cache import AuthInfoCache, DummyCache
 from b2sdk.encryption.setting import EncryptionSetting
 from b2sdk.exception import (InvalidAuthToken, Unauthorized)
 from b2sdk.file_lock import BucketRetentionSetting, FileRetentionSetting, LegalHold
-from b2sdk.raw_api import ALL_CAPABILITIES, B2RawApi, REALM_URLS
+from b2sdk.raw_api import ALL_CAPABILITIES, B2RawHTTPApi, REALM_URLS
 
 logger = logging.getLogger(__name__)
 
@@ -58,14 +58,14 @@ class B2Session(object):
                       default is :class:`~b2sdk.cache.DummyCache`
 
         :param raw_api: an instance of one of the following classes:
-                        :class:`~b2sdk.raw_api.B2RawApi`, :class:`~b2sdk.raw_simulator.RawSimulator`,
+                        :class:`~b2sdk.raw_api.B2RawHTTPApi`, :class:`~b2sdk.raw_simulator.RawSimulator`,
                         or any custom class derived from :class:`~b2sdk.raw_api.AbstractRawApi`
                         It makes network-less unit testing simple by using :class:`~b2sdk.raw_simulator.RawSimulator`,
-                        in tests and :class:`~b2sdk.raw_api.B2RawApi` in production.
-                        default is :class:`~b2sdk.raw_api.B2RawApi`
+                        in tests and :class:`~b2sdk.raw_api.B2RawHTTPApi` in production.
+                        default is :class:`~b2sdk.raw_api.B2RawHTTPApi`
         """
 
-        self.raw_api = raw_api or B2RawApi(B2Http())
+        self.raw_api = raw_api or B2RawHTTPApi(B2Http())
         if account_info is None:
             account_info = self.SQLITE_ACCOUNT_INFO_CLASS()
             if cache is None:

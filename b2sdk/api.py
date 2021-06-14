@@ -68,7 +68,7 @@ class B2Api(metaclass=B2TraceMeta):
     """
     Provide file-level access to B2 services.
 
-    While :class:`b2sdk.v1.B2RawApi` provides direct access to the B2 web APIs, this
+    While :class:`b2sdk.v1.B2RawHTTPApi` provides direct access to the B2 web APIs, this
     class handles several things that simplify the task of uploading
     and downloading files:
 
@@ -115,11 +115,11 @@ class B2Api(metaclass=B2TraceMeta):
                       default is :class:`~b2sdk.cache.DummyCache`
 
         :param raw_api: an instance of one of the following classes:
-                        :class:`~b2sdk.raw_api.B2RawApi`, :class:`~b2sdk.raw_simulator.RawSimulator`,
+                        :class:`~b2sdk.raw_api.B2RawHTTPApi`, :class:`~b2sdk.raw_simulator.RawSimulator`,
                         or any custom class derived from :class:`~b2sdk.raw_api.AbstractRawApi`
                         It makes network-less unit testing simple by using :class:`~b2sdk.raw_simulator.RawSimulator`,
-                        in tests and :class:`~b2sdk.raw_api.B2RawApi` in production.
-                        default is :class:`~b2sdk.raw_api.B2RawApi`
+                        in tests and :class:`~b2sdk.raw_api.B2RawHTTPApi` in production.
+                        default is :class:`~b2sdk.raw_api.B2RawHTTPApi`
 
         :param int max_upload_workers: a number of upload threads, default is 10
         :param int max_copy_workers: a number of copy threads, default is 10
@@ -145,8 +145,8 @@ class B2Api(metaclass=B2TraceMeta):
     def raw_api(self):
         """
         .. warning::
-            :class:`~b2sdk.raw_api.B2RawApi` attribute is deprecated.
-            :class:`~b2sdk.session.B2Session` expose all :class:`~b2sdk.raw_api.B2RawApi` methods now."""
+            :class:`~b2sdk.raw_api.B2RawHTTPApi` attribute is deprecated.
+            :class:`~b2sdk.session.B2Session` expose all :class:`~b2sdk.raw_api.B2RawHTTPApi` methods now."""
         return self.session.raw_api
 
     def authorize_automatically(self):

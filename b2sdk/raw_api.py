@@ -342,7 +342,7 @@ class AbstractRawApi(metaclass=ABCMeta):
         return download_url + '/file/' + bucket_name + '/' + b2_url_encode(file_name)
 
 
-class B2RawApi(AbstractRawApi):
+class B2RawHTTPApi(AbstractRawApi):
     """
     Provide access to the B2 web APIs, exactly as they are provided by b2.
 
@@ -1015,11 +1015,11 @@ class B2RawApi(AbstractRawApi):
 
 def test_raw_api(cleanup_old_buckets):
     """
-    Exercise the code in B2RawApi by making each call once, just
+    Exercise the code in B2RawHTTPApi by making each call once, just
     to make sure the parameters are passed in, and the result is
     passed back.
 
-    The goal is to be a complete test of B2RawApi, so the tests for
+    The goal is to be a complete test of B2RawHTTPApi, so the tests for
     the rest of the code can use the simulator.
 
     Prints to stdout if things go wrong.
@@ -1027,7 +1027,7 @@ def test_raw_api(cleanup_old_buckets):
     :return: 0 on success, non-zero on failure
     """
     try:
-        raw_api = B2RawApi(B2Http())
+        raw_api = B2RawHTTPApi(B2Http())
         test_raw_api_helper(raw_api, cleanup_old_buckets)
         return 0
     except Exception:

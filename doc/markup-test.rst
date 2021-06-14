@@ -108,7 +108,7 @@ Protected
 
 Things which sometimes might be necssary to use that are NOT considered public interface (and may change in a non-major version):
 * B2Session
-* B2RawApi
+* B2RawHTTPApi
 * B2Http
 
 .. note:: it is ok for you to use those (better that, than copying our sources), however if you do, please pin your dependencies to middle version.

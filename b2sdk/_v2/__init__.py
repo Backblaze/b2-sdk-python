@@ -109,7 +109,7 @@ from b2sdk.raw_simulator import RawSimulator
 # raw_api
 
 from b2sdk.raw_api import AbstractRawApi
-from b2sdk.raw_api import B2RawApi
+from b2sdk.raw_api import B2RawHTTPApi
 from b2sdk.raw_api import MetadataDirectiveMode
 
 # stream
