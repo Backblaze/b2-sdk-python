@@ -232,6 +232,38 @@ class Bucket(v2.Bucket):
             default_retention=default_retention,
         )
 
+    def ls(
+        self,
+        folder_to_list: str = '',
+        show_versions: bool = False,
+        recursive: bool = False,
+        fetch_count: Optional[int] = 10000
+    ):
+        """
+        Pretend that folders exist and yields the information about the files in a folder.
+
+        B2 has a flat namespace for the files in a bucket, but there is a convention
+        of using "/" as if there were folders.  This method searches through the
+        flat namespace to find the files and "folders" that live within a given
+        folder.
+
+        When the `recursive` flag is set, lists all of the files in the given
+        folder, and all of its sub-folders.
+
+        :param folder_to_list: the name of the folder to list; must not start with "/".
+                               Empty string means top-level folder
+        :param show_versions: when ``True`` returns info about all versions of a file,
+                              when ``False``, just returns info about the most recent versions
+        :param recursive: if ``True``, list folders recursively
+        :param fetch_count: how many entries to return or ``None`` to use the default. Acceptable values: 1 - 10000
+        :rtype: generator[tuple[b2sdk.v1.FileVersionInfo, str]]
+        :returns: generator of (file_version, folder_name) tuples
+
+        .. note::
+            In case of `recursive=True`, folder_name is returned only for first file in the folder.
+        """
+        return super().ls(folder_to_list, not show_versions, recursive, fetch_count)
+
 
 def download_file_and_return_info_dict(
     downloaded_file: v2.DownloadedFile, download_dest: AbstractDownloadDestination,

@@ -46,6 +46,14 @@ class B2Folder(v2.B2Folder, AbstractFolder):
     def all_files(self, reporter, policies_manager=DEFAULT_SCAN_MANAGER):
         return super().all_files(reporter, wrap_if_necessary(policies_manager))
 
+    def get_file_versions(self):
+        for file_version, _ in self.bucket.ls(
+            self.folder_name,
+            show_versions=True,
+            recursive=True,
+        ):
+            yield file_version
+
 
 # override to retain "policies_manager" default argument,
 # translate nice errors to old style Exceptions and CommandError

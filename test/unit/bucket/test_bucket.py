@@ -162,6 +162,14 @@ class CanRetry(B2Error):
         return self.can_retry
 
 
+def bucket_ls(bucket, *args, show_versions=False, **kwargs):
+    if apiver_deps.V <= 1:
+        ls_all_versions_kwarg = {'show_versions': show_versions}
+    else:
+        ls_all_versions_kwarg = {'latest_only': not show_versions}
+    return bucket.ls(*args, **ls_all_versions_kwarg, **kwargs)
+
+
 class TestCaseWithBucket(TestBase):
     RAW_SIMULATOR_CLASS = RawSimulator
 
@@ -178,13 +186,16 @@ class TestCaseWithBucket(TestBase):
         self.bucket = self.api.create_bucket('my-bucket', 'allPublic')
         self.bucket_id = self.bucket.id_
 
+    def bucket_ls(self, *args, show_versions=False, **kwargs):
+        return bucket_ls(self.bucket, *args, show_versions=show_versions, **kwargs)
+
     def assertBucketContents(self, expected, *args, **kwargs):
         """
-        *args and **kwargs are passed to self.bucket.ls()
+        *args and **kwargs are passed to self.bucket_ls()
         """
         actual = [
             (info.file_name, info.size, info.action, folder)
-            for (info, folder) in self.bucket.ls(*args, **kwargs)
+            for (info, folder) in self.bucket_ls(*args, **kwargs)
         ]
         self.assertEqual(expected, actual)
 
@@ -384,7 +395,7 @@ class TestGetFileInfo(TestCaseWithBucket):
 
 class TestLs(TestCaseWithBucket):
     def test_empty(self):
-        self.assertEqual([], list(self.bucket.ls('foo')))
+        self.assertEqual([], list(self.bucket_ls('foo')))
 
     def test_one_file_at_root(self):
         data = b'hello world'
@@ -434,7 +445,7 @@ class TestLs(TestCaseWithBucket):
         ]
         actual = [
             (info.id_, info.file_name, info.size, info.action, folder)
-            for (info, folder) in self.bucket.ls('bb', show_versions=True, fetch_count=1)
+            for (info, folder) in self.bucket_ls('bb', show_versions=True, fetch_count=1)
         ]
         self.assertEqual(expected, actual)
 
@@ -643,7 +654,7 @@ class TestCopyFile(TestCaseWithBucket):
         ]
         actual = [
             (info.file_name, info.size, info.action, info.content_type, folder)
-            for (info, folder) in self.bucket.ls(show_versions=True)
+            for (info, folder) in self.bucket_ls(show_versions=True)
         ]
         self.assertEqual(expected, actual)
 
@@ -674,7 +685,7 @@ class TestCopyFile(TestCaseWithBucket):
         def ls(bucket):
             return [
                 (info.file_name, info.size, info.action, folder)
-                for (info, folder) in bucket.ls(show_versions=True)
+                for (info, folder) in bucket_ls(bucket, show_versions=True)
             ]
 
         expected = [('hello.txt', 11, 'upload', None)]
