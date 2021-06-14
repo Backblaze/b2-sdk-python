@@ -12,6 +12,8 @@ import pytest
 
 import apiver_deps
 from apiver_deps import B2Api
+from apiver_deps import B2HttpApiConfig
+from apiver_deps import B2Http
 from apiver_deps import DummyCache
 from apiver_deps import EncryptionAlgorithm
 from apiver_deps import EncryptionMode
@@ -23,7 +25,7 @@ from apiver_deps import LegalHold
 from apiver_deps import RawSimulator
 from apiver_deps import RetentionMode
 from apiver_deps import NO_RETENTION_FILE_SETTING
-from apiver_deps_exception import RestrictedBucket
+from apiver_deps_exception import RestrictedBucket, InvalidArgument
 
 if apiver_deps.V <= 1:
     from apiver_deps import FileVersionInfo as VFileVersion
@@ -37,7 +39,8 @@ class TestApi:
         self.account_info = InMemoryAccountInfo()
         self.cache = DummyCache()
         self.raw_api = RawSimulator()
-        self.api = B2Api(self.account_info, self.cache, self.raw_api)
+        self.api = B2Api(self.account_info, self.cache)
+        self.api.session.raw_api = self.raw_api
         (self.application_key_id, self.master_key) = self.raw_api.create_account()
 
     def test_get_file_info(self):
@@ -311,3 +314,15 @@ class TestApi:
             action='cancel',
             api=self.api,
         )
+
+    @pytest.mark.apiver(to_ver=1)
+    def test_provide_raw_api_v1(self):
+        from apiver_deps import B2RawApi  # test for legacy name
+        old_style_api = B2Api(raw_api=B2RawApi(B2Http(user_agent_append='test append')))
+        new_style_api = B2Api(api_config=B2HttpApiConfig(user_agent_append='test append'))
+        assert old_style_api.session.raw_api.b2_http.user_agent == new_style_api.session.raw_api.b2_http.user_agent
+        with pytest.raises(InvalidArgument):
+            B2Api(
+                raw_api=B2RawApi(B2Http(user_agent_append='test append')),
+                api_config=B2HttpApiConfig(user_agent_append='test append'),
+            )

@@ -15,7 +15,9 @@ from apiver_deps import B2Session
 
 @pytest.fixture
 def b2_session(fake_account_info, fake_cache, fake_b2_raw_api):
-    return B2Session(account_info=fake_account_info, cache=fake_cache, raw_api=fake_b2_raw_api)
+    session = B2Session(account_info=fake_account_info, cache=fake_cache)
+    session.raw_api = fake_b2_raw_api
+    return session
 
 
 @pytest.fixture

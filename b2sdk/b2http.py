@@ -23,6 +23,7 @@ from .exception import (
     B2Error, B2RequestTimeoutDuringUpload, BadDateFormat, BrokenPipe, B2ConnectionError,
     B2RequestTimeout, ClockSkew, ConnectionReset, interpret_b2_error, UnknownError, UnknownHost
 )
+from .api_config import B2HttpApiConfig, DEFAULT_HTTP_API_CONFIG
 from .version import USER_AGENT
 
 logger = logging.getLogger(__name__)
@@ -250,20 +251,15 @@ class B2Http(object):
     # timeout for HTTP GET/POST requests
     TIMEOUT = 900  # 15 minutes as server-side copy can take time
 
-    def __init__(self, requests_module=None, install_clock_skew_hook=True, user_agent_append=None):
+    def __init__(self, api_config: B2HttpApiConfig = DEFAULT_HTTP_API_CONFIG):
         """
         Initialize with a reference to the requests module, which makes
         it easy to mock for testing.
-
-        :param requests_module: a reference to requests module
-        :param bool install_clock_skew_hook: if True, install a clock skew hook
-        :param str user_agent_append: if provided, the string will be appended to the User-Agent
         """
-        requests_to_use = requests_module or requests
-        self.user_agent = self._get_user_agent(user_agent_append)
-        self.session = requests_to_use.Session()
+        self.user_agent = self._get_user_agent(api_config.user_agent_append)
+        self.session = api_config.requests_module.Session()
         self.callbacks = []
-        if install_clock_skew_hook:
+        if api_config.install_clock_skew_hook:
             self.add_callback(ClockSkewHook())
 
     def add_callback(self, callback):

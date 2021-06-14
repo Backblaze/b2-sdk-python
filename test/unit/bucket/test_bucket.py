@@ -169,7 +169,8 @@ class TestCaseWithBucket(TestBase):
         self.bucket_name = 'my-bucket'
         self.simulator = self.RAW_SIMULATOR_CLASS()
         self.account_info = StubAccountInfo()
-        self.api = B2Api(self.account_info, raw_api=self.simulator)
+        self.api = B2Api(self.account_info)
+        self.api.session.raw_api = self.simulator
         (self.account_id, self.master_key) = self.simulator.create_account()
         self.api.authorize_account('production', self.account_id, self.master_key)
         self.api_url = self.account_info.get_api_url()
@@ -344,7 +345,8 @@ class TestGetFileInfo(TestCaseWithBucket):
         self.assertEqual((legal_hold, file_retention), actual)
 
         low_perm_account_info = StubAccountInfo()
-        low_perm_api = B2Api(low_perm_account_info, raw_api=self.simulator)
+        low_perm_api = B2Api(low_perm_account_info)
+        low_perm_api.session.raw_api = self.simulator
         low_perm_key_resp = self.api.create_key(
             key_name='lowperm', capabilities=[
                 'listKeys',

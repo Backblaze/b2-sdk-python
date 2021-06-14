@@ -26,7 +26,8 @@ class TestApi(TestBase):
         self.account_info = InMemoryAccountInfo()
         self.cache = InMemoryCache()
         self.raw_api = RawSimulator()
-        self.api = B2Api(self.account_info, self.cache, self.raw_api)
+        self.api = B2Api(self.account_info, self.cache)
+        self.api.session.raw_api = self.raw_api
         (self.application_key_id, self.master_key) = self.raw_api.create_account()
 
     def _authorize_account(self):

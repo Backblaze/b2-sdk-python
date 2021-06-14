@@ -12,7 +12,10 @@ from typing import Any, Dict, Optional, overload, Tuple
 
 from .download_dest import AbstractDownloadDestination
 from b2sdk import _v2 as v2
+from b2sdk.api import Services
+from .account_info import AbstractAccountInfo
 from .bucket import Bucket, BucketFactory, download_file_and_return_info_dict
+from .cache import AbstractCache
 from .file_version import FileVersionInfo, FileVersionInfoFactory, file_version_info_from_id_and_name
 from .session import B2Session
 
@@ -23,11 +26,49 @@ from .session import B2Session
 # and to retain cancel_large_file return type
 # and to retain old style download_file_by_id signature (allowing for the new one as well) and exception
 # and to retain old style get_file_info return type
+# and to accept old-style raw_api argument
 class B2Api(v2.B2Api):
     SESSION_CLASS = staticmethod(B2Session)
     BUCKET_FACTORY_CLASS = staticmethod(BucketFactory)
     BUCKET_CLASS = staticmethod(Bucket)
     FILE_VERSION_FACTORY_CLASS = staticmethod(FileVersionInfoFactory)
+
+    def __init__(
+        self,
+        account_info: Optional[AbstractAccountInfo] = None,
+        cache: Optional[AbstractCache] = None,
+        max_upload_workers: int = 10,
+        max_copy_workers: int = 10,
+        raw_api: v2.B2RawHTTPApi = None,
+        api_config: Optional[v2.B2HttpApiConfig] = None,
+    ):
+        """
+        Initialize the API using the given account info.
+
+        :param account_info: To learn more about Account Info objects, see here
+                      :class:`~b2sdk.v1.SqliteAccountInfo`
+
+        :param cache: It is used by B2Api to cache the mapping between bucket name and bucket ids.
+                      default is :class:`~b2sdk.cache.DummyCache`
+
+        :param max_upload_workers: a number of upload threads
+        :param max_copy_workers: a number of copy threads
+        :param raw_api:
+        :param api_config:
+        """
+        self.session = self.SESSION_CLASS(
+            account_info=account_info,
+            cache=cache,
+            raw_api=raw_api,
+            api_config=api_config,
+        )
+        self.file_version_factory = self.FILE_VERSION_FACTORY_CLASS(self)
+        self.download_version_factory = self.DOWNLOAD_VERSION_FACTORY_CLASS(self)
+        self.services = Services(
+            self,
+            max_upload_workers=max_upload_workers,
+            max_copy_workers=max_copy_workers,
+        )
 
     def get_file_info(self, file_id: str) -> Dict[str, Any]:
         """

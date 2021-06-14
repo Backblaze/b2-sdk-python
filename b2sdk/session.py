@@ -13,14 +13,16 @@ from enum import Enum, unique
 from typing import Any, Dict, Optional
 import logging
 
+from b2sdk.account_info.abstract import AbstractAccountInfo
 from b2sdk.account_info.sqlite_account_info import SqliteAccountInfo
 from b2sdk.account_info.exception import MissingAccountData
 from b2sdk.b2http import B2Http
-from b2sdk.cache import AuthInfoCache, DummyCache
+from b2sdk.cache import AbstractCache, AuthInfoCache, DummyCache
 from b2sdk.encryption.setting import EncryptionSetting
 from b2sdk.exception import (InvalidAuthToken, Unauthorized)
 from b2sdk.file_lock import BucketRetentionSetting, FileRetentionSetting, LegalHold
 from b2sdk.raw_api import ALL_CAPABILITIES, B2RawHTTPApi, REALM_URLS
+from b2sdk.api_config import B2HttpApiConfig, DEFAULT_HTTP_API_CONFIG
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +42,12 @@ class B2Session(object):
     """
     SQLITE_ACCOUNT_INFO_CLASS = staticmethod(SqliteAccountInfo)
 
-    def __init__(self, account_info=None, cache=None, raw_api=None):
+    def __init__(
+        self,
+        account_info: Optional[AbstractAccountInfo] = None,
+        cache: Optional[AbstractCache] = None,
+        api_config: B2HttpApiConfig = DEFAULT_HTTP_API_CONFIG
+    ):
         """
         Initialize Session using given account info.
 
@@ -57,15 +64,10 @@ class B2Session(object):
                       It is used by B2Api to cache the mapping between bucket name and bucket ids.
                       default is :class:`~b2sdk.cache.DummyCache`
 
-        :param raw_api: an instance of one of the following classes:
-                        :class:`~b2sdk.raw_api.B2RawHTTPApi`, :class:`~b2sdk.raw_simulator.RawSimulator`,
-                        or any custom class derived from :class:`~b2sdk.raw_api.AbstractRawApi`
-                        It makes network-less unit testing simple by using :class:`~b2sdk.raw_simulator.RawSimulator`,
-                        in tests and :class:`~b2sdk.raw_api.B2RawHTTPApi` in production.
-                        default is :class:`~b2sdk.raw_api.B2RawHTTPApi`
+        :param api_config
         """
 
-        self.raw_api = raw_api or B2RawHTTPApi(B2Http())
+        self.raw_api = B2RawHTTPApi(B2Http(api_config))
         if account_info is None:
             account_info = self.SQLITE_ACCOUNT_INFO_CLASS()
             if cache is None:

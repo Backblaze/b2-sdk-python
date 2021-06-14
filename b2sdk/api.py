@@ -10,6 +10,9 @@
 
 from typing import Optional, Tuple
 
+from .account_info.abstract import AbstractAccountInfo
+from .api_config import B2HttpApiConfig, DEFAULT_HTTP_API_CONFIG
+from .cache import AbstractCache
 from .bucket import Bucket, BucketFactory
 from .encryption.setting import EncryptionSetting
 from .exception import NonExistentBucket, RestrictedBucket
@@ -92,39 +95,28 @@ class B2Api(metaclass=B2TraceMeta):
 
     def __init__(
         self,
-        account_info=None,
-        cache=None,
-        raw_api=None,
-        max_upload_workers=10,
-        max_copy_workers=10
+        account_info: Optional[AbstractAccountInfo] = None,
+        cache: Optional[AbstractCache] = None,
+        max_upload_workers: int = 10,
+        max_copy_workers: int = 10,
+        api_config: B2HttpApiConfig = DEFAULT_HTTP_API_CONFIG,
     ):
         """
         Initialize the API using the given account info.
 
-        :param account_info: an instance of :class:`~b2sdk.v1.UrlPoolAccountInfo`,
-                      or any custom class derived from
-                      :class:`~b2sdk.v1.AbstractAccountInfo`
-                      To learn more about Account Info objects, see here
+        :param account_info: To learn more about Account Info objects, see here
                       :class:`~b2sdk.v1.SqliteAccountInfo`
 
-        :param cache: an instance of the one of the following classes:
-                      :class:`~b2sdk.cache.DummyCache`, :class:`~b2sdk.cache.InMemoryCache`,
-                      :class:`~b2sdk.cache.AuthInfoCache`,
-                      or any custom class derived from :class:`~b2sdk.cache.AbstractCache`
-                      It is used by B2Api to cache the mapping between bucket name and bucket ids.
+        :param cache: It is used by B2Api to cache the mapping between bucket name and bucket ids.
                       default is :class:`~b2sdk.cache.DummyCache`
 
-        :param raw_api: an instance of one of the following classes:
-                        :class:`~b2sdk.raw_api.B2RawHTTPApi`, :class:`~b2sdk.raw_simulator.RawSimulator`,
-                        or any custom class derived from :class:`~b2sdk.raw_api.AbstractRawApi`
-                        It makes network-less unit testing simple by using :class:`~b2sdk.raw_simulator.RawSimulator`,
-                        in tests and :class:`~b2sdk.raw_api.B2RawHTTPApi` in production.
-                        default is :class:`~b2sdk.raw_api.B2RawHTTPApi`
-
-        :param int max_upload_workers: a number of upload threads, default is 10
-        :param int max_copy_workers: a number of copy threads, default is 10
+        :param max_upload_workers: a number of upload threads
+        :param max_copy_workers: a number of copy threads
+        :param api_config:
         """
-        self.session = self.SESSION_CLASS(account_info=account_info, cache=cache, raw_api=raw_api)
+        self.session = self.SESSION_CLASS(
+            account_info=account_info, cache=cache, api_config=api_config
+        )
         self.file_version_factory = self.FILE_VERSION_FACTORY_CLASS(self)
         self.download_version_factory = self.DOWNLOAD_VERSION_FACTORY_CLASS(self)
         self.services = Services(
