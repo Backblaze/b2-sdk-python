@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: test/unit/v0/test_b2http.py
+# File: test/unit/b2http/test_b2http.py
 #
 # Copyright 2019 Backblaze Inc. All Rights Reserved.
 #
@@ -15,12 +15,12 @@ import sys
 
 from ..test_base import TestBase
 
-from .deps_exception import BadDateFormat, BadJson, BrokenPipe, B2ConnectionError, ClockSkew, ConnectionReset, ServiceError, UnknownError, UnknownHost, TooManyRequests
-from .deps import USER_AGENT
-from .deps import B2Http
-from .deps import ClockSkewHook
-from .deps import translate_errors as _translate_errors
-from .deps import translate_and_retry as _translate_and_retry
+from apiver_deps_exception import BadDateFormat, BadJson, BrokenPipe, B2ConnectionError, ClockSkew, ConnectionReset, ServiceError, UnknownError, UnknownHost, TooManyRequests
+from apiver_deps import USER_AGENT
+from apiver_deps import B2Http
+from apiver_deps import ClockSkewHook
+from apiver_deps import translate_errors as _translate_errors
+from apiver_deps import translate_and_retry as _translate_and_retry
 
 if sys.version_info < (3, 3):
     from mock import call, MagicMock, patch

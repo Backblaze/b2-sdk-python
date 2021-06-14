@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Old buckets (from past tests) are cleaned up before running integration tests in a single thread
 * `B2Api.get_file_info` returns a `FileVersion` object in v2
 * `B2RawApi` renamed to `B2RawHTTPApi`
+* `B2HTTP` tests are now common
 
 ## [1.9.0] - 2021-06-07
 
