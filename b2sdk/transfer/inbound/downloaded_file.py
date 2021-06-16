@@ -80,6 +80,11 @@ class MtimeUpdatedFile(io.IOBase):
 
 
 class DownloadedFile:
+    """
+    Result of a successful download initialization. Holds information about file's metadata
+    and allows to perform the download, determining the download strategy.
+    """
+
     def __init__(
         self,
         download_version: DownloadVersion,
@@ -92,9 +97,9 @@ class DownloadedFile:
         self.download_version = download_version
         self.download_manager = download_manager
         self.range_ = range_
-        self.progress_listener = progress_listener
         self.response = response
         self.encryption = encryption
+        self.progress_listener = progress_listener
         self.download_strategy = None
 
     def _validate_download(self, bytes_read, actual_sha1):
