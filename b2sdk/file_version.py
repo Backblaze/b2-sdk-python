@@ -89,14 +89,11 @@ class BaseFileVersion:
             result['size'] = self.size
         if self.upload_timestamp is not None:
             result['uploadTimestamp'] = self.upload_timestamp
-        if self.action is not None:
-            result['action'] = self.action
         if self.content_type is not None:
             result['contentType'] = self.content_type
         if self.content_sha1 is not None:
             result['contentSha1'] = self.content_sha1
-        if self.content_md5 is not None:
-            result['contentMd5'] = self.content_md5
+
         return result
 
     def __eq__(self, other):
@@ -169,6 +166,16 @@ class FileVersion(BaseFileVersion):
             file_retention=file_retention,
             legal_hold=legal_hold,
         )
+
+    def as_dict(self):
+        result = super().as_dict()
+
+        if self.action is not None:
+            result['action'] = self.action
+        if self.content_md5 is not None:
+            result['contentMd5'] = self.content_md5
+
+        return result
 
 
 class DownloadVersion(BaseFileVersion):
