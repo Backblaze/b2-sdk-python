@@ -82,7 +82,7 @@ class MtimeUpdatedFile(io.IOBase):
 class DownloadedFile:
     """
     Result of a successful download initialization. Holds information about file's metadata
-    and allows to perform the download, determining the download strategy.
+    and allows to perform the download.
     """
 
     def __init__(
