@@ -8,12 +8,10 @@
 #
 ######################################################################
 
-import hashlib
 import io
 import pathlib
 import random
 import string
-import time
 from typing import Optional
 from unittest import mock
 
@@ -32,26 +30,6 @@ GENERAL_BUCKET_NAME_PREFIX = 'sdktst'
 
 def bucket_name_part(length):
     return ''.join(random.choice(BUCKET_NAME_CHARS) for _ in range(length))
-
-
-def current_time_millis():
-    """
-    File times are in integer milliseconds, to avoid roundoff errors.
-    """
-    return int(round(time.time() * 1000))
-
-
-def hash_file(path_):
-    hash_ = hashlib.sha1()
-    with open(
-        str(path_), 'rb'
-    ) as file_to_hash:  # TODO: remove str() after dropping python 3.5 support
-        while True:
-            data = file_to_hash.read(65536)
-            if not data:
-                break
-            hash_.update(data)
-    return hash_.digest()
 
 
 def _authorize(b2_auth_data):
@@ -145,7 +123,8 @@ class TestLargeFile:
                     bucket.download_file_by_name('large_file').save_to(
                         str(target_large_file)
                     )  # TODO: remove str() after dropping python 3.5 support
-                    assert hash_file(source_large_file) == hash_file(target_large_file)
+                    assert hex_sha1_of_file(source_large_file
+                                           ) == hex_sha1_of_file(target_large_file)
 
 
 class BucketCleaner:

@@ -147,6 +147,14 @@ def hex_sha1_of_unlimited_stream(input_stream, limit=None):
             return digest.hexdigest(), content_length
 
 
+def hex_sha1_of_file(path_):
+    with open(
+        str(path_), 'rb'
+    ) as file:  # TODO: remove str() after dropping python 3.5 support, it's here in
+        # case someone uses pathlib.Paths
+        return hex_sha1_of_unlimited_stream(file)
+
+
 def hex_sha1_of_bytes(data: bytes) -> str:
     """
     Return the 40-character hex SHA1 checksum of the data.
@@ -439,6 +447,13 @@ class ConcurrentUsedAuthTokenGuard(object):
         except RuntimeError:
             # guard against releasing a non-acquired lock
             pass
+
+
+def current_time_millis():
+    """
+    File times are in integer milliseconds, to avoid roundoff errors.
+    """
+    return int(round(time.time() * 1000))
 
 
 assert disable_trace
