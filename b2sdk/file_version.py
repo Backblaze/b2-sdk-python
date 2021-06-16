@@ -48,7 +48,7 @@ class BaseFileVersion:
         api: 'B2Api',
         id_: str,
         file_name: str,
-        size: Union[int, None, str],
+        size: int,
         content_type: Optional[str],
         content_sha1: Optional[str],
         file_info: Dict[str, str],
@@ -60,7 +60,7 @@ class BaseFileVersion:
         self.api = api
         self.id_ = id_
         self.file_name = file_name
-        self.size = size and int(size)
+        self.size = size
         self.content_type = content_type
         self.content_sha1 = content_sha1
         self.file_info = file_info or {}
@@ -72,7 +72,7 @@ class BaseFileVersion:
         if SRC_LAST_MODIFIED_MILLIS in self.file_info:
             self.mod_time_millis = int(self.file_info[SRC_LAST_MODIFIED_MILLIS])
         else:
-            self.mod_time_millis = self.upload_timestamp and int(self.upload_timestamp)
+            self.mod_time_millis = self.upload_timestamp
 
     def as_dict(self):
         """ represents the object as a dict which looks almost exactly like the raw api output for upload/list """
@@ -357,13 +357,13 @@ class DownloadVersionFactory(object):
 
         return DownloadVersion(
             api=self.api,
-            id_=headers.get('x-bz-file-id'),
-            file_name=headers.get('x-bz-file-name'),
+            id_=headers['x-bz-file-id'],
+            file_name=headers['x-bz-file-name'],
             size=size,
-            content_type=headers.get('content-type'),
-            content_sha1=headers.get('x-bz-content-sha1'),
+            content_type=headers['content-type'],
+            content_sha1=headers['x-bz-content-sha1'],
             file_info=file_info,
-            upload_timestamp=headers.get('x-bz-upload-timestamp'),
+            upload_timestamp=int(headers['x-bz-upload-timestamp']),
             server_side_encryption=EncryptionSettingFactory.from_response_headers(headers),
             range_=range_,
             content_disposition=headers.get('Content-Disposition'),
