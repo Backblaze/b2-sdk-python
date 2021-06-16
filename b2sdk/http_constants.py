@@ -8,7 +8,7 @@
 #
 ######################################################################
 
-# These constants are needed in different modules, so they are stored in this module, that 
+# These constants are needed in different modules, so they are stored in this module, that
 # imports nothing, thus avoiding circular imports
 
 FILE_INFO_HEADER_PREFIX = 'X-Bz-Info-'
