@@ -8,15 +8,16 @@
 #
 ######################################################################
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple
 
 from .bucket import Bucket, BucketFactory
 from .encryption.setting import EncryptionSetting
 from .exception import NonExistentBucket, RestrictedBucket
 from .file_lock import FileRetentionSetting, LegalHold
-from .file_version import FileIdAndName, FileVersionFactory
+from .file_version import DownloadVersionFactory, FileIdAndName, FileVersionFactory
 from .large_file.services import LargeFileServices
 from .raw_api import API_VERSION
+from .progress import AbstractProgressListener
 from .session import B2Session
 from .transfer import (
     CopyManager,
@@ -24,6 +25,7 @@ from .transfer import (
     Emerger,
     UploadManager,
 )
+from .transfer.inbound.downloaded_file import DownloadedFile
 from .utils import B2TraceMeta, b2_url_encode, limit_trace_arguments
 
 
@@ -86,6 +88,7 @@ class B2Api(metaclass=B2TraceMeta):
     BUCKET_CLASS = staticmethod(Bucket)
     SESSION_CLASS = staticmethod(B2Session)
     FILE_VERSION_FACTORY_CLASS = staticmethod(FileVersionFactory)
+    DOWNLOAD_VERSION_FACTORY_CLASS = staticmethod(DownloadVersionFactory)
 
     def __init__(
         self,
@@ -123,6 +126,7 @@ class B2Api(metaclass=B2TraceMeta):
         """
         self.session = self.SESSION_CLASS(account_info=account_info, cache=cache, raw_api=raw_api)
         self.file_version_factory = self.FILE_VERSION_FACTORY_CLASS(self)
+        self.download_version_factory = self.DOWNLOAD_VERSION_FACTORY_CLASS(self)
         self.services = Services(
             self,
             max_upload_workers=max_upload_workers,
@@ -220,39 +224,23 @@ class B2Api(metaclass=B2TraceMeta):
 
     def download_file_by_id(
         self,
-        file_id,
-        download_dest,
-        progress_listener=None,
-        range_=None,
+        file_id: str,
+        progress_listener: Optional[AbstractProgressListener] = None,
+        range_: Optional[Tuple[int, int]] = None,
         encryption: Optional[EncryptionSetting] = None,
-    ):
+    ) -> DownloadedFile:
         """
         Download a file with the given ID.
 
         :param str file_id: a file ID
-        :param download_dest: an instance of the one of the following classes: \
-        :class:`~b2sdk.v1.DownloadDestLocalFile`,\
-        :class:`~b2sdk.v1.DownloadDestBytes`,\
-        :class:`~b2sdk.v1.DownloadDestProgressWrapper`,\
-        :class:`~b2sdk.v1.PreSeekedDownloadDest`,\
-        or any sub class of :class:`~b2sdk.v1.AbstractDownloadDestination`
-        :param progress_listener: an instance of the one of the following classes: \
-        :class:`~b2sdk.v1.PartProgressReporter`,\
-        :class:`~b2sdk.v1.TqdmProgressListener`,\
-        :class:`~b2sdk.v1.SimpleProgressListener`,\
-        :class:`~b2sdk.v1.DoNothingProgressListener`,\
-        :class:`~b2sdk.v1.ProgressListenerForTest`,\
-        :class:`~b2sdk.v1.SyncFileReporter`,\
-        or any sub class of :class:`~b2sdk.v1.AbstractProgressListener`
-        :param list range_: a list of two integers, the first one is a start\
+        :param progress_listener: a progress listener object to use, or ``None`` to not track progress
+        :param range_: a list of two integers, the first one is a start\
         position, and the second one is the end position in the file
-        :param b2sdk.v1.EncryptionSetting encryption: encryption settings (``None`` if unknown)
-        :return: context manager that returns an object that supports iter_content()
+        :param encryption: encryption settings (``None`` if unknown)
         """
         url = self.session.get_download_url_by_id(file_id)
         return self.services.download_manager.download_file_from_url(
             url,
-            download_dest,
             progress_listener,
             range_,
             encryption,

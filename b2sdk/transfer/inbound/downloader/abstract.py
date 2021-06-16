@@ -9,15 +9,22 @@
 ######################################################################
 
 from abc import abstractmethod
+from io import IOBase
 from typing import Optional
 
-from b2sdk.utils import B2TraceMetaAbstract
-from b2sdk.encryption.setting import EncryptionSetting
+from requests.models import Response
 
-from .range import Range
+from b2sdk.file_version import DownloadVersion
+from b2sdk.session import B2Session
+from b2sdk.utils import B2TraceMetaAbstract
+from b2sdk.utils.range_ import Range
+from b2sdk.encryption.setting import EncryptionSetting
 
 
 class AbstractDownloader(metaclass=B2TraceMetaAbstract):
+
+    REQUIRES_SEEKING = True
+
     def __init__(
         self,
         force_chunk_size=None,
@@ -41,34 +48,34 @@ class AbstractDownloader(metaclass=B2TraceMetaAbstract):
         return aligned
 
     @classmethod
-    def _get_remote_range(cls, response, metadata):
+    def _get_remote_range(cls, response: Response, download_version: DownloadVersion):
         """
         Get a range from response or original request (as appropriate).
 
         :param response: requests.Response of initial request
-        :param metadata: metadata dict of the target file
+        :param download_version: b2sdk.v1.DownloadVersion
         :return: a range object
         """
-        raw_range_header = response.request.headers.get('Range')  # 'bytes 0-11'
-        if raw_range_header is None:
-            return Range(0, 0 if metadata.content_length == 0 else metadata.content_length - 1)
-        return Range.from_header(raw_range_header)
+        if 'Range' in response.request.headers:
+            return Range.from_header(response.request.headers['Range'])
+        return download_version.range_
 
-    @abstractmethod
-    def is_suitable(self, metadata, progress_listener):
+    def is_suitable(self, download_version: DownloadVersion, allow_seeking: bool):
         """
-        Analyze metadata (possibly against options passed earlier to constructor
+        Analyze download_version (possibly against options passed earlier to constructor
         to find out whether the given download request should be handled by this downloader).
         """
-        pass
+        if self.REQUIRES_SEEKING and not allow_seeking:
+            return False
+        return True
 
     @abstractmethod
     def download(
         self,
-        file,
-        response,
-        metadata,
-        session,
+        file: IOBase,
+        response: Response,
+        download_version: DownloadVersion,
+        session: B2Session,
         encryption: Optional[EncryptionSetting] = None,
     ):
         """

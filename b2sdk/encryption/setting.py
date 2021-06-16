@@ -13,11 +13,10 @@ from typing import Optional
 import urllib
 import urllib.parse
 
+from ..http_constants import SSE_C_KEY_ID_FILE_INFO_KEY_NAME, SSE_C_KEY_ID_HEADER
 from ..utils import b64_of_bytes, md5_of_bytes
 from .types import ENCRYPTION_MODES_WITH_MANDATORY_ALGORITHM, ENCRYPTION_MODES_WITH_MANDATORY_KEY
 from .types import EncryptionAlgorithm, EncryptionMode
-
-SSE_C_KEY_ID_FILE_INFO_KEY_NAME = 'sse_c_key_id'
 
 logger = logging.getLogger(__name__)
 
@@ -147,7 +146,7 @@ class EncryptionSetting:
         elif self.mode == EncryptionMode.SSE_C:
             self._add_sse_c_headers(headers)
             if self.key.key_id is not None:
-                header = 'X-Bz-Info-%s' % (SSE_C_KEY_ID_FILE_INFO_KEY_NAME,)
+                header = SSE_C_KEY_ID_HEADER
                 if headers.get(header) is not None and headers[header] != self.key.key_id:
                     raise ValueError(
                         'Ambiguous key id set: "%s" in headers and "%s" in %s' %
@@ -309,18 +308,19 @@ class EncryptionSettingFactory:
 
     @classmethod
     def from_response_headers(cls, headers):
-
-        mode = EncryptionMode(headers.get('X-Bz-Server-Side-Encryption', 'none'))
-        kwargs = {
-            'mode': mode,
-        }
-        if mode == EncryptionMode.SSE_C:
-            kwargs['key'] = EncryptionKey(secret=None, key_id=None)
-        algorithm = headers.get('X-Bz-Server-Side-Encryption-Customer-Algorithm')
-        if algorithm is not None:
-            kwargs['algorithm'] = EncryptionAlgorithm(algorithm)
-
-        return EncryptionSetting(**kwargs)
+        if 'X-Bz-Server-Side-Encryption' in headers:
+            mode = EncryptionMode.SSE_B2
+            algorithm = EncryptionAlgorithm(headers['X-Bz-Server-Side-Encryption'])
+            return EncryptionSetting(mode, algorithm)
+        if 'X-Bz-Server-Side-Encryption-Customer-Algorithm' in headers:
+            mode = EncryptionMode.SSE_C
+            algorithm = EncryptionAlgorithm(
+                headers['X-Bz-Server-Side-Encryption-Customer-Algorithm']
+            )
+            key_id = headers.get(SSE_C_KEY_ID_HEADER)
+            key = EncryptionKey(secret=None, key_id=key_id)
+            return EncryptionSetting(mode, algorithm, key)
+        return EncryptionSetting(EncryptionMode.NONE)
 
 
 SSE_NONE = EncryptionSetting(mode=EncryptionMode.NONE,)

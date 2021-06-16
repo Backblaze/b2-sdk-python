@@ -25,9 +25,10 @@ from b2sdk.raw_api import ALL_CAPABILITIES, REALM_URLS
 from b2sdk.encryption.setting import EncryptionSetting
 from b2sdk.encryption.setting import EncryptionSettingFactory
 from b2sdk.encryption.setting import EncryptionKey
-from b2sdk.encryption.setting import SSE_NONE, SSE_B2_AES, SSE_C_KEY_ID_FILE_INFO_KEY_NAME
+from b2sdk.encryption.setting import SSE_NONE, SSE_B2_AES
 from b2sdk.encryption.types import EncryptionAlgorithm
 from b2sdk.encryption.types import EncryptionMode
+from b2sdk.http_constants import SSE_C_KEY_ID_FILE_INFO_KEY_NAME
 
 # account info
 
@@ -50,11 +51,13 @@ from b2sdk.utils import (
     b2_url_encode,
     b2_url_decode,
     choose_part_ranges,
+    current_time_millis,
     fix_windows_path_limit,
     format_and_scale_fraction,
     format_and_scale_number,
     hex_sha1_of_stream,
     hex_sha1_of_bytes,
+    hex_sha1_of_file,
     TempDir,
 )
 
@@ -62,11 +65,14 @@ from b2sdk.utils import trace_call
 
 # data classes
 
+from b2sdk.file_version import DownloadVersion
+from b2sdk.file_version import DownloadVersionFactory
 from b2sdk.file_version import FileIdAndName
 from b2sdk.file_version import FileVersion
 from b2sdk.file_version import FileVersionFactory
 from b2sdk.large_file.part import Part
 from b2sdk.large_file.unfinished_large_file import UnfinishedLargeFile
+from b2sdk.utils.range_ import Range
 
 # file lock
 
@@ -116,11 +122,7 @@ from b2sdk.stream import WritingStreamWithProgress
 
 # source / destination
 
-from b2sdk.download_dest import AbstractDownloadDestination
-from b2sdk.download_dest import DownloadDestBytes
-from b2sdk.download_dest import DownloadDestLocalFile
-from b2sdk.download_dest import DownloadDestProgressWrapper
-from b2sdk.download_dest import PreSeekedDownloadDest
+from b2sdk.transfer.inbound.downloaded_file import DownloadedFile
 
 from b2sdk.transfer.outbound.outbound_source import OutboundTransferSource
 from b2sdk.transfer.outbound.copy_source import CopySource
@@ -136,7 +138,6 @@ from b2sdk.transfer.emerge.write_intent import WriteIntent
 # trasfer
 
 from b2sdk.transfer.inbound.downloader.abstract import AbstractDownloader
-from b2sdk.transfer.inbound.file_metadata import FileMetadata
 from b2sdk.transfer.outbound.large_file_upload_state import LargeFileUploadState
 from b2sdk.transfer.inbound.downloader.parallel import AbstractDownloaderThread
 from b2sdk.transfer.inbound.downloader.parallel import FirstPartDownloaderThread
@@ -145,7 +146,6 @@ from b2sdk.transfer.inbound.downloader.parallel import ParallelDownloader
 from b2sdk.transfer.inbound.downloader.parallel import PartToDownload
 from b2sdk.transfer.inbound.downloader.parallel import WriterThread
 from b2sdk.transfer.outbound.progress_reporter import PartProgressReporter
-from b2sdk.transfer.inbound.downloader.range import Range
 from b2sdk.transfer.inbound.downloader.simple import SimpleDownloader
 
 # sync
@@ -208,4 +208,5 @@ from b2sdk.cache import AbstractCache
 from b2sdk.cache import AuthInfoCache
 from b2sdk.cache import DummyCache
 from b2sdk.cache import InMemoryCache
+from b2sdk.http_constants import SRC_LAST_MODIFIED_MILLIS
 from b2sdk.session import B2Session

@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: b2sdk/utils.py
+# File: b2sdk/utils/__init__.py
 #
 # Copyright 2019 Backblaze Inc. All Rights Reserved.
 #
@@ -15,6 +15,7 @@ import platform
 import re
 import shutil
 import tempfile
+import time
 import concurrent.futures as futures
 from decimal import Decimal
 from urllib.parse import quote, unquote_plus
@@ -141,6 +142,14 @@ def hex_sha1_of_unlimited_stream(input_stream, limit=None):
             content_length += data_len
         if data_len < to_read:
             return digest.hexdigest(), content_length
+
+
+def hex_sha1_of_file(path_):
+    with open(
+        str(path_), 'rb'
+    ) as file:  # TODO: remove str() after dropping python 3.5 support, it's here in
+        # case someone uses pathlib.Paths
+        return hex_sha1_of_unlimited_stream(file)
 
 
 def hex_sha1_of_bytes(data: bytes) -> str:
@@ -435,6 +444,13 @@ class ConcurrentUsedAuthTokenGuard(object):
         except RuntimeError:
             # guard against releasing a non-acquired lock
             pass
+
+
+def current_time_millis():
+    """
+    File times are in integer milliseconds, to avoid roundoff errors.
+    """
+    return int(round(time.time() * 1000))
 
 
 assert disable_trace

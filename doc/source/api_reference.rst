@@ -50,7 +50,6 @@ Internal API
    api/internal/b2http
    api/internal/utils
    api/internal/cache
-   api/internal/download_dest
    api/internal/stream/chained
    api/internal/stream/hashing
    api/internal/stream/progress
@@ -67,7 +66,6 @@ Internal API
    api/internal/sync/sync
    api/internal/transfer/inbound/downloader/abstract
    api/internal/transfer/inbound/downloader/parallel
-   api/internal/transfer/inbound/downloader/range
    api/internal/transfer/inbound/downloader/simple
    api/internal/transfer/inbound/download_manager
    api/internal/transfer/inbound/file_metadata

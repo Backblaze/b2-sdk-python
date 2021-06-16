@@ -9,7 +9,7 @@
 ######################################################################
 
 import logging
-from typing import Optional
+from typing import Optional, Tuple
 
 from .encryption.setting import EncryptionSetting, EncryptionSettingFactory
 from .encryption.types import EncryptionMode
@@ -21,10 +21,11 @@ from .file_lock import (
     UNKNOWN_BUCKET_RETENTION,
     LegalHold,
 )
-from .file_version import FileVersion
-from .progress import DoNothingProgressListener
+from .file_version import DownloadVersion, FileVersion
+from .progress import AbstractProgressListener, DoNothingProgressListener
 from .transfer.emerge.executor import AUTO_CONTENT_TYPE
 from .transfer.emerge.write_intent import WriteIntent
+from .transfer.inbound.downloaded_file import DownloadedFile
 from .transfer.outbound.copy_source import CopySource
 from .transfer.outbound.upload_source import UploadSourceBytes, UploadSourceLocalFile
 from .utils import B2TraceMeta, disable_trace, limit_trace_arguments
@@ -157,32 +158,24 @@ class Bucket(metaclass=B2TraceMeta):
 
     def download_file_by_id(
         self,
-        file_id,
-        download_dest,
-        progress_listener=None,
-        range_=None,
+        file_id: str,
+        progress_listener: Optional[AbstractProgressListener] = None,
+        range_: Optional[Tuple[int, int]] = None,
         encryption: Optional[EncryptionSetting] = None,
-    ):
+    ) -> DownloadedFile:
         """
         Download a file by ID.
 
         .. note::
           download_file_by_id actually belongs in :py:class:`b2sdk.v1.B2Api`, not in :py:class:`b2sdk.v1.Bucket`; we just provide a convenient redirect here
 
-        :param str file_id: a file ID
-        :param download_dest: an instance of the one of the following classes: \
-        :class:`~b2sdk.v1.DownloadDestLocalFile`,\
-        :class:`~b2sdk.v1.DownloadDestBytes`,\
-        :class:`~b2sdk.v1.DownloadDestProgressWrapper`,\
-        :class:`~b2sdk.v1.PreSeekedDownloadDest`,\
-        or any sub class of :class:`~b2sdk.v1.AbstractDownloadDestination`
-        :param b2sdk.v1.AbstractProgressListener, None progress_listener: a progress listener object to use, or ``None`` to not report progress
-        :param tuple[int, int] range_: two integer values, start and end offsets
-        :param b2sdk.v1.EncryptionSetting encryption: encryption settings (``None`` if unknown)
+        :param file_id: a file ID
+        :param progress_listener: a progress listener object to use, or ``None`` to not track progress
+        :param range_: two integer values, start and end offsets
+        :param encryption: encryption settings (``None`` if unknown)
         """
         return self.api.download_file_by_id(
             file_id,
-            download_dest,
             progress_listener,
             range_=range_,
             encryption=encryption,
@@ -190,12 +183,11 @@ class Bucket(metaclass=B2TraceMeta):
 
     def download_file_by_name(
         self,
-        file_name,
-        download_dest,
-        progress_listener=None,
-        range_=None,
+        file_name: str,
+        progress_listener: Optional[AbstractProgressListener] = None,
+        range_: Optional[Tuple[int, int]] = None,
         encryption: Optional[EncryptionSetting] = None,
-    ):
+    ) -> DownloadedFile:
         """
         Download a file by name.
 
@@ -203,21 +195,14 @@ class Bucket(metaclass=B2TraceMeta):
 
             :ref:`Synchronizer <sync>`, a *high-performance* utility that synchronizes a local folder with a Bucket.
 
-        :param str file_name: a file name
-        :param download_dest: an instance of the one of the following classes: \
-        :class:`~b2sdk.v1.DownloadDestLocalFile`,\
-        :class:`~b2sdk.v1.DownloadDestBytes`,\
-        :class:`~b2sdk.v1.DownloadDestProgressWrapper`,\
-        :class:`~b2sdk.v1.PreSeekedDownloadDest`,\
-        or any sub class of :class:`~b2sdk.v1.AbstractDownloadDestination`
-        :param b2sdk.v1.AbstractProgressListener, None progress_listener: a progress listener object to use, or ``None`` to not track progress
-        :param tuple[int, int] range_: two integer values, start and end offsets
-        :param b2sdk.v1.EncryptionSetting encryption: encryption settings (``None`` if unknown)
+        :param file_name: a file name
+        :param progress_listener: a progress listener object to use, or ``None`` to not track progress
+        :param range_: two integer values, start and end offsets
+        :param encryption: encryption settings (``None`` if unknown)
         """
         url = self.api.session.get_download_url_by_name(self.name, file_name)
         return self.api.services.download_manager.download_file_from_url(
             url,
-            download_dest,
             progress_listener,
             range_,
             encryption=encryption,
@@ -232,15 +217,14 @@ class Bucket(metaclass=B2TraceMeta):
         """
         return self.api.file_version_factory.from_api_response(self.api.get_file_info(file_id))
 
-    def get_file_info_by_name(self, file_name: str) -> FileVersion:
+    def get_file_info_by_name(self, file_name: str) -> DownloadVersion:
         """
-        Gets a file version's by its name.
+        Gets a file's DownloadVersion by name.
 
         :param str file_name: the name of the file who's info will be retrieved.
-        :rtype: generator[b2sdk.v1.FileVersionInfo]
         """
         try:
-            return self.api.file_version_factory.from_response_headers(
+            return self.api.download_version_factory.from_response_headers(
                 self.api.session.get_file_info_by_name(self.name, file_name)
             )
         except FileOrBucketNotFound:

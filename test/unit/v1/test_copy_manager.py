@@ -14,7 +14,7 @@ from .deps_exception import InvalidAuthToken, Unauthorized, SSECKeyIdMismatchInC
 from .deps import MetadataDirectiveMode
 from .deps import EncryptionAlgorithm, EncryptionSetting, EncryptionMode, EncryptionKey, SSE_NONE, SSE_B2_AES
 from b2sdk.transfer.outbound.copy_manager import CopyManager
-from b2sdk.encryption.setting import SSE_C_KEY_ID_FILE_INFO_KEY_NAME
+from b2sdk.http_constants import SSE_C_KEY_ID_FILE_INFO_KEY_NAME
 
 SSE_C_AES = EncryptionSetting(
     mode=EncryptionMode.SSE_C,

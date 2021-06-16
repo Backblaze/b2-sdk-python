@@ -8,27 +8,37 @@
 #
 ######################################################################
 
+from io import IOBase
 from typing import Optional
 import hashlib
 import logging
 
+from requests.models import Response
+
 from .abstract import AbstractDownloader
+from b2sdk.file_version import DownloadVersion
 from b2sdk.encryption.setting import EncryptionSetting
+from b2sdk.session import B2Session
 
 logger = logging.getLogger(__name__)
 
 
 class SimpleDownloader(AbstractDownloader):
+
+    REQUIRES_SEEKING = False
+
     def __init__(self, *args, **kwargs):
         super(SimpleDownloader, self).__init__(*args, **kwargs)
 
-    def is_suitable(self, metadata, progress_listener):
-        return True
-
     def download(
-        self, file, response, metadata, session, encryption: Optional[EncryptionSetting] = None
+        self,
+        file: IOBase,
+        response: Response,
+        download_version: DownloadVersion,
+        session: B2Session,
+        encryption: Optional[EncryptionSetting] = None,
     ):
-        actual_size = self._get_remote_range(response, metadata).size()
+        actual_size = self._get_remote_range(response, download_version).size()
         chunk_size = self._get_chunk_size(actual_size)
 
         digest = hashlib.sha1()
@@ -40,16 +50,16 @@ class SimpleDownloader(AbstractDownloader):
 
         assert actual_size >= 1  # code below does `actual_size - 1`, but it should never reach that part with an empty file
 
-        # now, normally bytes_read == metadata.content_length, but sometimes there is a timeout
+        # now, normally bytes_read == download_version.content_length, but sometimes there is a timeout
         # or something and the server closes connection, while neither tcp or http have a problem
         # with the truncated output, so we detect it here and try to continue
 
         num_tries = 5  # this is hardcoded because we are going to replace the entire retry interface soon, so we'll avoid deprecation here and keep it private
         retries_left = num_tries - 1
-        while retries_left and bytes_read < metadata.content_length:
+        while retries_left and bytes_read < download_version.content_length:
             new_range = self._get_remote_range(
                 response,
-                metadata,
+                download_version,
             ).subrange(bytes_read, actual_size - 1)
             # original response is not closed at this point yet, as another layer is responsible for closing it, so a new socket might be allocated,
             # but this is a very rare case and so it is not worth the optimization

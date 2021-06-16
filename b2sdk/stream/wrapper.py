@@ -79,10 +79,6 @@ class StreamWrapper(io.IOBase):
         """
         return self.stream.write(data)
 
-    def close(self):
-        super(StreamWrapper, self).close()
-        self.stream.close()
-
 
 class StreamWithLengthWrapper(StreamWrapper):
     """

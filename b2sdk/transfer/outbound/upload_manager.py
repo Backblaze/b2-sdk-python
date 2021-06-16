@@ -22,7 +22,7 @@ from b2sdk.exception import (
 from b2sdk.file_lock import FileRetentionSetting, LegalHold
 from b2sdk.stream.progress import ReadingStreamWithProgress
 from b2sdk.stream.hashing import StreamWithHash
-from b2sdk.raw_api import HEX_DIGITS_AT_END
+from b2sdk.http_constants import HEX_DIGITS_AT_END
 from b2sdk.utils import B2TraceMetaAbstract
 
 from .progress_reporter import PartProgressReporter

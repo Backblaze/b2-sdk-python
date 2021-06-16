@@ -13,7 +13,6 @@ import io
 from abc import ABCMeta, abstractmethod
 from functools import partial
 
-from b2sdk.download_dest import DownloadDestBytes
 from b2sdk.stream.chained import StreamOpener
 from b2sdk.stream.range import wrap_with_range
 from b2sdk.utils import hex_sha1_of_unlimited_stream
@@ -64,12 +63,13 @@ class RemoteSourceUploadSubpart(BaseUploadSubpart):
     def _download(self, emerge_execution):
         url = emerge_execution.services.session.get_download_url_by_id(self.outbound_source.file_id)
         absolute_offset = self.outbound_source.offset + self.relative_offset
-        download_dest = DownloadDestBytes()
         range_ = (absolute_offset, absolute_offset + self.length - 1)
-        emerge_execution.services.download_manager.download_file_from_url(
-            url, download_dest, range_=range_, encryption=self.outbound_source.encryption
-        )
-        return download_dest.get_bytes_written()
+        with io.BytesIO() as bytes_io:
+            downloaded_file = emerge_execution.services.download_manager.download_file_from_url(
+                url, range_=range_, encryption=self.outbound_source.encryption
+            )
+            downloaded_file.save(bytes_io)
+            return bytes_io.getvalue()
 
 
 class LocalSourceUploadSubpart(BaseUploadSubpart):

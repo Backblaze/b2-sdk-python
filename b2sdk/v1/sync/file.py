@@ -11,7 +11,7 @@
 from typing import List
 
 from b2sdk.v1 import FileVersionInfo
-from b2sdk.raw_api import SRC_LAST_MODIFIED_MILLIS
+from b2sdk.http_constants import SRC_LAST_MODIFIED_MILLIS
 
 
 # This whole module is here to retain legacy classes so they can be used in retained legacy exception

@@ -13,12 +13,12 @@ import datetime
 import functools
 
 from b2sdk import _v2 as v2
-from ..raw_api import SRC_LAST_MODIFIED_MILLIS
 from . import api as v1api
 
 
 # Override to retain legacy class name, __init__ signature, slots
 # and old formatting methods
+# and to omit 'api' property when doing __eq__ and __repr__
 class FileVersionInfo(v2.FileVersion):
     __slots__ = ['_api']
 
@@ -42,7 +42,7 @@ class FileVersionInfo(v2.FileVersion):
     ):
         self.id_ = id_
         self.file_name = file_name
-        self.size = size
+        self.size = size and int(size)
         self.content_type = content_type
         self.content_sha1 = content_sha1
         self.content_md5 = content_md5
@@ -54,8 +54,8 @@ class FileVersionInfo(v2.FileVersion):
         self.file_retention = file_retention
         self._api = api
 
-        if SRC_LAST_MODIFIED_MILLIS in self.file_info:
-            self.mod_time_millis = int(self.file_info[SRC_LAST_MODIFIED_MILLIS])
+        if v2.SRC_LAST_MODIFIED_MILLIS in self.file_info:
+            self.mod_time_millis = int(self.file_info[v2.SRC_LAST_MODIFIED_MILLIS])
         else:
             self.mod_time_millis = self.upload_timestamp
 
@@ -64,6 +64,11 @@ class FileVersionInfo(v2.FileVersion):
         if self._api is None:
             raise ValueError('"api" not set')
         return self._api
+
+    def _all_slots(self):
+        all_slots = super()._all_slots()
+        all_slots.remove('api')
+        return all_slots
 
     def format_ls_entry(self):
         dt = datetime.datetime.utcfromtimestamp(self.upload_timestamp / 1000)
@@ -119,9 +124,25 @@ def translate_single_file_version(func):
 class FileVersionInfoFactory(v2.FileVersionFactory):
 
     from_api_response = translate_single_file_version(v2.FileVersionFactory.from_api_response)
-    from_response_headers = translate_single_file_version(
-        v2.FileVersionFactory.from_response_headers
-    )
+
+    def from_response_headers(self, headers):
+
+        file_info = v2.DownloadVersionFactory.file_info_from_headers(headers)
+        return FileVersionInfo(
+            api=self.api,
+            id_=headers['x-bz-file-id'],
+            file_name=headers['x-bz-file-name'],
+            size=int(headers['content-length']),
+            content_type=headers['content-type'],
+            content_sha1=headers['x-bz-content-sha1'],
+            file_info=file_info,
+            upload_timestamp=int(headers['x-bz-upload-timestamp']),
+            action='upload',
+            content_md5=None,
+            server_side_encryption=v2.EncryptionSettingFactory.from_response_headers(headers),
+            file_retention=v2.FileRetentionSetting.from_response_headers(headers),
+            legal_hold=v2.LegalHold.from_response_headers(headers),
+        )
 
 
 def file_version_info_from_id_and_name(file_id_and_name: v2.FileIdAndName, api: 'v1api.B2Api'):
@@ -135,4 +156,22 @@ def file_version_info_from_id_and_name(file_id_and_name: v2.FileIdAndName, api: 
         upload_timestamp=0,
         action='cancel',
         api=api,
+    )
+
+
+def file_version_info_from_download_version(download_version: v2.DownloadVersion):
+    return FileVersionInfo(
+        id_=download_version.id_,
+        file_name=download_version.file_name,
+        size=download_version.size,
+        content_type=download_version.content_type,
+        content_sha1=download_version.content_sha1,
+        file_info=download_version.file_info,
+        upload_timestamp=download_version.upload_timestamp,
+        action='upload',
+        content_md5=None,
+        server_side_encryption=download_version.server_side_encryption,
+        file_retention=download_version.file_retention,
+        legal_hold=download_version.legal_hold,
+        api=download_version.api,
     )

@@ -15,7 +15,7 @@ from b2sdk import raw_api
 
 
 # TODO: move the test_raw_api test logic here
-def test_raw_api():
+def test_raw_api(dont_cleanup_old_buckets):
     application_key_id = os.environ.get('B2_TEST_APPLICATION_KEY_ID')
     if application_key_id is None:
         pytest.fail('B2_TEST_APPLICATION_KEY_ID is not set.')
@@ -26,5 +26,5 @@ def test_raw_api():
 
     print()
 
-    if raw_api.test_raw_api():
+    if raw_api.test_raw_api(not dont_cleanup_old_buckets):
         pytest.fail('test_raw_api exited with non-zero exit code')
