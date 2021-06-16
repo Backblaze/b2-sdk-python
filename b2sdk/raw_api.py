@@ -27,7 +27,9 @@ from .encryption.setting import EncryptionAlgorithm, EncryptionMode, EncryptionS
 from .file_lock import BucketRetentionSetting, FileRetentionSetting, NO_RETENTION_FILE_SETTING, RetentionMode, RetentionPeriod, LegalHold
 from .utils import b2_url_encode, hex_sha1_of_stream
 from b2sdk.http_constants import FILE_INFO_HEADER_PREFIX
-from b2sdk.http_constants import SRC_LAST_MODIFIED_MILLIS  # this is here because CLI depends on it TODO: remove after fixing imports in CLI
+from b2sdk.http_constants import SRC_LAST_MODIFIED_MILLIS
+assert SRC_LAST_MODIFIED_MILLIS  # workaround for pyflakes: disable
+# this is here because CLI depends on it TODO: remove after fixing imports in CLI
 
 # All supported realms
 REALM_URLS = {
