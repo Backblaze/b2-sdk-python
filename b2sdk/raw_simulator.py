@@ -40,14 +40,14 @@ from .exception import (
     SSECKeyError,
 )
 from .file_lock import BucketRetentionSetting, FileRetentionSetting, NO_RETENTION_BUCKET_SETTING, UNKNOWN_FILE_LOCK_CONFIGURATION, LegalHold
-from .raw_api import AbstractRawApi, HEX_DIGITS_AT_END, MetadataDirectiveMode, ALL_CAPABILITIES
+from .raw_api import AbstractRawApi, MetadataDirectiveMode, ALL_CAPABILITIES
 from .utils import (
     b2_url_decode,
     b2_url_encode,
     ConcurrentUsedAuthTokenGuard,
     hex_sha1_of_bytes,
-    FILE_INFO_HEADER_PREFIX,
 )
+from b2sdk.http_constants import FILE_INFO_HEADER_PREFIX, HEX_DIGITS_AT_END
 from .stream.hashing import StreamWithHash
 
 logger = logging.getLogger(__name__)

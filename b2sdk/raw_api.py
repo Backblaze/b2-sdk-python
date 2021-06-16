@@ -25,7 +25,9 @@ from .b2http import B2Http
 from .exception import FileOrBucketNotFound, ResourceNotFound, UnusableFileName, InvalidMetadataDirective, WrongEncryptionModeForBucketDefault, AccessDenied, SSECKeyError, RetentionWriteError
 from .encryption.setting import EncryptionAlgorithm, EncryptionMode, EncryptionSetting
 from .file_lock import BucketRetentionSetting, FileRetentionSetting, NO_RETENTION_FILE_SETTING, RetentionMode, RetentionPeriod, LegalHold
-from .utils import b2_url_encode, hex_sha1_of_stream, FILE_INFO_HEADER_PREFIX
+from .utils import b2_url_encode, hex_sha1_of_stream
+from b2sdk.http_constants import FILE_INFO_HEADER_PREFIX
+from b2sdk.http_constants import SRC_LAST_MODIFIED_MILLIS  # this is here because CLI depends on it TODO: remove after fixing imports in CLI
 
 # All supported realms
 REALM_URLS = {
@@ -56,12 +58,6 @@ ALL_CAPABILITIES = [
     'writeFiles',
     'deleteFiles',
 ]
-
-# Standard names for file info entries
-SRC_LAST_MODIFIED_MILLIS = 'src_last_modified_millis'
-
-# Special X-Bz-Content-Sha1 value to verify checksum at the end
-HEX_DIGITS_AT_END = 'hex_digits_at_end'
 
 # API version number to use when calling the service
 API_VERSION = 'v2'

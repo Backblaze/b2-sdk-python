@@ -13,13 +13,10 @@ from typing import Optional
 import urllib
 import urllib.parse
 
+from ..http_constants import SSE_C_KEY_ID_FILE_INFO_KEY_NAME, SSE_C_KEY_ID_HEADER
 from ..utils import b64_of_bytes, md5_of_bytes
 from .types import ENCRYPTION_MODES_WITH_MANDATORY_ALGORITHM, ENCRYPTION_MODES_WITH_MANDATORY_KEY
 from .types import EncryptionAlgorithm, EncryptionMode
-from ..utils import FILE_INFO_HEADER_PREFIX
-
-SSE_C_KEY_ID_FILE_INFO_KEY_NAME = 'sse_c_key_id'
-SSE_C_KEY_ID_HEADER = FILE_INFO_HEADER_PREFIX + SSE_C_KEY_ID_FILE_INFO_KEY_NAME
 
 logger = logging.getLogger(__name__)
 

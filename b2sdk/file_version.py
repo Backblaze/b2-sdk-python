@@ -13,9 +13,8 @@ from datetime import datetime
 from typing import Dict, Optional, Union
 
 from .encryption.setting import EncryptionSetting, EncryptionSettingFactory
+from .http_constants import FILE_INFO_HEADER_PREFIX_LOWER, SRC_LAST_MODIFIED_MILLIS
 from .file_lock import FileRetentionSetting, LegalHold, NO_RETENTION_FILE_SETTING
-from .raw_api import SRC_LAST_MODIFIED_MILLIS
-from .utils import FILE_INFO_HEADER_PREFIX_LOWER
 from .utils.range_ import Range
 
 if False:

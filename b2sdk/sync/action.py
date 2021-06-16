@@ -15,7 +15,7 @@ import os
 from .encryption_provider import AbstractSyncEncryptionSettingsProvider
 from ..bucket import Bucket
 
-from ..raw_api import SRC_LAST_MODIFIED_MILLIS
+from ..http_constants import SRC_LAST_MODIFIED_MILLIS
 from ..transfer.outbound.upload_source import UploadSourceLocalFile
 from .path import B2SyncPath
 from .report import SyncFileReporter

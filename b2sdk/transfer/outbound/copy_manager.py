@@ -12,7 +12,8 @@ import concurrent.futures as futures
 import logging
 from typing import Optional
 
-from b2sdk.encryption.setting import EncryptionMode, EncryptionSetting, SSE_C_KEY_ID_FILE_INFO_KEY_NAME
+from b2sdk.encryption.setting import EncryptionMode, EncryptionSetting
+from b2sdk.http_constants import SSE_C_KEY_ID_FILE_INFO_KEY_NAME
 from b2sdk.exception import AlreadyFailed, SSECKeyIdMismatchInCopy
 from b2sdk.file_lock import FileRetentionSetting, LegalHold
 from b2sdk.raw_api import MetadataDirectiveMode

@@ -13,8 +13,6 @@ import datetime
 import functools
 
 from b2sdk import _v2 as v2
-from b2sdk.utils import FILE_INFO_HEADER_PREFIX_LOWER
-from ..raw_api import SRC_LAST_MODIFIED_MILLIS
 from . import api as v1api
 
 
@@ -56,10 +54,10 @@ class FileVersionInfo(v2.FileVersion):
         self.file_retention = file_retention
         self._api = api
 
-        if SRC_LAST_MODIFIED_MILLIS in self.file_info:
-            self.mod_time_millis = int(self.file_info[SRC_LAST_MODIFIED_MILLIS])
+        if v2.SRC_LAST_MODIFIED_MILLIS in self.file_info:
+            self.mod_time_millis = int(self.file_info[v2.SRC_LAST_MODIFIED_MILLIS])
         else:
-            self.mod_time_millis = self.upload_timestamp and int(self.upload_timestamp)
+            self.mod_time_millis = self.upload_timestamp
 
     @property
     def api(self):
