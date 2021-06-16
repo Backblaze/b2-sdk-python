@@ -331,13 +331,18 @@ class DownloadVersionFactory(object):
 
         return range_, size
 
-    def from_response_headers(self, headers):
+    @classmethod
+    def file_info_from_headers(cls, headers: dict) -> dict:
         file_info = {}
         prefix_len = len(FILE_INFO_HEADER_PREFIX_LOWER)
         for header_name, header_value in headers.items():
             if header_name[:prefix_len].lower() == FILE_INFO_HEADER_PREFIX_LOWER:
                 file_info_key = header_name[prefix_len:]
                 file_info[file_info_key] = header_value
+        return file_info
+
+    def from_response_headers(self, headers):
+        file_info = self.file_info_from_headers(headers)
         if 'Expires' not in headers:
             expires = None
         else:
