@@ -326,7 +326,10 @@ class FileSimulator(object):
 
     def _file_retention_dict(self, account_auth_token):
         if not self.is_allowed_to_read_file_retention(account_auth_token):
-            return UNKNOWN_FILE_LOCK_CONFIGURATION
+            return {
+                'isClientAuthorizedToRead': False,
+                'value': None,
+            }
 
         file_lock_configuration = {'isClientAuthorizedToRead': True}
         if self.file_retention is None:
