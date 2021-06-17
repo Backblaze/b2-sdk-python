@@ -8,10 +8,11 @@
 #
 ######################################################################
 
-from typing import Optional, Tuple
+from typing import Optional, Tuple, List, Generator
 
 from .account_info.abstract import AbstractAccountInfo
 from .api_config import B2HttpApiConfig, DEFAULT_HTTP_API_CONFIG
+from .application_key import ApplicationKey, BaseApplicationKey, FullApplicationKey
 from .cache import AbstractCache
 from .bucket import Bucket, BucketFactory
 from .encryption.setting import EncryptionSetting
@@ -92,6 +93,7 @@ class B2Api(metaclass=B2TraceMeta):
     SESSION_CLASS = staticmethod(B2Session)
     FILE_VERSION_FACTORY_CLASS = staticmethod(FileVersionFactory)
     DOWNLOAD_VERSION_FACTORY_CLASS = staticmethod(DownloadVersionFactory)
+    DEFAULT_LIST_KEY_COUNT = 1000
 
     def __init__(
         self,
@@ -416,20 +418,20 @@ class B2Api(metaclass=B2TraceMeta):
     # keys
     def create_key(
         self,
-        capabilities,
-        key_name,
-        valid_duration_seconds=None,
-        bucket_id=None,
-        name_prefix=None,
+        capabilities: List[str],
+        key_name: str,
+        valid_duration_seconds: Optional[int] = None,
+        bucket_id: Optional[str] = None,
+        name_prefix: Optional[str] = None,
     ):
         """
         Create a new :term:`application key`.
 
-        :param list capabilities: a list of capabilities
-        :param str key_name: a name of a key
-        :param int,None valid_duration_seconds: key auto-expire time after it is created, in seconds, or ``None`` to not expire
-        :param str,None bucket_id: a bucket ID to restrict the key to, or ``None`` to not restrict
-        :param str,None name_prefix: a remote filename prefix to restrict the key to or ``None`` to not restrict
+        :param capabilities: a list of capabilities
+        :param key_name: a name of a key
+        :param valid_duration_seconds: key auto-expire time after it is created, in seconds, or ``None`` to not expire
+        :param bucket_id: a bucket ID to restrict the key to, or ``None`` to not restrict
+        :param name_prefix: a remote filename prefix to restrict the key to or ``None`` to not restrict
         """
         account_id = self.account_info.get_account_id()
 
@@ -440,34 +442,54 @@ class B2Api(metaclass=B2TraceMeta):
             valid_duration_seconds=valid_duration_seconds,
             bucket_id=bucket_id,
             name_prefix=name_prefix
+            # As of 17.06.2021 the server does not accept an 'options' argument
         )
 
         assert set(response['capabilities']) == set(capabilities)
         assert response['keyName'] == key_name
 
-        return response
+        return FullApplicationKey.from_create_response(response)
 
-    def delete_key(self, application_key_id):
+    def delete_key(self, application_key: BaseApplicationKey):
         """
         Delete :term:`application key`.
 
-        :param str application_key_id: an :term:`application key ID`
+        :param application_key: an :term:`application key`
+        """
+
+        return self.delete_key_by_id(application_key.id_)
+
+    def delete_key_by_id(self, application_key_id: str):
+        """
+        Delete :term:`application key`.
+
+        :param application_key_id: an :term:`application key ID`
         """
 
         response = self.session.delete_key(application_key_id=application_key_id)
-        return response
+        return ApplicationKey.from_api_response(response)
 
-    def list_keys(self, start_application_key_id=None):
+    def list_keys(self, start_application_key_id: Optional[str] = None) -> Generator[ApplicationKey, None, None]:
         """
         List application keys.
 
-        :param str,None start_application_key_id: an :term:`application key ID` to start from or ``None`` to start from the beginning
+        :param start_application_key_id: an :term:`application key ID` to start from or ``None`` to start from the beginning
         """
         account_id = self.account_info.get_account_id()
 
-        return self.session.list_keys(
-            account_id, max_key_count=1000, start_application_key_id=start_application_key_id
-        )
+        while True:
+            response = self.session.list_keys(
+                account_id,
+                max_key_count=self.DEFAULT_LIST_KEY_COUNT,
+                start_application_key_id=start_application_key_id,
+            )
+            for entry in response['keys']:
+                yield ApplicationKey.from_api_response(entry)
+
+            next_application_key_id = response['nextApplicationKeyId']
+            if next_application_key_id is None:
+                return
+            start_application_key_id = next_application_key_id
 
     # other
     def get_file_info(self, file_id: str) -> FileVersion:

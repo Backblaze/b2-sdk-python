@@ -15,7 +15,7 @@ import unittest.mock as mock
 
 import pytest
 
-from ..test_base import TestBase
+from ..test_base import TestBase, create_key
 
 import apiver_deps
 from apiver_deps_exception import (
@@ -358,8 +358,10 @@ class TestGetFileInfo(TestCaseWithBucket):
         low_perm_account_info = StubAccountInfo()
         low_perm_api = B2Api(low_perm_account_info)
         low_perm_api.session.raw_api = self.simulator
-        low_perm_key_resp = self.api.create_key(
-            key_name='lowperm', capabilities=[
+        low_perm_key = create_key(
+            self.api,
+            key_name='lowperm',
+            capabilities=[
                 'listKeys',
                 'listBuckets',
                 'listFiles',
@@ -367,9 +369,7 @@ class TestGetFileInfo(TestCaseWithBucket):
             ]
         )
 
-        low_perm_api.authorize_account(
-            'production', low_perm_key_resp['applicationKeyId'], low_perm_key_resp['applicationKey']
-        )
+        low_perm_api.authorize_account('production', low_perm_key.id_, low_perm_key.application_key)
         low_perm_bucket = low_perm_api.get_bucket_by_name('my-bucket-with-file-lock')
 
         file_version = low_perm_bucket.get_file_info_by_name('a')

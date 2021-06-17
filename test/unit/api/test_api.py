@@ -10,6 +10,8 @@
 
 import pytest
 
+from ..test_base import create_key
+
 import apiver_deps
 from apiver_deps import B2Api
 from apiver_deps import B2HttpApiConfig
@@ -168,8 +170,8 @@ class TestApi:
         self._check_if_bucket_is_encrypted('bucket2', should_be_encrypted=False)
 
         # now check it with no readBucketEncryption permission to see that it's unknown
-        key = self.api.create_key(['listBuckets'], 'key1')
-        self.api.authorize_account('production', key['applicationKeyId'], key['applicationKey'])
+        key = create_key(self.api, ['listBuckets'], 'key1')
+        self.api.authorize_account('production', key.id_, key.application_key)
         buckets = {
             b.name: b
             for b in self.api.list_buckets()  # scan again with new key
@@ -206,10 +208,10 @@ class TestApi:
     def test_reauthorize_with_app_key(self):
         # authorize and create a key
         self._authorize_account()
-        key = self.api.create_key(['listBuckets'], 'key1')
+        key = create_key(self.api, ['listBuckets'], 'key1')
 
         # authorize with the key
-        self.api.authorize_account('production', key['applicationKeyId'], key['applicationKey'])
+        self.api.authorize_account('production', key.id_, key.application_key)
 
         # expire the auth token we just got
         self.raw_api.expire_auth_token(self.account_info.get_account_auth_token())
@@ -221,23 +223,23 @@ class TestApi:
         self._authorize_account()
         bucket1 = self.api.create_bucket('bucket1', 'allPrivate')
         self.api.create_bucket('bucket2', 'allPrivate')
-        key = self.api.create_key(['listBuckets'], 'key1', bucket_id=bucket1.id_)
-        self.api.authorize_account('production', key['applicationKeyId'], key['applicationKey'])
+        key = create_key(self.api, ['listBuckets'], 'key1', bucket_id=bucket1.id_)
+        self.api.authorize_account('production', key.id_, key.application_key)
         assert [b.name for b in self.api.list_buckets(bucket_name=bucket1.name)] == ['bucket1']
 
     def test_get_bucket_by_name_with_bucket_restriction(self):
         self._authorize_account()
         bucket1 = self.api.create_bucket('bucket1', 'allPrivate')
-        key = self.api.create_key(['listBuckets'], 'key1', bucket_id=bucket1.id_)
-        self.api.authorize_account('production', key['applicationKeyId'], key['applicationKey'])
+        key = create_key(self.api, ['listBuckets'], 'key1', bucket_id=bucket1.id_)
+        self.api.authorize_account('production', key.id_, key.application_key)
         assert self.api.get_bucket_by_name('bucket1').id_ == bucket1.id_
 
     def test_list_buckets_with_restriction_and_wrong_name(self):
         self._authorize_account()
         bucket1 = self.api.create_bucket('bucket1', 'allPrivate')
         bucket2 = self.api.create_bucket('bucket2', 'allPrivate')
-        key = self.api.create_key(['listBuckets'], 'key1', bucket_id=bucket1.id_)
-        self.api.authorize_account('production', key['applicationKeyId'], key['applicationKey'])
+        key = create_key(self.api, ['listBuckets'], 'key1', bucket_id=bucket1.id_)
+        self.api.authorize_account('production', key.id_, key.application_key)
         with pytest.raises(RestrictedBucket) as excinfo:
             self.api.list_buckets(bucket_name=bucket2.name)
         assert str(excinfo.value) == 'Application key is restricted to bucket: bucket1'
@@ -246,8 +248,8 @@ class TestApi:
         self._authorize_account()
         bucket1 = self.api.create_bucket('bucket1', 'allPrivate')
         self.api.create_bucket('bucket2', 'allPrivate')
-        key = self.api.create_key(['listBuckets'], 'key1', bucket_id=bucket1.id_)
-        self.api.authorize_account('production', key['applicationKeyId'], key['applicationKey'])
+        key = create_key(self.api, ['listBuckets'], 'key1', bucket_id=bucket1.id_)
+        self.api.authorize_account('production', key.id_, key.application_key)
         with pytest.raises(RestrictedBucket) as excinfo:
             self.api.list_buckets()
         assert str(excinfo.value) == 'Application key is restricted to bucket: bucket1'
@@ -256,8 +258,8 @@ class TestApi:
         self._authorize_account()
         bucket1 = self.api.create_bucket('bucket1', 'allPrivate')
         self.api.create_bucket('bucket2', 'allPrivate')
-        key = self.api.create_key(['listBuckets'], 'key1', bucket_id=bucket1.id_)
-        self.api.authorize_account('production', key['applicationKeyId'], key['applicationKey'])
+        key = create_key(self.api, ['listBuckets'], 'key1', bucket_id=bucket1.id_)
+        self.api.authorize_account('production', key.id_, key.application_key)
         with pytest.raises(RestrictedBucket) as excinfo:
             self.api.list_buckets(bucket_id='not the one bound to the key')
         assert str(excinfo.value) == 'Application key is restricted to bucket: %s' % (bucket1.id_,)
@@ -272,7 +274,10 @@ class TestApi:
         assert created_file.file_retention == NO_RETENTION_FILE_SETTING
         new_retention = FileRetentionSetting(RetentionMode.COMPLIANCE, 100)
         self.api.update_file_retention(created_file.id_, created_file.file_name, new_retention)
-        file_version = bucket.get_file_info_by_id(created_file.id_)
+        if apiver_deps.V <= 1:
+            file_version = bucket.get_file_info_by_id(created_file.id_)
+        else:
+            file_version = self.api.get_file_info(created_file.id_)
         assert new_retention == file_version.file_retention
 
     def test_update_legal_hold(self):
@@ -282,7 +287,10 @@ class TestApi:
         assert created_file.legal_hold == LegalHold.UNSET
         new_legal_hold = LegalHold.ON
         self.api.update_file_legal_hold(created_file.id_, created_file.file_name, new_legal_hold)
-        file_version = bucket.get_file_info_by_id(created_file.id_)
+        if apiver_deps.V <= 1:
+            file_version = bucket.get_file_info_by_id(created_file.id_)
+        else:
+            file_version = self.api.get_file_info(created_file.id_)
         assert new_legal_hold == file_version.legal_hold
 
     @pytest.mark.apiver(from_ver=2)

@@ -8,7 +8,7 @@
 #
 ######################################################################
 
-from typing import Any, Dict, Optional, overload, Tuple
+from typing import Any, Dict, Optional, overload, Tuple, List
 
 from .download_dest import AbstractDownloadDestination
 from b2sdk import _v2 as v2
@@ -27,6 +27,8 @@ from .session import B2Session
 # and to retain old style download_file_by_id signature (allowing for the new one as well) and exception
 # and to retain old style get_file_info return type
 # and to accept old-style raw_api argument
+# and to retain old style download_file_by_id signature (allowing for the new one as well) and exception
+# and to retain old style create_key, delete_key and list_keys interfaces and behaviour
 class B2Api(v2.B2Api):
     SESSION_CLASS = staticmethod(B2Session)
     BUCKET_FACTORY_CLASS = staticmethod(BucketFactory)
@@ -169,3 +171,34 @@ class B2Api(v2.B2Api):
                 raise
         else:
             return downloaded_file
+
+    def list_keys(self, start_application_key_id=None) -> dict:
+        """
+        List application keys.
+
+        :param start_application_key_id: an :term:`application key ID` to start from or ``None`` to start from the beginning
+        """
+        account_id = self.account_info.get_account_id()
+
+        return self.session.list_keys(
+            account_id, max_key_count=self.DEFAULT_LIST_KEY_COUNT, start_application_key_id=start_application_key_id
+        )
+
+    def create_key(
+        self,
+        capabilities: List[str],
+        key_name: str,
+        valid_duration_seconds: Optional[int] = None,
+        bucket_id: Optional[str] = None,
+        name_prefix: Optional[str] = None,
+    ):
+        return super().create_key(
+            capabilities=capabilities,
+            key_name=key_name,
+            valid_duration_seconds=valid_duration_seconds,
+            bucket_id=bucket_id,
+            name_prefix=name_prefix,
+        ).as_dict()
+
+    def delete_key(self, application_key_id):
+        return super().delete_key_by_id(application_key_id).as_dict()

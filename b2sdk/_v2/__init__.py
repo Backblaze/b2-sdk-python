@@ -65,6 +65,9 @@ from b2sdk.utils import trace_call
 
 # data classes
 
+from b2sdk.application_key import ApplicationKey
+from b2sdk.application_key import BaseApplicationKey
+from b2sdk.application_key import FullApplicationKey
 from b2sdk.file_version import DownloadVersion
 from b2sdk.file_version import DownloadVersionFactory
 from b2sdk.file_version import FileIdAndName
