@@ -206,7 +206,7 @@ class DownloadVersion(BaseFileVersion):
         content_disposition: Optional[str],
         content_length: int,
         content_language: Optional[str],
-        expires: Optional[datetime],
+        expires: Optional[str],
         cache_control: Optional[str],
         content_encoding: Optional[str],
         file_retention: FileRetentionSetting = NO_RETENTION_FILE_SETTING,
@@ -342,11 +342,6 @@ class DownloadVersionFactory(object):
 
     def from_response_headers(self, headers):
         file_info = self.file_info_from_headers(headers)
-        if 'Expires' not in headers:
-            expires = None
-        else:
-            expires = datetime(*email_utils.parsedate(headers['expires']))
-
         if 'Content-Range' in headers:
             range_, size = self.range_and_size_from_header(headers['Content-Range'])
             content_length = int(headers['Content-Length'])
@@ -368,7 +363,7 @@ class DownloadVersionFactory(object):
             content_disposition=headers.get('Content-Disposition'),
             content_length=content_length,
             content_language=headers.get('Content-Language'),
-            expires=expires,
+            expires=headers.get('Expires'),
             cache_control=headers.get('Cache-Control'),
             content_encoding=headers.get('Content-Encoding'),
             file_retention=FileRetentionSetting.from_response_headers(headers),
