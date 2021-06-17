@@ -8,7 +8,10 @@
 #
 ######################################################################
 
+import time
+
 import pytest
+from unittest import mock
 
 from ..test_base import create_key
 
@@ -27,6 +30,7 @@ from apiver_deps import LegalHold
 from apiver_deps import RawSimulator
 from apiver_deps import RetentionMode
 from apiver_deps import NO_RETENTION_FILE_SETTING
+from apiver_deps import ApplicationKey, FullApplicationKey
 from apiver_deps_exception import RestrictedBucket, InvalidArgument
 
 if apiver_deps.V <= 1:
@@ -334,3 +338,132 @@ class TestApi:
                 raw_api=B2RawApi(B2Http(user_agent_append='test append')),
                 api_config=B2HttpApiConfig(user_agent_append='test append'),
             )
+
+    @pytest.mark.apiver(to_ver=1)
+    def test_create_and_delete_key_v1(self):
+        self._authorize_account()
+        create_result = self.api.create_key(['readFiles'], 'testkey')
+        assert create_result == {
+            'accountId': self.account_info.get_account_id(),
+            'applicationKey': 'appKey0',
+            'applicationKeyId': 'appKeyId0',
+            'capabilities': ['readFiles'],
+            'keyName': 'testkey',
+        }
+
+        delete_result = self.api.delete_key(create_result['applicationKeyId'])
+        self.assertDeleteAndCreateResult(create_result, delete_result)
+
+        create_result = self.api.create_key(['readFiles'], 'testkey')
+        delete_result = self.api.delete_key_by_id(create_result['applicationKeyId'])
+        self.assertDeleteAndCreateResult(create_result, delete_result.as_dict())
+
+    @pytest.mark.apiver(from_ver=2)
+    def test_create_and_delete_key_v2(self):
+        self._authorize_account()
+        bucket = self.api.create_bucket('bucket', 'allPrivate')
+        now = time.time()
+        create_result = self.api.create_key(
+            ['readFiles'],
+            'testkey',
+            valid_duration_seconds=100,
+            bucket_id=bucket.id_,
+            name_prefix='name',
+        )
+        assert isinstance(create_result, FullApplicationKey)
+        assert create_result.key_name == 'testkey'
+        assert create_result.capabilities == ['readFiles']
+        assert create_result.account_id == self.account_info.get_account_id()
+        assert (now + 100 -
+                10) * 1000 < create_result.expiration_timestamp_millis < (now + 100 + 10) * 1000
+        assert create_result.bucket_id == bucket.id_
+        assert create_result.name_prefix == 'name'
+        # assert create_result.options == ...  TODO
+
+        delete_result = self.api.delete_key(create_result)
+        self.assertDeleteAndCreateResult(create_result, delete_result)
+
+        create_result = self.api.create_key(
+            ['readFiles'],
+            'testkey',
+            valid_duration_seconds=100,
+            bucket_id=bucket.id_,
+            name_prefix='name',
+        )
+        delete_result = self.api.delete_key_by_id(create_result.id_)
+        self.assertDeleteAndCreateResult(create_result, delete_result)
+
+    def assertDeleteAndCreateResult(self, create_result, delete_result):
+        if apiver_deps.V <= 1:
+            create_result.pop('applicationKey')
+            assert delete_result == create_result
+        else:
+            assert isinstance(delete_result, ApplicationKey)
+            assert delete_result.key_name == create_result.key_name
+            assert delete_result.capabilities == create_result.capabilities
+            assert delete_result.account_id == create_result.account_id
+            assert delete_result.expiration_timestamp_millis == create_result.expiration_timestamp_millis
+            assert delete_result.bucket_id == create_result.bucket_id
+            assert delete_result.name_prefix == create_result.name_prefix
+
+    @pytest.mark.apiver(to_ver=1)
+    def test_list_keys_v1(self):
+        self._authorize_account()
+        for i in range(20):
+            self.api.create_key(['readFiles'], 'testkey%s' % (i,))
+        with mock.patch.object(self.api, 'DEFAULT_LIST_KEY_COUNT', 10):
+            response = self.api.list_keys()
+        assert response['nextApplicationKeyId'] == 'appKeyId18'
+        assert response['keys'] == [
+            {
+                'accountId': 'account-0',
+                'applicationKeyId': 'appKeyId%s' % (ind,),
+                'bucketId': None,
+                'capabilities': ['readFiles'],
+                'expirationTimestamp': None,
+                'keyName': 'testkey%s' % (ind,),
+                'namePrefix': None,
+            } for ind in [
+                0,
+                1,
+                10,
+                11,
+                12,
+                13,
+                14,
+                15,
+                16,
+                17,
+            ]
+        ]
+
+    @pytest.mark.apiver(from_ver=2)
+    def test_list_keys_v2(self):
+        self._authorize_account()
+        for i in range(20):
+            self.api.create_key(['readFiles'], 'testkey%s' % (i,))
+        with mock.patch.object(self.api, 'DEFAULT_LIST_KEY_COUNT', 10):
+            keys = list(self.api.list_keys())
+        assert [key.id_ for key in keys] == [
+            'appKeyId0',
+            'appKeyId1',
+            'appKeyId10',
+            'appKeyId11',
+            'appKeyId12',
+            'appKeyId13',
+            'appKeyId14',
+            'appKeyId15',
+            'appKeyId16',
+            'appKeyId17',
+            'appKeyId18',
+            'appKeyId19',
+            'appKeyId2',
+            'appKeyId3',
+            'appKeyId4',
+            'appKeyId5',
+            'appKeyId6',
+            'appKeyId7',
+            'appKeyId8',
+            'appKeyId9',
+        ]
+        assert isinstance(keys[0], ApplicationKey)

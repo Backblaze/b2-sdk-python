@@ -24,6 +24,7 @@ from .b2http import ResponseContextManager
 from .encryption.setting import EncryptionMode, EncryptionSetting
 from .exception import (
     BadJson,
+    BadRequest,
     BadUploadUrl,
     ChecksumMismatch,
     Conflict,
@@ -89,10 +90,10 @@ class KeySimulator(object):
         return dict(
             accountId=self.account_id,
             bucketId=self.bucket_id_or_none,
-            applicationKey=self.key,
             applicationKeyId=self.application_key_id,
             capabilities=self.capabilities,
-            expirationTimestamp=self.expiration_timestamp_or_none,
+            expirationTimestamp=self.expiration_timestamp_or_none and
+            self.expiration_timestamp_or_none * 1000,
             keyName=self.name,
             namePrefix=self.name_prefix_or_none,
         )
@@ -1310,12 +1311,13 @@ class RawSimulator(AbstractRawApi):
 
     def delete_key(self, api_url, account_auth_token, application_key_id):
         assert api_url == self.API_URL
-        return dict(
-            accountId='accountId',
-            applicationKeyId=application_key_id,
-            keyName='keyName',
-            capabilities=['listBuckets', 'readBuckets', 'writeBuckets']
-        )
+        key_sim = self.key_id_to_key.get(application_key_id)
+        if key_sim is None:
+            raise BadRequest(
+                'application key does not exist: %s' % (application_key_id,),
+                'bad_request',
+            )
+        return key_sim.as_key()
 
     def finish_large_file(self, api_url, account_auth_token, file_id, part_sha1_array):
         bucket_id = self.file_id_to_bucket_id[file_id]
@@ -1542,8 +1544,26 @@ class RawSimulator(AbstractRawApi):
         start_application_key_id=None
     ):
         self._assert_account_auth(api_url, account_auth_token, account_id, 'listKeys')
-        keys = map(lambda key: key.as_key(), self.all_application_keys)
-        return dict(keys=keys, nextKeyId=None)
+        next_application_key_id = None
+        all_keys_sorted = sorted(self.all_application_keys, key=lambda key: key.application_key_id)
+        if start_application_key_id is None:
+            keys = all_keys_sorted[:max_key_count]
+            if max_key_count < len(all_keys_sorted):
+                next_application_key_id = all_keys_sorted[max_key_count].application_key_id
+        else:
+            keys = []
+            got_already = 0
+            for ind, key in enumerate(all_keys_sorted):
+                if key.application_key_id >= start_application_key_id:
+                    keys.append(key)
+                    got_already += 1
+                    if got_already == max_key_count:
+                        if ind < len(all_keys_sorted) - 1:
+                            next_application_key_id = all_keys_sorted[ind + 1].application_key_id
+                        break
+
+        key_dicts = map(lambda key: key.as_key(), keys)
+        return dict(keys=list(key_dicts), nextApplicationKeyId=next_application_key_id)
 
     def list_parts(self, api_url, account_auth_token, file_id, start_part_number, max_part_count):
         bucket_id = self.file_id_to_bucket_id[file_id]

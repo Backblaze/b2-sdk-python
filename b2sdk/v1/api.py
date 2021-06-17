@@ -181,7 +181,9 @@ class B2Api(v2.B2Api):
         account_id = self.account_info.get_account_id()
 
         return self.session.list_keys(
-            account_id, max_key_count=self.DEFAULT_LIST_KEY_COUNT, start_application_key_id=start_application_key_id
+            account_id,
+            max_key_count=self.DEFAULT_LIST_KEY_COUNT,
+            start_application_key_id=start_application_key_id
         )
 
     def create_key(
