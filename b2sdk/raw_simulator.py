@@ -40,7 +40,7 @@ from .exception import (
     UnsatisfiableRange,
     SSECKeyError,
 )
-from .file_lock import BucketRetentionSetting, FileRetentionSetting, NO_RETENTION_BUCKET_SETTING, UNKNOWN_FILE_LOCK_CONFIGURATION, LegalHold
+from .file_lock import BucketRetentionSetting, FileRetentionSetting, NO_RETENTION_BUCKET_SETTING, LegalHold
 from .raw_api import AbstractRawApi, MetadataDirectiveMode, ALL_CAPABILITIES
 from .utils import (
     b2_url_decode,

@@ -8,8 +8,6 @@
 #
 ######################################################################
 
-import email.utils as email_utils
-from datetime import datetime
 from typing import Dict, Optional, Union
 
 from .encryption.setting import EncryptionSetting, EncryptionSettingFactory

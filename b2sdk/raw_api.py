@@ -1339,7 +1339,7 @@ def test_raw_api_helper(raw_api, cleanup_old_buckets):
 
 
 def cleanup_old_buckets():
-    raw_api = B2RawApi(B2Http())
+    raw_api = B2RawHTTPApi(B2Http())
     auth_dict = authorize_raw_api(raw_api)
     bucket_list_dict = raw_api.list_buckets(
         auth_dict['apiUrl'], auth_dict['authorizationToken'], auth_dict['accountId']

@@ -31,7 +31,7 @@ class EncryptionKey:
     """
     SECRET_REPR = '******'
 
-    def __init__(self, secret: Optional[bytes], key_id: Union[str, None, 'ellipsis']):
+    def __init__(self, secret: Optional[bytes], key_id: Union[str, None, 'Ellipsis']):
         self.secret = secret
         self.key_id = key_id
 
