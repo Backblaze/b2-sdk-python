@@ -34,6 +34,8 @@ class FileVersionInfo(v2.FileVersion):
         file_info,
         upload_timestamp,
         action,
+        account_id: Optional[str] = None,
+        bucket_id: Optional[str] = None,
         content_md5=None,
         server_side_encryption: Optional[v2.EncryptionSetting] = None,
         file_retention: Optional[v2.FileRetentionSetting] = None,
@@ -45,6 +47,8 @@ class FileVersionInfo(v2.FileVersion):
         self.size = size and int(size)
         self.content_type = content_type
         self.content_sha1 = content_sha1
+        self.account_id = account_id
+        self.bucket_id = bucket_id
         self.content_md5 = content_md5
         self.file_info = file_info or {}
         self.upload_timestamp = upload_timestamp

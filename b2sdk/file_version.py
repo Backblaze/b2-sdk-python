@@ -129,6 +129,8 @@ class FileVersion(BaseFileVersion):
     """
 
     __slots__ = [
+        'account_id',
+        'bucket_id',
         'content_md5',
         'action',
     ]
@@ -143,12 +145,16 @@ class FileVersion(BaseFileVersion):
         content_sha1: Optional[str],
         file_info: Dict[str, str],
         upload_timestamp: int,
+        account_id: str,
+        bucket_id: str,
         action: str,
         content_md5: Optional[str],
         server_side_encryption: EncryptionSetting,
         file_retention: FileRetentionSetting = NO_RETENTION_FILE_SETTING,
         legal_hold: LegalHold = LegalHold.UNSET,
     ):
+        self.account_id = account_id
+        self.bucket_id = bucket_id
         self.content_md5 = content_md5
         self.action = action
 
@@ -168,6 +174,8 @@ class FileVersion(BaseFileVersion):
 
     def as_dict(self):
         result = super().as_dict()
+        result['accountId'] = self.account_id
+        result['bucketId'] = self.bucket_id
 
         if self.action is not None:
             result['action'] = self.action
@@ -306,6 +314,8 @@ class FileVersionFactory(object):
             content_sha1,
             file_info,
             upload_timestamp,
+            file_version_dict['accountId'],
+            file_version_dict['bucketId'],
             action,
             content_md5,
             server_side_encryption,

@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * `Bucket.ls` argument `show_versions` renamed to `latest_only` in v2
 * `B2Api` application key methods refactored to operate with dataclasses instead of dicts in v2
 * `B2Api.list_keys` is a generator lazily fetching all keys in v2
+* `account_id` and `bucket_id` added to FileVersion
 
 ## [1.9.0] - 2021-06-07
 

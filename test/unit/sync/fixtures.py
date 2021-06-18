@@ -46,6 +46,8 @@ class FakeB2Folder(B2Folder):
         else:
             mandatory_kwargs = {
                 'api': None,
+                'account_id': 'account-id',
+                'bucket_id': 'bucket-id',
                 'content_md5': 'content_md5',
                 'server_side_encryption': None,
             }

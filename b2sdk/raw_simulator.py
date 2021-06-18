@@ -286,6 +286,8 @@ class FileSimulator(object):
 
     def as_list_files_dict(self, account_auth_token):
         result = dict(
+            accountId=self.account_id,
+            bucketId=self.bucket.bucket_id,
             fileId=self.file_id,
             fileName=self.name,
             contentLength=len(self.data_bytes) if self.data_bytes is not None else 0,
