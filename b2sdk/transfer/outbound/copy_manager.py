@@ -14,7 +14,7 @@ from typing import Optional
 
 from b2sdk.encryption.setting import EncryptionMode, EncryptionSetting
 from b2sdk.http_constants import SSE_C_KEY_ID_FILE_INFO_KEY_NAME
-from b2sdk.exception import AlreadyFailed, SSECKeyIdMismatchInCopy
+from b2sdk.exception import AlreadyFailed, CopyArgumentsMismatch, SSECKeyIdMismatchInCopy
 from b2sdk.file_lock import FileRetentionSetting, LegalHold
 from b2sdk.raw_api import MetadataDirectiveMode
 from b2sdk.utils import B2TraceMetaAbstract
@@ -188,11 +188,15 @@ class CopyManager(metaclass=B2TraceMetaAbstract):
 
             if content_type is None:
                 if file_info is not None:
-                    raise ValueError('File info can be set only when content type is set')
+                    raise CopyArgumentsMismatch(
+                        'File info can be set only when content type is set'
+                    )
                 metadata_directive = MetadataDirectiveMode.COPY
             else:
                 if file_info is None:
-                    raise ValueError('File info can be not set only when content type is not set')
+                    raise CopyArgumentsMismatch(
+                        'File info can be not set only when content type is not set'
+                    )
                 metadata_directive = MetadataDirectiveMode.REPLACE
             metadata_directive, file_info, content_type = self.establish_sse_c_file_metadata(
                 metadata_directive=metadata_directive,

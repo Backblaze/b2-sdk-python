@@ -485,6 +485,10 @@ class WrongEncryptionModeForBucketDefault(B2Error):
         return "%s cannot be used as default for a bucket." % (self.encryption_mode,)
 
 
+class CopyArgumentsMismatch(B2Error):
+    pass
+
+
 def interpret_b2_error(
     status: int,
     code: Optional[str],
