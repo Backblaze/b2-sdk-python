@@ -17,7 +17,7 @@ from b2sdk.utils import validate_b2_file_name
 
 
 # Overridden to retain the obsolete copy_file and start_large_file methods
-# and to return old style FILE_VERSION_FACTORY attribute
+# and to retain old style FILE_VERSION_FACTORY attribute
 # and to retain old style download_file_by_name signature
 # and to retain old style download_file_by_id signature (allowing for the new one as well)
 # and to retain old style get_file_info_by_name return type
