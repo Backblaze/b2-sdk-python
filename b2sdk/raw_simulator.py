@@ -532,7 +532,7 @@ class BucketSimulator(object):
                 default_sse['value']['algorithm'
                                     ] = self.default_server_side_encryption.algorithm.value
         else:
-            default_sse['value'] = {'mode': EncryptionMode.UNKNOWN}
+            default_sse['value'] = {'mode': EncryptionMode.UNKNOWN.value}
 
         if self.is_allowed_to_read_bucket_retention(account_auth_token):
             file_lock_configuration = {
