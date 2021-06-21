@@ -899,7 +899,7 @@ class TestUpdate(TestCaseWithBucket):
             )
         else:
             self.assertIsInstance(result, Bucket)
-            for attr_name, attr_value in {
+            assertions_mapping = {
                 'id_':
                     self.bucket.id_,
                 'name':
@@ -921,7 +921,8 @@ class TestUpdate(TestCaseWithBucket):
                     SSE_B2_AES,
                 'default_retention':
                     BucketRetentionSetting(RetentionMode.COMPLIANCE, RetentionPeriod(years=7)),
-            }.items():
+            }
+            for attr_name, attr_value in assertions_mapping.items():
                 self.assertEqual(attr_value, getattr(result, attr_name), attr_name)
 
     def test_update_if_revision_is(self):
