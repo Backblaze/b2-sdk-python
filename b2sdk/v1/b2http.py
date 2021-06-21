@@ -53,7 +53,7 @@ class B2Http(v2.B2Http):
         """
         super().__init__(
             v2.B2HttpApiConfig(
-                requests_module=requests_module or requests,
+                http_session_factory=(requests_module or requests).Session,
                 install_clock_skew_hook=install_clock_skew_hook,
                 user_agent_append=user_agent_append
             )

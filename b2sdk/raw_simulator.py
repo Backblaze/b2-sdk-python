@@ -1034,7 +1034,7 @@ class RawSimulator(AbstractRawApi):
         ) + ')$'
     )  # yapf: disable
 
-    def __init__(self):
+    def __init__(self, b2_http=None):
         # Map from application_key_id to KeySimulator.
         # The entry for the master application key ID is for the master application
         # key for the account, and the entries with non-master application keys

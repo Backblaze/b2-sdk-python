@@ -67,7 +67,7 @@ class B2Session(object):
         :param api_config
         """
 
-        self.raw_api = B2RawHTTPApi(B2Http(api_config))
+        self.raw_api = (api_config.raw_api_class or B2RawHTTPApi)(B2Http(api_config))
         if account_info is None:
             account_info = self.SQLITE_ACCOUNT_INFO_CLASS()
             if cache is None:

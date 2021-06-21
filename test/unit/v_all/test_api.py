@@ -11,6 +11,7 @@
 import pytest
 
 from apiver_deps import B2Api
+from apiver_deps import B2HttpApiConfig
 from apiver_deps import Bucket
 from apiver_deps import InMemoryCache
 from apiver_deps import EncryptionMode
@@ -25,9 +26,10 @@ class TestApi(TestBase):
     def setUp(self):
         self.account_info = InMemoryAccountInfo()
         self.cache = InMemoryCache()
-        self.raw_api = RawSimulator()
-        self.api = B2Api(self.account_info, self.cache)
-        self.api.session.raw_api = self.raw_api
+        self.api = B2Api(
+            self.account_info, self.cache, api_config=B2HttpApiConfig(_raw_api_class=RawSimulator)
+        )
+        self.raw_api = self.api.session.raw_api
         (self.application_key_id, self.master_key) = self.raw_api.create_account()
 
     def _authorize_account(self):

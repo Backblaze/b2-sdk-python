@@ -220,7 +220,9 @@ class TestB2Http(TestBase):
         else:
             self.b2_http = B2Http(
                 B2HttpApiConfig(
-                    requests, install_clock_skew_hook=False, user_agent_append=self.UA_APPEND
+                    requests.Session,
+                    install_clock_skew_hook=False,
+                    user_agent_append=self.UA_APPEND
                 )
             )
 

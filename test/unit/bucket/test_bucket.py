@@ -38,6 +38,7 @@ else:
     DownloadDestBytes, PreSeekedDownloadDest = None, None  # these classes are not present, thus not needed, in v2
     from apiver_deps import FileVersion as VFileVersionInfo
 from apiver_deps import B2Api
+from apiver_deps import B2HttpApiConfig
 from apiver_deps import Bucket
 from apiver_deps import DownloadedFile
 from apiver_deps import DownloadVersion
@@ -175,10 +176,11 @@ class TestCaseWithBucket(TestBase):
 
     def setUp(self):
         self.bucket_name = 'my-bucket'
-        self.simulator = self.RAW_SIMULATOR_CLASS()
         self.account_info = StubAccountInfo()
-        self.api = B2Api(self.account_info)
-        self.api.session.raw_api = self.simulator
+        self.api = B2Api(
+            self.account_info, api_config=B2HttpApiConfig(_raw_api_class=self.RAW_SIMULATOR_CLASS)
+        )
+        self.simulator = self.api.session.raw_api
         (self.account_id, self.master_key) = self.simulator.create_account()
         self.api.authorize_account('production', self.account_id, self.master_key)
         self.api_url = self.account_info.get_api_url()

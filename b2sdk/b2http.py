@@ -257,7 +257,7 @@ class B2Http(object):
         it easy to mock for testing.
         """
         self.user_agent = self._get_user_agent(api_config.user_agent_append)
-        self.session = api_config.requests_module.Session()
+        self.session = api_config.http_session_factory()
         self.callbacks = []
         if api_config.install_clock_skew_hook:
             self.add_callback(ClockSkewHook())

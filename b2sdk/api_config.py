@@ -8,30 +8,33 @@
 #
 ######################################################################
 
+from typing import Optional, Callable, Type
 import requests
 
-from typing import Optional
-
-from types import ModuleType
+if False:
+    from .raw_api import AbstractRawApi
 
 
 class B2HttpApiConfig:
     def __init__(
         self,
-        requests_module: ModuleType = requests,
+        http_session_factory: Callable[[], requests.Session] = requests.Session,
         install_clock_skew_hook: bool = True,
         user_agent_append: Optional[str] = None,
+        _raw_api_class: Optional[Type['AbstractRawApi']] = None,
     ):
         """
         A structure with params to be passed to low level API.
 
-        :param requests_module: a reference to requests module
-        :param bool install_clock_skew_hook: if True, install a clock skew hook
-        :param str user_agent_append: if provided, the string will be appended to the User-Agent
+        :param http_session_factory: a callable that returns a requests.Session object (or a compatible one)
+        :param install_clock_skew_hook: if True, install a clock skew hook
+        :param user_agent_append: if provided, the string will be appended to the User-Agent
+        :param _raw_api_class: AbstractRawApi-compliant class
         """
-        self.requests_module = requests_module
+        self.http_session_factory = http_session_factory
         self.install_clock_skew_hook = install_clock_skew_hook
         self.user_agent_append = user_agent_append
+        self.raw_api_class = _raw_api_class
 
 
 DEFAULT_HTTP_API_CONFIG = B2HttpApiConfig()
