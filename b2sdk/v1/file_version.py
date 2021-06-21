@@ -19,6 +19,7 @@ from . import api as v1api
 # Override to retain legacy class name, __init__ signature, slots
 # and old formatting methods
 # and to omit 'api' property when doing __eq__ and __repr__
+# and to make get_fresh_state return proper objects, even though v1.B2Api.get_file_info returns dicts
 class FileVersionInfo(v2.FileVersion):
     __slots__ = ['_api']
 
@@ -87,6 +88,12 @@ class FileVersionInfo(v2.FileVersion):
     @classmethod
     def format_folder_ls_entry(cls, name):
         return cls.LS_ENTRY_TEMPLATE % ('-', '-', '-', '-', 0, name)
+
+    def get_fresh_state(self) -> 'FileVersionInfo':
+        """
+        Fetch all the information about this file version and return a new FileVersion object.
+        """
+        return self.api.file_version_factory.from_api_response(self.api.get_file_info(self.id_))
 
 
 def file_version_info_from_new_file_version(file_version: v2.FileVersion) -> FileVersionInfo:

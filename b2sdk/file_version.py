@@ -176,6 +176,12 @@ class FileVersion(BaseFileVersion):
 
         return result
 
+    def get_fresh_state(self) -> 'FileVersion':
+        """
+        Fetch all the information about this file version and return a new FileVersion object.
+        """
+        return self.api.get_file_info(self.id_)
+
 
 class DownloadVersion(BaseFileVersion):
     """

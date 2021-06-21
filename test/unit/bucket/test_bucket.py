@@ -22,6 +22,7 @@ from apiver_deps_exception import (
     AlreadyFailed,
     B2Error,
     B2RequestTimeoutDuringUpload,
+    BucketIdNotFound,
     InvalidAuthToken,
     InvalidMetadataDirective,
     InvalidRange,
@@ -36,6 +37,7 @@ if apiver_deps.V <= 1:
 else:
     DownloadDestBytes, PreSeekedDownloadDest = None, None  # these classes are not present, thus not needed, in v2
 from apiver_deps import B2Api
+from apiver_deps import Bucket, BucketFactory
 from apiver_deps import DownloadedFile
 from apiver_deps import DownloadVersion
 from apiver_deps import LargeFileUploadState
@@ -460,6 +462,26 @@ class TestLs(TestCaseWithBucket):
 
         expected = [('hello.txt', 15, 'upload', None)]
         self.assertBucketContents(expected, '', show_versions=True)
+
+
+class TestGetFreshState(TestCaseWithBucket):
+    def test_ok(self):
+        same_but_different = self.api.get_bucket_by_id(self.bucket.id_)
+        same_but_different = same_but_different.get_fresh_state()
+        assert isinstance(same_but_different, Bucket)
+        assert id(same_but_different) != id(self.bucket)
+        assert same_but_different.as_dict() == self.bucket.as_dict()
+        same_but_different = same_but_different.update(bucket_info={'completely': 'new info'})
+        if apiver_deps.V <= 1:
+            same_but_different = BucketFactory.from_api_bucket_dict(self.api, same_but_different)
+        assert same_but_different.as_dict() != self.bucket.as_dict()
+        refreshed_bucket = self.bucket.get_fresh_state()
+        assert same_but_different.as_dict() == refreshed_bucket.as_dict()
+
+    def test_fail(self):
+        self.api.delete_bucket(self.bucket)
+        with pytest.raises(BucketIdNotFound):
+            self.bucket.get_fresh_state()
 
 
 class TestListVersions(TestCaseWithBucket):

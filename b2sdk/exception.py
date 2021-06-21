@@ -240,6 +240,14 @@ class FileOrBucketNotFound(ResourceNotFound):
         return 'Could not find %s within %s' % (file_str, bucket_str)
 
 
+class BucketIdNotFound(ResourceNotFound):
+    def __init__(self, bucket_id=None):
+        self.bucket_id = bucket_id
+
+    def __str__(self):
+        return 'Bucket with id=%s not found' % (self.bucket_id,)
+
+
 class FileAlreadyHidden(B2SimpleError):
     pass
 
