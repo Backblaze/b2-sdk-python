@@ -8,6 +8,7 @@
 #
 ######################################################################
 
+import enum
 import logging
 from typing import Optional, Union
 import urllib
@@ -20,7 +21,12 @@ from .types import EncryptionAlgorithm, EncryptionMode
 
 logger = logging.getLogger(__name__)
 
-UNKNOWN_KEY_ID = ...
+
+class _UnknownKeyId(enum.Enum):
+    unknown_key_id = 0
+
+
+UNKNOWN_KEY_ID = _UnknownKeyId.unknown_key_id
 
 
 class EncryptionKey:
@@ -31,7 +37,7 @@ class EncryptionKey:
     """
     SECRET_REPR = '******'
 
-    def __init__(self, secret: Optional[bytes], key_id: Union[str, None, 'Ellipsis']):
+    def __init__(self, secret: Optional[bytes], key_id: Union[str, None, _UnknownKeyId]):
         self.secret = secret
         self.key_id = key_id
 
