@@ -39,9 +39,9 @@ class B2Api(v2.B2Api):
         self,
         account_info: Optional[AbstractAccountInfo] = None,
         cache: Optional[AbstractCache] = None,
+        raw_api: v2.B2RawHTTPApi = None,
         max_upload_workers: int = 10,
         max_copy_workers: int = 10,
-        raw_api: v2.B2RawHTTPApi = None,
         api_config: Optional[v2.B2HttpApiConfig] = None,
     ):
         """

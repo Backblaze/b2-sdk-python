@@ -135,7 +135,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param b2sdk.v1.BucketRetentionSetting default_retention: bucket default retention setting
         """
         account_id = self.api.account_info.get_account_id()
-        return BucketFactory.from_api_bucket_dict(
+        return self.api.BUCKET_FACTORY_CLASS.from_api_bucket_dict(
             self.api,
             self.api.session.update_bucket(
                 account_id,
