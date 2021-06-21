@@ -1313,7 +1313,7 @@ class RawSimulator(AbstractRawApi):
 
     def delete_key(self, api_url, account_auth_token, application_key_id):
         assert api_url == self.API_URL
-        key_sim = self.key_id_to_key.get(application_key_id)
+        key_sim = self.key_id_to_key.pop(application_key_id, None)
         if key_sim is None:
             raise BadRequest(
                 'application key does not exist: %s' % (application_key_id,),
