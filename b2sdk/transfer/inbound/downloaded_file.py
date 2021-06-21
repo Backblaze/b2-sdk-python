@@ -10,7 +10,7 @@
 
 import io
 import logging
-from typing import Optional, Tuple
+from typing import Optional, Tuple, TYPE_CHECKING
 
 from requests.models import Response
 
@@ -25,7 +25,7 @@ from b2sdk.exception import (
 )
 from b2sdk.utils import set_file_mtime
 
-if False:
+if TYPE_CHECKING:
     from .download_manager import DownloadManager
 
 logger = logging.getLogger(__name__)

@@ -8,10 +8,10 @@
 #
 ######################################################################
 
-from typing import Optional, Callable, Type
+from typing import Optional, Callable, Type, TYPE_CHECKING
 import requests
 
-if False:
+if TYPE_CHECKING:
     from .raw_api import AbstractRawApi
 
 

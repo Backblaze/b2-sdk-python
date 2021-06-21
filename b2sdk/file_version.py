@@ -8,14 +8,14 @@
 #
 ######################################################################
 
-from typing import Dict, Optional, Union
+from typing import Dict, Optional, Union, TYPE_CHECKING
 
 from .encryption.setting import EncryptionSetting, EncryptionSettingFactory
 from .http_constants import FILE_INFO_HEADER_PREFIX_LOWER, SRC_LAST_MODIFIED_MILLIS
 from .file_lock import FileRetentionSetting, LegalHold, NO_RETENTION_FILE_SETTING
 from .utils.range_ import Range
 
-if False:
+if TYPE_CHECKING:
     from .api import B2Api
 
 
