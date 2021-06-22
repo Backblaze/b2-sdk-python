@@ -78,7 +78,7 @@ class BaseFileVersion:
             'fileName': self.file_name,
             'fileInfo': self.file_info,
             'serverSideEncryption': self.server_side_encryption.as_dict(),
-            'legalHold': self.legal_hold.to_dict_repr(),
+            'legalHold': self.legal_hold.value,
             'fileRetention': self.file_retention.as_dict(),
         }
 
