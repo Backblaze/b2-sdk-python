@@ -21,7 +21,7 @@ from b2sdk.cache import AbstractCache, AuthInfoCache, DummyCache
 from b2sdk.encryption.setting import EncryptionSetting
 from b2sdk.exception import (InvalidAuthToken, Unauthorized)
 from b2sdk.file_lock import BucketRetentionSetting, FileRetentionSetting, LegalHold
-from b2sdk.raw_api import ALL_CAPABILITIES, B2RawHTTPApi, REALM_URLS
+from b2sdk.raw_api import ALL_CAPABILITIES, REALM_URLS
 from b2sdk.api_config import B2HttpApiConfig, DEFAULT_HTTP_API_CONFIG
 
 logger = logging.getLogger(__name__)
@@ -67,7 +67,7 @@ class B2Session(object):
         :param api_config
         """
 
-        self.raw_api = (api_config.raw_api_class or B2RawHTTPApi)(B2Http(api_config))
+        self.raw_api = api_config.raw_api_class(B2Http(api_config))
         if account_info is None:
             account_info = self.SQLITE_ACCOUNT_INFO_CLASS()
             if cache is None:

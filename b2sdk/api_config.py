@@ -8,11 +8,10 @@
 #
 ######################################################################
 
-from typing import Optional, Callable, Type, TYPE_CHECKING
+from typing import Optional, Callable, Type
 import requests
 
-if TYPE_CHECKING:
-    from .raw_api import AbstractRawApi
+from .raw_api import AbstractRawApi, B2RawHTTPApi
 
 
 class B2HttpApiConfig:
@@ -21,7 +20,7 @@ class B2HttpApiConfig:
         http_session_factory: Callable[[], requests.Session] = requests.Session,
         install_clock_skew_hook: bool = True,
         user_agent_append: Optional[str] = None,
-        _raw_api_class: Optional[Type['AbstractRawApi']] = None,
+        _raw_api_class: Optional[Type[AbstractRawApi]] = None,
     ):
         """
         A structure with params to be passed to low level API.
@@ -34,7 +33,7 @@ class B2HttpApiConfig:
         self.http_session_factory = http_session_factory
         self.install_clock_skew_hook = install_clock_skew_hook
         self.user_agent_append = user_agent_append
-        self.raw_api_class = _raw_api_class
+        self.raw_api_class = _raw_api_class or B2RawHTTPApi
 
 
 DEFAULT_HTTP_API_CONFIG = B2HttpApiConfig()
