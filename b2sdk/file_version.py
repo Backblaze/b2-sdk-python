@@ -192,8 +192,8 @@ class DownloadVersion(BaseFileVersion):
         'content_disposition',
         'content_length',
         'content_language',
-        'expires',
-        'cache_control',
+        '_expires',
+        '_cache_control',
         'content_encoding',
     ]
 
@@ -222,8 +222,8 @@ class DownloadVersion(BaseFileVersion):
         self.content_disposition = content_disposition
         self.content_length = content_length
         self.content_language = content_language
-        self.expires = expires
-        self.cache_control = cache_control
+        self._expires = expires  # TODO: parse the string representation of this timestamp to datetime
+        self._cache_control = cache_control  # TODO: parse the string representation of this mapping to dict
         self.content_encoding = content_encoding
 
         super().__init__(
