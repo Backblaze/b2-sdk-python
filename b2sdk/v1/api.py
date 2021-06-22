@@ -76,7 +76,7 @@ class B2Api(v2.B2Api):
         """
         Gets info about file version.
 
-        :param str file_id: the id of the file who's info will be retrieved.
+        :param str file_id: the id of the file.
         """
         return self.session.get_file_info_by_id(file_id)
 

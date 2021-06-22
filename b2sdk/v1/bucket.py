@@ -194,7 +194,7 @@ class Bucket(v2.Bucket):
         """
         Gets a file version's by ID.
 
-        :param str file_id: the id of the file who's info will be retrieved.
+        :param str file_id: the id of the file.
         """
         return self.api.file_version_factory.from_api_response(self.api.get_file_info(file_id))
 
