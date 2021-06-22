@@ -442,7 +442,6 @@ class B2Api(metaclass=B2TraceMeta):
             valid_duration_seconds=valid_duration_seconds,
             bucket_id=bucket_id,
             name_prefix=name_prefix
-            # As of 17.06.2021 the server does not accept an 'options' argument
         )
 
         assert set(response['capabilities']) == set(capabilities)
@@ -472,7 +471,7 @@ class B2Api(metaclass=B2TraceMeta):
     def list_keys(self, start_application_key_id: Optional[str] = None
                  ) -> Generator[ApplicationKey, None, None]:
         """
-        List application keys.
+        List application keys. Lazily perform requests to B2 cloud and return all keys.
 
         :param start_application_key_id: an :term:`application key ID` to start from or ``None`` to start from the beginning
         """

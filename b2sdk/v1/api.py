@@ -27,7 +27,6 @@ from .session import B2Session
 # and to retain old style download_file_by_id signature (allowing for the new one as well) and exception
 # and to retain old style get_file_info return type
 # and to accept old-style raw_api argument
-# and to retain old style download_file_by_id signature (allowing for the new one as well) and exception
 # and to retain old style create_key, delete_key and list_keys interfaces and behaviour
 class B2Api(v2.B2Api):
     SESSION_CLASS = staticmethod(B2Session)
@@ -174,7 +173,8 @@ class B2Api(v2.B2Api):
 
     def list_keys(self, start_application_key_id=None) -> dict:
         """
-        List application keys.
+        List application keys. Perform a single request and return at most ``self.DEFAULT_LIST_KEY_COUNT`` keys, as
+        well as the value to supply to the next call as ``start_application_key_id``, if not all keys were retrieved.
 
         :param start_application_key_id: an :term:`application key ID` to start from or ``None`` to start from the beginning
         """

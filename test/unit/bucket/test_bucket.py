@@ -899,28 +899,16 @@ class TestUpdate(TestCaseWithBucket):
             )
         else:
             self.assertIsInstance(result, Bucket)
-            assertions_mapping = {
-                'id_':
-                    self.bucket.id_,
-                'name':
-                    self.bucket.name,
-                'type_':
-                    'allPrivate',
-                'bucket_info': {
-                    'info': 'o'
-                },
-                'cors_rules': {
-                    'andrea': 'corr'
-                },
-                'lifecycle_rules': {
-                    'life': 'is life'
-                },
-                'options_set':
-                    set(),
-                'default_server_side_encryption':
-                    SSE_B2_AES,
-                'default_retention':
-                    BucketRetentionSetting(RetentionMode.COMPLIANCE, RetentionPeriod(years=7)),
+            assertions_mapping = {  # yapf: disable
+                'id_': self.bucket.id_,
+                'name': self.bucket.name,
+                'type_': 'allPrivate',
+                'bucket_info': {'info': 'o'},
+                'cors_rules': {'andrea': 'corr'},
+                'lifecycle_rules': {'life': 'is life'},
+                'options_set': set(),
+                'default_server_side_encryption': SSE_B2_AES,
+                'default_retention': BucketRetentionSetting(RetentionMode.COMPLIANCE, RetentionPeriod(years=7)),
             }
             for attr_name, attr_value in assertions_mapping.items():
                 self.assertEqual(attr_value, getattr(result, attr_name), attr_name)

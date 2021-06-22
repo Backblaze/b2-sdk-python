@@ -211,13 +211,13 @@ class Bucket(v2.Bucket):
         """
         Update various bucket parameters.
 
-        :param str bucket_type: a bucket type
-        :param dict bucket_info: an info to store with a bucket
-        :param dict cors_rules: CORS rules to store with a bucket
-        :param dict lifecycle_rules: lifecycle rules to store with a bucket
-        :param int if_revision_is: revision number, update the info **only if** *revision* equals to *if_revision_is*
-        :param b2sdk.v1.EncryptionSetting default_server_side_encryption: default server side encryption settings (``None`` if unknown)
-        :param b2sdk.v1.BucketRetentionSetting default_retention: bucket default retention setting
+        :param bucket_type: a bucket type, if provided, it has to be either ``allPrivate`` or ``allPublic``
+        :param bucket_info: an info to store with a bucket
+        :param cors_rules: CORS rules to store with a bucket
+        :param lifecycle_rules: lifecycle rules to store with a bucket
+        :param if_revision_is: revision number, update the info **only if** *revision* equals to *if_revision_is*
+        :param default_server_side_encryption: default server side encryption settings (``None`` if unknown)
+        :param default_retention: bucket default retention setting
         """
         account_id = self.api.account_info.get_account_id()
         return self.api.session.update_bucket(
