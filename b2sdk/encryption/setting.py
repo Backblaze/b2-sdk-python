@@ -23,10 +23,15 @@ logger = logging.getLogger(__name__)
 
 
 class _UnknownKeyId(enum.Enum):
+    """The purpose of this enum is to provide a sentinel that can be used with type annotations."""
     unknown_key_id = 0
 
 
 UNKNOWN_KEY_ID = _UnknownKeyId.unknown_key_id
+"""
+Value for EncryptionKey.key_id that signifies that the key id may or may not be defined. Useful when establishing
+encryption settings based on user input (and not based on B2 cloud data).
+"""
 
 
 class EncryptionKey:
