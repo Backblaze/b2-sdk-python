@@ -15,6 +15,9 @@ from .raw_api import AbstractRawApi, B2RawHTTPApi
 
 
 class B2HttpApiConfig:
+
+    DEFAULT_RAW_API_CLASS = B2RawHTTPApi
+
     def __init__(
         self,
         http_session_factory: Callable[[], requests.Session] = requests.Session,
@@ -33,7 +36,7 @@ class B2HttpApiConfig:
         self.http_session_factory = http_session_factory
         self.install_clock_skew_hook = install_clock_skew_hook
         self.user_agent_append = user_agent_append
-        self.raw_api_class = _raw_api_class or B2RawHTTPApi
+        self.raw_api_class = _raw_api_class or self.DEFAULT_RAW_API_CLASS
 
 
 DEFAULT_HTTP_API_CONFIG = B2HttpApiConfig()
