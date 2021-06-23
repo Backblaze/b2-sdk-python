@@ -8,8 +8,6 @@
 #
 ######################################################################
 
-# TODO: v2 is still in progress that why the path is prefixed with "_"
-
 # this file maps the external interface into internal interface
 # it will come handy if we ever need to move something
 
