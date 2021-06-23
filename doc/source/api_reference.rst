@@ -69,6 +69,5 @@ Internal API
    api/internal/transfer/inbound/downloader/parallel
    api/internal/transfer/inbound/downloader/simple
    api/internal/transfer/inbound/download_manager
-   api/internal/transfer/inbound/file_metadata
    api/internal/transfer/outbound/upload_source
    api/internal/raw_simulator

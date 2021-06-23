@@ -128,6 +128,7 @@ from b2sdk.stream import WritingStreamWithProgress
 # source / destination
 
 from b2sdk.transfer.inbound.downloaded_file import DownloadedFile
+from b2sdk.transfer.inbound.downloaded_file import MtimeUpdatedFile
 
 from b2sdk.transfer.outbound.outbound_source import OutboundTransferSource
 from b2sdk.transfer.outbound.copy_source import CopySource

@@ -75,7 +75,7 @@ Concatenate files of known size
     ... ]
     >>> file_info = {'how': 'good-file'}
     >>> bucket.concatenate(input_sources, remote_name, file_info)
-    <b2sdk.file_version.FileVersionInfo at 0x7fc8cd560551>
+    <b2sdk.file_version.FileVersion at 0x7fc8cd560551>
 
 If one of remote source has length smaller than :term:`absoluteMinimumPartSize` then it cannot be copied into large file part. Such remote source would be downloaded and concatenated locally with local source or with other downloaded remote source.
 
@@ -99,7 +99,7 @@ Concatenate files of known size (streamed version)
     ... ]
     >>> file_info = {'how': 'good-file'}
     >>> bucket.concatenate_stream(input_sources, remote_name, file_info)
-    <b2sdk.file_version.FileVersionInfo at 0x7fc8cd560551>
+    <b2sdk.file_version.FileVersion at 0x7fc8cd560551>
 
 
 
@@ -148,7 +148,7 @@ The assumption here is that the file has been appended to since it was last uplo
     ... ]
     >>> file_info = {'how': 'good-file'}
     >>> bucket.create_file(input_sources, remote_name, file_info)
-    <b2sdk.file_version.FileVersionInfo at 0x7fc8cd560552>
+    <b2sdk.file_version.FileVersion at 0x7fc8cd560552>
 
 `LocalUploadSource` has the size determined automatically in this case. This is more efficient than :meth:`b2sdk.v2.Bucket.concatenate`, as it can use the overlapping ranges when a remote part is smaller than :term:`absoluteMinimumPartSize` to prevent downloading a range (when concatenating, local source would have destination offset at the end of remote source)
 
@@ -177,7 +177,7 @@ Change the middle of the remote file
     ... ]
     >>> file_info = {'how': 'good-file'}
     >>> bucket.create_file(input_sources, remote_name, file_info)
-    <b2sdk.file_version.FileVersionInfo at 0x7fc8cd560552>
+    <b2sdk.file_version.FileVersion at 0x7fc8cd560552>
 
 `LocalUploadSource` has the size determined automatically in this case. This is more efficient than :meth:`b2sdk.v2.Bucket.concatenate`, as it can use the overlapping ranges when a remote part is smaller than :term:`absoluteMinimumPartSize` to prevent downloading a range.
 
@@ -236,7 +236,7 @@ Scenarios such as below are then possible:
     ...
     >>> file_info = {'how': 'good-file'}
     >>> bucket.create_file(generate_input(), remote_name, file_info)
-    <b2sdk.file_version.FileVersionInfo at 0x7fc8cd560552>
+    <b2sdk.file_version.FileVersion at 0x7fc8cd560552>
 
 
 In such case, if the sizes allow for it (there would be no parts smaller than :term:`absoluteMinimumPartSize`), the only uploaded part will be `C-D`. Otherwise, more data will be uploaded, but the data transfer will be reduced in most cases. :meth:`b2sdk.v2.Bucket.create_file` does not guarantee that outbound transfer usage would be optimal, it uses a simple greedy algorithm with as small look-aheads as possible.

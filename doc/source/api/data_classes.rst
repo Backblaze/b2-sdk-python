@@ -1,7 +1,7 @@
 Data classes
 ===============================================
 
-.. autoclass:: b2sdk.v2.FileVersionInfo
+.. autoclass:: b2sdk.v2.FileVersion
    :inherited-members:
    :special-members: __dict__
 
