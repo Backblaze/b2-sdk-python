@@ -72,7 +72,7 @@ class AbstractFileSyncPolicy(metaclass=ABCMeta):
         :param int keep_days: days to keep before delete
         :param b2sdk.v2.NewerFileSyncMode newer_file_mode: setting which determines handling for destination files newer than on the source
         :param int compare_threshold: when comparing with size or time for sync
-        :param b2sdk.v2.COMPARE_VERSION_MODES compare_version_mode: how to compare source and destination files
+        :param b2sdk.v2.CompareVersionMode compare_version_mode: how to compare source and destination files
         :param b2sdk.v2.AbstractSyncEncryptionSettingsProvider encryption_settings_provider: encryption setting provider
         """
         self._source_path = source_path
@@ -372,7 +372,7 @@ def make_b2_delete_note(version, index, transferred):
     """
     Create a note message for delete action.
 
-    :param b2sdk.v2.FileVersionInfo version: an object which contains file version info
+    :param b2sdk.v2.FileVersion version: an object which contains file version info
     :param int index: file version index
     :param bool transferred: if True, file has been transferred, False otherwise
     """

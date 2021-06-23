@@ -225,7 +225,7 @@ class Bucket(metaclass=B2TraceMeta):
         Gets a file version's by ID.
 
         :param str file_id: the id of the file who's info will be retrieved.
-        :rtype: generator[b2sdk.v2.FileVersionInfo]
+        :rtype: generator[b2sdk.v2.FileVersion]
         """
         return self.api.get_file_info(file_id)
 
@@ -271,7 +271,7 @@ class Bucket(metaclass=B2TraceMeta):
 
         :param str file_name: the name of the file to list.
         :param int,None fetch_count: how many entries to list per API call or ``None`` to use the default. Acceptable values: 1 - 10000
-        :rtype: generator[b2sdk.v2.FileVersionInfo]
+        :rtype: generator[b2sdk.v2.FileVersion]
         """
         if fetch_count is not None and fetch_count <= 0:
             # fetch_count equal to 0 means "use API default", which we don't want to support here
@@ -319,7 +319,7 @@ class Bucket(metaclass=B2TraceMeta):
                               when ``True``, just returns info about the most recent versions
         :param recursive: if ``True``, list folders recursively
         :param fetch_count: how many entries to return or ``None`` to use the default. Acceptable values: 1 - 10000
-        :rtype: generator[tuple[b2sdk.v2.FileVersionInfo, str]]
+        :rtype: generator[tuple[b2sdk.v2.FileVersion, str]]
         :returns: generator of (file_version, folder_name) tuples
 
         .. note::
@@ -476,7 +476,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param b2sdk.v2.EncryptionSetting encryption: encryption settings (``None`` if unknown)
         :param b2sdk.v2.FileRetentionSetting file_retention: file retention setting
         :param bool legal_hold: legal hold setting
-        :rtype: b2sdk.v2.FileVersionInfo
+        :rtype: b2sdk.v2.FileVersion
         """
         upload_source = UploadSourceLocalFile(local_path=local_file, content_sha1=sha1_sum)
         return self.upload(
@@ -514,7 +514,7 @@ class Bucket(metaclass=B2TraceMeta):
         must be possible to call it more than once in case the upload
         is retried.
 
-        :param b2sdk.v2.UploadSource upload_source: an object that opens the source of the upload
+        :param b2sdk.v2.AbstractUploadSource upload_source: an object that opens the source of the upload
         :param str file_name: the file name of the new B2 file
         :param str,None content_type: the MIME type, or ``None`` to accept the default based on file extension of the B2 file name
         :param dict,None file_info: a file info to store with the file or ``None`` to not store anything
@@ -523,7 +523,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param b2sdk.v2.EncryptionSetting encryption: encryption settings (``None`` if unknown)
         :param b2sdk.v2.FileRetentionSetting file_retention: file retention setting
         :param bool legal_hold: legal hold setting
-        :rtype: b2sdk.v2.FileVersionInfo
+        :rtype: b2sdk.v2.FileVersion
         """
         return self.create_file(
             [WriteIntent(upload_source)],
@@ -786,7 +786,7 @@ class Bucket(metaclass=B2TraceMeta):
         Hide a file.
 
         :param str file_name: a file name
-        :rtype: b2sdk.v2.FileVersionInfo
+        :rtype: b2sdk.v2.FileVersion
         """
         response = self.api.session.hide_file(self.id_, file_name)
         return self.api.file_version_factory.from_api_response(response)

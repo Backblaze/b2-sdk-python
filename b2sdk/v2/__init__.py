@@ -16,6 +16,7 @@
 # core
 
 from b2sdk.api import B2Api
+from b2sdk.api import Services
 from b2sdk.bucket import Bucket
 from b2sdk.bucket import BucketFactory
 from b2sdk.raw_api import ALL_CAPABILITIES, REALM_URLS
@@ -117,6 +118,7 @@ from b2sdk.raw_api import MetadataDirectiveMode
 
 # stream
 
+from b2sdk.stream.chained import StreamOpener
 from b2sdk.stream.progress import AbstractStreamWithProgress
 from b2sdk.stream import RangeOfInputStream
 from b2sdk.stream import ReadingStreamWithProgress
@@ -136,6 +138,7 @@ from b2sdk.transfer.outbound.upload_source import UploadSourceLocalFileRange
 from b2sdk.transfer.outbound.upload_source import UploadSourceStream
 from b2sdk.transfer.outbound.upload_source import UploadSourceStreamRange
 
+from b2sdk.transfer.emerge.planner.upload_subpart import CachedBytesStreamOpener
 from b2sdk.transfer.emerge.write_intent import WriteIntent
 
 # trasfer

@@ -286,7 +286,7 @@ class FileVersionFactory(object):
                "serverSideEncryption": {"algorithm": "AES256", "mode": "SSE-B2"}
            }
 
-        into a :py:class:`b2sdk.v2.FileVersionInfo` object.
+        into a :py:class:`b2sdk.v2.FileVersion` object.
 
         """
         assert file_version_dict.get('action') is None or force_action is None, \
