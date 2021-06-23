@@ -126,7 +126,7 @@ class Bucket(metaclass=B2TraceMeta):
         """
         Update various bucket parameters.
 
-        :param bucket_type: a bucket type, if provided, it has to be either ``allPrivate`` or ``allPublic``
+        :param bucket_type: a bucket type, e.g. ``allPrivate`` or ``allPublic``
         :param bucket_info: an info to store with a bucket
         :param cors_rules: CORS rules to store with a bucket
         :param lifecycle_rules: lifecycle rules to store with a bucket

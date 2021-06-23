@@ -212,8 +212,8 @@ class DownloadVersion(BaseFileVersion):
         content_disposition: Optional[str],
         content_length: int,
         content_language: Optional[str],
-        expires: Optional[str],
-        cache_control: Optional[str],
+        expires,
+        cache_control,
         content_encoding: Optional[str],
         file_retention: FileRetentionSetting = NO_RETENTION_FILE_SETTING,
         legal_hold: LegalHold = LegalHold.UNSET,
@@ -222,8 +222,8 @@ class DownloadVersion(BaseFileVersion):
         self.content_disposition = content_disposition
         self.content_length = content_length
         self.content_language = content_language
-        self._expires = expires  # TODO: parse the string representation of this timestamp to datetime
-        self._cache_control = cache_control  # TODO: parse the string representation of this mapping to dict
+        self._expires = expires  # TODO: parse the string representation of this timestamp to datetime in DownloadVersionFactory
+        self._cache_control = cache_control  # TODO: parse the string representation of this mapping to dict in DownloadVersionFactory
         self.content_encoding = content_encoding
 
         super().__init__(
