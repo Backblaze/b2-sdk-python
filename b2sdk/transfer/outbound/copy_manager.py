@@ -128,8 +128,8 @@ class CopyManager(metaclass=B2TraceMetaAbstract):
         Copy a file part to started large file.
 
         :param :param str bucket_id: a bucket ID
-        :param file_id: a large file ID
-        :param b2sdk.v2.CopySourcePart copy_source_part: wrapper for copy source that represnts part range
+        :param large_file_id: a large file ID
+        :param b2sdk.v2.CopySource part_copy_source: copy source that represents a range (not necessarily a whole file)
         :param b2sdk.v2.LargeFileUploadState large_file_upload_state: state object for progress reporting
                                                                       on large file upload
         :param dict,None finished_parts: dictionary of known finished parts, keys are part numbers,

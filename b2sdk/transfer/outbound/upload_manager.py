@@ -135,7 +135,7 @@ class UploadManager(metaclass=B2TraceMetaAbstract):
 
         :param :param str bucket_id: a bucket ID
         :param file_id: a large file ID
-        :param b2sdk.v2.UploadSourcePart upload_source_part: wrapper for upload source that reads only required range
+        :param b2sdk.v2.AbstractUploadSource part_upload_source: upload source that reads only required range
         :param b2sdk.v2.LargeFileUploadState large_file_upload_state: state object for progress reporting
                                                                       on large file upload
         :param dict,None finished_parts: dictionary of known finished parts, keys are part numbers,
