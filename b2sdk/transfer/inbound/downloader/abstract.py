@@ -53,7 +53,7 @@ class AbstractDownloader(metaclass=B2TraceMetaAbstract):
         Get a range from response or original request (as appropriate).
 
         :param response: requests.Response of initial request
-        :param download_version: b2sdk.v1.DownloadVersion
+        :param download_version: b2sdk.v2.DownloadVersion
         :return: a range object
         """
         if 'Range' in response.request.headers:

@@ -16,12 +16,12 @@ class OutboundTransferSource(metaclass=ABCMeta):
 
     Supported outbound transfer sources are:
 
-    * :class:`b2sdk.v1.CopySource`
-    * :class:`b2sdk.v1.UploadSourceBytes`
-    * :class:`b2sdk.v1.UploadSourceLocalFile`
-    * :class:`b2sdk.v1.UploadSourceLocalFileRange`
-    * :class:`b2sdk.v1.UploadSourceStream`
-    * :class:`b2sdk.v1.UploadSourceStreamRange`
+    * :class:`b2sdk.v2.CopySource`
+    * :class:`b2sdk.v2.UploadSourceBytes`
+    * :class:`b2sdk.v2.UploadSourceLocalFile`
+    * :class:`b2sdk.v2.UploadSourceLocalFileRange`
+    * :class:`b2sdk.v2.UploadSourceStream`
+    * :class:`b2sdk.v2.UploadSourceStreamRange`
 
     """
 

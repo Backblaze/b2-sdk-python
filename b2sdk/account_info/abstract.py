@@ -73,7 +73,7 @@ class AbstractAccountInfo(metaclass=B2TraceMetaAbstract):
         """
         Remember the ID for the given bucket name.
 
-        :param b2sdk.v1.Bucket bucket: a Bucket object
+        :param b2sdk.v2.Bucket bucket: a Bucket object
         """
 
     @abstractmethod
@@ -129,7 +129,7 @@ class AbstractAccountInfo(metaclass=B2TraceMetaAbstract):
     @abstractmethod
     def get_account_id(self):
         """
-        Return account ID or raises :class:`~b2sdk.v1.exception.MissingAccountData` exception.
+        Return account ID or raises :class:`~b2sdk.v2.exception.MissingAccountData` exception.
 
         :rtype: str
         """
@@ -145,7 +145,7 @@ class AbstractAccountInfo(metaclass=B2TraceMetaAbstract):
     @abstractmethod
     def get_account_auth_token(self):
         """
-        Return account_auth_token or raises :class:`~b2sdk.v1.exception.MissingAccountData` exception.
+        Return account_auth_token or raises :class:`~b2sdk.v2.exception.MissingAccountData` exception.
 
         :rtype: str
         """
@@ -153,7 +153,7 @@ class AbstractAccountInfo(metaclass=B2TraceMetaAbstract):
     @abstractmethod
     def get_api_url(self):
         """
-        Return api_url or raises :class:`~b2sdk.v1.exception.MissingAccountData` exception.
+        Return api_url or raises :class:`~b2sdk.v2.exception.MissingAccountData` exception.
 
         :rtype: str
         """
@@ -161,7 +161,7 @@ class AbstractAccountInfo(metaclass=B2TraceMetaAbstract):
     @abstractmethod
     def get_application_key(self):
         """
-        Return application_key or raises :class:`~b2sdk.v1.exception.MissingAccountData` exception.
+        Return application_key or raises :class:`~b2sdk.v2.exception.MissingAccountData` exception.
 
         :rtype: str
         """
@@ -169,7 +169,7 @@ class AbstractAccountInfo(metaclass=B2TraceMetaAbstract):
     @abstractmethod
     def get_download_url(self):
         """
-        Return download_url or raises :class:`~b2sdk.v1.exception.MissingAccountData` exception.
+        Return download_url or raises :class:`~b2sdk.v2.exception.MissingAccountData` exception.
 
         :rtype: str
         """
@@ -177,7 +177,7 @@ class AbstractAccountInfo(metaclass=B2TraceMetaAbstract):
     @abstractmethod
     def get_realm(self):
         """
-        Return realm or raises :class:`~b2sdk.v1.exception.MissingAccountData` exception.
+        Return realm or raises :class:`~b2sdk.v2.exception.MissingAccountData` exception.
 
         :rtype: str
         """
@@ -213,7 +213,7 @@ class AbstractAccountInfo(metaclass=B2TraceMetaAbstract):
     @abstractmethod
     def get_s3_api_url(self):
         """
-        Return s3_api_url or raises :class:`~b2sdk.v1.exception.MissingAccountData` exception.
+        Return s3_api_url or raises :class:`~b2sdk.v2.exception.MissingAccountData` exception.
 
         :rtype: str
         """

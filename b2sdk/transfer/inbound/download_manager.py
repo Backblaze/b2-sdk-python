@@ -46,7 +46,7 @@ class DownloadManager(metaclass=B2TraceMetaAbstract):
         """
         Initialize the DownloadManager using the given services object.
 
-        :param b2sdk.v1.Services services:
+        :param b2sdk.v2.Services services:
         """
 
         self.services = services
@@ -74,7 +74,7 @@ class DownloadManager(metaclass=B2TraceMetaAbstract):
         :param url: url from which the file should be downloaded
         :param progress_listener: where to notify about downloading progress
         :param range_: 2-element tuple containing data of http Range header
-        :param b2sdk.v1.EncryptionSetting encryption: encryption setting (``None`` if unknown)
+        :param b2sdk.v2.EncryptionSetting encryption: encryption setting (``None`` if unknown)
         """
         progress_listener = progress_listener or DoNothingProgressListener()
         with self.services.session.download_file_from_url(

@@ -94,9 +94,9 @@ class EncryptionSetting:
         key: EncryptionKey = None,
     ):
         """
-        :param b2sdk.v1.EncryptionMode mode: encryption mode
-        :param b2sdk.v1.EncryptionAlgorithm algorithm: encryption algorithm
-        :param b2sdk.v1.EncryptionKey key: encryption key object for SSE-C
+        :param b2sdk.v2.EncryptionMode mode: encryption mode
+        :param b2sdk.v2.EncryptionAlgorithm algorithm: encryption algorithm
+        :param b2sdk.v2.EncryptionKey key: encryption key object for SSE-C
         """
         self.mode = mode
         self.algorithm = algorithm

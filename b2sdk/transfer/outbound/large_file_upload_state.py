@@ -24,7 +24,7 @@ class LargeFileUploadState(object):
 
     def __init__(self, file_progress_listener):
         """
-        :param b2sdk.v1.AbstractProgressListener file_progress_listener: a progress listener object to use. Use :py:class:`b2sdk.v1.DoNothingProgressListener` to disable.
+        :param b2sdk.v2.AbstractProgressListener file_progress_listener: a progress listener object to use. Use :py:class:`b2sdk.v2.DoNothingProgressListener` to disable.
         """
         self.lock = threading.RLock()
         self.error_message = None

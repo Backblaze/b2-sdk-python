@@ -14,7 +14,7 @@ class WriteIntent(object):
 
     def __init__(self, outbound_source, destination_offset=0):
         """
-        :param b2sdk.v1.OutboundTransferSource outbound_source: data source (remote or local)
+        :param b2sdk.v2.OutboundTransferSource outbound_source: data source (remote or local)
         :param int destination_offset: point of start in destination file
         """
         if outbound_source.get_content_length() is None:
@@ -69,9 +69,9 @@ class WriteIntent(object):
 
         Can be used in cases similar to concatenate to automatically compute destination offsets
 
-        :param: iterator[b2sdk.v1.OutboundTransferSource] outbound_sources_iterator: iterator of outbound sources
+        :param: iterator[b2sdk.v2.OutboundTransferSource] outbound_sources_iterator: iterator of outbound sources
 
-        :rtype: generator[b2sdk.v1.WriteIntent]
+        :rtype: generator[b2sdk.v2.WriteIntent]
         """
         current_position = 0
         for outbound_source in outbound_sources_iterator:

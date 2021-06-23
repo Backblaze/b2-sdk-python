@@ -51,11 +51,11 @@ class B2Session(object):
         """
         Initialize Session using given account info.
 
-        :param account_info: an instance of :class:`~b2sdk.v1.UrlPoolAccountInfo`,
+        :param account_info: an instance of :class:`~b2sdk.v2.UrlPoolAccountInfo`,
                       or any custom class derived from
-                      :class:`~b2sdk.v1.AbstractAccountInfo`
+                      :class:`~b2sdk.v2.AbstractAccountInfo`
                       To learn more about Account Info objects, see here
-                      :class:`~b2sdk.v1.SqliteAccountInfo`
+                      :class:`~b2sdk.v2.SqliteAccountInfo`
 
         :param cache: an instance of the one of the following classes:
                       :class:`~b2sdk.cache.DummyCache`, :class:`~b2sdk.cache.InMemoryCache`,

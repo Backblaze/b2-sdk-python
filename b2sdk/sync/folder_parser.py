@@ -25,11 +25,11 @@ def parse_sync_folder(folder_name, api, local_folder_class=LocalFolder, b2_folde
     :param folder_name: a name of the folder, either local or remote
     :type folder_name: str
     :param api: an API object
-    :type api: :class:`~b2sdk.v1.B2Api`
+    :type api: :class:`~b2sdk.v2.B2Api`
     :param local_folder_class: class to handle local folders
-    :type local_folder_class: `~b2sdk.v1.AbstractFolder`
+    :type local_folder_class: `~b2sdk.v2.AbstractFolder`
     :param b2_folder_class: class to handle B2 folders
-    :type b2_folder_class: `~b2sdk.v1.AbstractFolder`
+    :type b2_folder_class: `~b2sdk.v2.AbstractFolder`
     """
     if folder_name.startswith('b2://'):
         return _parse_bucket_and_folder(folder_name[5:], api, b2_folder_class)

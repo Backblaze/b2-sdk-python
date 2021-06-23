@@ -55,7 +55,7 @@ class Services(object):
         """
         Initialize Services object using given session.
 
-        :param b2sdk.v1.B2Api api:
+        :param b2sdk.v2.B2Api api:
         :param int max_upload_workers: a number of upload threads
         :param int max_copy_workers: a number of copy threads
         """
@@ -72,7 +72,7 @@ class B2Api(metaclass=B2TraceMeta):
     """
     Provide file-level access to B2 services.
 
-    While :class:`b2sdk.v1.B2RawHTTPApi` provides direct access to the B2 web APIs, this
+    While :class:`b2sdk.v2.B2RawHTTPApi` provides direct access to the B2 web APIs, this
     class handles several things that simplify the task of uploading
     and downloading files:
 
@@ -107,7 +107,7 @@ class B2Api(metaclass=B2TraceMeta):
         Initialize the API using the given account info.
 
         :param account_info: To learn more about Account Info objects, see here
-                      :class:`~b2sdk.v1.SqliteAccountInfo`
+                      :class:`~b2sdk.v2.SqliteAccountInfo`
 
         :param cache: It is used by B2Api to cache the mapping between bucket name and bucket ids.
                       default is :class:`~b2sdk.cache.DummyCache`
@@ -189,10 +189,10 @@ class B2Api(metaclass=B2TraceMeta):
         :param dict bucket_info: additional bucket info to store with the bucket
         :param dict cors_rules: bucket CORS rules to store with the bucket
         :param dict lifecycle_rules: bucket lifecycle rules to store with the bucket
-        :param b2sdk.v1.EncryptionSetting default_server_side_encryption: default server side encryption settings (``None`` if unknown)
+        :param b2sdk.v2.EncryptionSetting default_server_side_encryption: default server side encryption settings (``None`` if unknown)
         :param bool is_file_lock_enabled: boolean value specifies whether bucket is File Lock-enabled
         :return: a Bucket object
-        :rtype: b2sdk.v1.Bucket
+        :rtype: b2sdk.v2.Bucket
         """
         account_id = self.account_info.get_account_id()
 
@@ -269,7 +269,7 @@ class B2Api(metaclass=B2TraceMeta):
     def get_bucket_by_id(self, bucket_id: str) -> Bucket:
         """
         Return the Bucket matching the given bucket_id.
-        :raises b2sdk.v1.exception.NonExistentBucket: if the bucket does not exist in the account
+        :raises b2sdk.v2.exception.BucketIdNotFound: if the bucket does not exist in the account
         """
         # Give a useful warning if the current application key does not
         # allow access to bucket.
@@ -294,8 +294,8 @@ class B2Api(metaclass=B2TraceMeta):
 
         :param str bucket_name: the name of the bucket to return
         :return: a Bucket object
-        :rtype: b2sdk.v1.Bucket
-        :raises b2sdk.v1.exception.NonExistentBucket: if the bucket does not exist in the account
+        :rtype: b2sdk.v2.Bucket
+        :raises b2sdk.v2.exception.NonExistentBucket: if the bucket does not exist in the account
         """
         # Give a useful warning if the current application key does not
         # allow access to the named bucket.
@@ -318,7 +318,7 @@ class B2Api(metaclass=B2TraceMeta):
         """
         Delete a chosen bucket.
 
-        :param b2sdk.v1.Bucket bucket: a :term:`bucket` to delete
+        :param b2sdk.v2.Bucket bucket: a :term:`bucket` to delete
         :rtype: None
         """
         account_id = self.account_info.get_account_id()
@@ -336,7 +336,7 @@ class B2Api(metaclass=B2TraceMeta):
 
         :param str bucket_name: the name of the one bucket to return
         :param str bucket_id: the ID of the one bucket to return
-        :rtype: list[b2sdk.v1.Bucket]
+        :rtype: list[b2sdk.v2.Bucket]
         """
         # Give a useful warning if the current application key does not
         # allow access to the named bucket.
@@ -367,7 +367,7 @@ class B2Api(metaclass=B2TraceMeta):
 
     def list_parts(self, file_id, start_part_number=None, batch_size=None):
         """
-        Generator that yields a :py:class:`b2sdk.v1.Part` for each of the parts that have been uploaded.
+        Generator that yields a :py:class:`b2sdk.v2.Part` for each of the parts that have been uploaded.
 
         :param str file_id: the ID of the large file that is not finished
         :param int start_part_number: the first part number to return; defaults to the first part
@@ -507,9 +507,9 @@ class B2Api(metaclass=B2TraceMeta):
         Check to see if the allowed field from authorize-account has a bucket restriction.
 
         If it does, checks if the bucket_name for a given api call matches that.
-        If not, it raises a :py:exc:`b2sdk.v1.exception.RestrictedBucket` error.
+        If not, it raises a :py:exc:`b2sdk.v2.exception.RestrictedBucket` error.
 
-        :raises b2sdk.v1.exception.RestrictedBucket: if the account is not allowed to use this bucket
+        :raises b2sdk.v2.exception.RestrictedBucket: if the account is not allowed to use this bucket
         """
         self._check_bucket_restrictions('bucketName', bucket_name)
 
@@ -518,9 +518,9 @@ class B2Api(metaclass=B2TraceMeta):
         Check to see if the allowed field from authorize-account has a bucket restriction.
 
         If it does, checks if the bucket_id for a given api call matches that.
-        If not, it raises a :py:exc:`b2sdk.v1.exception.RestrictedBucket` error.
+        If not, it raises a :py:exc:`b2sdk.v2.exception.RestrictedBucket` error.
 
-        :raises b2sdk.v1.exception.RestrictedBucket: if the account is not allowed to use this bucket
+        :raises b2sdk.v2.exception.RestrictedBucket: if the account is not allowed to use this bucket
         """
         self._check_bucket_restrictions('bucketId', bucket_id)
 

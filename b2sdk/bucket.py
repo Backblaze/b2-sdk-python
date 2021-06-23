@@ -60,7 +60,7 @@ class Bucket(metaclass=B2TraceMeta):
         is_file_lock_enabled: Optional[bool] = None,
     ):
         """
-        :param b2sdk.v1.B2Api api: an API object
+        :param b2sdk.v2.B2Api api: an API object
         :param str id_: a bucket id
         :param str name: a bucket name
         :param str type_: a bucket type
@@ -70,8 +70,8 @@ class Bucket(metaclass=B2TraceMeta):
         :param int revision: a bucket revision number
         :param dict bucket_dict: a dictionary which contains bucket parameters
         :param set options_set: set of bucket options strings
-        :param b2sdk.v1.EncryptionSetting default_server_side_encryption: default server side encryption settings
-        :param b2sdk.v1.BucketRetentionSetting default_retention: default retention setting
+        :param b2sdk.v2.EncryptionSetting default_server_side_encryption: default server side encryption settings
+        :param b2sdk.v2.BucketRetentionSetting default_retention: default retention setting
         :param bool is_file_lock_enabled: whether file locking is enabled or not
         """
         self.api = api
@@ -179,7 +179,7 @@ class Bucket(metaclass=B2TraceMeta):
         Download a file by ID.
 
         .. note::
-          download_file_by_id actually belongs in :py:class:`b2sdk.v1.B2Api`, not in :py:class:`b2sdk.v1.Bucket`; we just provide a convenient redirect here
+          download_file_by_id actually belongs in :py:class:`b2sdk.v2.B2Api`, not in :py:class:`b2sdk.v2.Bucket`; we just provide a convenient redirect here
 
         :param file_id: a file ID
         :param progress_listener: a progress listener object to use, or ``None`` to not track progress
@@ -225,7 +225,7 @@ class Bucket(metaclass=B2TraceMeta):
         Gets a file version's by ID.
 
         :param str file_id: the id of the file who's info will be retrieved.
-        :rtype: generator[b2sdk.v1.FileVersionInfo]
+        :rtype: generator[b2sdk.v2.FileVersionInfo]
         """
         return self.api.get_file_info(file_id)
 
@@ -271,7 +271,7 @@ class Bucket(metaclass=B2TraceMeta):
 
         :param str file_name: the name of the file to list.
         :param int,None fetch_count: how many entries to list per API call or ``None`` to use the default. Acceptable values: 1 - 10000
-        :rtype: generator[b2sdk.v1.FileVersionInfo]
+        :rtype: generator[b2sdk.v2.FileVersionInfo]
         """
         if fetch_count is not None and fetch_count <= 0:
             # fetch_count equal to 0 means "use API default", which we don't want to support here
@@ -319,7 +319,7 @@ class Bucket(metaclass=B2TraceMeta):
                               when ``True``, just returns info about the most recent versions
         :param recursive: if ``True``, list folders recursively
         :param fetch_count: how many entries to return or ``None`` to use the default. Acceptable values: 1 - 10000
-        :rtype: generator[tuple[b2sdk.v1.FileVersionInfo, str]]
+        :rtype: generator[tuple[b2sdk.v2.FileVersionInfo, str]]
         :returns: generator of (file_version, folder_name) tuples
 
         .. note::
@@ -394,13 +394,13 @@ class Bucket(metaclass=B2TraceMeta):
 
     def list_unfinished_large_files(self, start_file_id=None, batch_size=None, prefix=None):
         """
-        A generator that yields an :py:class:`b2sdk.v1.UnfinishedLargeFile` for each
+        A generator that yields an :py:class:`b2sdk.v2.UnfinishedLargeFile` for each
         unfinished large file in the bucket, starting at the given file, filtering by prefix.
 
         :param str,None start_file_id: a file ID to start from or None to start from the beginning
         :param int,None batch_size: max file count
         :param str,None prefix: file name prefix filter
-        :rtype: generator[b2sdk.v1.UnfinishedLargeFile]
+        :rtype: generator[b2sdk.v2.UnfinishedLargeFile]
         """
         return self.api.services.large_file.list_unfinished_large_files(
             self.id_,
@@ -428,11 +428,11 @@ class Bucket(metaclass=B2TraceMeta):
         :param str file_name: a file name to upload bytes to
         :param str,None content_type: the MIME type, or ``None`` to accept the default based on file extension of the B2 file name
         :param dict,None file_infos: a file info to store with the file or ``None`` to not store anything
-        :param b2sdk.v1.AbstractProgressListener,None progress_listener: a progress listener object to use, or ``None`` to not track progress
-        :param b2sdk.v1.EncryptionSetting encryption: encryption settings (``None`` if unknown)
-        :param b2sdk.v1.FileRetentionSetting file_retention: file retention setting
+        :param b2sdk.v2.AbstractProgressListener,None progress_listener: a progress listener object to use, or ``None`` to not track progress
+        :param b2sdk.v2.EncryptionSetting encryption: encryption settings (``None`` if unknown)
+        :param b2sdk.v2.FileRetentionSetting file_retention: file retention setting
         :param bool legal_hold: legal hold setting
-        :rtype: generator[b2sdk.v1.FileVersion]
+        :rtype: generator[b2sdk.v2.FileVersion]
         """
         upload_source = UploadSourceBytes(data_bytes)
         return self.upload(
@@ -472,11 +472,11 @@ class Bucket(metaclass=B2TraceMeta):
         :param dict,None file_infos: a file info to store with the file or ``None`` to not store anything
         :param str,None sha1_sum: file SHA1 hash or ``None`` to compute it automatically
         :param int min_part_size: a minimum size of a part
-        :param b2sdk.v1.AbstractProgressListener,None progress_listener: a progress listener object to use, or ``None`` to not report progress
-        :param b2sdk.v1.EncryptionSetting encryption: encryption settings (``None`` if unknown)
-        :param b2sdk.v1.FileRetentionSetting file_retention: file retention setting
+        :param b2sdk.v2.AbstractProgressListener,None progress_listener: a progress listener object to use, or ``None`` to not report progress
+        :param b2sdk.v2.EncryptionSetting encryption: encryption settings (``None`` if unknown)
+        :param b2sdk.v2.FileRetentionSetting file_retention: file retention setting
         :param bool legal_hold: legal hold setting
-        :rtype: b2sdk.v1.FileVersionInfo
+        :rtype: b2sdk.v2.FileVersionInfo
         """
         upload_source = UploadSourceLocalFile(local_path=local_file, content_sha1=sha1_sum)
         return self.upload(
@@ -514,16 +514,16 @@ class Bucket(metaclass=B2TraceMeta):
         must be possible to call it more than once in case the upload
         is retried.
 
-        :param b2sdk.v1.UploadSource upload_source: an object that opens the source of the upload
+        :param b2sdk.v2.UploadSource upload_source: an object that opens the source of the upload
         :param str file_name: the file name of the new B2 file
         :param str,None content_type: the MIME type, or ``None`` to accept the default based on file extension of the B2 file name
         :param dict,None file_info: a file info to store with the file or ``None`` to not store anything
         :param int,None min_part_size: the smallest part size to use or ``None`` to determine automatically
-        :param b2sdk.v1.AbstractProgressListener,None progress_listener: a progress listener object to use, or ``None`` to not report progress
-        :param b2sdk.v1.EncryptionSetting encryption: encryption settings (``None`` if unknown)
-        :param b2sdk.v1.FileRetentionSetting file_retention: file retention setting
+        :param b2sdk.v2.AbstractProgressListener,None progress_listener: a progress listener object to use, or ``None`` to not report progress
+        :param b2sdk.v2.EncryptionSetting encryption: encryption settings (``None`` if unknown)
+        :param b2sdk.v2.FileRetentionSetting file_retention: file retention setting
         :param bool legal_hold: legal hold setting
-        :rtype: b2sdk.v1.FileVersionInfo
+        :rtype: b2sdk.v2.FileVersionInfo
         """
         return self.create_file(
             [WriteIntent(upload_source)],
@@ -557,22 +557,22 @@ class Bucket(metaclass=B2TraceMeta):
         Source ranges can overlap and remote sources will be prioritized over local sources (when possible).
         For more information and usage examples please see :ref:`Advanced usage patterns <AdvancedUsagePatterns>`.
 
-        :param list[b2sdk.v1.WriteIntent] write_intents: list of write intents (remote or local sources)
+        :param list[b2sdk.v2.WriteIntent] write_intents: list of write intents (remote or local sources)
         :param str new_file_name: file name of the new file
         :param str,None content_type: content_type for the new file, if ``None`` content_type would be
                         automatically determined or it may be copied if it resolves
                         as single part remote source copy
         :param dict,None file_info: file_info for the new file, if ``None`` it will be set to empty dict
                         or it may be copied if it resolves as single part remote source copy
-        :param b2sdk.v1.AbstractProgressListener,None progress_listener: a progress listener object to use,
+        :param b2sdk.v2.AbstractProgressListener,None progress_listener: a progress listener object to use,
                         or ``None`` to not report progress
         :param int,None recommended_upload_part_size: the recommended part size to use for uploading local sources
                         or ``None`` to determine automatically, but remote sources would be copied with
                         maximum possible part size
         :param str,None continue_large_file_id: large file id that should be selected to resume file creation
                         for multipart upload/copy, ``None`` for automatic search for this id
-        :param b2sdk.v1.EncryptionSetting encryption: encryption settings (``None`` if unknown)
-        :param b2sdk.v1.FileRetentionSetting file_retention: file retention setting
+        :param b2sdk.v2.EncryptionSetting encryption: encryption settings (``None`` if unknown)
+        :param b2sdk.v2.FileRetentionSetting file_retention: file retention setting
         :param bool legal_hold: legal hold setting
         """
         return self._create_file(
@@ -608,7 +608,7 @@ class Bucket(metaclass=B2TraceMeta):
         Source ranges can overlap and remote sources will be prioritized over local sources (when possible).
         For more information and usage examples please see :ref:`Advanced usage patterns <AdvancedUsagePatterns>`.
 
-        :param iterator[b2sdk.v1.WriteIntent] write_intents_iterator: iterator of write intents which
+        :param iterator[b2sdk.v2.WriteIntent] write_intents_iterator: iterator of write intents which
                         are sorted ascending by ``destination_offset``
         :param str new_file_name: file name of the new file
         :param str,None content_type: content_type for the new file, if ``None`` content_type would be
@@ -616,7 +616,7 @@ class Bucket(metaclass=B2TraceMeta):
                         as single part remote source copy
         :param dict,None file_info: file_info for the new file, if ``None`` it will be set to empty dict
                         or it may be copied if it resolves as single part remote source copy
-        :param b2sdk.v1.AbstractProgressListener,None progress_listener: a progress listener object to use,
+        :param b2sdk.v2.AbstractProgressListener,None progress_listener: a progress listener object to use,
                         or ``None`` to not report progress
         :param int,None recommended_upload_part_size: the recommended part size to use for uploading local sources
                         or ``None`` to determine automatically, but remote sources would be copied with
@@ -624,8 +624,8 @@ class Bucket(metaclass=B2TraceMeta):
         :param str,None continue_large_file_id: large file id that should be selected to resume file creation
                         for multipart upload/copy, if ``None`` in multipart case it would always start a new
                         large file
-        :param b2sdk.v1.EncryptionSetting encryption: encryption settings (``None`` if unknown)
-        :param b2sdk.v1.FileRetentionSetting file_retention: file retention setting
+        :param b2sdk.v2.EncryptionSetting encryption: encryption settings (``None`` if unknown)
+        :param b2sdk.v2.FileRetentionSetting file_retention: file retention setting
         :param bool legal_hold: legal hold setting
         """
         return self._create_file(
@@ -689,22 +689,22 @@ class Bucket(metaclass=B2TraceMeta):
         """
         Creates a new file in this bucket by concatenating multiple remote or local sources.
 
-        :param list[b2sdk.v1.OutboundTransferSource] outbound_sources: list of outbound sources (remote or local)
+        :param list[b2sdk.v2.OutboundTransferSource] outbound_sources: list of outbound sources (remote or local)
         :param str new_file_name: file name of the new file
         :param str,None content_type: content_type for the new file, if ``None`` content_type would be
                         automatically determined from file name or it may be copied if it resolves
                         as single part remote source copy
         :param dict,None file_info: file_info for the new file, if ``None`` it will be set to empty dict
                         or it may be copied if it resolves as single part remote source copy
-        :param b2sdk.v1.AbstractProgressListener,None progress_listener: a progress listener object to use,
+        :param b2sdk.v2.AbstractProgressListener,None progress_listener: a progress listener object to use,
                         or ``None`` to not report progress
         :param int,None recommended_upload_part_size: the recommended part size to use for uploading local sources
                         or ``None`` to determine automatically, but remote sources would be copied with
                         maximum possible part size
         :param str,None continue_large_file_id: large file id that should be selected to resume file creation
                         for multipart upload/copy, ``None`` for automatic search for this id
-        :param b2sdk.v1.EncryptionSetting encryption: encryption settings (``None`` if unknown)
-        :param b2sdk.v1.FileRetentionSetting file_retention: file retention setting
+        :param b2sdk.v2.EncryptionSetting encryption: encryption settings (``None`` if unknown)
+        :param b2sdk.v2.FileRetentionSetting file_retention: file retention setting
         :param bool legal_hold: legal hold setting
         """
         return self.create_file(
@@ -736,14 +736,14 @@ class Bucket(metaclass=B2TraceMeta):
         """
         Creates a new file in this bucket by concatenating stream of multiple remote or local sources.
 
-        :param iterator[b2sdk.v1.OutboundTransferSource] outbound_sources_iterator: iterator of outbound sources
+        :param iterator[b2sdk.v2.OutboundTransferSource] outbound_sources_iterator: iterator of outbound sources
         :param str new_file_name: file name of the new file
         :param str,None content_type: content_type for the new file, if ``None`` content_type would be
                         automatically determined or it may be copied if it resolves
                         as single part remote source copy
         :param dict,None file_info: file_info for the new file, if ``None`` it will be set to empty dict
                         or it may be copied if it resolves as single part remote source copy
-        :param b2sdk.v1.AbstractProgressListener,None progress_listener: a progress listener object to use,
+        :param b2sdk.v2.AbstractProgressListener,None progress_listener: a progress listener object to use,
                         or ``None`` to not report progress
         :param int,None recommended_upload_part_size: the recommended part size to use for uploading local sources
                         or ``None`` to determine automatically, but remote sources would be copied with
@@ -751,8 +751,8 @@ class Bucket(metaclass=B2TraceMeta):
         :param str,None continue_large_file_id: large file id that should be selected to resume file creation
                         for multipart upload/copy, if ``None`` in multipart case it would always start a new
                         large file
-        :param b2sdk.v1.EncryptionSetting encryption: encryption setting (``None`` if unknown)
-        :param b2sdk.v1.FileRetentionSetting file_retention: file retention setting
+        :param b2sdk.v2.EncryptionSetting encryption: encryption setting (``None`` if unknown)
+        :param b2sdk.v2.FileRetentionSetting file_retention: file retention setting
         :param bool legal_hold: legal hold setting
         """
         return self.create_file_stream(
@@ -786,7 +786,7 @@ class Bucket(metaclass=B2TraceMeta):
         Hide a file.
 
         :param str file_name: a file name
-        :rtype: b2sdk.v1.FileVersionInfo
+        :rtype: b2sdk.v2.FileVersionInfo
         """
         response = self.api.session.hide_file(self.id_, file_name)
         return self.api.file_version_factory.from_api_response(response)
@@ -821,15 +821,15 @@ class Bucket(metaclass=B2TraceMeta):
         :param int,None length: number of bytes to copy, if ``None`` then ``offset`` have to be ``0`` and it will
                         use ``b2_copy_file`` without ``range`` parameter so it may fail if file is too large.
                         For large files length have to be specified to use ``b2_copy_part`` instead.
-        :param b2sdk.v1.AbstractProgressListener,None progress_listener: a progress listener object to use
+        :param b2sdk.v2.AbstractProgressListener,None progress_listener: a progress listener object to use
                         for multipart copy, or ``None`` to not report progress
-        :param b2sdk.v1.EncryptionSetting destination_encryption: encryption settings for the destination
+        :param b2sdk.v2.EncryptionSetting destination_encryption: encryption settings for the destination
                         (``None`` if unknown)
-        :param b2sdk.v1.EncryptionSetting source_encryption: encryption settings for the source
+        :param b2sdk.v2.EncryptionSetting source_encryption: encryption settings for the source
                         (``None`` if unknown)
         :param dict,None source_file_info: source file's file_info dict, useful when copying files with SSE-C
         :param str,None source_content_type: source file's content type, useful when copying files with SSE-C
-        :param b2sdk.v1.FileRetentionSetting file_retention: file retention setting for the new file.
+        :param b2sdk.v2.FileRetentionSetting file_retention: file retention setting for the new file.
         :param bool legal_hold: legal hold setting for the new file.
         """
 
@@ -920,9 +920,9 @@ class BucketFactory(object):
         """
         Create a Bucket object from API response.
 
-        :param b2sdk.v1.B2Api api: API object
+        :param b2sdk.v2.B2Api api: API object
         :param requests.Response response: response object
-        :rtype: b2sdk.v1.Bucket
+        :rtype: b2sdk.v2.Bucket
         """
         return [cls.from_api_bucket_dict(api, bucket_dict) for bucket_dict in response['buckets']]
 
@@ -962,9 +962,9 @@ class BucketFactory(object):
 
         into a Bucket object.
 
-        :param b2sdk.v1.B2Api api: API client
+        :param b2sdk.v2.B2Api api: API client
         :param dict bucket_dict: a dictionary with bucket properties
-        :rtype: b2sdk.v1.Bucket
+        :rtype: b2sdk.v2.Bucket
 
         """
         type_ = bucket_dict['bucketType']
