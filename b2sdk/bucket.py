@@ -13,7 +13,7 @@ from typing import Optional, Tuple
 
 from .encryption.setting import EncryptionSetting, EncryptionSettingFactory
 from .encryption.types import EncryptionMode
-from .exception import FileNotPresent, FileOrBucketNotFound, UnexpectedCloudBehaviour, UnrecognizedBucketType
+from .exception import BucketIdNotFound, FileNotPresent, FileOrBucketNotFound, UnexpectedCloudBehaviour, UnrecognizedBucketType
 from .file_lock import (
     BucketRetentionSetting,
     FileLockConfiguration,
@@ -87,6 +87,16 @@ class Bucket(metaclass=B2TraceMeta):
         self.default_server_side_encryption = default_server_side_encryption
         self.default_retention = default_retention
         self.is_file_lock_enabled = is_file_lock_enabled
+
+    def get_fresh_state(self) -> 'Bucket':
+        """
+        Fetch all the information about this bucket and return a new bucket object.
+        This method does NOT change the object it is called on.
+        """
+        buckets_found = self.api.list_buckets(bucket_id=self.id_)
+        if not buckets_found:
+            raise BucketIdNotFound(self.id_)
+        return buckets_found[0]
 
     def get_id(self):
         """

@@ -16,7 +16,7 @@ from .application_key import ApplicationKey, BaseApplicationKey, FullApplication
 from .cache import AbstractCache
 from .bucket import Bucket, BucketFactory
 from .encryption.setting import EncryptionSetting
-from .exception import NonExistentBucket, RestrictedBucket
+from .exception import BucketIdNotFound, NonExistentBucket, RestrictedBucket
 from .file_lock import FileRetentionSetting, LegalHold
 from .file_version import DownloadVersionFactory, FileIdAndName, FileVersion, FileVersionFactory
 from .large_file.services import LargeFileServices
@@ -286,7 +286,7 @@ class B2Api(metaclass=B2TraceMeta):
             return bucket
 
         # There is no such bucket.
-        raise NonExistentBucket(bucket_name)
+        raise BucketIdNotFound(bucket_id)
 
     def get_bucket_by_name(self, bucket_name):
         """

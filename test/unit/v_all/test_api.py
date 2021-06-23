@@ -18,7 +18,7 @@ from apiver_deps import EncryptionMode
 from apiver_deps import EncryptionSetting
 from apiver_deps import InMemoryAccountInfo
 from apiver_deps import RawSimulator
-from apiver_deps_exception import NonExistentBucket
+from apiver_deps_exception import BucketIdNotFound
 from ..test_base import TestBase
 
 
@@ -56,7 +56,7 @@ class TestApi(TestBase):
     @pytest.mark.apiver(from_ver=2)
     def test_get_bucket_by_id_v2(self):
         self._authorize_account()
-        with pytest.raises(NonExistentBucket):
+        with pytest.raises(BucketIdNotFound):
             self.api.get_bucket_by_id("this id doesn't even exist")
         created_bucket = self.api.create_bucket('bucket1', 'allPrivate')
         read_bucket = self.api.get_bucket_by_id(created_bucket.id_)

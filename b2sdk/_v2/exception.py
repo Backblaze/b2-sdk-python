@@ -25,6 +25,7 @@ from b2sdk.exception import BadDateFormat
 from b2sdk.exception import BadFileInfo
 from b2sdk.exception import BadJson
 from b2sdk.exception import BadUploadUrl
+from b2sdk.exception import BucketIdNotFound
 from b2sdk.exception import BrokenPipe
 from b2sdk.exception import BucketNotAllowed
 from b2sdk.exception import CapabilityNotAllowed
@@ -95,6 +96,7 @@ __all__ = (
     'BadJson',
     'BadUploadUrl',
     'BrokenPipe',
+    'BucketIdNotFound',
     'BucketNotAllowed',
     'CapabilityNotAllowed',
     'CapExceeded',

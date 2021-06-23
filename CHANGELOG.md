@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+* `get_fresh_state` method added to `FileVersion` and `Bucket`
+
 ### Changed
 * `download_file_*` methods refactored to allow for inspecting DownloadVersion before downloading the whole file
 * `B2Api.get_file_info` returns a `FileVersion` object in v2
