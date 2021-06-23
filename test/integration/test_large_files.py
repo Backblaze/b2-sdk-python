@@ -17,7 +17,7 @@ from unittest import mock
 
 import pytest
 
-from b2sdk._v2 import *
+from b2sdk.v2 import *
 
 from .fixtures import *  # pyflakes: disable
 

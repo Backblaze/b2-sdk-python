@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: b2sdk/_v2/__init__.py
+# File: b2sdk/v2/__init__.py
 #
 # Copyright 2021 Backblaze Inc. All Rights Reserved.
 #

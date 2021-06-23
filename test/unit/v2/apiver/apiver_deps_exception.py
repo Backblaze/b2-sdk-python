@@ -8,4 +8,4 @@
 #
 ######################################################################
 
-from b2sdk._v2.exception import *  # noqa
+from b2sdk.v2.exception import *  # noqa

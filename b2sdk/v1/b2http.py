@@ -10,7 +10,7 @@
 
 import requests
 
-from b2sdk import _v2 as v2
+from b2sdk import v2
 
 
 # Overridden to retain old-style __init__ signature

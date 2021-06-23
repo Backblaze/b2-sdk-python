@@ -14,7 +14,7 @@ import logging
 import os
 from typing import Optional
 
-from b2sdk import _v2 as v2
+from b2sdk import v2
 from b2sdk.account_info.sqlite_account_info import DEFAULT_ABSOLUTE_MINIMUM_PART_SIZE
 from b2sdk.utils import limit_trace_arguments
 

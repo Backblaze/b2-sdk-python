@@ -8,7 +8,7 @@
 #
 ######################################################################
 
-from b2sdk._v2 import *  # noqa
+from b2sdk.v2 import *  # noqa
 from b2sdk.v1.account_info import (
     AbstractAccountInfo, InMemoryAccountInfo, UrlPoolAccountInfo, SqliteAccountInfo, StubAccountInfo
 )

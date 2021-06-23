@@ -10,7 +10,7 @@
 
 from typing import Tuple
 
-from b2sdk import _v2 as v2
+from b2sdk import v2
 from .file import File, B2File, FileVersion, B2FileVersion
 
 

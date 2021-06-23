@@ -12,7 +12,7 @@ import inspect
 from abc import abstractmethod
 from typing import Optional
 
-from b2sdk import _v2 as v2
+from b2sdk import v2
 from ..bucket import Bucket
 from ..file_version import FileVersionInfo
 

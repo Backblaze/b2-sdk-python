@@ -12,7 +12,7 @@ from .download_dest import AbstractDownloadDestination
 from .file_metadata import FileMetadata
 from .file_version import FileVersionInfo, FileVersionInfoFactory, file_version_info_from_download_version
 from typing import Optional, overload, Tuple
-from b2sdk import _v2 as v2
+from b2sdk import v2
 from b2sdk.utils import validate_b2_file_name
 
 

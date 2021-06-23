@@ -15,7 +15,7 @@ import unittest
 
 import apiver_deps
 from apiver_deps import B2Api
-from b2sdk._v2 import FullApplicationKey
+from b2sdk.v2 import FullApplicationKey
 
 
 class TestBase(unittest.TestCase):

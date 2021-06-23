@@ -11,7 +11,7 @@
 from abc import abstractmethod
 import functools
 
-from b2sdk import _v2 as v2
+from b2sdk import v2
 from .scan_policies import DEFAULT_SCAN_MANAGER, wrap_if_necessary
 from .. import exception
 
