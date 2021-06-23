@@ -132,8 +132,11 @@ Update bucket info
     >>> bucket_name = 'example-mybucket-b2'
 
     >>> bucket = b2_api.get_bucket_by_name(bucket_name)
-    >>> bucket.update(bucket_type=new_bucket_type,
-                      default_server_side_encryption=EncryptionSetting(mode=EncryptionMode.SSE_B2)).as_dict()
+    >>> new_bucket = bucket.update(
+            bucket_type=new_bucket_type,
+            default_server_side_encryption=EncryptionSetting(mode=EncryptionMode.SSE_B2)
+        )
+    >>> new_bucket.as_dict()
     {'accountId': '451862be08d0',
      'bucketId': '5485a1682662eb3e60980d10',
      'bucketInfo': {},
@@ -305,7 +308,8 @@ Get file metadata
 .. code-block:: python
 
     >>> file_id = '4_z5485a1682662eb3e60980d10_f113f963288e711a6_d20190404_m065910_c002_v0001095_t0044'
-    >>> b2_api.get_file_info(file_id).as_dict()
+    >>> file_version = b2_api.get_file_info(file_id)
+    >>> file_version.as_dict()
     {'accountId': '451862be08d0',
      'action': 'upload',
      'bucketId': '5485a1682662eb3e60980d10',
@@ -326,7 +330,8 @@ Copy file
 .. code-block:: python
 
     >>> file_id = '4_z5485a1682662eb3e60980d10_f118df9ba2c5131e8_d20190619_m065809_c002_v0001126_t0040'
-    >>> bucket.copy(file_id, 'f2_copy.txt').as_dict()
+    >>> new_file_version = bucket.copy(file_id, 'f2_copy.txt')
+    >>> new_file_version.as_dict()
     {'accountId': '451862be08d0',
      'action': 'copy',
      'bucketId': '5485a1682662eb3e60980d10',
@@ -364,7 +369,8 @@ Delete file
 .. code-block:: python
 
     >>> file_id = '4_z5485a1682662eb3e60980d10_f113f963288e711a6_d20190404_m065910_c002_v0001095_t0044'
-    >>> file_info = b2_api.delete_file_version(file_id, 'dummy_new.pdf').as_dict()
+    >>> file_info = b2_api.delete_file_version(file_id, 'dummy_new.pdf')
+    >>> file_info.as_dict()
     {'action': 'delete',
      'fileId': '4_z5485a1682662eb3e60980d10_f113f963288e711a6_d20190404_m065910_c002_v0001095_t0044',
      'fileName': 'dummy_new.pdf'}
