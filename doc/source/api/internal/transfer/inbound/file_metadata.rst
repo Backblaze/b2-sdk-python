@@ -1,7 +1,7 @@
-:mod:`b2sdk.v1.file_metadata`
+:mod:`b2sdk.v2.file_metadata`
 =============================
 
-.. automodule:: b2sdk.v1.file_metadata
+.. automodule:: b2sdk.v2.file_metadata
     :members:
     :undoc-members:
     :show-inheritance:

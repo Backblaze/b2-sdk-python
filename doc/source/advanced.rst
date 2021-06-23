@@ -21,17 +21,17 @@ Available methods
 +--------------------------------------------+--------+---------------------+--------------------------+------------------------------------+
 | Method / supported options                 | Source | Range |br| overlap  | Streaming |br| interface | :ref:`Continuation <continuation>` |
 +============================================+========+=====================+==========================+====================================+
-| :meth:`b2sdk.v1.Bucket.upload`             | local  | no                  | no                       | automatic                          |
+| :meth:`b2sdk.v2.Bucket.upload`             | local  | no                  | no                       | automatic                          |
 +--------------------------------------------+--------+---------------------+--------------------------+------------------------------------+
-| :meth:`b2sdk.v1.Bucket.copy`               | remote | no                  | no                       | automatic                          |
+| :meth:`b2sdk.v2.Bucket.copy`               | remote | no                  | no                       | automatic                          |
 +--------------------------------------------+--------+---------------------+--------------------------+------------------------------------+
-| :meth:`b2sdk.v1.Bucket.concatenate`        | any    | no                  | no                       | automatic                          |
+| :meth:`b2sdk.v2.Bucket.concatenate`        | any    | no                  | no                       | automatic                          |
 +--------------------------------------------+--------+---------------------+--------------------------+------------------------------------+
-| :meth:`b2sdk.v1.Bucket.concatenate_stream` | any    | no                  | yes                      | manual                             |
+| :meth:`b2sdk.v2.Bucket.concatenate_stream` | any    | no                  | yes                      | manual                             |
 +--------------------------------------------+--------+---------------------+--------------------------+------------------------------------+
-| :meth:`b2sdk.v1.Bucket.create_file`        | any    | yes                 | no                       | automatic                          |
+| :meth:`b2sdk.v2.Bucket.create_file`        | any    | yes                 | no                       | automatic                          |
 +--------------------------------------------+--------+---------------------+--------------------------+------------------------------------+
-| :meth:`b2sdk.v1.Bucket.create_file_stream` | any    | yes                 | yes                      | manual                             |
+| :meth:`b2sdk.v2.Bucket.create_file_stream` | any    | yes                 | yes                      | manual                             |
 +--------------------------------------------+--------+---------------------+--------------------------+------------------------------------+
 
 Range overlap
@@ -57,9 +57,9 @@ Please see :ref:`here <continuation>`
 Concatenate files
 *****************
 
-:meth:`b2sdk.v1.Bucket.concatenate` accepts an iterable of upload sources (either local or remote). It can be used to glue remote files together, back-to-back, into a new file.
+:meth:`b2sdk.v2.Bucket.concatenate` accepts an iterable of upload sources (either local or remote). It can be used to glue remote files together, back-to-back, into a new file.
 
-:meth:`b2sdk.v1.Bucket.concatenate_stream` does not create and validate a plan before starting the transfer, so it can be used to process a large input iterator, at a cost of limited automated continuation. 
+:meth:`b2sdk.v2.Bucket.concatenate_stream` does not create and validate a plan before starting the transfer, so it can be used to process a large input iterator, at a cost of limited automated continuation.
 
 
 Concatenate files of known size
@@ -79,15 +79,15 @@ Concatenate files of known size
 
 If one of remote source has length smaller than :term:`absoluteMinimumPartSize` then it cannot be copied into large file part. Such remote source would be downloaded and concatenated locally with local source or with other downloaded remote source.
 
-Please note that this method only allows checksum verification for local upload sources. Checksum verification for remote sources is available only when local copy is available. In such case :meth:`b2sdk.v1.Bucket.create_file` can be used with overalapping ranges in input.
+Please note that this method only allows checksum verification for local upload sources. Checksum verification for remote sources is available only when local copy is available. In such case :meth:`b2sdk.v2.Bucket.create_file` can be used with overalapping ranges in input.
 
-For more information about ``concatenate`` please see :meth:`b2sdk.v1.Bucket.concatenate` and :class:`b2sdk.v1.CopySource`.
+For more information about ``concatenate`` please see :meth:`b2sdk.v2.Bucket.concatenate` and :class:`b2sdk.v2.CopySource`.
 
 
 Concatenate files of known size (streamed version)
 ==================================================
 
-:meth:`b2sdk.v1.Bucket.concatenate` accepts an iterable of upload sources (either local or remote). The operation would not be planned ahead so it supports very large output objects, but continuation is only possible for local only sources and provided unfinished large file id. See more about continuation in :meth:`b2sdk.v1.Bucket.create_file` paragraph about continuation.
+:meth:`b2sdk.v2.Bucket.concatenate` accepts an iterable of upload sources (either local or remote). The operation would not be planned ahead so it supports very large output objects, but continuation is only possible for local only sources and provided unfinished large file id. See more about continuation in :meth:`b2sdk.v2.Bucket.create_file` paragraph about continuation.
 
 .. code-block:: python
 
@@ -118,7 +118,7 @@ Using methods described below an object can be created from both local and remot
 Update a file efficiently
 ====================================
 
-:meth:`b2sdk.v1.Bucket.create_file` accepts an iterable which *can contain overlapping destination ranges*.
+:meth:`b2sdk.v2.Bucket.create_file` accepts an iterable which *can contain overlapping destination ranges*.
 
 .. note::
   Following examples *create* new file - data in bucket is immutable, but **b2sdk** can create a new file version with the same name and updated content
@@ -150,9 +150,9 @@ The assumption here is that the file has been appended to since it was last uplo
     >>> bucket.create_file(input_sources, remote_name, file_info)
     <b2sdk.file_version.FileVersionInfo at 0x7fc8cd560552>
 
-`LocalUploadSource` has the size determined automatically in this case. This is more efficient than :meth:`b2sdk.v1.Bucket.concatenate`, as it can use the overlapping ranges when a remote part is smaller than :term:`absoluteMinimumPartSize` to prevent downloading a range (when concatenating, local source would have destination offset at the end of remote source)
+`LocalUploadSource` has the size determined automatically in this case. This is more efficient than :meth:`b2sdk.v2.Bucket.concatenate`, as it can use the overlapping ranges when a remote part is smaller than :term:`absoluteMinimumPartSize` to prevent downloading a range (when concatenating, local source would have destination offset at the end of remote source)
 
-For more information see :meth:`b2sdk.v1.Bucket.create_file`.
+For more information see :meth:`b2sdk.v2.Bucket.create_file`.
 
 
 Change the middle of the remote file
@@ -179,9 +179,9 @@ Change the middle of the remote file
     >>> bucket.create_file(input_sources, remote_name, file_info)
     <b2sdk.file_version.FileVersionInfo at 0x7fc8cd560552>
 
-`LocalUploadSource` has the size determined automatically in this case. This is more efficient than :meth:`b2sdk.v1.Bucket.concatenate`, as it can use the overlapping ranges when a remote part is smaller than :term:`absoluteMinimumPartSize` to prevent downloading a range.
+`LocalUploadSource` has the size determined automatically in this case. This is more efficient than :meth:`b2sdk.v2.Bucket.concatenate`, as it can use the overlapping ranges when a remote part is smaller than :term:`absoluteMinimumPartSize` to prevent downloading a range.
 
-For more information see :meth:`b2sdk.v1.Bucket.create_file`.
+For more information see :meth:`b2sdk.v2.Bucket.create_file`.
 
 
 Synthetize a file from local and remote parts
@@ -193,7 +193,7 @@ This is useful for expert usage patterns such as:
  - mostly-server-side cutting and gluing uncompressed media files such as `wav` and `avi` with rewriting of file headers
  - various deduplicated backup scenarios
 
-Please note that :meth:`b2sdk.v1.Bucket.create_file_stream` accepts **an ordered iterable** which *can contain overlapping ranges*, so the operation does not need to be planned ahead, but can be streamed, which supports very large output objects.
+Please note that :meth:`b2sdk.v2.Bucket.create_file_stream` accepts **an ordered iterable** which *can contain overlapping ranges*, so the operation does not need to be planned ahead, but can be streamed, which supports very large output objects.
 
 Scenarios such as below are then possible:
 
@@ -239,19 +239,19 @@ Scenarios such as below are then possible:
     <b2sdk.file_version.FileVersionInfo at 0x7fc8cd560552>
 
 
-In such case, if the sizes allow for it (there would be no parts smaller than :term:`absoluteMinimumPartSize`), the only uploaded part will be `C-D`. Otherwise, more data will be uploaded, but the data transfer will be reduced in most cases. :meth:`b2sdk.v1.Bucket.create_file` does not guarantee that outbound transfer usage would be optimal, it uses a simple greedy algorithm with as small look-aheads as possible.
+In such case, if the sizes allow for it (there would be no parts smaller than :term:`absoluteMinimumPartSize`), the only uploaded part will be `C-D`. Otherwise, more data will be uploaded, but the data transfer will be reduced in most cases. :meth:`b2sdk.v2.Bucket.create_file` does not guarantee that outbound transfer usage would be optimal, it uses a simple greedy algorithm with as small look-aheads as possible.
 
-For more information see :meth:`b2sdk.v1.Bucket.create_file`.
+For more information see :meth:`b2sdk.v2.Bucket.create_file`.
 
 Encryption
 ----------
 
-Even if files `A-C` and `D-G` are encrypted using `SSE-C` with different keys, they can still be used in a single :meth:`b2sdk.v1.Bucket.create_file` call, because :class:`b2sdk.v1.CopySource` accepts an optional :class:`b2sdk.v1.EncryptionSetting`.
+Even if files `A-C` and `D-G` are encrypted using `SSE-C` with different keys, they can still be used in a single :meth:`b2sdk.v2.Bucket.create_file` call, because :class:`b2sdk.v2.CopySource` accepts an optional :class:`b2sdk.v2.EncryptionSetting`.
 
 Prioritize remote or local sources
 ----------------------------------
 
-:meth:`b2sdk.v1.Bucket.create_file` and :meth:`b2sdk.v1.Bucket.create_file_stream` support source/origin prioritization, so that planner would know which sources should be used for overlapping ranges. Supported values are: `local`, `remote` and `local_verification`.
+:meth:`b2sdk.v2.Bucket.create_file` and :meth:`b2sdk.v2.Bucket.create_file_stream` support source/origin prioritization, so that planner would know which sources should be used for overlapping ranges. Supported values are: `local`, `remote` and `local_verification`.
 
 .. code-block::
 
@@ -324,7 +324,7 @@ If that is not available, ``large_file_id`` can be extracted via callback during
 Continuation of create/concantenate
 ===================================
 
-:meth:`b2sdk.v1.Bucket.create_file` supports automatic continuation or manual continuation. :meth:`b2sdk.v1.Bucket.create_file_stream` supports only manual continuation for local-only inputs. The situation looks the same for :meth:`b2sdk.v1.Bucket.concatenate` and :meth:`b2sdk.v1.Bucket.concatenate_stream` (streamed version supports only manual continuation of local sources). Also :meth:`b2sdk.v1.Bucket.upload` and :meth:`b2sdk.v2.Bucket.copy` support both automatic and manual continuation.
+:meth:`b2sdk.v2.Bucket.create_file` supports automatic continuation or manual continuation. :meth:`b2sdk.v2.Bucket.create_file_stream` supports only manual continuation for local-only inputs. The situation looks the same for :meth:`b2sdk.v2.Bucket.concatenate` and :meth:`b2sdk.v2.Bucket.concatenate_stream` (streamed version supports only manual continuation of local sources). Also :meth:`b2sdk.v2.Bucket.upload` and :meth:`b2sdk.v2.Bucket.copy` support both automatic and manual continuation.
 
 Manual continuation
 -------------------
@@ -353,7 +353,7 @@ Manual continuation (streamed version)
     >>> large_file_id = storage.query({'name': remote_name})[0]['large_file_id']
     >>> bucket.create_file_stream(input_sources, remote_name, file_info, large_file_id=large_file_id)
 
-Streams that contains remote sources cannot be continued with :meth:`b2sdk.v1.Bucket.create_file` - internally :meth:`b2sdk.v1.Bucket.create_file` stores plan information in file info for such inputs, and verifies it before any copy/upload and :meth:`b2sdk.v1.Bucket.create_file_stream` cannot store this information. Local source only inputs can be safely continued with :meth:`b2sdk.v1.Bucket.create_file` in auto continue mode or manual continue mode (because plan information is not stored in file info in such case).
+Streams that contains remote sources cannot be continued with :meth:`b2sdk.v2.Bucket.create_file` - internally :meth:`b2sdk.v2.Bucket.create_file` stores plan information in file info for such inputs, and verifies it before any copy/upload and :meth:`b2sdk.v2.Bucket.create_file_stream` cannot store this information. Local source only inputs can be safely continued with :meth:`b2sdk.v2.Bucket.create_file` in auto continue mode or manual continue mode (because plan information is not stored in file info in such case).
 
 Auto continuation
 -----------------
@@ -362,9 +362,9 @@ Auto continuation
 
     >>> bucket.create_file(input_sources, remote_name, file_info)
 
-For local source only input, :meth:`b2sdk.v1.Bucket.create_file` would try to find matching unfinished large file. It will verify uploaded parts checksums with local sources - the most completed, having all uploaded parts matched candidate would be automatically selected as file to continue. If there is no matching candidate (even if there are unfinished files for the same file name) new large file would be started.
+For local source only input, :meth:`b2sdk.v2.Bucket.create_file` would try to find matching unfinished large file. It will verify uploaded parts checksums with local sources - the most completed, having all uploaded parts matched candidate would be automatically selected as file to continue. If there is no matching candidate (even if there are unfinished files for the same file name) new large file would be started.
 
-In other cases plan information would be generated and :meth:`b2sdk.v1.Bucket.create_file` would try to find unfinished large file with matching plan info in its file info. If there is one or more such unfinished large files, :meth:`b2sdk.v1.Bucket.create_file` would verify checksums for all locally available parts and choose any matching candidate. If all candidates fails on uploaded parts checksums verification, process is interrupted and error raises. In such case corrupted unfinished large files should be cancelled manullay and :meth:`b2sdk.v1.Bucket.create_file` should be retried, or auto continuation should be turned off with `auto_continue=False`
+In other cases plan information would be generated and :meth:`b2sdk.v2.Bucket.create_file` would try to find unfinished large file with matching plan info in its file info. If there is one or more such unfinished large files, :meth:`b2sdk.v2.Bucket.create_file` would verify checksums for all locally available parts and choose any matching candidate. If all candidates fails on uploaded parts checksums verification, process is interrupted and error raises. In such case corrupted unfinished large files should be cancelled manullay and :meth:`b2sdk.v2.Bucket.create_file` should be retried, or auto continuation should be turned off with `auto_continue=False`
 
 
 No continuation

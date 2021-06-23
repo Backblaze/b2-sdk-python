@@ -5,12 +5,12 @@ AccountInfo
 ########################
 
 *AccountInfo* stores basic information about the account, such as *Application Key ID* and *Application Key*,
-in order to let :py:class:`b2sdk.v1.B2Api` perform authenticated requests.
+in order to let :py:class:`b2sdk.v2.B2Api` perform authenticated requests.
 
 There are two usable implementations provided by **b2sdk**:
 
- * :py:class:`b2sdk.v1.InMemoryAccountInfo` - a basic implementation with no persistence
- * :py:class:`b2sdk.v1.SqliteAccountInfo` - for console and GUI applications
+ * :py:class:`b2sdk.v2.InMemoryAccountInfo` - a basic implementation with no persistence
+ * :py:class:`b2sdk.v2.SqliteAccountInfo` - for console and GUI applications
 
 They both provide the full :ref:`AccountInfo interface <account_info_interface>`.
 
@@ -27,7 +27,7 @@ InMemoryAccountInfo
 
 *AccountInfo* with no persistence.
 
-.. autoclass:: b2sdk.v1.InMemoryAccountInfo()
+.. autoclass:: b2sdk.v2.InMemoryAccountInfo()
    :no-members:
 
    Implements all methods of :ref:`AccountInfo interface <account_info_interface>`.
@@ -46,7 +46,7 @@ InMemoryAccountInfo
 SqliteAccountInfo
 =================
 
-.. autoclass:: b2sdk.v1.SqliteAccountInfo()
+.. autoclass:: b2sdk.v2.SqliteAccountInfo()
    :inherited-members:
    :no-members:
    :special-members: __init__
@@ -73,16 +73,16 @@ SqliteAccountInfo
 Implementing your own
 *********************
 
-When building a server-side application or a web service, you might want to implement your own *AccountInfo* class backed by a database. In such case, you should inherit from :py:class:`b2sdk.v1.UrlPoolAccountInfo`, which has groundwork for url pool functionality). If you cannot use it, inherit directly from :py:class:`b2sdk.v1.AbstractAccountInfo`.
+When building a server-side application or a web service, you might want to implement your own *AccountInfo* class backed by a database. In such case, you should inherit from :py:class:`b2sdk.v2.UrlPoolAccountInfo`, which has groundwork for url pool functionality). If you cannot use it, inherit directly from :py:class:`b2sdk.v2.AbstractAccountInfo`.
 
 .. code-block:: python
 
-    >>> from b2sdk.v1 import UrlPoolAccountInfo
+    >>> from b2sdk.v2 import UrlPoolAccountInfo
     >>> class MyAccountInfo(UrlPoolAccountInfo):
             ...
 
 
-:py:class:`b2sdk.v1.AbstractAccountInfo` describes the interface, while :py:class:`b2sdk.v1.UrlPoolAccountInfo` and :py:class:`b2sdk.v1.UploadUrlPool` implement a part of the interface for in-memory upload token management.
+:py:class:`b2sdk.v2.AbstractAccountInfo` describes the interface, while :py:class:`b2sdk.v2.UrlPoolAccountInfo` and :py:class:`b2sdk.v2.UploadUrlPool` implement a part of the interface for in-memory upload token management.
 
 
 .. _account_info_interface:
@@ -90,7 +90,7 @@ When building a server-side application or a web service, you might want to impl
 AccountInfo interface
 =====================
 
-.. autoclass:: b2sdk.v1.AbstractAccountInfo()
+.. autoclass:: b2sdk.v2.AbstractAccountInfo()
    :inherited-members:
    :private-members:
    :exclude-members: _abc_cache, _abc_negative_cache, _abc_negative_cache_version, _abc_registry
@@ -99,7 +99,7 @@ AccountInfo interface
 AccountInfo helper classes
 ==========================
 
-.. autoclass:: b2sdk.v1.UrlPoolAccountInfo()
+.. autoclass:: b2sdk.v2.UrlPoolAccountInfo()
    :inherited-members:
    :no-members:
    :members: BUCKET_UPLOAD_POOL_CLASS, LARGE_FILE_UPLOAD_POOL_CLASS

@@ -1,15 +1,15 @@
 Enums
 ===============================================
 
-.. autoclass:: b2sdk.v1.MetadataDirectiveMode
+.. autoclass:: b2sdk.v2.MetadataDirectiveMode
    :inherited-members:
 
-.. autoclass:: b2sdk.v1.NewerFileSyncMode
+.. autoclass:: b2sdk.v2.NewerFileSyncMode
    :inherited-members:
 
-.. autoclass:: b2sdk.v1.CompareVersionMode
+.. autoclass:: b2sdk.v2.CompareVersionMode
    :inherited-members:
 
-.. autoclass:: b2sdk.v1.KeepOrDeleteMode
+.. autoclass:: b2sdk.v2.KeepOrDeleteMode
    :inherited-members:
 
