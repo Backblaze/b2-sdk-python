@@ -133,7 +133,7 @@ Update bucket info
 
     >>> bucket = b2_api.get_bucket_by_name(bucket_name)
     >>> bucket.update(bucket_type=new_bucket_type,
-                      default_server_side_encryption=EncryptionSetting(mode=EncryptionMode.SSE_B2))
+                      default_server_side_encryption=EncryptionSetting(mode=EncryptionMode.SSE_B2)).as_dict()
     {'accountId': '451862be08d0',
      'bucketId': '5485a1682662eb3e60980d10',
      'bucketInfo': {},
@@ -305,7 +305,7 @@ Get file metadata
 .. code-block:: python
 
     >>> file_id = '4_z5485a1682662eb3e60980d10_f113f963288e711a6_d20190404_m065910_c002_v0001095_t0044'
-    >>> b2_api.get_file_info(file_id)
+    >>> b2_api.get_file_info(file_id).as_dict()
     {'accountId': '451862be08d0',
      'action': 'upload',
      'bucketId': '5485a1682662eb3e60980d10',
@@ -323,12 +323,10 @@ Get file metadata
 Copy file
 =========
 
-Please switch to  :meth:`b2sdk.v2.Bucket.copy`.
-
 .. code-block:: python
 
     >>> file_id = '4_z5485a1682662eb3e60980d10_f118df9ba2c5131e8_d20190619_m065809_c002_v0001126_t0040'
-    >>> bucket.copy(file_id, 'f2_copy.txt')
+    >>> bucket.copy(file_id, 'f2_copy.txt').as_dict()
     {'accountId': '451862be08d0',
      'action': 'copy',
      'bucketId': '5485a1682662eb3e60980d10',
@@ -366,10 +364,10 @@ Delete file
 .. code-block:: python
 
     >>> file_id = '4_z5485a1682662eb3e60980d10_f113f963288e711a6_d20190404_m065910_c002_v0001095_t0044'
-    >>> file_info = b2_api.delete_file_version(file_id, 'dummy_new.pdf')
-    >>> print(file_info)
-    {'file_id': '4_z5485a1682662eb3e60980d10_f113f963288e711a6_d20190404_m065910_c002_v0001095_t0044',
-     'file_name': 'dummy_new.pdf'}
+    >>> file_info = b2_api.delete_file_version(file_id, 'dummy_new.pdf').as_dict()
+    {'action': 'delete',
+     'fileId': '4_z5485a1682662eb3e60980d10_f113f963288e711a6_d20190404_m065910_c002_v0001095_t0044',
+     'fileName': 'dummy_new.pdf'}
 
 
 Cancel large file uploads
@@ -378,7 +376,7 @@ Cancel large file uploads
 .. code-block:: python
 
     >>> bucket = b2_api.get_bucket_by_name(bucket_name)
-    >>> for file_version in bucket.list_unfinished_large_files():
-            bucket.cancel_large_file(file_version.file_id)
+    >>> for unfinished_file in bucket.list_unfinished_large_files():
+            b2_api.cancel_large_file(unfinished_file.file_id, unfinished_file.file_name)
 
 
