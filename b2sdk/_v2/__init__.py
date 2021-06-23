@@ -25,7 +25,7 @@ from b2sdk.raw_api import ALL_CAPABILITIES, REALM_URLS
 from b2sdk.encryption.setting import EncryptionSetting
 from b2sdk.encryption.setting import EncryptionSettingFactory
 from b2sdk.encryption.setting import EncryptionKey
-from b2sdk.encryption.setting import SSE_NONE, SSE_B2_AES
+from b2sdk.encryption.setting import SSE_NONE, SSE_B2_AES, UNKNOWN_KEY_ID
 from b2sdk.encryption.types import EncryptionAlgorithm
 from b2sdk.encryption.types import EncryptionMode
 from b2sdk.http_constants import SSE_C_KEY_ID_FILE_INFO_KEY_NAME
@@ -65,6 +65,9 @@ from b2sdk.utils import trace_call
 
 # data classes
 
+from b2sdk.application_key import ApplicationKey
+from b2sdk.application_key import BaseApplicationKey
+from b2sdk.application_key import FullApplicationKey
 from b2sdk.file_version import DownloadVersion
 from b2sdk.file_version import DownloadVersionFactory
 from b2sdk.file_version import FileIdAndName
@@ -109,7 +112,7 @@ from b2sdk.raw_simulator import RawSimulator
 # raw_api
 
 from b2sdk.raw_api import AbstractRawApi
-from b2sdk.raw_api import B2RawApi
+from b2sdk.raw_api import B2RawHTTPApi
 from b2sdk.raw_api import MetadataDirectiveMode
 
 # stream
@@ -198,6 +201,8 @@ from b2sdk.sync.encryption_provider import SERVER_DEFAULT_SYNC_ENCRYPTION_SETTIN
 # other
 
 from b2sdk.b2http import B2Http
+from b2sdk.api_config import B2HttpApiConfig
+from b2sdk.api_config import DEFAULT_HTTP_API_CONFIG
 from b2sdk.b2http import ClockSkewHook
 from b2sdk.b2http import HttpCallback
 from b2sdk.b2http import ResponseContextManager

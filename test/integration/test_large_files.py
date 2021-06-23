@@ -161,7 +161,7 @@ class BucketCleaner:
             else:
                 print('Trying to remove bucket:', bucket.name)
                 files_leftover = False
-                file_versions = bucket.ls(show_versions=True, recursive=True)
+                file_versions = bucket.ls(latest_only=False, recursive=True)
                 for file_version_info, _ in file_versions:
                     if file_version_info.file_retention:
                         if file_version_info.file_retention.mode == RetentionMode.GOVERNANCE:

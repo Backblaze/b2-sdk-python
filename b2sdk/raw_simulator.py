@@ -24,6 +24,7 @@ from .b2http import ResponseContextManager
 from .encryption.setting import EncryptionMode, EncryptionSetting
 from .exception import (
     BadJson,
+    BadRequest,
     BadUploadUrl,
     ChecksumMismatch,
     Conflict,
@@ -39,7 +40,7 @@ from .exception import (
     UnsatisfiableRange,
     SSECKeyError,
 )
-from .file_lock import BucketRetentionSetting, FileRetentionSetting, NO_RETENTION_BUCKET_SETTING, UNKNOWN_FILE_LOCK_CONFIGURATION, LegalHold
+from .file_lock import BucketRetentionSetting, FileRetentionSetting, NO_RETENTION_BUCKET_SETTING, LegalHold
 from .raw_api import AbstractRawApi, MetadataDirectiveMode, ALL_CAPABILITIES
 from .utils import (
     b2_url_decode,
@@ -89,10 +90,10 @@ class KeySimulator(object):
         return dict(
             accountId=self.account_id,
             bucketId=self.bucket_id_or_none,
-            applicationKey=self.key,
             applicationKeyId=self.application_key_id,
             capabilities=self.capabilities,
-            expirationTimestamp=self.expiration_timestamp_or_none,
+            expirationTimestamp=self.expiration_timestamp_or_none and
+            self.expiration_timestamp_or_none * 1000,
             keyName=self.name,
             namePrefix=self.name_prefix_or_none,
         )
@@ -285,6 +286,8 @@ class FileSimulator(object):
 
     def as_list_files_dict(self, account_auth_token):
         result = dict(
+            accountId=self.account_id,
+            bucketId=self.bucket.bucket_id,
             fileId=self.file_id,
             fileName=self.name,
             contentLength=len(self.data_bytes) if self.data_bytes is not None else 0,
@@ -326,7 +329,10 @@ class FileSimulator(object):
 
     def _file_retention_dict(self, account_auth_token):
         if not self.is_allowed_to_read_file_retention(account_auth_token):
-            return UNKNOWN_FILE_LOCK_CONFIGURATION
+            return {
+                'isClientAuthorizedToRead': False,
+                'value': None,
+            }
 
         file_lock_configuration = {'isClientAuthorizedToRead': True}
         if self.file_retention is None:
@@ -526,7 +532,7 @@ class BucketSimulator(object):
                 default_sse['value']['algorithm'
                                     ] = self.default_server_side_encryption.algorithm.value
         else:
-            default_sse['value'] = {'mode': EncryptionMode.UNKNOWN}
+            default_sse['value'] = {'mode': EncryptionMode.UNKNOWN.value}
 
         if self.is_allowed_to_read_bucket_retention(account_auth_token):
             file_lock_configuration = {
@@ -534,7 +540,7 @@ class BucketSimulator(object):
                 'value': {
                     'defaultRetention': {
                         'mode': self.default_retention.mode.value,
-                        'period': self.default_retention.period,
+                        'period': self.default_retention.period.as_dict() if self.default_retention.period else None,
                     },
                     'isFileLockEnabled': self.is_file_lock_enabled,
                 },
@@ -1000,11 +1006,11 @@ class BucketSimulator(object):
 
 class RawSimulator(AbstractRawApi):
     """
-    Implement the same interface as B2RawApi by simulating all of the
+    Implement the same interface as B2RawHTTPApi by simulating all of the
     calls and keeping state in memory.
 
     The intended use for this class is for unit tests that test things
-    built on top of B2RawApi.
+    built on top of B2RawHTTPApi.
     """
 
     BUCKET_SIMULATOR_CLASS = BucketSimulator
@@ -1028,7 +1034,7 @@ class RawSimulator(AbstractRawApi):
         ) + ')$'
     )  # yapf: disable
 
-    def __init__(self):
+    def __init__(self, b2_http=None):
         # Map from application_key_id to KeySimulator.
         # The entry for the master application key ID is for the master application
         # key for the account, and the entries with non-master application keys
@@ -1307,12 +1313,13 @@ class RawSimulator(AbstractRawApi):
 
     def delete_key(self, api_url, account_auth_token, application_key_id):
         assert api_url == self.API_URL
-        return dict(
-            accountId='accountId',
-            applicationKeyId=application_key_id,
-            keyName='keyName',
-            capabilities=['listBuckets', 'readBuckets', 'writeBuckets']
-        )
+        key_sim = self.key_id_to_key.pop(application_key_id, None)
+        if key_sim is None:
+            raise BadRequest(
+                'application key does not exist: %s' % (application_key_id,),
+                'bad_request',
+            )
+        return key_sim.as_key()
 
     def finish_large_file(self, api_url, account_auth_token, file_id, part_sha1_array):
         bucket_id = self.file_id_to_bucket_id[file_id]
@@ -1539,8 +1546,26 @@ class RawSimulator(AbstractRawApi):
         start_application_key_id=None
     ):
         self._assert_account_auth(api_url, account_auth_token, account_id, 'listKeys')
-        keys = map(lambda key: key.as_key(), self.all_application_keys)
-        return dict(keys=keys, nextKeyId=None)
+        next_application_key_id = None
+        all_keys_sorted = sorted(self.all_application_keys, key=lambda key: key.application_key_id)
+        if start_application_key_id is None:
+            keys = all_keys_sorted[:max_key_count]
+            if max_key_count < len(all_keys_sorted):
+                next_application_key_id = all_keys_sorted[max_key_count].application_key_id
+        else:
+            keys = []
+            got_already = 0
+            for ind, key in enumerate(all_keys_sorted):
+                if key.application_key_id >= start_application_key_id:
+                    keys.append(key)
+                    got_already += 1
+                    if got_already == max_key_count:
+                        if ind < len(all_keys_sorted) - 1:
+                            next_application_key_id = all_keys_sorted[ind + 1].application_key_id
+                        break
+
+        key_dicts = map(lambda key: key.as_key(), keys)
+        return dict(keys=list(key_dicts), nextApplicationKeyId=next_application_key_id)
 
     def list_parts(self, api_url, account_auth_token, file_id, start_part_number, max_part_count):
         bucket_id = self.file_id_to_bucket_id[file_id]

@@ -366,7 +366,7 @@ class B2Folder(AbstractFolder):
     def get_file_versions(self):
         for file_version, _ in self.bucket.ls(
             self.folder_name,
-            show_versions=True,
+            latest_only=False,
             recursive=True,
         ):
             yield file_version

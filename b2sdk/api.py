@@ -8,13 +8,17 @@
 #
 ######################################################################
 
-from typing import Any, Dict, Optional, Tuple
+from typing import Optional, Tuple, List, Generator
 
+from .account_info.abstract import AbstractAccountInfo
+from .api_config import B2HttpApiConfig, DEFAULT_HTTP_API_CONFIG
+from .application_key import ApplicationKey, BaseApplicationKey, FullApplicationKey
+from .cache import AbstractCache
 from .bucket import Bucket, BucketFactory
 from .encryption.setting import EncryptionSetting
 from .exception import NonExistentBucket, RestrictedBucket
 from .file_lock import FileRetentionSetting, LegalHold
-from .file_version import DownloadVersionFactory, FileIdAndName, FileVersionFactory
+from .file_version import DownloadVersionFactory, FileIdAndName, FileVersion, FileVersionFactory
 from .large_file.services import LargeFileServices
 from .raw_api import API_VERSION
 from .progress import AbstractProgressListener
@@ -68,7 +72,7 @@ class B2Api(metaclass=B2TraceMeta):
     """
     Provide file-level access to B2 services.
 
-    While :class:`b2sdk.v1.B2RawApi` provides direct access to the B2 web APIs, this
+    While :class:`b2sdk.v1.B2RawHTTPApi` provides direct access to the B2 web APIs, this
     class handles several things that simplify the task of uploading
     and downloading files:
 
@@ -89,42 +93,32 @@ class B2Api(metaclass=B2TraceMeta):
     SESSION_CLASS = staticmethod(B2Session)
     FILE_VERSION_FACTORY_CLASS = staticmethod(FileVersionFactory)
     DOWNLOAD_VERSION_FACTORY_CLASS = staticmethod(DownloadVersionFactory)
+    DEFAULT_LIST_KEY_COUNT = 1000
 
     def __init__(
         self,
-        account_info=None,
-        cache=None,
-        raw_api=None,
-        max_upload_workers=10,
-        max_copy_workers=10
+        account_info: Optional[AbstractAccountInfo] = None,
+        cache: Optional[AbstractCache] = None,
+        max_upload_workers: int = 10,
+        max_copy_workers: int = 10,
+        api_config: B2HttpApiConfig = DEFAULT_HTTP_API_CONFIG,
     ):
         """
         Initialize the API using the given account info.
 
-        :param account_info: an instance of :class:`~b2sdk.v1.UrlPoolAccountInfo`,
-                      or any custom class derived from
-                      :class:`~b2sdk.v1.AbstractAccountInfo`
-                      To learn more about Account Info objects, see here
+        :param account_info: To learn more about Account Info objects, see here
                       :class:`~b2sdk.v1.SqliteAccountInfo`
 
-        :param cache: an instance of the one of the following classes:
-                      :class:`~b2sdk.cache.DummyCache`, :class:`~b2sdk.cache.InMemoryCache`,
-                      :class:`~b2sdk.cache.AuthInfoCache`,
-                      or any custom class derived from :class:`~b2sdk.cache.AbstractCache`
-                      It is used by B2Api to cache the mapping between bucket name and bucket ids.
+        :param cache: It is used by B2Api to cache the mapping between bucket name and bucket ids.
                       default is :class:`~b2sdk.cache.DummyCache`
 
-        :param raw_api: an instance of one of the following classes:
-                        :class:`~b2sdk.raw_api.B2RawApi`, :class:`~b2sdk.raw_simulator.RawSimulator`,
-                        or any custom class derived from :class:`~b2sdk.raw_api.AbstractRawApi`
-                        It makes network-less unit testing simple by using :class:`~b2sdk.raw_simulator.RawSimulator`,
-                        in tests and :class:`~b2sdk.raw_api.B2RawApi` in production.
-                        default is :class:`~b2sdk.raw_api.B2RawApi`
-
-        :param int max_upload_workers: a number of upload threads, default is 10
-        :param int max_copy_workers: a number of copy threads, default is 10
+        :param max_upload_workers: a number of upload threads
+        :param max_copy_workers: a number of copy threads
+        :param api_config:
         """
-        self.session = self.SESSION_CLASS(account_info=account_info, cache=cache, raw_api=raw_api)
+        self.session = self.SESSION_CLASS(
+            account_info=account_info, cache=cache, api_config=api_config
+        )
         self.file_version_factory = self.FILE_VERSION_FACTORY_CLASS(self)
         self.download_version_factory = self.DOWNLOAD_VERSION_FACTORY_CLASS(self)
         self.services = Services(
@@ -145,8 +139,8 @@ class B2Api(metaclass=B2TraceMeta):
     def raw_api(self):
         """
         .. warning::
-            :class:`~b2sdk.raw_api.B2RawApi` attribute is deprecated.
-            :class:`~b2sdk.session.B2Session` expose all :class:`~b2sdk.raw_api.B2RawApi` methods now."""
+            :class:`~b2sdk.raw_api.B2RawHTTPApi` attribute is deprecated.
+            :class:`~b2sdk.session.B2Session` expose all :class:`~b2sdk.raw_api.B2RawHTTPApi` methods now."""
         return self.session.raw_api
 
     def authorize_automatically(self):
@@ -424,20 +418,20 @@ class B2Api(metaclass=B2TraceMeta):
     # keys
     def create_key(
         self,
-        capabilities,
-        key_name,
-        valid_duration_seconds=None,
-        bucket_id=None,
-        name_prefix=None,
+        capabilities: List[str],
+        key_name: str,
+        valid_duration_seconds: Optional[int] = None,
+        bucket_id: Optional[str] = None,
+        name_prefix: Optional[str] = None,
     ):
         """
         Create a new :term:`application key`.
 
-        :param list capabilities: a list of capabilities
-        :param str key_name: a name of a key
-        :param int,None valid_duration_seconds: key auto-expire time after it is created, in seconds, or ``None`` to not expire
-        :param str,None bucket_id: a bucket ID to restrict the key to, or ``None`` to not restrict
-        :param str,None name_prefix: a remote filename prefix to restrict the key to or ``None`` to not restrict
+        :param capabilities: a list of capabilities
+        :param key_name: a name of a key
+        :param valid_duration_seconds: key auto-expire time after it is created, in seconds, or ``None`` to not expire
+        :param bucket_id: a bucket ID to restrict the key to, or ``None`` to not restrict
+        :param name_prefix: a remote filename prefix to restrict the key to or ``None`` to not restrict
         """
         account_id = self.account_info.get_account_id()
 
@@ -453,43 +447,60 @@ class B2Api(metaclass=B2TraceMeta):
         assert set(response['capabilities']) == set(capabilities)
         assert response['keyName'] == key_name
 
-        return response
+        return FullApplicationKey.from_create_response(response)
 
-    def delete_key(self, application_key_id):
+    def delete_key(self, application_key: BaseApplicationKey):
         """
         Delete :term:`application key`.
 
-        :param str application_key_id: an :term:`application key ID`
+        :param application_key: an :term:`application key`
+        """
+
+        return self.delete_key_by_id(application_key.id_)
+
+    def delete_key_by_id(self, application_key_id: str):
+        """
+        Delete :term:`application key`.
+
+        :param application_key_id: an :term:`application key ID`
         """
 
         response = self.session.delete_key(application_key_id=application_key_id)
-        return response
+        return ApplicationKey.from_api_response(response)
 
-    def list_keys(self, start_application_key_id=None):
+    def list_keys(self, start_application_key_id: Optional[str] = None
+                 ) -> Generator[ApplicationKey, None, None]:
         """
-        List application keys.
+        List application keys. Lazily perform requests to B2 cloud and return all keys.
 
-        :param str,None start_application_key_id: an :term:`application key ID` to start from or ``None`` to start from the beginning
+        :param start_application_key_id: an :term:`application key ID` to start from or ``None`` to start from the beginning
         """
         account_id = self.account_info.get_account_id()
 
-        return self.session.list_keys(
-            account_id, max_key_count=1000, start_application_key_id=start_application_key_id
-        )
+        while True:
+            response = self.session.list_keys(
+                account_id,
+                max_key_count=self.DEFAULT_LIST_KEY_COUNT,
+                start_application_key_id=start_application_key_id,
+            )
+            for entry in response['keys']:
+                yield ApplicationKey.from_api_response(entry)
+
+            next_application_key_id = response['nextApplicationKeyId']
+            if next_application_key_id is None:
+                return
+            start_application_key_id = next_application_key_id
 
     # other
-    def get_file_info(self, file_id: str) -> Dict[str, Any]:
+    def get_file_info(self, file_id: str) -> FileVersion:
         """
-        Legacy interface which just returns whatever remote API returns.
-
-        .. todo::
-            get_file_info() should return a File with .delete(), copy(), rename(), read() and so on
+        Gets info about file version.
 
         :param str file_id: the id of the file who's info will be retrieved.
-        :return: The parsed response
-        :rtype: dict
         """
-        return self.session.get_file_info_by_id(file_id)
+        return self.file_version_factory.from_api_response(
+            self.session.get_file_info_by_id(file_id)
+        )
 
     def check_bucket_name_restrictions(self, bucket_name: str):
         """

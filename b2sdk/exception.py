@@ -66,6 +66,10 @@ class B2Error(Exception, metaclass=ABCMeta):
         return False
 
 
+class InvalidUserInput(B2Error):
+    pass
+
+
 class B2SimpleError(B2Error, metaclass=ABCMeta):
     """
     A B2Error with a message prefix.
@@ -476,13 +480,17 @@ class RetentionWriteError(AccessDenied):
                "bypassGovernance=true parameter missing"
 
 
-class WrongEncryptionModeForBucketDefault(B2Error):
+class WrongEncryptionModeForBucketDefault(InvalidUserInput):
     def __init__(self, encryption_mode):
         super().__init__()
         self.encryption_mode = encryption_mode
 
     def __str__(self):
         return "%s cannot be used as default for a bucket." % (self.encryption_mode,)
+
+
+class CopyArgumentsMismatch(InvalidUserInput):
+    pass
 
 
 def interpret_b2_error(

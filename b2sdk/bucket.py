@@ -115,37 +115,39 @@ class Bucket(metaclass=B2TraceMeta):
 
     def update(
         self,
-        bucket_type=None,
-        bucket_info=None,
-        cors_rules=None,
-        lifecycle_rules=None,
-        if_revision_is=None,
+        bucket_type: Optional[str] = None,
+        bucket_info: Optional[dict] = None,
+        cors_rules: Optional[dict] = None,
+        lifecycle_rules: Optional[dict] = None,
+        if_revision_is: Optional[int] = None,
         default_server_side_encryption: Optional[EncryptionSetting] = None,
         default_retention: Optional[BucketRetentionSetting] = None,
     ):
         """
         Update various bucket parameters.
-        For legacy reasons in apiver v1 it returns whatever server returned on b2_update_bucket call, v2 will change that.
 
-        :param str bucket_type: a bucket type
-        :param dict bucket_info: an info to store with a bucket
-        :param dict cors_rules: CORS rules to store with a bucket
-        :param dict lifecycle_rules: lifecycle rules to store with a bucket
-        :param int if_revision_is: revision number, update the info **only if** *revision* equals to *if_revision_is*
-        :param b2sdk.v1.EncryptionSetting default_server_side_encryption: default server side encryption settings (``None`` if unknown)
-        :param b2sdk.v1.BucketRetentionSetting default_retention: bucket default retention setting
+        :param bucket_type: a bucket type, e.g. ``allPrivate`` or ``allPublic``
+        :param bucket_info: an info to store with a bucket
+        :param cors_rules: CORS rules to store with a bucket
+        :param lifecycle_rules: lifecycle rules to store with a bucket
+        :param if_revision_is: revision number, update the info **only if** *revision* equals to *if_revision_is*
+        :param default_server_side_encryption: default server side encryption settings (``None`` if unknown)
+        :param default_retention: bucket default retention setting
         """
         account_id = self.api.account_info.get_account_id()
-        return self.api.session.update_bucket(
-            account_id,
-            self.id_,
-            bucket_type=bucket_type,
-            bucket_info=bucket_info,
-            cors_rules=cors_rules,
-            lifecycle_rules=lifecycle_rules,
-            if_revision_is=if_revision_is,
-            default_server_side_encryption=default_server_side_encryption,
-            default_retention=default_retention,
+        return self.api.BUCKET_FACTORY_CLASS.from_api_bucket_dict(
+            self.api,
+            self.api.session.update_bucket(
+                account_id,
+                self.id_,
+                bucket_type=bucket_type,
+                bucket_info=bucket_info,
+                cors_rules=cors_rules,
+                lifecycle_rules=lifecycle_rules,
+                if_revision_is=if_revision_is,
+                default_server_side_encryption=default_server_side_encryption,
+                default_retention=default_retention,
+            )
         )
 
     def cancel_large_file(self, file_id):
@@ -215,7 +217,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param str file_id: the id of the file who's info will be retrieved.
         :rtype: generator[b2sdk.v1.FileVersionInfo]
         """
-        return self.api.file_version_factory.from_api_response(self.api.get_file_info(file_id))
+        return self.api.get_file_info(file_id)
 
     def get_file_info_by_name(self, file_name: str) -> DownloadVersion:
         """
@@ -283,7 +285,13 @@ class Bucket(metaclass=B2TraceMeta):
             if start_file_name is None:
                 return
 
-    def ls(self, folder_to_list='', show_versions=False, recursive=False, fetch_count=10000):
+    def ls(
+        self,
+        folder_to_list: str = '',
+        latest_only: bool = True,
+        recursive: bool = False,
+        fetch_count: Optional[int] = 10000
+    ):
         """
         Pretend that folders exist and yields the information about the files in a folder.
 
@@ -295,12 +303,12 @@ class Bucket(metaclass=B2TraceMeta):
         When the `recursive` flag is set, lists all of the files in the given
         folder, and all of its sub-folders.
 
-        :param str folder_to_list: the name of the folder to list; must not start with "/".
+        :param folder_to_list: the name of the folder to list; must not start with "/".
                                Empty string means top-level folder
-        :param bool show_versions: when ``True`` returns info about all versions of a file,
-                              when ``False``, just returns info about the most recent versions
-        :param bool recursive: if ``True``, list folders recursively
-        :param int,None fetch_count: how many entries to return or ``None`` to use the default. Acceptable values: 1 - 10000
+        :param latest_only: when ``False`` returns info about all versions of a file,
+                              when ``True``, just returns info about the most recent versions
+        :param recursive: if ``True``, list folders recursively
+        :param fetch_count: how many entries to return or ``None`` to use the default. Acceptable values: 1 - 10000
         :rtype: generator[tuple[b2sdk.v1.FileVersionInfo, str]]
         :returns: generator of (file_version, folder_name) tuples
 
@@ -326,12 +334,12 @@ class Bucket(metaclass=B2TraceMeta):
         start_file_id = None
         session = self.api.session
         while True:
-            if show_versions:
+            if latest_only:
+                response = session.list_file_names(self.id_, start_file_name, fetch_count, prefix)
+            else:
                 response = session.list_file_versions(
                     self.id_, start_file_name, start_file_id, fetch_count, prefix
                 )
-            else:
-                response = session.list_file_names(self.id_, start_file_name, fetch_count, prefix)
             for entry in response['files']:
                 file_version = self.api.file_version_factory.from_api_response(entry)
                 if not file_version.file_name.startswith(prefix):

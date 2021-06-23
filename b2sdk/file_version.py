@@ -8,16 +8,14 @@
 #
 ######################################################################
 
-import email.utils as email_utils
-from datetime import datetime
-from typing import Dict, Optional, Union
+from typing import Dict, Optional, Union, TYPE_CHECKING
 
 from .encryption.setting import EncryptionSetting, EncryptionSettingFactory
 from .http_constants import FILE_INFO_HEADER_PREFIX_LOWER, SRC_LAST_MODIFIED_MILLIS
 from .file_lock import FileRetentionSetting, LegalHold, NO_RETENTION_FILE_SETTING
 from .utils.range_ import Range
 
-if False:
+if TYPE_CHECKING:
     from .api import B2Api
 
 
@@ -79,8 +77,8 @@ class BaseFileVersion:
             'fileId': self.id_,
             'fileName': self.file_name,
             'fileInfo': self.file_info,
-            'legalHold': self.legal_hold.to_dict_repr() if self.legal_hold is not None else None,
             'serverSideEncryption': self.server_side_encryption.as_dict(),
+            'legalHold': self.legal_hold.value,
             'fileRetention': self.file_retention.as_dict(),
         }
 
@@ -129,6 +127,8 @@ class FileVersion(BaseFileVersion):
     """
 
     __slots__ = [
+        'account_id',
+        'bucket_id',
         'content_md5',
         'action',
     ]
@@ -143,12 +143,16 @@ class FileVersion(BaseFileVersion):
         content_sha1: Optional[str],
         file_info: Dict[str, str],
         upload_timestamp: int,
+        account_id: str,
+        bucket_id: str,
         action: str,
         content_md5: Optional[str],
         server_side_encryption: EncryptionSetting,
         file_retention: FileRetentionSetting = NO_RETENTION_FILE_SETTING,
         legal_hold: LegalHold = LegalHold.UNSET,
     ):
+        self.account_id = account_id
+        self.bucket_id = bucket_id
         self.content_md5 = content_md5
         self.action = action
 
@@ -168,6 +172,8 @@ class FileVersion(BaseFileVersion):
 
     def as_dict(self):
         result = super().as_dict()
+        result['accountId'] = self.account_id
+        result['bucketId'] = self.bucket_id
 
         if self.action is not None:
             result['action'] = self.action
@@ -186,8 +192,8 @@ class DownloadVersion(BaseFileVersion):
         'content_disposition',
         'content_length',
         'content_language',
-        'expires',
-        'cache_control',
+        '_expires',
+        '_cache_control',
         'content_encoding',
     ]
 
@@ -206,8 +212,8 @@ class DownloadVersion(BaseFileVersion):
         content_disposition: Optional[str],
         content_length: int,
         content_language: Optional[str],
-        expires: Optional[datetime],
-        cache_control: Optional[str],
+        expires,
+        cache_control,
         content_encoding: Optional[str],
         file_retention: FileRetentionSetting = NO_RETENTION_FILE_SETTING,
         legal_hold: LegalHold = LegalHold.UNSET,
@@ -216,8 +222,8 @@ class DownloadVersion(BaseFileVersion):
         self.content_disposition = content_disposition
         self.content_length = content_length
         self.content_language = content_language
-        self.expires = expires
-        self.cache_control = cache_control
+        self._expires = expires  # TODO: parse the string representation of this timestamp to datetime in DownloadVersionFactory
+        self._cache_control = cache_control  # TODO: parse the string representation of this mapping to dict in DownloadVersionFactory
         self.content_encoding = content_encoding
 
         super().__init__(
@@ -306,6 +312,8 @@ class FileVersionFactory(object):
             content_sha1,
             file_info,
             upload_timestamp,
+            file_version_dict['accountId'],
+            file_version_dict['bucketId'],
             action,
             content_md5,
             server_side_encryption,
@@ -342,11 +350,6 @@ class DownloadVersionFactory(object):
 
     def from_response_headers(self, headers):
         file_info = self.file_info_from_headers(headers)
-        if 'Expires' not in headers:
-            expires = None
-        else:
-            expires = datetime(*email_utils.parsedate(headers['expires']))
-
         if 'Content-Range' in headers:
             range_, size = self.range_and_size_from_header(headers['Content-Range'])
             content_length = int(headers['Content-Length'])
@@ -368,7 +371,7 @@ class DownloadVersionFactory(object):
             content_disposition=headers.get('Content-Disposition'),
             content_length=content_length,
             content_language=headers.get('Content-Language'),
-            expires=expires,
+            expires=headers.get('Expires'),
             cache_control=headers.get('Cache-Control'),
             content_encoding=headers.get('Content-Encoding'),
             file_retention=FileRetentionSetting.from_response_headers(headers),

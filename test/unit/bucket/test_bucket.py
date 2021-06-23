@@ -15,7 +15,7 @@ import unittest.mock as mock
 
 import pytest
 
-from ..test_base import TestBase
+from ..test_base import TestBase, create_key
 
 import apiver_deps
 from apiver_deps_exception import (
@@ -33,9 +33,13 @@ from apiver_deps_exception import (
 )
 if apiver_deps.V <= 1:
     from apiver_deps import DownloadDestBytes, PreSeekedDownloadDest
+    from apiver_deps import FileVersionInfo as VFileVersionInfo
 else:
     DownloadDestBytes, PreSeekedDownloadDest = None, None  # these classes are not present, thus not needed, in v2
+    from apiver_deps import FileVersion as VFileVersionInfo
 from apiver_deps import B2Api
+from apiver_deps import B2HttpApiConfig
+from apiver_deps import Bucket
 from apiver_deps import DownloadedFile
 from apiver_deps import DownloadVersion
 from apiver_deps import LargeFileUploadState
@@ -50,11 +54,8 @@ from apiver_deps import UploadSourceBytes
 from apiver_deps import hex_sha1_of_bytes, TempDir
 from apiver_deps import EncryptionAlgorithm, EncryptionSetting, EncryptionMode, EncryptionKey, SSE_NONE, SSE_B2_AES
 from apiver_deps import CopySource, UploadSourceLocalFile, WriteIntent
-from apiver_deps import FileRetentionSetting, LegalHold, RetentionMode, NO_RETENTION_FILE_SETTING
-if apiver_deps.V <= 1:
-    from apiver_deps import FileVersionInfo as VFileVersionInfo
-else:
-    from apiver_deps import FileVersion as VFileVersionInfo
+from apiver_deps import BucketRetentionSetting, FileRetentionSetting, LegalHold, RetentionMode, RetentionPeriod, \
+    NO_RETENTION_FILE_SETTING
 
 pytestmark = [pytest.mark.apiver(from_ver=1)]
 
@@ -162,14 +163,24 @@ class CanRetry(B2Error):
         return self.can_retry
 
 
+def bucket_ls(bucket, *args, show_versions=False, **kwargs):
+    if apiver_deps.V <= 1:
+        ls_all_versions_kwarg = {'show_versions': show_versions}
+    else:
+        ls_all_versions_kwarg = {'latest_only': not show_versions}
+    return bucket.ls(*args, **ls_all_versions_kwarg, **kwargs)
+
+
 class TestCaseWithBucket(TestBase):
     RAW_SIMULATOR_CLASS = RawSimulator
 
     def setUp(self):
         self.bucket_name = 'my-bucket'
-        self.simulator = self.RAW_SIMULATOR_CLASS()
         self.account_info = StubAccountInfo()
-        self.api = B2Api(self.account_info, raw_api=self.simulator)
+        self.api = B2Api(
+            self.account_info, api_config=B2HttpApiConfig(_raw_api_class=self.RAW_SIMULATOR_CLASS)
+        )
+        self.simulator = self.api.session.raw_api
         (self.account_id, self.master_key) = self.simulator.create_account()
         self.api.authorize_account('production', self.account_id, self.master_key)
         self.api_url = self.account_info.get_api_url()
@@ -177,13 +188,16 @@ class TestCaseWithBucket(TestBase):
         self.bucket = self.api.create_bucket('my-bucket', 'allPublic')
         self.bucket_id = self.bucket.id_
 
+    def bucket_ls(self, *args, show_versions=False, **kwargs):
+        return bucket_ls(self.bucket, *args, show_versions=show_versions, **kwargs)
+
     def assertBucketContents(self, expected, *args, **kwargs):
         """
-        *args and **kwargs are passed to self.bucket.ls()
+        *args and **kwargs are passed to self.bucket_ls()
         """
         actual = [
             (info.file_name, info.size, info.action, folder)
-            for (info, folder) in self.bucket.ls(*args, **kwargs)
+            for (info, folder) in self.bucket_ls(*args, **kwargs)
         ]
         self.assertEqual(expected, actual)
 
@@ -344,9 +358,12 @@ class TestGetFileInfo(TestCaseWithBucket):
         self.assertEqual((legal_hold, file_retention), actual)
 
         low_perm_account_info = StubAccountInfo()
-        low_perm_api = B2Api(low_perm_account_info, raw_api=self.simulator)
-        low_perm_key_resp = self.api.create_key(
-            key_name='lowperm', capabilities=[
+        low_perm_api = B2Api(low_perm_account_info)
+        low_perm_api.session.raw_api = self.simulator
+        low_perm_key = create_key(
+            self.api,
+            key_name='lowperm',
+            capabilities=[
                 'listKeys',
                 'listBuckets',
                 'listFiles',
@@ -354,9 +371,7 @@ class TestGetFileInfo(TestCaseWithBucket):
             ]
         )
 
-        low_perm_api.authorize_account(
-            'production', low_perm_key_resp['applicationKeyId'], low_perm_key_resp['applicationKey']
-        )
+        low_perm_api.authorize_account('production', low_perm_key.id_, low_perm_key.application_key)
         low_perm_bucket = low_perm_api.get_bucket_by_name('my-bucket-with-file-lock')
 
         file_version = low_perm_bucket.get_file_info_by_name('a')
@@ -382,7 +397,7 @@ class TestGetFileInfo(TestCaseWithBucket):
 
 class TestLs(TestCaseWithBucket):
     def test_empty(self):
-        self.assertEqual([], list(self.bucket.ls('foo')))
+        self.assertEqual([], list(self.bucket_ls('foo')))
 
     def test_one_file_at_root(self):
         data = b'hello world'
@@ -432,7 +447,7 @@ class TestLs(TestCaseWithBucket):
         ]
         actual = [
             (info.id_, info.file_name, info.size, info.action, folder)
-            for (info, folder) in self.bucket.ls('bb', show_versions=True, fetch_count=1)
+            for (info, folder) in self.bucket_ls('bb', show_versions=True, fetch_count=1)
         ]
         self.assertEqual(expected, actual)
 
@@ -641,7 +656,7 @@ class TestCopyFile(TestCaseWithBucket):
         ]
         actual = [
             (info.file_name, info.size, info.action, info.content_type, folder)
-            for (info, folder) in self.bucket.ls(show_versions=True)
+            for (info, folder) in self.bucket_ls(show_versions=True)
         ]
         self.assertEqual(expected, actual)
 
@@ -672,7 +687,7 @@ class TestCopyFile(TestCaseWithBucket):
         def ls(bucket):
             return [
                 (info.file_name, info.size, info.action, folder)
-                for (info, folder) in bucket.ls(show_versions=True)
+                for (info, folder) in bucket_ls(bucket, show_versions=True)
             ]
 
         expected = [('hello.txt', 11, 'upload', None)]
@@ -824,6 +839,99 @@ class TestCopyFile(TestCaseWithBucket):
         data = b'hello world'
         actual_bucket = bucket or self.bucket
         return actual_bucket.upload_bytes(data, 'hello.txt').id_
+
+
+class TestUpdate(TestCaseWithBucket):
+    def test_update(self):
+        result = self.bucket.update(
+            bucket_type='allPrivate',
+            bucket_info={'info': 'o'},
+            cors_rules={'andrea': 'corr'},
+            lifecycle_rules={'life': 'is life'},
+            default_server_side_encryption=SSE_B2_AES,
+            default_retention=BucketRetentionSetting(
+                RetentionMode.COMPLIANCE, RetentionPeriod(years=7)
+            ),
+        )
+        if apiver_deps.V <= 1:
+            self.assertEqual(
+                {
+                    'accountId': 'account-0',
+                    'bucketId': 'bucket_0',
+                    'bucketInfo': {
+                        'info': 'o'
+                    },
+                    'bucketName': 'my-bucket',
+                    'bucketType': 'allPrivate',
+                    'corsRules': {
+                        'andrea': 'corr'
+                    },
+                    'defaultServerSideEncryption':
+                        {
+                            'isClientAuthorizedToRead': True,
+                            'value': {
+                                'algorithm': 'AES256',
+                                'mode': 'SSE-B2'
+                            }
+                        },
+                    'fileLockConfiguration':
+                        {
+                            'isClientAuthorizedToRead': True,
+                            'value':
+                                {
+                                    'defaultRetention':
+                                        {
+                                            'mode': 'compliance',
+                                            'period': {
+                                                'unit': 'years',
+                                                'duration': 7
+                                            }
+                                        },
+                                    'isFileLockEnabled': None
+                                }
+                        },
+                    'lifecycleRules': {
+                        'life': 'is life'
+                    },
+                    'options': set(),
+                    'revision': 2
+                }, result
+            )
+        else:
+            self.assertIsInstance(result, Bucket)
+            assertions_mapping = {  # yapf: disable
+                'id_': self.bucket.id_,
+                'name': self.bucket.name,
+                'type_': 'allPrivate',
+                'bucket_info': {'info': 'o'},
+                'cors_rules': {'andrea': 'corr'},
+                'lifecycle_rules': {'life': 'is life'},
+                'options_set': set(),
+                'default_server_side_encryption': SSE_B2_AES,
+                'default_retention': BucketRetentionSetting(RetentionMode.COMPLIANCE, RetentionPeriod(years=7)),
+            }
+            for attr_name, attr_value in assertions_mapping.items():
+                self.assertEqual(attr_value, getattr(result, attr_name), attr_name)
+
+    def test_update_if_revision_is(self):
+        current_revision = self.bucket.revision
+        self.bucket.update(
+            lifecycle_rules={'life': 'is life'},
+            if_revision_is=current_revision,
+        )
+        updated_bucket = self.api.get_bucket_by_name(self.bucket.name)
+        self.assertEqual({'life': 'is life'}, updated_bucket.lifecycle_rules)
+
+        try:
+            self.bucket.update(
+                lifecycle_rules={'another': 'life'},
+                if_revision_is=current_revision,  # this is now the old revision
+            )
+        except Exception:
+            pass
+
+        not_updated_bucket = self.api.get_bucket_by_name(self.bucket.name)
+        self.assertEqual({'life': 'is life'}, not_updated_bucket.lifecycle_rules)
 
 
 class TestUpload(TestCaseWithBucket):
@@ -1135,7 +1243,6 @@ class TestConcatenate(TestCaseWithBucket):
 
     def test_create_remote_encryption(self):
         for data in [b'hello_world', self._make_data(self.simulator.MIN_PART_SIZE * 3)]:
-
             f1_id = self.bucket.upload_bytes(data, 'f1', encryption=SSE_C_AES).id_
             f2_id = self.bucket.upload_bytes(data, 'f1', encryption=SSE_C_AES_2).id_
             with TempDir() as d:

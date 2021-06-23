@@ -33,6 +33,7 @@ from b2sdk.exception import ChecksumMismatch
 from b2sdk.exception import ClockSkew
 from b2sdk.exception import Conflict
 from b2sdk.exception import ConnectionReset
+from b2sdk.exception import CopyArgumentsMismatch
 from b2sdk.exception import DestFileNewer
 from b2sdk.exception import DuplicateBucketName
 from b2sdk.exception import FileAlreadyHidden
@@ -101,6 +102,7 @@ __all__ = (
     'ClockSkew',
     'Conflict',
     'ConnectionReset',
+    'CopyArgumentsMismatch',
     'CorruptAccountInfo',
     'DestFileNewer',
     'DuplicateBucketName',

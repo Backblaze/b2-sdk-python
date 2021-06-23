@@ -15,7 +15,7 @@ from .deps import EncryptionAlgorithm
 from .deps import EncryptionKey
 from .deps import EncryptionMode
 from .deps import EncryptionSetting
-from .deps import B2RawApi
+from .deps import B2RawHTTPApi
 from .deps import B2Http
 from .deps import BucketRetentionSetting, RetentionPeriod, RetentionMode
 from .deps_exception import UnusableFileName, WrongEncryptionModeForBucketDefault
@@ -30,7 +30,7 @@ class TestRawAPIFilenames(TestBase):
     """Test that the filename checker passes conforming names and rejects those that don't."""
 
     def setUp(self):
-        self.raw_api = B2RawApi(B2Http())
+        self.raw_api = B2RawHTTPApi(B2Http())
 
     def _should_be_ok(self, filename):
         """Call with test filenames that follow the filename rules.
@@ -104,7 +104,7 @@ class BucketTestBase:
     @pytest.fixture(autouse=True)
     def init(self, mocker):
         b2_http = mocker.MagicMock()
-        self.raw_api = B2RawApi(b2_http)
+        self.raw_api = B2RawHTTPApi(b2_http)
 
 
 class TestUpdateBucket(BucketTestBase):
@@ -113,7 +113,7 @@ class TestUpdateBucket(BucketTestBase):
     @pytest.fixture(autouse=True)
     def init(self, mocker):
         b2_http = mocker.MagicMock()
-        self.raw_api = B2RawApi(b2_http)
+        self.raw_api = B2RawHTTPApi(b2_http)
 
     def test_assertion_raises(self):
         with pytest.raises(AssertionError):

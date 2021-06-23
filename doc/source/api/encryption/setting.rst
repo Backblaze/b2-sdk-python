@@ -7,6 +7,8 @@ Encryption Settings
    :no-members:
    :special-members: __init__
 
+.. autoclass:: b2sdk.v1.UNKNOWN_KEY_ID
+   :no-members:
 
 .. autoclass:: b2sdk.v1.EncryptionSetting()
    :no-members:

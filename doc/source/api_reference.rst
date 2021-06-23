@@ -20,6 +20,7 @@ Public API
 ========================
 
 .. toctree::
+   api/application_key
    api/account_info
    api/cache
    api/api

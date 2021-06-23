@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: test/unit/file_lock/__init__.py
+# File: test/unit/b2http/__init__.py
 #
 # Copyright 2021 Backblaze Inc. All Rights Reserved.
 #

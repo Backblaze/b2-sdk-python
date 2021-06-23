@@ -21,6 +21,8 @@ from b2sdk.utils import validate_b2_file_name
 # and to retain old style download_file_by_name signature
 # and to retain old style download_file_by_id signature (allowing for the new one as well)
 # and to retain old style get_file_info_by_name return type
+# and to to adjust to old style B2Api.get_file_info return type
+# and to retain old style update return type
 class Bucket(v2.Bucket):
     FILE_VERSION_FACTORY = staticmethod(FileVersionInfoFactory)
 
@@ -187,6 +189,80 @@ class Bucket(v2.Bucket):
 
     def get_file_info_by_name(self, file_name: str) -> FileVersionInfo:
         return file_version_info_from_download_version(super().get_file_info_by_name(file_name))
+
+    def get_file_info_by_id(self, file_id: str) -> FileVersionInfo:
+        """
+        Gets a file version's by ID.
+
+        :param str file_id: the id of the file.
+        """
+        return self.api.file_version_factory.from_api_response(self.api.get_file_info(file_id))
+
+    def update(
+        self,
+        bucket_type: Optional[str] = None,
+        bucket_info: Optional[dict] = None,
+        cors_rules: Optional[dict] = None,
+        lifecycle_rules: Optional[dict] = None,
+        if_revision_is: Optional[int] = None,
+        default_server_side_encryption: Optional[v2.EncryptionSetting] = None,
+        default_retention: Optional[v2.BucketRetentionSetting] = None,
+    ):
+        """
+        Update various bucket parameters.
+
+        :param bucket_type: a bucket type, e.g. ``allPrivate`` or ``allPublic``
+        :param bucket_info: an info to store with a bucket
+        :param cors_rules: CORS rules to store with a bucket
+        :param lifecycle_rules: lifecycle rules to store with a bucket
+        :param if_revision_is: revision number, update the info **only if** *revision* equals to *if_revision_is*
+        :param default_server_side_encryption: default server side encryption settings (``None`` if unknown)
+        :param default_retention: bucket default retention setting
+        """
+        account_id = self.api.account_info.get_account_id()
+        return self.api.session.update_bucket(
+            account_id,
+            self.id_,
+            bucket_type=bucket_type,
+            bucket_info=bucket_info,
+            cors_rules=cors_rules,
+            lifecycle_rules=lifecycle_rules,
+            if_revision_is=if_revision_is,
+            default_server_side_encryption=default_server_side_encryption,
+            default_retention=default_retention,
+        )
+
+    def ls(
+        self,
+        folder_to_list: str = '',
+        show_versions: bool = False,
+        recursive: bool = False,
+        fetch_count: Optional[int] = 10000
+    ):
+        """
+        Pretend that folders exist and yields the information about the files in a folder.
+
+        B2 has a flat namespace for the files in a bucket, but there is a convention
+        of using "/" as if there were folders.  This method searches through the
+        flat namespace to find the files and "folders" that live within a given
+        folder.
+
+        When the `recursive` flag is set, lists all of the files in the given
+        folder, and all of its sub-folders.
+
+        :param folder_to_list: the name of the folder to list; must not start with "/".
+                               Empty string means top-level folder
+        :param show_versions: when ``True`` returns info about all versions of a file,
+                              when ``False``, just returns info about the most recent versions
+        :param recursive: if ``True``, list folders recursively
+        :param fetch_count: how many entries to return or ``None`` to use the default. Acceptable values: 1 - 10000
+        :rtype: generator[tuple[b2sdk.v1.FileVersionInfo, str]]
+        :returns: generator of (file_version, folder_name) tuples
+
+        .. note::
+            In case of `recursive=True`, folder_name is returned only for first file in the folder.
+        """
+        return super().ls(folder_to_list, not show_versions, recursive, fetch_count)
 
 
 def download_file_and_return_info_dict(

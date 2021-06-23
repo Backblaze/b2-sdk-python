@@ -320,7 +320,6 @@ class AbstractAccountInfo(metaclass=B2TraceMetaAbstract):
             ('capabilities' in allowed) and ('namePrefix' in allowed)
         )
 
-    # TODO: make a decorator for set_auth_data()
     @abstractmethod
     def _set_auth_data(
         self, account_id, auth_token, api_url, download_url, recommended_part_size,

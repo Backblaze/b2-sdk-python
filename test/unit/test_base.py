@@ -9,8 +9,13 @@
 ######################################################################
 
 from contextlib import contextmanager
+from typing import List, Optional
 import re
 import unittest
+
+import apiver_deps
+from apiver_deps import B2Api
+from b2sdk._v2 import FullApplicationKey
 
 
 class TestBase(unittest.TestCase):
@@ -34,3 +39,24 @@ class TestBase(unittest.TestCase):
                 assert False, "expected message '%s', but got '%s'" % (expected_regexp, str(e))
         else:
             assert False, 'should have thrown %s' % (expected_exception,)
+
+
+def create_key(
+    api: B2Api,
+    capabilities: List[str],
+    key_name: str,
+    valid_duration_seconds: Optional[int] = None,
+    bucket_id: Optional[str] = None,
+    name_prefix: Optional[str] = None,
+) -> FullApplicationKey:
+    """apiver-agnostic B2Api.create_key"""
+    result = api.create_key(
+        capabilities=capabilities,
+        key_name=key_name,
+        valid_duration_seconds=valid_duration_seconds,
+        bucket_id=bucket_id,
+        name_prefix=name_prefix,
+    )
+    if apiver_deps.V <= 1:
+        return FullApplicationKey.from_create_response(result)
+    return result

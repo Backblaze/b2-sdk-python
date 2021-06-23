@@ -8,11 +8,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 * `download_file_*` methods refactored to allow for inspecting DownloadVersion before downloading the whole file
+* `B2Api.get_file_info` returns a `FileVersion` object in v2
+* `B2RawApi` renamed to `B2RawHTTPApi`
+* `B2HTTP` tests are now common
+* `B2HttpApiConfig` class introduced to provide parameters like `user_agent_append` to `B2Api` without using internal classes in v2
+* `Bucket.update` returns a `Bucket` object in v2
+* `Bucket.ls` argument `show_versions` renamed to `latest_only` in v2
+* `B2Api` application key methods refactored to operate with dataclasses instead of dicts in v2
+* `B2Api.list_keys` is a generator lazily fetching all keys in v2
+* `account_id` and `bucket_id` added to FileVersion
 
 ### Fixed
 * Fix EncryptionSetting.from_response_headers
 * Fix FileVersion.size and FileVersion.mod_time_millis type ambiguity
 * Old buckets (from past tests) are cleaned up before running integration tests in a single thread
+
+### Removed
+* Remove deprecated `SyncReport` methods 
 
 ## [1.9.0] - 2021-06-07
 

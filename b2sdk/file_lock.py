@@ -238,15 +238,6 @@ class LegalHold(enum.Enum):
     def add_to_upload_headers(self, headers):
         headers['X-Bz-File-Legal-Hold'] = self.to_server()
 
-    def to_dict_repr(self):
-        if self.is_on():
-            return self.__class__.ON.value
-        elif self.is_off():
-            return self.__class__.OFF.value
-        elif self.is_unknown():
-            return self.__class__.UNKNOWN.value
-        raise ValueError('Unrepresentable value')
-
 
 class BucketRetentionSetting:
     """Represent bucket's default file retention settings, i.e. whether the files should be retained, in which mode

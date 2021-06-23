@@ -8,8 +8,9 @@
 #
 ######################################################################
 
+import enum
 import logging
-from typing import Optional
+from typing import Optional, Union
 import urllib
 import urllib.parse
 
@@ -21,14 +22,27 @@ from .types import EncryptionAlgorithm, EncryptionMode
 logger = logging.getLogger(__name__)
 
 
+class _UnknownKeyId(enum.Enum):
+    """The purpose of this enum is to provide a sentinel that can be used with type annotations."""
+    unknown_key_id = 0
+
+
+UNKNOWN_KEY_ID = _UnknownKeyId.unknown_key_id
+"""
+Value for EncryptionKey.key_id that signifies that the key id may or may not be defined. Useful when establishing
+encryption settings based on user input (and not based on B2 cloud data).
+"""
+
+
 class EncryptionKey:
     """
     Hold information about encryption key: the key itself, and its id. The id may be None, if it's not set
-    in encrypted file's fileInfo. The secret may be None, if encryption metadata is read from the server.
+    in encrypted file's fileInfo, or UNKNOWN_KEY_ID when that information is missing.
+    The secret may be None, if encryption metadata is read from the server.
     """
     SECRET_REPR = '******'
 
-    def __init__(self, secret: Optional[bytes], key_id: Optional[str]):
+    def __init__(self, secret: Optional[bytes], key_id: Union[str, None, _UnknownKeyId]):
         self.secret = secret
         self.key_id = key_id
 
@@ -39,7 +53,12 @@ class EncryptionKey:
         key_repr = self.SECRET_REPR
         if self.secret is None:
             key_repr = None
-        return '<%s(%s, %s)>' % (self.__class__.__name__, key_repr, self.key_id)
+
+        if self.key_id is UNKNOWN_KEY_ID:
+            key_id_repr = 'unknown'
+        else:
+            key_id_repr = repr(self.key_id)
+        return '<%s(%s, %s)>' % (self.__class__.__name__, key_repr, key_id_repr)
 
     def as_dict(self):
         """
@@ -144,6 +163,8 @@ class EncryptionSetting:
         elif self.mode == EncryptionMode.SSE_B2:
             self._add_sse_b2_headers(headers)
         elif self.mode == EncryptionMode.SSE_C:
+            if self.key.key_id is UNKNOWN_KEY_ID:
+                raise ValueError('Cannot upload a file with an unknown key id')
             self._add_sse_c_headers(headers)
             if self.key.key_id is not None:
                 header = SSE_C_KEY_ID_HEADER
@@ -179,6 +200,8 @@ class EncryptionSetting:
     def add_key_id_to_file_info(self, file_info: Optional[dict]):
         if self.key is None or self.key.key_id is None:
             return file_info
+        if self.key.key_id is UNKNOWN_KEY_ID:
+            raise ValueError('Cannot add an unknown key id to file info')
         if file_info is None:
             file_info = {}
         if file_info.get(SSE_C_KEY_ID_FILE_INFO_KEY_NAME) is not None and file_info[
