@@ -102,7 +102,7 @@ class B2UploadAction(AbstractAction):
         :param str b2_file_name: a name of a new remote file
         :param int mod_time_millis: file modification time in milliseconds
         :param int size: a file size
-        :param b2sdk.v1.AbstractSyncEncryptionSettingsProvider encryption_settings_provider: encryption setting provider
+        :param b2sdk.v2.AbstractSyncEncryptionSettingsProvider encryption_settings_provider: encryption setting provider
         """
         self.local_full_path = local_full_path
         self.relative_name = relative_name
@@ -123,7 +123,7 @@ class B2UploadAction(AbstractAction):
         """
         Perform the uploading action, returning only after the action is completed.
 
-        :param b2sdk.v1.Bucket bucket: a Bucket object
+        :param b2sdk.v2.Bucket bucket: a Bucket object
         :param reporter: a place to report errors
         """
         if reporter:
@@ -215,10 +215,10 @@ class B2DownloadAction(AbstractAction):
         encryption_settings_provider: AbstractSyncEncryptionSettingsProvider,
     ):
         """
-        :param b2sdk.v1.B2SyncPath source_path: the file to be downloaded
+        :param b2sdk.v2.B2SyncPath source_path: the file to be downloaded
         :param str b2_file_name: b2_file_name
         :param str local_full_path: a local file path
-        :param b2sdk.v1.AbstractSyncEncryptionSettingsProvider encryption_settings_provider: encryption setting provider
+        :param b2sdk.v2.AbstractSyncEncryptionSettingsProvider encryption_settings_provider: encryption setting provider
         """
         self.source_path = source_path
         self.b2_file_name = b2_file_name
@@ -247,7 +247,7 @@ class B2DownloadAction(AbstractAction):
         """
         Perform the downloading action, returning only after the action is completed.
 
-        :param b2sdk.v1.Bucket bucket: a Bucket object
+        :param b2sdk.v2.Bucket bucket: a Bucket object
         :param reporter: a place to report errors
         """
         self._ensure_directory_existence()
@@ -314,11 +314,11 @@ class B2CopyAction(AbstractAction):
     ):
         """
         :param str b2_file_name: a b2_file_name
-        :param b2sdk.v1.B2SyncPath source_path: the file to be copied
+        :param b2sdk.v2.B2SyncPath source_path: the file to be copied
         :param str dest_b2_file_name: a name of a destination remote file
         :param Bucket source_bucket: bucket to copy from
         :param Bucket destination_bucket: bucket to copy to
-        :param b2sdk.v1.AbstractSyncEncryptionSettingsProvider encryption_settings_provider: encryption setting provider
+        :param b2sdk.v2.AbstractSyncEncryptionSettingsProvider encryption_settings_provider: encryption setting provider
         """
         self.b2_file_name = b2_file_name
         self.source_path = source_path

@@ -8,8 +8,8 @@
 #
 ######################################################################
 
-from b2sdk import _v2 as v2
-from b2sdk._v2 import exception as v2_exception
+from b2sdk import v2
+from b2sdk.v2 import exception as v2_exception
 from .file_to_path_translator import make_files_from_paths, make_paths_from_files
 from .scan_policies import DEFAULT_SCAN_MANAGER, wrap_if_necessary as scan_wrap_if_necessary
 from .encryption_provider import wrap_if_necessary as encryption_wrap_if_necessary

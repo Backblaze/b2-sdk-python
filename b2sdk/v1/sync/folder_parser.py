@@ -8,7 +8,7 @@
 #
 ######################################################################
 
-from b2sdk import _v2 as v2
+from b2sdk import v2
 from .. import exception
 
 from .folder import LocalFolder, B2Folder

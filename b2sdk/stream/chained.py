@@ -23,8 +23,8 @@ class ChainedStream(ReadOnlyStreamMixin, io.IOBase):
     Can be seeked to beginning (when retrying upload, for example).
     Closes underlying streams as soon as they reaches EOF, but clears their buffers
     when the chained stream is closed for underlying streams that follow
-    :py:class:`b2sdk.v1.StreamOpener` cleanup interface, for example
-    :py:class:`b2sdk.v1.CachedBytesStreamOpener`
+    :py:class:`b2sdk.v2.StreamOpener` cleanup interface, for example
+    :py:class:`b2sdk.v2.CachedBytesStreamOpener`
     """
 
     def __init__(self, stream_openers):

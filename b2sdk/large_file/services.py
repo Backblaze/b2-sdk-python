@@ -23,7 +23,7 @@ class LargeFileServices(object):
 
     def list_parts(self, file_id, start_part_number=None, batch_size=None):
         """
-        Generator that yields a :py:class:`b2sdk.v1.Part` for each of the parts that have been uploaded.
+        Generator that yields a :py:class:`b2sdk.v2.Part` for each of the parts that have been uploaded.
 
         :param str file_id: the ID of the large file that is not finished
         :param int start_part_number: the first part number to return; defaults to the first part
@@ -43,14 +43,14 @@ class LargeFileServices(object):
         self, bucket_id, start_file_id=None, batch_size=None, prefix=None
     ):
         """
-        A generator that yields an :py:class:`b2sdk.v1.UnfinishedLargeFile` for each
+        A generator that yields an :py:class:`b2sdk.v2.UnfinishedLargeFile` for each
         unfinished large file in the bucket, starting at the given file, filtering by prefix.
 
         :param str bucket_id: bucket id
         :param str,None start_file_id: a file ID to start from or None to start from the beginning
         :param int,None batch_size: max file count
         :param str,None prefix: file name prefix filter
-        :rtype: generator[b2sdk.v1.UnfinishedLargeFile]
+        :rtype: generator[b2sdk.v2.UnfinishedLargeFile]
         """
         batch_size = batch_size or 100
         while True:
@@ -94,9 +94,9 @@ class LargeFileServices(object):
         :param str file_name: a file name
         :param str,None content_type: the MIME type, or ``None`` to accept the default based on file extension of the B2 file name
         :param dict,None file_info: a file info to store with the file or ``None`` to not store anything
-        :param b2sdk.v1.EncryptionSetting encryption: encryption settings (``None`` if unknown)
-        :param b2sdk.v1.LegalHold legal_hold: legal hold setting
-        :param b2sdk.v1.FileRetentionSetting file_retention: file retention setting
+        :param b2sdk.v2.EncryptionSetting encryption: encryption settings (``None`` if unknown)
+        :param b2sdk.v2.LegalHold legal_hold: legal hold setting
+        :param b2sdk.v2.FileRetentionSetting file_retention: file retention setting
         """
         return UnfinishedLargeFile(
             self.services.session.start_large_file(

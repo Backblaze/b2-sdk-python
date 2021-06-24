@@ -3,23 +3,23 @@
 Encryption Settings
 ===================
 
-.. autoclass:: b2sdk.v1.EncryptionKey()
+.. autoclass:: b2sdk.v2.EncryptionKey()
    :no-members:
    :special-members: __init__
 
-.. autoclass:: b2sdk.v1.UNKNOWN_KEY_ID
+.. autoclass:: b2sdk.v2.UNKNOWN_KEY_ID
    :no-members:
 
-.. autoclass:: b2sdk.v1.EncryptionSetting()
+.. autoclass:: b2sdk.v2.EncryptionSetting()
    :no-members:
    :special-members: __init__, as_dict
 
 
-.. autoattribute:: b2sdk.v1.SSE_NONE
+.. autoattribute:: b2sdk.v2.SSE_NONE
 
     Commonly used "no encryption" setting
 
 
-.. autoattribute:: b2sdk.v1.SSE_B2_AES
+.. autoattribute:: b2sdk.v2.SSE_B2_AES
 
     Commonly used SSE-B2 setting

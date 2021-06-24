@@ -42,17 +42,17 @@ class SyncPolicyManager(object):
         Return a policy object.
 
         :param str sync_type: synchronization type
-        :param b2sdk.v1.AbstractSyncPath source_path: source file
+        :param b2sdk.v2.AbstractSyncPath source_path: source file
         :param str source_folder: a source folder path
-        :param b2sdk.v1.AbstractSyncPath dest_path: destination file
+        :param b2sdk.v2.AbstractSyncPath dest_path: destination file
         :param str dest_folder: a destination folder path
         :param int now_millis: current time in milliseconds
         :param bool delete: delete policy
         :param int keep_days: keep for days policy
-        :param b2sdk.v1.NewerFileSyncMode newer_file_mode: setting which determines handling for destination files newer than on the source
+        :param b2sdk.v2.NewerFileSyncMode newer_file_mode: setting which determines handling for destination files newer than on the source
         :param int compare_threshold: difference between file modification time or file size
-        :param b2sdk.v1.CompareVersionMode compare_version_mode: setting which determines how to compare source and destination files
-        :param b2sdk.v1.AbstractSyncEncryptionSettingsProvider encryption_settings_provider: an object which decides which encryption to use (if any)
+        :param b2sdk.v2.CompareVersionMode compare_version_mode: setting which determines how to compare source and destination files
+        :param b2sdk.v2.AbstractSyncEncryptionSettingsProvider encryption_settings_provider: an object which decides which encryption to use (if any)
         :return: a policy object
         """
         policy_class = self.get_policy_class(sync_type, delete, keep_days)

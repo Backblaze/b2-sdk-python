@@ -14,8 +14,8 @@ from typing import Optional, Union, Iterable
 from .file import B2FileVersion
 from ..file_version import FileVersionInfo
 from .file_to_path_translator import _translate_local_path_to_file
-from b2sdk import _v2 as v2
-from b2sdk._v2 import exception as v2_exception  # noqa
+from b2sdk import v2
+from b2sdk.v2 import exception as v2_exception  # noqa
 
 try:  # python 3.5 and 3.6 compatibility
     regex_class = re.Pattern

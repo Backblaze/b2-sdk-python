@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+* apiver `v2` interface released. `from b2sdk.v2 import ...` is now the recommended import, 
+  but `from b2sdk.v1 import ...` works as before
+
 ## [1.10.0] - 2021-06-23
 
 ### Added

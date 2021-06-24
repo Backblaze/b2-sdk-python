@@ -39,7 +39,7 @@ class UploadManager(metaclass=B2TraceMetaAbstract):
 
     def __init__(self, services, max_upload_workers=10):
         """
-        :param b2sdk.v1.Services services:
+        :param b2sdk.v2.Services services:
         :param int max_upload_workers: a number of upload threads
         """
         self.services = services
@@ -135,12 +135,12 @@ class UploadManager(metaclass=B2TraceMetaAbstract):
 
         :param :param str bucket_id: a bucket ID
         :param file_id: a large file ID
-        :param b2sdk.v1.UploadSourcePart upload_source_part: wrapper for upload source that reads only required range
-        :param b2sdk.v1.LargeFileUploadState large_file_upload_state: state object for progress reporting
+        :param b2sdk.v2.AbstractUploadSource part_upload_source: upload source that reads only required range
+        :param b2sdk.v2.LargeFileUploadState large_file_upload_state: state object for progress reporting
                                                                       on large file upload
         :param dict,None finished_parts: dictionary of known finished parts, keys are part numbers,
-                                         values are instances of :class:`~b2sdk.v1.Part`
-        :param b2sdk.v1.EncryptionSetting encryption: encryption setting (``None`` if unknown)
+                                         values are instances of :class:`~b2sdk.v2.Part`
+        :param b2sdk.v2.EncryptionSetting encryption: encryption setting (``None`` if unknown)
         """
 
         # b2_upload_part doesn't need SSE-B2. Large file encryption is decided on b2_start_large_file.

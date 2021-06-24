@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: b2sdk/_v2/__init__.py
+# File: b2sdk/v2/__init__.py
 #
 # Copyright 2021 Backblaze Inc. All Rights Reserved.
 #
@@ -8,14 +8,13 @@
 #
 ######################################################################
 
-# TODO: v2 is still in progress that why the path is prefixed with "_"
-
 # this file maps the external interface into internal interface
 # it will come handy if we ever need to move something
 
 # core
 
 from b2sdk.api import B2Api
+from b2sdk.api import Services
 from b2sdk.bucket import Bucket
 from b2sdk.bucket import BucketFactory
 from b2sdk.raw_api import ALL_CAPABILITIES, REALM_URLS
@@ -117,6 +116,7 @@ from b2sdk.raw_api import MetadataDirectiveMode
 
 # stream
 
+from b2sdk.stream.chained import StreamOpener
 from b2sdk.stream.progress import AbstractStreamWithProgress
 from b2sdk.stream import RangeOfInputStream
 from b2sdk.stream import ReadingStreamWithProgress
@@ -126,6 +126,7 @@ from b2sdk.stream import WritingStreamWithProgress
 # source / destination
 
 from b2sdk.transfer.inbound.downloaded_file import DownloadedFile
+from b2sdk.transfer.inbound.downloaded_file import MtimeUpdatedFile
 
 from b2sdk.transfer.outbound.outbound_source import OutboundTransferSource
 from b2sdk.transfer.outbound.copy_source import CopySource
@@ -136,6 +137,7 @@ from b2sdk.transfer.outbound.upload_source import UploadSourceLocalFileRange
 from b2sdk.transfer.outbound.upload_source import UploadSourceStream
 from b2sdk.transfer.outbound.upload_source import UploadSourceStreamRange
 
+from b2sdk.transfer.emerge.planner.upload_subpart import CachedBytesStreamOpener
 from b2sdk.transfer.emerge.write_intent import WriteIntent
 
 # trasfer

@@ -10,8 +10,8 @@
 
 from typing import Optional
 
-from b2sdk import _v2 as v2
-from b2sdk._v2.exception import InvalidArgument
+from b2sdk import v2
+from b2sdk.v2.exception import InvalidArgument
 from .account_info import SqliteAccountInfo
 
 

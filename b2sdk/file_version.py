@@ -250,7 +250,7 @@ class DownloadVersion(BaseFileVersion):
 
 class FileVersionFactory(object):
     """
-    Construct :py:class:`b2sdk.v1.FileVersion` objects from api responses.
+    Construct :py:class:`b2sdk.v2.FileVersion` objects from api responses.
     """
 
     def __init__(self, api: 'B2Api'):
@@ -286,7 +286,7 @@ class FileVersionFactory(object):
                "serverSideEncryption": {"algorithm": "AES256", "mode": "SSE-B2"}
            }
 
-        into a :py:class:`b2sdk.v1.FileVersionInfo` object.
+        into a :py:class:`b2sdk.v2.FileVersion` object.
 
         """
         assert file_version_dict.get('action') is None or force_action is None, \
@@ -331,7 +331,7 @@ class FileVersionFactory(object):
 
 class DownloadVersionFactory(object):
     """
-    Construct :py:class:`b2sdk.v1.DownloadVersion` objects from download headers.
+    Construct :py:class:`b2sdk.v2.DownloadVersion` objects from download headers.
     """
 
     def __init__(self, api: 'B2Api'):

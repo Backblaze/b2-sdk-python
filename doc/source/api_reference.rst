@@ -28,13 +28,13 @@ Public API
    api/bucket
    api/file_lock
    api/data_classes
+   api/downloaded_file
    api/enums
    api/progress
    api/sync
    api/utils
    api/transfer/emerge/write_intent
    api/transfer/outbound/outbound_source
-   api/download_dest
    api/encryption/setting
    api/encryption/types
 
@@ -69,6 +69,5 @@ Internal API
    api/internal/transfer/inbound/downloader/parallel
    api/internal/transfer/inbound/downloader/simple
    api/internal/transfer/inbound/download_manager
-   api/internal/transfer/inbound/file_metadata
    api/internal/transfer/outbound/upload_source
    api/internal/raw_simulator

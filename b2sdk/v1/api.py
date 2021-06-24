@@ -11,7 +11,7 @@
 from typing import Any, Dict, Optional, overload, Tuple, List
 
 from .download_dest import AbstractDownloadDestination
-from b2sdk import _v2 as v2
+from b2sdk import v2
 from b2sdk.api import Services
 from .account_info import AbstractAccountInfo
 from .bucket import Bucket, BucketFactory, download_file_and_return_info_dict

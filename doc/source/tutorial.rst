@@ -10,11 +10,11 @@ AccountInfo
 
 It is the first object that you need to create to use **b2sdk**. Using ``AccountInfo``, we'll be able to create a ``B2Api`` object to manage a B2 account.
 
-In the tutorial we will use :py:class:`b2sdk.v1.InMemoryAccountInfo`:
+In the tutorial we will use :py:class:`b2sdk.v2.InMemoryAccountInfo`:
 
 .. code-block:: python
 
-    >>> from b2sdk.v1 import InMemoryAccountInfo
+    >>> from b2sdk.v2 import InMemoryAccountInfo
     >>> info = InMemoryAccountInfo()  # store credentials, tokens and cache in memory
 
 
@@ -29,7 +29,7 @@ Account authorization
 
 .. code-block:: python
 
-    >>> from b2sdk.v1 import B2Api
+    >>> from b2sdk.v2 import B2Api
     >>> b2_api = B2Api(info)
     >>> application_key_id = '4a5b6c7d8e9f'
     >>> application_key = '001b8e23c26ff6efb941e237deb182b9599a84bef7'
@@ -38,7 +38,7 @@ Account authorization
 .. tip::
    Get credentials from B2 website
 
-To find out more about account authorization, see :meth:`b2sdk.v1.B2Api.authorize_account`
+To find out more about account authorization, see :meth:`b2sdk.v2.B2Api.authorize_account`
 
 
 ***************************
@@ -50,7 +50,7 @@ B2Api
 Typical B2Api operations
 ========================
 
-.. currentmodule:: b2sdk.v1.B2Api
+.. currentmodule:: b2sdk.v2.B2Api
 
 .. autosummary::
    :nosignatures:
@@ -72,9 +72,9 @@ Typical B2Api operations
 
     >>> b2_api = B2Api(info)
 
-to find out more, see :class:`b2sdk.v1.B2Api`.
+to find out more, see :class:`b2sdk.v2.B2Api`.
 
-The most practical operation on ``B2Api`` object is :meth:`b2sdk.v1.B2Api.get_bucket_by_name`.
+The most practical operation on ``B2Api`` object is :meth:`b2sdk.v2.B2Api.get_bucket_by_name`.
 
 *Bucket* allows for operations such as listing a remote bucket or transferring files.
 
@@ -108,7 +108,7 @@ To create a bucket:
     >>> b2_api.create_bucket(bucket_name, bucket_type)
     Bucket<346501784642eb3e60980d10,example-mybucket-b2-1,allPublic>
 
-You can optionally store bucket info, CORS rules and lifecycle rules with the bucket. See :meth:`b2sdk.v1.B2Api.create_bucket` for more details.
+You can optionally store bucket info, CORS rules and lifecycle rules with the bucket. See :meth:`b2sdk.v2.B2Api.create_bucket` for more details.
 
 .. note::
     Bucket name must be unique in B2 (across all accounts!). Your application should be able to cope with a bucket name collision with another B2 user.
@@ -117,7 +117,7 @@ You can optionally store bucket info, CORS rules and lifecycle rules with the bu
 Typical Bucket operations
 =========================
 
-.. currentmodule:: b2sdk.v1.Bucket
+.. currentmodule:: b2sdk.v2.Bucket
 
 .. autosummary::
    :nosignatures:
@@ -135,7 +135,7 @@ Typical Bucket operations
    set_info
 
 
-To find out more, see :class:`b2sdk.v1.Bucket`.
+To find out more, see :class:`b2sdk.v2.Bucket`.
 
 
 ***************************

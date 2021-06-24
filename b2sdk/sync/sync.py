@@ -143,11 +143,11 @@ class Synchronizer:
         :param policies_manager: policies manager object
         :param bool dry_run: test mode, does not actually transfer/delete when enabled
         :param bool allow_empty_source: if True, do not check whether source folder is empty
-        :param b2sdk.v1.NewerFileSyncMode newer_file_mode: setting which determines handling for destination files newer than on the source
-        :param b2sdk.v1.KeepOrDeleteMode keep_days_or_delete: setting which determines if we should delete or not delete or keep for `keep_days`
-        :param b2sdk.v1.CompareVersionMode compare_version_mode: how to compare the source and destination files to find new ones
+        :param b2sdk.v2.NewerFileSyncMode newer_file_mode: setting which determines handling for destination files newer than on the source
+        :param b2sdk.v2.KeepOrDeleteMode keep_days_or_delete: setting which determines if we should delete or not delete or keep for `keep_days`
+        :param b2sdk.v2.CompareVersionMode compare_version_mode: how to compare the source and destination files to find new ones
         :param int compare_threshold: should be greater than 0, default is 0
-        :param int keep_days: if keep_days_or_delete is `b2sdk.v1.KeepOrDeleteMode.KEEP_BEFORE_DELETE`, then this should be greater than 0
+        :param int keep_days: if keep_days_or_delete is `b2sdk.v2.KeepOrDeleteMode.KEEP_BEFORE_DELETE`, then this should be greater than 0
         """
         self.newer_file_mode = newer_file_mode
         self.keep_days_or_delete = keep_days_or_delete
@@ -206,7 +206,7 @@ class Synchronizer:
         :param b2sdk.sync.folder.AbstractFolder dest_folder: destination folder object
         :param int now_millis: current time in milliseconds
         :param b2sdk.sync.report.SyncReport,None reporter: progress reporter
-        :param b2sdk.v1.AbstractSyncEncryptionSettingsProvider encryption_settings_provider: encryption setting provider
+        :param b2sdk.v2.AbstractSyncEncryptionSettingsProvider encryption_settings_provider: encryption setting provider
         """
         source_type = source_folder.folder_type()
         dest_type = dest_folder.folder_type()
@@ -276,12 +276,12 @@ class Synchronizer:
         Yield a sequence of actions that will sync the destination
         folder to the source folder.
 
-        :param b2sdk.v1.AbstractFolder source_folder: source folder object
-        :param b2sdk.v1.AbstractFolder dest_folder: destination folder object
+        :param b2sdk.v2.AbstractFolder source_folder: source folder object
+        :param b2sdk.v2.AbstractFolder dest_folder: destination folder object
         :param int now_millis: current time in milliseconds
-        :param b2sdk.v1.SyncReport reporter: reporter object
-        :param b2sdk.v1.SyncPolicyManager policies_manager: policies manager object
-        :param b2sdk.v1.AbstractSyncEncryptionSettingsProvider encryption_settings_provider: encryption setting provider
+        :param b2sdk.v2.SyncReport reporter: reporter object
+        :param b2sdk.v2.SyncPolicyManager policies_manager: policies manager object
+        :param b2sdk.v2.AbstractSyncEncryptionSettingsProvider encryption_settings_provider: encryption setting provider
         """
         if self.keep_days_or_delete == KeepOrDeleteMode.KEEP_BEFORE_DELETE and dest_folder.folder_type(
         ) == 'local':
@@ -348,12 +348,12 @@ class Synchronizer:
         Yields the sequence of actions needed to sync the two files
 
         :param str sync_type: synchronization type
-        :param b2sdk.v1.AbstractSyncPath source_path: source file object
-        :param b2sdk.v1.AbstractSyncPath dest_path: destination file object
-        :param b2sdk.v1.AbstractFolder source_folder: a source folder object
-        :param b2sdk.v1.AbstractFolder dest_folder: a destination folder object
+        :param b2sdk.v2.AbstractSyncPath source_path: source file object
+        :param b2sdk.v2.AbstractSyncPath dest_path: destination file object
+        :param b2sdk.v2.AbstractFolder source_folder: a source folder object
+        :param b2sdk.v2.AbstractFolder dest_folder: a destination folder object
         :param int now_millis: current time in milliseconds
-        :param b2sdk.v1.AbstractSyncEncryptionSettingsProvider encryption_settings_provider: encryption setting provider
+        :param b2sdk.v2.AbstractSyncEncryptionSettingsProvider encryption_settings_provider: encryption setting provider
         """
         delete = self.keep_days_or_delete == KeepOrDeleteMode.DELETE
         keep_days = self.keep_days

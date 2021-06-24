@@ -10,7 +10,7 @@ Prepare b2sdk
 
 .. code-block:: python
 
-    >>> from b2sdk.v1 import *
+    >>> from b2sdk.v2 import *
     >>> info = InMemoryAccountInfo()
     >>> b2_api = B2Api(info)
     >>> application_key_id = '4a5b6c7d8e9f'
@@ -27,10 +27,10 @@ Synchronization
 
 .. code-block:: python
 
-    >>> from b2sdk.v1 import ScanPoliciesManager
-    >>> from b2sdk.v1 import parse_sync_folder
-    >>> from b2sdk.v1 import Synchronizer
-    >>> from b2sdk.v1 import SyncReport
+    >>> from b2sdk.v2 import ScanPoliciesManager
+    >>> from b2sdk.v2 import parse_sync_folder
+    >>> from b2sdk.v2 import Synchronizer
+    >>> from b2sdk.v2 import SyncReport
     >>> import time
     >>> import sys
 
@@ -81,7 +81,7 @@ unique keys, or key identifiers, across files. This is covered in greater detail
 
 In the example above, Sync will assume `SSE-B2` for all files in `bucket1`, `SSE-C` with the key provided for `bucket2`
 and rely on bucket default for `bucket3`. Should developers need to provide keys per file (and not per bucket), they
-need to implement their own :class:`b2sdk.v1.AbstractSyncEncryptionSettingsProvider`.
+need to implement their own :class:`b2sdk.v2.AbstractSyncEncryptionSettingsProvider`.
 
 **************
 Bucket actions
@@ -109,7 +109,7 @@ Create a bucket
     >>> b2_api.create_bucket(bucket_name, bucket_type)
     Bucket<346501784642eb3e60980d10,example-mybucket-b2-1,allPublic>
 
-You can optionally store bucket info, CORS rules and lifecycle rules with the bucket. See :meth:`b2sdk.v1.B2Api.create_bucket`.
+You can optionally store bucket info, CORS rules and lifecycle rules with the bucket. See :meth:`b2sdk.v2.B2Api.create_bucket`.
 
 
 Delete a bucket
@@ -132,8 +132,11 @@ Update bucket info
     >>> bucket_name = 'example-mybucket-b2'
 
     >>> bucket = b2_api.get_bucket_by_name(bucket_name)
-    >>> bucket.update(bucket_type=new_bucket_type,
-                      default_server_side_encryption=EncryptionSetting(mode=EncryptionMode.SSE_B2))
+    >>> new_bucket = bucket.update(
+            bucket_type=new_bucket_type,
+            default_server_side_encryption=EncryptionSetting(mode=EncryptionMode.SSE_B2)
+        )
+    >>> new_bucket.as_dict()
     {'accountId': '451862be08d0',
      'bucketId': '5485a1682662eb3e60980d10',
      'bucketInfo': {},
@@ -146,7 +149,7 @@ Update bucket info
                                      'value': {'algorithm': 'AES256', 'mode': 'SSE-B2'}}},
      }
 
-For more information see :meth:`b2sdk.v1.Bucket.update`.
+For more information see :meth:`b2sdk.v2.Bucket.update`.
 
 
 ************
@@ -175,11 +178,11 @@ Upload file
             file_name=b2_file_name,
             file_infos=file_info,
         )
-    <b2sdk.file_version.FileVersionInfo at 0x7fc8cd560550>
+    <b2sdk.file_version.FileVersion at 0x7fc8cd560550>
 
 This will work regardless of the size of the file - ``upload_local_file`` automatically uses large file upload API when necessary.
 
-For more information see :meth:`b2sdk.v1.Bucket.upload_local_file`.
+For more information see :meth:`b2sdk.v2.Bucket.upload_local_file`.
 
 Upload file encrypted with SSE-C
 --------------------------------
@@ -210,32 +213,27 @@ By id
 
 .. code-block:: python
 
-    >>> from b2sdk.v1 import DownloadDestLocalFile
-    >>> from b2sdk.v1 import DoNothingProgressListener
+    >>> from b2sdk.v2 import DoNothingProgressListener
 
     >>> local_file_path = '/home/user1/b2_example/new2.pdf'
     >>> file_id = '4_z5485a1682662eb3e60980d10_f1195145f42952533_d20190403_m130258_c002_v0001111_t0002'
-    >>> download_dest = DownloadDestLocalFile(local_file_path)
     >>> progress_listener = DoNothingProgressListener()
 
-    >>> b2_api.download_file_by_id(file_id, download_dest, progress_listener)
-    {'fileId': '4_z5485a1682662eb3e60980d10_f1195145f42952533_d20190403_m130258_c002_v0001111_t0002',
-     'fileName': 'som2.pdf',
-     'contentType': 'application/pdf',
-     'contentLength': 1870579,
-     'contentSha1': 'd821849a70922e87c2b0786c0be7266b89d87df0',
-     'fileInfo': {'src_last_modified_millis': '1550988084299'}}
+    >>> downloaded_file = b2_api.download_file_by_id(file_id, progress_listener)  # only the headers
+        # and the beginning of the file is downloaded at this stage
 
-    >>> print('File name:   ', download_dest.file_name)
+    >>> print('File name:   ', downloaded_file.download_version.file_name)
     File name:    som2.pdf
-    >>> print('File id:     ', download_dest.file_id)
+    >>> print('File id:     ', downloaded_file.download_version.id_)
     File id:      4_z5485a1682662eb3e60980d10_f1195145f42952533_d20190403_m130258_c002_v0001111_t0002
-    >>> print('File size:   ', download_dest.content_length)
+    >>> print('File size:   ', downloaded_file.download_version.size)
     File size:    1870579
-    >>> print('Content type:', download_dest.content_type)
+    >>> print('Content type:', downloaded_file.download_version.content_type)
     Content type: application/pdf
-    >>> print('Content sha1:', download_dest.content_sha1)
+    >>> print('Content sha1:', downloaded_file.download_version.content_sha1)
     Content sha1: d821849a70922e87c2b0786c0be7266b89d87df0
+
+    >>> downloaded_file.save_to(local_file_path)  # this downloads the whole file
 
 By name
 -------
@@ -245,14 +243,8 @@ By name
     >>> bucket = b2_api.get_bucket_by_name(bucket_name)
     >>> b2_file_name = 'dummy_new.pdf'
     >>> local_file_name = '/home/user1/b2_example/new3.pdf'
-    >>> download_dest = DownloadDestLocalFile(local_file_name)
-    >>> bucket.download_file_by_name(b2_file_name, download_dest)
-    {'fileId': '4_z5485a1682662eb3e60980d10_f113f963288e711a6_d20190404_m065910_c002_v0001095_t0044',
-     'fileName': 'dummy_new.pdf',
-     'contentType': 'application/pdf',
-     'contentLength': 1870579,
-     'contentSha1': 'd821849a70922e87c2b0786c0be7266b89d87df0',
-     'fileInfo': {'how': 'good-file'}}
+    >>> downloaded_file = bucket.download_file_by_name(b2_file_name)
+    >>> downloaded_file.save_to(local_file_path)
 
 
 Downloading encrypted files
@@ -307,7 +299,7 @@ The folder_name is returned only for the first file in the folder.
     som2.pdf 1554296578000 None
     some.pdf 1554296579000 None
 
-For more information see :meth:`b2sdk.v1.Bucket.ls`.
+For more information see :meth:`b2sdk.v2.Bucket.ls`.
 
 
 Get file metadata
@@ -316,7 +308,8 @@ Get file metadata
 .. code-block:: python
 
     >>> file_id = '4_z5485a1682662eb3e60980d10_f113f963288e711a6_d20190404_m065910_c002_v0001095_t0044'
-    >>> b2_api.get_file_info(file_id)
+    >>> file_version = b2_api.get_file_info(file_id)
+    >>> file_version.as_dict()
     {'accountId': '451862be08d0',
      'action': 'upload',
      'bucketId': '5485a1682662eb3e60980d10',
@@ -334,12 +327,11 @@ Get file metadata
 Copy file
 =========
 
-Please switch to  :meth:`b2sdk.v1.Bucket.copy`.
-
 .. code-block:: python
 
     >>> file_id = '4_z5485a1682662eb3e60980d10_f118df9ba2c5131e8_d20190619_m065809_c002_v0001126_t0040'
-    >>> bucket.copy(file_id, 'f2_copy.txt')
+    >>> new_file_version = bucket.copy(file_id, 'f2_copy.txt')
+    >>> new_file_version.as_dict()
     {'accountId': '451862be08d0',
      'action': 'copy',
      'bucketId': '5485a1682662eb3e60980d10',
@@ -368,7 +360,7 @@ If you want to copy just the part of the file, then you can specify the offset a
 Note that content length is required for offset values other than zero.
 
 
-For more information see :meth:`b2sdk.v1.Bucket.copy`.
+For more information see :meth:`b2sdk.v2.Bucket.copy`.
 
 
 Delete file
@@ -378,9 +370,10 @@ Delete file
 
     >>> file_id = '4_z5485a1682662eb3e60980d10_f113f963288e711a6_d20190404_m065910_c002_v0001095_t0044'
     >>> file_info = b2_api.delete_file_version(file_id, 'dummy_new.pdf')
-    >>> print(file_info)
-    {'file_id': '4_z5485a1682662eb3e60980d10_f113f963288e711a6_d20190404_m065910_c002_v0001095_t0044',
-     'file_name': 'dummy_new.pdf'}
+    >>> file_info.as_dict()
+    {'action': 'delete',
+     'fileId': '4_z5485a1682662eb3e60980d10_f113f963288e711a6_d20190404_m065910_c002_v0001095_t0044',
+     'fileName': 'dummy_new.pdf'}
 
 
 Cancel large file uploads
@@ -389,7 +382,7 @@ Cancel large file uploads
 .. code-block:: python
 
     >>> bucket = b2_api.get_bucket_by_name(bucket_name)
-    >>> for file_version in bucket.list_unfinished_large_files():
-            bucket.cancel_large_file(file_version.file_id)
+    >>> for unfinished_file in bucket.list_unfinished_large_files():
+            b2_api.cancel_large_file(unfinished_file.file_id, unfinished_file.file_name)
 
 

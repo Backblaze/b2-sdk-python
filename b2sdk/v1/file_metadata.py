@@ -8,7 +8,7 @@
 #
 ######################################################################
 
-import b2sdk._v2 as v2
+import b2sdk.v2 as v2
 
 
 class FileMetadata(object):

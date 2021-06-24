@@ -32,7 +32,7 @@ In applications requiring enhanced security, using unique key per file is a good
 that makes managing such keys easier: `EncryptionSetting` holds a key identifier, aside from the key itself. This key
 identifier is saved in the metadata of all files uploaded, created or copied via **b2sdk** methods using `SSE-C`,
 under `sse_c_key_id` in `fileInfo`. This allows developers to create key managers that map those ids to keys, stored
-securely in a file or a database. Implementing such managers, and linking them to :class:`b2sdk.v1.AbstractSyncEncryptionSettingsProvider`
+securely in a file or a database. Implementing such managers, and linking them to :class:`b2sdk.v2.AbstractSyncEncryptionSettingsProvider`
 implementations (necessary for using Sync) is outside of the scope of this library.
 
 There is, however, a convention to such managers that authors of this library strongly suggest: if a manager needs to generate

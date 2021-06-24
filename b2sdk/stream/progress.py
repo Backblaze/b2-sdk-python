@@ -23,7 +23,7 @@ class AbstractStreamWithProgress(StreamWrapper):
         """
 
         :param stream: the stream to read from or write to
-        :param b2sdk.v1.AbstractProgressListener progress_listener: the listener that we tell about progress
+        :param b2sdk.v2.AbstractProgressListener progress_listener: the listener that we tell about progress
         :param int offset: the starting byte offset in the file
         """
         super(AbstractStreamWithProgress, self).__init__(stream)
