@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 * `BucketIdNotFound` thrown based on B2 cloud response
 
+### Removed
+* One unused import.
+
 ## [1.11.0] - 2021-06-24
 
 ### Changed
