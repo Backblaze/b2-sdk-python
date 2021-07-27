@@ -25,6 +25,7 @@ from .exception import (
     B2RequestTimeout, ClockSkew, ConnectionReset, interpret_b2_error, UnknownError, UnknownHost
 )
 from .api_config import B2HttpApiConfig, DEFAULT_HTTP_API_CONFIG
+from .b2http_adapter import NotDecompressingHTTPAdapter
 from .version import USER_AGENT
 
 logger = logging.getLogger(__name__)
@@ -171,6 +172,9 @@ class B2Http:
         """
         self.user_agent = self._get_user_agent(api_config.user_agent_append)
         self.session = api_config.http_session_factory()
+        if not api_config.decode_content:
+            self.session.adapters.clear()
+            self.session.mount('', NotDecompressingHTTPAdapter())
         self.callbacks = []
         if api_config.install_clock_skew_hook:
             self.add_callback(ClockSkewHook())

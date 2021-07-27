@@ -11,11 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Add `include_existing_files` parameter to `ReplicationSetupHelper`
 
 ### Changed
+* Downloading compressed files with `Content-Encoding` header set no longer causes them to be decompressed on the fly - 
+  it's an option
 * Change the per part retry limit from 5 to 20 for data transfer operations. Please note that the retry system is not considered to be a part of the public interface and is subject to be adjusted
 * Do not wait more than 64 seconds between retry attempts (unless server asks for it)
 * On longer failures wait an additional (random, up to 1s) amount of time to prevent client synchronization
 
 ### Fixed
+* Fix: downloading compressed files and decompressing them on the fly now does not cause a TruncatedOutput error
 * Fix `AccountInfo.is_master_key()`
 * Fix docstring of `SqliteAccountInfo`
 * Fix lifecycle rule type in the docs
