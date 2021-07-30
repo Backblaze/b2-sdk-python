@@ -11,7 +11,6 @@
 import datetime
 import requests
 import socket
-import sys
 
 from ..test_base import TestBase
 
@@ -22,10 +21,7 @@ from apiver_deps import B2Http
 from apiver_deps import B2HttpApiConfig
 from apiver_deps import ClockSkewHook
 
-if sys.version_info < (3, 3):
-    from mock import call, MagicMock, patch
-else:
-    from unittest.mock import call, MagicMock, patch
+from unittest.mock import call, MagicMock, patch
 
 
 class TestTranslateErrors(TestBase):
