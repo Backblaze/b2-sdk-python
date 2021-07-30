@@ -536,6 +536,8 @@ def interpret_b2_error(
         return MissingPart(post_params.get('fileId'))
     elif status == 400 and code == "part_sha1_mismatch":
         return PartSha1Mismatch(post_params.get('fileId'))
+    elif status == 400 and code == "bad_bucket_id":
+        return BucketIdNotFound(post_params.get('bucketId'))
     elif status == 400 and code == "bad_request":
         matcher = UPLOAD_TOKEN_USED_CONCURRENTLY_ERROR_MESSAGE_RE.match(message)
         if matcher is not None:

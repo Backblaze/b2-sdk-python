@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 * The `importlib-metadata` requirement is less strictly bound now (just >=3.3.0 for python > 3.5).
 
+### Added
+* `BucketIdNotFound` thrown based on B2 cloud response
+
 ## [1.11.0] - 2021-06-24
 
 ### Changed
