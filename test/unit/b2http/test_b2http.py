@@ -29,13 +29,13 @@ class TestTranslateErrors(TestBase):
         response = MagicMock()
         response.status_code = 200
         actual = B2Http._translate_errors(lambda: response)
-        self.assertTrue(response is actual)  # no assertIs until 2.7
+        self.assertIs(response, actual)
 
     def test_partial_content(self):
         response = MagicMock()
         response.status_code = 206
         actual = B2Http._translate_errors(lambda: response)
-        self.assertTrue(response is actual)  # no assertIs until 2.7
+        self.assertIs(response, actual)
 
     def test_b2_error(self):
         response = MagicMock()
@@ -107,29 +107,21 @@ class TestTranslateAndRetry(TestBase):
     def test_works_first_try(self):
         fcn = MagicMock()
         fcn.side_effect = [self.response]
-        self.assertTrue(
-            self.response is B2Http._translate_and_retry(fcn, 3)
-        )  # no assertIs until 2.7
+        self.assertIs(self.response, B2Http._translate_and_retry(fcn, 3))
 
     def test_non_retryable(self):
         with patch('time.sleep') as mock_time:
             fcn = MagicMock()
             fcn.side_effect = [BadJson('a'), self.response]
-            # no assertRaises until 2.7
-            try:
+            with self.assertRaises(BadJson):
                 B2Http._translate_and_retry(fcn, 3)
-                self.fail('should have raised BadJson')
-            except BadJson:
-                pass
             self.assertEqual([], mock_time.mock_calls)
 
     def test_works_second_try(self):
         with patch('time.sleep') as mock_time:
             fcn = MagicMock()
             fcn.side_effect = [ServiceError('a'), self.response]
-            self.assertTrue(
-                self.response is B2Http._translate_and_retry(fcn, 3)
-            )  # no assertIs until 2.7
+            self.assertIs(self.response, B2Http._translate_and_retry(fcn, 3))
             self.assertEqual([call(1.0)], mock_time.mock_calls)
 
     def test_never_works(self):
@@ -140,12 +132,8 @@ class TestTranslateAndRetry(TestBase):
                 ServiceError('a'),
                 ServiceError('a'), self.response
             ]
-            # no assertRaises until 2.7
-            try:
+            with self.assertRaises(ServiceError):
                 B2Http._translate_and_retry(fcn, 3)
-                self.fail('should have raised ServiceError')
-            except ServiceError:
-                pass
             self.assertEqual([call(1.0), call(1.5)], mock_time.mock_calls)
 
     def test_too_many_requests_works_after_sleep(self):
@@ -255,7 +243,7 @@ class TestB2Http(TestBase):
         self.session.get.return_value = self.response
         self.response.status_code = 200
         with self.b2_http.get_content(self.URL, self.HEADERS) as r:
-            self.assertTrue(self.response is r)  # no assertIs until 2.7
+            self.assertIs(self.response, r)
         self.session.get.assert_called_with(
             self.URL, headers=self.EXPECTED_HEADERS, stream=True, timeout=B2Http.TIMEOUT
         )
