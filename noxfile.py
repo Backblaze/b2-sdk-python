@@ -106,7 +106,8 @@ def unit(session):
     session.install(*REQUIREMENTS_TEST)
     args = ['--cov=b2sdk', '--cov-branch', '--cov-report=xml', '--doctest-modules']
     # TODO: Use session.parametrize for apiver
-    session.run('pytest', '--api=v2', *args, *session.posargs, 'test/unit')
+    session.run('pytest', '--api=v3', *args, *session.posargs, 'test/unit')
+    session.run('pytest', '--api=v2', '--cov-append', *args, *session.posargs, 'test/unit')
     session.run('pytest', '--api=v1', '--cov-append', *args, *session.posargs, 'test/unit')
     session.run('pytest', '--api=v0', '--cov-append', *args, *session.posargs, 'test/unit')
 
