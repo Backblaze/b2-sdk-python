@@ -208,8 +208,6 @@ from b2sdk.api_config import DEFAULT_HTTP_API_CONFIG
 from b2sdk.b2http import ClockSkewHook
 from b2sdk.b2http import HttpCallback
 from b2sdk.b2http import ResponseContextManager
-from b2sdk.b2http import _translate_and_retry as translate_and_retry  # for some reason importing a _private thing didn't work in tests
-from b2sdk.b2http import _translate_errors as translate_errors
 from b2sdk.bounded_queue_executor import BoundedQueueExecutor
 from b2sdk.cache import AbstractCache
 from b2sdk.cache import AuthInfoCache
