@@ -41,6 +41,7 @@ class B2Session(object):
         to methods of underlying raw_api and reauthorizes if necessary.
     """
     SQLITE_ACCOUNT_INFO_CLASS = staticmethod(SqliteAccountInfo)
+    B2HTTP_CLASS = staticmethod(B2Http)
 
     def __init__(
         self,
@@ -67,7 +68,7 @@ class B2Session(object):
         :param api_config
         """
 
-        self.raw_api = api_config.raw_api_class(B2Http(api_config))
+        self.raw_api = api_config.raw_api_class(self.B2HTTP_CLASS(api_config))
         if account_info is None:
             account_info = self.SQLITE_ACCOUNT_INFO_CLASS()
             if cache is None:

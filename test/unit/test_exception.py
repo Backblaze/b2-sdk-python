@@ -10,12 +10,13 @@
 
 import pytest
 
-from b2sdk.exception import FileOrBucketNotFound, ResourceNotFound
+from b2sdk.exception import ResourceNotFound
 from apiver_deps_exception import (
     AlreadyFailed,
     B2Error,
     BadJson,
     BadUploadUrl,
+    BucketIdNotFound,
     CapExceeded,
     Conflict,
     DuplicateBucketName,
@@ -140,6 +141,15 @@ class TestInterpretError:
     def test_too_many_requests_without_retry_after_header(self):
         error = self._check_one(TooManyRequests, 429, '', '', {})
         assert error.retry_after_seconds is None
+
+    @pytest.mark.apiver(
+        from_ver=3
+    )  # previous apivers throw this as well, but BucketIdNotFound is a different class in them
+    def test_bad_bucket_id(self):
+        error = self._check_one(
+            BucketIdNotFound, 400, 'bad_bucket_id', '', {}, {'bucketId': '1001'}
+        )
+        assert error.bucket_id == '1001'
 
     def test_service_error(self):
         error = interpret_b2_error(500, 'code', 'message', {})

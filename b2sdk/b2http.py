@@ -43,101 +43,6 @@ def _print_exception(e, indent=''):
             _print_exception(a, indent + '        ')
 
 
-def _translate_errors(fcn, post_params=None):
-    """
-    Call the given function, turning any exception raised into the right
-    kind of B2Error.
-
-    :param dict post_params: request parameters
-    """
-    try:
-        response = fcn()
-        if response.status_code not in [200, 206]:
-            # Decode the error object returned by the service
-            error = json.loads(response.content.decode('utf-8')) if response.content else {}
-            raise interpret_b2_error(
-                int(error.get('status', response.status_code)),
-                error.get('code'),
-                error.get('message'),
-                response.headers,
-                post_params,
-            )
-        return response
-
-    except B2Error:
-        raise  # pass through exceptions from just above
-
-    except requests.ConnectionError as e0:
-        e1 = e0.args[0]
-        if isinstance(e1, requests.packages.urllib3.exceptions.MaxRetryError):
-            msg = e1.args[0]
-            if 'nodename nor servname provided, or not known' in msg:
-                # Unknown host, or DNS failing.  In the context of calling
-                # B2, this means that something is down between here and
-                # Backblaze, so we treat it like 503 Service Unavailable.
-                raise UnknownHost()
-        elif isinstance(e1, requests.packages.urllib3.exceptions.ProtocolError):
-            e2 = e1.args[1]
-            if isinstance(e2, socket.error):
-                if len(e2.args) >= 2 and e2.args[1] == 'Broken pipe':
-                    # Broken pipes are usually caused by the service rejecting
-                    # an upload request for cause, so we use a 400 Bad Request
-                    # code.
-                    raise BrokenPipe()
-        raise B2ConnectionError(str(e0))
-
-    except requests.Timeout as e:
-        raise B2RequestTimeout(str(e))
-
-    except Exception as e:
-        text = repr(e)
-
-        # This is a special case to handle when urllib3 doesn't translate
-        # ECONNRESET into something that requests can turn into something
-        # we understand.  The SysCallError is from the optional library
-        # pyOpenSsl, which we don't require, so we can't import it and
-        # catch it explicitly.
-        #
-        # The text from one such error looks like this: SysCallError(104, 'ECONNRESET')
-        if text.startswith('SysCallError'):
-            if 'ECONNRESET' in text:
-                raise ConnectionReset()
-
-        logger.exception('_translate_errors has intercepted an unexpected exception')
-        raise UnknownError(text)
-
-
-def _translate_and_retry(fcn, try_count, post_params=None):
-    """
-    Try calling fcn try_count times, retrying only if
-    the exception is a retryable B2Error.
-
-    :param int try_count: a number of retries
-    :param dict post_params: request parameters
-    """
-    # For all but the last try, catch the exception.
-    wait_time = 1.0
-    for _ in range(try_count - 1):
-        try:
-            return _translate_errors(fcn, post_params)
-        except B2Error as e:
-            if not e.should_retry_http():
-                raise
-            logger.debug(str(e), exc_info=True)
-            if e.retry_after_seconds is not None:
-                sleep_duration = e.retry_after_seconds
-                sleep_reason = 'server asked us to'
-            else:
-                sleep_duration = wait_time
-                sleep_reason = 'that is what the default exponential backoff is'
-            logger.info('Pausing thread for %i seconds because %s', sleep_duration, sleep_reason)
-            time.sleep(sleep_duration)
-            wait_time *= 1.5
-
-    # If the last try gets an exception, it will be raised.
-    return _translate_errors(fcn, post_params)
-
-
 class ResponseContextManager(object):
     """
     A context manager that closes a requests.Response when done.
@@ -303,7 +208,7 @@ class B2Http(object):
             return response
 
         try:
-            response = _translate_and_retry(do_post, try_count, post_params)
+            response = self._translate_and_retry(do_post, try_count, post_params)
         except B2RequestTimeout:
             # this forces a token refresh, which is necessary if request is still alive
             # on the server but has terminated for some reason on the client. See #79
@@ -374,7 +279,7 @@ class B2Http(object):
             self._run_post_request_hooks('GET', url, request_headers, response)
             return response
 
-        response = _translate_and_retry(do_get, try_count, None)
+        response = self._translate_and_retry(do_get, try_count, None)
         return ResponseContextManager(response)
 
     def head_content(self, url: str, headers: Dict[str, Any], try_count: int = 5) -> Dict[str, Any]:
@@ -412,7 +317,7 @@ class B2Http(object):
             self._run_post_request_hooks('HEAD', url, request_headers, response)
             return response
 
-        return _translate_and_retry(do_head, try_count, None)
+        return self._translate_and_retry(do_head, try_count, None)
 
     @classmethod
     def _get_user_agent(cls, user_agent_append):
@@ -427,6 +332,103 @@ class B2Http(object):
     def _run_post_request_hooks(self, method, url, headers, response):
         for callback in self.callbacks:
             callback.post_request(method, url, headers, response)
+
+    @classmethod
+    def _translate_errors(cls, fcn, post_params=None):
+        """
+        Call the given function, turning any exception raised into the right
+        kind of B2Error.
+
+        :param dict post_params: request parameters
+        """
+        try:
+            response = fcn()
+            if response.status_code not in [200, 206]:
+                # Decode the error object returned by the service
+                error = json.loads(response.content.decode('utf-8')) if response.content else {}
+                raise interpret_b2_error(
+                    int(error.get('status', response.status_code)),
+                    error.get('code'),
+                    error.get('message'),
+                    response.headers,
+                    post_params,
+                )
+            return response
+
+        except B2Error:
+            raise  # pass through exceptions from just above
+
+        except requests.ConnectionError as e0:
+            e1 = e0.args[0]
+            if isinstance(e1, requests.packages.urllib3.exceptions.MaxRetryError):
+                msg = e1.args[0]
+                if 'nodename nor servname provided, or not known' in msg:
+                    # Unknown host, or DNS failing.  In the context of calling
+                    # B2, this means that something is down between here and
+                    # Backblaze, so we treat it like 503 Service Unavailable.
+                    raise UnknownHost()
+            elif isinstance(e1, requests.packages.urllib3.exceptions.ProtocolError):
+                e2 = e1.args[1]
+                if isinstance(e2, socket.error):
+                    if len(e2.args) >= 2 and e2.args[1] == 'Broken pipe':
+                        # Broken pipes are usually caused by the service rejecting
+                        # an upload request for cause, so we use a 400 Bad Request
+                        # code.
+                        raise BrokenPipe()
+            raise B2ConnectionError(str(e0))
+
+        except requests.Timeout as e:
+            raise B2RequestTimeout(str(e))
+
+        except Exception as e:
+            text = repr(e)
+
+            # This is a special case to handle when urllib3 doesn't translate
+            # ECONNRESET into something that requests can turn into something
+            # we understand.  The SysCallError is from the optional library
+            # pyOpenSsl, which we don't require, so we can't import it and
+            # catch it explicitly.
+            #
+            # The text from one such error looks like this: SysCallError(104, 'ECONNRESET')
+            if text.startswith('SysCallError'):
+                if 'ECONNRESET' in text:
+                    raise ConnectionReset()
+
+            logger.exception('_translate_errors has intercepted an unexpected exception')
+            raise UnknownError(text)
+
+    @classmethod
+    def _translate_and_retry(cls, fcn, try_count, post_params=None):
+        """
+        Try calling fcn try_count times, retrying only if
+        the exception is a retryable B2Error.
+
+        :param int try_count: a number of retries
+        :param dict post_params: request parameters
+        """
+        # For all but the last try, catch the exception.
+        wait_time = 1.0
+        for _ in range(try_count - 1):
+            try:
+                return cls._translate_errors(fcn, post_params)
+            except B2Error as e:
+                if not e.should_retry_http():
+                    raise
+                logger.debug(str(e), exc_info=True)
+                if e.retry_after_seconds is not None:
+                    sleep_duration = e.retry_after_seconds
+                    sleep_reason = 'server asked us to'
+                else:
+                    sleep_duration = wait_time
+                    sleep_reason = 'that is what the default exponential backoff is'
+                logger.info(
+                    'Pausing thread for %i seconds because %s', sleep_duration, sleep_reason
+                )
+                time.sleep(sleep_duration)
+                wait_time *= 1.5
+
+        # If the last try gets an exception, it will be raised.
+        return cls._translate_errors(fcn, post_params)
 
 
 def test_http():

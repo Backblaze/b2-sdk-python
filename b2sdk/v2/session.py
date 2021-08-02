@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: b2sdk/v2/__init__.py
+# File: b2sdk/v2/session.py
 #
 # Copyright 2021 Backblaze Inc. All Rights Reserved.
 #
@@ -8,9 +8,10 @@
 #
 ######################################################################
 
-from b2sdk._v3 import *  # noqa
-
-from .api import B2Api
+from b2sdk import _v3 as v3
 from .b2http import B2Http
-from .bucket import Bucket, BucketFactory
-from .session import B2Session
+
+
+# Override to use legacy B2Http
+class B2Session(v3.B2Session):
+    B2HTTP_CLASS = staticmethod(B2Http)
