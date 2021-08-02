@@ -13,10 +13,17 @@ import pytest
 import apiver_deps
 from apiver_deps import B2Api
 from apiver_deps import B2HttpApiConfig
+from apiver_deps import DownloadVersion
 from apiver_deps import DummyCache
+from apiver_deps import EncryptionAlgorithm
+from apiver_deps import EncryptionKey
+from apiver_deps import EncryptionMode
+from apiver_deps import EncryptionSetting
+from apiver_deps import FileRetentionSetting
 from apiver_deps import InMemoryAccountInfo
 from apiver_deps import LegalHold
 from apiver_deps import RawSimulator
+from apiver_deps import RetentionMode
 
 if apiver_deps.V <= 1:
     from apiver_deps import FileVersionInfo as VFileVersion
@@ -61,3 +68,39 @@ class TestFileVersion:
         refreshed_version = initial_file_version.get_fresh_state()
         assert isinstance(refreshed_version, VFileVersion)
         assert refreshed_version.as_dict() == fetched_version.as_dict()
+
+    def test_clone_file_version_and_download_version(self):
+        encryption = EncryptionSetting(
+            EncryptionMode.SSE_C, EncryptionAlgorithm.AES256, EncryptionKey(b'secret', None)
+        )
+        self.bucket = self.api.create_bucket('testbucket', 'allPrivate', is_file_lock_enabled=True)
+        initial_file_version = self.bucket.upload_bytes(
+            b'nothing',
+            'test_file',
+            content_type='video/mp4',
+            file_infos={
+                'file': 'info',
+                'b2-content-language': 'en_US',
+                'b2-content-disposition': 'attachment',
+                'b2-expires': '2100-01-01',
+                'b2-cache-control': 'unknown',
+                'b2-content-encoding': 'text',
+            },
+            encryption=encryption,
+            file_retention=FileRetentionSetting(RetentionMode.GOVERNANCE, 100),
+            legal_hold=LegalHold.ON,
+        )
+        assert initial_file_version.clone() == initial_file_version
+        cloned = initial_file_version.clone(legal_hold=LegalHold.OFF)
+        assert isinstance(cloned, VFileVersion)
+        assert cloned.as_dict() == {
+            **initial_file_version.as_dict(), 'legalHold': LegalHold.OFF.value
+        }
+
+        download_version = self.api.download_file_by_id(
+            initial_file_version.id_, encryption=encryption
+        ).download_version
+        assert download_version.clone() == download_version
+        cloned = download_version.clone(legal_hold=LegalHold.OFF)
+        assert isinstance(cloned, DownloadVersion)
+        assert cloned.as_dict() == {**download_version.as_dict(), 'legalHold': LegalHold.OFF.value}

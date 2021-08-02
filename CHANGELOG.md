@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 * `BucketIdNotFound` thrown based on B2 cloud response
+* `clone` method to `FileVersion` and `DownloadVersion`
 
 ### Fixed
 * FileSimulator returns special file info headers properly

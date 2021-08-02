@@ -8,7 +8,8 @@
 #
 ######################################################################
 
-from typing import Dict, Optional, Union, TYPE_CHECKING
+from abc import ABC, abstractmethod
+from typing import Dict, Optional, Union, Tuple, TYPE_CHECKING
 
 from .encryption.setting import EncryptionSetting, EncryptionSettingFactory
 from .http_constants import FILE_INFO_HEADER_PREFIX_LOWER, SRC_LAST_MODIFIED_MILLIS
@@ -19,7 +20,7 @@ if TYPE_CHECKING:
     from .api import B2Api
 
 
-class BaseFileVersion:
+class BaseFileVersion(ABC):
     """
     Base class for representing file metadata in B2 cloud.
 
@@ -70,6 +71,13 @@ class BaseFileVersion:
             self.mod_time_millis = int(self.file_info[SRC_LAST_MODIFIED_MILLIS])
         else:
             self.mod_time_millis = self.upload_timestamp
+
+    @abstractmethod
+    def clone(self, **new_attributes: Dict[str, object]):
+        """
+        Create new instance based on the old one, overriding attributes with :code:`new_attributes`
+        (only applies to arguments passed to __init__)
+        """
 
     def as_dict(self):
         """ represents the object as a dict which looks almost exactly like the raw api output for upload/list """
@@ -170,6 +178,26 @@ class FileVersion(BaseFileVersion):
             legal_hold=legal_hold,
         )
 
+    def clone(self, **new_attributes: Dict[str, object]):
+        args = {
+            'api': self.api,
+            'id_': self.id_,
+            'file_name': self.file_name,
+            'size': self.size,
+            'content_type': self.content_type,
+            'content_sha1': self.content_sha1,
+            'file_info': self.file_info,
+            'upload_timestamp': self.upload_timestamp,
+            'account_id': self.account_id,
+            'bucket_id': self.bucket_id,
+            'action': self.action,
+            'content_md5': self.content_md5,
+            'server_side_encryption': self.server_side_encryption,
+            'file_retention': self.file_retention,
+            'legal_hold': self.legal_hold,
+        }
+        return self.__class__(**{**args, **new_attributes})
+
     def as_dict(self):
         result = super().as_dict()
         result['accountId'] = self.account_id
@@ -246,6 +274,29 @@ class DownloadVersion(BaseFileVersion):
             file_retention=file_retention,
             legal_hold=legal_hold,
         )
+
+    def clone(self, **new_attributes: Dict[str, object]):
+        args = {
+            'api': self.api,
+            'id_': self.id_,
+            'file_name': self.file_name,
+            'size': self.size,
+            'content_type': self.content_type,
+            'content_sha1': self.content_sha1,
+            'file_info': self.file_info,
+            'upload_timestamp': self.upload_timestamp,
+            'server_side_encryption': self.server_side_encryption,
+            'range_': self.range_,
+            'content_disposition': self.content_disposition,
+            'content_length': self.content_length,
+            'content_language': self.content_language,
+            'expires': self._expires,
+            'cache_control': self._cache_control,
+            'content_encoding': self.content_encoding,
+            'file_retention': self.file_retention,
+            'legal_hold': self.legal_hold,
+        }
+        return self.__class__(**{**args, **new_attributes})
 
 
 class FileVersionFactory(object):

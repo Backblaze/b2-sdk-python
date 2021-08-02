@@ -149,6 +149,7 @@ class FileSimulator(object):
         'b2-cache-control': 'Cache-Control',
         'b2-content-encoding': 'Content-Encoding',
     }
+
     def __init__(
         self,
         account_id,
