@@ -14,10 +14,12 @@ from typing import Dict, Optional, Union, Tuple, TYPE_CHECKING
 from .encryption.setting import EncryptionSetting, EncryptionSettingFactory
 from .http_constants import FILE_INFO_HEADER_PREFIX_LOWER, SRC_LAST_MODIFIED_MILLIS
 from .file_lock import FileRetentionSetting, LegalHold, NO_RETENTION_FILE_SETTING
+from .progress import AbstractProgressListener
 from .utils.range_ import Range
 
 if TYPE_CHECKING:
     from .api import B2Api
+    from .transfer.inbound.downloaded_file import DownloadedFile
 
 
 class BaseFileVersion(ABC):
@@ -73,7 +75,7 @@ class BaseFileVersion(ABC):
             self.mod_time_millis = self.upload_timestamp
 
     @abstractmethod
-    def clone(self, **new_attributes: Dict[str, object]):
+    def clone(self, **new_attributes):
         """
         Create new instance based on the old one, overriding attributes with :code:`new_attributes`
         (only applies to arguments passed to __init__)
@@ -120,6 +122,23 @@ class BaseFileVersion(ABC):
         for klass in self.__class__.__mro__[-1::-1]:
             all_slots.extend(getattr(klass, '__slots__', []))
         return all_slots
+
+    def delete(self) -> 'FileIdAndName':
+        return self.api.delete_file_version(self.id_, self.file_name)
+
+    def update_legal_hold(self, legal_hold: LegalHold) -> 'BaseFileVersion':
+        legal_hold = self.api.update_file_legal_hold(self.id_, self.file_name, legal_hold)
+        return self.clone(legal_hold=legal_hold)
+
+    def update_retention(
+        self,
+        file_retention: FileRetentionSetting,
+        bypass_governance: bool = False,
+    ) -> 'BaseFileVersion':
+        file_retention = self.api.update_file_retention(
+            self.id_, self.file_name, file_retention, bypass_governance
+        )
+        return self.clone(file_retention=file_retention)
 
 
 class FileVersion(BaseFileVersion):
@@ -216,6 +235,19 @@ class FileVersion(BaseFileVersion):
         This method does NOT change the object it is called on.
         """
         return self.api.get_file_info(self.id_)
+
+    def download(
+        self,
+        progress_listener: Optional[AbstractProgressListener] = None,
+        range_: Optional[Tuple[int, int]] = None,
+        encryption: Optional[EncryptionSetting] = None,
+    ) -> 'DownloadedFile':
+        return self.api.download_file_by_id(
+            self.id_,
+            progress_listener=progress_listener,
+            range_=range_,
+            encryption=encryption,
+        )
 
 
 class DownloadVersion(BaseFileVersion):
