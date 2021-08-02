@@ -246,12 +246,14 @@ class B2Api(metaclass=B2TraceMeta):
         file_name: str,
         file_retention: FileRetentionSetting,
         bypass_governance: bool = False,
-    ):
-        self.session.update_file_retention(
-            file_id,
-            file_name,
-            file_retention,
-            bypass_governance,
+    ) -> FileRetentionSetting:
+        return FileRetentionSetting.from_server_response(
+            self.session.update_file_retention(
+                file_id,
+                file_name,
+                file_retention,
+                bypass_governance,
+            )
         )
 
     def update_file_legal_hold(
@@ -259,11 +261,13 @@ class B2Api(metaclass=B2TraceMeta):
         file_id: str,
         file_name: str,
         legal_hold: LegalHold,
-    ):
-        self.session.update_file_legal_hold(
-            file_id,
-            file_name,
-            legal_hold,
+    ) -> LegalHold:
+        return LegalHold.from_server_response(
+            self.session.update_file_legal_hold(
+                file_id,
+                file_name,
+                legal_hold,
+            )
         )
 
     def get_bucket_by_id(self, bucket_id: str) -> Bucket:
