@@ -142,7 +142,13 @@ class FileSimulator(object):
     """
 
     CHECK_ENCRYPTION = True
-
+    SPECIAL_FILE_INFOS = {  # when downloading, these file info keys are translated to specialized headers
+        'b2-content-disposition': 'Content-Disposition',
+        'b2-content-language': 'Content-Language',
+        'b2-expires': 'Expires',
+        'b2-cache-control': 'Cache-Control',
+        'b2-content-encoding': 'Content-Encoding',
+    }
     def __init__(
         self,
         account_id,
@@ -221,7 +227,11 @@ class FileSimulator(object):
             }
         )
         for key, value in self.file_info.items():
-            headers[FILE_INFO_HEADER_PREFIX + key] = value
+            key_lower = key.lower()
+            if key_lower in self.SPECIAL_FILE_INFOS:
+                headers[self.SPECIAL_FILE_INFOS[key_lower]] = value
+            else:
+                headers[FILE_INFO_HEADER_PREFIX + key] = value
 
         if account_auth_token_or_none is not None and self.bucket.is_file_lock_enabled:
             not_permitted = []
@@ -260,8 +270,6 @@ class FileSimulator(object):
             headers['Content-Range'] = 'bytes %d-%d/%d' % (
                 range_[0], range_[0] + content_length - 1, len(self.data_bytes)
             )  # yapf: disable
-        for key, value in self.file_info.items():
-            headers[FILE_INFO_HEADER_PREFIX + key] = value
         return headers
 
     def as_upload_result(self, account_auth_token):
