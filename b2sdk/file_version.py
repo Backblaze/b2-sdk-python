@@ -75,7 +75,7 @@ class BaseFileVersion(ABC):
             self.mod_time_millis = self.upload_timestamp
 
     @abstractmethod
-    def clone(self, **new_attributes):
+    def _clone(self, **new_attributes):
         """
         Create new instance based on the old one, overriding attributes with :code:`new_attributes`
         (only applies to arguments passed to __init__)
@@ -128,7 +128,7 @@ class BaseFileVersion(ABC):
 
     def update_legal_hold(self, legal_hold: LegalHold) -> 'BaseFileVersion':
         legal_hold = self.api.update_file_legal_hold(self.id_, self.file_name, legal_hold)
-        return self.clone(legal_hold=legal_hold)
+        return self._clone(legal_hold=legal_hold)
 
     def update_retention(
         self,
@@ -138,7 +138,7 @@ class BaseFileVersion(ABC):
         file_retention = self.api.update_file_retention(
             self.id_, self.file_name, file_retention, bypass_governance
         )
-        return self.clone(file_retention=file_retention)
+        return self._clone(file_retention=file_retention)
 
 
 class FileVersion(BaseFileVersion):
@@ -197,7 +197,7 @@ class FileVersion(BaseFileVersion):
             legal_hold=legal_hold,
         )
 
-    def clone(self, **new_attributes: Dict[str, object]):
+    def _clone(self, **new_attributes: Dict[str, object]):
         args = {
             'api': self.api,
             'id_': self.id_,
@@ -307,7 +307,7 @@ class DownloadVersion(BaseFileVersion):
             legal_hold=legal_hold,
         )
 
-    def clone(self, **new_attributes: Dict[str, object]):
+    def _clone(self, **new_attributes: Dict[str, object]):
         args = {
             'api': self.api,
             'id_': self.id_,

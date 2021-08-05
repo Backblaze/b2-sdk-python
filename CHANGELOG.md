@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 * `BucketIdNotFound` thrown based on B2 cloud response
-* `clone` method to `FileVersion` and `DownloadVersion`
+* `_clone` method to `FileVersion` and `DownloadVersion`
 * `delete`, `update_legal_hold`, `update_retention` and `download` methods added to `FileVersion`
 
 ### Fixed

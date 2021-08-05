@@ -92,8 +92,8 @@ class TestFileVersion:
             file_retention=FileRetentionSetting(RetentionMode.GOVERNANCE, 100),
             legal_hold=LegalHold.ON,
         )
-        assert initial_file_version.clone() == initial_file_version
-        cloned = initial_file_version.clone(legal_hold=LegalHold.OFF)
+        assert initial_file_version._clone() == initial_file_version
+        cloned = initial_file_version._clone(legal_hold=LegalHold.OFF)
         assert isinstance(cloned, VFileVersion)
         assert cloned.as_dict() == {
             **initial_file_version.as_dict(), 'legalHold': LegalHold.OFF.value
@@ -102,8 +102,8 @@ class TestFileVersion:
         download_version = self.api.download_file_by_id(
             initial_file_version.id_, encryption=encryption
         ).download_version
-        assert download_version.clone() == download_version
-        cloned = download_version.clone(legal_hold=LegalHold.OFF)
+        assert download_version._clone() == download_version
+        cloned = download_version._clone(legal_hold=LegalHold.OFF)
         assert isinstance(cloned, DownloadVersion)
         assert cloned.as_dict() == {**download_version.as_dict(), 'legalHold': LegalHold.OFF.value}
 
