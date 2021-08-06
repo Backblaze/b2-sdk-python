@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.12.0] - 2021-08-06
+
 ### Changed
 * The `importlib-metadata` requirement is less strictly bound now (just >=3.3.0 for python > 3.5).
 * `B2Api` `update_file_legal_hold` and `update_file_retention_setting` now return the set values 
@@ -248,7 +250,8 @@ has changed.
 ### Added
 Initial official release of SDK as a separate package (until now it was a part of B2 CLI)
 
-[Unreleased]: https://github.com/Backblaze/b2-sdk-python/compare/v1.11.0...HEAD
+[Unreleased]: https://github.com/Backblaze/b2-sdk-python/compare/v1.12.0...HEAD
+[1.12.0]: https://github.com/Backblaze/b2-sdk-python/compare/v1.11.0...v1.12.0
 [1.11.0]: https://github.com/Backblaze/b2-sdk-python/compare/v1.10.0...v1.11.0
 [1.10.0]: https://github.com/Backblaze/b2-sdk-python/compare/v1.9.0...v1.10.0
 [1.9.0]: https://github.com/Backblaze/b2-sdk-python/compare/v1.8.0...v1.9.0
