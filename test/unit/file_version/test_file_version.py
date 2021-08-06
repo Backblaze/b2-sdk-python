@@ -9,14 +9,24 @@
 ######################################################################
 
 import pytest
+import os.path
 
 import apiver_deps
 from apiver_deps import B2Api
 from apiver_deps import B2HttpApiConfig
+from apiver_deps import DownloadVersion
 from apiver_deps import DummyCache
+from apiver_deps import EncryptionAlgorithm
+from apiver_deps import EncryptionKey
+from apiver_deps import EncryptionMode
+from apiver_deps import EncryptionSetting
+from apiver_deps import FileIdAndName
+from apiver_deps import FileRetentionSetting
 from apiver_deps import InMemoryAccountInfo
 from apiver_deps import LegalHold
 from apiver_deps import RawSimulator
+from apiver_deps import RetentionMode
+from apiver_deps_exception import FileNotPresent
 
 if apiver_deps.V <= 1:
     from apiver_deps import FileVersionInfo as VFileVersion
@@ -35,6 +45,8 @@ class TestFileVersion:
         self.raw_api = self.api.session.raw_api
         (self.application_key_id, self.master_key) = self.raw_api.create_account()
         self.api.authorize_account('production', self.application_key_id, self.master_key)
+        self.bucket = self.api.create_bucket('testbucket', 'allPrivate', is_file_lock_enabled=True)
+        self.file_version = self.bucket.upload_bytes(b'nothing', 'test_file')
 
     @pytest.mark.apiver(to_ver=1)
     def test_format_ls_entry(self):
@@ -49,15 +61,86 @@ class TestFileVersion:
         assert expected_entry == file_version_info.format_ls_entry()
 
     def test_get_fresh_state(self):
-        self.bucket = self.api.create_bucket('testbucket', 'allPrivate', is_file_lock_enabled=True)
-        initial_file_version = self.bucket.upload_bytes(b'nothing', 'test_file')
         self.api.update_file_legal_hold(
-            initial_file_version.id_, initial_file_version.file_name, LegalHold.ON
+            self.file_version.id_, self.file_version.file_name, LegalHold.ON
         )
-        fetched_version = self.api.get_file_info(initial_file_version.id_)
+        fetched_version = self.api.get_file_info(self.file_version.id_)
         if apiver_deps.V <= 1:
             fetched_version = self.api.file_version_factory.from_api_response(fetched_version)
-        assert initial_file_version.as_dict() != fetched_version.as_dict()
-        refreshed_version = initial_file_version.get_fresh_state()
+        assert self.file_version.as_dict() != fetched_version.as_dict()
+        refreshed_version = self.file_version.get_fresh_state()
         assert isinstance(refreshed_version, VFileVersion)
         assert refreshed_version.as_dict() == fetched_version.as_dict()
+
+    def test_clone_file_version_and_download_version(self):
+        encryption = EncryptionSetting(
+            EncryptionMode.SSE_C, EncryptionAlgorithm.AES256, EncryptionKey(b'secret', None)
+        )
+        initial_file_version = self.bucket.upload_bytes(
+            b'nothing',
+            'test_file',
+            content_type='video/mp4',
+            file_infos={
+                'file': 'info',
+                'b2-content-language': 'en_US',
+                'b2-content-disposition': 'attachment',
+                'b2-expires': '2100-01-01',
+                'b2-cache-control': 'unknown',
+                'b2-content-encoding': 'text',
+            },
+            encryption=encryption,
+            file_retention=FileRetentionSetting(RetentionMode.GOVERNANCE, 100),
+            legal_hold=LegalHold.ON,
+        )
+        assert initial_file_version._clone() == initial_file_version
+        cloned = initial_file_version._clone(legal_hold=LegalHold.OFF)
+        assert isinstance(cloned, VFileVersion)
+        assert cloned.as_dict() == {
+            **initial_file_version.as_dict(), 'legalHold': LegalHold.OFF.value
+        }
+
+        download_version = self.api.download_file_by_id(
+            initial_file_version.id_, encryption=encryption
+        ).download_version
+        assert download_version._clone() == download_version
+        cloned = download_version._clone(legal_hold=LegalHold.OFF)
+        assert isinstance(cloned, DownloadVersion)
+        assert cloned.as_dict() == {**download_version.as_dict(), 'legalHold': LegalHold.OFF.value}
+
+    def test_update_legal_hold(self):
+        new_file_version = self.file_version.update_legal_hold(LegalHold.ON)
+        assert isinstance(new_file_version, VFileVersion)
+        assert new_file_version.legal_hold == LegalHold.ON
+
+        download_version = self.api.download_file_by_id(self.file_version.id_).download_version
+        new_download_version = download_version.update_legal_hold(LegalHold.ON)
+        assert isinstance(new_download_version, DownloadVersion)
+        assert new_download_version.legal_hold == LegalHold.ON
+
+    def test_update_retention(self):
+        new_retention = FileRetentionSetting(RetentionMode.COMPLIANCE, 100)
+
+        new_file_version = self.file_version.update_retention(new_retention)
+        assert isinstance(new_file_version, VFileVersion)
+        assert new_file_version.file_retention == new_retention
+
+        download_version = self.api.download_file_by_id(self.file_version.id_).download_version
+        new_download_version = download_version.update_retention(new_retention)
+        assert isinstance(new_download_version, DownloadVersion)
+        assert new_download_version.file_retention == new_retention
+
+    def test_delete_file_version(self):
+        ret = self.file_version.delete()
+        assert isinstance(ret, FileIdAndName)
+        with pytest.raises(FileNotPresent):
+            self.bucket.get_file_info_by_name(self.file_version.file_name)
+
+    def test_delete_download_version(self):
+        download_version = self.api.download_file_by_id(self.file_version.id_).download_version
+        ret = download_version.delete()
+        assert isinstance(ret, FileIdAndName)
+        with pytest.raises(FileNotPresent):
+            self.bucket.get_file_info_by_name(self.file_version.file_name)
+
+    # FileVersion.download tests are not here, because another test file already has all the facilities for such test
+    # prepared

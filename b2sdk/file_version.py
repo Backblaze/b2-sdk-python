@@ -8,18 +8,21 @@
 #
 ######################################################################
 
-from typing import Dict, Optional, Union, TYPE_CHECKING
+from abc import ABC, abstractmethod
+from typing import Dict, Optional, Union, Tuple, TYPE_CHECKING
 
 from .encryption.setting import EncryptionSetting, EncryptionSettingFactory
 from .http_constants import FILE_INFO_HEADER_PREFIX_LOWER, SRC_LAST_MODIFIED_MILLIS
 from .file_lock import FileRetentionSetting, LegalHold, NO_RETENTION_FILE_SETTING
+from .progress import AbstractProgressListener
 from .utils.range_ import Range
 
 if TYPE_CHECKING:
     from .api import B2Api
+    from .transfer.inbound.downloaded_file import DownloadedFile
 
 
-class BaseFileVersion:
+class BaseFileVersion(ABC):
     """
     Base class for representing file metadata in B2 cloud.
 
@@ -71,6 +74,13 @@ class BaseFileVersion:
         else:
             self.mod_time_millis = self.upload_timestamp
 
+    @abstractmethod
+    def _clone(self, **new_attributes):
+        """
+        Create new instance based on the old one, overriding attributes with :code:`new_attributes`
+        (only applies to arguments passed to __init__)
+        """
+
     def as_dict(self):
         """ represents the object as a dict which looks almost exactly like the raw api output for upload/list """
         result = {
@@ -112,6 +122,23 @@ class BaseFileVersion:
         for klass in self.__class__.__mro__[-1::-1]:
             all_slots.extend(getattr(klass, '__slots__', []))
         return all_slots
+
+    def delete(self) -> 'FileIdAndName':
+        return self.api.delete_file_version(self.id_, self.file_name)
+
+    def update_legal_hold(self, legal_hold: LegalHold) -> 'BaseFileVersion':
+        legal_hold = self.api.update_file_legal_hold(self.id_, self.file_name, legal_hold)
+        return self._clone(legal_hold=legal_hold)
+
+    def update_retention(
+        self,
+        file_retention: FileRetentionSetting,
+        bypass_governance: bool = False,
+    ) -> 'BaseFileVersion':
+        file_retention = self.api.update_file_retention(
+            self.id_, self.file_name, file_retention, bypass_governance
+        )
+        return self._clone(file_retention=file_retention)
 
 
 class FileVersion(BaseFileVersion):
@@ -170,6 +197,26 @@ class FileVersion(BaseFileVersion):
             legal_hold=legal_hold,
         )
 
+    def _clone(self, **new_attributes: Dict[str, object]):
+        args = {
+            'api': self.api,
+            'id_': self.id_,
+            'file_name': self.file_name,
+            'size': self.size,
+            'content_type': self.content_type,
+            'content_sha1': self.content_sha1,
+            'file_info': self.file_info,
+            'upload_timestamp': self.upload_timestamp,
+            'account_id': self.account_id,
+            'bucket_id': self.bucket_id,
+            'action': self.action,
+            'content_md5': self.content_md5,
+            'server_side_encryption': self.server_side_encryption,
+            'file_retention': self.file_retention,
+            'legal_hold': self.legal_hold,
+        }
+        return self.__class__(**{**args, **new_attributes})
+
     def as_dict(self):
         result = super().as_dict()
         result['accountId'] = self.account_id
@@ -188,6 +235,19 @@ class FileVersion(BaseFileVersion):
         This method does NOT change the object it is called on.
         """
         return self.api.get_file_info(self.id_)
+
+    def download(
+        self,
+        progress_listener: Optional[AbstractProgressListener] = None,
+        range_: Optional[Tuple[int, int]] = None,
+        encryption: Optional[EncryptionSetting] = None,
+    ) -> 'DownloadedFile':
+        return self.api.download_file_by_id(
+            self.id_,
+            progress_listener=progress_listener,
+            range_=range_,
+            encryption=encryption,
+        )
 
 
 class DownloadVersion(BaseFileVersion):
@@ -246,6 +306,29 @@ class DownloadVersion(BaseFileVersion):
             file_retention=file_retention,
             legal_hold=legal_hold,
         )
+
+    def _clone(self, **new_attributes: Dict[str, object]):
+        args = {
+            'api': self.api,
+            'id_': self.id_,
+            'file_name': self.file_name,
+            'size': self.size,
+            'content_type': self.content_type,
+            'content_sha1': self.content_sha1,
+            'file_info': self.file_info,
+            'upload_timestamp': self.upload_timestamp,
+            'server_side_encryption': self.server_side_encryption,
+            'range_': self.range_,
+            'content_disposition': self.content_disposition,
+            'content_length': self.content_length,
+            'content_language': self.content_language,
+            'expires': self._expires,
+            'cache_control': self._cache_control,
+            'content_encoding': self.content_encoding,
+            'file_retention': self.file_retention,
+            'legal_hold': self.legal_hold,
+        }
+        return self.__class__(**{**args, **new_attributes})
 
 
 class FileVersionFactory(object):

@@ -136,6 +136,10 @@ class FileRetentionSetting:
         )
 
     @classmethod
+    def from_server_response(cls, server_response: dict) -> 'FileRetentionSetting':
+        return cls.from_file_retention_value_dict(server_response['fileRetention'])
+
+    @classmethod
     def from_response_headers(cls, headers) -> 'FileRetentionSetting':
         retention_mode_header = 'X-Bz-File-Retention-Mode'
         retain_until_header = 'X-Bz-File-Retention-Retain-Until-Timestamp'
@@ -213,6 +217,10 @@ class LegalHold(enum.Enum):
         if not file_version_dict['legalHold']['isClientAuthorizedToRead']:
             return cls.UNKNOWN
         return cls.from_string_or_none(file_version_dict['legalHold']['value'])
+
+    @classmethod
+    def from_server_response(cls, server_response: dict) -> 'LegalHold':
+        return cls.from_string_or_none(server_response['legalHold'])
 
     @classmethod
     def from_string_or_none(cls, string: Optional[str]) -> 'LegalHold':

@@ -278,7 +278,10 @@ class TestApi:
         created_file = bucket.upload_bytes(b'hello world', 'file')
         assert created_file.file_retention == NO_RETENTION_FILE_SETTING
         new_retention = FileRetentionSetting(RetentionMode.COMPLIANCE, 100)
-        self.api.update_file_retention(created_file.id_, created_file.file_name, new_retention)
+        read_file_retention = self.api.update_file_retention(
+            created_file.id_, created_file.file_name, new_retention
+        )
+        assert new_retention == read_file_retention
         if apiver_deps.V <= 1:
             file_version = bucket.get_file_info_by_id(created_file.id_)
         else:
@@ -291,7 +294,10 @@ class TestApi:
         created_file = bucket.upload_bytes(b'hello world', 'file')
         assert created_file.legal_hold == LegalHold.UNSET
         new_legal_hold = LegalHold.ON
-        self.api.update_file_legal_hold(created_file.id_, created_file.file_name, new_legal_hold)
+        read_legal_hold = self.api.update_file_legal_hold(
+            created_file.id_, created_file.file_name, new_legal_hold
+        )
+        assert new_legal_hold == read_legal_hold
         if apiver_deps.V <= 1:
             file_version = bucket.get_file_info_by_id(created_file.id_)
         else:

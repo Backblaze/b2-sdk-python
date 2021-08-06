@@ -1325,12 +1325,11 @@ class DownloadTestsBase(object):
         self.encrypted_file_version = self.bucket.upload_bytes(
             self.DATA.encode(), 'enc_file1', encryption=SSE_C_AES
         )
+        self.bytes_io = io.BytesIO()
         if apiver_deps.V <= 1:
             self.download_dest = DownloadDestBytes()
-            self.bytes_io = None
         else:
             self.download_dest = None
-            self.bytes_io = io.BytesIO()
         self.progress_listener = StubProgressListener()
 
     def _verify(self, expected_result, check_progress_listener=True):
@@ -1383,7 +1382,6 @@ class TestDownloadException(DownloadTestsBase, TestCaseWithBucket):
 class DownloadTests(DownloadTestsBase):
     DATA = 'abcdefghijklmnopqrs'
 
-    @pytest.mark.apiver(from_ver=2)
     def test_v2_return_types(self):
         download_kwargs = {
             'range_': (7, 18),
@@ -1421,7 +1419,13 @@ class DownloadTests(DownloadTestsBase):
         for attr_name, expected_value in {**download_kwargs, **other_properties}.items():
             assert getattr(ret, attr_name) == expected_value, attr_name
 
-        ret = self.bucket.download_file_by_name(file_version.file_name, **download_kwargs)
+        if apiver_deps.V >= 2:
+            ret = self.bucket.download_file_by_name(file_version.file_name, **download_kwargs)
+            assert isinstance(ret, DownloadedFile), type(ret)
+            for attr_name, expected_value in {**download_kwargs, **other_properties}.items():
+                assert getattr(ret, attr_name) == expected_value, attr_name
+
+        ret = file_version.download(**download_kwargs)
         assert isinstance(ret, DownloadedFile), type(ret)
         for attr_name, expected_value in {**download_kwargs, **other_properties}.items():
             assert getattr(ret, attr_name) == expected_value, attr_name
@@ -1440,6 +1444,12 @@ class DownloadTests(DownloadTestsBase):
         assert ret == expected
         ret = self.bucket.download_file_by_name(self.file_version.file_name, self.download_dest)
         assert ret == expected
+
+    def test_download_file_version(self):
+        self.file_version.download().save(self.bytes_io)
+        assert self.bytes_io.getvalue() == self.DATA.encode()
+        # self._verify preforms different checks based on apiver,
+        # but this is a new feature so it works the same on v2, v1 and v0
 
     def test_download_by_id_no_progress(self):
         self.download_file_by_id(self.file_version.id_)

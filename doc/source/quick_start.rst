@@ -208,6 +208,8 @@ Upload file encrypted with SSE-C
 Download file
 =============
 
+.. _download-file-by-id:
+
 By id
 -----
 
@@ -235,6 +237,8 @@ By id
 
     >>> downloaded_file.save_to(local_file_path)  # this downloads the whole file
 
+.. _download-file-by-name:
+
 By name
 -------
 
@@ -250,8 +254,8 @@ By name
 Downloading encrypted files
 ---------------------------
 
-Both methods (`By name`_ and `By id`_) accept an optional `encryption` argument, similarly to `Upload file`_. This
-parameter is necessary for downloading files encrypted with `SSE-C`.
+Both methods (:ref:`download-file-by-name` and :ref:`download-file-by-id`) accept an optional `encryption` argument,
+similarly to `Upload file`_. This parameter is necessary for downloading files encrypted with `SSE-C`.
 
 List files
 ==========
@@ -260,8 +264,8 @@ List files
 
     >>> bucket_name = 'example-mybucket-b2'
     >>> bucket = b2_api.get_bucket_by_name(bucket_name)
-    >>> for file_info, folder_name in bucket.ls(show_versions=False):
-    >>>     print(file_info.file_name, file_info.upload_timestamp, folder_name)
+    >>> for file_version, folder_name in bucket.ls(latest_only=True):
+    >>>     print(file_version.file_name, file_version.upload_timestamp, folder_name)
     f2.txt 1560927489000 None
     som2.pdf 1554296578000 None
     some.pdf 1554296579000 None
@@ -270,8 +274,8 @@ List files
     # Recursive
     >>> bucket_name = 'example-mybucket-b2'
     >>> bucket = b2_api.get_bucket_by_name(bucket_name)
-    >>> for file_info, folder_name in bucket.ls(show_versions=False, recursive=True):
-    >>>     print(file_info.file_name, file_info.upload_timestamp, folder_name)
+    >>> for file_version, folder_name in bucket.ls(latest_only=True, recursive=True):
+    >>>     print(file_version.file_name, file_version.upload_timestamp, folder_name)
     f2.txt 1560927489000 None
     som2.pdf 1554296578000 None
     some.pdf 1554296579000 None
@@ -286,14 +290,14 @@ The folder_name is returned only for the first file in the folder.
     # Within folder
     >>> bucket_name = 'example-mybucket-b2'
     >>> bucket = b2_api.get_bucket_by_name(bucket_name)
-    >>> for file_info, folder_name in bucket.ls(folder_to_list='test-folder', show_versions=False):
-    >>>     print(file_info.file_name, file_info.upload_timestamp, folder_name)
+    >>> for file_version, folder_name in bucket.ls(folder_to_list='test-folder', latest_only=True):
+    >>>     print(file_version.file_name, file_version.upload_timestamp, folder_name)
     test-folder/.bzEmpty 1561005295000 None
     test-folder/folder_file.txt 1561005349000 None
 
     # list file versions
-    >>> for file_info, folder_name in bucket.ls(show_versions=True):
-    >>>     print(file_info.file_name, file_info.upload_timestamp, folder_name)
+    >>> for file_version, folder_name in bucket.ls(latest_only=False):
+    >>>     print(file_version.file_name, file_version.upload_timestamp, folder_name)
     f2.txt 1560927489000 None
     f2.txt 1560849524000 None
     som2.pdf 1554296578000 None
@@ -323,6 +327,21 @@ Get file metadata
      "serverSideEncryption": {"algorithm": "AES256",
                               "mode": "SSE-C"},
      }
+
+
+Update file lock configuration
+==============================
+
+.. code-block:: python
+
+    >>> file_id = '4_z5485a1682662eb3e60980d10_f113f963288e711a6_d20190404_m065910_c002_v0001095_t0044'
+    >>> file_name = 'dummy.pdf'
+    >>> b2_api.update_file_legal_hold(file_id, file_name, LegalHold.ON)
+    >>> b2_api.update_file_legal_hold(
+            file_id, file_name,
+            FileRetentionSetting(RetentionMode.GOVERNANCE, int(time.time() + 100)*1000))
+
+This is low-level file API, for high-level operations see `Direct file operations`_.
 
 Copy file
 =========
@@ -369,12 +388,13 @@ Delete file
 .. code-block:: python
 
     >>> file_id = '4_z5485a1682662eb3e60980d10_f113f963288e711a6_d20190404_m065910_c002_v0001095_t0044'
-    >>> file_info = b2_api.delete_file_version(file_id, 'dummy_new.pdf')
-    >>> file_info.as_dict()
+    >>> file_id_and_name = b2_api.delete_file_version(file_id, 'dummy_new.pdf')
+    >>> file_id_and_name.as_dict()
     {'action': 'delete',
      'fileId': '4_z5485a1682662eb3e60980d10_f113f963288e711a6_d20190404_m065910_c002_v0001095_t0044',
      'fileName': 'dummy_new.pdf'}
 
+This is low-level file API, for high-level operations see `Direct file operations`_.
 
 Cancel large file uploads
 =========================
@@ -385,4 +405,129 @@ Cancel large file uploads
     >>> for unfinished_file in bucket.list_unfinished_large_files():
             b2_api.cancel_large_file(unfinished_file.file_id, unfinished_file.file_name)
 
+
+**********************
+Direct file operations
+**********************
+
+Methods for manipulating object (file) state mentioned in sections above are low level and useful when users have access
+to basic information, like file id and name. Many API methods, however, return python objects representing files
+(:class:`b2sdk.v2.FileVersion` and :class:`b2sdk.v2.DownloadVersion`), that provide high-level access to methods
+manipulating their state. As a rule, these methods don't change properties of python objects they are called on, but
+return new objects instead.
+
+Obtain file representing objects
+================================
+
+:class:`b2sdk.v2.FileVersion`
+-----------------------------
+
+By id
+*****
+
+.. code-block:: python
+
+    >>> file_id = '4_z5485a1682662eb3e60980d10_f113f963288e711a6_d20190404_m065910_c002_v0001095_t0044'
+    >>> file_version = b2_api.get_file_info(file_id)
+
+By listing
+**********
+
+.. code-block:: python
+
+    >>> for file_version, folder_name in bucket.ls(latest_only=True, prefix='dir_name'):
+    >>>     ...
+
+
+:class:`b2sdk.v2.DownloadVersion`
+---------------------------------
+
+By id
+*****
+
+.. code-block:: python
+
+    >>> file_id = '4_z5485a1682662eb3e60980d10_f113f963288e711a6_d20190404_m065910_c002_v0001095_t0044'
+    >>> downloaded_file = b2_api.download_file_by_id(file_id)
+    >>> download_version = downloaded_file.download_version
+
+By name
+*******
+
+.. code-block:: python
+
+    >>> bucket = b2_api.get_bucket_by_name(bucket_name)
+    >>> b2_file_name = 'dummy_new.pdf'
+    >>> downloaded_file = bucket.download_file_by_name(b2_file_name)
+    >>> download_version = downloaded_file.download_version
+
+
+Download (only for :class:`b2sdk.v2.FileVersion`)
+=================================================
+
+.. code-block:: python
+
+    >>> file_version.download()
+    >>> # equivalent to
+    >>> b2_api.download_file_by_id(file_version.id_)
+
+Delete
+======
+
+.. code-block:: python
+
+    >>> file_version.delete()
+    >>> download_version.delete()
+    >>> # equivalent to
+    >>> b2_api.delete_file_version(file_version.id_, file_version.file_name)
+    >>> b2_api.delete_file_version(download_version.id_, download_version.file_name)
+
+
+Update file lock
+================
+
+.. code-block:: python
+
+    >>> file_version.update_legal_hold(LegalHold.ON)
+    >>> download_version.update_legal_hold(LegalHold.ON)
+    >>> file_version.update_retention(
+            FileRetentionSetting(RetentionMode.GOVERNANCE, int(time.time() + 100)*1000))
+    >>> download_version.update_retention(
+            FileRetentionSetting(RetentionMode.GOVERNANCE, int(time.time() + 100)*1000))
+    >>> # equivalent to
+    >>> b2_api.update_file_legal_hold(file_version.id_, file_version.file_name, LegalHold.ON)
+    >>> b2_api.update_file_legal_hold(download_version.id_, download_version.file_name, LegalHold.ON)
+    >>> b2_api.update_file_legal_hold(
+            file_version.id_, file_version.file_name,
+            FileRetentionSetting(RetentionMode.GOVERNANCE, int(time.time() + 100)*1000))
+    >>> b2_api.update_file_legal_hold(
+            download_version.id_, download_version.file_name,
+            FileRetentionSetting(RetentionMode.GOVERNANCE, int(time.time() + 100)*1000))
+
+
+Usage examples
+==============
+
+.. code-block:: python
+
+    >>> for file_version, folder_name in bucket.ls(latest_only=True, prefix='dir_name'):
+    >>>     if file_version.mod_time_millis < 1627979193913 and file_version.file_name.endswith('.csv'):
+    >>>         if file_version.legal_hold.is_on():
+    >>>             file_version = file_version.update_legal_hold(LegalHold.OFF)
+    >>>         file_version.delete()
+    >>>     else:
+    >>>         file_version.download().save_to(Path('/tmp/dir_name') / file_version.file_name)
+
+
+.. code-block:: python
+
+    >>> file_id = '4_z5485a1682662eb3e60980d10_f113f963288e711a6_d20190404_m065910_c002_v0001095_t0044'
+    >>> downloaded_file = b2_api.download_file_by_id(file_id)
+    >>> download_version = downloaded_file.download_version
+    >>> if download_version.content_type == 'video/mp4':
+    >>>     downloaded_file.save_to(Path('/tmp/dir_name') / download_version.file_name)
+    >>> if download_version.file_retention != NO_RETENTION_FILE_SETTING:
+    >>>     download_version = download_version.update_retention(
+                NO_RETENTION_FILE_SETTING, bypass_governance=True)
+    >>> download_version.delete()
 
