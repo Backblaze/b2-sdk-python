@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+* Fix pypy selector in CI
+
 ## [1.12.0] - 2021-08-06
 
 ### Changed
@@ -19,7 +22,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 * FileSimulator returns special file info headers properly
-* Fix pypy selector in CI
 
 ### Removed
 * One unused import.
