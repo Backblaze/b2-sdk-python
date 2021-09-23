@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 * FileSimulator returns special file info headers properly
+* Fix pypy selector in CI
 
 ### Removed
 * One unused import.
