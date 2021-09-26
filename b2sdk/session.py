@@ -119,6 +119,17 @@ class B2Session:
         if not self.account_info.is_same_account(account_id, realm):
             self.cache.clear()
 
+        # if the key is restricted to the bucket, prepopulate the cache with it
+        allowed_bucket_id = allowed['bucketId']
+        if allowed_bucket_id is not None:
+            self.cache.save_bucket(
+                Bucket(
+                    api=None,  # we don't have it here, but Cache doesn't need it
+                    id_=allowed_bucket_id,
+                    name=allowed['bucketName'],
+                )
+            )
+
         # Store the auth data
         self.account_info.set_auth_data(
             account_id=account_id,
@@ -131,7 +142,7 @@ class B2Session:
             realm=realm,
             s3_api_url=response['s3ApiUrl'],
             allowed=allowed,
-            application_key_id=application_key_id
+            application_key_id=application_key_id,
         )
 
     def cancel_large_file(self, file_id):
