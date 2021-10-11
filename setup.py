@@ -36,8 +36,16 @@ if tuple(int(x) for x in setuptoolsversion.split('.')[:2]) < MIN_SETUPTOOLS_VERS
 with open('README.md', encoding='utf-8') as f:
     long_description = f.read()
 
-with open('requirements.txt', encoding='utf-8') as f:
-    requirements = f.read().splitlines()
+
+def read_requirements(extra=None):
+    if extra is not None:
+        file = 'requirements-{}.txt'.format(extra)
+    else:
+        file = 'requirements.txt'
+
+    with open(file, encoding='utf-8') as f:
+        return f.read().splitlines()
+
 
 setup(
     name='b2sdk',
@@ -78,6 +86,7 @@ setup(
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
     ],
 
     # What does your project relate to?
@@ -95,22 +104,13 @@ setup(
     # your project is installed. For an analysis of "install_requires" vs pip's
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
-    install_requires=requirements,
+    install_requires=read_requirements(),
 
     # List additional groups of dependencies here (e.g. development
     # dependencies). You can install these using the following syntax,
     # for example:
     # $ pip install -e .[dev,test]
-    extras_require={
-        'doc':
-            [
-                'sphinx<4.0',  # sphinx>=4.0 doesn't support Python 3.5
-                'sphinx-autobuild',
-                'sphinx_rtd_theme',
-                'sphinxcontrib-plantuml',
-                'sadisplay'
-            ],
-    },
+    extras_require={'doc': read_requirements('doc')},
     setup_requires=['setuptools_scm<6.0'],  # setuptools_scm>=6.0 doesn't support Python 3.5
     use_scm_version=True,
 
@@ -120,7 +120,7 @@ setup(
 
     # Although 'package_data' is the preferred approach, in some case you may
     # need to place data files outside of your packages. See:
-    # http://docs.python.org/3.9/distutils/setupscript.html#installing-additional-files # noqa
+    # http://docs.python.org/3.10/distutils/setupscript.html#installing-additional-files # noqa
     # In this case, 'data_file' will be installed into '<sys.prefix>/my_data'
     data_files=[
         #('my_data', ['data/data_file'])

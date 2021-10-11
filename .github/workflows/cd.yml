@@ -5,7 +5,7 @@ on:
     tags: 'v*'  # push events to matching v*, i.e. v1.0, v20.15.10
 
 env:
-  PYTHON_DEFAULT_VERSION: 3.9
+  PYTHON_DEFAULT_VERSION: "3.10"
 
 jobs:
   deploy:
