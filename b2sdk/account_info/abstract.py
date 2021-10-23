@@ -43,7 +43,7 @@ class AbstractAccountInfo(metaclass=B2TraceMetaAbstract):
 
         :rtype: list
         """
-        return cls.ALL_CAPABILITIES
+        return ALL_CAPABILITIES
 
     @abstractmethod
     def clear(self):
