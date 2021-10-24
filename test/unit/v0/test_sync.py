@@ -712,7 +712,7 @@ class TestFolderExceptions:
     def test_ensure_present_unable_to_create(self, exception, msg):
         with TempDir() as path:
             file = os.path.join(path, 'clearly_a_file')
-            with open('file', 'w') as f:
+            with open(file, 'w') as f:
                 f.write(' ')
             folder = parse_sync_folder(os.path.join(file, 'nonsense'), MagicMock())
             with pytest.raises(exception, match=msg):

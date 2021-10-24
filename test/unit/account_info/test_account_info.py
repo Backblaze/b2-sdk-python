@@ -19,6 +19,7 @@ import tempfile
 import pytest
 
 from apiver_deps import (
+    ALL_CAPABILITIES,
     AbstractAccountInfo,
     InMemoryAccountInfo,
     UploadUrlPool,
@@ -88,6 +89,10 @@ class TestAccountInfo:
         }
         account_info.set_auth_data(**account_info_default_data)
         assert s3_api_url == account_info.get_s3_api_url()
+
+    def test_getting_all_capabilities(self):
+        account_info = self.account_info_factory()
+        assert account_info.all_capabilities() == ALL_CAPABILITIES
 
 
 class TestUploadUrlPool:
