@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.13.0] - 2021-10-24
+
 ### Added
 * Add support for Python 3.10
 
@@ -259,7 +261,8 @@ has changed.
 ### Added
 Initial official release of SDK as a separate package (until now it was a part of B2 CLI)
 
-[Unreleased]: https://github.com/Backblaze/b2-sdk-python/compare/v1.12.0...HEAD
+[Unreleased]: https://github.com/Backblaze/b2-sdk-python/compare/v1.13.0...HEAD
+[1.13.0]: https://github.com/Backblaze/b2-sdk-python/compare/v1.12.0...v1.13.0
 [1.12.0]: https://github.com/Backblaze/b2-sdk-python/compare/v1.11.0...v1.12.0
 [1.11.0]: https://github.com/Backblaze/b2-sdk-python/compare/v1.10.0...v1.11.0
 [1.10.0]: https://github.com/Backblaze/b2-sdk-python/compare/v1.9.0...v1.10.0
