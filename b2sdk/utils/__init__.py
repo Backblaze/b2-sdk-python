@@ -20,7 +20,7 @@ import concurrent.futures as futures
 from decimal import Decimal
 from urllib.parse import quote, unquote_plus
 
-from logfury.v0_1 import DefaultTraceAbstractMeta, DefaultTraceMeta, limit_trace_arguments, disable_trace, trace_call
+from logfury.v1 import DefaultTraceAbstractMeta, DefaultTraceMeta, limit_trace_arguments, disable_trace, trace_call
 
 
 def interruptible_get_result(future):
