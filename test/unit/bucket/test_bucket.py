@@ -1448,7 +1448,7 @@ class DownloadTests(DownloadTestsBase):
     def test_download_file_version(self):
         self.file_version.download().save(self.bytes_io)
         assert self.bytes_io.getvalue() == self.DATA.encode()
-        # self._verify preforms different checks based on apiver,
+        # self._verify performs different checks based on apiver,
         # but this is a new feature so it works the same on v2, v1 and v0
 
     def test_download_by_id_no_progress(self):
