@@ -318,7 +318,7 @@ In order to continue a simple upload session, **b2sdk** checks for any available
 
 To support automatic continuation, some advanced methods create a plan before starting copy/upload operations, saving the hash of that plan in ``file_info`` for increased reliability.
 
-If that is not available, ``large_file_id`` can be extracted via callback during the operation start. It can then be passed into the subsequent call to continue the same task, though the responsibility for passing the exact same input is then on the user of the function. Please see :ref:`advanced method support table <advanced_methods_support_table>` to see where automatic continuation is supported. ``large_file_id`` can also be passed if automatic continuation is available in order to avoid issues where multiple matchin upload sessions are matching the transfer.
+If that is not available, ``large_file_id`` can be extracted via callback during the operation start. It can then be passed into the subsequent call to continue the same task, though the responsibility for passing the exact same input is then on the user of the function. Please see :ref:`advanced method support table <advanced_methods_support_table>` to see where automatic continuation is supported. ``large_file_id`` can also be passed if automatic continuation is available in order to avoid issues where multiple matching upload sessions are matching the transfer.
 
 
 Continuation of create/concantenate

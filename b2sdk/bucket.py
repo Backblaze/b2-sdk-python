@@ -817,7 +817,7 @@ class Bucket(metaclass=B2TraceMeta):
                         automatically determined
         :param dict,None file_info: file_info for the new file, if ``None`` will and ``b2_copy_file`` will be used
                         file_info will be copied from source file - otherwise it will be set to empty dict
-        :param int offset: offset of exisiting file that copy should start from
+        :param int offset: offset of existing file that copy should start from
         :param int,None length: number of bytes to copy, if ``None`` then ``offset`` have to be ``0`` and it will
                         use ``b2_copy_file`` without ``range`` parameter so it may fail if file is too large.
                         For large files length have to be specified to use ``b2_copy_part`` instead.

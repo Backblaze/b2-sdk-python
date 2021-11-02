@@ -166,7 +166,7 @@ class EmergePlanner(object):
             # if this is a copy intent and we want to copy it server-side, then we have to
             # flush the whole upload buffer we accumulated so far, but OTOH we may decide that we just want to
             # append it to upload buffer (see complete, untrivial logic below) and then maybe
-            # flush some upload parts from upload bufffer (if there is enough in the buffer)
+            # flush some upload parts from upload buffer (if there is enough in the buffer)
 
             current_len = current_end - upload_buffer.end_offset
             # should we flush the upload buffer or do we have to add a chunk of the copy first?
@@ -291,7 +291,7 @@ class EmergePlanner(object):
             if tail_buffer.length < self.recommended_upload_part_size + self.min_part_size:
                 # `EmergePlanner_buff_partition` can split in such way that tail part
                 # can be smaller than `min_part_size` - to avoid unnecessary download of possible
-                # incoming copy intent, we don't split futher
+                # incoming copy intent, we don't split further
                 yield tail_buffer
                 return
             head_buff, tail_buffer = self._buff_partition(tail_buffer)
@@ -300,7 +300,7 @@ class EmergePlanner(object):
     def _buff_partition(self, upload_buffer):
         """ Split upload buffer to two parts (smaller upload buffers).
 
-        In result left part cannot be splitted more, and nothing can be assumed about right part.
+        In result left part cannot be split more, and nothing can be assumed about right part.
 
         :rtype tuple(b2sdk.transfer.emerge.planner.planner.UploadBuffer,
                      b2sdk.transfer.emerge.planner.planner.UploadBuffer):
@@ -331,7 +331,7 @@ class EmergePlanner(object):
         would be merged again by higher level iterator that produces emerge parts, but
         in principle this merging can happen here. Not merging it is a code design decision
         to make this function easier to implement and also it would allow yielding emerge parts
-        a bit quickier.
+        a bit quicker.
         """
 
         # `protected_intent_length` for upload state is 0, so it would generate at most single intent fragment
@@ -384,7 +384,7 @@ class EmergePlanner(object):
     def _merge_intent_fragments(self, start_offset, upload_intents, copy_intents):
         """ Select "competing" upload and copy fragments.
 
-        Upload and copy fragments may overlap so we nedd to choose right one
+        Upload and copy fragments may overlap so we need to choose right one
         to use - copy fragments are prioritized unless this fragment is unprotected
         (we use "protection" as an abstract for "short copy" fragments - meaning upload
         fragments have higher priority than "short copy")
@@ -475,7 +475,7 @@ class IntentsState(object):
         would not be added to this intents state. It would yield a state of this stream
         of intents (like copy or upload) from ``last_sent_offset`` to ``incoming_offset``.
         So here happens the first stage of solving overlapping intents selection - but
-        write intent iterator can be splitted to multiple substreams (like copy and upload)
+        write intent iterator can be split to multiple substreams (like copy and upload)
         so additional stage is required to cover this.
         """
         if self._current_intent is not None:
@@ -558,7 +558,7 @@ class IntentsState(object):
         we need to know for fragment if it is a "small copy" or not. In result of solving
         overlapping intents selection there might be a situation when original intent was not
         a small copy, but in effect it will be used only partially and in effect it may be a "small copy".
-        Algorithm attempts to aviod using smaller fragments than ``protected_intent_length`` but
+        Algorithm attempts to avoid using smaller fragments than ``protected_intent_length`` but
         sometimes it may be impossible. So if this function returns ``False`` it means
         that used length of this intent is smaller than ``protected_intent_length`` and the algorithm
         was unable to avoid this.

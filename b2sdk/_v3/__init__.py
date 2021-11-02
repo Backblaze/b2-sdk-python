@@ -140,7 +140,7 @@ from b2sdk.transfer.outbound.upload_source import UploadSourceStreamRange
 from b2sdk.transfer.emerge.planner.upload_subpart import CachedBytesStreamOpener
 from b2sdk.transfer.emerge.write_intent import WriteIntent
 
-# trasfer
+# transfer
 
 from b2sdk.transfer.inbound.downloader.abstract import AbstractDownloader
 from b2sdk.transfer.outbound.large_file_upload_state import LargeFileUploadState

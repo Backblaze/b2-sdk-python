@@ -323,7 +323,7 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
 
             if file_retention != file_.file_retention:
                 # if `file_.file_retention` is UNKNOWN then we skip - lib user can still
-                # pass UKNOWN file_retention here - but raw_api/server won't allow it
+                # pass UNKNOWN file_retention here - but raw_api/server won't allow it
                 # and we don't check it here
                 continue
             finished_parts = {}
@@ -385,7 +385,7 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
 
             if file_retention != file_.file_retention:
                 # if `file_.file_retention` is UNKNOWN then we skip - lib user can still
-                # pass UKNOWN file_retention here - but raw_api/server won't allow it
+                # pass UNKNOWN file_retention here - but raw_api/server won't allow it
                 # and we don't check it here
                 continue
             files_match = True

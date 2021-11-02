@@ -100,13 +100,13 @@ In other words, if you pin your dependencies to
   
   >=4.5.6;<5.0.0
 
-.. note:: b2sdk.*._something and b2sdk.*.*._something, having a name which begins with an underscore, are NOT considred public interface.
+.. note:: b2sdk.*._something and b2sdk.*.*._something, having a name which begins with an underscore, are NOT considered public interface.
 
 
 Protected
 ~~~~~~~~~
 
-Things which sometimes might be necssary to use that are NOT considered public interface (and may change in a non-major version):
+Things which sometimes might be necessary to use that are NOT considered public interface (and may change in a non-major version):
 * B2Session
 * B2RawHTTPApi
 * B2Http

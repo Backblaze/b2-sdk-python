@@ -43,7 +43,7 @@ class LargeFileUploadState(object):
 
     def has_error(self):
         """
-        Check whether an error occured.
+        Check whether an error occurred.
 
         :rtype: bool
         """

@@ -261,7 +261,7 @@ class FileNameNotAllowed(NotAllowedByAppKeyError):
 
 
 class FileNotPresent(FileOrBucketNotFound):
-    def __str__(self):  # overriden to retain message across prev versions
+    def __str__(self):  # overridden to retain message across prev versions
         return "File not present%s" % (': ' + self.file_id_or_name if self.file_id_or_name else "")
 
 
@@ -378,7 +378,7 @@ class MissingPart(B2SimpleError):
 
 
 class NonExistentBucket(FileOrBucketNotFound):
-    def __str__(self):  # overriden to retain message across prev versions
+    def __str__(self):  # overridden to retain message across prev versions
         return "No such bucket%s" % (': ' + self.bucket_name if self.bucket_name else "")
 
 
