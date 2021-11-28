@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+* Relax constraint on arrow to allow for versions >= 1.0.2
+
 ## [1.13.0] - 2021-10-24
 
 ### Added
