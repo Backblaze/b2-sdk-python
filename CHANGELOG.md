@@ -83,6 +83,9 @@ Expect substantial amount of work on sdk interface:
 ### Fixed
 * Relax constraint on arrow to allow for versions >= 1.0.2
 
+### Added
+* Add included_sources module, for keeping track of included modified third-party libraries
+
 ## [1.13.0] - 2021-10-24
 
 ### Added
