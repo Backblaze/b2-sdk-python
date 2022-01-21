@@ -1,3 +1,13 @@
+######################################################################
+#
+# File: b2sdk/utils/thread_pool.py
+#
+# Copyright 2020 Backblaze Inc. All Rights Reserved.
+#
+# License https://www.backblaze.com/using_b2_code.html
+#
+######################################################################
+
 from concurrent.futures import ThreadPoolExecutor
 from threading import Lock
 from typing import Optional
