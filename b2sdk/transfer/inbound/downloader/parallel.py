@@ -225,6 +225,7 @@ class WriterThread(threading.Thread):
         self.queue.put((True, None, None))
         self.join()
 
+
 # TODO: Add param type annotations & docstrings
 def download_first_part(
     response,
