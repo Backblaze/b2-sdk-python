@@ -56,7 +56,7 @@ class ParallelDownloader(AbstractDownloader, LazyThreadPoolMixin):
         min_part_size: int,
         max_download_workers: int = 10,
         *args,
-        **kwargs,
+        **kwargs
     ) -> None:
         """
         :param max_streams: maximum number of simultaneous streams

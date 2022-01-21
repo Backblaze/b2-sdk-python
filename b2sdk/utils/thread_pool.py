@@ -26,7 +26,7 @@ class LazyThreadPoolMixin(metaclass=B2TraceMetaAbstract):
         """
 
         self._lock = Lock()
-        self._thread_pool: 'Optional[ThreadPoolExecutor]' = None
+        self._thread_pool = None  # type: 'Optional[ThreadPoolExecutor]'
         self._max_workers = max_workers
 
     def set_thread_pool_size(self, max_workers: int) -> None:
