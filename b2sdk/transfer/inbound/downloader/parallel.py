@@ -51,12 +51,7 @@ class ParallelDownloader(AbstractDownloader, LazyThreadPoolMixin):
     FINISH_HASHING_BUFFER_SIZE = 1024**2
 
     def __init__(
-        self,
-        max_streams: int,
-        min_part_size: int,
-        max_download_workers: int = 10,
-        *args,
-        **kwargs
+        self, max_streams: int, min_part_size: int, max_download_workers: int = 10, *args, **kwargs
     ) -> None:
         """
         :param max_streams: maximum number of simultaneous streams
