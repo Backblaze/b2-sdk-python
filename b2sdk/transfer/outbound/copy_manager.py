@@ -8,7 +8,6 @@
 #
 ######################################################################
 
-import concurrent.futures as futures
 import logging
 from typing import Optional
 
@@ -17,12 +16,12 @@ from b2sdk.http_constants import SSE_C_KEY_ID_FILE_INFO_KEY_NAME
 from b2sdk.exception import AlreadyFailed, CopyArgumentsMismatch, SSECKeyIdMismatchInCopy
 from b2sdk.file_lock import FileRetentionSetting, LegalHold
 from b2sdk.raw_api import MetadataDirectiveMode
-from b2sdk.utils import B2TraceMetaAbstract
+from b2sdk.utils.thread_pool import LazyThreadPoolMixin
 
 logger = logging.getLogger(__name__)
 
 
-class CopyManager(metaclass=B2TraceMetaAbstract):
+class CopyManager(LazyThreadPoolMixin):
     """
     Handle complex actions around server side copy to free raw_api from that responsibility.
     """
@@ -32,37 +31,14 @@ class CopyManager(metaclass=B2TraceMetaAbstract):
     def __init__(self, services, max_copy_workers=10):
         """
         :param b2sdk.v2.Services services:
-        :param int max_copy_workers: a number of copy threads
+        :param int max_copy_workers: maximum number of copy threads
         """
+        super().__init__(max_workers=max_copy_workers)
         self.services = services
-
-        self.copy_executor = None
-        self.max_workers = max_copy_workers
 
     @property
     def account_info(self):
         return self.services.session.account_info
-
-    def set_thread_pool_size(self, max_workers):
-        """
-        Set the size of the thread pool to use for uploads and downloads.
-
-        Must be called before any work starts, or the thread pool will get
-        the default size.
-
-        :param int max_workers: maximum allowed number of workers in a pool
-        """
-        if self.copy_executor is not None:
-            raise Exception('thread pool already created')
-        self.max_workers = max_workers
-
-    def get_thread_pool(self):
-        """
-        Return the thread pool executor to use for uploads and downloads.
-        """
-        if self.copy_executor is None:
-            self.copy_executor = futures.ThreadPoolExecutor(max_workers=self.max_workers)
-        return self.copy_executor
 
     def copy_file(
         self,

@@ -42,11 +42,12 @@ class DownloadManager(metaclass=B2TraceMetaAbstract):
     MIN_CHUNK_SIZE = 8192  # ~1MB file will show ~1% progress increment
     MAX_CHUNK_SIZE = 1024**2
 
-    def __init__(self, services):
+    def __init__(self, services, max_download_workers=10):
         """
         Initialize the DownloadManager using the given services object.
 
         :param b2sdk.v2.Services services:
+        :param int max_download_workers: maximum number of download threads
         """
 
         self.services = services
@@ -56,6 +57,7 @@ class DownloadManager(metaclass=B2TraceMetaAbstract):
                 min_part_size=self.DEFAULT_MIN_PART_SIZE,
                 min_chunk_size=self.MIN_CHUNK_SIZE,
                 max_chunk_size=self.MAX_CHUNK_SIZE,
+                max_download_workers=max_download_workers,
             ),
             SimpleDownloader(
                 min_chunk_size=self.MIN_CHUNK_SIZE,

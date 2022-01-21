@@ -9,7 +9,6 @@
 ######################################################################
 
 import logging
-import concurrent.futures as futures
 
 from typing import Optional
 
@@ -23,14 +22,14 @@ from b2sdk.file_lock import FileRetentionSetting, LegalHold
 from b2sdk.stream.progress import ReadingStreamWithProgress
 from b2sdk.stream.hashing import StreamWithHash
 from b2sdk.http_constants import HEX_DIGITS_AT_END
-from b2sdk.utils import B2TraceMetaAbstract
 
 from .progress_reporter import PartProgressReporter
+from ...utils.thread_pool import LazyThreadPoolMixin
 
 logger = logging.getLogger(__name__)
 
 
-class UploadManager(metaclass=B2TraceMetaAbstract):
+class UploadManager(LazyThreadPoolMixin):
     """
     Handle complex actions around uploads to free raw_api from that responsibility.
     """
@@ -40,37 +39,14 @@ class UploadManager(metaclass=B2TraceMetaAbstract):
     def __init__(self, services, max_upload_workers=10):
         """
         :param b2sdk.v2.Services services:
-        :param int max_upload_workers: a number of upload threads
+        :param int max_upload_workers: maximum number of upload threads
         """
+        super().__init__(max_workers=max_upload_workers)
         self.services = services
-
-        self.upload_executor = None
-        self.max_workers = max_upload_workers
 
     @property
     def account_info(self):
         return self.services.session.account_info
-
-    def set_thread_pool_size(self, max_workers):
-        """
-        Set the size of the thread pool to use for uploads and downloads.
-
-        Must be called before any work starts, or the thread pool will get
-        the default size.
-
-        :param int max_workers: maximum allowed number of workers in a pool
-        """
-        if self.upload_executor is not None:
-            raise Exception('thread pool already created')
-        self.max_workers = max_workers
-
-    def get_thread_pool(self):
-        """
-        Return the thread pool executor to use for uploads and downloads.
-        """
-        if self.upload_executor is None:
-            self.upload_executor = futures.ThreadPoolExecutor(max_workers=self.max_workers)
-        return self.upload_executor
 
     def upload_file(
         self,

@@ -144,9 +144,6 @@ from b2sdk.transfer.emerge.write_intent import WriteIntent
 
 from b2sdk.transfer.inbound.downloader.abstract import AbstractDownloader
 from b2sdk.transfer.outbound.large_file_upload_state import LargeFileUploadState
-from b2sdk.transfer.inbound.downloader.parallel import AbstractDownloaderThread
-from b2sdk.transfer.inbound.downloader.parallel import FirstPartDownloaderThread
-from b2sdk.transfer.inbound.downloader.parallel import NonHashingDownloaderThread
 from b2sdk.transfer.inbound.downloader.parallel import ParallelDownloader
 from b2sdk.transfer.inbound.downloader.parallel import PartToDownload
 from b2sdk.transfer.inbound.downloader.parallel import WriterThread
