@@ -36,12 +36,12 @@ class UploadManager(LazyThreadPoolMixin):
 
     MAX_UPLOAD_ATTEMPTS = 5
 
-    def __init__(self, services, max_upload_workers=10):
+    def __init__(self, services, max_workers: Optional[int] = None):
         """
         :param b2sdk.v2.Services services:
-        :param int max_upload_workers: maximum number of upload threads
+        :param max_workers: maximum number of upload threads
         """
-        super().__init__(max_workers=max_upload_workers)
+        super().__init__(max_workers=max_workers)
         self.services = services
 
     @property
@@ -60,7 +60,7 @@ class UploadManager(LazyThreadPoolMixin):
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
     ):
-        f = self.get_thread_pool().submit(
+        f = self._get_thread_pool().submit(
             self._upload_small_file,
             bucket_id,
             upload_source,
@@ -84,7 +84,7 @@ class UploadManager(LazyThreadPoolMixin):
         finished_parts=None,
         encryption: EncryptionSetting = None,
     ):
-        f = self.get_thread_pool().submit(
+        f = self._get_thread_pool().submit(
             self._upload_part,
             bucket_id,
             file_id,

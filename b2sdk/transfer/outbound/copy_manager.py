@@ -28,12 +28,12 @@ class CopyManager(LazyThreadPoolMixin):
 
     MAX_LARGE_FILE_SIZE = 10 * 1000 * 1000 * 1000 * 1000  # 10 TB
 
-    def __init__(self, services, max_copy_workers=10):
+    def __init__(self, services, max_workers: Optional[int] = None):
         """
         :param b2sdk.v2.Services services:
-        :param int max_copy_workers: maximum number of copy threads
+        :param int max_workers: maximum number of copy threads
         """
-        super().__init__(max_workers=max_copy_workers)
+        super().__init__(max_workers=max_workers)
         self.services = services
 
     @property
@@ -55,7 +55,7 @@ class CopyManager(LazyThreadPoolMixin):
     ):
         # Run small copies in the same thread pool as large file copies,
         # so that they share resources during a sync.
-        return self.get_thread_pool().submit(
+        return self._get_thread_pool().submit(
             self._copy_small_file,
             copy_source,
             file_name,
@@ -79,7 +79,7 @@ class CopyManager(LazyThreadPoolMixin):
         destination_encryption: Optional[EncryptionSetting] = None,
         source_encryption: Optional[EncryptionSetting] = None,
     ):
-        return self.get_thread_pool().submit(
+        return self._get_thread_pool().submit(
             self._copy_part,
             large_file_id,
             part_copy_source,

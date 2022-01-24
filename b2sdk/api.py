@@ -51,21 +51,27 @@ def url_for_api(info, api_name):
 class Services(object):
     """ Gathers objects that provide high level logic over raw api usage. """
 
-    def __init__(self, api, max_upload_workers=10, max_copy_workers=10, max_download_workers=10):
+    def __init__(
+        self,
+        api,
+        max_upload_workers: Optional[int] = None,
+        max_copy_workers: Optional[int] = None,
+        max_download_workers: Optional[int] = None,
+    ):
         """
         Initialize Services object using given session.
 
         :param b2sdk.v2.B2Api api:
-        :param int max_upload_workers: a number of upload threads
-        :param int max_copy_workers: a number of copy threads
-        :param int max_download_workers: maximum number of download threads
+        :param max_upload_workers: a number of upload threads
+        :param max_copy_workers: a number of copy threads
+        :param max_download_workers: maximum number of download threads
         """
         self.api = api
         self.session = api.session
         self.large_file = LargeFileServices(self)
-        self.download_manager = DownloadManager(self, max_download_workers=max_download_workers)
-        self.upload_manager = UploadManager(self, max_upload_workers=max_upload_workers)
-        self.copy_manager = CopyManager(self, max_copy_workers=max_copy_workers)
+        self.download_manager = DownloadManager(self, max_workers=max_download_workers)
+        self.upload_manager = UploadManager(self, max_workers=max_upload_workers)
+        self.copy_manager = CopyManager(self, max_workers=max_download_workers)
         self.emerger = Emerger(self)
 
 
@@ -100,10 +106,10 @@ class B2Api(metaclass=B2TraceMeta):
         self,
         account_info: Optional[AbstractAccountInfo] = None,
         cache: Optional[AbstractCache] = None,
-        max_upload_workers: int = 10,
-        max_copy_workers: int = 10,
+        max_upload_workers: Optional[int] = None,
+        max_copy_workers: Optional[int] = None,
         api_config: B2HttpApiConfig = DEFAULT_HTTP_API_CONFIG,
-        max_download_workers: int = 10,
+        max_download_workers: Optional[int] = None,
     ):
         """
         Initialize the API using the given account info.
@@ -116,8 +122,8 @@ class B2Api(metaclass=B2TraceMeta):
 
         :param max_upload_workers: a number of upload threads
         :param max_copy_workers: a number of copy threads
-        :param int max_download_workers: maximum number of download threads
         :param api_config:
+        :param max_download_workers: maximum number of download threads
         """
         self.session = self.SESSION_CLASS(
             account_info=account_info, cache=cache, api_config=api_config

@@ -2,7 +2,7 @@
 #
 # File: b2sdk/utils/thread_pool.py
 #
-# Copyright 2020 Backblaze Inc. All Rights Reserved.
+# Copyright 2022 Backblaze Inc. All Rights Reserved.
 #
 # License https://www.backblaze.com/using_b2_code.html
 #
@@ -17,7 +17,8 @@ from b2sdk.utils import B2TraceMetaAbstract
 
 class LazyThreadPoolMixin(metaclass=B2TraceMetaAbstract):
     """
-    TODO: Add docstring
+    Mixing class with lazy initialized ThreadPoolExecutor.
+    Can be safely used between threads.
     """
 
     def __init__(self, max_workers: 'Optional[int]' = None) -> None:
@@ -29,7 +30,7 @@ class LazyThreadPoolMixin(metaclass=B2TraceMetaAbstract):
         self._thread_pool = None  # type: 'Optional[ThreadPoolExecutor]'
         self._max_workers = max_workers
 
-    def set_thread_pool_size(self, max_workers: int) -> None:
+    def _set_thread_pool_size(self, max_workers: int) -> None:
         """
         Set the size of the thread pool.
 
@@ -43,7 +44,7 @@ class LazyThreadPoolMixin(metaclass=B2TraceMetaAbstract):
                 raise RuntimeError('Thread pool already created')
             self._max_workers = max_workers
 
-    def get_thread_pool(self) -> ThreadPoolExecutor:
+    def _get_thread_pool(self) -> ThreadPoolExecutor:
         """
         Return the thread pool executor.
         """

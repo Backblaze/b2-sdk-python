@@ -51,15 +51,20 @@ class ParallelDownloader(AbstractDownloader, LazyThreadPoolMixin):
     FINISH_HASHING_BUFFER_SIZE = 1024**2
 
     def __init__(
-        self, max_streams: int, min_part_size: int, max_download_workers: int = 10, *args, **kwargs
+        self,
+        max_streams: int,
+        min_part_size: int,
+        max_workers: Optional[int] = None,
+        *args,
+        **kwargs
     ) -> None:
         """
         :param max_streams: maximum number of simultaneous streams
         :param min_part_size: minimum amount of data a single stream will retrieve, in bytes
-        :param int max_download_workers: maximum number of download threads
+        :param max_workers: maximum number of download threads
         """
         super().__init__(*args, **kwargs)
-        LazyThreadPoolMixin.__init__(self, max_workers=max_download_workers)
+        LazyThreadPoolMixin.__init__(self, max_workers=max_workers)
         self.max_streams = max_streams
         self.min_part_size = min_part_size
 
@@ -144,7 +149,7 @@ class ParallelDownloader(AbstractDownloader, LazyThreadPoolMixin):
         self, response, session, writer, hasher, first_part, parts_to_download, chunk_size,
         encryption
     ):
-        stream = self.get_thread_pool().submit(
+        stream = self._get_thread_pool().submit(
             download_first_part,
             response,
             hasher,
@@ -157,7 +162,7 @@ class ParallelDownloader(AbstractDownloader, LazyThreadPoolMixin):
         streams = [stream]
 
         for part in parts_to_download:
-            stream = self.get_thread_pool().submit(
+            stream = self._get_thread_pool().submit(
                 download_non_first_part,
                 response.request.url,
                 session,
@@ -221,19 +226,23 @@ class WriterThread(threading.Thread):
         self.join()
 
 
-# TODO: Add param type annotations & docstrings
 def download_first_part(
-    response,
+    response: Response,
     hasher,
-    session,
-    writer,
-    first_part,
-    chunk_size,
+    session: B2Session,
+    writer: WriterThread,
+    first_part: 'PartToDownload',
+    chunk_size: int,
     encryption: Optional[EncryptionSetting] = None,
 ) -> None:
     """
     :param response: response of the original GET call
     :param hasher: hasher object to feed to as the stream is written
+    :param session: B2 API session
+    :param writer: thread responsible for writing downloaded data
+    :param first_part: definition of the part to be downloaded
+    :param chunk_size: size (in bytes) of read data chunks
+    :param encryption: encryption mode, algorithm and key
     """
 
     writer_queue_put = writer.queue.put
@@ -283,15 +292,22 @@ def download_first_part(
         tries_left -= 1
 
 
-# TODO: Add param type annotations & docstrings
 def download_non_first_part(
-    url,
-    session,
-    writer,
-    part_to_download,
-    chunk_size,
+    url: str,
+    session: B2Session,
+    writer: WriterThread,
+    part_to_download: 'PartToDownload',
+    chunk_size: int,
     encryption: Optional[EncryptionSetting] = None,
 ) -> None:
+    """
+    :param url: download URL
+    :param session: B2 API session
+    :param writer: thread responsible for writing downloaded data
+    :param part_to_download: definition of the part to be downloaded
+    :param chunk_size: size (in bytes) of read data chunks
+    :param encryption: encryption mode, algorithm and key
+    """
     writer_queue_put = writer.queue.put
     start_range = part_to_download.local_range.start
     actual_part_size = part_to_download.local_range.size()
