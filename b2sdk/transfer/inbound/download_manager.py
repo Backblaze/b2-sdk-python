@@ -43,6 +43,9 @@ class DownloadManager(TransferManager, metaclass=B2TraceMetaAbstract):
     MIN_CHUNK_SIZE = 8192  # ~1MB file will show ~1% progress increment
     MAX_CHUNK_SIZE = 1024**2
 
+    PARALLEL_DOWNLOADER_CLASS = staticmethod(ParallelDownloader)
+    SIMPLE_DOWNLOADER_CLASS = staticmethod(SimpleDownloader)
+
     def __init__(self, max_workers: Optional[int] = None, **kwargs) -> None:
         """
         Initialize the DownloadManager using the given services object.
@@ -52,14 +55,14 @@ class DownloadManager(TransferManager, metaclass=B2TraceMetaAbstract):
 
         super().__init__(**kwargs)
         self.strategies = [
-            ParallelDownloader(
+            self.PARALLEL_DOWNLOADER_CLASS(
                 max_streams=self.DEFAULT_MAX_STREAMS,
                 min_part_size=self.DEFAULT_MIN_PART_SIZE,
                 min_chunk_size=self.MIN_CHUNK_SIZE,
                 max_chunk_size=self.MAX_CHUNK_SIZE,
                 max_workers=max_workers,
             ),
-            SimpleDownloader(
+            self.SIMPLE_DOWNLOADER_CLASS(
                 min_chunk_size=self.MIN_CHUNK_SIZE,
                 max_chunk_size=self.MAX_CHUNK_SIZE,
             ),

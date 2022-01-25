@@ -10,11 +10,12 @@
 
 from b2sdk import api
 
-from .transfer import UploadManager
+from .transfer import DownloadManager, UploadManager
 
 
 class Services(api.Services):
     UPLOAD_MANAGER_CLASS = staticmethod(UploadManager)
+    DOWNLOAD_MANAGER_CLASS = staticmethod(DownloadManager)
 
 
 class B2Api(api.B2Api):

@@ -9,6 +9,24 @@
 ######################################################################
 
 from b2sdk import transfer
+from b2sdk.transfer.inbound.downloader import parallel
+
+
+class ParallelDownloader(parallel.ParallelDownloader):
+
+    # This method is used in SDK even though it doesn't belong to the public API
+    def set_thread_pool_size(self, max_workers: int) -> None:
+        self._set_thread_pool_size(max_workers)
+
+
+class DownloadManager(transfer.DownloadManager):
+    PARALLEL_DOWNLOADER_CLASS = staticmethod(ParallelDownloader)
+
+    # This method is used in SDK even though it doesn't belong to the public API
+    def set_thread_pool_size(self, max_workers: int) -> None:
+        for strategy in self.strategies:
+            if isinstance(strategy, ParallelDownloader):
+                strategy.set_thread_pool_size(max_workers)
 
 
 class UploadManager(transfer.UploadManager):
