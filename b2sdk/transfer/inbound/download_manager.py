@@ -22,11 +22,12 @@ from b2sdk.utils import B2TraceMetaAbstract
 from .downloaded_file import DownloadedFile
 from .downloader.parallel import ParallelDownloader
 from .downloader.simple import SimpleDownloader
+from ..transfer_manager import TransferManager
 
 logger = logging.getLogger(__name__)
 
 
-class DownloadManager(metaclass=B2TraceMetaAbstract):
+class DownloadManager(TransferManager, metaclass=B2TraceMetaAbstract):
     """
     Handle complex actions around downloads to free raw_api from that responsibility.
     """
@@ -42,15 +43,14 @@ class DownloadManager(metaclass=B2TraceMetaAbstract):
     MIN_CHUNK_SIZE = 8192  # ~1MB file will show ~1% progress increment
     MAX_CHUNK_SIZE = 1024**2
 
-    def __init__(self, services, max_workers: Optional[int] = None):
+    def __init__(self, max_workers: Optional[int] = None, **kwargs) -> None:
         """
         Initialize the DownloadManager using the given services object.
 
-        :param b2sdk.v2.Services services:
         :param max_workers: maximum number of download threads
         """
 
-        self.services = services
+        super().__init__(**kwargs)
         self.strategies = [
             ParallelDownloader(
                 max_streams=self.DEFAULT_MAX_STREAMS,

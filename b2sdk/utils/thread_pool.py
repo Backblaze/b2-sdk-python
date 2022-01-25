@@ -21,7 +21,7 @@ class LazyThreadPoolMixin(metaclass=B2TraceMetaAbstract):
     Can be safely used between threads.
     """
 
-    def __init__(self, max_workers: 'Optional[int]' = None) -> None:
+    def __init__(self, max_workers: 'Optional[int]' = None, **kwargs) -> None:
         """
         :param Optional[int] max_workers: maximum number of worker threads
         """
@@ -29,6 +29,7 @@ class LazyThreadPoolMixin(metaclass=B2TraceMetaAbstract):
         self._lock = Lock()
         self._thread_pool = None  # type: 'Optional[ThreadPoolExecutor]'
         self._max_workers = max_workers
+        super().__init__(**kwargs)
 
     def _set_thread_pool_size(self, max_workers: int) -> None:
         """

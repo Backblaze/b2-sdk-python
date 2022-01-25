@@ -16,25 +16,18 @@ from b2sdk.http_constants import SSE_C_KEY_ID_FILE_INFO_KEY_NAME
 from b2sdk.exception import AlreadyFailed, CopyArgumentsMismatch, SSECKeyIdMismatchInCopy
 from b2sdk.file_lock import FileRetentionSetting, LegalHold
 from b2sdk.raw_api import MetadataDirectiveMode
+from b2sdk.transfer.transfer_manager import TransferManager
 from b2sdk.utils.thread_pool import LazyThreadPoolMixin
 
 logger = logging.getLogger(__name__)
 
 
-class CopyManager(LazyThreadPoolMixin):
+class CopyManager(TransferManager, LazyThreadPoolMixin):
     """
     Handle complex actions around server side copy to free raw_api from that responsibility.
     """
 
     MAX_LARGE_FILE_SIZE = 10 * 1000 * 1000 * 1000 * 1000  # 10 TB
-
-    def __init__(self, services, max_workers: Optional[int] = None):
-        """
-        :param b2sdk.v2.Services services:
-        :param int max_workers: maximum number of copy threads
-        """
-        super().__init__(max_workers=max_workers)
-        self.services = services
 
     @property
     def account_info(self):

@@ -24,25 +24,18 @@ from b2sdk.stream.hashing import StreamWithHash
 from b2sdk.http_constants import HEX_DIGITS_AT_END
 
 from .progress_reporter import PartProgressReporter
+from ..transfer_manager import TransferManager
 from ...utils.thread_pool import LazyThreadPoolMixin
 
 logger = logging.getLogger(__name__)
 
 
-class UploadManager(LazyThreadPoolMixin):
+class UploadManager(TransferManager, LazyThreadPoolMixin):
     """
     Handle complex actions around uploads to free raw_api from that responsibility.
     """
 
     MAX_UPLOAD_ATTEMPTS = 5
-
-    def __init__(self, services, max_workers: Optional[int] = None):
-        """
-        :param b2sdk.v2.Services services:
-        :param max_workers: maximum number of upload threads
-        """
-        super().__init__(max_workers=max_workers)
-        self.services = services
 
     @property
     def account_info(self):

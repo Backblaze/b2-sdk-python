@@ -8,18 +8,20 @@
 #
 ######################################################################
 
-from unittest import mock
-
 from b2sdk import api
 
 from .transfer import UploadManager
 
 
+class Services(api.Services):
+    UPLOAD_MANAGER_CLASS = staticmethod(UploadManager)
+
+
 class B2Api(api.B2Api):
+    SERVICES_CLASS = staticmethod(Services)
 
     # Legacy init in case something depends on max_workers defaults = 10
     def __init__(self, *args, **kwargs):
         kwargs.setdefault('max_upload_workers', 10)
         kwargs.setdefault('max_copy_workers', 10)
-        with mock.patch('b2sdk.api.UploadManager', UploadManager):
-            super().__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)

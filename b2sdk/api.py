@@ -50,6 +50,9 @@ def url_for_api(info, api_name):
 
 class Services(object):
     """ Gathers objects that provide high level logic over raw api usage. """
+    UPLOAD_MANAGER_CLASS = staticmethod(UploadManager)
+    COPY_MANAGER_CLASS = staticmethod(CopyManager)
+    DOWNLOAD_MANAGER_CLASS = staticmethod(DownloadManager)
 
     def __init__(
         self,
@@ -69,9 +72,13 @@ class Services(object):
         self.api = api
         self.session = api.session
         self.large_file = LargeFileServices(self)
-        self.download_manager = DownloadManager(self, max_workers=max_download_workers)
-        self.upload_manager = UploadManager(self, max_workers=max_upload_workers)
-        self.copy_manager = CopyManager(self, max_workers=max_download_workers)
+        self.upload_manager = self.UPLOAD_MANAGER_CLASS(
+            services=self, max_workers=max_upload_workers
+        )
+        self.copy_manager = self.COPY_MANAGER_CLASS(services=self, max_workers=max_copy_workers)
+        self.download_manager = self.DOWNLOAD_MANAGER_CLASS(
+            services=self, max_workers=max_download_workers
+        )
         self.emerger = Emerger(self)
 
 
@@ -100,6 +107,7 @@ class B2Api(metaclass=B2TraceMeta):
     SESSION_CLASS = staticmethod(B2Session)
     FILE_VERSION_FACTORY_CLASS = staticmethod(FileVersionFactory)
     DOWNLOAD_VERSION_FACTORY_CLASS = staticmethod(DownloadVersionFactory)
+    SERVICES_CLASS = staticmethod(Services)
     DEFAULT_LIST_KEY_COUNT = 1000
 
     def __init__(
@@ -130,8 +138,8 @@ class B2Api(metaclass=B2TraceMeta):
         )
         self.file_version_factory = self.FILE_VERSION_FACTORY_CLASS(self)
         self.download_version_factory = self.DOWNLOAD_VERSION_FACTORY_CLASS(self)
-        self.services = Services(
-            self,
+        self.services = self.SERVICES_CLASS(
+            api=self,
             max_upload_workers=max_upload_workers,
             max_copy_workers=max_copy_workers,
             max_download_workers=max_download_workers,
