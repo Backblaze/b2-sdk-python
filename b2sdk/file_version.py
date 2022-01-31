@@ -74,12 +74,28 @@ class BaseFileVersion(ABC):
         else:
             self.mod_time_millis = self.upload_timestamp
 
-    @abstractmethod
-    def _clone(self, **new_attributes):
+    def _clone(self, **new_attributes: Dict[str, object]):
         """
         Create new instance based on the old one, overriding attributes with :code:`new_attributes`
         (only applies to arguments passed to __init__)
         """
+        args = self._get_args_for_clone()
+        return self.__class__(**{**args, **new_attributes})
+
+    def _get_args_for_clone(self):
+        return {
+            'api': self.api,
+            'id_': self.id_,
+            'file_name': self.file_name,
+            'size': self.size,
+            'content_type': self.content_type,
+            'content_sha1': self._encode_content_sha1(self.content_sha1, self.content_sha1_verified),
+            'file_info': self.file_info,
+            'upload_timestamp': self.upload_timestamp,
+            'server_side_encryption': self.server_side_encryption,
+            'file_retention': self.file_retention,
+            'legal_hold': self.legal_hold,
+        }  # yapf: disable
 
     def as_dict(self):
         """ represents the object as a dict which looks almost exactly like the raw api output for upload/list """
@@ -197,25 +213,17 @@ class FileVersion(BaseFileVersion):
             legal_hold=legal_hold,
         )
 
-    def _clone(self, **new_attributes: Dict[str, object]):
-        args = {
-            'api': self.api,
-            'id_': self.id_,
-            'file_name': self.file_name,
-            'size': self.size,
-            'content_type': self.content_type,
-            'content_sha1': self.content_sha1,
-            'file_info': self.file_info,
-            'upload_timestamp': self.upload_timestamp,
-            'account_id': self.account_id,
-            'bucket_id': self.bucket_id,
-            'action': self.action,
-            'content_md5': self.content_md5,
-            'server_side_encryption': self.server_side_encryption,
-            'file_retention': self.file_retention,
-            'legal_hold': self.legal_hold,
-        }
-        return self.__class__(**{**args, **new_attributes})
+    def _get_args_for_clone(self):
+        args = super()._get_args_for_clone()
+        args.update(
+            {
+                'account_id': self.account_id,
+                'bucket_id': self.bucket_id,
+                'action': self.action,
+                'content_md5': self.content_md5,
+            }
+        )
+        return args
 
     def as_dict(self):
         result = super().as_dict()
@@ -307,28 +315,20 @@ class DownloadVersion(BaseFileVersion):
             legal_hold=legal_hold,
         )
 
-    def _clone(self, **new_attributes: Dict[str, object]):
-        args = {
-            'api': self.api,
-            'id_': self.id_,
-            'file_name': self.file_name,
-            'size': self.size,
-            'content_type': self.content_type,
-            'content_sha1': self.content_sha1,
-            'file_info': self.file_info,
-            'upload_timestamp': self.upload_timestamp,
-            'server_side_encryption': self.server_side_encryption,
-            'range_': self.range_,
-            'content_disposition': self.content_disposition,
-            'content_length': self.content_length,
-            'content_language': self.content_language,
-            'expires': self._expires,
-            'cache_control': self._cache_control,
-            'content_encoding': self.content_encoding,
-            'file_retention': self.file_retention,
-            'legal_hold': self.legal_hold,
-        }
-        return self.__class__(**{**args, **new_attributes})
+    def _get_args_for_clone(self):
+        args = super()._get_args_for_clone()
+        args.update(
+            {
+                'range_': self.range_,
+                'content_disposition': self.content_disposition,
+                'content_length': self.content_length,
+                'content_language': self.content_language,
+                'expires': self._expires,
+                'cache_control': self._cache_control,
+                'content_encoding': self.content_encoding,
+            }
+        )
+        return args
 
 
 class FileVersionFactory(object):
