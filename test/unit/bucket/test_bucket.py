@@ -1637,7 +1637,7 @@ class DownloadTests(DownloadTestsBase):
 # download empty file
 
 
-class EmptyFileDownloadScenarioMixin(object):
+class EmptyFileDownloadScenarioMixin:
     """ use with DownloadTests, but not for TestDownloadParallel as it does not like empty files """
 
     def test_download_by_name_empty_file(self):
@@ -1646,7 +1646,7 @@ class EmptyFileDownloadScenarioMixin(object):
         self._verify('')
 
 
-class UnverifiedChecksumDownloadScenarioMixin(object):
+class UnverifiedChecksumDownloadScenarioMixin:
     """ use with DownloadTests """
 
     def test_download_by_name_unverified_checksum(self):
