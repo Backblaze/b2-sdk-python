@@ -1646,6 +1646,25 @@ class EmptyFileDownloadScenarioMixin(object):
         self._verify('')
 
 
+class UnverifiedChecksumDownloadScenarioMixin(object):
+    """ use with DownloadTests """
+
+    def test_download_by_name_unverified_checksum(self):
+        with TempDir() as d:
+            path = os.path.join(d, 'file1')
+            data = b'hello world'
+            write_file(path, data)
+            file_info = self.bucket.upload_local_file(path, 'file1')
+            simulated_file = list(self.simulator.bucket_name_to_bucket.values()
+                                 )[0].file_id_to_file[file_info.id_]
+            simulated_file.content_sha1 = 'unverified:' + simulated_file.content_sha1
+            #, sha1_sum='unverified:2aae6c35c94fcfb415dbe95f408b9ce91ee846ed')
+
+            self.download_file_by_name('file1', progress_listener=self.progress_listener)
+
+            self._verify('hello world')
+
+
 # actual tests
 
 # test choosing strategy
@@ -1690,7 +1709,12 @@ class TestDownloadDefault(DownloadTests, EmptyFileDownloadScenarioMixin, TestCas
     pass
 
 
-class TestDownloadSimple(DownloadTests, EmptyFileDownloadScenarioMixin, TestCaseWithBucket):
+class TestDownloadSimple(
+    DownloadTests,
+    UnverifiedChecksumDownloadScenarioMixin,
+    EmptyFileDownloadScenarioMixin,
+    TestCaseWithBucket,
+):
     def setUp(self):
         super(TestDownloadSimple, self).setUp()
         self.bucket.api.services.download_manager.strategies = [
@@ -1698,7 +1722,11 @@ class TestDownloadSimple(DownloadTests, EmptyFileDownloadScenarioMixin, TestCase
         ]
 
 
-class TestDownloadParallel(DownloadTests, TestCaseWithBucket):
+class TestDownloadParallel(
+    DownloadTests,
+    UnverifiedChecksumDownloadScenarioMixin,
+    TestCaseWithBucket,
+):
     def setUp(self):
         super(TestDownloadParallel, self).setUp()
         self.bucket.api.services.download_manager.strategies = [

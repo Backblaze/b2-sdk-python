@@ -8,7 +8,6 @@
 #
 ######################################################################
 
-from abc import ABC, abstractmethod
 from typing import Dict, Optional, Union, Tuple, TYPE_CHECKING
 
 from .encryption.setting import EncryptionSetting, EncryptionSettingFactory
@@ -22,12 +21,13 @@ if TYPE_CHECKING:
     from .transfer.inbound.downloaded_file import DownloadedFile
 
 
-class BaseFileVersion(ABC):
+class BaseFileVersion:
     """
     Base class for representing file metadata in B2 cloud.
 
     :ivar size - size of the whole file (for "upload" markers)
     """
+    UNVERIFIED_CHECKSUM_PREFIX = 'unverified:'
     __slots__ = [
         'id_',
         'api',
@@ -35,6 +35,7 @@ class BaseFileVersion(ABC):
         'size',
         'content_type',
         'content_sha1',
+        'content_sha1_verified',
         'file_info',
         'upload_timestamp',
         'server_side_encryption',
@@ -62,17 +63,29 @@ class BaseFileVersion(ABC):
         self.file_name = file_name
         self.size = size
         self.content_type = content_type
-        self.content_sha1 = content_sha1
+        self.content_sha1, self.content_sha1_verified = self._decode_content_sha1(content_sha1)
         self.file_info = file_info or {}
         self.upload_timestamp = upload_timestamp
         self.server_side_encryption = server_side_encryption
-        self.legal_hold = legal_hold
         self.file_retention = file_retention
+        self.legal_hold = legal_hold
 
         if SRC_LAST_MODIFIED_MILLIS in self.file_info:
             self.mod_time_millis = int(self.file_info[SRC_LAST_MODIFIED_MILLIS])
         else:
             self.mod_time_millis = self.upload_timestamp
+
+    @classmethod
+    def _decode_content_sha1(cls, content_sha1):
+        if content_sha1.startswith(cls.UNVERIFIED_CHECKSUM_PREFIX):
+            return content_sha1[len(cls.UNVERIFIED_CHECKSUM_PREFIX):], False
+        return content_sha1, True
+
+    @classmethod
+    def _encode_content_sha1(cls, content_sha1, content_sha1_verified):
+        if not content_sha1_verified:
+            return '%s%s' % (cls.UNVERIFIED_CHECKSUM_PREFIX, content_sha1)
+        return content_sha1
 
     def _clone(self, **new_attributes: Dict[str, object]):
         """
@@ -115,7 +128,9 @@ class BaseFileVersion(ABC):
         if self.content_type is not None:
             result['contentType'] = self.content_type
         if self.content_sha1 is not None:
-            result['contentSha1'] = self.content_sha1
+            result['contentSha1'] = self._encode_content_sha1(
+                self.content_sha1, self.content_sha1_verified
+            )
 
         return result
 
