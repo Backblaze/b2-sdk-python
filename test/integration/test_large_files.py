@@ -106,10 +106,10 @@ class TestLargeFile:
                     with io.BytesIO() as io_:
                         bucket.download_file_by_name('a_single_zero').save(io_)
                 assert exc_info.value.args == ('no strategy suitable for download was found!',)
-                f = self._file_helper()
+                f = self._file_helper(bucket)
                 assert f.content_sha1_verified
 
-    def _file_helper(self, sha1_sum=None):
+    def _file_helper(self, bucket, sha1_sum=None):
         bytes_to_write = int(self.info.get_absolute_minimum_part_size() * 2.5)
         with TempDir() as temp_dir:
             temp_dir = pathlib.Path(temp_dir)
@@ -133,7 +133,8 @@ class TestLargeFile:
         return f
 
     def test_unverified(self):
-        f = _file_helper(sha1_sum='do_not_verify')
+        bucket = self.create_bucket()
+        f = self._file_helper(bucket, sha1_sum='do_not_verify')
         assert not f.content_sha1_verified
 
 
