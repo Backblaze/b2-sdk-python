@@ -924,6 +924,8 @@ class BucketSimulator(object):
         computed_sha1 = hex_sha1_of_bytes(data_bytes)
         if content_sha1 != computed_sha1:
             raise FileSha1Mismatch(file_name)
+        if content_sha1 == 'do_not_verify':
+            content_sha1 = 'unverified:' + computed_sha1
         file_id = self._next_file_id()
 
         encryption = server_side_encryption or self.default_server_side_encryption
