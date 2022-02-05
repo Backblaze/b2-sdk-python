@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+* Fix setting permissions for local sqlite database (thanks to Jan Schejbal for responsible disclosure!)
+
 ## [1.14.0] - 2021-12-23
 
 ### Fixed
