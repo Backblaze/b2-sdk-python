@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+* Add pypy-3.8 to test matrix
 * Add support for unverified checksum upload mode
 
 ### Fixed
