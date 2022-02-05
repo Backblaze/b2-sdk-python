@@ -50,6 +50,7 @@ from .utils import (
 )
 from b2sdk.http_constants import FILE_INFO_HEADER_PREFIX, HEX_DIGITS_AT_END
 from .stream.hashing import StreamWithHash
+from .file_version import UNVERIFIED_CHECKSUM_PREFIX
 
 logger = logging.getLogger(__name__)
 
@@ -925,7 +926,7 @@ class BucketSimulator(object):
         if content_sha1 != computed_sha1:
             raise FileSha1Mismatch(file_name)
         if content_sha1 == 'do_not_verify':
-            content_sha1 = 'unverified:' + computed_sha1
+            content_sha1 = UNVERIFIED_CHECKSUM_PREFIX + computed_sha1
         file_id = self._next_file_id()
 
         encryption = server_side_encryption or self.default_server_side_encryption

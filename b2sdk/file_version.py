@@ -20,6 +20,8 @@ if TYPE_CHECKING:
     from .api import B2Api
     from .transfer.inbound.downloaded_file import DownloadedFile
 
+UNVERIFIED_CHECKSUM_PREFIX = 'unverified:'
+
 
 class BaseFileVersion:
     """
@@ -27,7 +29,6 @@ class BaseFileVersion:
 
     :ivar size - size of the whole file (for "upload" markers)
     """
-    UNVERIFIED_CHECKSUM_PREFIX = 'unverified:'
     __slots__ = [
         'id_',
         'api',
@@ -77,14 +78,14 @@ class BaseFileVersion:
 
     @classmethod
     def _decode_content_sha1(cls, content_sha1):
-        if content_sha1.startswith(cls.UNVERIFIED_CHECKSUM_PREFIX):
-            return content_sha1[len(cls.UNVERIFIED_CHECKSUM_PREFIX):], False
+        if content_sha1.startswith(UNVERIFIED_CHECKSUM_PREFIX):
+            return content_sha1[len(UNVERIFIED_CHECKSUM_PREFIX):], False
         return content_sha1, True
 
     @classmethod
     def _encode_content_sha1(cls, content_sha1, content_sha1_verified):
         if not content_sha1_verified:
-            return '%s%s' % (cls.UNVERIFIED_CHECKSUM_PREFIX, content_sha1)
+            return '%s%s' % (UNVERIFIED_CHECKSUM_PREFIX, content_sha1)
         return content_sha1
 
     def _clone(self, **new_attributes: Dict[str, object]):
