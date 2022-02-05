@@ -11,7 +11,7 @@
 import b2sdk.v2 as v2
 
 
-class FileMetadata(object):
+class FileMetadata:
     """
     Hold information about a file which is being downloaded.
     """

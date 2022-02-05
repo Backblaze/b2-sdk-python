@@ -9,7 +9,7 @@
 ######################################################################
 
 from . import get_b2_auth_data
-from .test_large_files import BucketCleaner
+from .bucket_cleaner import BucketCleaner
 from .test_raw_api import cleanup_old_buckets
 
 if __name__ == '__main__':

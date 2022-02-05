@@ -214,7 +214,7 @@ class UploadManager(TransferManager, LazyThreadPoolMixin):
                         )
                         if content_sha1 == HEX_DIGITS_AT_END:
                             content_sha1 = input_stream.hash
-                        assert content_sha1 == response[
+                        assert content_sha1 == 'do_not_verify' or content_sha1 == response[
                             'contentSha1'], '%s != %s' % (content_sha1, response['contentSha1'])
                         return self.services.api.file_version_factory.from_api_response(response)
 

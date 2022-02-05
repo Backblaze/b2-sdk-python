@@ -47,7 +47,7 @@ class FileVersionInfo(v2.FileVersion):
         self.file_name = file_name
         self.size = size and int(size)
         self.content_type = content_type
-        self.content_sha1 = content_sha1
+        self.content_sha1, self.content_sha1_verified = self._decode_content_sha1(content_sha1)
         self.account_id = account_id
         self.bucket_id = bucket_id
         self.content_md5 = content_md5
