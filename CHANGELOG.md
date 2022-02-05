@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 * Add support for unverified checksum upload mode
+* Add dedicated exception for unverified email
 
 ### Fixed
 * Fix downloading files with unverified checksum

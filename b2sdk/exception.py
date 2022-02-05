@@ -325,6 +325,11 @@ class Unauthorized(B2Error):
         return True
 
 
+class EmailNotVerified(Unauthorized):
+    def should_retry_upload(self):
+        return False
+
+
 class InvalidAuthToken(Unauthorized):
     """
     Specific type of Unauthorized that means the auth token is invalid.
@@ -548,6 +553,8 @@ def interpret_b2_error(
         return BadRequest(message, code)
     elif status == 401 and code in ("bad_auth_token", "expired_auth_token"):
         return InvalidAuthToken(message, code)
+    elif status == 401 and code == 'email_not_verified':
+        return EmailNotVerified(message, code)
     elif status == 401:
         return Unauthorized(message, code)
     elif status == 403 and code == "storage_cap_exceeded":
