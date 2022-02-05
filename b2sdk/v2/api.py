@@ -13,6 +13,12 @@ from b2sdk._v3.exception import BucketIdNotFound as v3BucketIdNotFound
 from .bucket import Bucket, BucketFactory
 from .exception import BucketIdNotFound
 from .session import B2Session
+from .transfer import DownloadManager, UploadManager
+
+
+class Services(v3.Services):
+    UPLOAD_MANAGER_CLASS = staticmethod(UploadManager)
+    DOWNLOAD_MANAGER_CLASS = staticmethod(DownloadManager)
 
 
 # override to use legacy B2Session with legacy B2Http
@@ -22,6 +28,13 @@ class B2Api(v3.B2Api):
     SESSION_CLASS = staticmethod(B2Session)
     BUCKET_CLASS = staticmethod(Bucket)
     BUCKET_FACTORY_CLASS = staticmethod(BucketFactory)
+    SERVICES_CLASS = staticmethod(Services)
+
+    # Legacy init in case something depends on max_workers defaults = 10
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault('max_upload_workers', 10)
+        kwargs.setdefault('max_copy_workers', 10)
+        super().__init__(*args, **kwargs)
 
     def get_bucket_by_id(self, bucket_id: str) -> v3.Bucket:
         try:
