@@ -324,7 +324,7 @@ class TestSqliteAccountInfo(AccountInfoBase):
         yield
         for cleanup_method in [lambda: os.unlink(self.db_path), lambda: shutil.rmtree(self.test_home)]:
             try:
-                cleanup_method
+                cleanup_method()
             except OSError:
                 pass
 
