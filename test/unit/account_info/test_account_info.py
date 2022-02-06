@@ -14,6 +14,7 @@ import unittest.mock as mock
 import os
 import platform
 import shutil
+import stat
 import tempfile
 
 import pytest
@@ -322,11 +323,21 @@ class TestSqliteAccountInfo(AccountInfoBase):
         self.test_home = tempfile.mkdtemp()
 
         yield
-        for cleanup_method in [lambda: os.unlink(self.db_path), lambda: shutil.rmtree(self.test_home)]:
+        for cleanup_method in [
+            lambda: os.unlink(self.db_path), lambda: shutil.rmtree(self.test_home)
+        ]:
             try:
                 cleanup_method()
             except OSError:
                 pass
+
+    def test_permissions(self):
+        """
+        Test that a new database won't be readable by just any user
+        """
+        s = SqliteAccountInfo(file_name=self.db_path,)
+        mode = os.stat(self.db_path).st_mode
+        assert stat.filemode(mode) == '-rw-------'
 
     def test_corrupted(self):
         """
