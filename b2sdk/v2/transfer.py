@@ -11,11 +11,17 @@
 from b2sdk import _v3 as v3
 
 
-class ParallelDownloader(v3.ParallelDownloader):
-
+class LazyThreadPoolMixin(v3.LazyThreadPoolMixin):
     # This method is used in CLI even though it doesn't belong to the public API
     def set_thread_pool_size(self, max_workers: int) -> None:
-        self._set_thread_pool_size(max_workers)
+        with self._lock:
+            if self._thread_pool is not None:
+                raise RuntimeError('Thread pool already created')
+            self._max_workers = max_workers
+
+
+class ParallelDownloader(v3.ParallelDownloader, LazyThreadPoolMixin):
+    pass
 
 
 class DownloadManager(v3.DownloadManager):
@@ -28,8 +34,5 @@ class DownloadManager(v3.DownloadManager):
                 strategy.set_thread_pool_size(max_workers)
 
 
-class UploadManager(v3.UploadManager):
-
-    # This method is used in SDK even though it doesn't belong to the public API
-    def set_thread_pool_size(self, max_workers: int) -> None:
-        self._set_thread_pool_size(max_workers)
+class UploadManager(v3.UploadManager, LazyThreadPoolMixin):
+    pass

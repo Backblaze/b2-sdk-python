@@ -7,14 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
-* Introduced a thread worker pool for parallel downloads
+* Introduce a common thread worker pool for all parallel downloads
 
 ### Added
 * Add support for unverified checksum upload mode
 
 ### Fixed
 * Fix downloading files with unverified checksum
-
 
 ## [1.14.0] - 2021-12-23
 

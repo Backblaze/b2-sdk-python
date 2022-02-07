@@ -214,3 +214,4 @@ from b2sdk.cache import DummyCache
 from b2sdk.cache import InMemoryCache
 from b2sdk.http_constants import SRC_LAST_MODIFIED_MILLIS
 from b2sdk.session import B2Session
+from b2sdk.utils.thread_pool import LazyThreadPoolMixin
