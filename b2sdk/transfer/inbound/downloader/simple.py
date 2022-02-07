@@ -7,9 +7,9 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
-
+from concurrent.futures import ThreadPoolExecutor
 from io import IOBase
-from typing import Optional
+from typing import Optional, Callable
 import hashlib
 import logging
 
@@ -26,9 +26,6 @@ logger = logging.getLogger(__name__)
 class SimpleDownloader(AbstractDownloader):
 
     REQUIRES_SEEKING = False
-
-    def __init__(self, *args, **kwargs):
-        super(SimpleDownloader, self).__init__(*args, **kwargs)
 
     def download(
         self,

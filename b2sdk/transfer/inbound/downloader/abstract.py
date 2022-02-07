@@ -9,8 +9,9 @@
 ######################################################################
 
 from abc import abstractmethod
+from concurrent.futures import ThreadPoolExecutor
 from io import IOBase
-from typing import Optional
+from typing import Optional, Callable
 
 from requests.models import Response
 
@@ -25,7 +26,14 @@ class AbstractDownloader(metaclass=B2TraceMetaAbstract):
 
     REQUIRES_SEEKING = True
 
-    def __init__(self, force_chunk_size=None, min_chunk_size=None, max_chunk_size=None, **kwargs):
+    def __init__(
+        self,
+        get_thread_pool: Callable[[], ThreadPoolExecutor],
+        force_chunk_size=None,
+        min_chunk_size=None,
+        max_chunk_size=None,
+        **kwargs
+    ):
         assert force_chunk_size is not None or (
             min_chunk_size is not None and max_chunk_size is not None and min_chunk_size > 0 and
             max_chunk_size >= min_chunk_size
@@ -33,6 +41,7 @@ class AbstractDownloader(metaclass=B2TraceMetaAbstract):
         self._min_chunk_size = min_chunk_size
         self._max_chunk_size = max_chunk_size
         self._forced_chunk_size = force_chunk_size
+        self._get_thread_pool = get_thread_pool
         super().__init__(**kwargs)
 
     def _get_chunk_size(self, content_length):

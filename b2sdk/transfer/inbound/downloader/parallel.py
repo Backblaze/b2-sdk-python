@@ -10,7 +10,7 @@
 
 from concurrent import futures
 from io import IOBase
-from typing import Optional
+from typing import Optional, Callable
 import logging
 import hashlib
 import queue
@@ -18,7 +18,6 @@ import threading
 
 from requests.models import Response
 
-from b2sdk.utils.thread_pool import LazyThreadPoolMixin
 from .abstract import AbstractDownloader
 from b2sdk.encryption.setting import EncryptionSetting
 from b2sdk.file_version import DownloadVersion
@@ -28,7 +27,7 @@ from b2sdk.utils.range_ import Range
 logger = logging.getLogger(__name__)
 
 
-class ParallelDownloader(AbstractDownloader, LazyThreadPoolMixin):
+class ParallelDownloader(AbstractDownloader):
     # situations to consider:
     #
     # local file start                                         local file end
@@ -50,12 +49,12 @@ class ParallelDownloader(AbstractDownloader, LazyThreadPoolMixin):
     #
     FINISH_HASHING_BUFFER_SIZE = 1024**2
 
-    def __init__(self, max_streams: int, min_part_size: int, *args, **kwargs):
+    def __init__(self, max_streams: int, min_part_size: int, **kwargs):
         """
         :param max_streams: maximum number of simultaneous streams
         :param min_part_size: minimum amount of data a single stream will retrieve, in bytes
         """
-        super().__init__(*args, **kwargs)
+        super().__init__(**kwargs)
         self.max_streams = max_streams
         self.min_part_size = min_part_size
 

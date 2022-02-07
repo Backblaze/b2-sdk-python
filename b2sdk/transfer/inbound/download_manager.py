@@ -23,11 +23,12 @@ from .downloaded_file import DownloadedFile
 from .downloader.parallel import ParallelDownloader
 from .downloader.simple import SimpleDownloader
 from ..transfer_manager import TransferManager
+from ...utils.thread_pool import LazyThreadPoolMixin
 
 logger = logging.getLogger(__name__)
 
 
-class DownloadManager(TransferManager, metaclass=B2TraceMetaAbstract):
+class DownloadManager(TransferManager, LazyThreadPoolMixin, metaclass=B2TraceMetaAbstract):
     """
     Handle complex actions around downloads to free raw_api from that responsibility.
     """
@@ -46,11 +47,9 @@ class DownloadManager(TransferManager, metaclass=B2TraceMetaAbstract):
     PARALLEL_DOWNLOADER_CLASS = staticmethod(ParallelDownloader)
     SIMPLE_DOWNLOADER_CLASS = staticmethod(SimpleDownloader)
 
-    def __init__(self, max_workers: Optional[int] = None, **kwargs):
+    def __init__(self, **kwargs):
         """
         Initialize the DownloadManager using the given services object.
-
-        :param max_workers: maximum number of download threads
         """
 
         super().__init__(**kwargs)
@@ -60,11 +59,12 @@ class DownloadManager(TransferManager, metaclass=B2TraceMetaAbstract):
                 min_part_size=self.DEFAULT_MIN_PART_SIZE,
                 min_chunk_size=self.MIN_CHUNK_SIZE,
                 max_chunk_size=self.MAX_CHUNK_SIZE,
-                max_workers=max_workers,
+                get_thread_pool=self._get_thread_pool,
             ),
             self.SIMPLE_DOWNLOADER_CLASS(
                 min_chunk_size=self.MIN_CHUNK_SIZE,
                 max_chunk_size=self.MAX_CHUNK_SIZE,
+                get_thread_pool=self._get_thread_pool,
             ),
         ]
 

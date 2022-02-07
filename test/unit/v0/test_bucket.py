@@ -1184,19 +1184,24 @@ class TestDownloadDefault(DownloadTests, EmptyFileDownloadScenarioMixin, TestCas
 class TestDownloadSimple(DownloadTests, EmptyFileDownloadScenarioMixin, TestCaseWithBucket):
     def setUp(self):
         super(TestDownloadSimple, self).setUp()
-        self.bucket.api.services.download_manager.strategies = [
-            SimpleDownloader(force_chunk_size=20,)
+        download_manager = self.bucket.api.services.download_manager
+        download_manager.strategies = [
+            SimpleDownloader(
+                force_chunk_size=20, get_thread_pool=download_manager._get_thread_pool
+            )
         ]
 
 
 class TestDownloadParallel(DownloadTests, TestCaseWithBucket):
     def setUp(self):
         super(TestDownloadParallel, self).setUp()
-        self.bucket.api.services.download_manager.strategies = [
+        download_manager = self.bucket.api.services.download_manager
+        download_manager.strategies = [
             ParallelDownloader(
                 force_chunk_size=2,
                 max_streams=999,
                 min_part_size=2,
+                get_thread_pool=download_manager._get_thread_pool,
             )
         ]
 
@@ -1233,18 +1238,23 @@ class TestCaseWithTruncatedDownloadBucket(TestCaseWithBucket):
 class TestTruncatedDownloadSimple(DownloadTests, TestCaseWithTruncatedDownloadBucket):
     def setUp(self):
         super(TestTruncatedDownloadSimple, self).setUp()
-        self.bucket.api.services.download_manager.strategies = [
-            SimpleDownloader(force_chunk_size=20,)
+        download_manager = self.bucket.api.services.download_manager
+        download_manager.strategies = [
+            SimpleDownloader(
+                force_chunk_size=20, get_thread_pool=download_manager._get_thread_pool
+            )
         ]
 
 
 class TestTruncatedDownloadParallel(DownloadTests, TestCaseWithTruncatedDownloadBucket):
     def setUp(self):
         super(TestTruncatedDownloadParallel, self).setUp()
-        self.bucket.api.services.download_manager.strategies = [
+        download_manager = self.bucket.api.services.download_manager
+        download_manager.strategies = [
             ParallelDownloader(
                 force_chunk_size=3,
                 max_streams=2,
                 min_part_size=2,
+                get_thread_pool=download_manager._get_thread_pool,
             )
         ]

@@ -20,18 +20,8 @@ class LazyThreadPoolMixin(v3.LazyThreadPoolMixin):
             self._max_workers = max_workers
 
 
-class ParallelDownloader(v3.ParallelDownloader, LazyThreadPoolMixin):
+class DownloadManager(v3.DownloadManager, LazyThreadPoolMixin):
     pass
-
-
-class DownloadManager(v3.DownloadManager):
-    PARALLEL_DOWNLOADER_CLASS = staticmethod(ParallelDownloader)
-
-    # This method is used in CLI even though it doesn't belong to the public API
-    def set_thread_pool_size(self, max_workers: int) -> None:
-        for strategy in self.strategies:
-            if isinstance(strategy, ParallelDownloader):
-                strategy.set_thread_pool_size(max_workers)
 
 
 class UploadManager(v3.UploadManager, LazyThreadPoolMixin):

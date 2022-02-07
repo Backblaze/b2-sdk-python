@@ -1674,13 +1674,15 @@ class UnverifiedChecksumDownloadScenarioMixin:
 class TestChooseStrategy(TestCaseWithBucket):
     def test_choose_strategy(self):
         file_version = self.bucket.upload_bytes(b'hello world' * 8, 'file1')
+        download_manager = self.bucket.api.services.download_manager
         parallel_downloader = ParallelDownloader(
             force_chunk_size=1,
             max_streams=32,
             min_part_size=16,
+            get_thread_pool=download_manager._get_thread_pool,
         )
-        simple_downloader = self.bucket.api.services.download_manager.strategies[1]
-        self.bucket.api.services.download_manager.strategies = [
+        simple_downloader = download_manager.strategies[1]
+        download_manager.strategies = [
             parallel_downloader,
             simple_downloader,
         ]
@@ -1717,8 +1719,11 @@ class TestDownloadSimple(
 ):
     def setUp(self):
         super(TestDownloadSimple, self).setUp()
-        self.bucket.api.services.download_manager.strategies = [
-            SimpleDownloader(force_chunk_size=20,)
+        download_manager = self.bucket.api.services.download_manager
+        download_manager.strategies = [
+            SimpleDownloader(
+                force_chunk_size=20, get_thread_pool=download_manager._get_thread_pool
+            )
         ]
 
 
@@ -1729,11 +1734,13 @@ class TestDownloadParallel(
 ):
     def setUp(self):
         super(TestDownloadParallel, self).setUp()
-        self.bucket.api.services.download_manager.strategies = [
+        download_manager = self.bucket.api.services.download_manager
+        download_manager.strategies = [
             ParallelDownloader(
                 force_chunk_size=2,
                 max_streams=999,
                 min_part_size=2,
+                get_thread_pool=download_manager._get_thread_pool,
             ),
         ]
 
@@ -1743,7 +1750,8 @@ class TestDownloadParallelALotOfStreams(DownloadTestsBase, TestCaseWithBucket):
 
     def setUp(self):
         super(TestDownloadParallelALotOfStreams, self).setUp()
-        self.bucket.api.services.download_manager.strategies = [
+        download_manager = self.bucket.api.services.download_manager
+        download_manager.strategies = [
             # this should produce 32 streams with 16 single byte writes
             # so we increase probability of non-sequential writes as much as possible
             # with great help from random sleeps in FakeResponse
@@ -1751,6 +1759,7 @@ class TestDownloadParallelALotOfStreams(DownloadTestsBase, TestCaseWithBucket):
                 force_chunk_size=1,
                 max_streams=32,
                 min_part_size=16,
+                get_thread_pool=download_manager._get_thread_pool,
             ),
         ]
 
@@ -1791,18 +1800,23 @@ class TestCaseWithTruncatedDownloadBucket(TestCaseWithBucket):
 class TestTruncatedDownloadSimple(DownloadTests, TestCaseWithTruncatedDownloadBucket):
     def setUp(self):
         super(TestTruncatedDownloadSimple, self).setUp()
-        self.bucket.api.services.download_manager.strategies = [
-            SimpleDownloader(force_chunk_size=20,)
+        download_manager = self.bucket.api.services.download_manager
+        download_manager.strategies = [
+            SimpleDownloader(
+                force_chunk_size=20, get_thread_pool=download_manager._get_thread_pool
+            )
         ]
 
 
 class TestTruncatedDownloadParallel(DownloadTests, TestCaseWithTruncatedDownloadBucket):
     def setUp(self):
         super(TestTruncatedDownloadParallel, self).setUp()
-        self.bucket.api.services.download_manager.strategies = [
+        download_manager = self.bucket.api.services.download_manager
+        download_manager.strategies = [
             ParallelDownloader(
                 force_chunk_size=3,
                 max_streams=2,
                 min_part_size=2,
+                get_thread_pool=download_manager._get_thread_pool,
             )
         ]
