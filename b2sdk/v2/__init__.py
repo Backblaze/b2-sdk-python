@@ -14,3 +14,4 @@ from .api import B2Api
 from .b2http import B2Http
 from .bucket import Bucket, BucketFactory
 from .session import B2Session
+from .transfer import DownloadManager, UploadManager
