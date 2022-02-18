@@ -33,6 +33,8 @@ class LazyThreadPool:
 
     def set_size(self, max_workers: int) -> None:
         with self._lock:
+            if self._max_workers == max_workers:
+                return
             if self._thread_pool is not None:
                 raise RuntimeError('Thread pool already created')
             self._max_workers = max_workers
