@@ -1185,11 +1185,7 @@ class TestDownloadSimple(DownloadTests, EmptyFileDownloadScenarioMixin, TestCase
     def setUp(self):
         super(TestDownloadSimple, self).setUp()
         download_manager = self.bucket.api.services.download_manager
-        download_manager.strategies = [
-            SimpleDownloader(
-                force_chunk_size=20, get_thread_pool=download_manager._get_thread_pool
-            )
-        ]
+        download_manager.strategies = [SimpleDownloader(force_chunk_size=20)]
 
 
 class TestDownloadParallel(DownloadTests, TestCaseWithBucket):
@@ -1201,7 +1197,6 @@ class TestDownloadParallel(DownloadTests, TestCaseWithBucket):
                 force_chunk_size=2,
                 max_streams=999,
                 min_part_size=2,
-                get_thread_pool=download_manager._get_thread_pool,
             )
         ]
 
@@ -1239,11 +1234,7 @@ class TestTruncatedDownloadSimple(DownloadTests, TestCaseWithTruncatedDownloadBu
     def setUp(self):
         super(TestTruncatedDownloadSimple, self).setUp()
         download_manager = self.bucket.api.services.download_manager
-        download_manager.strategies = [
-            SimpleDownloader(
-                force_chunk_size=20, get_thread_pool=download_manager._get_thread_pool
-            )
-        ]
+        download_manager.strategies = [SimpleDownloader(force_chunk_size=20)]
 
 
 class TestTruncatedDownloadParallel(DownloadTests, TestCaseWithTruncatedDownloadBucket):
@@ -1255,6 +1246,5 @@ class TestTruncatedDownloadParallel(DownloadTests, TestCaseWithTruncatedDownload
                 force_chunk_size=3,
                 max_streams=2,
                 min_part_size=2,
-                get_thread_pool=download_manager._get_thread_pool,
             )
         ]

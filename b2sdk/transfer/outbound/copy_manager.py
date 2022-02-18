@@ -48,7 +48,7 @@ class CopyManager(TransferManager, LazyThreadPoolMixin):
     ):
         # Run small copies in the same thread pool as large file copies,
         # so that they share resources during a sync.
-        return self._get_thread_pool().submit(
+        return self._thread_pool.submit(
             self._copy_small_file,
             copy_source,
             file_name,
@@ -72,7 +72,7 @@ class CopyManager(TransferManager, LazyThreadPoolMixin):
         destination_encryption: Optional[EncryptionSetting] = None,
         source_encryption: Optional[EncryptionSetting] = None,
     ):
-        return self._get_thread_pool().submit(
+        return self._thread_pool.submit(
             self._copy_part,
             large_file_id,
             part_copy_source,

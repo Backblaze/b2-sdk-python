@@ -53,7 +53,7 @@ class UploadManager(TransferManager, LazyThreadPoolMixin):
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
     ):
-        f = self._get_thread_pool().submit(
+        f = self._thread_pool.submit(
             self._upload_small_file,
             bucket_id,
             upload_source,
@@ -77,7 +77,7 @@ class UploadManager(TransferManager, LazyThreadPoolMixin):
         finished_parts=None,
         encryption: EncryptionSetting = None,
     ):
-        f = self._get_thread_pool().submit(
+        f = self._thread_pool.submit(
             self._upload_part,
             bucket_id,
             file_id,

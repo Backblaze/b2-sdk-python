@@ -11,7 +11,7 @@
 from abc import abstractmethod
 from concurrent.futures import ThreadPoolExecutor
 from io import IOBase
-from typing import Optional, Callable
+from typing import Optional, Union
 
 from requests.models import Response
 
@@ -20,6 +20,7 @@ from b2sdk.session import B2Session
 from b2sdk.utils import B2TraceMetaAbstract
 from b2sdk.utils.range_ import Range
 from b2sdk.encryption.setting import EncryptionSetting
+from b2sdk.utils.thread_pool import LazyThreadPool
 
 
 class AbstractDownloader(metaclass=B2TraceMetaAbstract):
@@ -28,7 +29,7 @@ class AbstractDownloader(metaclass=B2TraceMetaAbstract):
 
     def __init__(
         self,
-        get_thread_pool: Callable[[], ThreadPoolExecutor],
+        thread_pool: Optional[Union[LazyThreadPool, ThreadPoolExecutor]] = None,
         force_chunk_size=None,
         min_chunk_size=None,
         max_chunk_size=None,
@@ -41,7 +42,7 @@ class AbstractDownloader(metaclass=B2TraceMetaAbstract):
         self._min_chunk_size = min_chunk_size
         self._max_chunk_size = max_chunk_size
         self._forced_chunk_size = force_chunk_size
-        self._get_thread_pool = get_thread_pool
+        self._thread_pool = thread_pool if thread_pool is not None else LazyThreadPool()
         super().__init__(**kwargs)
 
     def _get_chunk_size(self, content_length):

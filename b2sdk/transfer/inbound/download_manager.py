@@ -59,12 +59,12 @@ class DownloadManager(TransferManager, LazyThreadPoolMixin, metaclass=B2TraceMet
                 min_part_size=self.DEFAULT_MIN_PART_SIZE,
                 min_chunk_size=self.MIN_CHUNK_SIZE,
                 max_chunk_size=self.MAX_CHUNK_SIZE,
-                get_thread_pool=self._get_thread_pool,
+                thread_pool=self._thread_pool,
             ),
             self.SIMPLE_DOWNLOADER_CLASS(
                 min_chunk_size=self.MIN_CHUNK_SIZE,
                 max_chunk_size=self.MAX_CHUNK_SIZE,
-                get_thread_pool=self._get_thread_pool,
+                thread_pool=self._thread_pool,
             ),
         ]
 

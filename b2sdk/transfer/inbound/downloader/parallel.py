@@ -139,7 +139,7 @@ class ParallelDownloader(AbstractDownloader):
         self, response, session, writer, hasher, first_part, parts_to_download, chunk_size,
         encryption
     ):
-        stream = self._get_thread_pool().submit(
+        stream = self._thread_pool.submit(
             download_first_part,
             response,
             hasher,
@@ -152,7 +152,7 @@ class ParallelDownloader(AbstractDownloader):
         streams = [stream]
 
         for part in parts_to_download:
-            stream = self._get_thread_pool().submit(
+            stream = self._thread_pool.submit(
                 download_non_first_part,
                 response.request.url,
                 session,

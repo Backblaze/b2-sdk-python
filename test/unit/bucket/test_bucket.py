@@ -1679,7 +1679,7 @@ class TestChooseStrategy(TestCaseWithBucket):
             force_chunk_size=1,
             max_streams=32,
             min_part_size=16,
-            get_thread_pool=download_manager._get_thread_pool,
+            thread_pool=download_manager._thread_pool,
         )
         simple_downloader = download_manager.strategies[1]
         download_manager.strategies = [
@@ -1720,11 +1720,7 @@ class TestDownloadSimple(
     def setUp(self):
         super(TestDownloadSimple, self).setUp()
         download_manager = self.bucket.api.services.download_manager
-        download_manager.strategies = [
-            SimpleDownloader(
-                force_chunk_size=20, get_thread_pool=download_manager._get_thread_pool
-            )
-        ]
+        download_manager.strategies = [SimpleDownloader(force_chunk_size=20)]
 
 
 class TestDownloadParallel(
@@ -1740,7 +1736,6 @@ class TestDownloadParallel(
                 force_chunk_size=2,
                 max_streams=999,
                 min_part_size=2,
-                get_thread_pool=download_manager._get_thread_pool,
             ),
         ]
 
@@ -1759,7 +1754,7 @@ class TestDownloadParallelALotOfStreams(DownloadTestsBase, TestCaseWithBucket):
                 force_chunk_size=1,
                 max_streams=32,
                 min_part_size=16,
-                get_thread_pool=download_manager._get_thread_pool,
+                thread_pool=download_manager._thread_pool,
             ),
         ]
 
@@ -1801,11 +1796,7 @@ class TestTruncatedDownloadSimple(DownloadTests, TestCaseWithTruncatedDownloadBu
     def setUp(self):
         super(TestTruncatedDownloadSimple, self).setUp()
         download_manager = self.bucket.api.services.download_manager
-        download_manager.strategies = [
-            SimpleDownloader(
-                force_chunk_size=20, get_thread_pool=download_manager._get_thread_pool
-            )
-        ]
+        download_manager.strategies = [SimpleDownloader(force_chunk_size=20)]
 
 
 class TestTruncatedDownloadParallel(DownloadTests, TestCaseWithTruncatedDownloadBucket):
@@ -1817,6 +1808,5 @@ class TestTruncatedDownloadParallel(DownloadTests, TestCaseWithTruncatedDownload
                 force_chunk_size=3,
                 max_streams=2,
                 min_part_size=2,
-                get_thread_pool=download_manager._get_thread_pool,
             )
         ]
