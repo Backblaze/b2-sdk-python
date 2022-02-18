@@ -7,11 +7,30 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from concurrent.futures import Future, ThreadPoolExecutor
+from threading import Lock
+from typing import Callable
 
 from b2sdk import _v3 as v3
 
 
-class LazyThreadPool(v3.LazyThreadPool):
+class LazyThreadPool:
+    """
+    Lazily initialized thread pool. Threadsafe.
+    """
+
+    def __init__(self, max_workers: 'Optional[int]' = None, **kwargs):
+        self._lock = Lock()
+        self._max_workers = max_workers
+        self._thread_pool = None  # type: 'Optional[ThreadPoolExecutor]'
+        super().__init__(**kwargs)
+
+    def submit(self, fn: Callable, *args, **kwargs) -> Future:
+        with self._lock:
+            if self._thread_pool is None:
+                self._thread_pool = ThreadPoolExecutor(self._max_workers)
+            return self._thread_pool.submit(fn, *args, **kwargs)
+
     def set_size(self, max_workers: int) -> None:
         with self._lock:
             if self._thread_pool is not None:
@@ -19,7 +38,7 @@ class LazyThreadPool(v3.LazyThreadPool):
             self._max_workers = max_workers
 
 
-class LazyThreadPoolMixin(v3.LazyThreadPoolMixin):
+class ThreadPoolMixin(v3.ThreadPoolMixin):
     THREAD_POOL_CLASS = staticmethod(LazyThreadPool)
 
     # This method is used in CLI even though it doesn't belong to the public API
@@ -27,9 +46,9 @@ class LazyThreadPoolMixin(v3.LazyThreadPoolMixin):
         self._thread_pool.set_size(max_workers)
 
 
-class DownloadManager(v3.DownloadManager, LazyThreadPoolMixin):
+class DownloadManager(v3.DownloadManager, ThreadPoolMixin):
     pass
 
 
-class UploadManager(v3.UploadManager, LazyThreadPoolMixin):
+class UploadManager(v3.UploadManager, ThreadPoolMixin):
     pass

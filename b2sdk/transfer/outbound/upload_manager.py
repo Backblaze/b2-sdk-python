@@ -25,12 +25,12 @@ from b2sdk.http_constants import HEX_DIGITS_AT_END
 
 from .progress_reporter import PartProgressReporter
 from ..transfer_manager import TransferManager
-from ...utils.thread_pool import LazyThreadPoolMixin
+from ...utils.thread_pool import ThreadPoolMixin
 
 logger = logging.getLogger(__name__)
 
 
-class UploadManager(TransferManager, LazyThreadPoolMixin):
+class UploadManager(TransferManager, ThreadPoolMixin):
     """
     Handle complex actions around uploads to free raw_api from that responsibility.
     """

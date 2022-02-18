@@ -17,12 +17,12 @@ from b2sdk.exception import AlreadyFailed, CopyArgumentsMismatch, SSECKeyIdMisma
 from b2sdk.file_lock import FileRetentionSetting, LegalHold
 from b2sdk.raw_api import MetadataDirectiveMode
 from b2sdk.transfer.transfer_manager import TransferManager
-from b2sdk.utils.thread_pool import LazyThreadPoolMixin
+from b2sdk.utils.thread_pool import ThreadPoolMixin
 
 logger = logging.getLogger(__name__)
 
 
-class CopyManager(TransferManager, LazyThreadPoolMixin):
+class CopyManager(TransferManager, ThreadPoolMixin):
     """
     Handle complex actions around server side copy to free raw_api from that responsibility.
     """

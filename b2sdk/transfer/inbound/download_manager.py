@@ -23,12 +23,12 @@ from .downloaded_file import DownloadedFile
 from .downloader.parallel import ParallelDownloader
 from .downloader.simple import SimpleDownloader
 from ..transfer_manager import TransferManager
-from ...utils.thread_pool import LazyThreadPoolMixin
+from ...utils.thread_pool import ThreadPoolMixin
 
 logger = logging.getLogger(__name__)
 
 
-class DownloadManager(TransferManager, LazyThreadPoolMixin, metaclass=B2TraceMetaAbstract):
+class DownloadManager(TransferManager, ThreadPoolMixin, metaclass=B2TraceMetaAbstract):
     """
     Handle complex actions around downloads to free raw_api from that responsibility.
     """
