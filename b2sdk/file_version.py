@@ -345,6 +345,9 @@ class DownloadVersion(BaseFileVersion):
             }
         )
         return args
+    
+    def _set_filename(self, filename):
+        self.file_name = filename
 
 
 class FileVersionFactory(object):

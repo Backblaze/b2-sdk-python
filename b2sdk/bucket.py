@@ -236,9 +236,11 @@ class Bucket(metaclass=B2TraceMeta):
         :param str file_name: the name of the file who's info will be retrieved.
         """
         try:
-            return self.api.download_version_factory.from_response_headers(
+            download_version = self.api.download_version_factory.from_response_headers(
                 self.api.session.get_file_info_by_name(self.name, file_name)
             )
+            download_version._set_filename(file_name)
+            return download_version
         except FileOrBucketNotFound:
             raise FileNotPresent(bucket_name=self.name, file_id_or_name=file_name)
 
