@@ -1679,7 +1679,7 @@ class TestChooseStrategy(TestCaseWithBucket):
             force_chunk_size=1,
             max_streams=32,
             min_part_size=16,
-            thread_pool=download_manager._thread_pool,
+            thread_pool=download_manager,
         )
         simple_downloader = download_manager.strategies[1]
         download_manager.strategies = [
@@ -1754,7 +1754,7 @@ class TestDownloadParallelALotOfStreams(DownloadTestsBase, TestCaseWithBucket):
                 force_chunk_size=1,
                 max_streams=32,
                 min_part_size=16,
-                thread_pool=download_manager._thread_pool,
+                thread_pool=download_manager,
             ),
         ]
 

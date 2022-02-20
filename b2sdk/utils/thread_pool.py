@@ -8,15 +8,16 @@
 #
 ######################################################################
 
-from concurrent.futures import ThreadPoolExecutor
-from typing import Optional
+from concurrent.futures import Future, ThreadPoolExecutor
+from threading import Lock
+from typing import Callable
 
 from b2sdk.utils import B2TraceMetaAbstract
 
 
 class ThreadPoolMixin(metaclass=B2TraceMetaAbstract):
     """
-    Mixin class with lazily initialized ThreadPoolExecutor. Threadsafe.
+    Mixin class with ThreadPoolExecutor. Threadsafe.
     """
     THREAD_POOL_CLASS = staticmethod(ThreadPoolExecutor)
 
@@ -24,6 +25,10 @@ class ThreadPoolMixin(metaclass=B2TraceMetaAbstract):
         """
         :param Optional[int] max_workers: maximum number of worker threads
         """
-
+        self._lock = Lock()
         self._thread_pool = self.THREAD_POOL_CLASS(max_workers=max_workers)
         super().__init__(**kwargs)
+
+    def submit(self, fn: Callable, *args, **kwargs) -> Future:
+        with self._lock:
+            return self._thread_pool.submit(fn, *args, **kwargs)
