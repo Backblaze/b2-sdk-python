@@ -18,11 +18,11 @@ class TestDownloadManager(TestBase):
     def test_set_thread_pool_size(self) -> None:
         download_manager = DownloadManager(services=Mock())
         download_manager.set_thread_pool_size(21)
-        self.assertEqual(download_manager._thread_pool._max_workers, 21)
+        self.assertEqual(download_manager._thread_pool._thread_pool._max_workers, 21)
 
 
 class TestUploadManager(TestBase):
     def test_set_thread_pool_size(self) -> None:
         upload_manager = UploadManager(services=Mock())
         upload_manager.set_thread_pool_size(37)
-        self.assertEqual(upload_manager._thread_pool._max_workers, 37)
+        self.assertEqual(upload_manager._thread_pool._thread_pool._max_workers, 37)
