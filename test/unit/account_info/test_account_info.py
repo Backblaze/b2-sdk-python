@@ -331,6 +331,10 @@ class TestSqliteAccountInfo(AccountInfoBase):
             except OSError:
                 pass
 
+    @pytest.mark.skipif(
+        platform.system() == 'Windows',
+        reason='different permission system on Windows'
+    )
     def test_permissions(self):
         """
         Test that a new database won't be readable by just any user
