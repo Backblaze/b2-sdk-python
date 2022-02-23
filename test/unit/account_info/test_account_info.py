@@ -14,6 +14,7 @@ import unittest.mock as mock
 import os
 import platform
 import shutil
+import stat
 import tempfile
 
 import pytest
@@ -319,14 +320,28 @@ class TestSqliteAccountInfo(AccountInfoBase):
             os.unlink(self.db_path)
         except OSError:
             pass
-        self.home = tempfile.mkdtemp()
+        self.test_home = tempfile.mkdtemp()
 
         yield
-        for cleanup_method in [lambda: os.unlink(self.db_path), lambda: shutil.rmtree(self.home)]:
+        for cleanup_method in [
+            lambda: os.unlink(self.db_path), lambda: shutil.rmtree(self.test_home)
+        ]:
             try:
-                cleanup_method
+                cleanup_method()
             except OSError:
                 pass
+
+    @pytest.mark.skipif(
+        platform.system() == 'Windows',
+        reason='different permission system on Windows'
+    )
+    def test_permissions(self):
+        """
+        Test that a new database won't be readable by just any user
+        """
+        s = SqliteAccountInfo(file_name=self.db_path,)
+        mode = os.stat(self.db_path).st_mode
+        assert stat.filemode(mode) == '-rw-------'
 
     def test_corrupted(self):
         """
@@ -371,7 +386,7 @@ class TestSqliteAccountInfo(AccountInfoBase):
         :param dict env: Override Environment variables.
         """
         # Override HOME to ensure hermetic tests
-        with mock.patch('os.environ', env or {'HOME': self.home}):
+        with mock.patch('os.environ', env or {'HOME': self.test_home}):
             return SqliteAccountInfo(
                 file_name=self.db_path if not env else None,
                 last_upgrade_to_run=last_upgrade_to_run,
@@ -380,24 +395,24 @@ class TestSqliteAccountInfo(AccountInfoBase):
     def test_uses_default(self):
         account_info = self._make_sqlite_account_info(
             env={
-                'HOME': self.home,
-                'USERPROFILE': self.home,
+                'HOME': self.test_home,
+                'USERPROFILE': self.test_home,
             }
         )
         actual_path = os.path.abspath(account_info.filename)
-        assert os.path.join(self.home, '.b2_account_info') == actual_path
+        assert os.path.join(self.test_home, '.b2_account_info') == actual_path
 
     def test_uses_xdg_config_home(self, apiver):
         with WindowsSafeTempDir() as d:
             account_info = self._make_sqlite_account_info(
                 env={
-                    'HOME': self.home,
-                    'USERPROFILE': self.home,
+                    'HOME': self.test_home,
+                    'USERPROFILE': self.test_home,
                     XDG_CONFIG_HOME_ENV_VAR: d,
                 }
             )
             if apiver in ['v0', 'v1']:
-                expected_path = os.path.abspath(os.path.join(self.home, '.b2_account_info'))
+                expected_path = os.path.abspath(os.path.join(self.test_home, '.b2_account_info'))
             else:
                 assert os.path.exists(os.path.join(d, 'b2'))
                 expected_path = os.path.abspath(os.path.join(d, 'b2', 'account_info'))
@@ -406,12 +421,12 @@ class TestSqliteAccountInfo(AccountInfoBase):
 
     def test_uses_existing_file_and_ignores_xdg(self):
         with WindowsSafeTempDir() as d:
-            default_db_file_location = os.path.join(self.home, '.b2_account_info')
+            default_db_file_location = os.path.join(self.test_home, '.b2_account_info')
             open(default_db_file_location, 'a').close()
             account_info = self._make_sqlite_account_info(
                 env={
-                    'HOME': self.home,
-                    'USERPROFILE': self.home,
+                    'HOME': self.test_home,
+                    'USERPROFILE': self.test_home,
                     XDG_CONFIG_HOME_ENV_VAR: d,
                 }
             )
@@ -423,8 +438,8 @@ class TestSqliteAccountInfo(AccountInfoBase):
         with WindowsSafeTempDir() as d:
             account_info = self._make_sqlite_account_info(
                 env={
-                    'HOME': self.home,
-                    'USERPROFILE': self.home,
+                    'HOME': self.test_home,
+                    'USERPROFILE': self.test_home,
                     XDG_CONFIG_HOME_ENV_VAR: d,
                     B2_ACCOUNT_INFO_ENV_VAR: os.path.join(d, 'b2_account_info'),
                 }
