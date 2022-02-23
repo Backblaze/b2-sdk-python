@@ -333,7 +333,7 @@ class TestSqliteAccountInfo(AccountInfoBase):
 
     @pytest.mark.skipif(
         platform.system() == 'Windows',
-        reason='different permission system on Windows'
+        reason='different permission system on Windows',
     )
     def test_permissions(self):
         """
