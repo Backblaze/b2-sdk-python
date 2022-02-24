@@ -16,7 +16,7 @@ from b2sdk import _v3 as v3
 
 class LazyThreadPool:
     """
-    Lazily initialized thread pool. *Not* threadsafe.
+    Lazily initialized thread pool.
     """
 
     def __init__(self, max_workers: 'Optional[int]' = None, **kwargs):
@@ -37,15 +37,8 @@ class LazyThreadPool:
         self._max_workers = max_workers
 
 
-class ThreadsafeThreadPool(v3.ThreadsafeThreadPool):
-    THREAD_POOL_CLASS = staticmethod(LazyThreadPool)
-
-    def set_size(self, max_workers: int) -> None:
-        self._thread_pool.set_size(max_workers)
-
-
 class ThreadPoolMixin(v3.ThreadPoolMixin):
-    DEFAULT_THREAD_POOL_CLASS = staticmethod(ThreadsafeThreadPool)
+    DEFAULT_THREAD_POOL_CLASS = staticmethod(LazyThreadPool)
 
     # This method is used in CLI even though it doesn't belong to the public API
     def set_thread_pool_size(self, max_workers: int) -> None:
