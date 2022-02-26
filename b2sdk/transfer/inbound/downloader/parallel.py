@@ -10,7 +10,7 @@
 
 from concurrent import futures
 from io import IOBase
-from typing import Optional, Callable
+from typing import Optional
 import logging
 import hashlib
 import queue

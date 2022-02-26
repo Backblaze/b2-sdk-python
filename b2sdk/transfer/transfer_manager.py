@@ -14,6 +14,6 @@ class TransferManager:
     Base class for manager classes (copy, upload, download)
     """
 
-    def __init__(self, services: 'b2sdk.api.Services', **kwargs):
+    def __init__(self, services, **kwargs):
         self.services = services
         super().__init__(**kwargs)

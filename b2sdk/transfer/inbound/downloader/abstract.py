@@ -11,7 +11,7 @@
 from abc import abstractmethod
 from concurrent.futures import ThreadPoolExecutor
 from io import IOBase
-from typing import Optional, Union
+from typing import Optional
 
 from requests.models import Response
 
