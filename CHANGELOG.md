@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Add pypy-3.8 to test matrix
 * Add support for unverified checksum upload mode
 * Add dedicated exception for unverified email
+* Add a parameter to customize `sync_policy_manager`
 
 ### Fixed
 * Fix downloading files with unverified checksum

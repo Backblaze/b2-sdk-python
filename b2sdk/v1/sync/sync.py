@@ -37,10 +37,19 @@ class Synchronizer(v2.Synchronizer):
         compare_version_mode=v2.CompareVersionMode.MODTIME,
         compare_threshold=None,
         keep_days=None,
+        sync_policy_manager: v2.SyncPolicyManager = v2.POLICY_MANAGER,
     ):
         super().__init__(
-            max_workers, scan_wrap_if_necessary(policies_manager), dry_run, allow_empty_source,
-            newer_file_mode, keep_days_or_delete, compare_version_mode, compare_threshold, keep_days
+            max_workers,
+            scan_wrap_if_necessary(policies_manager),
+            dry_run,
+            allow_empty_source,
+            newer_file_mode,
+            keep_days_or_delete,
+            compare_version_mode,
+            compare_threshold,
+            keep_days,
+            sync_policy_manager,
         )
 
     def make_folder_sync_actions(
