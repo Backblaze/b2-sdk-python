@@ -49,7 +49,7 @@ class ParallelDownloader(AbstractDownloader):
     #
     FINISH_HASHING_BUFFER_SIZE = 1024**2
 
-    def __init__(self, max_streams: int, min_part_size: int, **kwargs):
+    def __init__(self, min_part_size: int, max_streams: Optional[int] = None, **kwargs):
         """
         :param max_streams: maximum number of simultaneous streams
         :param min_part_size: minimum amount of data a single stream will retrieve, in bytes
@@ -66,7 +66,14 @@ class ParallelDownloader(AbstractDownloader):
         ) >= 2 and download_version.content_length >= 2 * self.min_part_size
 
     def _get_number_of_streams(self, content_length):
-        return min(self.max_streams, content_length // self.min_part_size) or 1
+        num_streams = content_length // self.min_part_size
+        if self.max_streams is not None:
+            num_streams = min(num_streams, self.max_streams)
+        else:
+            max_threadpool_workers = getattr(self._thread_pool, '_max_workers', None)
+            if max_threadpool_workers is not None:
+                num_streams = min(num_streams, max_threadpool_workers)
+        return num_streams
 
     def download(
         self,

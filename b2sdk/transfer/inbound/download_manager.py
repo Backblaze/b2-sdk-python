@@ -33,9 +33,6 @@ class DownloadManager(TransferManager, ThreadPoolMixin, metaclass=B2TraceMetaAbs
     Handle complex actions around downloads to free raw_api from that responsibility.
     """
 
-    # how many chunks to break a downloaded file into
-    DEFAULT_MAX_STREAMS = 8
-
     # minimum size of a download chunk
     DEFAULT_MIN_PART_SIZE = 100 * 1024 * 1024
 
@@ -55,7 +52,6 @@ class DownloadManager(TransferManager, ThreadPoolMixin, metaclass=B2TraceMetaAbs
         super().__init__(**kwargs)
         self.strategies = [
             self.PARALLEL_DOWNLOADER_CLASS(
-                max_streams=self.DEFAULT_MAX_STREAMS,
                 min_part_size=self.DEFAULT_MIN_PART_SIZE,
                 min_chunk_size=self.MIN_CHUNK_SIZE,
                 max_chunk_size=self.MAX_CHUNK_SIZE,
