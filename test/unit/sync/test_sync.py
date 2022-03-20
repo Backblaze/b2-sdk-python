@@ -12,7 +12,7 @@ from unittest import mock
 from enum import Enum
 from functools import partial
 
-from apiver_deps import B2DownloadAction, B2UploadAction, B2CopyAction, AbstractSyncEncryptionSettingsProvider, UploadSourceLocalFile
+from apiver_deps import UpPolicy, B2DownloadAction, B2UploadAction, B2CopyAction, AbstractSyncEncryptionSettingsProvider, UploadSourceLocalFile, SyncPolicyManager
 from apiver_deps_exception import DestFileNewer, InvalidArgument
 from b2sdk.utils import TempDir
 
@@ -848,6 +848,25 @@ class TestSynchronizer:
                 **{file_version_kwarg: mock.ANY},
             )
         ]
+
+    def test_custom_sync_manager_policy(self, synchronizer_factory):
+        class MySyncPolicyManager(SyncPolicyManager):
+            def get_policy_class(self, sync_type, delete, keep_days):
+                return UpPolicy
+
+        synchronizer = synchronizer_factory(
+            compare_version_mode=CompareVersionMode.SIZE,
+            keep_days_or_delete=KeepOrDeleteMode.DELETE,
+            sync_policy_manager=MySyncPolicyManager(),
+        )
+        src = self.folder_factory('local', ('a.txt', [200], 11))
+        dst = self.folder_factory('b2', ('a.txt', [100], 10))
+        # normally_expected = [
+        #     'b2_upload(/dir/a.txt, folder/a.txt, 200)',
+        #     'b2_delete(folder/a.txt, id_a_100, (old version))'
+        # ]
+        expected = ['b2_upload(/dir/a.txt, folder/a.txt, 200)']
+        self.assert_folder_sync_actions(synchronizer, src, dst, expected)
 
 
 class TstEncryptionSettingsProvider(AbstractSyncEncryptionSettingsProvider):

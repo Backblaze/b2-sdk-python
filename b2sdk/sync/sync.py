@@ -135,12 +135,13 @@ class Synchronizer:
         compare_version_mode=CompareVersionMode.MODTIME,
         compare_threshold=None,
         keep_days=None,
+        sync_policy_manager: SyncPolicyManager = POLICY_MANAGER,
     ):
         """
         Initialize synchronizer class and validate arguments
 
         :param int max_workers: max number of workers
-        :param policies_manager: policies manager object
+        :param policies_manager: object which decides which files to process
         :param bool dry_run: test mode, does not actually transfer/delete when enabled
         :param bool allow_empty_source: if True, do not check whether source folder is empty
         :param b2sdk.v2.NewerFileSyncMode newer_file_mode: setting which determines handling for destination files newer than on the source
@@ -148,6 +149,7 @@ class Synchronizer:
         :param b2sdk.v2.CompareVersionMode compare_version_mode: how to compare the source and destination files to find new ones
         :param int compare_threshold: should be greater than 0, default is 0
         :param int keep_days: if keep_days_or_delete is `b2sdk.v2.KeepOrDeleteMode.KEEP_BEFORE_DELETE`, then this should be greater than 0
+        :param SyncPolicyManager sync_policy_manager: object which decides what to do with each file (upload, download, delete, copy, hide etc)
         """
         self.newer_file_mode = newer_file_mode
         self.keep_days_or_delete = keep_days_or_delete
@@ -156,7 +158,8 @@ class Synchronizer:
         self.compare_threshold = compare_threshold or 0
         self.dry_run = dry_run
         self.allow_empty_source = allow_empty_source
-        self.policies_manager = policies_manager
+        self.policies_manager = policies_manager  # actually it should be called scan_policies_manager
+        self.sync_policy_manager = sync_policy_manager
         self.max_workers = max_workers
         self._validate()
 
@@ -280,7 +283,7 @@ class Synchronizer:
         :param b2sdk.v2.AbstractFolder dest_folder: destination folder object
         :param int now_millis: current time in milliseconds
         :param b2sdk.v2.SyncReport reporter: reporter object
-        :param b2sdk.v2.SyncPolicyManager policies_manager: policies manager object
+        :param b2sdk.v2.ScanPolicyManager policies_manager: object which decides which files to process
         :param b2sdk.v2.AbstractSyncEncryptionSettingsProvider encryption_settings_provider: encryption setting provider
         """
         if self.keep_days_or_delete == KeepOrDeleteMode.KEEP_BEFORE_DELETE and dest_folder.folder_type(
@@ -358,7 +361,7 @@ class Synchronizer:
         delete = self.keep_days_or_delete == KeepOrDeleteMode.DELETE
         keep_days = self.keep_days
 
-        policy = POLICY_MANAGER.get_policy(
+        policy = self.sync_policy_manager.get_policy(
             sync_type,
             source_path,
             source_folder,
