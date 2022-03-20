@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 * Fix downloading files with unverified checksum
 
+### Changed
+* Don't run coverage in pypy in CI
+
 ## [1.14.1] - 2022-02-23
 
 ### Fixed
