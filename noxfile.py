@@ -16,6 +16,7 @@ import nox
 
 CI = os.environ.get('CI') is not None
 NOX_PYTHONS = os.environ.get('NOX_PYTHONS')
+SKIP_COVERAGE = os.environ.get('SKIP_COVERAGE') == 'true'
 
 PYTHON_VERSIONS = ['3.5', '3.6', '3.7', '3.8', '3.9', '3.10'
                   ] if NOX_PYTHONS is None else NOX_PYTHONS.split(',')
@@ -107,14 +108,18 @@ def unit(session):
     """Run unit tests."""
     install_myself(session)
     session.install(*REQUIREMENTS_TEST)
-    args = ['--cov=b2sdk', '--cov-branch', '--cov-report=xml', '--doctest-modules']
+    args = ['--doctest-modules']
+    if not SKIP_COVERAGE:
+        args += ['--cov=b2sdk', '--cov-branch', '--cov-report=xml']
     # TODO: Use session.parametrize for apiver
     session.run('pytest', '--api=v3', *args, *session.posargs, 'test/unit')
-    session.run('pytest', '--api=v2', '--cov-append', *args, *session.posargs, 'test/unit')
-    session.run('pytest', '--api=v1', '--cov-append', *args, *session.posargs, 'test/unit')
-    session.run('pytest', '--api=v0', '--cov-append', *args, *session.posargs, 'test/unit')
+    if not SKIP_COVERAGE:
+        args += ['--cov-append']
+    session.run('pytest', '--api=v2', *args, *session.posargs, 'test/unit')
+    session.run('pytest', '--api=v1', *args, *session.posargs, 'test/unit')
+    session.run('pytest', '--api=v0', *args, *session.posargs, 'test/unit')
 
-    if not session.posargs:
+    if not SKIP_COVERAGE and not session.posargs:
         session.notify('cover')
 
 
