@@ -1163,6 +1163,14 @@ class TestUpload(TestCaseWithBucket):
             self.bucket.upload_local_file(path, 'file1')
             self._check_file_contents('file1', data)
 
+    def test_upload_local_large_file_over_10k_parts(self):
+        with TempDir() as d:
+            path = os.path.join(d, 'file1')
+            data = self._make_data(self.simulator.MIN_PART_SIZE * 10001)  # 2MB on the simulator
+            write_file(path, data)
+            self.bucket.upload_local_file(path, 'file1')
+            self._check_file_contents('file1', data)
+
     def test_upload_large_resume(self):
         part_size = self.simulator.MIN_PART_SIZE
         data = self._make_data(part_size * 3)

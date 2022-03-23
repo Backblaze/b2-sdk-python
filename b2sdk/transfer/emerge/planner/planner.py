@@ -8,6 +8,7 @@
 #
 ######################################################################
 
+from math import ceil
 import hashlib
 import json
 
@@ -119,6 +120,15 @@ class EmergePlanner(object):
 
     def get_emerge_plan(self, write_intents):
         write_intents = sorted(write_intents, key=lambda intent: intent.destination_offset)
+
+        # the upload part size recommended by the server causes errors with files larger than 1TB
+        # (with the current 100MB part size and 10000 part count limit).
+        # Therefore here we increase the recommended upload part size if needed.
+        total_length = sum(write_intent.length for write_intent in write_intents)
+        self.recommended_upload_part_size = max(
+            self.recommended_upload_part_size,
+            ceil(total_length / 10000),
+        )
         return self._get_emerge_plan(write_intents, EmergePlan)
 
     def get_streaming_emerge_plan(self, write_intent_iterator):

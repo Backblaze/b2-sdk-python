@@ -1075,6 +1075,7 @@ class RawSimulator(AbstractRawApi):
     DOWNLOAD_URL = 'http://download.example.com'
 
     MIN_PART_SIZE = 200
+    MAX_PART_ID = 10000
 
     # This is the maximum duration in seconds that an application key can be valid (1000 days).
     MAX_DURATION_IN_SECONDS = 86400000
@@ -1765,6 +1766,8 @@ class RawSimulator(AbstractRawApi):
             url_match = self.UPLOAD_PART_MATCHER.match(upload_url)
             if url_match is None:
                 raise BadUploadUrl(upload_url)
+            elif part_number > self.MAX_PART_ID:
+                raise BadRequest('Part number must be in range 1 - 10000', 'bad_request')
             file_id = url_match.group(1)
             bucket_id = self.file_id_to_bucket_id[file_id]
             bucket = self._get_bucket_by_id(bucket_id)
