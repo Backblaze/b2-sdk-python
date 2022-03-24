@@ -8,7 +8,7 @@
 #
 ######################################################################
 
-from abc import abstractmethod
+from concurrent import futures
 from io import IOBase
 from typing import Optional
 import logging
@@ -49,14 +49,14 @@ class ParallelDownloader(AbstractDownloader):
     #
     FINISH_HASHING_BUFFER_SIZE = 1024**2
 
-    def __init__(self, max_streams, min_part_size, *args, **kwargs):
+    def __init__(self, min_part_size: int, max_streams: Optional[int] = None, **kwargs):
         """
         :param max_streams: maximum number of simultaneous streams
         :param min_part_size: minimum amount of data a single stream will retrieve, in bytes
         """
+        super().__init__(**kwargs)
         self.max_streams = max_streams
         self.min_part_size = min_part_size
-        super(ParallelDownloader, self).__init__(*args, **kwargs)
 
     def is_suitable(self, download_version: DownloadVersion, allow_seeking: bool):
         if not super().is_suitable(download_version, allow_seeking):
@@ -66,7 +66,14 @@ class ParallelDownloader(AbstractDownloader):
         ) >= 2 and download_version.content_length >= 2 * self.min_part_size
 
     def _get_number_of_streams(self, content_length):
-        return min(self.max_streams, content_length // self.min_part_size) or 1
+        num_streams = content_length // self.min_part_size
+        if self.max_streams is not None:
+            num_streams = min(num_streams, self.max_streams)
+        else:
+            max_threadpool_workers = getattr(self._thread_pool, '_max_workers', None)
+            if max_threadpool_workers is not None:
+                num_streams = min(num_streams, max_threadpool_workers)
+        return num_streams
 
     def download(
         self,
@@ -139,7 +146,8 @@ class ParallelDownloader(AbstractDownloader):
         self, response, session, writer, hasher, first_part, parts_to_download, chunk_size,
         encryption
     ):
-        stream = FirstPartDownloaderThread(
+        stream = self._thread_pool.submit(
+            download_first_part,
             response,
             hasher,
             session,
@@ -148,11 +156,11 @@ class ParallelDownloader(AbstractDownloader):
             chunk_size,
             encryption=encryption,
         )
-        stream.start()
         streams = [stream]
 
         for part in parts_to_download:
-            stream = NonHashingDownloaderThread(
+            stream = self._thread_pool.submit(
+                download_non_first_part,
                 response.request.url,
                 session,
                 writer,
@@ -160,10 +168,9 @@ class ParallelDownloader(AbstractDownloader):
                 chunk_size,
                 encryption=encryption,
             )
-            stream.start()
             streams.append(stream)
-        for stream in streams:
-            stream.join()
+
+        futures.wait(streams)
 
 
 class WriterThread(threading.Thread):
@@ -216,123 +223,111 @@ class WriterThread(threading.Thread):
         self.join()
 
 
-class AbstractDownloaderThread(threading.Thread):
-    def __init__(
-        self,
-        session,
-        writer,
-        part_to_download,
-        chunk_size,
-        encryption: Optional[EncryptionSetting] = None,
-    ):
-        """
-        :param session: raw_api wrapper
-        :param writer: where to write data
-        :param part_to_download: PartToDownload object
-        :param chunk_size: internal buffer size to use for writing and hashing
-        """
-        self.session = session
-        self.writer = writer
-        self.part_to_download = part_to_download
-        self.chunk_size = chunk_size
-        self.encryption = encryption
-        super(AbstractDownloaderThread, self).__init__()
+def download_first_part(
+    response: Response,
+    hasher,
+    session: B2Session,
+    writer: WriterThread,
+    first_part: 'PartToDownload',
+    chunk_size: int,
+    encryption: Optional[EncryptionSetting] = None,
+) -> None:
+    """
+    :param response: response of the original GET call
+    :param hasher: hasher object to feed to as the stream is written
+    :param session: B2 API session
+    :param writer: thread responsible for writing downloaded data
+    :param first_part: definition of the part to be downloaded
+    :param chunk_size: size (in bytes) of read data chunks
+    :param encryption: encryption mode, algorithm and key
+    """
 
-    @abstractmethod
-    def run(self):
-        pass
+    writer_queue_put = writer.queue.put
+    hasher_update = hasher.update
+    first_offset = first_part.local_range.start
+    last_offset = first_part.local_range.end + 1
+    actual_part_size = first_part.local_range.size()
+    starting_cloud_range = first_part.cloud_range
 
+    bytes_read = 0
+    stop = False
+    for data in response.iter_content(chunk_size=chunk_size):
+        if first_offset + bytes_read + len(data) >= last_offset:
+            to_write = data[:last_offset - bytes_read]
+            stop = True
+        else:
+            to_write = data
+        writer_queue_put((False, first_offset + bytes_read, to_write))
+        hasher_update(to_write)
+        bytes_read += len(to_write)
+        if stop:
+            break
 
-class FirstPartDownloaderThread(AbstractDownloaderThread):
-    def __init__(self, response, hasher, *args, **kwargs):
-        """
-        :param response: response of the original GET call
-        :param hasher: hasher object to feed to as the stream is written
-        """
-        self.response = response
-        self.hasher = hasher
-        super(FirstPartDownloaderThread, self).__init__(*args, **kwargs)
+    # since we got everything we need from original response, close the socket and free the buffer
+    # to avoid a timeout exception during hashing and other trouble
+    response.close()
 
-    def run(self):
-        writer_queue_put = self.writer.queue.put
-        hasher_update = self.hasher.update
-        first_offset = self.part_to_download.local_range.start
-        last_offset = self.part_to_download.local_range.end + 1
-        actual_part_size = self.part_to_download.local_range.size()
-        starting_cloud_range = self.part_to_download.cloud_range
-
-        bytes_read = 0
-        stop = False
-        for data in self.response.iter_content(chunk_size=self.chunk_size):
-            if first_offset + bytes_read + len(data) >= last_offset:
-                to_write = data[:last_offset - bytes_read]
-                stop = True
-            else:
-                to_write = data
-            writer_queue_put((False, first_offset + bytes_read, to_write))
-            hasher_update(to_write)
-            bytes_read += len(to_write)
-            if stop:
-                break
-
-        # since we got everything we need from original response, close the socket and free the buffer
-        # to avoid a timeout exception during hashing and other trouble
-        self.response.close()
-
-        url = self.response.request.url
-        tries_left = 5 - 1  # this is hardcoded because we are going to replace the entire retry interface soon, so we'll avoid deprecation here and keep it private
-        while tries_left and bytes_read < actual_part_size:
-            cloud_range = starting_cloud_range.subrange(
-                bytes_read, actual_part_size - 1
-            )  # first attempt was for the whole file, but retries are bound correctly
-            logger.debug(
-                'download attempts remaining: %i, bytes read already: %i. Getting range %s now.',
-                tries_left, bytes_read, cloud_range
-            )
-            with self.session.download_file_from_url(
-                url,
-                cloud_range.as_tuple(),
-                encryption=self.encryption,
-            ) as response:
-                for to_write in response.iter_content(chunk_size=self.chunk_size):
-                    writer_queue_put((False, first_offset + bytes_read, to_write))
-                    hasher_update(to_write)
-                    bytes_read += len(to_write)
-            tries_left -= 1
+    url = response.request.url
+    tries_left = 5 - 1  # this is hardcoded because we are going to replace the entire retry interface soon, so we'll avoid deprecation here and keep it private
+    while tries_left and bytes_read < actual_part_size:
+        cloud_range = starting_cloud_range.subrange(
+            bytes_read, actual_part_size - 1
+        )  # first attempt was for the whole file, but retries are bound correctly
+        logger.debug(
+            'download attempts remaining: %i, bytes read already: %i. Getting range %s now.',
+            tries_left, bytes_read, cloud_range
+        )
+        with session.download_file_from_url(
+            url,
+            cloud_range.as_tuple(),
+            encryption=encryption,
+        ) as response:
+            for to_write in response.iter_content(chunk_size=chunk_size):
+                writer_queue_put((False, first_offset + bytes_read, to_write))
+                hasher_update(to_write)
+                bytes_read += len(to_write)
+        tries_left -= 1
 
 
-class NonHashingDownloaderThread(AbstractDownloaderThread):
-    def __init__(self, url, *args, **kwargs):
-        """
-        :param url: url of the target file
-        """
-        self.url = url
-        super(NonHashingDownloaderThread, self).__init__(*args, **kwargs)
+def download_non_first_part(
+    url: str,
+    session: B2Session,
+    writer: WriterThread,
+    part_to_download: 'PartToDownload',
+    chunk_size: int,
+    encryption: Optional[EncryptionSetting] = None,
+) -> None:
+    """
+    :param url: download URL
+    :param session: B2 API session
+    :param writer: thread responsible for writing downloaded data
+    :param part_to_download: definition of the part to be downloaded
+    :param chunk_size: size (in bytes) of read data chunks
+    :param encryption: encryption mode, algorithm and key
+    """
+    writer_queue_put = writer.queue.put
+    start_range = part_to_download.local_range.start
+    actual_part_size = part_to_download.local_range.size()
+    bytes_read = 0
 
-    def run(self):
-        writer_queue_put = self.writer.queue.put
-        start_range = self.part_to_download.local_range.start
-        actual_part_size = self.part_to_download.local_range.size()
-        bytes_read = 0
+    starting_cloud_range = part_to_download.cloud_range
 
-        starting_cloud_range = self.part_to_download.cloud_range
-
-        retries_left = 5  # this is hardcoded because we are going to replace the entire retry interface soon, so we'll avoid deprecation here and keep it private
-        while retries_left and bytes_read < actual_part_size:
-            cloud_range = starting_cloud_range.subrange(bytes_read, actual_part_size - 1)
-            logger.debug(
-                'download attempts remaining: %i, bytes read already: %i. Getting range %s now.',
-                retries_left, bytes_read, cloud_range
-            )
-            with self.session.download_file_from_url(
-                self.url,
-                cloud_range.as_tuple(),
-                encryption=self.encryption,
-            ) as response:
-                for to_write in response.iter_content(chunk_size=self.chunk_size):
-                    writer_queue_put((False, start_range + bytes_read, to_write))
-                    bytes_read += len(to_write)
-            retries_left -= 1
+    retries_left = 5  # this is hardcoded because we are going to replace the entire retry interface soon, so we'll avoid deprecation here and keep it private
+    while retries_left and bytes_read < actual_part_size:
+        cloud_range = starting_cloud_range.subrange(bytes_read, actual_part_size - 1)
+        logger.debug(
+            'download attempts remaining: %i, bytes read already: %i. Getting range %s now.',
+            retries_left, bytes_read, cloud_range
+        )
+        with session.download_file_from_url(
+            url,
+            cloud_range.as_tuple(),
+            encryption=encryption,
+        ) as response:
+            for to_write in response.iter_content(chunk_size=chunk_size):
+                writer_queue_put((False, start_range + bytes_read, to_write))
+                bytes_read += len(to_write)
+        retries_left -= 1
 
 
 class PartToDownload(object):

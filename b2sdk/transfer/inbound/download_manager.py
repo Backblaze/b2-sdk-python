@@ -22,17 +22,16 @@ from b2sdk.utils import B2TraceMetaAbstract
 from .downloaded_file import DownloadedFile
 from .downloader.parallel import ParallelDownloader
 from .downloader.simple import SimpleDownloader
+from ..transfer_manager import TransferManager
+from ...utils.thread_pool import ThreadPoolMixin
 
 logger = logging.getLogger(__name__)
 
 
-class DownloadManager(metaclass=B2TraceMetaAbstract):
+class DownloadManager(TransferManager, ThreadPoolMixin, metaclass=B2TraceMetaAbstract):
     """
     Handle complex actions around downloads to free raw_api from that responsibility.
     """
-
-    # how many chunks to break a downloaded file into
-    DEFAULT_MAX_STREAMS = 8
 
     # minimum size of a download chunk
     DEFAULT_MIN_PART_SIZE = 100 * 1024 * 1024
@@ -42,24 +41,26 @@ class DownloadManager(metaclass=B2TraceMetaAbstract):
     MIN_CHUNK_SIZE = 8192  # ~1MB file will show ~1% progress increment
     MAX_CHUNK_SIZE = 1024**2
 
-    def __init__(self, services):
+    PARALLEL_DOWNLOADER_CLASS = staticmethod(ParallelDownloader)
+    SIMPLE_DOWNLOADER_CLASS = staticmethod(SimpleDownloader)
+
+    def __init__(self, **kwargs):
         """
         Initialize the DownloadManager using the given services object.
-
-        :param b2sdk.v2.Services services:
         """
 
-        self.services = services
+        super().__init__(**kwargs)
         self.strategies = [
-            ParallelDownloader(
-                max_streams=self.DEFAULT_MAX_STREAMS,
+            self.PARALLEL_DOWNLOADER_CLASS(
                 min_part_size=self.DEFAULT_MIN_PART_SIZE,
                 min_chunk_size=self.MIN_CHUNK_SIZE,
                 max_chunk_size=self.MAX_CHUNK_SIZE,
+                thread_pool=self._thread_pool,
             ),
-            SimpleDownloader(
+            self.SIMPLE_DOWNLOADER_CLASS(
                 min_chunk_size=self.MIN_CHUNK_SIZE,
                 max_chunk_size=self.MAX_CHUNK_SIZE,
+                thread_pool=self._thread_pool,
             ),
         ]
 
