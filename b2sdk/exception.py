@@ -312,6 +312,12 @@ class BadRequest(B2Error):
         return '%s (%s)' % (self.message, self.code)
 
 
+class CopySourceTooBig(BadRequest):
+    def __init__(self, message, code, size: int):
+        super().__init__(message, code)
+        self.size = size
+
+
 class Unauthorized(B2Error):
     def __init__(self, message, code):
         super(Unauthorized, self).__init__()

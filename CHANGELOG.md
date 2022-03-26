@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Add dedicated exception for unverified email
 * Add a parameter to customize `sync_policy_manager`
 * Add parameters to set the min/max part size for large file upload/copy methods
+* Add CopySourceTooBig exception
 
 ### Fixed
 * Fix downloading files with unverified checksum
