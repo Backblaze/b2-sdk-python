@@ -154,7 +154,7 @@ class B2Http(object):
     """
 
     # timeout for HTTP GET/POST requests
-    TIMEOUT = 900  # 15 minutes as server-side copy can take time
+    TIMEOUT = 1200  # 20 minutes as server-side copy can take time
 
     def __init__(self, api_config: B2HttpApiConfig = DEFAULT_HTTP_API_CONFIG):
         """
