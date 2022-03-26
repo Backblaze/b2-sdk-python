@@ -27,10 +27,7 @@ class SimpleDownloader(AbstractDownloader):
 
     REQUIRES_SEEKING = False
 
-    def __init__(self, *args, **kwargs):
-        super(SimpleDownloader, self).__init__(*args, **kwargs)
-
-    def download(
+    def _download(
         self,
         file: IOBase,
         response: Response,
@@ -80,3 +77,16 @@ class SimpleDownloader(AbstractDownloader):
                     bytes_read += len(data)
             retries_left -= 1
         return bytes_read, digest.hexdigest()
+
+    def download(
+        self,
+        file: IOBase,
+        response: Response,
+        download_version: DownloadVersion,
+        session: B2Session,
+        encryption: Optional[EncryptionSetting] = None,
+    ):
+        future = self._thread_pool.submit(
+            self._download, file, response, download_version, session, encryption
+        )
+        return future.result()

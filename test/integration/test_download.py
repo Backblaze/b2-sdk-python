@@ -34,10 +34,10 @@ class TestDownload(IntegrationTestBase):
                 'strategies',
                 new=[
                     ParallelDownloader(
-                        max_streams=download_manager.DEFAULT_MAX_STREAMS,
                         min_part_size=self.info.get_absolute_minimum_part_size(),
                         min_chunk_size=download_manager.MIN_CHUNK_SIZE,
                         max_chunk_size=download_manager.MAX_CHUNK_SIZE,
+                        thread_pool=download_manager._thread_pool,
                     )
                 ]
             ):

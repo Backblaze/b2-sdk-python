@@ -165,9 +165,16 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
 
     def _create_database(self, last_upgrade_to_run):
         """
-        Make sure that the database is created and sets the file permissions.
+        Make sure that the database is created and has appropriate file permissions.
         This should be done before storing any sensitive data in it.
         """
+        # Prepare a file
+        fd = os.open(
+            self.filename,
+            flags=os.O_RDWR | os.O_CREAT,
+            mode=stat.S_IRUSR | stat.S_IWUSR,
+        )
+        os.close(fd)
         # Create the tables in the database
         conn = self._connect()
         try:
@@ -175,9 +182,6 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
                 self._create_tables(conn, last_upgrade_to_run)
         finally:
             conn.close()
-
-        # Set the file permissions
-        os.chmod(self.filename, stat.S_IRUSR | stat.S_IWUSR)
 
     def _create_tables(self, conn, last_upgrade_to_run):
         conn.execute(

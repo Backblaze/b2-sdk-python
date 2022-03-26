@@ -6,13 +6,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+* Introduce a common thread worker pool for all downloads
+
 ### Added
 * Add pypy-3.8 to test matrix
 * Add support for unverified checksum upload mode
 * Add dedicated exception for unverified email
+* Add a parameter to customize `sync_policy_manager`
 
 ### Fixed
 * Fix downloading files with unverified checksum
+
+### Changed
+* Don't run coverage in pypy in CI
+
+## [1.14.1] - 2022-02-23
+
+### Fixed
+* Fix setting permissions for local sqlite database (thanks to Jan Schejbal for responsible disclosure!)
 
 ## [1.14.0] - 2021-12-23
 
@@ -274,7 +286,8 @@ has changed.
 ### Added
 Initial official release of SDK as a separate package (until now it was a part of B2 CLI)
 
-[Unreleased]: https://github.com/Backblaze/b2-sdk-python/compare/v1.14.0...HEAD
+[Unreleased]: https://github.com/Backblaze/b2-sdk-python/compare/v1.14.1...HEAD
+[1.14.1]: https://github.com/Backblaze/b2-sdk-python/compare/v1.14.0...v1.14.1
 [1.14.0]: https://github.com/Backblaze/b2-sdk-python/compare/v1.13.0...v1.14.0
 [1.13.0]: https://github.com/Backblaze/b2-sdk-python/compare/v1.12.0...v1.13.0
 [1.12.0]: https://github.com/Backblaze/b2-sdk-python/compare/v1.11.0...v1.12.0

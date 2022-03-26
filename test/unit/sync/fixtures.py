@@ -15,7 +15,7 @@ import pytest
 import apiver_deps
 from apiver_deps import AbstractFolder, B2Folder, LocalFolder, B2SyncPath, LocalSyncPath
 from apiver_deps import CompareVersionMode, NewerFileSyncMode, KeepOrDeleteMode
-from apiver_deps import DEFAULT_SCAN_MANAGER, Synchronizer
+from apiver_deps import DEFAULT_SCAN_MANAGER, POLICY_MANAGER, Synchronizer
 
 if apiver_deps.V <= 1:
     from apiver_deps import FileVersionInfo as VFileVersion
@@ -112,6 +112,7 @@ def synchronizer_factory():
         keep_days=None,
         compare_version_mode=CompareVersionMode.MODTIME,
         compare_threshold=None,
+        sync_policy_manager=POLICY_MANAGER,
     ):
         return Synchronizer(
             1,
@@ -123,6 +124,7 @@ def synchronizer_factory():
             keep_days=keep_days,
             compare_version_mode=compare_version_mode,
             compare_threshold=compare_threshold,
+            sync_policy_manager=sync_policy_manager,
         )
 
     return get_synchronizer
