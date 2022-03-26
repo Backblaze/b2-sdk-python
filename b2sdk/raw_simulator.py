@@ -233,7 +233,7 @@ class FileSimulator(object):
             if key_lower in self.SPECIAL_FILE_INFOS:
                 headers[self.SPECIAL_FILE_INFOS[key_lower]] = value
             else:
-                headers[FILE_INFO_HEADER_PREFIX + key] = value
+                headers[FILE_INFO_HEADER_PREFIX + key] = b2_url_encode(value)
 
         if account_auth_token_or_none is not None and self.bucket.is_file_lock_enabled:
             not_permitted = []
