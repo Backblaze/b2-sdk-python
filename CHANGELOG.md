@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 * Fix downloading files with unverified checksum
+* Fix decoding in filename and file info of `DownloadVersion`
 
 ### Changed
 * Don't run coverage in pypy in CI

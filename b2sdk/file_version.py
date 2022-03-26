@@ -452,7 +452,7 @@ class DownloadVersionFactory(object):
         for header_name, header_value in headers.items():
             if header_name[:prefix_len].lower() == FILE_INFO_HEADER_PREFIX_LOWER:
                 file_info_key = header_name[prefix_len:]
-                file_info[file_info_key] = header_value
+                file_info[file_info_key] = b2_url_decode(header_value)
         return file_info
 
     def from_response_headers(self, headers):
