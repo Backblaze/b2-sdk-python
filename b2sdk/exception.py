@@ -19,6 +19,8 @@ UPLOAD_TOKEN_USED_CONCURRENTLY_ERROR_MESSAGE_RE = re.compile(
     r'^more than one upload using auth token (?P<token>[^)]+)$'
 )
 
+COPY_SOURCE_TOO_BIG_ERROR_MESSAGE_RE = re.compile(r'^Copy source too big: (?P<size>[\d]+)$')
+
 
 class B2Error(Exception, metaclass=ABCMeta):
     def __init__(self, *args, **kwargs):
@@ -549,11 +551,19 @@ def interpret_b2_error(
         return PartSha1Mismatch(post_params.get('fileId'))
     elif status == 400 and code == "bad_bucket_id":
         return BucketIdNotFound(post_params.get('bucketId'))
-    elif status == 400 and code == "bad_request":
+    elif status == 400 and code in ('bad_request', 'auth_token_limit', 'source_too_large'):
+        # it's "bad_request" on 2022-03-29, but will become 'auth_token_limit' in 2022-04  # TODO: cleanup after 2022-05-01
         matcher = UPLOAD_TOKEN_USED_CONCURRENTLY_ERROR_MESSAGE_RE.match(message)
         if matcher is not None:
             token = matcher.group('token')
             return UploadTokenUsedConcurrently(token)
+
+        # it's "bad_request" on 2022-03-29, but will become 'source_too_large' in 2022-04  # TODO: cleanup after 2022-05-01
+        matcher = COPY_SOURCE_TOO_BIG_ERROR_MESSAGE_RE.match(message)
+        if matcher is not None:
+            size = int(matcher.group('size'))
+            return CopySourceTooBig(size)
+
         return BadRequest(message, code)
     elif status == 400:
         return BadRequest(message, code)

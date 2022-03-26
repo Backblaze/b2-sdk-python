@@ -28,6 +28,7 @@ from .exception import (
     BadUploadUrl,
     ChecksumMismatch,
     Conflict,
+    CopySourceTooBig,
     DuplicateBucketName,
     FileNotPresent,
     FileSha1Mismatch,
@@ -476,6 +477,7 @@ class BucketSimulator(object):
 
     FILE_SIMULATOR_CLASS = FileSimulator
     RESPONSE_CLASS = FakeResponse
+    MAX_SIMPLE_COPY_SIZE = 200  # should be same as RawSimulator.MIN_PART_SIZE
 
     def __init__(
         self,
@@ -736,6 +738,12 @@ class BucketSimulator(object):
         new_file_id = self._next_file_id()
 
         data_bytes = get_bytes_range(file_sim.data_bytes, bytes_range)
+        if len(data_bytes) > self.MAX_SIMPLE_COPY_SIZE:
+            raise CopySourceTooBig(
+                'Copy source too big: %i' % (len(data_bytes),),
+                'bad_request',
+                len(data_bytes),
+            )
 
         destination_bucket = self.api.bucket_id_to_bucket.get(destination_bucket_id, self)
         sse = destination_server_side_encryption or self.default_server_side_encryption
