@@ -225,7 +225,7 @@ class FileSimulator(object):
                 'x-bz-content-sha1': self.content_sha1,
                 'x-bz-upload-timestamp': self.upload_timestamp,
                 'x-bz-file-id': self.file_id,
-                'x-bz-file-name': self.name,
+                'x-bz-file-name': b2_url_encode(self.name),
             }
         )
         for key, value in self.file_info.items():

@@ -1876,8 +1876,18 @@ class DecodeTests(DecodeTestsBase, TestCaseWithBucket):
 
     def test_file_info_1(self):
         download_version = self.bucket.get_file_info_by_name('test.txt?foo=bar')
+        assert download_version.file_name == 'test.txt?foo=bar'
         assert download_version.file_info['custom_info'] == 'aaa?bbb'
 
     def test_file_info_2(self):
         download_version = self.bucket.get_file_info_by_name('test.txt%3Ffoo=bar')
+        assert download_version.file_name == 'test.txt%3Ffoo=bar'
         assert download_version.file_info['custom_info'] == 'aaa%3Fbbb'
+
+    def test_file_info_3(self):
+        download_version = self.bucket.get_file_info_by_name('test.txt%3Ffoo%3Dbar')
+        assert download_version.file_name == 'test.txt%3Ffoo%3Dbar'
+
+    def test_file_info_4(self):
+        download_version = self.bucket.get_file_info_by_name('test.txt%253Ffoo%253Dbar')
+        assert download_version.file_name == 'test.txt%253Ffoo%253Dbar'
