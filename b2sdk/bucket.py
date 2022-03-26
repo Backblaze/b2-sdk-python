@@ -13,7 +13,7 @@ from typing import Optional, Tuple
 
 from .encryption.setting import EncryptionSetting, EncryptionSettingFactory
 from .encryption.types import EncryptionMode
-from .exception import BucketIdNotFound, FileNotPresent, FileOrBucketNotFound, UnexpectedCloudBehaviour, UnrecognizedBucketType
+from .exception import BucketIdNotFound, CopySourceTooBig, FileNotPresent, FileOrBucketNotFound, UnexpectedCloudBehaviour, UnrecognizedBucketType
 from .file_lock import (
     BucketRetentionSetting,
     FileLockConfiguration,
@@ -870,34 +870,38 @@ class Bucket(metaclass=B2TraceMeta):
         if not length:
             # TODO: it feels like this should be checked on lower level - eg. RawApi
             validate_b2_file_name(new_file_name)
-            progress_listener = progress_listener or DoNothingProgressListener()
-            return self.api.services.copy_manager.copy_file(
-                copy_source,
-                new_file_name,
-                content_type=content_type,
-                file_info=file_info,
-                destination_bucket_id=self.id_,
-                progress_listener=progress_listener,
-                destination_encryption=destination_encryption,
-                source_encryption=source_encryption,
-                file_retention=file_retention,
-                legal_hold=legal_hold,
-                min_part_size=min_part_size,
-                max_part_size=max_part_size,
-            ).result()
-        else:
-            return self.create_file(
-                [WriteIntent(copy_source)],
-                new_file_name,
-                content_type=content_type,
-                file_info=file_info,
-                progress_listener=progress_listener,
-                encryption=destination_encryption,
-                file_retention=file_retention,
-                legal_hold=legal_hold,
-                min_part_size=min_part_size,
-                max_part_size=max_part_size,
-            )
+            try:
+                progress_listener = progress_listener or DoNothingProgressListener()
+                return self.api.services.copy_manager.copy_file(
+                    copy_source,
+                    new_file_name,
+                    content_type=content_type,
+                    file_info=file_info,
+                    destination_bucket_id=self.id_,
+                    progress_listener=progress_listener,
+                    destination_encryption=destination_encryption,
+                    source_encryption=source_encryption,
+                    file_retention=file_retention,
+                    legal_hold=legal_hold,
+                ).result()
+            except CopySourceTooBig as e:
+                copy_source.length = e.size
+                progress_listener = DoNothingProgressListener()
+                logger.warning(
+                    'a copy of large object of unknown size is upgraded to the large file interface. No progress report will be provided.'
+                )
+        return self.create_file(
+            [WriteIntent(copy_source)],
+            new_file_name,
+            content_type=content_type,
+            file_info=file_info,
+            progress_listener=progress_listener,
+            encryption=destination_encryption,
+            file_retention=file_retention,
+            legal_hold=legal_hold,
+            min_part_size=min_part_size,
+            max_part_size=max_part_size,
+        )
 
     def delete_file_version(self, file_id, file_name):
         """
