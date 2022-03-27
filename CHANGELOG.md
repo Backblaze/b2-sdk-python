@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 * Introduce a common thread worker pool for all downloads
+* Don't run coverage in pypy in CI
 
 ### Added
 * Add pypy-3.8 to test matrix
@@ -18,9 +19,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 * Fix downloading files with unverified checksum
 * Fix decoding in filename and file info of `DownloadVersion`
-
-### Changed
-* Don't run coverage in pypy in CI
 
 ## [1.14.1] - 2022-02-23
 
