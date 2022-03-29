@@ -636,6 +636,21 @@ class TestCopyFile(TestCaseWithBucket):
         else:
             return bucket.copy
 
+    @pytest.mark.apiver(from_ver=2)
+    def test_copy_big(self):
+        data = b'HelloWorld' * 100
+        for i in range(10):
+            data += bytes(':#' + str(i) + '$' + 'abcdefghijklmnopqrstuvwx' * 4, 'ascii')
+        file_info = self.bucket.upload_bytes(data, 'file1')
+
+        self.bucket.copy(
+            file_info.id_,
+            'file2',
+            min_part_size=200,
+            max_part_size=400,
+        )
+        self._check_file_contents('file2', data)
+
     def test_copy_without_optional_params(self):
         file_id = self._make_file()
         if apiver_deps.V <= 1:
@@ -769,7 +784,8 @@ class TestCopyFile(TestCaseWithBucket):
                         file_id,
                         'copied_file',
                         file_retention=FileRetentionSetting(RetentionMode.COMPLIANCE, 100),
-                        legal_hold=LegalHold.ON
+                        legal_hold=LegalHold.ON,
+                        max_part_size=400,
                     )
                     self.assertEqual(
                         FileRetentionSetting(RetentionMode.COMPLIANCE, 100),
