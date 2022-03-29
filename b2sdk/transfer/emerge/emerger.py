@@ -117,6 +117,16 @@ class Emerger(metaclass=B2TraceMetaAbstract):
         :param str,None content_type: the MIME type or ``None`` to determine automatically
         :param dict,None file_info: a file info to store with the file or ``None`` to not store anything
         :param b2sdk.v2.AbstractProgressListener progress_listener: a progress listener object to use
+        :param int,None recommended_upload_part_size: the recommended part size to use for uploading local sources
+                        or ``None`` to determine automatically, but remote sources would be copied with
+                        maximum possible part size
+        :param str,None continue_large_file_id: large file id that should be selected to resume file creation
+                        for multipart upload/copy, if ``None`` in multipart case it would always start a new
+                        large file
+        :param b2sdk.v2.EncryptionSetting encryption: encryption settings (``None`` if unknown)
+        :param b2sdk.v2.FileRetentionSetting file_retention: file retention setting
+        :param bool legal_hold: legal hold setting
+
         :param int min_part_size: lower limit of part size for the transfer planner, in bytes
         :param int max_part_size: upper limit of part size for the transfer planner, in bytes
 
