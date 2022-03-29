@@ -760,7 +760,7 @@ class BucketSimulator(object):
             'upload',
             new_file_name,
             file_sim.content_type,
-            file_sim.content_sha1,
+            hex_sha1_of_bytes(data_bytes),  # we hash here again because bytes_range may not cover the full source
             file_sim.file_info,
             data_bytes,
             next(self.upload_timestamp_counter),
