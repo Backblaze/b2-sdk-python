@@ -629,17 +629,37 @@ class TestListVersions(TestCaseWithBucket):
 
 
 class TestCopyFile(TestCaseWithBucket):
-    @pytest.mark.apiver(to_ver=1)
+    @classmethod
+    def _copy_function(cls, bucket):
+        if apiver_deps.V <= 1:
+            return bucket.copy_file
+        else:
+            return bucket.copy
+
     def test_copy_without_optional_params(self):
         file_id = self._make_file()
-        self.bucket.copy_file(file_id, 'hello_new.txt')
+        if apiver_deps.V <= 1:
+            f = self.bucket.copy_file(file_id, 'hello_new.txt')
+            assert f['action'] == 'copy'
+        else:
+            f = self.bucket.copy(file_id, 'hello_new.txt')
+            assert f.action == 'copy'
         expected = [('hello.txt', 11, 'upload', None), ('hello_new.txt', 11, 'copy', None)]
         self.assertBucketContents(expected, '', show_versions=True)
 
-    @pytest.mark.apiver(to_ver=1)
     def test_copy_with_range(self):
         file_id = self._make_file()
-        self.bucket.copy_file(file_id, 'hello_new.txt', bytes_range=(3, 9))
+        #data = b'hello world'
+        #            3456789
+        if apiver_deps.V <= 1:
+            self.bucket.copy_file(
+                file_id,
+                'hello_new.txt',
+                bytes_range=(3, 9),
+            )  # inclusive, confusingly
+        else:
+            self.bucket.copy(file_id, 'hello_new.txt', offset=3, length=7)
+        self._check_file_contents('hello_new.txt', b'lo worl')
         expected = [('hello.txt', 11, 'upload', None), ('hello_new.txt', 7, 'copy', None)]
         self.assertBucketContents(expected, '', show_versions=True)
 
@@ -699,15 +719,22 @@ class TestCopyFile(TestCaseWithBucket):
         ]
         self.assertEqual(expected, actual)
 
-    @pytest.mark.apiver(to_ver=1)
     def test_copy_with_unsatisfied_range(self):
         file_id = self._make_file()
         try:
-            self.bucket.copy_file(
-                file_id,
-                'hello_new.txt',
-                bytes_range=(12, 15),
-            )
+            if apiver_deps.V <= 1:
+                self.bucket.copy_file(
+                    file_id,
+                    'hello_new.txt',
+                    bytes_range=(12, 15),
+                )
+            else:
+                self.bucket.copy(
+                    file_id,
+                    'hello_new.txt',
+                    offset=12,
+                    length=3,
+                )
             self.fail('should have raised UnsatisfiableRange')
         except UnsatisfiableRange as e:
             self.assertEqual(
@@ -717,11 +744,10 @@ class TestCopyFile(TestCaseWithBucket):
         expected = [('hello.txt', 11, 'upload', None)]
         self.assertBucketContents(expected, '', show_versions=True)
 
-    @pytest.mark.apiver(to_ver=1)
     def test_copy_with_different_bucket(self):
         source_bucket = self.api.create_bucket('source-bucket', 'allPublic')
         file_id = self._make_file(source_bucket)
-        self.bucket.copy_file(file_id, 'hello_new.txt')
+        self._copy_function(self.bucket)(file_id, 'hello_new.txt')
 
         def ls(bucket):
             return [
