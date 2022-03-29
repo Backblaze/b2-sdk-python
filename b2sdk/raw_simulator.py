@@ -727,7 +727,7 @@ class BucketSimulator(object):
         legal_hold: Optional[LegalHold] = None,
     ):
         if metadata_directive is not None:
-            assert metadata_directive in tuple(MetadataDirectiveMode)
+            assert metadata_directive in tuple(MetadataDirectiveMode), metadata_directive
             if metadata_directive is MetadataDirectiveMode.COPY and (
                 content_type is not None or file_info is not None
             ):
