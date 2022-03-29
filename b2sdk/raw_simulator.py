@@ -713,6 +713,7 @@ class BucketSimulator(object):
 
     def copy_file(
         self,
+        account_auth_token,
         file_id,
         new_file_name,
         bytes_range=None,
@@ -767,6 +768,8 @@ class BucketSimulator(object):
             file_retention=file_retention,
             legal_hold=legal_hold,
         )  # yapf: disable
+        destination_bucket.file_id_to_file[copy_file_sim.file_id] = copy_file_sim
+        destination_bucket.file_name_and_id_to_file[copy_file_sim.sort_key()] = copy_file_sim
 
         if metadata_directive is MetadataDirectiveMode.REPLACE:
             copy_file_sim.content_type = content_type
@@ -827,6 +830,8 @@ class BucketSimulator(object):
                     if len(result_files) == max_file_count:
                         next_file_name = file_sim.name + ' '
                         break
+                else:
+                    logger.debug('skipping invisible file during listing: %s', key)
         return dict(files=result_files, nextFileName=next_file_name)
 
     def list_file_versions(
@@ -1443,7 +1448,16 @@ class RawSimulator(AbstractRawApi):
         bucket_id = self.file_id_to_bucket_id[source_file_id]
         bucket = self._get_bucket_by_id(bucket_id)
         self._assert_account_auth(api_url, account_auth_token, bucket.account_id, 'writeFiles')
+
+        if destination_bucket_id:
+            # TODO: Handle and raise proper exception after server docs get updated
+            dest_bucket = self.bucket_id_to_bucket[destination_bucket_id]
+            assert dest_bucket.account_id == bucket.account_id
+        else:
+            dest_bucket = bucket
+
         copy_file_sim = bucket.copy_file(
+            account_auth_token,
             source_file_id,
             new_file_name,
             bytes_range,
@@ -1456,16 +1470,6 @@ class RawSimulator(AbstractRawApi):
             file_retention=file_retention,
             legal_hold=legal_hold,
         )
-
-        if destination_bucket_id:
-            # TODO: Handle and raise proper exception after server docs get updated
-            dest_bucket = self.bucket_id_to_bucket[destination_bucket_id]
-            assert dest_bucket.account_id == bucket.account_id
-        else:
-            dest_bucket = bucket
-
-        dest_bucket.file_id_to_file[copy_file_sim.file_id] = copy_file_sim
-        dest_bucket.file_name_and_id_to_file[copy_file_sim.sort_key()] = copy_file_sim
 
         return copy_file_sim.as_upload_result(account_auth_token)
 
