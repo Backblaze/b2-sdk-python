@@ -644,7 +644,7 @@ class TestCopyFile(TestCaseWithBucket):
         else:
             f = self.bucket.copy(file_id, 'hello_new.txt')
             assert f.action == 'copy'
-        expected = [('hello.txt', 11, 'upload', None), ('hello_new.txt', 11, 'copy', None)]
+        expected = [('hello.txt', 11, 'upload', None), ('hello_new.txt', 11, 'upload', None)]
         self.assertBucketContents(expected, '', show_versions=True)
 
     def test_copy_with_range(self):
@@ -660,7 +660,7 @@ class TestCopyFile(TestCaseWithBucket):
         else:
             self.bucket.copy(file_id, 'hello_new.txt', offset=3, length=7)
         self._check_file_contents('hello_new.txt', b'lo worl')
-        expected = [('hello.txt', 11, 'upload', None), ('hello_new.txt', 7, 'copy', None)]
+        expected = [('hello.txt', 11, 'upload', None), ('hello_new.txt', 7, 'upload', None)]
         self.assertBucketContents(expected, '', show_versions=True)
 
     @pytest.mark.apiver(to_ver=1)
@@ -711,7 +711,7 @@ class TestCopyFile(TestCaseWithBucket):
         )
         expected = [
             ('hello.txt', 11, 'upload', 'b2/x-auto', None),
-            ('hello_new.txt', 11, 'copy', 'text/plain', None),
+            ('hello_new.txt', 11, 'upload', 'text/plain', None),
         ]
         actual = [
             (info.file_name, info.size, info.action, info.content_type, folder)
@@ -757,7 +757,7 @@ class TestCopyFile(TestCaseWithBucket):
 
         expected = [('hello.txt', 11, 'upload', None)]
         self.assertEqual(expected, ls(source_bucket))
-        expected = [('hello_new.txt', 11, 'copy', None)]
+        expected = [('hello_new.txt', 11, 'upload', None)]
         self.assertBucketContents(expected, '', show_versions=True)
 
     def test_copy_retention(self):

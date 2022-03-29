@@ -756,7 +756,7 @@ class BucketSimulator(object):
             self.account_id,
             destination_bucket,
             new_file_id,
-            'copy',
+            'upload',
             new_file_name,
             file_sim.content_type,
             file_sim.content_sha1,
@@ -766,13 +766,39 @@ class BucketSimulator(object):
             server_side_encryption=sse,
             file_retention=file_retention,
             legal_hold=legal_hold,
-        )
+        )  # yapf: disable
 
         if metadata_directive is MetadataDirectiveMode.REPLACE:
             copy_file_sim.content_type = content_type
             copy_file_sim.file_info = file_info or file_sim.file_info
 
-        return copy_file_sim
+        ## long term storage of that file has action="upload", but here we need to return action="copy", just this once
+        #class TestFileVersionFactory(FileVersionFactory):
+        #    FILE_VERSION_CLASS = self.FILE_SIMULATOR_CLASS
+
+        #file_version_dict = copy_file_sim.as_upload_result(account_auth_token)
+        #del file_version_dict['action']
+        #print(file_version_dict)
+        #copy_file_sim_with_action_copy = TestFileVersionFactory(self.api).from_api_response(file_version_dict, force_action='copy')
+        #return copy_file_sim_with_action_copy
+
+        # TODO: the code above cannot be used right now because FileSimulator.__init__ is incompatible with FileVersionFactory / FileVersion.__init__ - refactor is needed
+        # for now we'll just return the newly constructed object with a copy action...
+        return self.FILE_SIMULATOR_CLASS(
+            self.account_id,
+            destination_bucket,
+            new_file_id,
+            'copy',
+            new_file_name,
+            copy_file_sim.content_type,
+            copy_file_sim.content_sha1,
+            copy_file_sim.file_info,
+            data_bytes,
+            copy_file_sim.upload_timestamp,
+            server_side_encryption=sse,
+            file_retention=file_retention,
+            legal_hold=legal_hold,
+        )
 
     def list_file_names(
         self,
