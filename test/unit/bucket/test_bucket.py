@@ -218,6 +218,24 @@ class TestCaseWithBucket(TestBase):
             fragments.append(fragment)
         return b''.join(fragments)
 
+    def _check_file_contents(self, file_name, expected_contents):
+        contents = self._download_file(file_name)
+        print(contents)
+        print(expected_contents)
+        self.assertEqual(expected_contents, contents)
+
+    def _download_file(self, file_name):
+        with FileSimulator.dont_check_encryption():
+            if apiver_deps.V <= 1:
+                download = DownloadDestBytes()
+                self.bucket.download_file_by_name(file_name, download)
+                return download.get_bytes_written()
+            else:
+                with io.BytesIO() as bytes_io:
+                    downloaded_file = self.bucket.download_file_by_name(file_name)
+                    downloaded_file.save(bytes_io)
+                    return bytes_io.getvalue()
+
 
 class TestReauthorization(TestCaseWithBucket):
     def testCreateBucket(self):
@@ -1216,22 +1234,6 @@ class TestUpload(TestCaseWithBucket):
             upload_info['uploadUrl'], upload_info['authorizationToken'], part_number,
             len(part_data), hex_sha1_of_bytes(part_data), part_stream
         )
-
-    def _check_file_contents(self, file_name, expected_contents):
-        contents = self._download_file(file_name)
-        self.assertEqual(expected_contents, contents)
-
-    def _download_file(self, file_name):
-        with FileSimulator.dont_check_encryption():
-            if apiver_deps.V <= 1:
-                download = DownloadDestBytes()
-                self.bucket.download_file_by_name(file_name, download)
-                return download.get_bytes_written()
-            else:
-                with io.BytesIO() as bytes_io:
-                    downloaded_file = self.bucket.download_file_by_name(file_name)
-                    downloaded_file.save(bytes_io)
-                    return bytes_io.getvalue()
 
 
 class TestConcatenate(TestCaseWithBucket):
