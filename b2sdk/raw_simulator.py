@@ -616,10 +616,15 @@ class BucketSimulator(object):
                                      1)['files']  # token is not important here
         if len(files) == 0:
             raise FileNotPresent(file_id_or_name=file_name)
+
         file_dict = files[0]
-        if file_dict['fileName'] != file_name or file_dict['action'] != 'upload':
+        if file_dict['fileName'] != file_name:
             raise FileNotPresent(file_id_or_name=file_name)
+
         file_sim = self.file_name_and_id_to_file[(file_name, file_dict['fileId'])]
+        if not file_sim.is_visible():
+            raise FileNotPresent(file_id_or_name=file_name)
+
         file_sim.check_encryption(encryption)
         return self._download_file_sim(account_auth_token_or_none, file_sim, url, range_=range_)
 
