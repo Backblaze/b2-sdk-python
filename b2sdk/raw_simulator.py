@@ -66,7 +66,7 @@ def get_bytes_range(data_bytes, bytes_range):
         raise UnsatisfiableRange()
     if bytes_range[1] > len(data_bytes):
         raise UnsatisfiableRange()
-    return data_bytes[bytes_range[0]:bytes_range[1]]
+    return data_bytes[bytes_range[0]:bytes_range[1] + 1]
 
 
 class KeySimulator(object):

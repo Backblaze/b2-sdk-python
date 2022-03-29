@@ -640,7 +640,7 @@ class TestCopyFile(TestCaseWithBucket):
     def test_copy_with_range(self):
         file_id = self._make_file()
         self.bucket.copy_file(file_id, 'hello_new.txt', bytes_range=(3, 9))
-        expected = [('hello.txt', 11, 'upload', None), ('hello_new.txt', 6, 'copy', None)]
+        expected = [('hello.txt', 11, 'upload', None), ('hello_new.txt', 7, 'copy', None)]
         self.assertBucketContents(expected, '', show_versions=True)
 
     @pytest.mark.apiver(to_ver=1)
