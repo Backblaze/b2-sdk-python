@@ -470,13 +470,13 @@ class TestCopyFile(TestCaseWithBucket):
     def test_copy_without_optional_params(self):
         file_id = self._make_file()
         self.bucket.copy_file(file_id, 'hello_new.txt')
-        expected = [('hello.txt', 11, 'upload', None), ('hello_new.txt', 11, 'copy', None)]
+        expected = [('hello.txt', 11, 'upload', None), ('hello_new.txt', 11, 'upload', None)]
         self.assertBucketContents(expected, '', show_versions=True)
 
     def test_copy_with_range(self):
         file_id = self._make_file()
         self.bucket.copy_file(file_id, 'hello_new.txt', bytes_range=(3, 9))
-        expected = [('hello.txt', 11, 'upload', None), ('hello_new.txt', 6, 'copy', None)]
+        expected = [('hello.txt', 11, 'upload', None), ('hello_new.txt', 7, 'upload', None)]
         self.assertBucketContents(expected, '', show_versions=True)
 
     def test_copy_with_invalid_metadata(self):
@@ -524,7 +524,7 @@ class TestCopyFile(TestCaseWithBucket):
         )
         expected = [
             ('hello.txt', 11, 'upload', 'b2/x-auto', None),
-            ('hello_new.txt', 11, 'copy', 'text/plain', None),
+            ('hello_new.txt', 11, 'upload', 'text/plain', None),
         ]
         actual = [
             (info.file_name, info.size, info.action, info.content_type, folder)
@@ -562,7 +562,7 @@ class TestCopyFile(TestCaseWithBucket):
 
         expected = [('hello.txt', 11, 'upload', None)]
         self.assertEqual(expected, ls(source_bucket))
-        expected = [('hello_new.txt', 11, 'copy', None)]
+        expected = [('hello_new.txt', 11, 'upload', None)]
         self.assertBucketContents(expected, '', show_versions=True)
 
     def test_copy_retention(self):
@@ -574,7 +574,8 @@ class TestCopyFile(TestCaseWithBucket):
                         file_id,
                         'copied_file',
                         file_retention=FileRetentionSetting(RetentionMode.COMPLIANCE, 100),
-                        legal_hold=LegalHold.ON
+                        legal_hold=LegalHold.ON,
+                        max_part_size=400,
                     )
                     self.assertEqual(
                         FileRetentionSetting(RetentionMode.COMPLIANCE, 100),

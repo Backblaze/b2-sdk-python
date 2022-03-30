@@ -218,6 +218,22 @@ class TestCaseWithBucket(TestBase):
             fragments.append(fragment)
         return b''.join(fragments)
 
+    def _check_file_contents(self, file_name, expected_contents):
+        contents = self._download_file(file_name)
+        self.assertEqual(expected_contents, contents)
+
+    def _download_file(self, file_name):
+        with FileSimulator.dont_check_encryption():
+            if apiver_deps.V <= 1:
+                download = DownloadDestBytes()
+                self.bucket.download_file_by_name(file_name, download)
+                return download.get_bytes_written()
+            else:
+                with io.BytesIO() as bytes_io:
+                    downloaded_file = self.bucket.download_file_by_name(file_name)
+                    downloaded_file.save(bytes_io)
+                    return bytes_io.getvalue()
+
 
 class TestReauthorization(TestCaseWithBucket):
     def testCreateBucket(self):
@@ -611,18 +627,53 @@ class TestListVersions(TestCaseWithBucket):
 
 
 class TestCopyFile(TestCaseWithBucket):
-    @pytest.mark.apiver(to_ver=1)
+    @classmethod
+    def _copy_function(cls, bucket):
+        if apiver_deps.V <= 1:
+            return bucket.copy_file
+        else:
+            return bucket.copy
+
+    @pytest.mark.apiver(from_ver=2)
+    def test_copy_big(self):
+        data = b'HelloWorld' * 100
+        for i in range(10):
+            data += bytes(':#' + str(i) + '$' + 'abcdefghijklmnopqrstuvwx' * 4, 'ascii')
+        file_info = self.bucket.upload_bytes(data, 'file1')
+
+        self.bucket.copy(
+            file_info.id_,
+            'file2',
+            min_part_size=200,
+            max_part_size=400,
+        )
+        self._check_file_contents('file2', data)
+
     def test_copy_without_optional_params(self):
         file_id = self._make_file()
-        self.bucket.copy_file(file_id, 'hello_new.txt')
-        expected = [('hello.txt', 11, 'upload', None), ('hello_new.txt', 11, 'copy', None)]
+        if apiver_deps.V <= 1:
+            f = self.bucket.copy_file(file_id, 'hello_new.txt')
+            assert f['action'] == 'copy'
+        else:
+            f = self.bucket.copy(file_id, 'hello_new.txt')
+            assert f.action == 'copy'
+        expected = [('hello.txt', 11, 'upload', None), ('hello_new.txt', 11, 'upload', None)]
         self.assertBucketContents(expected, '', show_versions=True)
 
-    @pytest.mark.apiver(to_ver=1)
     def test_copy_with_range(self):
         file_id = self._make_file()
-        self.bucket.copy_file(file_id, 'hello_new.txt', bytes_range=(3, 9))
-        expected = [('hello.txt', 11, 'upload', None), ('hello_new.txt', 6, 'copy', None)]
+        #data = b'hello world'
+        #            3456789
+        if apiver_deps.V <= 1:
+            self.bucket.copy_file(
+                file_id,
+                'hello_new.txt',
+                bytes_range=(3, 9),
+            )  # inclusive, confusingly
+        else:
+            self.bucket.copy(file_id, 'hello_new.txt', offset=3, length=7)
+        self._check_file_contents('hello_new.txt', b'lo worl')
+        expected = [('hello.txt', 11, 'upload', None), ('hello_new.txt', 7, 'upload', None)]
         self.assertBucketContents(expected, '', show_versions=True)
 
     @pytest.mark.apiver(to_ver=1)
@@ -673,7 +724,7 @@ class TestCopyFile(TestCaseWithBucket):
         )
         expected = [
             ('hello.txt', 11, 'upload', 'b2/x-auto', None),
-            ('hello_new.txt', 11, 'copy', 'text/plain', None),
+            ('hello_new.txt', 11, 'upload', 'text/plain', None),
         ]
         actual = [
             (info.file_name, info.size, info.action, info.content_type, folder)
@@ -681,15 +732,22 @@ class TestCopyFile(TestCaseWithBucket):
         ]
         self.assertEqual(expected, actual)
 
-    @pytest.mark.apiver(to_ver=1)
     def test_copy_with_unsatisfied_range(self):
         file_id = self._make_file()
         try:
-            self.bucket.copy_file(
-                file_id,
-                'hello_new.txt',
-                bytes_range=(12, 15),
-            )
+            if apiver_deps.V <= 1:
+                self.bucket.copy_file(
+                    file_id,
+                    'hello_new.txt',
+                    bytes_range=(12, 15),
+                )
+            else:
+                self.bucket.copy(
+                    file_id,
+                    'hello_new.txt',
+                    offset=12,
+                    length=3,
+                )
             self.fail('should have raised UnsatisfiableRange')
         except UnsatisfiableRange as e:
             self.assertEqual(
@@ -699,11 +757,10 @@ class TestCopyFile(TestCaseWithBucket):
         expected = [('hello.txt', 11, 'upload', None)]
         self.assertBucketContents(expected, '', show_versions=True)
 
-    @pytest.mark.apiver(to_ver=1)
     def test_copy_with_different_bucket(self):
         source_bucket = self.api.create_bucket('source-bucket', 'allPublic')
         file_id = self._make_file(source_bucket)
-        self.bucket.copy_file(file_id, 'hello_new.txt')
+        self._copy_function(self.bucket)(file_id, 'hello_new.txt')
 
         def ls(bucket):
             return [
@@ -713,7 +770,7 @@ class TestCopyFile(TestCaseWithBucket):
 
         expected = [('hello.txt', 11, 'upload', None)]
         self.assertEqual(expected, ls(source_bucket))
-        expected = [('hello_new.txt', 11, 'copy', None)]
+        expected = [('hello_new.txt', 11, 'upload', None)]
         self.assertBucketContents(expected, '', show_versions=True)
 
     def test_copy_retention(self):
@@ -725,7 +782,8 @@ class TestCopyFile(TestCaseWithBucket):
                         file_id,
                         'copied_file',
                         file_retention=FileRetentionSetting(RetentionMode.COMPLIANCE, 100),
-                        legal_hold=LegalHold.ON
+                        legal_hold=LegalHold.ON,
+                        max_part_size=400,
                     )
                     self.assertEqual(
                         FileRetentionSetting(RetentionMode.COMPLIANCE, 100),
@@ -1216,22 +1274,6 @@ class TestUpload(TestCaseWithBucket):
             upload_info['uploadUrl'], upload_info['authorizationToken'], part_number,
             len(part_data), hex_sha1_of_bytes(part_data), part_stream
         )
-
-    def _check_file_contents(self, file_name, expected_contents):
-        contents = self._download_file(file_name)
-        self.assertEqual(expected_contents, contents)
-
-    def _download_file(self, file_name):
-        with FileSimulator.dont_check_encryption():
-            if apiver_deps.V <= 1:
-                download = DownloadDestBytes()
-                self.bucket.download_file_by_name(file_name, download)
-                return download.get_bytes_written()
-            else:
-                with io.BytesIO() as bytes_io:
-                    downloaded_file = self.bucket.download_file_by_name(file_name)
-                    downloaded_file.save(bytes_io)
-                    return bytes_io.getvalue()
 
 
 class TestConcatenate(TestCaseWithBucket):

@@ -13,7 +13,7 @@ from typing import Optional, Tuple
 
 from .encryption.setting import EncryptionSetting, EncryptionSettingFactory
 from .encryption.types import EncryptionMode
-from .exception import BucketIdNotFound, FileNotPresent, FileOrBucketNotFound, UnexpectedCloudBehaviour, UnrecognizedBucketType
+from .exception import BucketIdNotFound, CopySourceTooBig, FileNotPresent, FileOrBucketNotFound, UnexpectedCloudBehaviour, UnrecognizedBucketType
 from .file_lock import (
     BucketRetentionSetting,
     FileLockConfiguration,
@@ -550,6 +550,8 @@ class Bucket(metaclass=B2TraceMeta):
         encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
+        min_part_size=None,
+        max_part_size=None,
     ):
         """
         Creates a new file in this bucket using an iterable (list, tuple etc) of remote or local sources.
@@ -574,6 +576,8 @@ class Bucket(metaclass=B2TraceMeta):
         :param b2sdk.v2.EncryptionSetting encryption: encryption settings (``None`` if unknown)
         :param b2sdk.v2.FileRetentionSetting file_retention: file retention setting
         :param bool legal_hold: legal hold setting
+        :param int min_part_size: lower limit of part size for the transfer planner, in bytes
+        :param int max_part_size: upper limit of part size for the transfer planner, in bytes
         """
         return self._create_file(
             self.api.services.emerger.emerge,
@@ -587,6 +591,8 @@ class Bucket(metaclass=B2TraceMeta):
             encryption=encryption,
             file_retention=file_retention,
             legal_hold=legal_hold,
+            min_part_size=min_part_size,
+            max_part_size=max_part_size,
         )
 
     def create_file_stream(
@@ -601,6 +607,8 @@ class Bucket(metaclass=B2TraceMeta):
         encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
+        min_part_size=None,
+        max_part_size=None,
     ):
         """
         Creates a new file in this bucket using a stream of multiple remote or local sources.
@@ -627,6 +635,8 @@ class Bucket(metaclass=B2TraceMeta):
         :param b2sdk.v2.EncryptionSetting encryption: encryption settings (``None`` if unknown)
         :param b2sdk.v2.FileRetentionSetting file_retention: file retention setting
         :param bool legal_hold: legal hold setting
+        :param int min_part_size: lower limit of part size for the transfer planner, in bytes
+        :param int max_part_size: upper limit of part size for the transfer planner, in bytes
         """
         return self._create_file(
             self.api.services.emerger.emerge_stream,
@@ -640,6 +650,8 @@ class Bucket(metaclass=B2TraceMeta):
             encryption=encryption,
             file_retention=file_retention,
             legal_hold=legal_hold,
+            min_part_size=min_part_size,
+            max_part_size=max_part_size,
         )
 
     def _create_file(
@@ -655,6 +667,8 @@ class Bucket(metaclass=B2TraceMeta):
         encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
+        min_part_size=None,
+        max_part_size=None,
     ):
         validate_b2_file_name(file_name)
         progress_listener = progress_listener or DoNothingProgressListener()
@@ -671,6 +685,8 @@ class Bucket(metaclass=B2TraceMeta):
             encryption=encryption,
             file_retention=file_retention,
             legal_hold=legal_hold,
+            min_part_size=min_part_size,
+            max_part_size=max_part_size,
         )
 
     def concatenate(
@@ -685,6 +701,8 @@ class Bucket(metaclass=B2TraceMeta):
         encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
+        min_part_size=None,
+        max_part_size=None,
     ):
         """
         Creates a new file in this bucket by concatenating multiple remote or local sources.
@@ -706,6 +724,8 @@ class Bucket(metaclass=B2TraceMeta):
         :param b2sdk.v2.EncryptionSetting encryption: encryption settings (``None`` if unknown)
         :param b2sdk.v2.FileRetentionSetting file_retention: file retention setting
         :param bool legal_hold: legal hold setting
+        :param int min_part_size: lower limit of part size for the transfer planner, in bytes
+        :param int max_part_size: upper limit of part size for the transfer planner, in bytes
         """
         return self.create_file(
             WriteIntent.wrap_sources_iterator(outbound_sources),
@@ -718,6 +738,8 @@ class Bucket(metaclass=B2TraceMeta):
             encryption=encryption,
             file_retention=file_retention,
             legal_hold=legal_hold,
+            min_part_size=min_part_size,
+            max_part_size=max_part_size,
         )
 
     def concatenate_stream(
@@ -806,6 +828,8 @@ class Bucket(metaclass=B2TraceMeta):
         source_content_type: Optional[str] = None,
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
+        min_part_size=None,
+        max_part_size=None,
     ):
         """
         Creates a new file in this bucket by (server-side) copying from an existing file.
@@ -831,6 +855,8 @@ class Bucket(metaclass=B2TraceMeta):
         :param str,None source_content_type: source file's content type, useful when copying files with SSE-C
         :param b2sdk.v2.FileRetentionSetting file_retention: file retention setting for the new file.
         :param bool legal_hold: legal hold setting for the new file.
+        :param int min_part_size: lower limit of part size for the transfer planner, in bytes
+        :param int max_part_size: upper limit of part size for the transfer planner, in bytes
         """
 
         copy_source = CopySource(
@@ -844,30 +870,38 @@ class Bucket(metaclass=B2TraceMeta):
         if not length:
             # TODO: it feels like this should be checked on lower level - eg. RawApi
             validate_b2_file_name(new_file_name)
-            progress_listener = progress_listener or DoNothingProgressListener()
-            return self.api.services.copy_manager.copy_file(
-                copy_source,
-                new_file_name,
-                content_type=content_type,
-                file_info=file_info,
-                destination_bucket_id=self.id_,
-                progress_listener=progress_listener,
-                destination_encryption=destination_encryption,
-                source_encryption=source_encryption,
-                file_retention=file_retention,
-                legal_hold=legal_hold,
-            ).result()
-        else:
-            return self.create_file(
-                [WriteIntent(copy_source)],
-                new_file_name,
-                content_type=content_type,
-                file_info=file_info,
-                progress_listener=progress_listener,
-                encryption=destination_encryption,
-                file_retention=file_retention,
-                legal_hold=legal_hold,
-            )
+            try:
+                progress_listener = progress_listener or DoNothingProgressListener()
+                return self.api.services.copy_manager.copy_file(
+                    copy_source,
+                    new_file_name,
+                    content_type=content_type,
+                    file_info=file_info,
+                    destination_bucket_id=self.id_,
+                    progress_listener=progress_listener,
+                    destination_encryption=destination_encryption,
+                    source_encryption=source_encryption,
+                    file_retention=file_retention,
+                    legal_hold=legal_hold,
+                ).result()
+            except CopySourceTooBig as e:
+                copy_source.length = e.size
+                progress_listener = DoNothingProgressListener()
+                logger.warning(
+                    'a copy of large object of unknown size is upgraded to the large file interface. No progress report will be provided.'
+                )
+        return self.create_file(
+            [WriteIntent(copy_source)],
+            new_file_name,
+            content_type=content_type,
+            file_info=file_info,
+            progress_listener=progress_listener,
+            encryption=destination_encryption,
+            file_retention=file_retention,
+            legal_hold=legal_hold,
+            min_part_size=min_part_size,
+            max_part_size=max_part_size,
+        )
 
     def delete_file_version(self, file_id, file_name):
         """

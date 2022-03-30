@@ -154,7 +154,7 @@ class B2Http(object):
     """
 
     # timeout for HTTP GET/POST requests
-    TIMEOUT = 900  # 15 minutes as server-side copy can take time
+    TIMEOUT = 1200  # 20 minutes as server-side copy can take time
 
     def __init__(self, api_config: B2HttpApiConfig = DEFAULT_HTTP_API_CONFIG):
         """
@@ -346,6 +346,11 @@ class B2Http(object):
             if response.status_code not in [200, 206]:
                 # Decode the error object returned by the service
                 error = json.loads(response.content.decode('utf-8')) if response.content else {}
+                extra_error_keys = error.keys() - ('code', 'status', 'message')
+                if extra_error_keys:
+                    logger.debug(
+                        'received error has extra (unsupported) keys: %s', extra_error_keys
+                    )
                 raise interpret_b2_error(
                     int(error.get('status', response.status_code)),
                     error.get('code'),
