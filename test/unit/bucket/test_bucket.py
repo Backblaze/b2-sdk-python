@@ -220,8 +220,6 @@ class TestCaseWithBucket(TestBase):
 
     def _check_file_contents(self, file_name, expected_contents):
         contents = self._download_file(file_name)
-        print(contents)
-        print(expected_contents)
         self.assertEqual(expected_contents, contents)
 
     def _download_file(self, file_name):

@@ -72,6 +72,7 @@ class Emerger(metaclass=B2TraceMetaAbstract):
         """
         # WARNING: time spent trying to extract common parts of emerge() and emerge_stream()
         # into a separate method: 20min. You can try it too, but please increment the timer honestly.
+        # Problematic lines are marked with a "<--".
         planner = self.get_emerge_planner(
             min_part_size=min_part_size,
             recommended_upload_part_size=recommended_upload_part_size,
