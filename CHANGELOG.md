@@ -21,8 +21,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Add an option to set a custom file version class to FileVersionFactory
 
 ### Fixed
-* Fix downloading files with unverified checksum
 * Fix copying objects larger than 1TB
+* Fix downloading files with unverified checksum
+* Fix uploading objects larger than 1TB
 
 ## [1.14.1] - 2022-02-23
 
