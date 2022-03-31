@@ -1163,13 +1163,40 @@ class TestUpload(TestCaseWithBucket):
             self.bucket.upload_local_file(path, 'file1')
             self._check_file_contents('file1', data)
 
-    def test_upload_local_large_file_over_10k_parts(self):
+    def test_upload_local_large_file_over_10k_parts(self):  # TODO: this test is very slow, speed it up?
         with TempDir() as d:
             path = os.path.join(d, 'file1')
             data = self._make_data(self.simulator.MIN_PART_SIZE * 10001)  # 2MB on the simulator
             write_file(path, data)
             self.bucket.upload_local_file(path, 'file1')
             self._check_file_contents('file1', data)
+
+    def test_create_file_over_10k_parts(self):
+        data = b'hello world' * 20000
+
+        f1_id = self.bucket.upload_bytes(data, 'f1').id_
+        with TempDir() as d:
+            write_intents = [
+                WriteIntent(
+                    CopySource(f1_id, length=len(data), offset=0),
+                    destination_offset=0,
+                )
+            ] * 10
+            created_file = self.bucket.create_file(
+                write_intents,
+                file_name='created_file',
+                min_part_size=10,
+                max_part_size=200,
+            )
+            self.assertIsInstance(created_file, VFileVersionInfo)
+            actual = (
+                created_file.id_,
+                created_file.file_name,
+                created_file.size,
+                created_file.server_side_encryption,
+            )
+            expected = ('9998', 'created_file', len(data), SSE_NONE)
+            self.assertEqual(expected, actual)
 
     def test_upload_large_resume(self):
         part_size = self.simulator.MIN_PART_SIZE

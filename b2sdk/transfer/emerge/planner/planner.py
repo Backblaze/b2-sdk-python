@@ -124,11 +124,16 @@ class EmergePlanner(object):
         # the upload part size recommended by the server causes errors with files larger than 1TB
         # (with the current 100MB part size and 10000 part count limit).
         # Therefore here we increase the recommended upload part size if needed.
-        total_length = sum(write_intent.length for write_intent in write_intents)
+        # the constant is for handling mixed upload/copy in concatenate etc
+        max_destination_offset = max(intent.destination_end_offset for intent in write_intents)
         self.recommended_upload_part_size = max(
             self.recommended_upload_part_size,
-            ceil(total_length / 10000),
+            min(
+                ceil(1.5 * max_destination_offset / 10000),
+                self.max_part_size,
+            )
         )
+        assert self.min_part_size <= self.recommended_upload_part_size <= self.max_part_size, (self.min_part_size, self.recommended_upload_part_size, self.max_part_size)
         return self._get_emerge_plan(write_intents, EmergePlan)
 
     def get_streaming_emerge_plan(self, write_intent_iterator):
