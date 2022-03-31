@@ -25,6 +25,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Fix downloading files with unverified checksum
 * Fix uploading objects larger than 1TB
 
+### Removed
+* Drop support for Python 3.5 and Python 3.6
+
 ## [1.14.1] - 2022-02-23
 
 ### Fixed

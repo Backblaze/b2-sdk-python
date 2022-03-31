@@ -12,8 +12,8 @@ import sys
 
 try:
     from importlib.metadata import version
-except ImportError:  # ModuleNotFoundError is not available in Python 3.5
-    from importlib_metadata import version
+except ModuleNotFoundError:
+    from importlib_metadata import version  # for python 3.7
 
 VERSION = version('b2sdk')
 

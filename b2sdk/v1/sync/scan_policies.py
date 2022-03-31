@@ -17,10 +17,7 @@ from .file_to_path_translator import _translate_local_path_to_file
 from b2sdk import v2
 from b2sdk.v2 import exception as v2_exception  # noqa
 
-try:  # python 3.5 and 3.6 compatibility
-    regex_class = re.Pattern
-except AttributeError:
-    regex_class = re._pattern_type
+regex_class = re.Pattern
 
 
 # Override to retain old exceptions in __init__

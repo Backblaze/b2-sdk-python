@@ -145,10 +145,7 @@ def hex_sha1_of_unlimited_stream(input_stream, limit=None):
 
 
 def hex_sha1_of_file(path_):
-    with open(
-        str(path_), 'rb'
-    ) as file:  # TODO: remove str() after dropping python 3.5 support, it's here in
-        # case someone uses pathlib.Paths
+    with open(path_, 'rb') as file:
         return hex_sha1_of_unlimited_stream(file)
 
 

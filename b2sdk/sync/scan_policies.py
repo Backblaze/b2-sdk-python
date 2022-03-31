@@ -18,10 +18,7 @@ from ..file_version import FileVersion
 
 logger = logging.getLogger(__name__)
 
-try:  # python 3.5 and 3.6 compatibility
-    regex_class = re.Pattern
-except AttributeError:
-    regex_class = re._pattern_type
+regex_class = re.Pattern
 
 
 class RegexSet(object):
