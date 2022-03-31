@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 * Fix copying objects larger than 1TB
 * Fix downloading files with unverified checksum
+* Fix uploading objects larger than 1TB
 
 ## [1.14.1] - 2022-02-23
 
