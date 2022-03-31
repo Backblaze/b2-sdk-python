@@ -226,7 +226,7 @@ class FileSimulator(object):
                 'x-bz-content-sha1': self.content_sha1,
                 'x-bz-upload-timestamp': self.upload_timestamp,
                 'x-bz-file-id': self.file_id,
-                'x-bz-file-name': self.name,
+                'x-bz-file-name': b2_url_encode(self.name),
             }
         )
         for key, value in self.file_info.items():
@@ -234,7 +234,7 @@ class FileSimulator(object):
             if key_lower in self.SPECIAL_FILE_INFOS:
                 headers[self.SPECIAL_FILE_INFOS[key_lower]] = value
             else:
-                headers[FILE_INFO_HEADER_PREFIX + key] = value
+                headers[FILE_INFO_HEADER_PREFIX + key] = b2_url_encode(value)
 
         if account_auth_token_or_none is not None and self.bucket.is_file_lock_enabled:
             not_permitted = []

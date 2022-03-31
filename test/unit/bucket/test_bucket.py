@@ -1889,3 +1889,84 @@ class TestTruncatedDownloadParallel(DownloadTests, TestCaseWithTruncatedDownload
                 min_part_size=2,
             )
         ]
+
+
+class DecodeTestsBase(object):
+    def setUp(self):
+        super(DecodeTestsBase, self).setUp()
+        self.bucket.upload_bytes(
+            'Test File 1'.encode(), 'test.txt?foo=bar', file_infos={'custom_info': 'aaa?bbb'}
+        )
+        self.bucket.upload_bytes(
+            'Test File 2'.encode(), 'test.txt%3Ffoo=bar', file_infos={'custom_info': 'aaa%3Fbbb'}
+        )
+        self.bucket.upload_bytes('Test File 3'.encode(), 'test.txt%3Ffoo%3Dbar')
+        self.bucket.upload_bytes('Test File 4'.encode(), 'test.txt%253Ffoo%253Dbar')
+        self.bytes_io = io.BytesIO()
+        if apiver_deps.V <= 1:
+            self.download_dest = DownloadDestBytes()
+        else:
+            self.download_dest = None
+        self.progress_listener = StubProgressListener()
+
+    def _verify(self, expected_result, check_progress_listener=True):
+        self._assert_downloaded_data(expected_result)
+        if check_progress_listener:
+            valid, reason = self.progress_listener.is_valid_reason(
+                check_closed=False,
+                check_progress=False,
+                check_monotonic_progress=True,
+            )
+            assert valid, reason
+
+    def _assert_downloaded_data(self, expected_result):
+        if apiver_deps.V <= 1:
+            assert self.download_dest.get_bytes_written() == expected_result.encode()
+        else:
+            assert self.bytes_io.getvalue() == expected_result.encode()
+
+    def download_file_by_name(self, file_name, download_dest=None, **kwargs):
+        if apiver_deps.V <= 1:
+            self.bucket.download_file_by_name(
+                file_name, download_dest or self.download_dest, **kwargs
+            )
+        else:
+            self.bucket.download_file_by_name(file_name, **kwargs).save(self.bytes_io)
+
+
+class DecodeTests(DecodeTestsBase, TestCaseWithBucket):
+    def test_file_content_1(self):
+        self.download_file_by_name('test.txt?foo=bar', progress_listener=self.progress_listener)
+        self._verify("Test File 1")
+
+    def test_file_content_2(self):
+        self.download_file_by_name('test.txt%3Ffoo=bar', progress_listener=self.progress_listener)
+        self._verify("Test File 2")
+
+    def test_file_content_3(self):
+        self.download_file_by_name('test.txt%3Ffoo%3Dbar', progress_listener=self.progress_listener)
+        self._verify("Test File 3")
+
+    def test_file_content_4(self):
+        self.download_file_by_name(
+            'test.txt%253Ffoo%253Dbar', progress_listener=self.progress_listener
+        )
+        self._verify("Test File 4")
+
+    def test_file_info_1(self):
+        download_version = self.bucket.get_file_info_by_name('test.txt?foo=bar')
+        assert download_version.file_name == 'test.txt?foo=bar'
+        assert download_version.file_info['custom_info'] == 'aaa?bbb'
+
+    def test_file_info_2(self):
+        download_version = self.bucket.get_file_info_by_name('test.txt%3Ffoo=bar')
+        assert download_version.file_name == 'test.txt%3Ffoo=bar'
+        assert download_version.file_info['custom_info'] == 'aaa%3Fbbb'
+
+    def test_file_info_3(self):
+        download_version = self.bucket.get_file_info_by_name('test.txt%3Ffoo%3Dbar')
+        assert download_version.file_name == 'test.txt%3Ffoo%3Dbar'
+
+    def test_file_info_4(self):
+        download_version = self.bucket.get_file_info_by_name('test.txt%253Ffoo%253Dbar')
+        assert download_version.file_name == 'test.txt%253Ffoo%253Dbar'

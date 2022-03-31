@@ -15,6 +15,7 @@ from .http_constants import FILE_INFO_HEADER_PREFIX_LOWER, SRC_LAST_MODIFIED_MIL
 from .file_lock import FileRetentionSetting, LegalHold, NO_RETENTION_FILE_SETTING
 from .progress import AbstractProgressListener
 from .utils.range_ import Range
+from .utils import b2_url_decode
 
 if TYPE_CHECKING:
     from .api import B2Api
@@ -452,7 +453,7 @@ class DownloadVersionFactory(object):
         for header_name, header_value in headers.items():
             if header_name[:prefix_len].lower() == FILE_INFO_HEADER_PREFIX_LOWER:
                 file_info_key = header_name[prefix_len:]
-                file_info[file_info_key] = header_value
+                file_info[file_info_key] = b2_url_decode(header_value)
         return file_info
 
     def from_response_headers(self, headers):
@@ -467,7 +468,7 @@ class DownloadVersionFactory(object):
         return DownloadVersion(
             api=self.api,
             id_=headers['x-bz-file-id'],
-            file_name=headers['x-bz-file-name'],
+            file_name=b2_url_decode(headers['x-bz-file-name']),
             size=size,
             content_type=headers['content-type'],
             content_sha1=headers['x-bz-content-sha1'],
