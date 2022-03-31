@@ -133,7 +133,9 @@ class EmergePlanner(object):
                 self.max_part_size,
             )
         )
-        assert self.min_part_size <= self.recommended_upload_part_size <= self.max_part_size, (self.min_part_size, self.recommended_upload_part_size, self.max_part_size)
+        assert self.min_part_size <= self.recommended_upload_part_size <= self.max_part_size, (
+            self.min_part_size, self.recommended_upload_part_size, self.max_part_size
+        )
         return self._get_emerge_plan(write_intents, EmergePlan)
 
     def get_streaming_emerge_plan(self, write_intent_iterator):
