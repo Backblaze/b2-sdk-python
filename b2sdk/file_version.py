@@ -353,6 +353,8 @@ class FileVersionFactory(object):
     Construct :py:class:`b2sdk.v2.FileVersion` objects from api responses.
     """
 
+    FILE_VERSION_CLASS = FileVersion
+
     def __init__(self, api: 'B2Api'):
         self.api = api
 
@@ -409,8 +411,7 @@ class FileVersionFactory(object):
         file_retention = FileRetentionSetting.from_file_version_dict(file_version_dict)
 
         legal_hold = LegalHold.from_file_version_dict(file_version_dict)
-
-        return FileVersion(
+        return self.FILE_VERSION_CLASS(
             self.api,
             id_,
             file_name,

@@ -28,6 +28,7 @@ from .exception import (
     BadUploadUrl,
     ChecksumMismatch,
     Conflict,
+    CopySourceTooBig,
     DuplicateBucketName,
     FileNotPresent,
     FileSha1Mismatch,
@@ -65,7 +66,7 @@ def get_bytes_range(data_bytes, bytes_range):
         raise UnsatisfiableRange()
     if bytes_range[1] > len(data_bytes):
         raise UnsatisfiableRange()
-    return data_bytes[bytes_range[0]:bytes_range[1]]
+    return data_bytes[bytes_range[0]:bytes_range[1] + 1]
 
 
 class KeySimulator(object):
@@ -476,6 +477,7 @@ class BucketSimulator(object):
 
     FILE_SIMULATOR_CLASS = FileSimulator
     RESPONSE_CLASS = FakeResponse
+    MAX_SIMPLE_COPY_SIZE = 200  # should be same as RawSimulator.MIN_PART_SIZE
 
     def __init__(
         self,
@@ -614,10 +616,15 @@ class BucketSimulator(object):
                                      1)['files']  # token is not important here
         if len(files) == 0:
             raise FileNotPresent(file_id_or_name=file_name)
+
         file_dict = files[0]
-        if file_dict['fileName'] != file_name or file_dict['action'] != 'upload':
+        if file_dict['fileName'] != file_name:
             raise FileNotPresent(file_id_or_name=file_name)
+
         file_sim = self.file_name_and_id_to_file[(file_name, file_dict['fileId'])]
+        if not file_sim.is_visible():
+            raise FileNotPresent(file_id_or_name=file_name)
+
         file_sim.check_encryption(encryption)
         return self._download_file_sim(account_auth_token_or_none, file_sim, url, range_=range_)
 
@@ -706,6 +713,7 @@ class BucketSimulator(object):
 
     def copy_file(
         self,
+        account_auth_token,
         file_id,
         new_file_name,
         bytes_range=None,
@@ -719,7 +727,7 @@ class BucketSimulator(object):
         legal_hold: Optional[LegalHold] = None,
     ):
         if metadata_directive is not None:
-            assert metadata_directive in tuple(MetadataDirectiveMode)
+            assert metadata_directive in tuple(MetadataDirectiveMode), metadata_directive
             if metadata_directive is MetadataDirectiveMode.COPY and (
                 content_type is not None or file_info is not None
             ):
@@ -736,6 +744,12 @@ class BucketSimulator(object):
         new_file_id = self._next_file_id()
 
         data_bytes = get_bytes_range(file_sim.data_bytes, bytes_range)
+        if len(data_bytes) > self.MAX_SIMPLE_COPY_SIZE:
+            raise CopySourceTooBig(
+                'Copy source too big: %i' % (len(data_bytes),),
+                'bad_request',
+                len(data_bytes),
+            )
 
         destination_bucket = self.api.bucket_id_to_bucket.get(destination_bucket_id, self)
         sse = destination_server_side_encryption or self.default_server_side_encryption
@@ -743,23 +757,51 @@ class BucketSimulator(object):
             self.account_id,
             destination_bucket,
             new_file_id,
-            'copy',
+            'upload',
             new_file_name,
             file_sim.content_type,
-            file_sim.content_sha1,
+            hex_sha1_of_bytes(data_bytes),  # we hash here again because bytes_range may not cover the full source
             file_sim.file_info,
             data_bytes,
             next(self.upload_timestamp_counter),
             server_side_encryption=sse,
             file_retention=file_retention,
             legal_hold=legal_hold,
-        )
+        )  # yapf: disable
+        destination_bucket.file_id_to_file[copy_file_sim.file_id] = copy_file_sim
+        destination_bucket.file_name_and_id_to_file[copy_file_sim.sort_key()] = copy_file_sim
 
         if metadata_directive is MetadataDirectiveMode.REPLACE:
             copy_file_sim.content_type = content_type
             copy_file_sim.file_info = file_info or file_sim.file_info
 
-        return copy_file_sim
+        ## long term storage of that file has action="upload", but here we need to return action="copy", just this once
+        #class TestFileVersionFactory(FileVersionFactory):
+        #    FILE_VERSION_CLASS = self.FILE_SIMULATOR_CLASS
+
+        #file_version_dict = copy_file_sim.as_upload_result(account_auth_token)
+        #del file_version_dict['action']
+        #print(file_version_dict)
+        #copy_file_sim_with_action_copy = TestFileVersionFactory(self.api).from_api_response(file_version_dict, force_action='copy')
+        #return copy_file_sim_with_action_copy
+
+        # TODO: the code above cannot be used right now because FileSimulator.__init__ is incompatible with FileVersionFactory / FileVersion.__init__ - refactor is needed
+        # for now we'll just return the newly constructed object with a copy action...
+        return self.FILE_SIMULATOR_CLASS(
+            self.account_id,
+            destination_bucket,
+            new_file_id,
+            'copy',
+            new_file_name,
+            copy_file_sim.content_type,
+            copy_file_sim.content_sha1,
+            copy_file_sim.file_info,
+            data_bytes,
+            copy_file_sim.upload_timestamp,
+            server_side_encryption=sse,
+            file_retention=file_retention,
+            legal_hold=legal_hold,
+        )
 
     def list_file_names(
         self,
@@ -788,6 +830,8 @@ class BucketSimulator(object):
                     if len(result_files) == max_file_count:
                         next_file_name = file_sim.name + ' '
                         break
+                else:
+                    logger.debug('skipping invisible file during listing: %s', key)
         return dict(files=result_files, nextFileName=next_file_name)
 
     def list_file_versions(
@@ -1031,6 +1075,7 @@ class RawSimulator(AbstractRawApi):
     DOWNLOAD_URL = 'http://download.example.com'
 
     MIN_PART_SIZE = 200
+    MAX_PART_ID = 10000
 
     # This is the maximum duration in seconds that an application key can be valid (1000 days).
     MAX_DURATION_IN_SECONDS = 86400000
@@ -1404,7 +1449,16 @@ class RawSimulator(AbstractRawApi):
         bucket_id = self.file_id_to_bucket_id[source_file_id]
         bucket = self._get_bucket_by_id(bucket_id)
         self._assert_account_auth(api_url, account_auth_token, bucket.account_id, 'writeFiles')
+
+        if destination_bucket_id:
+            # TODO: Handle and raise proper exception after server docs get updated
+            dest_bucket = self.bucket_id_to_bucket[destination_bucket_id]
+            assert dest_bucket.account_id == bucket.account_id
+        else:
+            dest_bucket = bucket
+
         copy_file_sim = bucket.copy_file(
+            account_auth_token,
             source_file_id,
             new_file_name,
             bytes_range,
@@ -1417,16 +1471,6 @@ class RawSimulator(AbstractRawApi):
             file_retention=file_retention,
             legal_hold=legal_hold,
         )
-
-        if destination_bucket_id:
-            # TODO: Handle and raise proper exception after server docs get updated
-            dest_bucket = self.bucket_id_to_bucket[destination_bucket_id]
-            assert dest_bucket.account_id == bucket.account_id
-        else:
-            dest_bucket = bucket
-
-        dest_bucket.file_id_to_file[copy_file_sim.file_id] = copy_file_sim
-        dest_bucket.file_name_and_id_to_file[copy_file_sim.sort_key()] = copy_file_sim
 
         return copy_file_sim.as_upload_result(account_auth_token)
 
@@ -1722,6 +1766,8 @@ class RawSimulator(AbstractRawApi):
             url_match = self.UPLOAD_PART_MATCHER.match(upload_url)
             if url_match is None:
                 raise BadUploadUrl(upload_url)
+            elif part_number > self.MAX_PART_ID:
+                raise BadRequest('Part number must be in range 1 - 10000', 'bad_request')
             file_id = url_match.group(1)
             bucket_id = self.file_id_to_bucket_id[file_id]
             bucket = self._get_bucket_by_id(bucket_id)

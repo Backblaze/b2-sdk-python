@@ -7,16 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
-* Introduce a common thread worker pool for all downloads
 * Don't run coverage in pypy in CI
+* Introduce a common thread worker pool for all downloads
+* Increase http timeout to 20min (for copy using 5GB parts)
 
 ### Added
 * Add pypy-3.8 to test matrix
 * Add support for unverified checksum upload mode
 * Add dedicated exception for unverified email
 * Add a parameter to customize `sync_policy_manager`
+* Add parameters to set the min/max part size for large file upload/copy methods
+* Add CopySourceTooBig exception
+* Add an option to set a custom file version class to FileVersionFactory
 
 ### Fixed
+* Fix copying objects larger than 1TB
+* Fix uploading objects larger than 1TB
 * Fix downloading files with unverified checksum
 * Fix decoding in filename and file info of `DownloadVersion`
 
