@@ -11,7 +11,7 @@
 import threading
 
 
-class LargeFileUploadState(object):
+class LargeFileUploadState:
     """
     Track the status of uploading a large file, accepting updates
     from the tasks that upload each of the parts.

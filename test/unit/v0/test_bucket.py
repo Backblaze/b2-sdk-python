@@ -193,7 +193,7 @@ class TestCaseWithBucket(TestBase):
 
 class TestReauthorization(TestCaseWithBucket):
     def testCreateBucket(self):
-        class InvalidAuthTokenWrapper(object):
+        class InvalidAuthTokenWrapper:
             def __init__(self, original_function):
                 self.__original_function = original_function
                 self.__name__ = original_function.__name__
@@ -1024,7 +1024,7 @@ class TestCreateFileStream(TestConcatenate):
 # Downloads
 
 
-class DownloadTests(object):
+class DownloadTests:
     DATA = 'abcdefghijklmnopqrs'
 
     def setUp(self):
@@ -1166,7 +1166,7 @@ class DownloadTests(object):
 # download empty file
 
 
-class EmptyFileDownloadScenarioMixin(object):
+class EmptyFileDownloadScenarioMixin:
     """ use with DownloadTests, but not for TestDownloadParallel as it does not like empty files """
 
     def test_download_by_name_empty_file(self):

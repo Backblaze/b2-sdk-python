@@ -330,7 +330,7 @@ def download_non_first_part(
         retries_left -= 1
 
 
-class PartToDownload(object):
+class PartToDownload:
     """
     Hold the range of a file to download, and the range of the
     local file where it should be stored.

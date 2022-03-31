@@ -23,7 +23,7 @@ from b2sdk.utils import interruptible_get_result
 AUTO_CONTENT_TYPE = 'b2/x-auto'
 
 
-class EmergeExecutor(object):
+class EmergeExecutor:
     def __init__(self, services):
         self.services = services
 

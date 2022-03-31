@@ -30,7 +30,7 @@ MEGABYTE = 1000 * 1000
 GIGABYTE = 1000 * MEGABYTE
 
 
-class UploadBuffer(object):
+class UploadBuffer:
     """ data container used by EmergePlanner for temporary storage of write intents """
 
     def __init__(self, start_offset, buff=None):
@@ -80,7 +80,7 @@ class UploadBuffer(object):
         return self.__class__(start_offset, buff_slice)
 
 
-class EmergePlanner(object):
+class EmergePlanner:
     """ Creates a list of actions required for advanced creation of an object in the cloud from an iterator of write intent objects """
     DEFAULT_MIN_PART_SIZE = 5 * MEGABYTE
     DEFAULT_RECOMMENDED_UPLOAD_PART_SIZE = 100 * MEGABYTE
@@ -447,7 +447,7 @@ class EmergePlanner(object):
             yield write_intent
 
 
-class IntentsState(object):
+class IntentsState:
     """ Store and process state of incoming write intents to solve
     overlapping intents selection in streaming manner.
 
@@ -651,7 +651,7 @@ class StreamingEmergePlan(BaseEmergePlan):
             return chain([first_part, second_part], emerge_parts_iterator), True
 
 
-class EmergePart(object):
+class EmergePart:
     def __init__(self, part_definition, verification_ranges=None):
         self.part_definition = part_definition
         self.verification_ranges = verification_ranges

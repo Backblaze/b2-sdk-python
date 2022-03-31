@@ -35,7 +35,7 @@ class TokenType(Enum):
     UPLOAD_SMALL = 'upload_small'
 
 
-class B2Session(object):
+class B2Session:
     """
         A facade that supplies the correct api_url and account_auth_token
         to methods of underlying raw_api and reauthorizes if necessary.

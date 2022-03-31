@@ -17,7 +17,7 @@ from b2sdk.large_file.part import PartFactory
 from b2sdk.large_file.unfinished_large_file import UnfinishedLargeFile
 
 
-class LargeFileServices(object):
+class LargeFileServices:
     def __init__(self, services):
         self.services = services
 

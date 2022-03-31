@@ -943,7 +943,7 @@ class Bucket(metaclass=B2TraceMeta):
         return 'Bucket<%s,%s,%s>' % (self.id_, self.name, self.type_)
 
 
-class BucketFactory(object):
+class BucketFactory:
     """
     This is a factory for creating bucket objects from different kind of objects.
     """

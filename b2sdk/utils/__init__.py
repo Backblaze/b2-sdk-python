@@ -289,7 +289,7 @@ def fix_windows_path_limit(path):
         return path
 
 
-class TempDir(object):
+class TempDir:
     """
     Context manager that creates and destroys a temporary directory.
     """
@@ -419,7 +419,7 @@ class B2TraceMetaAbstract(DefaultTraceAbstractMeta):
     pass
 
 
-class ConcurrentUsedAuthTokenGuard(object):
+class ConcurrentUsedAuthTokenGuard:
     """
     Context manager preventing two tokens being used simultaneously.
     Throws UploadTokenUsedConcurrently when unable to acquire a lock
