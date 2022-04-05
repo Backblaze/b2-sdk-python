@@ -116,7 +116,7 @@ class ParallelDownloader(AbstractDownloader):
         # At this point the hasher already consumed the data until the end of first stream.
         # Consume the rest of the file to complete the hashing process
         if self._check_hash:
-            # we skip hasing if we would not check it - hasher object is actualy a EmptyHasher instance
+            # we skip hashing if we would not check it - hasher object is actually a EmptyHasher instance
             # but we avoid here reading whole file from disk again
             self._finish_hashing(first_part, file, hasher, download_version.content_length)
 
