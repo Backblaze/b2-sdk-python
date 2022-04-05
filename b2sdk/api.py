@@ -48,7 +48,7 @@ def url_for_api(info, api_name):
     return '%s/b2api/%s/%s' % (base, API_VERSION, api_name)
 
 
-class Services(object):
+class Services:
     """ Gathers objects that provide high level logic over raw api usage. """
     UPLOAD_MANAGER_CLASS = staticmethod(UploadManager)
     COPY_MANAGER_CLASS = staticmethod(CopyManager)

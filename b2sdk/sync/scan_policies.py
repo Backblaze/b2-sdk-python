@@ -24,7 +24,7 @@ except AttributeError:
     regex_class = re._pattern_type
 
 
-class RegexSet(object):
+class RegexSet:
     """
     Hold a (possibly empty) set of regular expressions and know how to check
     whether a string matches any of them.
@@ -77,7 +77,7 @@ def convert_dir_regex_to_dir_prefix_regex(dir_regex):
         return dir_regex + r'.*?/'
 
 
-class IntegerRange(object):
+class IntegerRange:
     """
     Hold a range of two integers. If the range value is None, it indicates that
     the value should be treated as -Inf (for begin) or +Inf (for end).
@@ -110,7 +110,7 @@ class IntegerRange(object):
         return ge_begin and le_end
 
 
-class ScanPoliciesManager(object):
+class ScanPoliciesManager:
     """
     Policy object used when scanning folders for syncing, used to decide
     which files to include in the list of files to be synced.

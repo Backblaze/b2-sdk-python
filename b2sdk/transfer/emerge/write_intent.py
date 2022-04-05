@@ -9,7 +9,7 @@
 ######################################################################
 
 
-class WriteIntent(object):
+class WriteIntent:
     """ Wrapper for outbound source that defines destination offset. """
 
     def __init__(self, outbound_source, destination_offset=0):

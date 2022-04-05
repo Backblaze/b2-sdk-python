@@ -69,7 +69,7 @@ def get_bytes_range(data_bytes, bytes_range):
     return data_bytes[bytes_range[0]:bytes_range[1] + 1]
 
 
-class KeySimulator(object):
+class KeySimulator:
     """
     Hold information about one application key, which can be either
     a master application key, or one created with create_key().
@@ -121,7 +121,7 @@ class KeySimulator(object):
         )
 
 
-class PartSimulator(object):
+class PartSimulator:
     def __init__(self, file_id, part_number, content_length, content_sha1, part_data):
         self.file_id = file_id
         self.part_number = part_number
@@ -138,7 +138,7 @@ class PartSimulator(object):
         )  # yapf: disable
 
 
-class FileSimulator(object):
+class FileSimulator:
     """
     One of three: an unfinished large file, a finished file, or a deletion marker.
     """
@@ -439,7 +439,7 @@ class FileSimulator(object):
 FakeRequest = collections.namedtuple('FakeRequest', 'url headers')
 
 
-class FakeResponse(object):
+class FakeResponse:
     def __init__(self, account_auth_token_or_none, file_sim, url, range_=None):
         self.data_bytes = file_sim.data_bytes
         self.headers = file_sim.as_download_headers(account_auth_token_or_none, range_)
@@ -467,7 +467,7 @@ class FakeResponse(object):
         pass
 
 
-class BucketSimulator(object):
+class BucketSimulator:
 
     # File IDs start at 9999 and count down, so they sort in the order
     # returned by list_file_versions. The IDs are strings.

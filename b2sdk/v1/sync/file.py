@@ -15,7 +15,7 @@ from b2sdk.http_constants import SRC_LAST_MODIFIED_MILLIS
 
 
 # This whole module is here to retain legacy classes so they can be used in retained legacy exception
-class File(object):
+class File:
     """
     Hold information about one file in a folder.
 
@@ -66,7 +66,7 @@ class B2File(File):
         return super().latest_version()
 
 
-class FileVersion(object):
+class FileVersion:
     """
     Hold information about one version of a file.
     """

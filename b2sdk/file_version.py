@@ -348,7 +348,7 @@ class DownloadVersion(BaseFileVersion):
         return args
 
 
-class FileVersionFactory(object):
+class FileVersionFactory:
     """
     Construct :py:class:`b2sdk.v2.FileVersion` objects from api responses.
     """
@@ -430,7 +430,7 @@ class FileVersionFactory(object):
         )
 
 
-class DownloadVersionFactory(object):
+class DownloadVersionFactory:
     """
     Construct :py:class:`b2sdk.v2.DownloadVersion` objects from download headers.
     """
@@ -487,7 +487,7 @@ class DownloadVersionFactory(object):
         )
 
 
-class FileIdAndName(object):
+class FileIdAndName:
     """
     A structure which represents a B2 cloud file with just `file_name` and `fileId` attributes.
 

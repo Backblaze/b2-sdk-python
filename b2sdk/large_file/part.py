@@ -9,7 +9,7 @@
 ######################################################################
 
 
-class PartFactory(object):
+class PartFactory:
     @classmethod
     def from_list_parts_dict(cls, part_dict):
         return Part(
@@ -20,7 +20,7 @@ class PartFactory(object):
         )
 
 
-class Part(object):
+class Part:
     """
     A structure which represents a *part* of a large file upload.
 

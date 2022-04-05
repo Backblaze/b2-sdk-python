@@ -12,7 +12,7 @@ from b2sdk.encryption.setting import EncryptionSettingFactory
 from b2sdk.file_lock import FileRetentionSetting, LegalHold
 
 
-class UnfinishedLargeFile(object):
+class UnfinishedLargeFile:
     """
     A structure which represents a version of a file (in B2 cloud).
 

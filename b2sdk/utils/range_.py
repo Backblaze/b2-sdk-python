@@ -9,7 +9,7 @@
 ######################################################################
 
 
-class Range(object):
+class Range:
     """
     HTTP ranges use an *inclusive* index at the end.
     """

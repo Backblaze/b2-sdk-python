@@ -237,7 +237,7 @@ class TestCaseWithBucket(TestBase):
 
 class TestReauthorization(TestCaseWithBucket):
     def testCreateBucket(self):
-        class InvalidAuthTokenWrapper(object):
+        class InvalidAuthTokenWrapper:
             def __init__(self, original_function):
                 self.__original_function = original_function
                 self.__name__ = original_function.__name__
@@ -1395,7 +1395,7 @@ class TestCreateFileStream(TestConcatenate):
         )
 
 
-class DownloadTestsBase(object):
+class DownloadTestsBase:
     DATA = NotImplemented
 
     def setUp(self):

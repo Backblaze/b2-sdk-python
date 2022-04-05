@@ -43,7 +43,7 @@ def _print_exception(e, indent=''):
             _print_exception(a, indent + '        ')
 
 
-class ResponseContextManager(object):
+class ResponseContextManager:
     """
     A context manager that closes a requests.Response when done.
     """
@@ -58,7 +58,7 @@ class ResponseContextManager(object):
         self.response.close()
 
 
-class HttpCallback(object):
+class HttpCallback:
     """
     A callback object that does nothing.  Overrides pre_request
     and/or post_request as desired.
@@ -128,7 +128,7 @@ class ClockSkewHook(HttpCallback):
             raise ClockSkew(skew_seconds)
 
 
-class B2Http(object):
+class B2Http:
     """
     A wrapper for the requests module.  Provides the operations
     needed to access B2, and handles retrying when the returned

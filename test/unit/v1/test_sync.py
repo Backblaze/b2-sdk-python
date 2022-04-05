@@ -801,7 +801,7 @@ class TestZipFolders(TestSync):
         folder_b.all_files.assert_called_once_with(self.reporter)
 
 
-class FakeArgs(object):
+class FakeArgs:
     """
     Can be passed to sync code to simulate command-line options.
     """
@@ -938,7 +938,7 @@ class TestBoundedQueueExecutor(TestBase):
         raw_executor = futures.ThreadPoolExecutor(1)
         bounded_executor = BoundedQueueExecutor(raw_executor, 5)
 
-        class Counter(object):
+        class Counter:
             """
             Counts how many times run() is called.
             """
@@ -970,7 +970,7 @@ class TestBoundedQueueExecutor(TestBase):
         bounded_executor = BoundedQueueExecutor(raw_executor, 1)
         assert_equal = self.assertEqual
 
-        class CountAtOnce(object):
+        class CountAtOnce:
             """
             Counts how many threads are running at once.
             There should never be more than 1 because that's

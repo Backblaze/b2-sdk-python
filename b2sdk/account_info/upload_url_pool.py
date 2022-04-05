@@ -15,7 +15,7 @@ import threading
 from .abstract import AbstractAccountInfo
 
 
-class UploadUrlPool(object):
+class UploadUrlPool:
     """
     For each key (either a bucket id or large file id), hold a pool
     of (url, auth_token) pairs.

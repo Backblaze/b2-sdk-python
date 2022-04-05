@@ -14,7 +14,7 @@ import logging
 logging.getLogger(__name__).addHandler(logging.NullHandler())
 
 
-class UrllibWarningFilter(object):
+class UrllibWarningFilter:
     def filter(self, record):
         return record.msg != "Connection pool is full, discarding connection: %s"
 

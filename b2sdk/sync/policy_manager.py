@@ -14,7 +14,7 @@ from .policy import CopyAndDeletePolicy, CopyAndKeepDaysPolicy, CopyPolicy, \
 from .path import AbstractSyncPath
 
 
-class SyncPolicyManager(object):
+class SyncPolicyManager:
     """
     Policy manager; implement a logic to get a correct policy class
     and create a policy object based on various parameters.

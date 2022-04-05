@@ -11,7 +11,7 @@
 import threading
 
 
-class BoundedQueueExecutor(object):
+class BoundedQueueExecutor:
     """
     Wrap a concurrent.futures.Executor and limits the number of requests that
     can be queued at once.  Requests to submit() tasks block until
