@@ -59,8 +59,8 @@ class AbstractDownloader(metaclass=B2TraceMetaAbstract):
     ):
         align_factor = align_factor or self.DEFAULT_ALIGN_FACTOR
         assert force_chunk_size is not None or (
-            min_chunk_size is not None and max_chunk_size is not None
-            and 0 < min_chunk_size <= max_chunk_size and max_chunk_size >= align_factor
+            min_chunk_size is not None and max_chunk_size is not None and
+            0 < min_chunk_size <= max_chunk_size and max_chunk_size >= align_factor
         )
         self._min_chunk_size = min_chunk_size
         self._max_chunk_size = max_chunk_size
@@ -81,7 +81,9 @@ class AbstractDownloader(metaclass=B2TraceMetaAbstract):
         if self._forced_chunk_size is not None:
             return self._forced_chunk_size
         ideal = content_length // 1000
-        non_aligned = min(max(ideal, self._min_chunk_size, self._align_factor), self._max_chunk_size)
+        non_aligned = min(
+            max(ideal, self._min_chunk_size, self._align_factor), self._max_chunk_size
+        )
         aligned = non_aligned // self._align_factor * self._align_factor
         return aligned
 

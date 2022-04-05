@@ -1912,7 +1912,9 @@ class DummyDownloader(AbstractDownloader):
         (10, 100, 1, 100, 100),  # max_chunk_size/align_factor
     ],
 )
-def test_downloader_get_chunk_size(min_chunk_size, max_chunk_size, content_length, align_factor, expected_chunk_size):
+def test_downloader_get_chunk_size(
+    min_chunk_size, max_chunk_size, content_length, align_factor, expected_chunk_size
+):
     downloader = DummyDownloader(
         min_chunk_size=min_chunk_size,
         max_chunk_size=max_chunk_size,
@@ -1928,7 +1930,8 @@ class TestDownloadTuneWriteBuffer(DownloadTestsBase, TestCaseWithBucket):
 
     def get_api(self):
         return B2Api(
-            self.account_info, api_config=B2HttpApiConfig(_raw_api_class=self.RAW_SIMULATOR_CLASS),
+            self.account_info,
+            api_config=B2HttpApiConfig(_raw_api_class=self.RAW_SIMULATOR_CLASS),
             save_to_buffer_size=self.ALIGN_FACTOR,
         )
 
@@ -1958,9 +1961,7 @@ class TestDownloadTuneWriteBuffer(DownloadTestsBase, TestCaseWithBucket):
         )
 
     def test_set_write_buffer_simple_called_get_chunk_size(self):
-        self._check_called_on_downloader(
-            SimpleDownloader(force_chunk_size=len(self.DATA) // 3)
-        )
+        self._check_called_on_downloader(SimpleDownloader(force_chunk_size=len(self.DATA) // 3))
 
     def _check_called_on_downloader(self, downloader):
         download_manager = self.bucket.api.services.download_manager
@@ -1979,7 +1980,8 @@ class TestDownloadNoHashChecking(DownloadTestsBase, TestCaseWithBucket):
 
     def get_api(self):
         return B2Api(
-            self.account_info, api_config=B2HttpApiConfig(_raw_api_class=self.RAW_SIMULATOR_CLASS),
+            self.account_info,
+            api_config=B2HttpApiConfig(_raw_api_class=self.RAW_SIMULATOR_CLASS),
             check_download_hash=False,
         )
 

@@ -112,8 +112,10 @@ class DownloadedFile:
             if bytes_read != self.download_version.content_length:
                 raise TruncatedOutput(bytes_read, self.download_version.content_length)
 
-            if (self.check_hash and self.download_version.content_sha1 != 'none'
-                    and actual_sha1 != self.download_version.content_sha1):
+            if (
+                self.check_hash and self.download_version.content_sha1 != 'none' and
+                actual_sha1 != self.download_version.content_sha1
+            ):
                 raise ChecksumMismatch(
                     checksum_type='sha1',
                     expected=self.download_version.content_sha1,
@@ -164,7 +166,9 @@ class DownloadedFile:
                               (parallel strategies) will be discarded.
         """
         with MtimeUpdatedFile(
-            path_, mod_time_millis=self.download_version.mod_time_millis, mode=mode,
+            path_,
+            mod_time_millis=self.download_version.mod_time_millis,
+            mode=mode,
             buffering=self.write_buffer_size
         ) as file:
             self.save(file, allow_seeking=allow_seeking)
