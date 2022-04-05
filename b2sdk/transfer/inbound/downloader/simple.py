@@ -10,7 +10,6 @@
 
 from io import IOBase
 from typing import Optional
-import hashlib
 import logging
 
 from requests.models import Response
@@ -38,7 +37,8 @@ class SimpleDownloader(AbstractDownloader):
         actual_size = self._get_remote_range(response, download_version).size()
         chunk_size = self._get_chunk_size(actual_size)
 
-        digest = hashlib.sha1()
+        digest = self._get_hasher()
+
         bytes_read = 0
         for data in response.iter_content(chunk_size=chunk_size):
             file.write(data)

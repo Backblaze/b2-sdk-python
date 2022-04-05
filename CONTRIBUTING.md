@@ -88,6 +88,10 @@ To run just integration tests:
     export B2_TEST_APPLICATION_KEY_ID=your_app_key_id
     nox -s integration-3.10
 
+To run tests by keyword expressions:
+    
+    nox -s unit-3.10 -- -k keyword
+
 ## Documentation
 
 To build the documentation and watch for changes (including the source code):
