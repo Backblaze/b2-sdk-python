@@ -17,8 +17,6 @@ from .file_to_path_translator import _translate_local_path_to_file
 from b2sdk import v2
 from b2sdk.v2 import exception as v2_exception  # noqa
 
-regex_class = re.Pattern
-
 
 # Override to retain old exceptions in __init__
 # and to provide interface for new should_exclude_* methods
@@ -38,9 +36,9 @@ class ScanPoliciesManager(v2.ScanPoliciesManager):
 
     def __init__(
         self,
-        exclude_dir_regexes: Iterable[Union[str, regex_class]] = tuple(),
-        exclude_file_regexes: Iterable[Union[str, regex_class]] = tuple(),
-        include_file_regexes: Iterable[Union[str, regex_class]] = tuple(),
+        exclude_dir_regexes: Iterable[Union[str, re.Pattern]] = tuple(),
+        exclude_file_regexes: Iterable[Union[str, re.Pattern]] = tuple(),
+        include_file_regexes: Iterable[Union[str, re.Pattern]] = tuple(),
         exclude_all_symlinks: bool = False,
         exclude_modified_before: Optional[int] = None,
         exclude_modified_after: Optional[int] = None,
