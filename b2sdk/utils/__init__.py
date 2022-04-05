@@ -23,23 +23,6 @@ from urllib.parse import quote, unquote_plus
 from logfury.v1 import DefaultTraceAbstractMeta, DefaultTraceMeta, limit_trace_arguments, disable_trace, trace_call
 
 
-def interruptible_get_result(future):
-    """
-    Wait for the result of a future in a way that can be interrupted
-    by a KeyboardInterrupt.
-
-    This is not necessary in Python 3, but is needed for Python 2.
-
-    :param future: a future to get result of
-    :type future: Future
-    """
-    while True:
-        try:
-            return future.result(timeout=1.0)
-        except futures.TimeoutError:
-            pass
-
-
 def b2_url_encode(s):
     """
     URL-encode a unicode string to be sent to B2 in an HTTP header.

@@ -18,7 +18,6 @@ from b2sdk.exception import MaxFileSizeExceeded
 from b2sdk.file_lock import FileRetentionSetting, LegalHold, NO_RETENTION_FILE_SETTING
 from b2sdk.transfer.outbound.large_file_upload_state import LargeFileUploadState
 from b2sdk.transfer.outbound.upload_source import UploadSourceStream
-from b2sdk.utils import interruptible_get_result
 
 AUTO_CONTENT_TYPE = 'b2/x-auto'
 
@@ -214,7 +213,7 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
             # Collect the sha1 checksums of the parts as the uploads finish.
             # If any of them raised an exception, that same exception will
             # be raised here by result()
-            part_sha1_array = [interruptible_get_result(f)['contentSha1'] for f in part_futures]
+            part_sha1_array = [f.result()['contentSha1'] for f in part_futures]
 
         # Finish the large file
         response = self.services.session.finish_large_file(file_id, part_sha1_array)
