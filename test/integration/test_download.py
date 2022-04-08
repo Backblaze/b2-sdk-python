@@ -56,21 +56,17 @@ class TestDownload(IntegrationTestBase):
         with TempDir() as temp_dir:
             temp_dir = pathlib.Path(temp_dir)
             source_large_file = pathlib.Path(temp_dir) / 'source_large_file'
-            with open(
-                str(source_large_file), 'wb'
-            ) as large_file:  # TODO: remove str() after dropping python 3.5 support
+            with open(source_large_file, 'wb') as large_file:
                 self.write_zeros(large_file, bytes_to_write)
             bucket.upload_local_file(
-                str(source_large_file),
+                source_large_file,
                 'large_file',
                 sha1_sum='do_not_verify',
-            )  # TODO: remove str() after dropping python 3.5 support
+            )
             target_large_file = pathlib.Path(temp_dir) / 'target_large_file'
 
             f = bucket.download_file_by_name('large_file')
-            f.save_to(
-                str(target_large_file)
-            )  # TODO: remove str() after dropping python 3.5 support
+            f.save_to(target_large_file)
             assert hex_sha1_of_file(source_large_file) == hex_sha1_of_file(target_large_file)
         return f
 
