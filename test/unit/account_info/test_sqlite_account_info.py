@@ -8,9 +8,18 @@
 #
 ######################################################################
 
+import os
+import unittest.mock as mock
+
 import pytest
 
-from apiver_deps import AbstractAccountInfo
+from apiver_deps import (
+    B2_ACCOUNT_INFO_DEFAULT_FILE,
+    B2_ACCOUNT_INFO_ENV_VAR,
+    XDG_CONFIG_HOME_ENV_VAR,
+    AbstractAccountInfo,
+    SqliteAccountInfo,
+)
 
 from .fixtures import *
 
@@ -55,3 +64,66 @@ class TestDatabseMigrations:
                 "SELECT recommended_part_size, absolute_minimum_part_size from account"
             ).fetchone()
         assert (100, 5000000) == sizes
+
+
+class TestSqliteAccountProfileFileLocation:
+    @pytest.fixture(autouse=True)
+    def setup(self, monkeypatch):
+        monkeypatch.delenv(B2_ACCOUNT_INFO_ENV_VAR, raising=False)
+        monkeypatch.delenv(XDG_CONFIG_HOME_ENV_VAR, raising=False)
+        if os.path.exists(os.path.expanduser(B2_ACCOUNT_INFO_DEFAULT_FILE)):
+            os.remove(os.path.expanduser(B2_ACCOUNT_INFO_DEFAULT_FILE))
+
+    def test_invalid_profile_name(self):
+        with pytest.raises(ValueError):
+            SqliteAccountInfo.get_user_account_info_path(profile='&@(*$')
+
+    def test_profile_and_file_name_conflict(self):
+        with pytest.raises(ValueError):
+            SqliteAccountInfo.get_user_account_info_path(file_name='foo', profile='bar')
+
+    def test_profile_and_env_var_conflict(self, monkeypatch):
+        monkeypatch.setenv(B2_ACCOUNT_INFO_ENV_VAR, 'foo')
+        with pytest.raises(ValueError):
+            SqliteAccountInfo.get_user_account_info_path(profile='bar')
+
+    def test_profile_and_xdg_config_env_var(self, monkeypatch):
+        monkeypatch.setenv(XDG_CONFIG_HOME_ENV_VAR, os.path.join('~', 'custom'))
+        account_info_path = SqliteAccountInfo.get_user_account_info_path(profile='secondary')
+        assert account_info_path == os.path.expanduser(
+            os.path.join('~', 'custom', 'b2', 'db-secondary.sqlite')
+        )
+
+    def test_profile(self):
+        account_info_path = SqliteAccountInfo.get_user_account_info_path(profile='foo')
+        assert account_info_path == os.path.expanduser(os.path.join('~', '.b2db-foo.sqlite'))
+
+    def test_file_name(self):
+        account_info_path = SqliteAccountInfo.get_user_account_info_path(
+            file_name=os.path.join('~', 'foo')
+        )
+        assert account_info_path == os.path.expanduser(os.path.join('~', 'foo'))
+
+    def test_env_var(self, monkeypatch):
+        monkeypatch.setenv(B2_ACCOUNT_INFO_ENV_VAR, os.path.join('~', 'foo'))
+        account_info_path = SqliteAccountInfo.get_user_account_info_path()
+        assert account_info_path == os.path.expanduser(os.path.join('~', 'foo'))
+
+    def test_default_file_if_exists(self, monkeypatch):
+        # ensure that XDG_CONFIG_HOME_ENV_VAR doesn't matter if default file exists
+        monkeypatch.setenv(XDG_CONFIG_HOME_ENV_VAR, 'some')
+        with open(os.path.expanduser(B2_ACCOUNT_INFO_DEFAULT_FILE), 'w') as account_file:
+            account_file.write('')
+        account_info_path = SqliteAccountInfo.get_user_account_info_path()
+        assert account_info_path == os.path.expanduser(B2_ACCOUNT_INFO_DEFAULT_FILE)
+
+    def test_xdg_config_env_var(self, monkeypatch):
+        monkeypatch.setenv(XDG_CONFIG_HOME_ENV_VAR, os.path.join('~', 'custom'))
+        account_info_path = SqliteAccountInfo.get_user_account_info_path()
+        assert account_info_path == os.path.expanduser(
+            os.path.join('~', 'custom', 'b2', 'account_info')
+        )
+
+    def test_default_file(self):
+        account_info_path = SqliteAccountInfo.get_user_account_info_path()
+        assert account_info_path == os.path.expanduser(B2_ACCOUNT_INFO_DEFAULT_FILE)

@@ -34,7 +34,10 @@ from b2sdk.http_constants import SSE_C_KEY_ID_FILE_INFO_KEY_NAME
 from b2sdk.account_info.abstract import AbstractAccountInfo
 from b2sdk.account_info.in_memory import InMemoryAccountInfo
 from b2sdk.account_info.sqlite_account_info import SqliteAccountInfo
-from b2sdk.account_info.sqlite_account_info import B2_ACCOUNT_INFO_ENV_VAR, B2_ACCOUNT_INFO_DEFAULT_FILE, XDG_CONFIG_HOME_ENV_VAR
+from b2sdk.account_info.sqlite_account_info import B2_ACCOUNT_INFO_ENV_VAR
+from b2sdk.account_info.sqlite_account_info import B2_ACCOUNT_INFO_DEFAULT_FILE
+from b2sdk.account_info.sqlite_account_info import B2_ACCOUNT_INFO_PROFILE_FILE
+from b2sdk.account_info.sqlite_account_info import XDG_CONFIG_HOME_ENV_VAR
 from b2sdk.account_info.stub import StubAccountInfo
 from b2sdk.account_info.upload_url_pool import UploadUrlPool
 from b2sdk.account_info.upload_url_pool import UrlPoolAccountInfo
