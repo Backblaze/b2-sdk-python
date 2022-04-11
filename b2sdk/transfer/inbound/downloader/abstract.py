@@ -50,11 +50,11 @@ class AbstractDownloader(metaclass=B2TraceMetaAbstract):
     def __init__(
         self,
         thread_pool: Optional[ThreadPoolExecutor] = None,
-        force_chunk_size=None,
-        min_chunk_size=None,
-        max_chunk_size=None,
-        align_factor=None,
-        check_hash=True,
+        force_chunk_size: Optional[int] = None,
+        min_chunk_size: Optional[int] = None,
+        max_chunk_size: Optional[int] = None,
+        align_factor: Optional[int] = None,
+        check_hash: bool = True,
         **kwargs
     ):
         align_factor = align_factor or self.DEFAULT_ALIGN_FACTOR
@@ -76,7 +76,7 @@ class AbstractDownloader(metaclass=B2TraceMetaAbstract):
             return hashlib.sha1()
         return EmptyHasher()
 
-    def _get_chunk_size(self, content_length):
+    def _get_chunk_size(self, content_length: Optional[int]):
         if self._forced_chunk_size is not None:
             return self._forced_chunk_size
         ideal = max(content_length // 1000, self._align_factor)
