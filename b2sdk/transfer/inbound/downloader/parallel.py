@@ -12,7 +12,6 @@ from concurrent import futures
 from io import IOBase
 from typing import Optional
 import logging
-import hashlib
 import queue
 import threading
 
@@ -99,7 +98,7 @@ class ParallelDownloader(AbstractDownloader):
 
         first_part = parts_to_download[0]
 
-        hasher = hashlib.sha1()
+        hasher = self._get_hasher()
 
         with WriterThread(file, max_queue_depth=len(parts_to_download) * 2) as writer:
             self._get_parts(
@@ -116,7 +115,10 @@ class ParallelDownloader(AbstractDownloader):
 
         # At this point the hasher already consumed the data until the end of first stream.
         # Consume the rest of the file to complete the hashing process
-        self._finish_hashing(first_part, file, hasher, download_version.content_length)
+        if self._check_hash:
+            # we skip hashing if we would not check it - hasher object is actually a EmptyHasher instance
+            # but we avoid here reading whole file (except for the first part) from disk again
+            self._finish_hashing(first_part, file, hasher, download_version.content_length)
 
         return bytes_written, hasher.hexdigest()
 

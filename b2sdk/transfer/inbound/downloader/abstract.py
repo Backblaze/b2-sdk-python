@@ -8,6 +8,8 @@
 #
 ######################################################################
 
+import hashlib
+
 from abc import abstractmethod
 from concurrent.futures import ThreadPoolExecutor
 from io import IOBase
@@ -22,36 +24,64 @@ from b2sdk.utils.range_ import Range
 from b2sdk.encryption.setting import EncryptionSetting
 
 
+class EmptyHasher:
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def update(self, data):
+        pass
+
+    def digest(self):
+        return b''
+
+    def hexdigest(self):
+        return ''
+
+    def copy(self):
+        return self
+
+
 class AbstractDownloader(metaclass=B2TraceMetaAbstract):
 
     REQUIRES_SEEKING = True
     DEFAULT_THREAD_POOL_CLASS = staticmethod(ThreadPoolExecutor)
+    DEFAULT_ALIGN_FACTOR = 4096
 
     def __init__(
         self,
         thread_pool: Optional[ThreadPoolExecutor] = None,
-        force_chunk_size=None,
-        min_chunk_size=None,
-        max_chunk_size=None,
+        force_chunk_size: Optional[int] = None,
+        min_chunk_size: Optional[int] = None,
+        max_chunk_size: Optional[int] = None,
+        align_factor: Optional[int] = None,
+        check_hash: bool = True,
         **kwargs
     ):
+        align_factor = align_factor or self.DEFAULT_ALIGN_FACTOR
         assert force_chunk_size is not None or (
             min_chunk_size is not None and max_chunk_size is not None and
-            0 < min_chunk_size <= max_chunk_size
+            0 < min_chunk_size <= max_chunk_size and max_chunk_size >= align_factor
         )
         self._min_chunk_size = min_chunk_size
         self._max_chunk_size = max_chunk_size
         self._forced_chunk_size = force_chunk_size
+        self._align_factor = align_factor
+        self._check_hash = check_hash
         self._thread_pool = thread_pool if thread_pool is not None \
             else self.DEFAULT_THREAD_POOL_CLASS()
         super().__init__(**kwargs)
 
-    def _get_chunk_size(self, content_length):
+    def _get_hasher(self):
+        if self._check_hash:
+            return hashlib.sha1()
+        return EmptyHasher()
+
+    def _get_chunk_size(self, content_length: Optional[int]):
         if self._forced_chunk_size is not None:
             return self._forced_chunk_size
-        ideal = content_length // 1000
+        ideal = max(content_length // 1000, self._align_factor)
         non_aligned = min(max(ideal, self._min_chunk_size), self._max_chunk_size)
-        aligned = non_aligned // 4096 * 4096
+        aligned = non_aligned // self._align_factor * self._align_factor
         return aligned
 
     @classmethod
