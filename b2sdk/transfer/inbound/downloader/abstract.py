@@ -79,10 +79,8 @@ class AbstractDownloader(metaclass=B2TraceMetaAbstract):
     def _get_chunk_size(self, content_length):
         if self._forced_chunk_size is not None:
             return self._forced_chunk_size
-        ideal = content_length // 1000
-        non_aligned = min(
-            max(ideal, self._min_chunk_size, self._align_factor), self._max_chunk_size
-        )
+        ideal = max(content_length // 1000, self._align_factor)
+        non_aligned = min(max(ideal, self._min_chunk_size), self._max_chunk_size)
         aligned = non_aligned // self._align_factor * self._align_factor
         return aligned
 
