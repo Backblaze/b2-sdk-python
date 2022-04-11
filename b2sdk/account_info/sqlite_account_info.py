@@ -11,19 +11,22 @@
 import json
 import logging
 import os
+import re
+import sqlite3
 import stat
 import threading
-from typing import Optional, List
 
-from .exception import (CorruptAccountInfo, MissingAccountData)
+from typing import List, Optional
+
+from .exception import CorruptAccountInfo, MissingAccountData
 from .upload_url_pool import UrlPoolAccountInfo
-
-import sqlite3
 
 logger = logging.getLogger(__name__)
 
 B2_ACCOUNT_INFO_ENV_VAR = 'B2_ACCOUNT_INFO'
-B2_ACCOUNT_INFO_DEFAULT_FILE = '~/.b2_account_info'
+B2_ACCOUNT_INFO_DEFAULT_FILE = os.path.join('~', '.b2_account_info')
+B2_ACCOUNT_INFO_PROFILE_FILE = os.path.join('~', '.b2db-{profile}.sqlite')
+B2_ACCOUNT_INFO_PROFILE_NAME_REGEXP = re.compile(r'[a-zA-Z0-9_\-]{1,64}')
 XDG_CONFIG_HOME_ENV_VAR = 'XDG_CONFIG_HOME'
 
 DEFAULT_ABSOLUTE_MINIMUM_PART_SIZE = 5000000  # this value is used ONLY in migrating db, and in v1 wrapper, it is not
@@ -39,7 +42,7 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
     completed.
     """
 
-    def __init__(self, file_name=None, last_upgrade_to_run=None):
+    def __init__(self, file_name=None, last_upgrade_to_run=None, profile: Optional[str] = None):
         """
         Initialize SqliteAccountInfo.
 
@@ -49,6 +52,11 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
 
         SqliteAccountInfo currently checks locations in the following order:
 
+        If ``profile`` arg is provided:
+        * ``{XDG_CONFIG_HOME_ENV_VAR}/b2/db-<profile>.sqlite``, if ``{XDG_CONFIG_HOME_ENV_VAR}`` env var is set
+        * ``{B2_ACCOUNT_INFO_PROFILE_FILE}``
+
+        Otherwise:
         * ``file_name``, if truthy
         * ``{B2_ACCOUNT_INFO_ENV_VAR}`` env var's value, if set
         * ``{B2_ACCOUNT_INFO_DEFAULT_FILE}``, if it exists
@@ -62,21 +70,7 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
         """
         self.thread_local = threading.local()
 
-        if file_name:
-            user_account_info_path = file_name
-        elif B2_ACCOUNT_INFO_ENV_VAR in os.environ:
-            user_account_info_path = os.environ[B2_ACCOUNT_INFO_ENV_VAR]
-        elif os.path.exists(os.path.expanduser(B2_ACCOUNT_INFO_DEFAULT_FILE)):
-            user_account_info_path = B2_ACCOUNT_INFO_DEFAULT_FILE
-        elif XDG_CONFIG_HOME_ENV_VAR in os.environ:
-            config_home = os.environ[XDG_CONFIG_HOME_ENV_VAR]
-            user_account_info_path = os.path.join(config_home, 'b2', 'account_info')
-            if not os.path.exists(os.path.join(config_home, 'b2')):
-                os.makedirs(os.path.join(config_home, 'b2'), mode=0o755)
-        else:
-            user_account_info_path = B2_ACCOUNT_INFO_DEFAULT_FILE
-
-        self.filename = os.path.expanduser(user_account_info_path)
+        self.filename = self._get_user_account_info_path(file_name=file_name, profile=profile)
         logger.debug('%s file path to use: %s', self.__class__.__name__, self.filename)
 
         self._validate_database(last_upgrade_to_run)
@@ -90,9 +84,41 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
             **dict(
                 B2_ACCOUNT_INFO_ENV_VAR=B2_ACCOUNT_INFO_ENV_VAR,
                 B2_ACCOUNT_INFO_DEFAULT_FILE=B2_ACCOUNT_INFO_DEFAULT_FILE,
+                B2_ACCOUNT_INFO_PROFILE_FILE=B2_ACCOUNT_INFO_PROFILE_FILE,
                 XDG_CONFIG_HOME_ENV_VAR=XDG_CONFIG_HOME_ENV_VAR,
             )
         )
+
+    @classmethod
+    def _get_user_account_info_path(cls, file_name=None, profile=None):
+        if profile and not B2_ACCOUNT_INFO_PROFILE_NAME_REGEXP.match(profile):
+            raise ValueError('Invalid profile name: {}'.format(profile))
+
+        if file_name:
+            if profile:
+                raise ValueError('Provide either file_name or profile, not both')
+            user_account_info_path = file_name
+        elif B2_ACCOUNT_INFO_ENV_VAR in os.environ:
+            if profile:
+                raise ValueError(
+                    'Provide either {} env var or profile, not both'.
+                    format(B2_ACCOUNT_INFO_ENV_VAR)
+                )
+            user_account_info_path = os.environ[B2_ACCOUNT_INFO_ENV_VAR]
+        elif os.path.exists(os.path.expanduser(B2_ACCOUNT_INFO_DEFAULT_FILE)) and not profile:
+            user_account_info_path = B2_ACCOUNT_INFO_DEFAULT_FILE
+        elif XDG_CONFIG_HOME_ENV_VAR in os.environ:
+            config_home = os.environ[XDG_CONFIG_HOME_ENV_VAR]
+            file_name = 'db-{}.sqlite'.format(profile) if profile else 'account_info'
+            user_account_info_path = os.path.join(config_home, 'b2', file_name)
+            if not os.path.exists(os.path.join(config_home, 'b2')):
+                os.makedirs(os.path.join(config_home, 'b2'), mode=0o755)
+        elif profile:
+            user_account_info_path = B2_ACCOUNT_INFO_PROFILE_FILE.format(profile=profile)
+        else:
+            user_account_info_path = B2_ACCOUNT_INFO_DEFAULT_FILE
+
+        return os.path.expanduser(user_account_info_path)
 
     def _validate_database(self, last_upgrade_to_run=None):
         """

@@ -30,6 +30,7 @@ REQUIREMENTS_TEST = [
     "pytest-cov==3.0.0",
     "pytest-mock==3.6.1",
     'pytest-lazy-fixture==0.6.3',
+    'pyfakefs==4.5.6',
 ]
 REQUIREMENTS_BUILD = ['setuptools>=20.2']
 
@@ -107,7 +108,7 @@ def unit(session):
     """Run unit tests."""
     install_myself(session)
     session.install(*REQUIREMENTS_TEST)
-    args = ['--doctest-modules']
+    args = ['--doctest-modules', '-p', 'pyfakefs']
     if not SKIP_COVERAGE:
         args += ['--cov=b2sdk', '--cov-branch', '--cov-report=xml']
     # TODO: Use session.parametrize for apiver
