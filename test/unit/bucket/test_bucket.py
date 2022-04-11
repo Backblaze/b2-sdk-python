@@ -48,6 +48,7 @@ from apiver_deps import MetadataDirectiveMode
 from apiver_deps import Part
 from apiver_deps import AbstractProgressListener
 from apiver_deps import StubAccountInfo, RawSimulator, BucketSimulator, FakeResponse, FileSimulator
+from apiver_deps import AbstractDownloader
 from apiver_deps import ParallelDownloader
 from apiver_deps import Range
 from apiver_deps import SimpleDownloader
@@ -175,12 +176,15 @@ def bucket_ls(bucket, *args, show_versions=False, **kwargs):
 class TestCaseWithBucket(TestBase):
     RAW_SIMULATOR_CLASS = RawSimulator
 
+    def get_api(self):
+        return B2Api(
+            self.account_info, api_config=B2HttpApiConfig(_raw_api_class=self.RAW_SIMULATOR_CLASS)
+        )
+
     def setUp(self):
         self.bucket_name = 'my-bucket'
         self.account_info = StubAccountInfo()
-        self.api = B2Api(
-            self.account_info, api_config=B2HttpApiConfig(_raw_api_class=self.RAW_SIMULATOR_CLASS)
-        )
+        self.api = self.get_api()
         self.simulator = self.api.session.raw_api
         (self.account_id, self.master_key) = self.simulator.create_account()
         self.api.authorize_account('production', self.account_id, self.master_key)
@@ -1889,6 +1893,108 @@ class TestTruncatedDownloadParallel(DownloadTests, TestCaseWithTruncatedDownload
                 min_part_size=2,
             )
         ]
+
+
+class DummyDownloader(AbstractDownloader):
+    def download(self, *args, **kwargs):
+        pass
+
+
+@pytest.mark.parametrize(
+    'min_chunk_size,max_chunk_size,content_length,align_factor,expected_chunk_size',
+    [
+        (10, 100, 1000 * 9, 8, 8),  # min_chunk_size aligned
+        (10, 100, 1000 * 17, 8, 16),  # content_length // 1000 aligned
+        (10, 100, 1000 * 108, 8, 96),  # max_chunk_size // 1000 aligned
+        (10, 100, 1000 * 9, 100, 100),  # max_chunk_size/align_factor
+        (10, 100, 1000 * 17, 100, 100),  # max_chunk_size/align_factor
+        (10, 100, 1000 * 108, 100, 100),  # max_chunk_size/align_factor
+        (10, 100, 1, 100, 100),  # max_chunk_size/align_factor
+    ],
+)
+def test_downloader_get_chunk_size(
+    min_chunk_size, max_chunk_size, content_length, align_factor, expected_chunk_size
+):
+    downloader = DummyDownloader(
+        min_chunk_size=min_chunk_size,
+        max_chunk_size=max_chunk_size,
+        align_factor=align_factor,
+    )
+    assert downloader._get_chunk_size(content_length) == expected_chunk_size
+
+
+@pytest.mark.apiver(from_ver=2)
+class TestDownloadTuneWriteBuffer(DownloadTestsBase, TestCaseWithBucket):
+    ALIGN_FACTOR = 123
+    DATA = 'abc' * 4096
+
+    def get_api(self):
+        return B2Api(
+            self.account_info,
+            api_config=B2HttpApiConfig(_raw_api_class=self.RAW_SIMULATOR_CLASS),
+            save_to_buffer_size=self.ALIGN_FACTOR,
+        )
+
+    def test_get_chunk_size_alignment(self):
+        download_manager = self.bucket.api.services.download_manager
+        for downloader in download_manager.strategies:
+            assert downloader._get_chunk_size(len(self.DATA)) % self.ALIGN_FACTOR == 0
+
+    def test_buffering_in_save_to(self):
+        with TempDir() as d:
+            path = os.path.join(d, 'file2')
+            with mock.patch('b2sdk.transfer.inbound.downloaded_file.open') as mock_open:
+                mock_open.side_effect = open
+                self.bucket.download_file_by_id(self.file_version.id_).save_to(path)
+                mock_open.assert_called_once_with(path, mock.ANY, buffering=self.ALIGN_FACTOR)
+                with open(path, 'r') as f:
+                    contents = f.read()
+                    assert contents == self.DATA
+
+    def test_set_write_buffer_parallel_called_get_chunk_size(self):
+        self._check_called_on_downloader(
+            ParallelDownloader(
+                force_chunk_size=len(self.DATA) // 3,
+                max_streams=999,
+                min_part_size=len(self.DATA) // 3,
+            )
+        )
+
+    def test_set_write_buffer_simple_called_get_chunk_size(self):
+        self._check_called_on_downloader(SimpleDownloader(force_chunk_size=len(self.DATA) // 3))
+
+    def _check_called_on_downloader(self, downloader):
+        download_manager = self.bucket.api.services.download_manager
+        download_manager.strategies = [downloader]
+        orig_get_chunk_size = downloader._get_chunk_size
+        with mock.patch.object(downloader, '_get_chunk_size') as mock_get_chunk_size:
+            mock_get_chunk_size.side_effect = orig_get_chunk_size
+            self.download_file_by_id(self.file_version.id_)
+            self._verify(self.DATA, check_progress_listener=False)
+            assert mock_get_chunk_size.called
+
+
+@pytest.mark.apiver(from_ver=2)
+class TestDownloadNoHashChecking(DownloadTestsBase, TestCaseWithBucket):
+    DATA = 'abcdefghijklmnopqrs'
+
+    def get_api(self):
+        return B2Api(
+            self.account_info,
+            api_config=B2HttpApiConfig(_raw_api_class=self.RAW_SIMULATOR_CLASS),
+            check_download_hash=False,
+        )
+
+    def test_download_by_id_no_hash_checking(self):
+        downloaded_file = self.bucket.download_file_by_id(self.file_version.id_)
+        orig_validate_download = downloaded_file._validate_download
+        with mock.patch.object(downloaded_file, '_validate_download') as mocked_validate_download:
+            mocked_validate_download.side_effect = orig_validate_download
+            downloaded_file.save(self.bytes_io)
+            self._verify(self.DATA, check_progress_listener=False)
+            mocked_validate_download.assert_called_once_with(mock.ANY, '')
+            assert downloaded_file.download_version.content_sha1 != 'none'
+            assert downloaded_file.download_version.content_sha1 != ''
 
 
 class DecodeTestsBase(object):

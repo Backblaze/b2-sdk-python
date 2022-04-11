@@ -20,6 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Add parameters to set the min/max part size for large file upload/copy methods
 * Add CopySourceTooBig exception
 * Add an option to set a custom file version class to FileVersionFactory
+* Add an option for B2Api to turn off hash checking for downloaded files
+* Add an option for B2Api to set write buffer size for DownloadedFile.save_to method
 * Add support for multiple profile files for SqliteAccountInfo
 
 ### Fixed
@@ -27,6 +29,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Fix uploading objects larger than 1TB
 * Fix downloading files with unverified checksum
 * Fix decoding in filename and file info of `DownloadVersion`
+
+### Removed
+* Drop support for Python 3.5 and Python 3.6
 
 ## [1.14.1] - 2022-02-23
 

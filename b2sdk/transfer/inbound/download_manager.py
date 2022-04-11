@@ -44,7 +44,7 @@ class DownloadManager(TransferManager, ThreadPoolMixin, metaclass=B2TraceMetaAbs
     PARALLEL_DOWNLOADER_CLASS = staticmethod(ParallelDownloader)
     SIMPLE_DOWNLOADER_CLASS = staticmethod(SimpleDownloader)
 
-    def __init__(self, **kwargs):
+    def __init__(self, write_buffer_size: Optional[int] = None, check_hash: bool = True, **kwargs):
         """
         Initialize the DownloadManager using the given services object.
         """
@@ -54,15 +54,21 @@ class DownloadManager(TransferManager, ThreadPoolMixin, metaclass=B2TraceMetaAbs
             self.PARALLEL_DOWNLOADER_CLASS(
                 min_part_size=self.DEFAULT_MIN_PART_SIZE,
                 min_chunk_size=self.MIN_CHUNK_SIZE,
-                max_chunk_size=self.MAX_CHUNK_SIZE,
+                max_chunk_size=max(self.MAX_CHUNK_SIZE, write_buffer_size or 0),
+                align_factor=write_buffer_size,
                 thread_pool=self._thread_pool,
+                check_hash=check_hash,
             ),
             self.SIMPLE_DOWNLOADER_CLASS(
                 min_chunk_size=self.MIN_CHUNK_SIZE,
-                max_chunk_size=self.MAX_CHUNK_SIZE,
+                max_chunk_size=max(self.MAX_CHUNK_SIZE, write_buffer_size or 0),
+                align_factor=write_buffer_size,
                 thread_pool=self._thread_pool,
+                check_hash=check_hash,
             ),
         ]
+        self.write_buffer_size = write_buffer_size
+        self.check_hash = check_hash
 
     def download_file_from_url(
         self,
@@ -98,4 +104,6 @@ class DownloadManager(TransferManager, ThreadPoolMixin, metaclass=B2TraceMetaAbs
                 response=response,
                 encryption=encryption,
                 progress_listener=progress_listener,
+                write_buffer_size=self.write_buffer_size,
+                check_hash=self.check_hash,
             )

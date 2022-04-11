@@ -18,8 +18,7 @@ CI = os.environ.get('CI') is not None
 NOX_PYTHONS = os.environ.get('NOX_PYTHONS')
 SKIP_COVERAGE = os.environ.get('SKIP_COVERAGE') == 'true'
 
-PYTHON_VERSIONS = ['3.5', '3.6', '3.7', '3.8', '3.9', '3.10'
-                  ] if NOX_PYTHONS is None else NOX_PYTHONS.split(',')
+PYTHON_VERSIONS = ['3.7', '3.8', '3.9', '3.10'] if NOX_PYTHONS is None else NOX_PYTHONS.split(',')
 PYTHON_DEFAULT_VERSION = PYTHON_VERSIONS[-1]
 
 PY_PATHS = ['b2sdk', 'test', 'noxfile.py', 'setup.py']
@@ -27,10 +26,10 @@ PY_PATHS = ['b2sdk', 'test', 'noxfile.py', 'setup.py']
 REQUIREMENTS_FORMAT = ['yapf==0.27']
 REQUIREMENTS_LINT = ['yapf==0.27', 'pyflakes==2.4.0', 'pytest==6.2.5', 'liccheck==0.6.2']
 REQUIREMENTS_TEST = [
-    "pytest==6.2.5;python_version>'3.5'", "pytest==6.1.1;python_version=='3.5'",
-    "pytest-cov==3.0.0;python_version>'3.5'", "pytest-cov==2.10.1;python_version=='3.5'",
-    "pytest-mock==3.6.1;python_version>'3.5'", "pytest-mock==3.3.1;python_version=='3.5'",
-    'pytest-lazy-fixture==0.6.3'
+    "pytest==6.2.5",
+    "pytest-cov==3.0.0",
+    "pytest-mock==3.6.1",
+    'pytest-lazy-fixture==0.6.3',
 ]
 REQUIREMENTS_BUILD = ['setuptools>=20.2']
 

@@ -60,6 +60,8 @@ class Services:
         max_upload_workers: Optional[int] = None,
         max_copy_workers: Optional[int] = None,
         max_download_workers: Optional[int] = None,
+        save_to_buffer_size: Optional[int] = None,
+        check_download_hash: bool = True,
     ):
         """
         Initialize Services object using given session.
@@ -68,6 +70,8 @@ class Services:
         :param max_upload_workers: a number of upload threads
         :param max_copy_workers: a number of copy threads
         :param max_download_workers: maximum number of download threads
+        :param save_to_buffer_size: buffer size to use when writing files using DownloadedFile.save_to
+        :param check_download_hash: whether to check hash of downloaded files. Can be disabled for files with internal checksums, for example, or to forcefully retrieve objects with corrupted payload or hash value
         """
         self.api = api
         self.session = api.session
@@ -77,7 +81,10 @@ class Services:
         )
         self.copy_manager = self.COPY_MANAGER_CLASS(services=self, max_workers=max_copy_workers)
         self.download_manager = self.DOWNLOAD_MANAGER_CLASS(
-            services=self, max_workers=max_download_workers
+            services=self,
+            max_workers=max_download_workers,
+            write_buffer_size=save_to_buffer_size,
+            check_hash=check_download_hash,
         )
         self.emerger = Emerger(self)
 
@@ -118,6 +125,8 @@ class B2Api(metaclass=B2TraceMeta):
         max_copy_workers: Optional[int] = None,
         api_config: B2HttpApiConfig = DEFAULT_HTTP_API_CONFIG,
         max_download_workers: Optional[int] = None,
+        save_to_buffer_size: Optional[int] = None,
+        check_download_hash: bool = True,
     ):
         """
         Initialize the API using the given account info.
@@ -132,6 +141,8 @@ class B2Api(metaclass=B2TraceMeta):
         :param max_copy_workers: a number of copy threads
         :param api_config:
         :param max_download_workers: maximum number of download threads
+        :param save_to_buffer_size: buffer size to use when writing files using DownloadedFile.save_to
+        :param check_download_hash: whether to check hash of downloaded files. Can be disabled for files with internal checksums, for example, or to forcefully retrieve objects with corrupted payload or hash value
         """
         self.session = self.SESSION_CLASS(
             account_info=account_info, cache=cache, api_config=api_config
@@ -143,6 +154,8 @@ class B2Api(metaclass=B2TraceMeta):
             max_upload_workers=max_upload_workers,
             max_copy_workers=max_copy_workers,
             max_download_workers=max_download_workers,
+            save_to_buffer_size=save_to_buffer_size,
+            check_download_hash=check_download_hash,
         )
 
     @property

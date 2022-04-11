@@ -44,9 +44,10 @@ class MtimeUpdatedFile(io.IOBase):
        #  'some_local_path' has the mod_time set according to metadata in B2
     """
 
-    def __init__(self, path_, mod_time_millis: int, mode='wb+'):
+    def __init__(self, path_, mod_time_millis: int, mode='wb+', buffering=None):
         self.path_ = path_
         self.mode = mode
+        self.buffering = buffering if buffering is not None else -1
         self.mod_time_to_set = mod_time_millis
         self.file = None
 
@@ -69,7 +70,7 @@ class MtimeUpdatedFile(io.IOBase):
         return self.file.tell()
 
     def __enter__(self):
-        self.file = open(self.path_, self.mode)
+        self.file = open(self.path_, self.mode, buffering=self.buffering)
         self.write = self.file.write
         self.read = self.file.read
         return self
@@ -93,6 +94,8 @@ class DownloadedFile:
         response: Response,
         encryption: Optional[EncryptionSetting],
         progress_listener: AbstractProgressListener,
+        write_buffer_size=None,
+        check_hash=True,
     ):
         self.download_version = download_version
         self.download_manager = download_manager
@@ -101,13 +104,18 @@ class DownloadedFile:
         self.encryption = encryption
         self.progress_listener = progress_listener
         self.download_strategy = None
+        self.write_buffer_size = write_buffer_size
+        self.check_hash = check_hash
 
     def _validate_download(self, bytes_read, actual_sha1):
         if self.range_ is None:
             if bytes_read != self.download_version.content_length:
                 raise TruncatedOutput(bytes_read, self.download_version.content_length)
 
-            if self.download_version.content_sha1 != 'none' and actual_sha1 != self.download_version.content_sha1:
+            if (
+                self.check_hash and self.download_version.content_sha1 != 'none' and
+                actual_sha1 != self.download_version.content_sha1
+            ):
                 raise ChecksumMismatch(
                     checksum_type='sha1',
                     expected=self.download_version.content_sha1,
@@ -158,6 +166,9 @@ class DownloadedFile:
                               (parallel strategies) will be discarded.
         """
         with MtimeUpdatedFile(
-            path_, mod_time_millis=self.download_version.mod_time_millis, mode=mode
+            path_,
+            mod_time_millis=self.download_version.mod_time_millis,
+            mode=mode,
+            buffering=self.write_buffer_size,
         ) as file:
             self.save(file, allow_seeking=allow_seeking)
