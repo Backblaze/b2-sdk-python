@@ -68,11 +68,9 @@ class TestDatabseMigrations:
 
 class TestSqliteAccountProfileFileLocation:
     @pytest.fixture(autouse=True)
-    def setup(self, monkeypatch):
+    def setup(self, monkeypatch, fs):
         monkeypatch.delenv(B2_ACCOUNT_INFO_ENV_VAR, raising=False)
         monkeypatch.delenv(XDG_CONFIG_HOME_ENV_VAR, raising=False)
-        if os.path.exists(os.path.expanduser(B2_ACCOUNT_INFO_DEFAULT_FILE)):
-            os.remove(os.path.expanduser(B2_ACCOUNT_INFO_DEFAULT_FILE))
 
     def test_invalid_profile_name(self):
         with pytest.raises(ValueError):
@@ -112,7 +110,10 @@ class TestSqliteAccountProfileFileLocation:
     def test_default_file_if_exists(self, monkeypatch):
         # ensure that XDG_CONFIG_HOME_ENV_VAR doesn't matter if default file exists
         monkeypatch.setenv(XDG_CONFIG_HOME_ENV_VAR, 'some')
-        with open(os.path.expanduser(B2_ACCOUNT_INFO_DEFAULT_FILE), 'w') as account_file:
+        account_file_path = os.path.expanduser(B2_ACCOUNT_INFO_DEFAULT_FILE)
+        parent_dir = os.path.abspath(os.path.join(account_file_path, os.pardir))
+        os.makedirs(parent_dir, exist_ok=True)
+        with open(account_file_path, 'w') as account_file:
             account_file.write('')
         account_info_path = SqliteAccountInfo._get_user_account_info_path()
         assert account_info_path == os.path.expanduser(B2_ACCOUNT_INFO_DEFAULT_FILE)
