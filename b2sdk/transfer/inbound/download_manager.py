@@ -44,7 +44,7 @@ class DownloadManager(TransferManager, ThreadPoolMixin, metaclass=B2TraceMetaAbs
     PARALLEL_DOWNLOADER_CLASS = staticmethod(ParallelDownloader)
     SIMPLE_DOWNLOADER_CLASS = staticmethod(SimpleDownloader)
 
-    def __init__(self, write_buffer_size=None, check_hash=True, **kwargs):
+    def __init__(self, write_buffer_size: Optional[int] = None, check_hash: bool = True, **kwargs):
         """
         Initialize the DownloadManager using the given services object.
         """

@@ -169,6 +169,6 @@ class DownloadedFile:
             path_,
             mod_time_millis=self.download_version.mod_time_millis,
             mode=mode,
-            buffering=self.write_buffer_size
+            buffering=self.write_buffer_size,
         ) as file:
             self.save(file, allow_seeking=allow_seeking)

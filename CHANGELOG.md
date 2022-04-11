@@ -19,8 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Add parameters to set the min/max part size for large file upload/copy methods
 * Add CopySourceTooBig exception
 * Add an option to set a custom file version class to FileVersionFactory
-* Add parameter for B2Api to turn off hash checking for downloaded files
-* Add parameter for B2Api to set write buffer size for DownloadedFile.save_to method
+* Add an option for B2Api to turn off hash checking for downloaded files
+* Add an option for B2Api to set write buffer size for DownloadedFile.save_to method
 
 ### Fixed
 * Fix copying objects larger than 1TB

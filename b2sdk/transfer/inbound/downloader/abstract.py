@@ -74,8 +74,7 @@ class AbstractDownloader(metaclass=B2TraceMetaAbstract):
     def _get_hasher(self):
         if self._check_hash:
             return hashlib.sha1()
-        else:
-            return EmptyHasher()
+        return EmptyHasher()
 
     def _get_chunk_size(self, content_length):
         if self._forced_chunk_size is not None:
