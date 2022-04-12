@@ -202,6 +202,13 @@ from b2sdk.sync.encryption_provider import BasicSyncEncryptionSettingsProvider
 from b2sdk.sync.encryption_provider import ServerDefaultSyncEncryptionSettingsProvider
 from b2sdk.sync.encryption_provider import SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER
 
+# replication
+
+from b2sdk.replication.setting import ReplicationConfiguration
+from b2sdk.replication.setting import ReplicationSourceConfiguration
+from b2sdk.replication.setting import ReplicationRule
+from b2sdk.replication.setting import ReplicationDestinationConfiguration
+
 # other
 
 from b2sdk.b2http import B2Http

@@ -9,27 +9,42 @@
 ######################################################################
 
 import logging
+
 from typing import Optional, Tuple
 
 from .encryption.setting import EncryptionSetting, EncryptionSettingFactory
 from .encryption.types import EncryptionMode
-from .exception import BucketIdNotFound, CopySourceTooBig, FileNotPresent, FileOrBucketNotFound, UnexpectedCloudBehaviour, UnrecognizedBucketType
+from .exception import (
+    BucketIdNotFound,
+    CopySourceTooBig,
+    FileNotPresent,
+    FileOrBucketNotFound,
+    UnexpectedCloudBehaviour,
+    UnrecognizedBucketType,
+)
 from .file_lock import (
+    UNKNOWN_BUCKET_RETENTION,
     BucketRetentionSetting,
     FileLockConfiguration,
     FileRetentionSetting,
-    UNKNOWN_BUCKET_RETENTION,
     LegalHold,
 )
 from .file_version import DownloadVersion, FileVersion
 from .progress import AbstractProgressListener, DoNothingProgressListener
+from .replication.setting import ReplicationConfiguration
 from .transfer.emerge.executor import AUTO_CONTENT_TYPE
 from .transfer.emerge.write_intent import WriteIntent
 from .transfer.inbound.downloaded_file import DownloadedFile
 from .transfer.outbound.copy_source import CopySource
 from .transfer.outbound.upload_source import UploadSourceBytes, UploadSourceLocalFile
-from .utils import B2TraceMeta, disable_trace, limit_trace_arguments
-from .utils import b2_url_encode, validate_b2_file_name
+from .utils import (
+    B2TraceMeta,
+    b2_url_encode,
+    disable_trace,
+    limit_trace_arguments,
+    validate_b2_file_name,
+)
+
 
 logger = logging.getLogger(__name__)
 
@@ -58,6 +73,7 @@ class Bucket(metaclass=B2TraceMeta):
         ),
         default_retention: BucketRetentionSetting = UNKNOWN_BUCKET_RETENTION,
         is_file_lock_enabled: Optional[bool] = None,
+        replication: Optional[ReplicationConfiguration] = None,
     ):
         """
         :param b2sdk.v2.B2Api api: an API object
@@ -73,6 +89,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param b2sdk.v2.EncryptionSetting default_server_side_encryption: default server side encryption settings
         :param b2sdk.v2.BucketRetentionSetting default_retention: default retention setting
         :param bool is_file_lock_enabled: whether file locking is enabled or not
+        :param b2sdk.v2.ReplicationConfiguration replication: replication rules for the bucket
         """
         self.api = api
         self.id_ = id_
@@ -87,6 +104,7 @@ class Bucket(metaclass=B2TraceMeta):
         self.default_server_side_encryption = default_server_side_encryption
         self.default_retention = default_retention
         self.is_file_lock_enabled = is_file_lock_enabled
+        self.replication = replication
 
     def get_fresh_state(self) -> 'Bucket':
         """
@@ -132,6 +150,7 @@ class Bucket(metaclass=B2TraceMeta):
         if_revision_is: Optional[int] = None,
         default_server_side_encryption: Optional[EncryptionSetting] = None,
         default_retention: Optional[BucketRetentionSetting] = None,
+        replication: Optional[ReplicationConfiguration] = None,
     ):
         """
         Update various bucket parameters.
@@ -157,6 +176,7 @@ class Bucket(metaclass=B2TraceMeta):
                 if_revision_is=if_revision_is,
                 default_server_side_encryption=default_server_side_encryption,
                 default_retention=default_retention,
+                replication=replication,
             )
         )
 
@@ -967,32 +987,59 @@ class BucketFactory:
 
         .. code-block:: python
 
-           {
-               "bucketType": "allPrivate",
-               "bucketId": "a4ba6a39d8b6b5fd561f0010",
-               "bucketName": "zsdfrtsazsdfafr",
-               "accountId": "4aa9865d6f00",
-               "bucketInfo": {},
-               "options": [],
-               "revision": 1,
-               "defaultServerSideEncryption": {
-                   "isClientAuthorizedToRead" : true,
-                   "value": {
-                     "algorithm" : "AES256",
-                     "mode" : "SSE-B2"
-                   }
-               },
-               "fileLockConfiguration": {
-                   "isClientAuthorizedToRead": true,
-                   "value": {
-                       "defaultRetention": {
-                           "mode": null,
-                           "period": null
-                        },
-                        "isFileLockEnabled": false
+            {
+                "bucketType": "allPrivate",
+                "bucketId": "a4ba6a39d8b6b5fd561f0010",
+                "bucketName": "zsdfrtsazsdfafr",
+                "accountId": "4aa9865d6f00",
+                "bucketInfo": {},
+                "options": [],
+                "revision": 1,
+                "defaultServerSideEncryption": {
+                    "isClientAuthorizedToRead" : true,
+                    "value": {
+                        "algorithm" : "AES256",
+                        "mode" : "SSE-B2"
                     }
-              }
-           }
+                },
+                "fileLockConfiguration": {
+                    "isClientAuthorizedToRead": true,
+                    "value": {
+                        "defaultRetention": {
+                            "mode": null,
+                            "period": null
+                            },
+                            "isFileLockEnabled": false
+                        }
+                },
+                "replicationConfiguration": {
+                    "asReplicationSource": {
+                        "replicationRules": [
+                            {
+                                "destinationBucketId": "c5f35d53a90a7ea284fb0719",
+                                "fileNamePrefix": "",
+                                "isEnabled": true,
+                                "priority": 1,
+                                "replicationRuleName": "replication-us-west"
+                            },
+                            {
+                                "destinationBucketId": "55f34d53a96a7ea284fb0719",
+                                "fileNamePrefix": "",
+                                "isEnabled": true,
+                                "priority": 2,
+                                "replicationRuleName": "replication-us-west-2"
+                            }
+                        ],
+                        "sourceApplicationKeyId": "10053d55ae26b790000000006"
+                    },
+                    "asReplicationDestination": {
+                        "sourceToDestinationKeyMapping": {
+                            "10053d55ae26b790000000045": "10053d55ae26b790000000004",
+                            "10053d55ae26b790000000046": "10053d55ae26b790030000004"
+                        }
+                    }
+                }
+            }
 
         into a Bucket object.
 
@@ -1016,6 +1063,7 @@ class BucketFactory:
             raise UnexpectedCloudBehaviour('server did not provide `defaultServerSideEncryption`')
         default_server_side_encryption = EncryptionSettingFactory.from_bucket_dict(bucket_dict)
         file_lock_configuration = FileLockConfiguration.from_bucket_dict(bucket_dict)
+        replication = ReplicationConfiguration.from_bucket_dict(bucket_dict)
         return cls.BUCKET_CLASS(
             api,
             bucket_id,
@@ -1030,4 +1078,5 @@ class BucketFactory:
             default_server_side_encryption,
             file_lock_configuration.default_retention,
             file_lock_configuration.is_file_lock_enabled,
+            replication,
         )

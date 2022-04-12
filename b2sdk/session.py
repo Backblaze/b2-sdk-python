@@ -19,6 +19,7 @@ from b2sdk.account_info.exception import MissingAccountData
 from b2sdk.b2http import B2Http
 from b2sdk.cache import AbstractCache, AuthInfoCache, DummyCache
 from b2sdk.encryption.setting import EncryptionSetting
+from b2sdk.replication.setting import ReplicationConfiguration
 from b2sdk.exception import (InvalidAuthToken, Unauthorized)
 from b2sdk.file_lock import BucketRetentionSetting, FileRetentionSetting, LegalHold
 from b2sdk.raw_api import ALL_CAPABILITIES, REALM_URLS
@@ -146,6 +147,7 @@ class B2Session:
         lifecycle_rules=None,
         default_server_side_encryption=None,
         is_file_lock_enabled: Optional[bool] = None,
+        replication: Optional[ReplicationConfiguration] = None,
     ):
         return self._wrap_default_token(
             self.raw_api.create_bucket,
@@ -157,6 +159,7 @@ class B2Session:
             lifecycle_rules=lifecycle_rules,
             default_server_side_encryption=default_server_side_encryption,
             is_file_lock_enabled=is_file_lock_enabled,
+            replication=replication,
         )
 
     def create_key(
@@ -316,6 +319,7 @@ class B2Session:
         if_revision_is=None,
         default_server_side_encryption: Optional[EncryptionSetting] = None,
         default_retention: Optional[BucketRetentionSetting] = None,
+        replication: Optional[ReplicationConfiguration] = None,
     ):
         return self._wrap_default_token(
             self.raw_api.update_bucket,
@@ -328,6 +332,7 @@ class B2Session:
             if_revision_is=if_revision_is,
             default_server_side_encryption=default_server_side_encryption,
             default_retention=default_retention,
+            replication=replication,
         )
 
     def upload_file(

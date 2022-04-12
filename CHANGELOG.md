@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+* Add basic replication support to Bucket and FileVersion
+
+### Fixed
+* Fix license test on Windows
+
 ## [1.15.0] - 2022-04-12
 
 ### Changed

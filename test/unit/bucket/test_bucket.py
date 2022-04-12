@@ -58,6 +58,8 @@ from apiver_deps import EncryptionAlgorithm, EncryptionSetting, EncryptionMode, 
 from apiver_deps import CopySource, UploadSourceLocalFile, WriteIntent
 from apiver_deps import BucketRetentionSetting, FileRetentionSetting, LegalHold, RetentionMode, RetentionPeriod, \
     NO_RETENTION_FILE_SETTING
+from apiver_deps import ReplicationConfiguration, ReplicationSourceConfiguration, \
+    ReplicationRule, ReplicationDestinationConfiguration
 
 pytestmark = [pytest.mark.apiver(from_ver=1)]
 
@@ -85,6 +87,30 @@ SSE_C_AES_FROM_SERVER = EncryptionSetting(
     mode=EncryptionMode.SSE_C,
     algorithm=EncryptionAlgorithm.AES256,
     key=EncryptionKey(key_id=None, secret=None),
+)
+REPLICATION = ReplicationConfiguration(
+    as_replication_source=ReplicationSourceConfiguration(
+        replication_rules=[
+            ReplicationRule(
+                destination_bucket_id='c5f35d53a90a7ea284fb0719',
+                replication_rule_name='replication-us-west',
+            ),
+            ReplicationRule(
+                destination_bucket_id='55f34d53a96a7ea284fb0719',
+                replication_rule_name='replication-us-west-2',
+                file_name_prefix='replica/',
+                is_enabled=False,
+                priority=255,
+            ),
+        ],
+        source_application_key_id='10053d55ae26b790000000006',
+    ),
+    as_replication_destination=ReplicationDestinationConfiguration(
+        source_to_destination_key_mapping={
+            "10053d55ae26b790000000045": "10053d55ae26b790000000004",
+            "10053d55ae26b790000000046": "10053d55ae26b790030000004"
+        },
+    ),
 )
 
 
@@ -935,6 +961,7 @@ class TestUpdate(TestCaseWithBucket):
             default_retention=BucketRetentionSetting(
                 RetentionMode.COMPLIANCE, RetentionPeriod(years=7)
             ),
+            replication=REPLICATION,
         )
         if apiver_deps.V <= 1:
             self.assertEqual(
@@ -992,6 +1019,7 @@ class TestUpdate(TestCaseWithBucket):
                 'options_set': set(),
                 'default_server_side_encryption': SSE_B2_AES,
                 'default_retention': BucketRetentionSetting(RetentionMode.COMPLIANCE, RetentionPeriod(years=7)),
+                'replication': REPLICATION,
             }
             for attr_name, attr_value in assertions_mapping.items():
                 self.assertEqual(attr_value, getattr(result, attr_name), attr_name)
