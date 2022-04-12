@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.15.0] - 2022-04-12
+
 ### Changed
 * Don't run coverage in pypy in CI
 * Introduce a common thread worker pool for all downloads
@@ -30,13 +32,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Fix uploading objects larger than 1TB
 * Fix downloading files with unverified checksum
 * Fix decoding in filename and file info of `DownloadVersion`
+* Fix an off-by-one bug and other bugs in the Simulator copy functionality
 
 ### Removed
 * Drop support for Python 3.5 and Python 3.6
 
 ## [1.14.1] - 2022-02-23
 
-### Fixed
+### Security
 * Fix setting permissions for local sqlite database (thanks to Jan Schejbal for responsible disclosure!)
 
 ## [1.14.0] - 2021-12-23
@@ -299,7 +302,8 @@ has changed.
 ### Added
 Initial official release of SDK as a separate package (until now it was a part of B2 CLI)
 
-[Unreleased]: https://github.com/Backblaze/b2-sdk-python/compare/v1.14.1...HEAD
+[Unreleased]: https://github.com/Backblaze/b2-sdk-python/compare/v1.15.0...HEAD
+[1.15.0]: https://github.com/Backblaze/b2-sdk-python/compare/v1.14.1...v1.15.0
 [1.14.1]: https://github.com/Backblaze/b2-sdk-python/compare/v1.14.0...v1.14.1
 [1.14.0]: https://github.com/Backblaze/b2-sdk-python/compare/v1.13.0...v1.14.0
 [1.13.0]: https://github.com/Backblaze/b2-sdk-python/compare/v1.12.0...v1.13.0
