@@ -1167,9 +1167,8 @@ class TestUpload(TestCaseWithBucket):
             self.bucket.upload_local_file(path, 'file1')
             self._check_file_contents('file1', data)
 
-    def test_upload_local_large_file_over_10k_parts(
-        self
-    ):  # TODO: this test is very slow, speed it up?
+    def test_upload_local_large_file_over_10k_parts(self):
+        pytest.skip('this test is really slow and impedes development')  # TODO: fix it
         with TempDir() as d:
             path = os.path.join(d, 'file1')
             data = self._make_data(self.simulator.MIN_PART_SIZE * 10001)  # 2MB on the simulator

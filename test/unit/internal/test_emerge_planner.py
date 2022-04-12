@@ -94,7 +94,10 @@ class TestEmergePlanner(TestBase):
         self.recommended_size = 100 * MEGABYTE
         self.min_size = 5 * MEGABYTE
         self.max_size = 5 * GIGABYTE
-        self.planner = EmergePlanner(
+        self.planner = self._get_emerge_planner()
+
+    def _get_emerge_planner(self):
+        return EmergePlanner(
             min_part_size=self.min_size,
             recommended_upload_part_size=self.recommended_size,
             max_part_size=self.max_size,
@@ -147,6 +150,15 @@ class TestEmergePlanner(TestBase):
             [WriteIntent(source)],
             self.split_source_to_part_defs(source, expected_part_sizes),
         )
+
+    def test_recommended_part_size_decrease(self):
+        source_upload1 = UploadSource(self.recommended_size * 10001)
+
+        write_intents = [
+            WriteIntent(source_upload1),
+        ]
+        emerge_plan = self.planner.get_emerge_plan(write_intents)
+        assert len(emerge_plan.emerge_parts) < 10000
 
     def test_single_multipart_copy(self):
         source = CopySource(5 * self.max_size)

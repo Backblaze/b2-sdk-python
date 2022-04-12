@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Introduce a common thread worker pool for all downloads
 * Increase http timeout to 20min (for copy using 5GB parts)
 * Remove inheritance from object (leftover from python2)
+* Run unit tests on all CPUs
 
 ### Added
 * Add pypy-3.8 to test matrix
