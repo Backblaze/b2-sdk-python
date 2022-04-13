@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 * Fix `AccountInfo.is_master_key()`
+* Fix docstring of `SqliteAccountInfo`
 
 ### Infrastructure
 * Add 3.11.0-beta.1 to CI
