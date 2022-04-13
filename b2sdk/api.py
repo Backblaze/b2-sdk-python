@@ -535,7 +535,7 @@ class B2Api(metaclass=B2TraceMeta):
         """
         Gets info about file version.
 
-        :param str file_id: the id of the file who's info will be retrieved.
+        :param str file_id: the id of the file whose info will be retrieved.
         """
         return self.file_version_factory.from_api_response(
             self.session.get_file_info_by_id(file_id)

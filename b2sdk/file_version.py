@@ -11,6 +11,7 @@
 from typing import Dict, Optional, Union, Tuple, TYPE_CHECKING
 
 from .encryption.setting import EncryptionSetting, EncryptionSettingFactory
+from .replication.types import ReplicationStatus
 from .http_constants import FILE_INFO_HEADER_PREFIX_LOWER, SRC_LAST_MODIFIED_MILLIS
 from .file_lock import FileRetentionSetting, LegalHold, NO_RETENTION_FILE_SETTING
 from .progress import AbstractProgressListener
@@ -191,6 +192,7 @@ class FileVersion(BaseFileVersion):
         'bucket_id',
         'content_md5',
         'action',
+        'replication_status',
     ]
 
     def __init__(
@@ -210,11 +212,13 @@ class FileVersion(BaseFileVersion):
         server_side_encryption: EncryptionSetting,
         file_retention: FileRetentionSetting = NO_RETENTION_FILE_SETTING,
         legal_hold: LegalHold = LegalHold.UNSET,
+        replication_status: ReplicationStatus = None,
     ):
         self.account_id = account_id
         self.bucket_id = bucket_id
         self.content_md5 = content_md5
         self.action = action
+        self.replication_status = replication_status
 
         super().__init__(
             api=api,
@@ -238,6 +242,7 @@ class FileVersion(BaseFileVersion):
                 'bucket_id': self.bucket_id,
                 'action': self.action,
                 'content_md5': self.content_md5,
+                'replication_status': self.replication_status,
             }
         )
         return args
@@ -246,6 +251,7 @@ class FileVersion(BaseFileVersion):
         result = super().as_dict()
         result['accountId'] = self.account_id
         result['bucketId'] = self.bucket_id
+        result['replicationStatus'] = self.replication_status and self.replication_status.value
 
         if self.action is not None:
             result['action'] = self.action
@@ -369,7 +375,8 @@ class FileVersionFactory:
                "fileId": "4_zBucketName_f103b7ca31313c69c_d20151230_m030117_c001_v0001015_t0000",
                "fileName": "randomdata",
                "size": 0,
-               "uploadTimestamp": 1451444477000
+               "uploadTimestamp": 1451444477000,
+               "replicationStatus": "PENDING"
            }
 
         or this:
@@ -385,7 +392,8 @@ class FileVersionFactory:
                "fileId": "4_z547a2a395826655d561f0010_f106d4ca95f8b5b78_d20160104_m003906_c001_v0001013_t0005",
                "fileInfo": {},
                "fileName": "randomdata",
-               "serverSideEncryption": {"algorithm": "AES256", "mode": "SSE-B2"}
+               "serverSideEncryption": {"algorithm": "AES256", "mode": "SSE-B2"},
+               "replicationStatus": "COMPLETED"
            }
 
         into a :py:class:`b2sdk.v2.FileVersion` object.
@@ -411,6 +419,10 @@ class FileVersionFactory:
         file_retention = FileRetentionSetting.from_file_version_dict(file_version_dict)
 
         legal_hold = LegalHold.from_file_version_dict(file_version_dict)
+
+        replication_status_value = file_version_dict['replicationStatus']
+        replication_status = replication_status_value and ReplicationStatus[replication_status_value]
+
         return self.FILE_VERSION_CLASS(
             self.api,
             id_,
@@ -427,6 +439,7 @@ class FileVersionFactory:
             server_side_encryption,
             file_retention,
             legal_hold,
+            replication_status,
         )
 
 

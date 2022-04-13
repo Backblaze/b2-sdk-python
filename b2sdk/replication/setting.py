@@ -89,8 +89,7 @@ class ReplicationSourceConfiguration:
     def from_dict(cls, value_dict: dict) -> 'ReplicationSourceConfiguration':
         return cls(
             replication_rules=[
-                ReplicationRule.from_dict(rule_dict)
-                for rule_dict in value_dict['replicationRules']
+                ReplicationRule.from_dict(rule_dict) for rule_dict in value_dict['replicationRules']
             ],
             source_application_key_id=value_dict['sourceApplicationKeyId'],
         )
@@ -106,8 +105,10 @@ class ReplicationDestinationConfiguration:
 
         for source, destination in self.source_to_destination_key_mapping.items():
             if not source or not destination:
-                raise ValueError("source_to_destination_key_mapping must not contain \
-                                  empty keys or values: ({}, {})".format(source, destination))
+                raise ValueError(
+                    "source_to_destination_key_mapping must not contain \
+                                  empty keys or values: ({}, {})".format(source, destination)
+                )
 
     def as_dict(self) -> dict:
         return {
@@ -116,9 +117,7 @@ class ReplicationDestinationConfiguration:
 
     @classmethod
     def from_dict(cls, value_dict: dict) -> 'ReplicationDestinationConfiguration':
-        return cls(
-            source_to_destination_key_mapping=value_dict['sourceToDestinationKeyMapping'],
-        )
+        return cls(source_to_destination_key_mapping=value_dict['sourceToDestinationKeyMapping'])
 
 
 @dataclass
@@ -188,7 +187,8 @@ class ReplicationConfiguration:
     @classmethod
     def from_bucket_dict(cls, bucket_dict: dict) -> Optional['ReplicationConfiguration']:
         """
-        Returns ReplicationConfiguration for the given bucket dict retrieved from the api, or None if no replication configured.
+        Returns ReplicationConfiguration for the given bucket dict retrieved from the api,
+        or None if no replication configured.
         """
         replication_data = bucket_dict.get('replicationConfiguration')
         if replication_data is None:
@@ -199,10 +199,14 @@ class ReplicationConfiguration:
     @classmethod
     def from_dict(cls, value_dict: dict) -> 'ReplicationConfiguration':
         replication_source_dict = value_dict.get('asReplicationSource')
-        as_replication_source = replication_source_dict and ReplicationSourceConfiguration.from_dict(replication_source_dict)
+        as_replication_source = replication_source_dict and ReplicationSourceConfiguration.from_dict(
+            replication_source_dict
+        )
 
         replication_destination_dict = value_dict.get('asReplicationDestination')
-        as_replication_destination = replication_destination_dict and ReplicationDestinationConfiguration.from_dict(replication_destination_dict)
+        as_replication_destination = replication_destination_dict and ReplicationDestinationConfiguration.from_dict(
+            replication_destination_dict
+        )
 
         return cls(
             as_replication_source=as_replication_source,

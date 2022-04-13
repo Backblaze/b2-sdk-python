@@ -45,7 +45,6 @@ from .utils import (
     validate_b2_file_name,
 )
 
-
 logger = logging.getLogger(__name__)
 
 

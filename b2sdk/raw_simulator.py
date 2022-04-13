@@ -25,6 +25,7 @@ from requests.structures import CaseInsensitiveDict
 
 from .b2http import ResponseContextManager
 from .encryption.setting import EncryptionMode, EncryptionSetting
+from .replication.types import ReplicationStatus
 from .exception import (
     BadJson,
     BadRequest,
@@ -54,7 +55,6 @@ from .file_version import UNVERIFIED_CHECKSUM_PREFIX
 from .raw_api import ALL_CAPABILITIES, AbstractRawApi, MetadataDirectiveMode
 from .stream.hashing import StreamWithHash
 from .utils import ConcurrentUsedAuthTokenGuard, b2_url_decode, b2_url_encode, hex_sha1_of_bytes
-
 
 logger = logging.getLogger(__name__)
 
@@ -171,6 +171,7 @@ class FileSimulator:
         server_side_encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: LegalHold = LegalHold.UNSET,
+        replication_status: Optional[ReplicationStatus] = None,
     ):
         if action == 'hide':
             assert server_side_encryption is None
@@ -194,6 +195,7 @@ class FileSimulator:
         self.server_side_encryption = server_side_encryption
         self.file_retention = file_retention
         self.legal_hold = legal_hold if legal_hold is not None else LegalHold.UNSET
+        self.replication_status = replication_status
 
         if action == 'start':
             self.parts = []
@@ -290,6 +292,7 @@ class FileSimulator:
             fileInfo=self.file_info,
             action=self.action,
             uploadTimestamp=self.upload_timestamp,
+            replicationStatus=self.replication_status and self.replication_status.value,
         )  # yapf: disable
         if self.server_side_encryption is not None:
             result['serverSideEncryption'
@@ -310,6 +313,7 @@ class FileSimulator:
             fileInfo=self.file_info,
             action=self.action,
             uploadTimestamp=self.upload_timestamp,
+            replicationStatus=self.replication_status and self.replication_status.value,
         )  # yapf: disable
         if self.server_side_encryption is not None:
             result['serverSideEncryption'
@@ -333,6 +337,7 @@ class FileSimulator:
             contentType=self.content_type,
             fileInfo=self.file_info,
             uploadTimestamp=self.upload_timestamp,
+            replicationStatus=self.replication_status and self.replication_status.value,
         )  # yapf: disable
         if self.server_side_encryption is not None:
             result['serverSideEncryption'
