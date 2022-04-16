@@ -129,12 +129,6 @@ class ReplicationConfiguration:
     as_replication_source: Optional[ReplicationSourceConfiguration] = None
     as_replication_destination: Optional[ReplicationDestinationConfiguration] = None
 
-    def __post_init__(self):
-        if not self.as_replication_source and not self.as_replication_destination:
-            raise ValueError(
-                "Must provide either as_replication_source or as_replication_destination"
-            )
-
     def serialize_to_json_for_request(self) -> dict:
         return self.as_dict()
 
