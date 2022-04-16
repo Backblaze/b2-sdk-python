@@ -66,7 +66,7 @@ class ReplicationRule:
 @dataclass
 class ReplicationSourceConfiguration:
     """
-    Hold information about bucket as replication source
+    Hold information about bucket being a replication source
     """
 
     replication_rules: List[ReplicationRule]
@@ -123,7 +123,7 @@ class ReplicationDestinationConfiguration:
 @dataclass
 class ReplicationConfiguration:
     """
-    Hold information about bucket replication
+    Hold information about bucket replication configuration
     """
 
     as_replication_source: Optional[ReplicationSourceConfiguration] = None

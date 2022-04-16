@@ -16,7 +16,7 @@ Semantic versioning
 
 Therefore when setting up **b2sdk** as a dependency, please make sure to match the version appropriately, for example you could put this in your ``requirements.txt`` to make sure your code is compatible with the ``b2sdk`` version your user will get from pypi::
 
-    b2sdk>=1.0.0,<2.0.0
+    b2sdk>=1.15.0,<2.0.0
 
 .. _interface_versions:
 
@@ -26,7 +26,7 @@ Interface versions
 
 You might notice that the import structure provided in the documentation looks a little odd: ``from b2sdk.v2 import ...``.
 The ``.v2`` part is used to keep the interface fluid without risk of breaking applications that use the old signatures.
-With new versions, **b2sdk** will provide functions with signatures matching the old ones, wrapping the new interface in place of the old one. What this means for a developer using **b2sdk**, is that it will just keep working. We havealready deleted some legacy functions when moving from ``.v0`` to ``.v1``, providing equivalent wrappers to reduce the migration effort for applications using pre-1.0 versions of **b2sdk** to fixing imports.
+With new versions, **b2sdk** will provide functions with signatures matching the old ones, wrapping the new interface in place of the old one. What this means for a developer using **b2sdk**, is that it will just keep working. We have already deleted some legacy functions when moving from ``.v0`` to ``.v1``, providing equivalent wrappers to reduce the migration effort for applications using pre-1.0 versions of **b2sdk** to fixing imports.
 
 It also means that **b2sdk** developers may change the interface in the future and will not need to maintain many branches and backport fixes to keep compatibility of for users of those old branches.
 
@@ -46,7 +46,7 @@ The exception hierarchy may change in a backwards compatible manner and the deve
 Extensions
 ==========
 
-Even in the same interface version, objects/classes/enums can get additional fields and their representations such as ``to_dict()`` or ``__repr__`` (but not ``__str__``) may start to contain those fields.
+Even in the same interface version, objects/classes/enums can get additional fields and their representations such as ``as_dict()`` or ``__repr__`` (but not ``__str__``) may start to contain those fields.
 
 Methods and functions can start accepting new **optional** arguments. New methods can be added to existing classes.
 
@@ -64,6 +64,9 @@ Public interface consists of **public** members of modules listed in :ref:`Publi
 This should be used in 99% of use cases, it's enough to implement anything from a `console tool <https://github.com/Backblaze/B2_Command_Line_Tool>`_ to a `FUSE filesystem <https://github.com/sondree/b2_fuse>`_.
 
 Those modules will generally not change in a backwards-incompatible way between non-major versions. Please see :ref:`interface version compatibility <interface_version_compatibility>` chapter for notes on what changes must be expected.
+
+.. note::
+  Replication is currently in a Closed Beta state, where not all B2 accounts have access to the feature. The interface of the beta server API might change and the interface of **b2sdk** around replication may change as well. For the avoidance of doubt, until this message is removed, replication-related functionality of **b2sdk** should be considered as internal interface.
 
 .. hint::
   If the current version of **b2sdk** is ``4.5.6`` and you only use the *public* interface,

@@ -43,7 +43,7 @@ class FileVersionInfo(v2.FileVersion):
         file_retention: Optional[v2.FileRetentionSetting] = None,
         legal_hold: Optional[v2.LegalHold] = None,
         api: Optional['v1api.B2Api'] = None,
-        **kwargs,
+        **kwargs
     ):
         self.id_ = id_
         self.file_name = file_name
