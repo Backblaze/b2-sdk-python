@@ -8,6 +8,7 @@
 #
 ######################################################################
 import io
+from contextlib import suppress
 from io import BytesIO
 import os
 import platform
@@ -964,6 +965,9 @@ class TestUpdate(TestCaseWithBucket):
             replication=REPLICATION,
         )
         if apiver_deps.V <= 1:
+            self.maxDiff = None
+            with suppress(KeyError):
+                del result['replicationConfiguration']
             self.assertEqual(
                 {
                     'accountId': 'account-0',

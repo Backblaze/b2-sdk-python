@@ -8,10 +8,12 @@
 #
 ######################################################################
 
+from contextlib import suppress
+from typing import Optional, overload, Tuple
+
 from .download_dest import AbstractDownloadDestination
 from .file_metadata import FileMetadata
 from .file_version import FileVersionInfo, FileVersionInfoFactory, file_version_info_from_download_version
-from typing import Optional, overload, Tuple
 from b2sdk import v2
 from b2sdk.utils import validate_b2_file_name
 
@@ -207,6 +209,7 @@ class Bucket(v2.Bucket):
         if_revision_is: Optional[int] = None,
         default_server_side_encryption: Optional[v2.EncryptionSetting] = None,
         default_retention: Optional[v2.BucketRetentionSetting] = None,
+        **kwargs
     ):
         """
         Update various bucket parameters.
@@ -219,6 +222,13 @@ class Bucket(v2.Bucket):
         :param default_server_side_encryption: default server side encryption settings (``None`` if unknown)
         :param default_retention: bucket default retention setting
         """
+        # allow common tests to execute without hitting attributeerror
+
+        with suppress(KeyError):
+            del kwargs['replication']
+        self.replication = None
+        assert not kwargs  # after we get rid of everything we don't support in this apiver, this should be empty
+
         account_id = self.api.account_info.get_account_id()
         return self.api.session.update_bucket(
             account_id,

@@ -11,8 +11,8 @@
 import time
 
 import pytest
+from contextlib import suppress
 from unittest import mock
-
 from ..test_base import create_key
 
 import apiver_deps
@@ -58,6 +58,9 @@ class TestApi:
         result = self.api.get_file_info(created_file.id_)
 
         if apiver_deps.V <= 1:
+            self.maxDiff = None
+            with suppress(KeyError):
+                del result['replicationStatus']
             assert result == {
                 'accountId': 'account-0',
                 'action': 'upload',
