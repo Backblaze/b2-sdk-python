@@ -19,6 +19,7 @@ import pytest
 
 from b2sdk.b2http import B2Http
 from b2sdk.encryption.setting import EncryptionAlgorithm, EncryptionMode, EncryptionSetting
+from b2sdk.replication.setting import ReplicationConfiguration, ReplicationSourceConfiguration, ReplicationRule
 from b2sdk.file_lock import BucketRetentionSetting, NO_RETENTION_FILE_SETTING, RetentionMode, RetentionPeriod
 from b2sdk.raw_api import B2RawHTTPApi, REALM_URLS
 from b2sdk.utils import hex_sha1_of_stream
@@ -136,6 +137,28 @@ def raw_api_test_helper(raw_api, should_cleanup_old_buckets):
     )
     bucket_id = bucket_dict['bucketId']
     first_bucket_revision = bucket_dict['revision']
+
+    print('b2_create_bucket/replication')
+    # in order to test replication, we need to create a second bucket
+    _ = raw_api.create_bucket(
+        api_url,
+        account_auth_token,
+        account_id,
+        bucket_name + '-rep',
+        'allPublic',
+        is_file_lock_enabled=True,
+        replication=ReplicationConfiguration(
+            as_replication_source=ReplicationSourceConfiguration(
+                replication_rules=[
+                    ReplicationRule(
+                        destination_bucket_id=bucket_id,
+                        replication_rule_name='test-rule',
+                    ),
+                ],
+                source_application_key_id=key_dict['applicationKeyId'],
+            ),
+        ),
+    )
 
     ##################
     print('b2_update_bucket')

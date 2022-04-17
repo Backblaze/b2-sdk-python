@@ -17,4 +17,3 @@ class ReplicationStatus(Enum):
     COMPLETED = 'COMPLETED'
     FAILED = 'FAILED'
     REPLICA = 'REPLICA'
-
