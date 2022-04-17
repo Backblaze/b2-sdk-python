@@ -60,7 +60,7 @@ from apiver_deps import CopySource, UploadSourceLocalFile, WriteIntent
 from apiver_deps import BucketRetentionSetting, FileRetentionSetting, LegalHold, RetentionMode, RetentionPeriod, \
     NO_RETENTION_FILE_SETTING
 from apiver_deps import ReplicationConfiguration, ReplicationSourceConfiguration, \
-    ReplicationRule, ReplicationDestinationConfiguration
+    ReplicationRule, ReplicationDestinationConfiguration, ReplicationConfigurationResponse
 
 pytestmark = [pytest.mark.apiver(from_ver=1)]
 
@@ -1023,7 +1023,10 @@ class TestUpdate(TestCaseWithBucket):
                 'options_set': set(),
                 'default_server_side_encryption': SSE_B2_AES,
                 'default_retention': BucketRetentionSetting(RetentionMode.COMPLIANCE, RetentionPeriod(years=7)),
-                'replication': REPLICATION,
+                'replication': ReplicationConfigurationResponse(
+                    is_client_authorized_to_read=True,
+                    value=REPLICATION,
+                ),
             }
             for attr_name, attr_value in assertions_mapping.items():
                 self.assertEqual(attr_value, getattr(result, attr_name), attr_name)

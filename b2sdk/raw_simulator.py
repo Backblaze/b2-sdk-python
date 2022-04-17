@@ -570,7 +570,10 @@ class BucketSimulator:
         else:
             file_lock_configuration = {'isClientAuthorizedToRead': False, 'value': None}
 
-        replication = self.replication and self.replication.as_dict()
+        replication = self.replication and {
+            'isClientAuthorizedToRead': True,
+            'value': self.replication.as_dict(),
+        }
 
         return dict(
             accountId=self.account_id,

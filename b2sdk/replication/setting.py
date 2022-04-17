@@ -179,18 +179,6 @@ class ReplicationConfiguration:
         return result
 
     @classmethod
-    def from_bucket_dict(cls, bucket_dict: dict) -> Optional['ReplicationConfiguration']:
-        """
-        Returns ReplicationConfiguration for the given bucket dict retrieved from the api,
-        or None if no replication configured.
-        """
-        replication_data = bucket_dict.get('replicationConfiguration')
-        if replication_data is None:
-            return
-
-        return cls.from_dict(bucket_dict['replicationConfiguration'])
-
-    @classmethod
     def from_dict(cls, value_dict: dict) -> 'ReplicationConfiguration':
         replication_source_dict = value_dict.get('asReplicationSource')
         as_replication_source = replication_source_dict and ReplicationSourceConfiguration.from_dict(
@@ -205,4 +193,29 @@ class ReplicationConfiguration:
         return cls(
             as_replication_source=as_replication_source,
             as_replication_destination=as_replication_destination,
+        )
+
+
+@dataclass
+class ReplicationConfigurationResponse:
+    is_client_authorized_to_read: bool
+    value: ReplicationConfiguration
+
+    @classmethod
+    def from_bucket_dict(cls, bucket_dict: dict) -> Optional['ReplicationConfigurationResponse']:
+        """
+        Returns ReplicationConfigurationResponse for the given bucket dict
+        retrieved from the api, or None if no replication configured.
+        """
+        replication_data = bucket_dict.get('replicationConfiguration')
+        if replication_data is None:
+            return
+
+        return cls.from_dict(bucket_dict['replicationConfiguration'])
+
+    @classmethod
+    def from_dict(cls, value_dict: dict) -> 'ReplicationConfigurationResponse':
+        return cls(
+            is_client_authorized_to_read=value_dict['isClientAuthorizedToRead'],
+            value=ReplicationConfiguration.from_dict(value_dict['value']),
         )
