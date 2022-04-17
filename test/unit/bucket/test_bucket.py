@@ -8,14 +8,17 @@
 #
 ######################################################################
 import io
+import itertools
 from contextlib import suppress
 from io import BytesIO
 import os
 import platform
 import unittest.mock as mock
+from typing import List
 
 import pytest
 
+from .test_bucket_typing import get_all_annotations
 from ..test_base import TestBase, create_key
 
 import apiver_deps
@@ -41,7 +44,7 @@ else:
     from apiver_deps import FileVersion as VFileVersionInfo
 from apiver_deps import B2Api
 from apiver_deps import B2HttpApiConfig
-from apiver_deps import Bucket, BucketFactory
+from apiver_deps import Bucket, BucketFactory, BucketStructure, ValueNotSet
 from apiver_deps import DownloadedFile
 from apiver_deps import DownloadVersion
 from apiver_deps import LargeFileUploadState
@@ -207,6 +210,13 @@ class TestCaseWithBucket(TestBase):
         return B2Api(
             self.account_info, api_config=B2HttpApiConfig(_raw_api_class=self.RAW_SIMULATOR_CLASS)
         )
+
+    def new_api_with_new_key(self, capabilities: List[str]) -> B2Api:
+        new_key = create_key(self.api, capabilities=capabilities, key_name='newtestkey')
+        new_api = B2Api(StubAccountInfo())
+        new_api.session.raw_api = self.simulator
+        new_api.authorize_account('production', new_key.id_, new_key.application_key)
+        return new_api
 
     def setUp(self):
         self.bucket_name = 'my-bucket'
@@ -405,12 +415,7 @@ class TestGetFileInfo(TestCaseWithBucket):
         actual = (file_version.legal_hold, file_version.file_retention)
         self.assertEqual((legal_hold, file_retention), actual)
 
-        low_perm_account_info = StubAccountInfo()
-        low_perm_api = B2Api(low_perm_account_info)
-        low_perm_api.session.raw_api = self.simulator
-        low_perm_key = create_key(
-            self.api,
-            key_name='lowperm',
+        low_perm_api = self.new_api_with_new_key(
             capabilities=[
                 'listKeys',
                 'listBuckets',
@@ -418,8 +423,6 @@ class TestGetFileInfo(TestCaseWithBucket):
                 'readFiles',
             ]
         )
-
-        low_perm_api.authorize_account('production', low_perm_key.id_, low_perm_key.application_key)
         low_perm_bucket = low_perm_api.get_bucket_by_name('my-bucket-with-file-lock')
 
         file_version = low_perm_bucket.get_file_info_by_name('a')
@@ -2123,3 +2126,54 @@ class DecodeTests(DecodeTestsBase, TestCaseWithBucket):
     def test_file_info_4(self):
         download_version = self.bucket.get_file_info_by_name('test.txt%253Ffoo%253Dbar')
         assert download_version.file_name == 'test.txt%253Ffoo%253Dbar'
+
+
+class TestBucketStructure(TestCaseWithBucket):
+    def test_create_with_all_attributes(self):
+        recreated_structure = BucketFactory.bucket_structure_from_dict(self.bucket.bucket_dict)
+        for attr_name in get_all_annotations(BucketStructure):
+            assert getattr(self.bucket,
+                           attr_name) == getattr(recreated_structure, attr_name), attr_name
+
+    def test_create_with_all_attributes_low_permissions(self):
+        low_perm_api = self.new_api_with_new_key(capabilities=['listBuckets'])
+        low_perm_bucket = low_perm_api.get_bucket_by_name(self.bucket.name)
+        recreated_structure = BucketFactory.bucket_structure_from_dict(low_perm_bucket.bucket_dict)
+
+        comparison_exclusion_list = [
+            'bucket_dict', 'default_server_side_encryption', 'default_retention',
+            'is_file_lock_enabled', 'replication'
+        ]
+        for attr_name in comparison_exclusion_list:
+            assert hasattr(self.bucket, attr_name), attr_name
+
+        for attr_name in get_all_annotations(BucketStructure):
+            assert not isinstance(getattr(recreated_structure, attr_name), ValueNotSet), attr_name
+            if attr_name not in comparison_exclusion_list:
+                assert getattr(self.bucket,
+                               attr_name) == getattr(recreated_structure, attr_name), attr_name
+
+    def test_create_with_some_attributes(self):
+        attributes_to_drop = {
+            'cors_rules': 'corsRules',
+            'default_server_side_encryption': 'defaultServerSideEncryption',
+            'name': 'bucketName'
+        }
+        comparison_exclusion_list = ['bucket_dict']
+        for attr_name in itertools.chain(attributes_to_drop, comparison_exclusion_list):
+            assert hasattr(self.bucket, attr_name), attr_name
+
+        new_bucket_dict = self.bucket.bucket_dict.copy()
+        for key in attributes_to_drop.values():
+            new_bucket_dict.pop(key)
+
+        recreated_structure = BucketFactory.bucket_structure_from_dict(new_bucket_dict)
+
+        for attr_name in get_all_annotations(BucketStructure):
+            if attr_name in comparison_exclusion_list:
+                assert not isinstance(getattr(recreated_structure, attr_name), ValueNotSet)
+            elif attr_name in attributes_to_drop:
+                assert isinstance(getattr(recreated_structure, attr_name), ValueNotSet)
+            else:
+                assert getattr(self.bucket,
+                               attr_name) == getattr(recreated_structure, attr_name), attr_name

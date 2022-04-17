@@ -284,6 +284,8 @@ class BucketRetentionSetting:
         }
         if self.period is not None:
             result['period'] = self.period.as_dict()
+        else:
+            result['period'] = None
         return result
 
     def serialize_to_json_for_request(self):
@@ -301,6 +303,7 @@ class BucketRetentionSetting:
 class FileLockConfiguration:
     """Represent bucket's file lock configuration, i.e. whether the file lock mechanism is enabled and default
     file retention"""
+    TOP_LEVEL_KEY = 'fileLockConfiguration'
 
     def __init__(
         self,
@@ -339,12 +342,12 @@ class FileLockConfiguration:
             }
         """
 
-        if not bucket_dict['fileLockConfiguration']['isClientAuthorizedToRead']:
+        if not bucket_dict[cls.TOP_LEVEL_KEY]['isClientAuthorizedToRead']:
             return cls(UNKNOWN_BUCKET_RETENTION, None)
         retention = BucketRetentionSetting.from_bucket_retention_dict(
-            bucket_dict['fileLockConfiguration']['value']['defaultRetention']
+            bucket_dict[cls.TOP_LEVEL_KEY]['value']['defaultRetention']
         )
-        is_file_lock_enabled = bucket_dict['fileLockConfiguration']['value']['isFileLockEnabled']
+        is_file_lock_enabled = bucket_dict[cls.TOP_LEVEL_KEY]['value']['isFileLockEnabled']
         return cls(retention, is_file_lock_enabled)
 
     def as_dict(self):

@@ -37,6 +37,7 @@ class TestApi(TestBase):
 
     @pytest.mark.apiver(to_ver=1)
     def test_get_bucket_by_id_up_to_v1(self):
+        self._authorize_account()
         bucket = self.api.get_bucket_by_id("this id doesn't even exist")
         assert bucket.id_ == "this id doesn't even exist"
         for att_name, att_value in [

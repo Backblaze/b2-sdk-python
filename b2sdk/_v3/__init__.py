@@ -17,6 +17,8 @@ from b2sdk.api import B2Api
 from b2sdk.api import Services
 from b2sdk.bucket import Bucket
 from b2sdk.bucket import BucketFactory
+from b2sdk.bucket import BucketStructure
+from b2sdk.bucket import ValueNotSet
 from b2sdk.raw_api import ALL_CAPABILITIES, REALM_URLS
 
 # encryption

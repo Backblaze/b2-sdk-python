@@ -220,6 +220,7 @@ class ReplicationConfiguration:
 
 @dataclass
 class ReplicationConfigurationFactory:
+    TOP_LEVEL_KEY = 'replicationConfiguration'
     is_client_authorized_to_read: bool
     value: Optional[ReplicationConfiguration]
 
@@ -229,7 +230,7 @@ class ReplicationConfigurationFactory:
         Returns ReplicationConfigurationFactory for the given bucket dict
         retrieved from the api, or None if no replication configured.
         """
-        replication_dict = bucket_dict.get('replicationConfiguration')
+        replication_dict = bucket_dict.get(cls.TOP_LEVEL_KEY)
         if not replication_dict:
             return cls(
                 is_client_authorized_to_read=True,

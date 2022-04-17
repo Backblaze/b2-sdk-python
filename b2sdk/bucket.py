@@ -10,7 +10,10 @@
 
 import logging
 
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Union
+
+if False:
+    from b2sdk.api import B2Api
 
 from .encryption.setting import EncryptionSetting, EncryptionSettingFactory
 from .encryption.types import EncryptionMode
@@ -28,6 +31,7 @@ from .file_lock import (
     FileLockConfiguration,
     FileRetentionSetting,
     LegalHold,
+    RetentionMode,
 )
 from .file_version import DownloadVersion, FileVersion
 from .progress import AbstractProgressListener, DoNothingProgressListener
@@ -48,16 +52,30 @@ from .utils import (
 logger = logging.getLogger(__name__)
 
 
-class Bucket(metaclass=B2TraceMeta):
-    """
-    Provide access to a bucket in B2: listing files, uploading and downloading.
-    """
+class ValueNotSet:
+    pass
 
-    DEFAULT_CONTENT_TYPE = AUTO_CONTENT_TYPE
+
+class BucketStructure(metaclass=B2TraceMeta):
+    """Structure holding all attributes of a bucket."""
+
+    id_: Union[str, ValueNotSet]
+    account_id: Union[str, ValueNotSet]
+    name: Union[str, ValueNotSet]
+    type_: Union[str, ValueNotSet]
+    bucket_info: Union[dict, ValueNotSet]
+    cors_rules: Union[dict, ValueNotSet]
+    lifecycle_rules: Union[dict, ValueNotSet]
+    revision: Union[int, ValueNotSet]
+    bucket_dict: Union[dict, ValueNotSet]
+    options_set: Union[set, ValueNotSet]
+    default_server_side_encryption: Union[EncryptionSetting, ValueNotSet]
+    default_retention: Union[BucketRetentionSetting, ValueNotSet]
+    is_file_lock_enabled: Union[Optional[bool], ValueNotSet]
+    replication: Union[Optional[ReplicationConfiguration], ValueNotSet]
 
     def __init__(
         self,
-        api,
         id_,
         name=None,
         type_=None,
@@ -73,9 +91,10 @@ class Bucket(metaclass=B2TraceMeta):
         default_retention: BucketRetentionSetting = UNKNOWN_BUCKET_RETENTION,
         is_file_lock_enabled: Optional[bool] = None,
         replication: Optional[ReplicationConfiguration] = None,
+        *,
+        account_id,
     ):
         """
-        :param b2sdk.v2.B2Api api: an API object
         :param str id_: a bucket id
         :param str name: a bucket name
         :param str type_: a bucket type
@@ -89,9 +108,10 @@ class Bucket(metaclass=B2TraceMeta):
         :param b2sdk.v2.BucketRetentionSetting default_retention: default retention setting
         :param bool is_file_lock_enabled: whether file locking is enabled or not
         :param b2sdk.v2.ReplicationConfiguration replication: replication rules for the bucket
+        :param str account_id: id of the account owning the bucket
         """
-        self.api = api
         self.id_ = id_
+        self.account_id = account_id
         self.name = name
         self.type_ = type_
         self.bucket_info = bucket_info or {}
@@ -104,6 +124,45 @@ class Bucket(metaclass=B2TraceMeta):
         self.default_retention = default_retention
         self.is_file_lock_enabled = is_file_lock_enabled
         self.replication = replication
+
+    def __repr__(self):
+        return '%s<%s,%s,%s>' % (type(self).__name__, self.id_, self.name, self.type_)
+
+
+class Bucket(BucketStructure):
+    """
+    Provide access to a bucket in B2: listing files, uploading and downloading.
+    """
+
+    api: 'B2Api'
+    id_: str
+    account_id: str
+    name: str
+    type_: str
+    bucket_info: dict
+    cors_rules: dict
+    lifecycle_rules: dict
+    revision: int
+    bucket_dict: dict
+    options_set: set
+    default_server_side_encryption: EncryptionSetting
+    default_retention: BucketRetentionSetting
+    is_file_lock_enabled: Optional[bool]
+    replication: Optional[ReplicationConfiguration]
+
+    DEFAULT_CONTENT_TYPE = AUTO_CONTENT_TYPE
+
+    def __init__(
+        self,
+        api,
+        *args,
+        **kwargs,
+    ):
+        """
+        :param b2sdk.v2.B2Api api: an API object
+        """
+        self.api = api
+        super().__init__(*args, account_id=self.api.account_info.get_account_id(), **kwargs)
 
     def get_fresh_state(self) -> 'Bucket':
         """
@@ -960,9 +1019,6 @@ class Bucket(metaclass=B2TraceMeta):
 
         return result
 
-    def __repr__(self):
-        return 'Bucket<%s,%s,%s>' % (self.id_, self.name, self.type_)
-
 
 class BucketFactory:
     """
@@ -980,6 +1036,123 @@ class BucketFactory:
         :rtype: b2sdk.v2.Bucket
         """
         return [cls.from_api_bucket_dict(api, bucket_dict) for bucket_dict in response['buckets']]
+
+    @classmethod
+    def bucket_structure_from_dict(cls, bucket_dict) -> BucketStructure:
+        """
+        Turn a dictionary, like this:
+
+        .. code-block:: python
+
+            {
+                "bucketType": "allPrivate",
+                "accountId": "0991231",
+                "bucketId": "a4ba6a39d8b6b5fd561f0010",
+                "bucketName": "zsdfrtsazsdfafr",
+                "accountId": "4aa9865d6f00",
+                "bucketInfo": {},
+                "options": [],
+                "revision": 1,
+                "defaultServerSideEncryption": {
+                    "isClientAuthorizedToRead" : true,
+                    "value": {
+                        "algorithm" : "AES256",
+                        "mode" : "SSE-B2"
+                    }
+                },
+                "fileLockConfiguration": {
+                    "isClientAuthorizedToRead": true,
+                    "value": {
+                        "defaultRetention": {
+                            "mode": null,
+                            "period": null
+                            },
+                            "isFileLockEnabled": false
+                        }
+                },
+                "replicationConfiguration": {
+                    "clientIsAllowedToRead": true,
+                    "value": {
+                        "asReplicationSource": {
+                            "replicationRules": [
+                                {
+                                    "destinationBucketId": "c5f35d53a90a7ea284fb0719",
+                                    "fileNamePrefix": "",
+                                    "includeExistingFiles": True,
+                                    "isEnabled": true,
+                                    "priority": 1,
+                                    "replicationRuleName": "replication-us-west"
+                                },
+                                {
+                                    "destinationBucketId": "55f34d53a96a7ea284fb0719",
+                                    "fileNamePrefix": "",
+                                    "includeExistingFiles": True,
+                                    "isEnabled": true,
+                                    "priority": 2,
+                                    "replicationRuleName": "replication-us-west-2"
+                                }
+                            ],
+                            "sourceApplicationKeyId": "10053d55ae26b790000000006"
+                        },
+                        "asReplicationDestination": {
+                            "sourceToDestinationKeyMapping": {
+                                "10053d55ae26b790000000045": "10053d55ae26b790000000004",
+                                "10053d55ae26b790000000046": "10053d55ae26b790030000004"
+                            }
+                        }
+                    }
+                }
+            }
+
+        into a BucketStructure object.
+
+        :param dict bucket_dict: a dictionary with bucket properties
+        :rtype: BucketStructure
+
+        """
+        type_ = bucket_dict.get('bucketType', ValueNotSet())
+        bucket_name = bucket_dict.get('bucketName', ValueNotSet())
+        bucket_id = bucket_dict.get('bucketId', ValueNotSet())
+        bucket_info = bucket_dict.get('bucketInfo', ValueNotSet())
+        cors_rules = bucket_dict.get('corsRules', ValueNotSet())
+        lifecycle_rules = bucket_dict.get('lifecycleRules', ValueNotSet())
+        revision = bucket_dict.get('revision', ValueNotSet())
+        options = set(bucket_dict['options']) if 'options' in bucket_dict else ValueNotSet()
+        account_id = bucket_dict.get('accountId', ValueNotSet())
+
+        default_server_side_encryption = (
+            EncryptionSettingFactory.from_bucket_dict(bucket_dict)
+            if EncryptionSettingFactory.TOP_LEVEL_KEY in bucket_dict else ValueNotSet()
+        )
+        replication = (
+            ReplicationConfigurationFactory.from_bucket_dict(bucket_dict).value
+            if ReplicationConfigurationFactory.TOP_LEVEL_KEY in bucket_dict else ValueNotSet()
+        )
+
+        if FileLockConfiguration.TOP_LEVEL_KEY in bucket_dict:
+            file_lock_configuration = FileLockConfiguration.from_bucket_dict(bucket_dict)
+            default_retention = file_lock_configuration.default_retention
+            is_file_lock_enabled = file_lock_configuration.is_file_lock_enabled
+        else:
+            default_retention = ValueNotSet()
+            is_file_lock_enabled = ValueNotSet()
+
+        return BucketStructure(
+            bucket_id,
+            bucket_name,
+            type_,
+            bucket_info,
+            cors_rules,
+            lifecycle_rules,
+            revision,
+            bucket_dict,
+            options,
+            default_server_side_encryption,
+            default_retention,
+            is_file_lock_enabled,
+            replication,
+            account_id=account_id,
+        )
 
     @classmethod
     def from_api_bucket_dict(cls, api, bucket_dict):

@@ -220,6 +220,7 @@ class EncryptionSetting:
 
 
 class EncryptionSettingFactory:
+    TOP_LEVEL_KEY = 'defaultServerSideEncryption'
     # 2021-03-17: for the bucket the response of the server is:
     # if authorized to read:
     #    "mode": "none"
@@ -301,7 +302,7 @@ class EncryptionSettingFactory:
 
         """
         default_sse = bucket_dict.get(
-            'defaultServerSideEncryption',
+            cls.TOP_LEVEL_KEY,
             {'isClientAuthorizedToRead': False},
         )
 
