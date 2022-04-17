@@ -140,7 +140,7 @@ def raw_api_test_helper(raw_api, should_cleanup_old_buckets):
 
     print('b2_create_bucket/replication')
     # in order to test replication, we need to create a second bucket
-    _ = raw_api.create_bucket(
+    bucket_dict = raw_api.create_bucket(
         api_url,
         account_auth_token,
         account_id,
@@ -159,6 +159,22 @@ def raw_api_test_helper(raw_api, should_cleanup_old_buckets):
             ),
         ),
     )
+    assert 'replicationConfiguration' in bucket_dict
+    assert bucket_dict['replicationConfiguration'] == {
+        "asReplicationSource": {
+            "replicationRules": [
+                {
+                    "destinationBucketId": bucket_id,
+                    "fileNamePrefix": "",
+                    "isEnabled": True,
+                    "priority": 1,
+                    "replicationRuleName": "test-rule"
+                },
+            ],
+            "sourceApplicationKeyId": key_dict['applicationKeyId']
+        },
+        "asReplicationDestination": None,
+    }
 
     ##################
     print('b2_update_bucket')
