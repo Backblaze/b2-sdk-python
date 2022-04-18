@@ -163,21 +163,24 @@ def raw_api_test_helper(raw_api, should_cleanup_old_buckets):
     assert 'replicationConfiguration' in replication_source_bucket_dict
     assert replication_source_bucket_dict['replicationConfiguration'] == {
         'isClientAuthorizedToRead': True,
-        'value': {
-            "asReplicationSource": {
-                "replicationRules": [
+        'value':
+            {
+                "asReplicationSource":
                     {
-                        "destinationBucketId": bucket_id,
-                        "fileNamePrefix": "",
-                        "isEnabled": True,
-                        "priority": 1,
-                        "replicationRuleName": "test-rule"
+                        "replicationRules":
+                            [
+                                {
+                                    "destinationBucketId": bucket_id,
+                                    "fileNamePrefix": "",
+                                    "isEnabled": True,
+                                    "priority": 1,
+                                    "replicationRuleName": "test-rule"
+                                },
+                            ],
+                        "sourceApplicationKeyId": key_dict['applicationKeyId']
                     },
-                ],
-                "sourceApplicationKeyId": key_dict['applicationKeyId']
+                "asReplicationDestination": None,
             },
-            "asReplicationDestination": None,
-        },
     }
 
     ##################

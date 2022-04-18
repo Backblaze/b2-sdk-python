@@ -21,7 +21,6 @@ from .fixtures import *  # pyflakes: disable
 from .helpers import GENERAL_BUCKET_NAME_PREFIX
 from .base import IntegrationTestBase
 
-
 #class TestDownload(IntegrationTestBase):
 #    def test_large_file(self):
 #        bucket = self.create_bucket()
