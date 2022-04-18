@@ -23,7 +23,7 @@ class ReplicationRule:
     """
 
     destination_bucket_id: str
-    replication_rule_name: str
+    name: str
     file_name_prefix: str = ''
     is_enabled: bool = True
     priority: int = 1
@@ -40,8 +40,8 @@ class ReplicationRule:
 
         # TODO: file_name_prefix validation
 
-        if not self.REPLICATION_RULE_REGEX.match(self.replication_rule_name):
-            raise ValueError('replication_rule_name is invalid')
+        if not self.REPLICATION_RULE_REGEX.match(self.name):
+            raise ValueError('replication rule name is invalid')
 
     def as_dict(self) -> dict:
         return {
@@ -49,7 +49,7 @@ class ReplicationRule:
             'fileNamePrefix': self.file_name_prefix,
             'isEnabled': self.is_enabled,
             'priority': self.priority,
-            'replicationRuleName': self.replication_rule_name,
+            'replicationRuleName': self.name,
         }
 
     @classmethod
@@ -59,7 +59,7 @@ class ReplicationRule:
             file_name_prefix=value_dict['fileNamePrefix'],
             is_enabled=value_dict['isEnabled'],
             priority=value_dict['priority'],
-            replication_rule_name=value_dict['replicationRuleName'],
+            name=value_dict['replicationRuleName'],
         )
 
 
@@ -69,26 +69,26 @@ class ReplicationSourceConfiguration:
     Hold information about bucket being a replication source
     """
 
-    replication_rules: List[ReplicationRule]
+    rules: List[ReplicationRule]
     source_application_key_id: str
 
     def __post_init__(self):
-        if not self.replication_rules:
-            raise ValueError("replication_rules must not be empty")
+        if not self.rules:
+            raise ValueError("rules must not be empty")
 
         if not self.source_application_key_id:
             raise ValueError("source_application_key_id must not be empty")
 
     def as_dict(self) -> dict:
         return {
-            "replicationRules": [rule.as_dict() for rule in self.replication_rules],
+            "replicationRules": [rule.as_dict() for rule in self.rules],
             "sourceApplicationKeyId": self.source_application_key_id,
         }
 
     @classmethod
     def from_dict(cls, value_dict: dict) -> 'ReplicationSourceConfiguration':
         return cls(
-            replication_rules=[
+            rules=[
                 ReplicationRule.from_dict(rule_dict) for rule_dict in value_dict['replicationRules']
             ],
             source_application_key_id=value_dict['sourceApplicationKeyId'],

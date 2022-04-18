@@ -530,6 +530,19 @@ class B2Api(metaclass=B2TraceMeta):
                 return
             start_application_key_id = next_application_key_id
 
+    def get_key(self, key_id: str) -> Optional[ApplicationKey]:
+        """
+        Gets information about a single key: it's capabilities, prefix, name etc
+
+        Returns `None` if the key does not exist.
+
+        Raises an exception if profile is not permitted to list keys.
+        """
+        try:
+            return self.list_keys(start_application_key_id=key_id)[0]
+        except IndexError:
+            return None
+
     # other
     def get_file_info(self, file_id: str) -> FileVersion:
         """

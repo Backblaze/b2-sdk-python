@@ -1711,7 +1711,7 @@ class RawSimulator(AbstractRawApi):
         default_retention: Optional[BucketRetentionSetting] = None,
         replication: Optional[ReplicationConfiguration] = None,
     ):
-        assert bucket_type or bucket_info or cors_rules or lifecycle_rules or default_server_side_encryption
+        assert bucket_type or bucket_info or cors_rules or lifecycle_rules or default_server_side_encryption or replication
         bucket = self._get_bucket_by_id(bucket_id)
         self._assert_account_auth(api_url, account_auth_token, bucket.account_id, 'writeBuckets')
         return bucket._update_bucket(

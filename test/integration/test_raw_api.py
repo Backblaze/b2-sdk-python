@@ -170,10 +170,10 @@ def raw_api_test_helper(raw_api, should_cleanup_old_buckets):
             is_file_lock_enabled=True,
             replication=ReplicationConfiguration(
                 as_replication_source=ReplicationSourceConfiguration(
-                    replication_rules=[
+                    rules=[
                         ReplicationRule(
                             destination_bucket_id=bucket_id,
-                            replication_rule_name='test-rule',
+                            name='test-rule',
                         ),
                     ],
                     source_application_key_id=replication_source_key,

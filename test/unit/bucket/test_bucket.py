@@ -91,14 +91,14 @@ SSE_C_AES_FROM_SERVER = EncryptionSetting(
 )
 REPLICATION = ReplicationConfiguration(
     as_replication_source=ReplicationSourceConfiguration(
-        replication_rules=[
+        rules=[
             ReplicationRule(
                 destination_bucket_id='c5f35d53a90a7ea284fb0719',
-                replication_rule_name='replication-us-west',
+                name='replication-us-west',
             ),
             ReplicationRule(
                 destination_bucket_id='55f34d53a96a7ea284fb0719',
-                replication_rule_name='replication-us-west-2',
+                name='replication-us-west-2',
                 file_name_prefix='replica/',
                 is_enabled=False,
                 priority=255,
@@ -1026,6 +1026,11 @@ class TestUpdate(TestCaseWithBucket):
                 'replication': REPLICATION,
             }
             for attr_name, attr_value in assertions_mapping.items():
+                self.maxDiff = None
+                print('---', attr_name, '---')
+                print(attr_value)
+                print('?=?')
+                print(getattr(result, attr_name))
                 self.assertEqual(attr_value, getattr(result, attr_name), attr_name)
 
     def test_update_if_revision_is(self):
