@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.16.0-alpha.1] - 2022-04-18
+
 ### Added
 * Add basic replication support to `Bucket` and `FileVersion`
 * Add `is_master_key()` method to `AbstractAccountInfo`
