@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 * Add basic replication support to `Bucket` and `FileVersion`
 * Add `is_master_key()` method to `AbstractAccountInfo`
+* Add `readBucketReplications` and `writeBucketReplications` to `ALL_CAPABILITIES`
 
 ### Fixed
 * Fix license test on Windows

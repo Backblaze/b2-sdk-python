@@ -47,6 +47,8 @@ ALL_CAPABILITIES = [
     'writeFileRetentions',
     'readFileLegalHolds',
     'writeFileLegalHolds',
+    'readBucketReplications',
+    'writeBucketReplications',
     'bypassGovernance',
     'listFiles',
     'readFiles',
