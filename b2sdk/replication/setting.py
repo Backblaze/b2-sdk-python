@@ -180,6 +180,8 @@ class ReplicationConfiguration:
 
     @classmethod
     def from_dict(cls, value_dict: dict) -> 'ReplicationConfiguration':
+        if value_dict is None:
+            return
         replication_source_dict = value_dict.get('asReplicationSource')
         as_replication_source = replication_source_dict and ReplicationSourceConfiguration.from_dict(
             replication_source_dict
@@ -215,6 +217,8 @@ class ReplicationConfigurationResponse:
 
     @classmethod
     def from_dict(cls, value_dict: dict) -> 'ReplicationConfigurationResponse':
+        if value_dict is None:
+            return
         return cls(
             is_client_authorized_to_read=value_dict['isClientAuthorizedToRead'],
             value=ReplicationConfiguration.from_dict(value_dict['value']),
