@@ -201,7 +201,7 @@ class ReplicationConfiguration:
 @dataclass
 class ReplicationConfigurationResponse:
     is_client_authorized_to_read: bool
-    value: ReplicationConfiguration
+    value: Optional[ReplicationConfiguration]
 
     @classmethod
     def from_bucket_dict(cls, bucket_dict: dict) -> Optional['ReplicationConfigurationResponse']:
@@ -221,5 +221,5 @@ class ReplicationConfigurationResponse:
             return
         return cls(
             is_client_authorized_to_read=value_dict['isClientAuthorizedToRead'],
-            value=ReplicationConfiguration.from_dict(value_dict['value']),
+            value=value_dict['value'] and ReplicationConfiguration.from_dict(value_dict['value']),
         )
