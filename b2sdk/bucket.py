@@ -1081,5 +1081,5 @@ class BucketFactory:
             default_server_side_encryption,
             file_lock_configuration.default_retention,
             file_lock_configuration.is_file_lock_enabled,
-            replication.value,
+            replication and replication.value,
         )

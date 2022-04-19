@@ -177,5 +177,5 @@ class DownloadedFile:
             self.save(file, allow_seeking=allow_seeking)
 
     @classmethod
-    def get_replication_status_from_headers(headers: dict) -> Optional[ReplicationStatus]:
+    def get_replication_status_from_headers(cls, headers: dict) -> Optional[ReplicationStatus]:
         return headers.get('X-Bz-Replication-Status', None)
