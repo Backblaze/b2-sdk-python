@@ -955,6 +955,7 @@ class Bucket(metaclass=B2TraceMeta):
         result['defaultServerSideEncryption'] = self.default_server_side_encryption.as_dict()
         result['isFileLockEnabled'] = self.is_file_lock_enabled
         result['defaultRetention'] = self.default_retention.as_dict()
+        result['replication'] = self.replication and self.replication.as_dict()
 
         return result
 
@@ -1012,29 +1013,32 @@ class BucketFactory:
                         }
                 },
                 "replicationConfiguration": {
-                    "asReplicationSource": {
-                        "replicationRules": [
-                            {
-                                "destinationBucketId": "c5f35d53a90a7ea284fb0719",
-                                "fileNamePrefix": "",
-                                "isEnabled": true,
-                                "priority": 1,
-                                "replicationRuleName": "replication-us-west"
-                            },
-                            {
-                                "destinationBucketId": "55f34d53a96a7ea284fb0719",
-                                "fileNamePrefix": "",
-                                "isEnabled": true,
-                                "priority": 2,
-                                "replicationRuleName": "replication-us-west-2"
+                    "clientIsAllowedToRead": true,
+                    "value": {
+                        "asReplicationSource": {
+                            "replicationRules": [
+                                {
+                                    "destinationBucketId": "c5f35d53a90a7ea284fb0719",
+                                    "fileNamePrefix": "",
+                                    "isEnabled": true,
+                                    "priority": 1,
+                                    "replicationRuleName": "replication-us-west"
+                                },
+                                {
+                                    "destinationBucketId": "55f34d53a96a7ea284fb0719",
+                                    "fileNamePrefix": "",
+                                    "isEnabled": true,
+                                    "priority": 2,
+                                    "replicationRuleName": "replication-us-west-2"
+                                }
+                            ],
+                            "sourceApplicationKeyId": "10053d55ae26b790000000006"
+                        },
+                        "asReplicationDestination": {
+                            "sourceToDestinationKeyMapping": {
+                                "10053d55ae26b790000000045": "10053d55ae26b790000000004",
+                                "10053d55ae26b790000000046": "10053d55ae26b790030000004"
                             }
-                        ],
-                        "sourceApplicationKeyId": "10053d55ae26b790000000006"
-                    },
-                    "asReplicationDestination": {
-                        "sourceToDestinationKeyMapping": {
-                            "10053d55ae26b790000000045": "10053d55ae26b790000000004",
-                            "10053d55ae26b790000000046": "10053d55ae26b790030000004"
                         }
                     }
                 }
@@ -1077,5 +1081,5 @@ class BucketFactory:
             default_server_side_encryption,
             file_lock_configuration.default_retention,
             file_lock_configuration.is_file_lock_enabled,
-            replication,
+            replication.value,
         )
