@@ -6,7 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.16.0-alpha.1] - 2022-04-18
+## [1.16.0-alpha.1] - 2022-04-20
+
+This is an alpha release. A preview, not for production use. It allows for basic
+usage of B2 replication feature (currently in closed beta). The main reason of
+releasing it early is to pair it with alpha b2 cli. Expect substantial amount
+of work on sdk interface:
+* The interface of `Bucket.replication` WILL change
+* The interface of `FileVersion.replication_status` MIGHT change
+* The interface of `FileVersionDownload` MIGHT change
 
 ### Added
 * Add basic replication support to `Bucket` and `FileVersion`
