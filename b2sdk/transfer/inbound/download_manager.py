@@ -106,4 +106,7 @@ class DownloadManager(TransferManager, ThreadPoolMixin, metaclass=B2TraceMetaAbs
                 progress_listener=progress_listener,
                 write_buffer_size=self.write_buffer_size,
                 check_hash=self.check_hash,
+                replication_status=DownloadedFile.get_replication_status_from_headers(
+                    response.headers,
+                ),
             )
