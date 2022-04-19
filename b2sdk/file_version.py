@@ -45,6 +45,7 @@ class BaseFileVersion:
         'legal_hold',
         'file_retention',
         'mod_time_millis',
+        'replication_status',
     ]
 
     def __init__(
@@ -60,6 +61,7 @@ class BaseFileVersion:
         server_side_encryption: EncryptionSetting,
         file_retention: FileRetentionSetting = NO_RETENTION_FILE_SETTING,
         legal_hold: LegalHold = LegalHold.UNSET,
+        replication_status: Optional[ReplicationStatus] = None,
     ):
         self.api = api
         self.id_ = id_
@@ -72,6 +74,7 @@ class BaseFileVersion:
         self.server_side_encryption = server_side_encryption
         self.file_retention = file_retention
         self.legal_hold = legal_hold
+        self.replication_status = replication_status
 
         if SRC_LAST_MODIFIED_MILLIS in self.file_info:
             self.mod_time_millis = int(self.file_info[SRC_LAST_MODIFIED_MILLIS])
@@ -111,6 +114,7 @@ class BaseFileVersion:
             'server_side_encryption': self.server_side_encryption,
             'file_retention': self.file_retention,
             'legal_hold': self.legal_hold,
+            'replication_status': self.replication_status,
         }  # yapf: disable
 
     def as_dict(self):
@@ -134,6 +138,7 @@ class BaseFileVersion:
             result['contentSha1'] = self._encode_content_sha1(
                 self.content_sha1, self.content_sha1_verified
             )
+        result['replicationStatus'] = self.replication_status and self.replication_status.value
 
         return result
 
@@ -192,7 +197,6 @@ class FileVersion(BaseFileVersion):
         'bucket_id',
         'content_md5',
         'action',
-        'replication_status',
     ]
 
     def __init__(
@@ -212,13 +216,12 @@ class FileVersion(BaseFileVersion):
         server_side_encryption: EncryptionSetting,
         file_retention: FileRetentionSetting = NO_RETENTION_FILE_SETTING,
         legal_hold: LegalHold = LegalHold.UNSET,
-        replication_status: ReplicationStatus = None,
+        replication_status: Optional[ReplicationStatus] = None,
     ):
         self.account_id = account_id
         self.bucket_id = bucket_id
         self.content_md5 = content_md5
         self.action = action
-        self.replication_status = replication_status
 
         super().__init__(
             api=api,
@@ -232,6 +235,7 @@ class FileVersion(BaseFileVersion):
             server_side_encryption=server_side_encryption,
             file_retention=file_retention,
             legal_hold=legal_hold,
+            replication_status=replication_status,
         )
 
     def _get_args_for_clone(self):
@@ -242,7 +246,6 @@ class FileVersion(BaseFileVersion):
                 'bucket_id': self.bucket_id,
                 'action': self.action,
                 'content_md5': self.content_md5,
-                'replication_status': self.replication_status,
             }
         )
         return args
@@ -251,7 +254,6 @@ class FileVersion(BaseFileVersion):
         result = super().as_dict()
         result['accountId'] = self.account_id
         result['bucketId'] = self.bucket_id
-        result['replicationStatus'] = self.replication_status and self.replication_status.value
 
         if self.action is not None:
             result['action'] = self.action
@@ -315,6 +317,7 @@ class DownloadVersion(BaseFileVersion):
         content_encoding: Optional[str],
         file_retention: FileRetentionSetting = NO_RETENTION_FILE_SETTING,
         legal_hold: LegalHold = LegalHold.UNSET,
+        replication_status: Optional[ReplicationStatus] = None,
     ):
         self.range_ = range_
         self.content_disposition = content_disposition
@@ -336,6 +339,7 @@ class DownloadVersion(BaseFileVersion):
             server_side_encryption=server_side_encryption,
             file_retention=file_retention,
             legal_hold=legal_hold,
+            replication_status=replication_status,
         )
 
     def _get_args_for_clone(self):
@@ -497,6 +501,7 @@ class DownloadVersionFactory:
             content_encoding=headers.get('Content-Encoding'),
             file_retention=FileRetentionSetting.from_response_headers(headers),
             legal_hold=LegalHold.from_response_headers(headers),
+            replication_status=ReplicationStatus.from_response_headers(headers),
         )
 
 

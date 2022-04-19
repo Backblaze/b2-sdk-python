@@ -1023,10 +1023,7 @@ class TestUpdate(TestCaseWithBucket):
                 'options_set': set(),
                 'default_server_side_encryption': SSE_B2_AES,
                 'default_retention': BucketRetentionSetting(RetentionMode.COMPLIANCE, RetentionPeriod(years=7)),
-                'replication': ReplicationConfigurationResponse(
-                    is_client_authorized_to_read=True,
-                    value=REPLICATION,
-                ),
+                'replication': REPLICATION,
             }
             for attr_name, attr_value in assertions_mapping.items():
                 self.assertEqual(attr_value, getattr(result, attr_name), attr_name)

@@ -15,7 +15,6 @@ from typing import Optional, Tuple, TYPE_CHECKING
 from requests.models import Response
 
 from ...encryption.setting import EncryptionSetting
-from ...replication.types import ReplicationStatus
 from ...file_version import DownloadVersion
 from ...progress import AbstractProgressListener
 from ...stream.progress import WritingStreamWithProgress
@@ -97,7 +96,6 @@ class DownloadedFile:
         progress_listener: AbstractProgressListener,
         write_buffer_size=None,
         check_hash=True,
-        replication_status: Optional[ReplicationStatus] = None,
     ):
         self.download_version = download_version
         self.download_manager = download_manager
@@ -108,7 +106,6 @@ class DownloadedFile:
         self.download_strategy = None
         self.write_buffer_size = write_buffer_size
         self.check_hash = check_hash
-        self.replication_status = replication_status
 
     def _validate_download(self, bytes_read, actual_sha1):
         if self.range_ is None:
@@ -175,7 +172,3 @@ class DownloadedFile:
             buffering=self.write_buffer_size,
         ) as file:
             self.save(file, allow_seeking=allow_seeking)
-
-    @classmethod
-    def get_replication_status_from_headers(cls, headers: dict) -> Optional[ReplicationStatus]:
-        return headers.get('X-Bz-Replication-Status', None)

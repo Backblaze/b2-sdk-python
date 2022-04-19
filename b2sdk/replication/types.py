@@ -9,6 +9,7 @@
 ######################################################################
 
 from enum import Enum, unique
+from typing import Optional
 
 
 @unique
@@ -17,3 +18,8 @@ class ReplicationStatus(Enum):
     COMPLETED = 'COMPLETED'
     FAILED = 'FAILED'
     REPLICA = 'REPLICA'
+
+    @classmethod
+    def from_response_headers(cls, headers: dict) -> Optional['ReplicationStatus']:
+        value = headers.get('X-Bz-Replication-Status', None)
+        return value and cls[value]
