@@ -205,7 +205,9 @@ def raw_api_test_helper(raw_api, should_cleanup_old_buckets):
 
         # # 3) upload test file and check replication status
         upload_url_dict = raw_api.get_upload_url(
-            api_url, account_auth_token, replication_source_bucket_dict['bucketId'],
+            api_url,
+            account_auth_token,
+            replication_source_bucket_dict['bucketId'],
         )
         file_contents = b'hello world'
         file_dict = raw_api.upload_file(
@@ -289,7 +291,11 @@ def raw_api_test_helper(raw_api, should_cleanup_old_buckets):
     }
 
     _clean_and_delete_bucket(
-        raw_api, api_url, account_auth_token, account_id, replication_source_bucket_dict['bucketId'],
+        raw_api,
+        api_url,
+        account_auth_token,
+        account_id,
+        replication_source_bucket_dict['bucketId'],
     )
 
     #################
