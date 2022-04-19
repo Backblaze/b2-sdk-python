@@ -22,4 +22,4 @@ class ReplicationStatus(Enum):
     @classmethod
     def from_response_headers(cls, headers: dict) -> Optional['ReplicationStatus']:
         value = headers.get('X-Bz-Replication-Status', None)
-        return value and cls[value]
+        return value and cls[value.upper()]

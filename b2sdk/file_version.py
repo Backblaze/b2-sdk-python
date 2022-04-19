@@ -380,7 +380,7 @@ class FileVersionFactory:
                "fileName": "randomdata",
                "size": 0,
                "uploadTimestamp": 1451444477000,
-               "replicationStatus": "PENDING"
+               "replicationStatus": "pending"
            }
 
         or this:
@@ -397,7 +397,7 @@ class FileVersionFactory:
                "fileInfo": {},
                "fileName": "randomdata",
                "serverSideEncryption": {"algorithm": "AES256", "mode": "SSE-B2"},
-               "replicationStatus": "COMPLETED"
+               "replicationStatus": "completed"
            }
 
         into a :py:class:`b2sdk.v2.FileVersion` object.
@@ -425,7 +425,7 @@ class FileVersionFactory:
         legal_hold = LegalHold.from_file_version_dict(file_version_dict)
 
         replication_status_value = file_version_dict.get('replicationStatus')
-        replication_status = replication_status_value and ReplicationStatus[replication_status_value]
+        replication_status = replication_status_value and ReplicationStatus[replication_status_value.upper()]
 
         return self.FILE_VERSION_CLASS(
             self.api,
