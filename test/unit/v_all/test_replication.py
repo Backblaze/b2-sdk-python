@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: test/unit/v_all/test_api.py
+# File: test/unit/v_all/test_replication.py
 #
 # Copyright 2021 Backblaze Inc. All Rights Reserved.
 #

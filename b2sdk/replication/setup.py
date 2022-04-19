@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: b2sdk/replication/setting.py
+# File: b2sdk/replication/setup.py
 #
 # Copyright 2022 Backblaze Inc. All Rights Reserved.
 #
