@@ -204,13 +204,13 @@ class ReplicationSetupHelper:
                 do_create_key = True
             else:
                 current_source_key = api.get_key(
-                    current_replication_configuration.as_replication_source.source_key_id
+                    current_replication_configuration.as_replication_source.source_application_key_id
                 )
                 if current_source_key is None:
                     do_create_key = True
                     logger.debug(
                         'will create a new source key because current key %s has been deleted',
-                        current_replication_configuration.source_key_id,
+                        current_replication_configuration.as_replication_source.source_application_key_id,
                     )
                 else:
                     current_capabilities = current_source_key.get_capabilities()

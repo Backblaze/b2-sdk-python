@@ -538,10 +538,10 @@ class B2Api(metaclass=B2TraceMeta):
 
         Raises an exception if profile is not permitted to list keys.
         """
-        try:
-            return self.list_keys(start_application_key_id=key_id)[0]
-        except IndexError:
-            return None
+        return next(
+            self.list_keys(start_application_key_id=key_id),
+            None,
+        )
 
     # other
     def get_file_info(self, file_id: str) -> FileVersion:
