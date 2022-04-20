@@ -60,7 +60,7 @@ from apiver_deps import CopySource, UploadSourceLocalFile, WriteIntent
 from apiver_deps import BucketRetentionSetting, FileRetentionSetting, LegalHold, RetentionMode, RetentionPeriod, \
     NO_RETENTION_FILE_SETTING
 from apiver_deps import ReplicationConfiguration, ReplicationSourceConfiguration, \
-    ReplicationRule, ReplicationDestinationConfiguration, ReplicationConfigurationResponse
+    ReplicationRule, ReplicationDestinationConfiguration
 
 pytestmark = [pytest.mark.apiver(from_ver=1)]
 

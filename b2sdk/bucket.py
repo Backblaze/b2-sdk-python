@@ -31,7 +31,7 @@ from .file_lock import (
 )
 from .file_version import DownloadVersion, FileVersion
 from .progress import AbstractProgressListener, DoNothingProgressListener
-from .replication.setting import ReplicationConfiguration, ReplicationConfigurationResponse
+from .replication.setting import ReplicationConfiguration, ReplicationConfigurationFactory
 from .transfer.emerge.executor import AUTO_CONTENT_TYPE
 from .transfer.emerge.write_intent import WriteIntent
 from .transfer.inbound.downloaded_file import DownloadedFile
@@ -161,6 +161,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param if_revision_is: revision number, update the info **only if** *revision* equals to *if_revision_is*
         :param default_server_side_encryption: default server side encryption settings (``None`` if unknown)
         :param default_retention: bucket default retention setting
+        :param replication: replication rules for the bucket;
         """
         account_id = self.api.account_info.get_account_id()
         return self.api.BUCKET_FACTORY_CLASS.from_api_bucket_dict(
@@ -1066,7 +1067,7 @@ class BucketFactory:
             raise UnexpectedCloudBehaviour('server did not provide `defaultServerSideEncryption`')
         default_server_side_encryption = EncryptionSettingFactory.from_bucket_dict(bucket_dict)
         file_lock_configuration = FileLockConfiguration.from_bucket_dict(bucket_dict)
-        replication = ReplicationConfigurationResponse.from_bucket_dict(bucket_dict)
+        replication = ReplicationConfigurationFactory.from_bucket_dict(bucket_dict).value
         return cls.BUCKET_CLASS(
             api,
             bucket_id,
@@ -1081,5 +1082,5 @@ class BucketFactory:
             default_server_side_encryption,
             file_lock_configuration.default_retention,
             file_lock_configuration.is_file_lock_enabled,
-            replication and replication.value,
+            replication,
         )

@@ -11,7 +11,7 @@
 import re
 
 from builtins import classmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import ClassVar, Dict, List, Optional
 
 
@@ -69,15 +69,16 @@ class ReplicationSourceConfiguration:
     Hold information about bucket being a replication source
     """
 
-    rules: List[ReplicationRule]
-    source_application_key_id: str
+    rules: List[ReplicationRule] = field(default_factory=list)
+    source_application_key_id: Optional[str] = None
 
     def __post_init__(self):
-        if not self.rules:
-            raise ValueError("rules must not be empty")
-
-        if not self.source_application_key_id:
+        if self.rules and not self.source_application_key_id:
             raise ValueError("source_application_key_id must not be empty")
+
+    def serialize_to_json_for_request(self) -> Optional[dict]:
+        if self.rules or self.source_application_key_id:
+            return self.as_dict()
 
     def as_dict(self) -> dict:
         return {
@@ -97,18 +98,19 @@ class ReplicationSourceConfiguration:
 
 @dataclass
 class ReplicationDestinationConfiguration:
-    source_to_destination_key_mapping: Dict[str, str]
+    source_to_destination_key_mapping: Dict[str, str] = field(default_factory=dict)
 
     def __post_init__(self):
-        if not self.source_to_destination_key_mapping:
-            raise ValueError("source_to_destination_key_mapping must not be empty")
-
         for source, destination in self.source_to_destination_key_mapping.items():
             if not source or not destination:
                 raise ValueError(
                     "source_to_destination_key_mapping must not contain \
-                                  empty keys or values: ({}, {})".format(source, destination)
+                     empty keys or values: ({}, {})".format(source, destination)
                 )
+
+    def serialize_to_json_for_request(self) -> Optional[dict]:
+        if self.source_to_destination_key_mapping:
+            return self.as_dict()
 
     def as_dict(self) -> dict:
         return {
@@ -126,8 +128,12 @@ class ReplicationConfiguration:
     Hold information about bucket replication configuration
     """
 
-    as_replication_source: Optional[ReplicationSourceConfiguration] = None
-    as_replication_destination: Optional[ReplicationDestinationConfiguration] = None
+    as_replication_source: ReplicationSourceConfiguration = field(
+        default_factory=ReplicationSourceConfiguration,
+    )
+    as_replication_destination: ReplicationDestinationConfiguration = field(
+        default_factory=ReplicationDestinationConfiguration,
+    )
 
     def serialize_to_json_for_request(self) -> dict:
         return self.as_dict()
@@ -168,29 +174,24 @@ class ReplicationConfiguration:
 
         """
 
-        result = {}
-
-        if self.as_replication_source:
-            result['asReplicationSource'] = self.as_replication_source.as_dict()
-
-        if self.as_replication_destination:
-            result['asReplicationDestination'] = self.as_replication_destination.as_dict()
-
-        return result
+        return {
+            'asReplicationSource':
+                self.as_replication_source.serialize_to_json_for_request(),
+            'asReplicationDestination':
+                self.as_replication_destination.serialize_to_json_for_request(),
+        }
 
     @classmethod
     def from_dict(cls, value_dict: dict) -> 'ReplicationConfiguration':
-        if value_dict is None:
-            return
         replication_source_dict = value_dict.get('asReplicationSource')
-        as_replication_source = replication_source_dict and ReplicationSourceConfiguration.from_dict(
+        as_replication_source = ReplicationSourceConfiguration.from_dict(
             replication_source_dict
-        )
+        ) if replication_source_dict else ReplicationSourceConfiguration()
 
         replication_destination_dict = value_dict.get('asReplicationDestination')
-        as_replication_destination = replication_destination_dict and ReplicationDestinationConfiguration.from_dict(
+        as_replication_destination = ReplicationDestinationConfiguration.from_dict(
             replication_destination_dict
-        )
+        ) if replication_destination_dict else ReplicationDestinationConfiguration()
 
         return cls(
             as_replication_source=as_replication_source,
@@ -199,27 +200,37 @@ class ReplicationConfiguration:
 
 
 @dataclass
-class ReplicationConfigurationResponse:
+class ReplicationConfigurationFactory:
     is_client_authorized_to_read: bool
     value: Optional[ReplicationConfiguration]
 
     @classmethod
-    def from_bucket_dict(cls, bucket_dict: dict) -> Optional['ReplicationConfigurationResponse']:
+    def from_bucket_dict(cls, bucket_dict: dict) -> Optional['ReplicationConfigurationFactory']:
         """
-        Returns ReplicationConfigurationResponse for the given bucket dict
+        Returns ReplicationConfigurationFactory for the given bucket dict
         retrieved from the api, or None if no replication configured.
         """
-        replication_data = bucket_dict.get('replicationConfiguration')
-        if replication_data is None:
-            return
+        replication_dict = bucket_dict.get('replicationConfiguration')
+        if not replication_dict:
+            return cls(
+                is_client_authorized_to_read=True,
+                value=ReplicationConfiguration(),
+            )
 
-        return cls.from_dict(bucket_dict['replicationConfiguration'])
+        return cls.from_dict(replication_dict)
 
     @classmethod
-    def from_dict(cls, value_dict: dict) -> 'ReplicationConfigurationResponse':
-        if value_dict is None:
-            return
+    def from_dict(cls, value_dict: dict) -> 'ReplicationConfigurationFactory':
+        if not value_dict['isClientAuthorizedToRead']:
+            return cls(
+                is_client_authorized_to_read=False,
+                value=None,
+            )
+
+        replication_dict = value_dict['value']
+        replication_configuration = ReplicationConfiguration.from_dict(replication_dict) \
+            if replication_dict else ReplicationConfiguration()
         return cls(
-            is_client_authorized_to_read=value_dict['isClientAuthorizedToRead'],
-            value=value_dict['value'] and ReplicationConfiguration.from_dict(value_dict['value']),
+            is_client_authorized_to_read=True,
+            value=replication_configuration,
         )
