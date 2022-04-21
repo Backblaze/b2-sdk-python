@@ -8,6 +8,7 @@
 #
 ######################################################################
 
+import logging
 import pytest
 
 from apiver_deps import B2Api
@@ -19,6 +20,8 @@ from apiver_deps import RawSimulator
 from ..test_base import TestBase
 
 from b2sdk.replication.setup import ReplicationSetupHelper
+
+logger = logging.getLogger(__name__)
 
 
 class TestReplication(TestBase):
@@ -39,22 +42,25 @@ class TestReplication(TestBase):
         self._authorize_account()
         #with pytest.raises(BucketIdNotFound):
         #    self.api.get_bucket_by_id("this id doesn't even exist")
-        created_bucket = self.api.create_bucket('bucket1', 'allPrivate')
+        source_bucket = self.api.create_bucket('bucket1', 'allPrivate')
         destination_bucket = self.api.create_bucket('bucket2', 'allPrivate')
-        #read_bucket = self.api.get_bucket_by_id(created_bucket.id_)
-        #assert created_bucket.id_ == read_bucket.id_
+        #read_bucket = self.api.get_bucket_by_id(source_bucket.id_)
+        #assert source_bucket.id_ == read_bucket.id_
         #self.cache.save_bucket(Bucket(api=self.api, name='bucket_name', id_='bucket_id'))
         #read_bucket = self.api.get_bucket_by_id('bucket_id')
         #assert read_bucket.name == 'bucket_name'
+        logger.info('preparations complete, starting the test')
         rsh = ReplicationSetupHelper(
             source_b2api=self.api,
             destination_b2api=self.api,
         )
-        rsh.setup_both(
+        source_bucket, destination_bucket = rsh.setup_both(
             source_bucket_path="bucket1",
             destination_bucket=destination_bucket,
             name='aa',
-            #priority=None,
-            #key_mode,
-            #widen_source_key,
         )
+        print(source_bucket.replication)
+        # ReplicationConfiguration(as_replication_source=ReplicationSourceConfiguration(rules=[ReplicationRule(destination_bucket_id='bucket_1', name='aa', file_name_prefix='', is_enabled=True, priority=128)], source_application_key_id=<b2sdk.application_key.FullApplicationKey object at 0x7f273162cbe0>), as_replication_destination=ReplicationDestinationConfiguration(source_to_destination_key_mapping={}))
+        print('---')
+        print(destination_bucket.replication)
+        # ReplicationConfiguration(as_replication_source=ReplicationSourceConfiguration(rules=[], source_application_key_id=None), as_replication_destination=ReplicationDestinationConfiguration(source_to_destination_key_mapping={<b2sdk.application_key.FullApplicationKey object at 0x7f273162cbe0>: <b2sdk.application_key.FullApplicationKey object at 0x7f273162cac8>}))

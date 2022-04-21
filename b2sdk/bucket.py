@@ -115,7 +115,7 @@ class Bucket(metaclass=B2TraceMeta):
             raise BucketIdNotFound(self.id_)
         return buckets_found[0]
 
-    def get_id(self):
+    def get_id(self) -> str:
         """
         Return bucket ID.
 
@@ -123,7 +123,7 @@ class Bucket(metaclass=B2TraceMeta):
         """
         return self.id_
 
-    def set_info(self, new_bucket_info, if_revision_is=None):
+    def set_info(self, new_bucket_info, if_revision_is=None) -> 'Bucket':
         """
         Update bucket info.
 
@@ -132,7 +132,7 @@ class Bucket(metaclass=B2TraceMeta):
         """
         return self.update(bucket_info=new_bucket_info, if_revision_is=if_revision_is)
 
-    def set_type(self, bucket_type):
+    def set_type(self, bucket_type) -> 'Bucket':
         """
         Update bucket type.
 
@@ -150,7 +150,7 @@ class Bucket(metaclass=B2TraceMeta):
         default_server_side_encryption: Optional[EncryptionSetting] = None,
         default_retention: Optional[BucketRetentionSetting] = None,
         replication: Optional[ReplicationConfiguration] = None,
-    ):
+    ) -> 'Bucket':
         """
         Update various bucket parameters.
 
