@@ -18,24 +18,33 @@
 # b2 replication-deny destinationBucketName sourceKeyId
 
 from typing import ClassVar, List, Optional, Tuple
-from enum import Enum, auto, unique
 import logging
 
 from b2sdk.api import B2Api
 from b2sdk.application_key import ApplicationKey
 from b2sdk.bucket import Bucket
+from b2sdk.utils import B2TraceMeta
 from b2sdk.replication.setting import ReplicationConfiguration, ReplicationDestinationConfiguration, ReplicationRule, ReplicationSourceConfiguration
 
 logger = logging.getLogger(__name__)
 
 
-class ReplicationSetupHelper:
+class ReplicationSetupHelper(metaclass=B2TraceMeta):
     """ class with various methods that help with repliction management """
-    PRIORITY_OFFSET: ClassVar[int] = 10  #: how far to to put the new rule from the existing rules
+    PRIORITY_OFFSET: ClassVar[int] = 5  #: how far to to put the new rule from the existing rules
     DEFAULT_PRIORITY: ClassVar[int] = 128  #: what priority to set if there are no preexisting rules
     MAX_PRIORITY: ClassVar[int] = 255  #: maximum allowed priority of a replication rule
-    DEFAULT_SOURCE_CAPABILITIES = 'readFiles'
-    DEFAULT_DESTINATION_CAPABILITIES = 'writeFiles'
+    DEFAULT_SOURCE_CAPABILITIES: ClassVar[Tuple[str, ...]] = (
+        'readFiles',
+        'readFileLegalHolds',
+        'readFileRetentions',
+    )
+    DEFAULT_DESTINATION_CAPABILITIES: ClassVar[Tuple[str, ...]] = (
+        'writeFiles',
+        'writeFileLegalHolds',
+        'writeFileRetentions',
+        'deleteFiles',
+    )
 
     def __init__(self, source_b2api: B2Api = None, destination_b2api: B2Api = None):
         assert source_b2api is not None or destination_b2api is not None
@@ -44,13 +53,15 @@ class ReplicationSetupHelper:
 
     def setup_both(
         self,
-        source_bucket_path: str,
+        source_bucket_name: str,
         destination_bucket: Bucket,
         name: str = None,  #: name for the new replication rule
         priority: int = None,  #: priority for the new replication rule
+        prefix: Optional[str] = None,
     ) -> Tuple[Bucket, Bucket]:
         source_bucket = self.setup_source(
-            source_bucket_path,
+            source_bucket_name,
+            prefix,
             destination_bucket.id_,
             name,
             priority,
@@ -76,13 +87,14 @@ class ReplicationSetupHelper:
         except (NameError, AttributeError):
             destination_configuration = ReplicationDestinationConfiguration({})
 
-        # TODO: try to find a good key in the mapping, maybe one exists already? OTOH deletions...
-        #current_destination_key_ids = destination_configuration.source_to_destination_key_mapping.values()
-
-        destination_key = self._get_destination_key(
-            api, destination_bucket, current_destination_key=None
+        keys_to_purge, destination_key = self._get_destination_key(
+            api,
+            destination_bucket,
+            destination_configuration,
         )
-        destination_configuration.source_to_destination_key_mapping[source_key_id] = destination_key
+
+        destination_configuration.source_to_destination_key_mapping[source_key_id
+                                                                   ] = destination_key.id_
         new_replication_configuration = ReplicationConfiguration(
             source_configuration,
             destination_configuration,
@@ -92,37 +104,56 @@ class ReplicationSetupHelper:
             replication=new_replication_configuration,
         )
 
+    @classmethod
     def _get_destination_key(
-        self,
+        cls,
         api: B2Api,
-        destination_bucket,
-        current_destination_key,
-    ) -> ApplicationKey:
-        #do_create_key = False
-        #if current_destination_key is None:
-        #    do_create_key = True
-        #if current_destination_key.prefix:
-        #    pass
-        # TODO
-        #if not do_create_key:
-        #    return current_destination_key
-        #else:
-        return self._create_destination_key(
-            name=destination_bucket.name[:91] + '-replidst',
-            api=api,
-            bucket_id=destination_bucket.id_,
-            prefix=None,
+        destination_bucket: Bucket,
+        destination_configuration: ReplicationDestinationConfiguration,
+    ):
+        keys_to_purge = []
+        current_destination_key_ids = destination_configuration.source_to_destination_key_mapping.values(
         )
+        key = None
+        for current_destination_key_id in current_destination_key_ids:
+            # potential inefficiency here as we are fetching keys one by one, however
+            # the number of keys on an account is limited to a 100 000 000 per account lifecycle
+            # while the number of keys in the map can be expected to be very low
+            current_destination_key = api.get_key(current_destination_key_id)
+            if current_destination_key is None:
+                logger.debug(
+                    'zombie key found in replication destination_configuration.source_to_destination_key_mapping: %s',
+                    current_destination_key_id
+                )
+                keys_to_purge.append(current_destination_key_id)
+                continue
+            if current_destination_key.has_capabilities(
+                cls.DEFAULT_DESTINATION_CAPABILITIES
+            ) and not current_destination_key.name_prefix:
+                logger.debug('matching destination key found: %s', current_destination_key_id)
+                key = current_destination_key
+                # not breaking here since we want to fill the purge list
+        if not key:
+            logger.debug("no matching key found, making a new one")
+            key = cls._create_destination_key(
+                name=destination_bucket.name[:91] + '-replidst',
+                api=api,
+                bucket_id=destination_bucket.id_,
+                prefix=None,
+            )
+        return keys_to_purge, key
 
     def setup_source(
         self,
-        source_bucket_path,
+        source_bucket_name,
+        prefix,
         destination_bucket_id,
         name,
         priority,
     ) -> Bucket:
-        source_bucket_name, prefix = self._partion_bucket_path(source_bucket_path)
-        source_bucket: Bucket = self.source_b2api.list_buckets(source_bucket_name)[0]  # fresh
+        source_bucket: Bucket = self.source_b2api.list_buckets(source_bucket_name)[0]  # fresh!
+        if prefix is None:
+            prefix = ""
 
         try:
             current_source_rrs = source_bucket.replication.as_replication_source.rules
@@ -133,7 +164,7 @@ class ReplicationSetupHelper:
         except (NameError, AttributeError):
             destination_configuration = None
 
-        source_key_id = self._get_source_key(
+        source_key = self._get_source_key(
             source_bucket,
             prefix,
             source_bucket.replication,
@@ -152,7 +183,7 @@ class ReplicationSetupHelper:
         )
         new_replication_configuration = ReplicationConfiguration(
             ReplicationSourceConfiguration(
-                source_application_key_id=source_key_id,
+                source_application_key_id=source_key.id_,
                 rules=current_source_rrs + [new_rr],
             ),
             destination_configuration,
@@ -169,66 +200,58 @@ class ReplicationSetupHelper:
         prefix,
         current_replication_configuration: ReplicationConfiguration,
         current_source_rrs,
-    ) -> str:
+    ) -> ApplicationKey:
         api = source_bucket.api
 
-        do_create_key = False
-        new_prefix = cls._get_narrowest_common_prefix(
-            [rr.path for rr in current_source_rrs] + [prefix]
+        current_source_key = api.get_key(
+            current_replication_configuration.as_replication_source.source_application_key_id
         )
-        if new_prefix != prefix:
-            logger.debug(
-                'forced key creation due to widened key prefix from %s to %s',
-                prefix,
-                new_prefix,
-            )
-            prefix = new_prefix
-            do_create_key = True
-
+        do_create_key = cls._should_make_new_source_key(
+            current_replication_configuration,
+            current_source_key,
+        )
         if not do_create_key:
-            if not current_replication_configuration or not current_replication_configuration.as_replication_source:
-                do_create_key = True
-            else:
-                current_source_key = api.get_key(
-                    current_replication_configuration.as_replication_source.
-                    source_application_key_id
-                )
-                if current_source_key is None:
-                    do_create_key = True
-                    logger.debug(
-                        'will create a new source key because current key %s has been deleted',
-                        current_replication_configuration.as_replication_source.
-                        source_application_key_id,
-                    )
-                else:
-                    current_capabilities = current_source_key.get_capabilities()
-                    if not prefix.startswith(current_source_key.prefix):
-                        do_create_key = True
-                        logger.debug(
-                            'will create a new source key because %s installed so far does not encompass current needs with its prefix',
-                            current_source_key.id_,
-                        )
-                    elif 'readFiles' not in current_capabilities:  # TODO: more permissions
-                        do_create_key = True
-                        logger.debug(
-                            'will create a new source key because %s installed so far does not have enough permissions for replication source',
-                            current_source_key.id_,
-                        )
-                    else:
-                        return current_source_key
-
-        #if not prefix.startswith(current_key.prefix):
-        #    do_create_key = True
-        #else:
-        #    new_key = current_key
+            return current_source_key
 
         new_key = cls._create_source_key(
             name=source_bucket.name[:91] + '-replisrc',
             api=api,
             bucket_id=source_bucket.id_,
-            prefix=prefix,
-        )
+        )  # no prefix!
         return new_key
+
+    @classmethod
+    def _should_make_new_source_key(
+        cls,
+        current_replication_configuration: ReplicationConfiguration,
+        current_source_key: Optional[ApplicationKey],
+    ) -> bool:
+        if current_replication_configuration.as_replication_source.source_application_key_id is None:
+            logger.debug('will create a new source key because no key is set')
+            return True
+
+        if current_source_key is None:
+            logger.debug(
+                'will create a new source key because current key "%s" was deleted',
+                current_replication_configuration.as_replication_source.source_application_key_id,
+            )
+            return True
+
+        if current_source_key.name_prefix:
+            logger.debug(
+                'will create a new source key because current key %s had a prefix: "%s"',
+                current_source_key.name_prefix,
+            )
+            return True
+
+        if not current_source_key.has_capabilities(cls.DEFAULT_SOURCE_CAPABILITIES):
+            logger.debug(
+                'will create a new source key because %s installed so far does not have enough permissions for replication source: ',
+                current_source_key.id_,
+                current_source_key.capabilities,
+            )
+            return True
+        return False  # current key is ok
 
     @classmethod
     def _create_source_key(

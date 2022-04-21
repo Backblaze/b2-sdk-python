@@ -65,6 +65,10 @@ class BaseApplicationKey:
                for key, value in optional_args.items() if value is not None},
         }
 
+    def has_capabilities(self, capabilities) -> bool:
+        """ checks whether the key has ALL of the given capabilities """
+        return len(set(capabilities) - set(self.capabilities)) == 0
+
     def as_dict(self):
         """Represent the key as a dict, like the one returned by B2 cloud"""
         mandatory_keys = {
