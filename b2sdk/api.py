@@ -327,7 +327,7 @@ class B2Api(metaclass=B2TraceMeta):
         # There is no such bucket.
         raise BucketIdNotFound(bucket_id)
 
-    def get_bucket_by_name(self, bucket_name):
+    def get_bucket_by_name(self, bucket_name: str):
         """
         Return the Bucket matching the given bucket_name.
 

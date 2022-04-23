@@ -18,6 +18,7 @@
 # b2 replication-deny destinationBucketName sourceKeyId
 
 from typing import ClassVar, List, Optional, Tuple
+import itertools
 import logging
 
 from b2sdk.api import B2Api
@@ -55,14 +56,14 @@ class ReplicationSetupHelper(metaclass=B2TraceMeta):
         self,
         source_bucket_name: str,
         destination_bucket: Bucket,
-        name: str = None,  #: name for the new replication rule
+        name: Optional[str] = None,  #: name for the new replication rule
         priority: int = None,  #: priority for the new replication rule
         prefix: Optional[str] = None,
     ) -> Tuple[Bucket, Bucket]:
         source_bucket = self.setup_source(
             source_bucket_name,
             prefix,
-            destination_bucket.id_,
+            destination_bucket,
             name,
             priority,
         )
@@ -147,7 +148,7 @@ class ReplicationSetupHelper(metaclass=B2TraceMeta):
         self,
         source_bucket_name,
         prefix,
-        destination_bucket_id,
+        destination_bucket: Bucket,
         name,
         priority,
     ) -> Bucket:
@@ -174,11 +175,15 @@ class ReplicationSetupHelper(metaclass=B2TraceMeta):
             priority,
             current_source_rrs,
         )
-
+        name = self._get_name_for_new_rule(
+            name,
+            current_source_rrs,
+            destination_bucket.name,
+        )
         new_rr = ReplicationRule(
             name=name,
             priority=priority,
-            destination_bucket_id=destination_bucket_id,
+            destination_bucket_id=destination_bucket.id_,
             file_name_prefix=prefix,
         )
         new_replication_configuration = ReplicationConfiguration(
@@ -307,6 +312,28 @@ class ReplicationSetupHelper(metaclass=B2TraceMeta):
             existing_priority = max(rr.priority for rr in current_source_rrs)
             return min(existing_priority + cls.PRIORITY_OFFSET, cls.MAX_PRIORITY)
         return cls.DEFAULT_PRIORITY
+
+    @classmethod
+    def _get_name_for_new_rule(
+        cls, name: Optional[str], current_source_rrs, destination_bucket_name
+    ):
+        if name is not None:
+            return name
+        existing_names = set(rr.name for rr in current_source_rrs)
+        suffixes = cls._get_rule_name_candidate_suffixes()
+        while True:
+            candidate = '%s%s' % (destination_bucket_name, next(suffixes))
+            if candidate not in existing_names:
+                return candidate
+
+    @classmethod
+    def _get_rule_name_candidate_suffixes(cls):
+        """
+        >>> a = ReplicationSetupHelper._get_rule_name_candidate_suffixes()
+        >>> [next(a) for i in range(10)]
+        ['', '2', '3', '4', '5', '6', '7', '8', '9', '10']
+        """
+        return map(str, itertools.chain([''], itertools.count(2)))
 
     @classmethod
     def _partion_bucket_path(cls, bucket_path: str) -> Tuple[str, str]:
