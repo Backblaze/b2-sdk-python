@@ -27,6 +27,7 @@ class ReplicationRule:
     file_name_prefix: str = ''
     is_enabled: bool = True
     priority: int = 1
+    include_existing_files: bool = False
 
     REPLICATION_RULE_REGEX: ClassVar = re.compile(r'^[a-zA-Z0-9_\-]{1,64}$')
 
@@ -47,6 +48,7 @@ class ReplicationRule:
         return {
             'destinationBucketId': self.destination_bucket_id,
             'fileNamePrefix': self.file_name_prefix,
+            'includeExistingFiles': self.include_existing_files,
             'isEnabled': self.is_enabled,
             'priority': self.priority,
             'replicationRuleName': self.name,
@@ -57,6 +59,7 @@ class ReplicationRule:
         return cls(
             destination_bucket_id=value_dict['destinationBucketId'],
             file_name_prefix=value_dict['fileNamePrefix'],
+            include_existing_files=value_dict['includeExistingFiles'],
             is_enabled=value_dict['isEnabled'],
             priority=value_dict['priority'],
             name=value_dict['replicationRuleName'],

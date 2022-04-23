@@ -173,6 +173,7 @@ def raw_api_test_helper(raw_api, should_cleanup_old_buckets):
                     rules=[
                         ReplicationRule(
                             destination_bucket_id=bucket_id,
+                            include_existing_files=True,
                             name='test-rule',
                         ),
                     ],
@@ -192,6 +193,7 @@ def raw_api_test_helper(raw_api, should_cleanup_old_buckets):
                                     {
                                         "destinationBucketId": bucket_id,
                                         "fileNamePrefix": "",
+                                        "includeExistingFiles": True,
                                         "isEnabled": True,
                                         "priority": 1,
                                         "replicationRuleName": "test-rule"
