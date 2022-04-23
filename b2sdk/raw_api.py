@@ -705,8 +705,6 @@ class B2RawHTTPApi(AbstractRawApi):
         default_retention: Optional[BucketRetentionSetting] = None,
         replication: Optional[ReplicationConfiguration] = None,
     ):
-        assert bucket_info is not None or bucket_type is not None
-
         kwargs = {}
         if if_revision_is is not None:
             kwargs['ifRevisionIs'] = if_revision_is
@@ -727,6 +725,8 @@ class B2RawHTTPApi(AbstractRawApi):
             kwargs['defaultRetention'] = default_retention.serialize_to_json_for_request()
         if replication is not None:
             kwargs['replicationConfiguration'] = replication.serialize_to_json_for_request()
+
+        assert kwargs
 
         return self._post_json(
             api_url,
