@@ -1037,9 +1037,7 @@ class TestUpdate(TestCaseWithBucket):
     def test_empty_replication(self):
         self.bucket.update(
             replication=ReplicationConfiguration(
-                as_replication_source=ReplicationSourceConfiguration(
-                    rules=[],
-                ),
+                as_replication_source=ReplicationSourceConfiguration(rules=[],),
                 as_replication_destination=ReplicationDestinationConfiguration(
                     source_to_destination_key_mapping={},
                 ),

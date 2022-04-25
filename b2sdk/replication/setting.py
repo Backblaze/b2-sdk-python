@@ -56,14 +56,14 @@ class ReplicationRule:
 
     @classmethod
     def from_dict(cls, value_dict: dict) -> 'ReplicationRule':
-        return cls(
-            destination_bucket_id=value_dict['destinationBucketId'],
-            file_name_prefix=value_dict['fileNamePrefix'],
-            include_existing_files=value_dict['includeExistingFiles'],
-            is_enabled=value_dict['isEnabled'],
-            priority=value_dict['priority'],
-            name=value_dict['replicationRuleName'],
-        )
+        kwargs = {}
+        kwargs['destination_bucket_id'] = value_dict['destinationBucketId']
+        kwargs['name'] = value_dict['replicationRuleName']
+        kwargs['file_name_prefix'] = value_dict.get('fileNamePrefix')
+        kwargs['include_existing_files'] = value_dict.get('includeExistingFiles')
+        kwargs['is_enabled'] = value_dict.get('isEnabled')
+        kwargs['priority'] = value_dict.get('priority')
+        return cls(**kwargs)
 
 
 @dataclass
@@ -178,9 +178,11 @@ class ReplicationConfiguration:
         """
         result = {}
         if self.as_replication_source is not None:
-            result['asReplicationSource'] = self.as_replication_source.serialize_to_json_for_request()
+            result['asReplicationSource'
+                  ] = self.as_replication_source.serialize_to_json_for_request()
         if self.as_replication_destination is not None:
-            result['asReplicationDestination'] = self.as_replication_destination.serialize_to_json_for_request()
+            result['asReplicationDestination'
+                  ] = self.as_replication_destination.serialize_to_json_for_request()
         return result
 
     @classmethod
