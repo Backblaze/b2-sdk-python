@@ -526,6 +526,9 @@ class BucketSimulator:
         self.is_file_lock_enabled = is_file_lock_enabled
         self.default_retention = NO_RETENTION_BUCKET_SETTING
         self.replication = replication
+        if self.replication is not None:
+            assert self.replication.asReplicationSource is None or self.replication.asReplicationSource.rules
+            assert self.replication.asReplicationDestination is None or self.replication.asReplicationDestination.sourceToDestinationKeyMapping
 
     def is_allowed_to_read_bucket_encryption_setting(self, account_auth_token):
         return self._check_capability(account_auth_token, 'readBucketEncryption')

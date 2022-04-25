@@ -176,13 +176,12 @@ class ReplicationConfiguration:
             }
 
         """
-
-        return {
-            'asReplicationSource':
-                self.as_replication_source.serialize_to_json_for_request(),
-            'asReplicationDestination':
-                self.as_replication_destination.serialize_to_json_for_request(),
-        }
+        result = {}
+        if self.as_replication_source is not None:
+            result['asReplicationSource'] = self.as_replication_source.serialize_to_json_for_request()
+        if self.as_replication_destination is not None:
+            result['asReplicationDestination'] = self.as_replication_destination.serialize_to_json_for_request()
+        return result
 
     @classmethod
     def from_dict(cls, value_dict: dict) -> 'ReplicationConfiguration':

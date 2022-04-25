@@ -1033,6 +1033,19 @@ class TestUpdate(TestCaseWithBucket):
                 print(getattr(result, attr_name))
                 self.assertEqual(attr_value, getattr(result, attr_name), attr_name)
 
+    @pytest.mark.apiver(from_ver=2)
+    def test_empty_replication(self):
+        self.bucket.update(
+            replication=ReplicationConfiguration(
+                as_replication_source=ReplicationSourceConfiguration(
+                    rules=[],
+                ),
+                as_replication_destination=ReplicationDestinationConfiguration(
+                    source_to_destination_key_mapping={},
+                ),
+            ),
+        )
+
     def test_update_if_revision_is(self):
         current_revision = self.bucket.revision
         self.bucket.update(
