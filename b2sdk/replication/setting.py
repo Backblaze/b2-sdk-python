@@ -51,7 +51,7 @@ class ReplicationRule:
     @classmethod
     def from_dict(cls, value_dict: dict) -> 'ReplicationRule':
         kwargs = {}
-        for field, protocolField in (
+        for field_, protocolField in (
             ('destination_bucket_id', 'destinationBucketId'),
             ('name', 'replicationRuleName'),
             ('file_name_prefix', 'fileNamePrefix'),
@@ -63,7 +63,7 @@ class ReplicationRule:
                 protocolField
             )  # refactor to := when dropping Python 3.7, maybe even dict expression
             if value is not None:
-                kwargs[field] = value
+                kwargs[field_] = value
         return cls(**kwargs)
 
 
