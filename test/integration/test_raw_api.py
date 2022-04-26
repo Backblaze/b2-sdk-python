@@ -210,7 +210,7 @@ def raw_api_test_helper(raw_api, should_cleanup_old_buckets):
                 },
         }
 
-        # # 3) upload test file and check replication status
+        # 3) upload test file and check replication status
         upload_url_dict = raw_api.get_upload_url(
             api_url,
             account_auth_token,
@@ -228,7 +228,8 @@ def raw_api_test_helper(raw_api, should_cleanup_old_buckets):
             io.BytesIO(file_contents),
         )
 
-        assert ReplicationStatus[file_dict['replicationStatus'].upper()]
+        assert ReplicationStatus[file_dict['replicationStatus'].upper()
+                                ] == ReplicationStatus.PENDING
 
     finally:
         raw_api.delete_key(api_url, account_auth_token, replication_source_key)
