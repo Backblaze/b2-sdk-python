@@ -154,6 +154,7 @@ class ReplicationConfiguration:
                         {
                             "destinationBucketId": "c5f35d53a90a7ea284fb0719",
                             "fileNamePrefix": "",
+                            "includeExistingFiles": True,
                             "isEnabled": true,
                             "priority": 1,
                             "replicationRuleName": "replication-us-west"
@@ -161,6 +162,7 @@ class ReplicationConfiguration:
                         {
                             "destinationBucketId": "55f34d53a96a7ea284fb0719",
                             "fileNamePrefix": "",
+                            "includeExistingFiles": True,
                             "isEnabled": true,
                             "priority": 2,
                             "replicationRuleName": "replication-us-west-2"
