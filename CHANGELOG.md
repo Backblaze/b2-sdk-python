@@ -24,6 +24,7 @@ of work on sdk interface:
 
 ### Fixed
 * Fix license test on Windows
+* Fix unclear errors when running integration tests with a non-full key
 
 ## [1.15.0] - 2022-04-12
 

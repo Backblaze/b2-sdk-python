@@ -22,7 +22,7 @@ from b2sdk.encryption.setting import EncryptionAlgorithm, EncryptionMode, Encryp
 from b2sdk.replication.setting import ReplicationConfiguration, ReplicationSourceConfiguration, ReplicationRule, ReplicationDestinationConfiguration
 from b2sdk.replication.types import ReplicationStatus
 from b2sdk.file_lock import BucketRetentionSetting, NO_RETENTION_FILE_SETTING, RetentionMode, RetentionPeriod
-from b2sdk.raw_api import B2RawHTTPApi, REALM_URLS
+from b2sdk.raw_api import ALL_CAPABILITIES, B2RawHTTPApi, REALM_URLS
 from b2sdk.utils import hex_sha1_of_stream
 
 
@@ -90,6 +90,11 @@ def raw_api_test_helper(raw_api, should_cleanup_old_buckets):
     # b2_authorize_account
     print('b2_authorize_account')
     auth_dict = authorize_raw_api(raw_api)
+    missing_capabilities = set(ALL_CAPABILITIES) - set(auth_dict['allowed']['capabilities'])
+    assert not missing_capabilities, 'it appears that the raw_api integration test is being run with a non-full key. Missing capabilities: %s' % (
+        missing_capabilities,
+    )
+
     account_id = auth_dict['accountId']
     account_auth_token = auth_dict['authorizationToken']
     api_url = auth_dict['apiUrl']
