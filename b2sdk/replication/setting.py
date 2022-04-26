@@ -35,12 +35,6 @@ class ReplicationRule:
         if not self.destination_bucket_id:
             raise ValueError('destination_bucket_id is required')
 
-        # TODO
-        # if not (1 < self.priority < 255):
-        # raise ValueError()
-
-        # TODO: file_name_prefix validation
-
         if not self.REPLICATION_RULE_REGEX.match(self.name):
             raise ValueError('replication rule name is invalid')
 
@@ -57,12 +51,19 @@ class ReplicationRule:
     @classmethod
     def from_dict(cls, value_dict: dict) -> 'ReplicationRule':
         kwargs = {}
-        kwargs['destination_bucket_id'] = value_dict['destinationBucketId']
-        kwargs['name'] = value_dict['replicationRuleName']
-        kwargs['file_name_prefix'] = value_dict.get('fileNamePrefix')
-        kwargs['include_existing_files'] = value_dict.get('includeExistingFiles')
-        kwargs['is_enabled'] = value_dict.get('isEnabled')
-        kwargs['priority'] = value_dict.get('priority')
+        for field, protocolField in (
+            ('destination_bucket_id', 'destinationBucketId'),
+            ('name', 'replicationRuleName'),
+            ('file_name_prefix', 'fileNamePrefix'),
+            ('include_existing_files', 'includeExistingFiles'),
+            ('is_enabled', 'isEnabled'),
+            ('priority', 'priority'),
+        ):
+            value = value_dict.get(
+                protocolField
+            )  # refactor to := when dropping Python 3.7, maybe even dict expression
+            if value is not None:
+                kwargs[field] = value
         return cls(**kwargs)
 
 
