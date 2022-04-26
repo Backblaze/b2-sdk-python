@@ -20,6 +20,7 @@ of work on sdk interface:
 * Add basic replication support to `Bucket` and `FileVersion`
 * Add `is_master_key()` method to `AbstractAccountInfo`
 * Add `readBucketReplications` and `writeBucketReplications` to `ALL_CAPABILITIES`
+* Add log tracing of `interpret_b2_error`
 
 ### Fixed
 * Fix license test on Windows

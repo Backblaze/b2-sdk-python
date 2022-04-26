@@ -10,16 +10,19 @@
 
 from abc import ABCMeta
 
+import logging
 import re
 from typing import Any, Dict, Optional
 
-from .utils import camelcase_to_underscore
+from .utils import camelcase_to_underscore, trace_call
 
 UPLOAD_TOKEN_USED_CONCURRENTLY_ERROR_MESSAGE_RE = re.compile(
     r'^more than one upload using auth token (?P<token>[^)]+)$'
 )
 
 COPY_SOURCE_TOO_BIG_ERROR_MESSAGE_RE = re.compile(r'^Copy source too big: (?P<size>[\d]+)$')
+
+logger = logging.getLogger(__name__)
 
 
 class B2Error(Exception, metaclass=ABCMeta):
@@ -514,6 +517,7 @@ class CopyArgumentsMismatch(InvalidUserInput):
     pass
 
 
+@trace_call(logger)
 def interpret_b2_error(
     status: int,
     code: Optional[str],
