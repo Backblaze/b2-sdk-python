@@ -79,14 +79,16 @@ class ReplicationSetupHelper(metaclass=B2TraceMeta):
         destination_bucket: Bucket,
     ) -> Bucket:
         api: B2Api = destination_bucket.api
-        try:
-            source_configuration = destination_bucket.replication.as_replication_source
-        except (NameError, AttributeError):
+        destination_bucket = api.list_buckets(destination_bucket.name)[0]  # fresh!
+        if destination_bucket.replication is None or destination_bucket.replication.as_replication_source is None:
             source_configuration = None
-        try:
-            destination_configuration = destination_bucket.replication.as_replication_destination
-        except (NameError, AttributeError):
+        else:
+            source_configuration = destination_bucket.replication.as_replication_source
+
+        if destination_bucket.replication is None or destination_bucket.replication.as_replication_destination is None:
             destination_configuration = ReplicationDestinationConfiguration({})
+        else:
+            destination_configuration = destination_bucket.replication.as_replication_destination
 
         keys_to_purge, destination_key = self._get_destination_key(
             api,
@@ -134,6 +136,8 @@ class ReplicationSetupHelper(metaclass=B2TraceMeta):
                 logger.debug('matching destination key found: %s', current_destination_key_id)
                 key = current_destination_key
                 # not breaking here since we want to fill the purge list
+            else:
+                logger.info('non-matching destination key found: %s', current_destination_key)
         if not key:
             logger.debug("no matching key found, making a new one")
             key = cls._create_destination_key(
