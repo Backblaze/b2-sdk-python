@@ -90,7 +90,8 @@ def raw_api_test_helper(raw_api, should_cleanup_old_buckets):
     # b2_authorize_account
     print('b2_authorize_account')
     auth_dict = authorize_raw_api(raw_api)
-    missing_capabilities = set(ALL_CAPABILITIES) - set(auth_dict['allowed']['capabilities'])
+    missing_capabilities = set(ALL_CAPABILITIES) - set(['readBuckets']
+                                                      ) - set(auth_dict['allowed']['capabilities'])
     assert not missing_capabilities, 'it appears that the raw_api integration test is being run with a non-full key. Missing capabilities: %s' % (
         missing_capabilities,
     )
