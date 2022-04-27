@@ -139,7 +139,7 @@ def raw_api_test_helper(raw_api, should_cleanup_old_buckets):
         account_auth_token,
         account_id,
         bucket_name,
-        'allPrivate',
+        'allPublic',
         is_file_lock_enabled=True,
     )
     bucket_id = bucket_dict['bucketId']
@@ -172,7 +172,7 @@ def raw_api_test_helper(raw_api, should_cleanup_old_buckets):
             account_auth_token,
             account_id,
             replication_source_bucket_name,
-            'allPrivate',
+            'allPublic',
             is_file_lock_enabled=True,
             replication=ReplicationConfiguration(
                 as_replication_source=ReplicationSourceConfiguration(
@@ -255,7 +255,7 @@ def raw_api_test_helper(raw_api, should_cleanup_old_buckets):
             account_auth_token,
             account_id,
             bucket_id,
-            'allPrivate',
+            'allPublic',
             replication=ReplicationConfiguration(
                 as_replication_destination=ReplicationDestinationConfiguration(
                     source_to_destination_key_mapping={
@@ -291,7 +291,7 @@ def raw_api_test_helper(raw_api, should_cleanup_old_buckets):
         account_auth_token,
         account_id,
         bucket_id,
-        'allPrivate',
+        'allPublic',
         replication=ReplicationConfiguration(),
     )
     assert bucket_dict['replicationConfiguration'] == {
@@ -327,7 +327,7 @@ def raw_api_test_helper(raw_api, should_cleanup_old_buckets):
             account_auth_token,
             account_id,
             bucket_id,
-            'allPrivate',
+            'allPublic',
             default_server_side_encryption=encryption_setting,
             default_retention=default_retention,
         )
