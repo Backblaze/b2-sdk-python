@@ -201,7 +201,7 @@ def raw_api_test_helper(raw_api, should_cleanup_old_buckets):
                                         "fileNamePrefix": "",
                                         "includeExistingFiles": True,
                                         "isEnabled": True,
-                                        "priority": 1,
+                                        "priority": 128,
                                         "replicationRuleName": "test-rule"
                                     },
                                 ],
