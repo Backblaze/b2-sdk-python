@@ -26,10 +26,12 @@ class ReplicationRule:
     name: str
     file_name_prefix: str = ''
     is_enabled: bool = True
-    priority: int = 1
+    priority: int = 128
     include_existing_files: bool = False
 
     REPLICATION_RULE_REGEX: ClassVar = re.compile(r'^[a-zA-Z0-9_\-]{1,64}$')
+    MIN_PRIORITY: ClassVar[int] = 1
+    MAX_PRIORITY: ClassVar[int] = 2147483647
 
     def __post_init__(self):
         if not self.destination_bucket_id:
@@ -37,6 +39,12 @@ class ReplicationRule:
 
         if not self.REPLICATION_RULE_REGEX.match(self.name):
             raise ValueError('replication rule name is invalid')
+
+        if not (self.MIN_PRIORITY <= self.priority <= self.MAX_PRIORITY):
+            raise ValueError('priority should be within [%d, %d] interval' % (
+                self.MIN_PRIORITY,
+                self.MAX_PRIORITY,
+            ))
 
     def as_dict(self) -> dict:
         return {

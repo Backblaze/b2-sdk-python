@@ -33,8 +33,8 @@ logger = logging.getLogger(__name__)
 class ReplicationSetupHelper(metaclass=B2TraceMeta):
     """ class with various methods that help with repliction management """
     PRIORITY_OFFSET: ClassVar[int] = 5  #: how far to to put the new rule from the existing rules
-    DEFAULT_PRIORITY: ClassVar[int] = 128  #: what priority to set if there are no preexisting rules
-    MAX_PRIORITY: ClassVar[int] = 255  #: maximum allowed priority of a replication rule
+    DEFAULT_PRIORITY: ClassVar[int] = ReplicationRule.priority  #: what priority to set if there are no preexisting rules
+    MAX_PRIORITY: ClassVar[int] = ReplicationRule.MAX_PRIORITY  #: maximum allowed priority of a replication rule
     DEFAULT_SOURCE_CAPABILITIES: ClassVar[Tuple[str, ...]] = (
         'readFiles',
         'readFileLegalHolds',
