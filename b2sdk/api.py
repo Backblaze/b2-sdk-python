@@ -16,6 +16,7 @@ from .application_key import ApplicationKey, BaseApplicationKey, FullApplication
 from .cache import AbstractCache
 from .bucket import Bucket, BucketFactory
 from .encryption.setting import EncryptionSetting
+from .replication.setting import ReplicationConfiguration
 from .exception import BucketIdNotFound, NonExistentBucket, RestrictedBucket
 from .file_lock import FileRetentionSetting, LegalHold
 from .file_version import DownloadVersionFactory, FileIdAndName, FileVersion, FileVersionFactory
@@ -211,6 +212,7 @@ class B2Api(metaclass=B2TraceMeta):
         lifecycle_rules=None,
         default_server_side_encryption: Optional[EncryptionSetting] = None,
         is_file_lock_enabled: Optional[bool] = None,
+        replication: Optional[ReplicationConfiguration] = None,
     ):
         """
         Create a bucket.
@@ -222,6 +224,7 @@ class B2Api(metaclass=B2TraceMeta):
         :param dict lifecycle_rules: bucket lifecycle rules to store with the bucket
         :param b2sdk.v2.EncryptionSetting default_server_side_encryption: default server side encryption settings (``None`` if unknown)
         :param bool is_file_lock_enabled: boolean value specifies whether bucket is File Lock-enabled
+        :param b2sdk.v2.ReplicationConfiguration replication: bucket replication rules or ``None``
         :return: a Bucket object
         :rtype: b2sdk.v2.Bucket
         """
@@ -236,6 +239,7 @@ class B2Api(metaclass=B2TraceMeta):
             lifecycle_rules=lifecycle_rules,
             default_server_side_encryption=default_server_side_encryption,
             is_file_lock_enabled=is_file_lock_enabled,
+            replication=replication,
         )
         bucket = self.BUCKET_FACTORY_CLASS.from_api_bucket_dict(self, response)
         assert name == bucket.name, 'API created a bucket with different name\
@@ -323,7 +327,7 @@ class B2Api(metaclass=B2TraceMeta):
         # There is no such bucket.
         raise BucketIdNotFound(bucket_id)
 
-    def get_bucket_by_name(self, bucket_name):
+    def get_bucket_by_name(self, bucket_name: str):
         """
         Return the Bucket matching the given bucket_name.
 
@@ -526,12 +530,25 @@ class B2Api(metaclass=B2TraceMeta):
                 return
             start_application_key_id = next_application_key_id
 
+    def get_key(self, key_id: str) -> Optional[ApplicationKey]:
+        """
+        Gets information about a single key: it's capabilities, prefix, name etc
+
+        Returns `None` if the key does not exist.
+
+        Raises an exception if profile is not permitted to list keys.
+        """
+        return next(
+            self.list_keys(start_application_key_id=key_id),
+            None,
+        )
+
     # other
     def get_file_info(self, file_id: str) -> FileVersion:
         """
         Gets info about file version.
 
-        :param str file_id: the id of the file who's info will be retrieved.
+        :param str file_id: the id of the file whose info will be retrieved.
         """
         return self.file_version_factory.from_api_response(
             self.session.get_file_info_by_id(file_id)

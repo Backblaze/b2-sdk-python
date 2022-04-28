@@ -126,6 +126,9 @@ class AbstractAccountInfo(metaclass=B2TraceMetaAbstract):
         except exception.MissingAccountData:
             return False
 
+    def is_master_key(self) -> bool:
+        return self.get_account_id() == self.get_application_key_id()
+
     @abstractmethod
     def get_account_id(self):
         """

@@ -6,6 +6,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.16.0] - 2022-04-27
+
+This release contains a preview of replication support. It allows for basic
+usage of B2 replication feature (currently in closed beta).
+
+As the interface of the sdk (and the server api) may change, the replication
+support shall be considered PRIVATE interface and should be used with caution.
+Please consult the documentation on how to safely use the private api interface.
+
+Expect substantial amount of work on sdk interface:
+* The interface of `ReplicationConfiguration` WILL change
+* The interface of `FileVersion.replication_status` MIGHT change
+* The interface of `FileVersionDownload` MIGHT change
+
+### Added
+* Add basic replication support to `Bucket` and `FileVersion`
+* Add `is_master_key()` method to `AbstractAccountInfo`
+* Add `readBucketReplications` and `writeBucketReplications` to `ALL_CAPABILITIES`
+* Add log tracing of `interpret_b2_error`
+* Add `ReplicationSetupHelper`
+
+### Fixed
+* Fix license test on Windows
+* Fix cryptic errors when running integration tests with a non-full key
+
 ## [1.15.0] - 2022-04-12
 
 ### Changed
@@ -22,9 +47,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Add a parameter to customize `sync_policy_manager`
 * Add parameters to set the min/max part size for large file upload/copy methods
 * Add CopySourceTooBig exception
-* Add an option to set a custom file version class to FileVersionFactory
+* Add an option to set a custom file version class to `FileVersionFactory`
 * Add an option for B2Api to turn off hash checking for downloaded files
-* Add an option for B2Api to set write buffer size for DownloadedFile.save_to method
+* Add an option for B2Api to set write buffer size for `DownloadedFile.save_to` method
 * Add support for multiple profile files for SqliteAccountInfo
 
 ### Fixed

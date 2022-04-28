@@ -19,8 +19,10 @@ import pytest
 
 from b2sdk.b2http import B2Http
 from b2sdk.encryption.setting import EncryptionAlgorithm, EncryptionMode, EncryptionSetting
+from b2sdk.replication.setting import ReplicationConfiguration, ReplicationSourceConfiguration, ReplicationRule, ReplicationDestinationConfiguration
+from b2sdk.replication.types import ReplicationStatus
 from b2sdk.file_lock import BucketRetentionSetting, NO_RETENTION_FILE_SETTING, RetentionMode, RetentionPeriod
-from b2sdk.raw_api import B2RawHTTPApi, REALM_URLS
+from b2sdk.raw_api import ALL_CAPABILITIES, B2RawHTTPApi, REALM_URLS
 from b2sdk.utils import hex_sha1_of_stream
 
 
@@ -88,6 +90,12 @@ def raw_api_test_helper(raw_api, should_cleanup_old_buckets):
     # b2_authorize_account
     print('b2_authorize_account')
     auth_dict = authorize_raw_api(raw_api)
+    missing_capabilities = set(ALL_CAPABILITIES) - set(['readBuckets']
+                                                      ) - set(auth_dict['allowed']['capabilities'])
+    assert not missing_capabilities, 'it appears that the raw_api integration test is being run with a non-full key. Missing capabilities: %s' % (
+        missing_capabilities,
+    )
+
     account_id = auth_dict['accountId']
     account_auth_token = auth_dict['authorizationToken']
     api_url = auth_dict['apiUrl']
@@ -137,7 +145,169 @@ def raw_api_test_helper(raw_api, should_cleanup_old_buckets):
     bucket_id = bucket_dict['bucketId']
     first_bucket_revision = bucket_dict['revision']
 
-    ##################
+    #################################
+    print('b2 / replication')
+
+    # 1) create source key (read permissions)
+    replication_source_key_dict = raw_api.create_key(
+        api_url,
+        account_auth_token,
+        account_id,
+        ['listBuckets', 'listFiles', 'readFiles'],
+        'testReplicationSourceKey',
+        None,
+        None,
+        None,
+    )
+    replication_source_key = replication_source_key_dict['applicationKeyId']
+
+    # 2) create source bucket with replication to destination - existing bucket
+    try:
+        # in order to test replication, we need to create a second bucket
+        replication_source_bucket_name = 'test-raw-api-%s-%d-%d' % (
+            account_id, int(time.time()), random.randint(1000, 9999)
+        )
+        replication_source_bucket_dict = raw_api.create_bucket(
+            api_url,
+            account_auth_token,
+            account_id,
+            replication_source_bucket_name,
+            'allPublic',
+            is_file_lock_enabled=True,
+            replication=ReplicationConfiguration(
+                as_replication_source=ReplicationSourceConfiguration(
+                    rules=[
+                        ReplicationRule(
+                            destination_bucket_id=bucket_id,
+                            include_existing_files=True,
+                            name='test-rule',
+                        ),
+                    ],
+                    source_application_key_id=replication_source_key,
+                ),
+            ),
+        )
+        assert 'replicationConfiguration' in replication_source_bucket_dict
+        assert replication_source_bucket_dict['replicationConfiguration'] == {
+            'isClientAuthorizedToRead': True,
+            'value':
+                {
+                    "asReplicationSource":
+                        {
+                            "replicationRules":
+                                [
+                                    {
+                                        "destinationBucketId": bucket_id,
+                                        "fileNamePrefix": "",
+                                        "includeExistingFiles": True,
+                                        "isEnabled": True,
+                                        "priority": 128,
+                                        "replicationRuleName": "test-rule"
+                                    },
+                                ],
+                            "sourceApplicationKeyId": replication_source_key,
+                        },
+                    "asReplicationDestination": None,
+                },
+        }
+
+        # 3) upload test file and check replication status
+        upload_url_dict = raw_api.get_upload_url(
+            api_url,
+            account_auth_token,
+            replication_source_bucket_dict['bucketId'],
+        )
+        file_contents = b'hello world'
+        file_dict = raw_api.upload_file(
+            upload_url_dict['uploadUrl'],
+            upload_url_dict['authorizationToken'],
+            'test.txt',
+            len(file_contents),
+            'text/plain',
+            hex_sha1_of_stream(io.BytesIO(file_contents), len(file_contents)),
+            {'color': 'blue'},
+            io.BytesIO(file_contents),
+        )
+
+        assert ReplicationStatus[file_dict['replicationStatus'].upper()
+                                ] == ReplicationStatus.PENDING
+
+    finally:
+        raw_api.delete_key(api_url, account_auth_token, replication_source_key)
+
+    # 4) create destination key (write permissions)
+    replication_destination_key_dict = raw_api.create_key(
+        api_url,
+        account_auth_token,
+        account_id,
+        ['listBuckets', 'listFiles', 'writeFiles'],
+        'testReplicationDestinationKey',
+        None,
+        None,
+        None,
+    )
+    replication_destination_key = replication_destination_key_dict['applicationKeyId']
+
+    # 5) update destination bucket to receive updates
+    try:
+        bucket_dict = raw_api.update_bucket(
+            api_url,
+            account_auth_token,
+            account_id,
+            bucket_id,
+            'allPublic',
+            replication=ReplicationConfiguration(
+                as_replication_destination=ReplicationDestinationConfiguration(
+                    source_to_destination_key_mapping={
+                        replication_source_key: replication_destination_key,
+                    },
+                ),
+            ),
+        )
+        assert bucket_dict['replicationConfiguration'] == {
+            'isClientAuthorizedToRead': True,
+            'value':
+                {
+                    'asReplicationDestination':
+                        {
+                            'sourceToDestinationKeyMapping':
+                                {
+                                    replication_source_key: replication_destination_key,
+                                },
+                        },
+                    'asReplicationSource': None,
+                },
+        }
+    finally:
+        raw_api.delete_key(
+            api_url,
+            account_auth_token,
+            replication_destination_key_dict['applicationKeyId'],
+        )
+
+    # 6) cleanup: disable replication for destination and remove source
+    bucket_dict = raw_api.update_bucket(
+        api_url,
+        account_auth_token,
+        account_id,
+        bucket_id,
+        'allPublic',
+        replication=ReplicationConfiguration(),
+    )
+    assert bucket_dict['replicationConfiguration'] == {
+        'isClientAuthorizedToRead': True,
+        'value': None,
+    }
+
+    _clean_and_delete_bucket(
+        raw_api,
+        api_url,
+        account_auth_token,
+        account_id,
+        replication_source_bucket_dict['bucketId'],
+    )
+
+    #################
     print('b2_update_bucket')
     sse_b2_aes = EncryptionSetting(
         mode=EncryptionMode.SSE_B2,

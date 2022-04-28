@@ -11,6 +11,7 @@
 from typing import Dict, Optional, Union, Tuple, TYPE_CHECKING
 
 from .encryption.setting import EncryptionSetting, EncryptionSettingFactory
+from .replication.types import ReplicationStatus
 from .http_constants import FILE_INFO_HEADER_PREFIX_LOWER, SRC_LAST_MODIFIED_MILLIS
 from .file_lock import FileRetentionSetting, LegalHold, NO_RETENTION_FILE_SETTING
 from .progress import AbstractProgressListener
@@ -44,6 +45,7 @@ class BaseFileVersion:
         'legal_hold',
         'file_retention',
         'mod_time_millis',
+        'replication_status',
     ]
 
     def __init__(
@@ -59,6 +61,7 @@ class BaseFileVersion:
         server_side_encryption: EncryptionSetting,
         file_retention: FileRetentionSetting = NO_RETENTION_FILE_SETTING,
         legal_hold: LegalHold = LegalHold.UNSET,
+        replication_status: Optional[ReplicationStatus] = None,
     ):
         self.api = api
         self.id_ = id_
@@ -71,6 +74,7 @@ class BaseFileVersion:
         self.server_side_encryption = server_side_encryption
         self.file_retention = file_retention
         self.legal_hold = legal_hold
+        self.replication_status = replication_status
 
         if SRC_LAST_MODIFIED_MILLIS in self.file_info:
             self.mod_time_millis = int(self.file_info[SRC_LAST_MODIFIED_MILLIS])
@@ -110,6 +114,7 @@ class BaseFileVersion:
             'server_side_encryption': self.server_side_encryption,
             'file_retention': self.file_retention,
             'legal_hold': self.legal_hold,
+            'replication_status': self.replication_status,
         }  # yapf: disable
 
     def as_dict(self):
@@ -133,6 +138,7 @@ class BaseFileVersion:
             result['contentSha1'] = self._encode_content_sha1(
                 self.content_sha1, self.content_sha1_verified
             )
+        result['replicationStatus'] = self.replication_status and self.replication_status.value
 
         return result
 
@@ -210,6 +216,7 @@ class FileVersion(BaseFileVersion):
         server_side_encryption: EncryptionSetting,
         file_retention: FileRetentionSetting = NO_RETENTION_FILE_SETTING,
         legal_hold: LegalHold = LegalHold.UNSET,
+        replication_status: Optional[ReplicationStatus] = None,
     ):
         self.account_id = account_id
         self.bucket_id = bucket_id
@@ -228,6 +235,7 @@ class FileVersion(BaseFileVersion):
             server_side_encryption=server_side_encryption,
             file_retention=file_retention,
             legal_hold=legal_hold,
+            replication_status=replication_status,
         )
 
     def _get_args_for_clone(self):
@@ -309,6 +317,7 @@ class DownloadVersion(BaseFileVersion):
         content_encoding: Optional[str],
         file_retention: FileRetentionSetting = NO_RETENTION_FILE_SETTING,
         legal_hold: LegalHold = LegalHold.UNSET,
+        replication_status: Optional[ReplicationStatus] = None,
     ):
         self.range_ = range_
         self.content_disposition = content_disposition
@@ -330,6 +339,7 @@ class DownloadVersion(BaseFileVersion):
             server_side_encryption=server_side_encryption,
             file_retention=file_retention,
             legal_hold=legal_hold,
+            replication_status=replication_status,
         )
 
     def _get_args_for_clone(self):
@@ -369,7 +379,8 @@ class FileVersionFactory:
                "fileId": "4_zBucketName_f103b7ca31313c69c_d20151230_m030117_c001_v0001015_t0000",
                "fileName": "randomdata",
                "size": 0,
-               "uploadTimestamp": 1451444477000
+               "uploadTimestamp": 1451444477000,
+               "replicationStatus": "pending"
            }
 
         or this:
@@ -385,7 +396,8 @@ class FileVersionFactory:
                "fileId": "4_z547a2a395826655d561f0010_f106d4ca95f8b5b78_d20160104_m003906_c001_v0001013_t0005",
                "fileInfo": {},
                "fileName": "randomdata",
-               "serverSideEncryption": {"algorithm": "AES256", "mode": "SSE-B2"}
+               "serverSideEncryption": {"algorithm": "AES256", "mode": "SSE-B2"},
+               "replicationStatus": "completed"
            }
 
         into a :py:class:`b2sdk.v2.FileVersion` object.
@@ -411,6 +423,11 @@ class FileVersionFactory:
         file_retention = FileRetentionSetting.from_file_version_dict(file_version_dict)
 
         legal_hold = LegalHold.from_file_version_dict(file_version_dict)
+
+        replication_status_value = file_version_dict.get('replicationStatus')
+        replication_status = replication_status_value and ReplicationStatus[
+            replication_status_value.upper()]
+
         return self.FILE_VERSION_CLASS(
             self.api,
             id_,
@@ -427,6 +444,7 @@ class FileVersionFactory:
             server_side_encryption,
             file_retention,
             legal_hold,
+            replication_status,
         )
 
 
@@ -484,6 +502,7 @@ class DownloadVersionFactory:
             content_encoding=headers.get('Content-Encoding'),
             file_retention=FileRetentionSetting.from_response_headers(headers),
             legal_hold=LegalHold.from_response_headers(headers),
+            replication_status=ReplicationStatus.from_response_headers(headers),
         )
 
 

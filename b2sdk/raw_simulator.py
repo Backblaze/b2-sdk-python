@@ -8,20 +8,24 @@
 #
 ######################################################################
 
-from typing import Optional
 import collections
 import io
 import logging
 import random
 import re
-import time
 import threading
-from contextlib import contextmanager
+import time
 
+from contextlib import contextmanager
+from typing import Optional
+
+from b2sdk.http_constants import FILE_INFO_HEADER_PREFIX, HEX_DIGITS_AT_END
+from b2sdk.replication.setting import ReplicationConfiguration
 from requests.structures import CaseInsensitiveDict
 
 from .b2http import ResponseContextManager
 from .encryption.setting import EncryptionMode, EncryptionSetting
+from .replication.types import ReplicationStatus
 from .exception import (
     BadJson,
     BadRequest,
@@ -37,21 +41,20 @@ from .exception import (
     MissingPart,
     NonExistentBucket,
     PartSha1Mismatch,
+    SSECKeyError,
     Unauthorized,
     UnsatisfiableRange,
-    SSECKeyError,
 )
-from .file_lock import BucketRetentionSetting, FileRetentionSetting, NO_RETENTION_BUCKET_SETTING, LegalHold
-from .raw_api import AbstractRawApi, MetadataDirectiveMode, ALL_CAPABILITIES
-from .utils import (
-    b2_url_decode,
-    b2_url_encode,
-    ConcurrentUsedAuthTokenGuard,
-    hex_sha1_of_bytes,
+from .file_lock import (
+    NO_RETENTION_BUCKET_SETTING,
+    BucketRetentionSetting,
+    FileRetentionSetting,
+    LegalHold,
 )
-from b2sdk.http_constants import FILE_INFO_HEADER_PREFIX, HEX_DIGITS_AT_END
-from .stream.hashing import StreamWithHash
 from .file_version import UNVERIFIED_CHECKSUM_PREFIX
+from .raw_api import ALL_CAPABILITIES, AbstractRawApi, MetadataDirectiveMode
+from .stream.hashing import StreamWithHash
+from .utils import ConcurrentUsedAuthTokenGuard, b2_url_decode, b2_url_encode, hex_sha1_of_bytes
 
 logger = logging.getLogger(__name__)
 
@@ -168,6 +171,7 @@ class FileSimulator:
         server_side_encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: LegalHold = LegalHold.UNSET,
+        replication_status: Optional[ReplicationStatus] = None,
     ):
         if action == 'hide':
             assert server_side_encryption is None
@@ -191,6 +195,7 @@ class FileSimulator:
         self.server_side_encryption = server_side_encryption
         self.file_retention = file_retention
         self.legal_hold = legal_hold if legal_hold is not None else LegalHold.UNSET
+        self.replication_status = replication_status
 
         if action == 'start':
             self.parts = []
@@ -287,6 +292,7 @@ class FileSimulator:
             fileInfo=self.file_info,
             action=self.action,
             uploadTimestamp=self.upload_timestamp,
+            replicationStatus=self.replication_status and self.replication_status.value,
         )  # yapf: disable
         if self.server_side_encryption is not None:
             result['serverSideEncryption'
@@ -307,6 +313,7 @@ class FileSimulator:
             fileInfo=self.file_info,
             action=self.action,
             uploadTimestamp=self.upload_timestamp,
+            replicationStatus=self.replication_status and self.replication_status.value,
         )  # yapf: disable
         if self.server_side_encryption is not None:
             result['serverSideEncryption'
@@ -330,6 +337,7 @@ class FileSimulator:
             contentType=self.content_type,
             fileInfo=self.file_info,
             uploadTimestamp=self.upload_timestamp,
+            replicationStatus=self.replication_status and self.replication_status.value,
         )  # yapf: disable
         if self.server_side_encryption is not None:
             result['serverSideEncryption'
@@ -492,6 +500,7 @@ class BucketSimulator:
         options_set=None,
         default_server_side_encryption=None,
         is_file_lock_enabled: Optional[bool] = None,
+        replication: Optional[ReplicationConfiguration] = None,
     ):
         assert bucket_type in ['allPrivate', 'allPublic']
         self.api = api
@@ -516,6 +525,10 @@ class BucketSimulator:
         self.default_server_side_encryption = default_server_side_encryption
         self.is_file_lock_enabled = is_file_lock_enabled
         self.default_retention = NO_RETENTION_BUCKET_SETTING
+        self.replication = replication
+        if self.replication is not None:
+            assert self.replication.asReplicationSource is None or self.replication.asReplicationSource.rules
+            assert self.replication.asReplicationDestination is None or self.replication.asReplicationDestination.sourceToDestinationKeyMapping
 
     def is_allowed_to_read_bucket_encryption_setting(self, account_auth_token):
         return self._check_capability(account_auth_token, 'readBucketEncryption')
@@ -559,6 +572,12 @@ class BucketSimulator:
             }  # yapf: disable
         else:
             file_lock_configuration = {'isClientAuthorizedToRead': False, 'value': None}
+
+        replication = self.replication and {
+            'isClientAuthorizedToRead': True,
+            'value': self.replication.as_dict(),
+        }
+
         return dict(
             accountId=self.account_id,
             bucketName=self.bucket_name,
@@ -571,6 +590,7 @@ class BucketSimulator:
             revision=self.revision,
             defaultServerSideEncryption=default_sse,
             fileLockConfiguration=file_lock_configuration,
+            replicationConfiguration=replication,
         )
 
     def cancel_large_file(self, file_id):
@@ -925,6 +945,7 @@ class BucketSimulator:
         if_revision_is: Optional[int] = None,
         default_server_side_encryption: Optional[EncryptionSetting] = None,
         default_retention: Optional[BucketRetentionSetting] = None,
+        replication: Optional[ReplicationConfiguration] = None,
     ):
         if if_revision_is is not None and self.revision != if_revision_is:
             raise Conflict()
@@ -942,6 +963,7 @@ class BucketSimulator:
         if default_retention:
             self.default_retention = default_retention
         self.revision += 1
+        self.replication = replication
         return self.bucket_dict(self.api.current_token)
 
     def upload_file(
@@ -1211,6 +1233,7 @@ class RawSimulator(AbstractRawApi):
         lifecycle_rules=None,
         default_server_side_encryption: Optional[EncryptionSetting] = None,
         is_file_lock_enabled: Optional[bool] = None,
+        replication: Optional[ReplicationConfiguration] = None,
     ):
         if not re.match(r'^[-a-zA-Z0-9]*$', bucket_name):
             raise BadJson('illegal bucket name: ' + bucket_name)
@@ -1230,6 +1253,7 @@ class RawSimulator(AbstractRawApi):
             # watch out for options!
             default_server_side_encryption=default_server_side_encryption,
             is_file_lock_enabled=is_file_lock_enabled,
+            replication=replication,
         )
         self.bucket_name_to_bucket[bucket_name] = bucket
         self.bucket_id_to_bucket[bucket_id] = bucket
@@ -1688,8 +1712,9 @@ class RawSimulator(AbstractRawApi):
         if_revision_is=None,
         default_server_side_encryption: Optional[EncryptionSetting] = None,
         default_retention: Optional[BucketRetentionSetting] = None,
+        replication: Optional[ReplicationConfiguration] = None,
     ):
-        assert bucket_type or bucket_info or cors_rules or lifecycle_rules or default_server_side_encryption
+        assert bucket_type or bucket_info or cors_rules or lifecycle_rules or default_server_side_encryption or replication
         bucket = self._get_bucket_by_id(bucket_id)
         self._assert_account_auth(api_url, account_auth_token, bucket.account_id, 'writeBuckets')
         return bucket._update_bucket(
@@ -1700,6 +1725,7 @@ class RawSimulator(AbstractRawApi):
             if_revision_is=if_revision_is,
             default_server_side_encryption=default_server_side_encryption,
             default_retention=default_retention,
+            replication=replication,
         )
 
     def upload_file(

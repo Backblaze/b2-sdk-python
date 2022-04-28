@@ -11,8 +11,8 @@
 import time
 
 import pytest
+from contextlib import suppress
 from unittest import mock
-
 from ..test_base import create_key
 
 import apiver_deps
@@ -58,6 +58,9 @@ class TestApi:
         result = self.api.get_file_info(created_file.id_)
 
         if apiver_deps.V <= 1:
+            self.maxDiff = None
+            with suppress(KeyError):
+                del result['replicationStatus']
             assert result == {
                 'accountId': 'account-0',
                 'action': 'upload',
@@ -131,6 +134,9 @@ class TestApi:
         self.api.create_bucket('bucket1', 'allPrivate')
         bucket2 = self.api.create_bucket('bucket2', 'allPrivate')
         delete_output = self.api.delete_bucket(bucket2)
+        if expected_delete_bucket_output is not None:
+            with suppress(KeyError):
+                del delete_output['replicationConfiguration']
         assert delete_output == expected_delete_bucket_output
         self.api.create_bucket('bucket3', 'allPrivate')
         assert [b.name for b in self.api.list_buckets()] == ['bucket1', 'bucket3']

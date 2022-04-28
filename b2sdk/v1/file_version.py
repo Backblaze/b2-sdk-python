@@ -8,6 +8,7 @@
 #
 ######################################################################
 
+from contextlib import suppress
 from typing import Optional
 import datetime
 import functools
@@ -42,6 +43,7 @@ class FileVersionInfo(v2.FileVersion):
         file_retention: Optional[v2.FileRetentionSetting] = None,
         legal_hold: Optional[v2.LegalHold] = None,
         api: Optional['v1api.B2Api'] = None,
+        **kwargs
     ):
         self.id_ = id_
         self.file_name = file_name
@@ -58,6 +60,13 @@ class FileVersionInfo(v2.FileVersion):
         self.legal_hold = legal_hold
         self.file_retention = file_retention
         self._api = api
+
+        # allow common tests to execute without hitting attributeerror
+
+        with suppress(KeyError):
+            del kwargs['replication_status']
+        self.replication_status = None
+        assert not kwargs  # after we get rid of everything we don't support in this apiver, this should be empty
 
         if v2.SRC_LAST_MODIFIED_MILLIS in self.file_info:
             self.mod_time_millis = int(self.file_info[v2.SRC_LAST_MODIFIED_MILLIS])
