@@ -17,7 +17,7 @@ from apiver_deps import Bucket
 from apiver_deps import InMemoryCache
 from apiver_deps import InMemoryAccountInfo
 from apiver_deps import RawSimulator
-from apiver_deps import ReplicationRule, ReplicationDestinationConfiguration, ReplicationSourceConfiguration
+from apiver_deps import ReplicationConfiguration, ReplicationDestinationConfiguration, ReplicationRule, ReplicationSourceConfiguration
 from ..test_base import TestBase
 
 from b2sdk.replication.setup import ReplicationSetupHelper
@@ -146,3 +146,8 @@ class TestReplication(TestBase):
                 new_source_application_key.id_: destination_application_key.id_
             }
         )
+
+    @pytest.mark.apiver(from_ver=2)
+    def test_factory(self):
+        replication = ReplicationConfiguration.from_dict({})
+        assert replication == ReplicationConfiguration()
