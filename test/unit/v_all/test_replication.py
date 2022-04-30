@@ -115,7 +115,6 @@ class TestReplication(TestBase):
         source_bucket, destination_bucket = rsh.setup_both(
             source_bucket_name="bucket1",
             destination_bucket=destination_bucket,
-            name='ac',
             prefix='ad',
         )
 
@@ -132,7 +131,7 @@ class TestReplication(TestBase):
                 ),
                 ReplicationRule(
                     destination_bucket_id='bucket_1',
-                    name='ac',
+                    name='bucket2',
                     file_name_prefix='ad',
                     is_enabled=True,
                     priority=133,

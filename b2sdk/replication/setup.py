@@ -17,6 +17,7 @@
 # b2 replication-accept destinationBucketName sourceKeyId [destinationKeyId]
 # b2 replication-deny destinationBucketName sourceKeyId
 
+from collections.abc import Iterable
 from typing import ClassVar, List, Optional, Tuple
 import itertools
 import logging
@@ -31,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 
 class ReplicationSetupHelper(metaclass=B2TraceMeta):
-    """ class with various methods that help with repliction management """
+    """ class with various methods that help with setting up repliction """
     PRIORITY_OFFSET: ClassVar[int] = 5  #: how far to to put the new rule from the existing rules
     DEFAULT_PRIORITY: ClassVar[
         int
@@ -58,15 +59,15 @@ class ReplicationSetupHelper(metaclass=B2TraceMeta):
     def setup_both(
         self,
         source_bucket_name: str,
-        destination_bucket: Bucket,
+        destination_bucket_name: str,
         name: Optional[str] = None,  #: name for the new replication rule
         priority: int = None,  #: priority for the new replication rule
         prefix: Optional[str] = None,
     ) -> Tuple[Bucket, Bucket]:
         source_bucket = self.setup_source(
             source_bucket_name,
+            destination_bucket_name,
             prefix,
-            destination_bucket,
             name,
             priority,
         )
@@ -79,10 +80,10 @@ class ReplicationSetupHelper(metaclass=B2TraceMeta):
     def setup_destination(
         self,
         source_key_id: str,
-        destination_bucket: Bucket,
+        destination_bucket_name: str,
     ) -> Bucket:
         api: B2Api = destination_bucket.api
-        destination_bucket = api.list_buckets(destination_bucket.name)[0]  # fresh!
+        destination_bucket = api.list_buckets(destination_bucket_name)[0]  # fresh!
         if destination_bucket.replication is None or destination_bucket.replication.as_replication_source is None:
             source_configuration = None
         else:
@@ -153,20 +154,20 @@ class ReplicationSetupHelper(metaclass=B2TraceMeta):
 
     def setup_source(
         self,
-        source_bucket_name,
-        prefix,
+        source_bucket_name: str,
         destination_bucket: Bucket,
-        name,
-        priority,
+        prefix: Optional[str] = None,
+        name: Optional[str] = None,  #: name for the new replication rule
+        priority: int = None,  #: priority for the new replication rule
     ) -> Bucket:
         source_bucket: Bucket = self.source_b2api.list_buckets(source_bucket_name)[0]  # fresh!
         if prefix is None:
             prefix = ""
 
         try:
-            current_source_rrs = source_bucket.replication.as_replication_source.rules
+            current_source_rules = source_bucket.replication.as_replication_source.rules
         except (NameError, AttributeError):
-            current_source_rrs = []
+            current_source_rules = []
         try:
             destination_configuration = source_bucket.replication.as_replication_destination
         except (NameError, AttributeError):
@@ -176,16 +177,16 @@ class ReplicationSetupHelper(metaclass=B2TraceMeta):
             source_bucket,
             prefix,
             source_bucket.replication,
-            current_source_rrs,
+            current_source_rules,
         )
         priority = self._get_priority_for_new_rule(
             priority,
-            current_source_rrs,
+            current_source_rules,
         )
-        name = self._get_name_for_new_rule(
+        name = self._get_new_rule_name(
+            current_source_rules,
+            destination_bucket,
             name,
-            current_source_rrs,
-            destination_bucket.name,
         )
         new_rr = ReplicationRule(
             name=name,
@@ -196,7 +197,7 @@ class ReplicationSetupHelper(metaclass=B2TraceMeta):
         new_replication_configuration = ReplicationConfiguration(
             ReplicationSourceConfiguration(
                 source_application_key_id=source_key.id_,
-                rules=current_source_rrs + [new_rr],
+                rules=current_source_rules + [new_rr],
             ),
             destination_configuration,
         )
@@ -208,10 +209,10 @@ class ReplicationSetupHelper(metaclass=B2TraceMeta):
     @classmethod
     def _get_source_key(
         cls,
-        source_bucket,
-        prefix,
+        source_bucket: Bucket,
+        prefix: str,
         current_replication_configuration: ReplicationConfiguration,
-        current_source_rrs,
+        current_source_rules: Iterable[ReplicationRule],
     ) -> ApplicationKey:
         api = source_bucket.api
 
@@ -229,7 +230,8 @@ class ReplicationSetupHelper(metaclass=B2TraceMeta):
             name=source_bucket.name[:91] + '-replisrc',
             api=api,
             bucket_id=source_bucket.id_,
-        )  # no prefix!
+            prefix=prefix,
+        )
         return new_key
 
     @classmethod
@@ -273,6 +275,12 @@ class ReplicationSetupHelper(metaclass=B2TraceMeta):
         bucket_id: str,
         prefix: Optional[str] = None,
     ) -> ApplicationKey:
+        # in this implementation we ignore the prefix and create a full key, because
+        # if someone would need a different (wider) key later, all replication
+        # destinations would have to start using new keys and it's not feasible
+        # from organizational perspective, while the prefix of uploaded files can be
+        # restricted on the rule level
+        prefix = None
         capabilities = cls.DEFAULT_SOURCE_CAPABILITIES
         return cls._create_key(name, api, bucket_id, prefix, capabilities)
 
@@ -304,32 +312,35 @@ class ReplicationSetupHelper(metaclass=B2TraceMeta):
         )
 
     @classmethod
-    def _get_narrowest_common_prefix(cls, widen_to: List[str]) -> str:
-        for path in widen_to:
-            pass  # TODO
-        return ''
-
-    @classmethod
-    def _get_priority_for_new_rule(cls, priority, current_source_rrs):
-        # if there is no priority hint, look into current rules to determine the last priority and add a constant to it
+    def _get_priority_for_new_rule(
+        cls,
+        current_rules: Iterable[ReplicationRule],
+        priority: Optional[int] = None,
+    ):
         if priority is not None:
             return priority
-        if current_source_rrs:
-            # TODO: maybe handle a case where the existing rrs need to have their priorities decreased to make space
-            existing_priority = max(rr.priority for rr in current_source_rrs)
+        if current_rules:
+            # ignore a case where the existing rrs need to have their priorities decreased to make space (max is 2**31-1)
+            existing_priority = max(rr.priority for rr in current_rules)
             return min(existing_priority + cls.PRIORITY_OFFSET, cls.MAX_PRIORITY)
         return cls.DEFAULT_PRIORITY
 
     @classmethod
-    def _get_name_for_new_rule(
-        cls, name: Optional[str], current_source_rrs, destination_bucket_name
+    def _get_new_rule_name(
+        cls,
+        current_rules: Iterable[ReplicationRule],
+        destination_bucket: Bucket,
+        name: Optional[str] = None,
     ):
         if name is not None:
             return name
-        existing_names = set(rr.name for rr in current_source_rrs)
+        existing_names = set(rr.name for rr in current_rules)
         suffixes = cls._get_rule_name_candidate_suffixes()
         while True:
-            candidate = '%s%s' % (destination_bucket_name, next(suffixes))
+            candidate = '%s%s' % (
+                destination_bucket_name,
+                next(suffixes),
+            )  # use := after dropping 3.7
             if candidate not in existing_names:
                 return candidate
 
