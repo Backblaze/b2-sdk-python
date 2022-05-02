@@ -205,7 +205,7 @@ class Bucket(v2.Bucket):
         bucket_type: Optional[str] = None,
         bucket_info: Optional[dict] = None,
         cors_rules: Optional[dict] = None,
-        lifecycle_rules: Optional[dict] = None,
+        lifecycle_rules: Optional[list] = None,
         if_revision_is: Optional[int] = None,
         default_server_side_encryption: Optional[v2.EncryptionSetting] = None,
         default_retention: Optional[v2.BucketRetentionSetting] = None,
@@ -217,7 +217,7 @@ class Bucket(v2.Bucket):
         :param bucket_type: a bucket type, e.g. ``allPrivate`` or ``allPublic``
         :param bucket_info: an info to store with a bucket
         :param cors_rules: CORS rules to store with a bucket
-        :param lifecycle_rules: lifecycle rules to store with a bucket
+        :param lifecycle_rules: lifecycle rules of the bucket
         :param if_revision_is: revision number, update the info **only if** *revision* equals to *if_revision_is*
         :param default_server_side_encryption: default server side encryption settings (``None`` if unknown)
         :param default_retention: bucket default retention setting
