@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+* Fix account info `is_master_key()`
+
 ## [1.16.0] - 2022-04-27
 
 This release contains a preview of replication support. It allows for basic
