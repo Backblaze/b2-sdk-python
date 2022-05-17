@@ -20,7 +20,6 @@ from ..transfer.outbound.upload_source import UploadSourceLocalFile
 from .encryption_provider import AbstractSyncEncryptionSettingsProvider
 from .report import SyncFileReporter
 
-
 logger = logging.getLogger(__name__)
 
 

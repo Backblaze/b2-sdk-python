@@ -17,7 +17,6 @@ from io import TextIOWrapper
 
 from ..utils import format_and_scale_number
 
-
 logger = logging.getLogger(__name__)
 
 

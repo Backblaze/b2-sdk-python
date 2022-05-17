@@ -8,7 +8,6 @@
 #
 ######################################################################
 
-
 from typing import Optional, Tuple
 
 from .folder import AbstractFolder

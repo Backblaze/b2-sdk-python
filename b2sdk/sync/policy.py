@@ -21,7 +21,6 @@ from ..scan.path import AbstractPath
 from .action import B2CopyAction, B2DeleteAction, B2DownloadAction, B2HideAction, B2UploadAction, LocalDeleteAction
 from .encryption_provider import SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER, AbstractSyncEncryptionSettingsProvider
 
-
 ONE_DAY_IN_MS = 24 * 60 * 60 * 1000
 
 logger = logging.getLogger(__name__)

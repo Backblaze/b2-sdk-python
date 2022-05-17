@@ -17,7 +17,6 @@ from ..progress import AbstractProgressListener
 from ..scan.report import Report
 from ..utils import format_and_scale_fraction, format_and_scale_number
 
-
 logger = logging.getLogger(__name__)
 
 

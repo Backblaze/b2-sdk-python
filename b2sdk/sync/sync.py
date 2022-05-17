@@ -25,7 +25,6 @@ from .policy import CompareVersionMode, NewerFileSyncMode
 from .policy_manager import POLICY_MANAGER, SyncPolicyManager
 from .report import SyncReport
 
-
 logger = logging.getLogger(__name__)
 
 
