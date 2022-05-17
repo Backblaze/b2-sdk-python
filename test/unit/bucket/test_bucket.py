@@ -105,7 +105,7 @@ REPLICATION = ReplicationConfiguration(
     source_key_id='10053d55ae26b790000000006',
     source_to_destination_key_mapping={
         "10053d55ae26b790000000045": "10053d55ae26b790000000004",
-        "10053d55ae26b790000000046": "10053d55ae26b790030000004"
+        "10053d55ae26b790000000046": "10053d55ae26b790030000004",
     },
 )
 
