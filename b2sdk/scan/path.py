@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: b2sdk/sync/path.py
+# File: b2sdk/scan/path.py
 #
 # Copyright 2021 Backblaze Inc. All Rights Reserved.
 #

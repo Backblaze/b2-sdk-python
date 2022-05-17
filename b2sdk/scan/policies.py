@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: b2sdk/sync/scan_policies.py
+# File: b2sdk/scan/policies.py
 #
 # Copyright 2019 Backblaze Inc. All Rights Reserved.
 #

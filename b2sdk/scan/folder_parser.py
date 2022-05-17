@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: b2sdk/sync/folder_parser.py
+# File: b2sdk/scan/folder_parser.py
 #
 # Copyright 2019 Backblaze Inc. All Rights Reserved.
 #
