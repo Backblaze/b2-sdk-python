@@ -144,7 +144,7 @@ __all__ = (
     'UnknownHost',
     'UnrecognizedBucketType',
     'UnableToCreateDirectory',
-    'UnSyncableFilename',
+    'UnsupportedFilename',
     'UnsatisfiableRange',
     'UnusableFileName',
     'interpret_b2_error',

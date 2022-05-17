@@ -15,7 +15,7 @@ import re
 import sys
 
 from abc import ABCMeta, abstractmethod
-from .exception import EmptyDirectory, EnvironmentEncodingError, UnSyncableFilename, NotADirectory, UnableToCreateDirectory
+from .exception import EmptyDirectory, EnvironmentEncodingError, UnsupportedFilename, NotADirectory, UnableToCreateDirectory
 from .path import B2SyncPath, LocalSyncPath
 from .report import SyncReport
 from .scan_policies import DEFAULT_SCAN_MANAGER, ScanPoliciesManager
@@ -148,7 +148,7 @@ class LocalFolder(AbstractFolder):
 
         # Ensure the new full_path is inside the self.root directory
         if common_prefix != self.root:
-            raise UnSyncableFilename("illegal file name", full_path)
+            raise UnsupportedFilename("illegal file name", full_path)
 
         return full_path
 
@@ -208,8 +208,8 @@ class LocalFolder(AbstractFolder):
                 name = self._handle_non_unicode_file_name(name)
 
             if '/' in name:
-                raise UnSyncableFilename(
-                    "sync does not support file names that include '/'",
+                raise UnsupportedFilename(
+                    "scan does not support file names that include '/'",
                     "%s in dir %s" % (name, local_dir)
                 )
 
@@ -374,18 +374,18 @@ class B2Folder(AbstractFolder):
     def _validate_file_name(self, file_name):
         # Do not allow relative paths in file names
         if RELATIVE_PATH_MATCHER.search(file_name):
-            raise UnSyncableFilename(
-                "sync does not support file names that include relative paths", file_name
+            raise UnsupportedFilename(
+                "scan does not support file names that include relative paths", file_name
             )
         # Do not allow absolute paths in file names
         if ABSOLUTE_PATH_MATCHER.search(file_name):
-            raise UnSyncableFilename(
-                "sync does not support file names with absolute paths", file_name
+            raise UnsupportedFilename(
+                "scan does not support file names with absolute paths", file_name
             )
         # On Windows, do not allow drive letters in file names
         if platform.system() == "Windows" and DRIVE_MATCHER.search(file_name):
-            raise UnSyncableFilename(
-                "sync does not support file names with drive letters", file_name
+            raise UnsupportedFilename(
+                "scan does not support file names with drive letters", file_name
             )
 
     def folder_type(self):

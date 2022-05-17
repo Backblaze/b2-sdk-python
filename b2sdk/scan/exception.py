@@ -57,9 +57,9 @@ class InvalidArgument(B2Error):
         return "%s %s" % (self.parameter_name, self.message)
 
 
-class UnSyncableFilename(B2Error):
+class UnsupportedFilename(B2Error):
     """
-    Raised when a filename is not supported by the sync operation
+    Raised when a filename is not supported by the scan operation
     """
 
     def __init__(self, message, filename):

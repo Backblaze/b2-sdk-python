@@ -9,6 +9,7 @@
 ######################################################################
 
 from b2sdk._v3 import *  # noqa
+from b2sdk._v3 import UnsupportedFilename as UnSyncableFilename
 
 from .api import B2Api
 from .b2http import B2Http
