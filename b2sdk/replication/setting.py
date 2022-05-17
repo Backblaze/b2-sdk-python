@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 from typing import ClassVar, Dict, List, Optional
 
 
-@dataclass(kw_only=True, slots=True)
+@dataclass
 class ReplicationRule:
     """
     Hold information about replication rule: destination bucket, priority,
@@ -79,7 +79,7 @@ class ReplicationRule:
         return cls(**kwargs)
 
 
-@dataclass(kw_only=True, slots=True)
+@dataclass
 class ReplicationConfiguration:
     """
     Hold information about bucket replication configuration
@@ -190,7 +190,7 @@ class ReplicationConfiguration:
         )
 
 
-@dataclass(kw_only=True, slots=True)
+@dataclass
 class ReplicationConfigurationFactory:
     is_client_authorized_to_read: bool
     value: Optional[ReplicationConfiguration]
