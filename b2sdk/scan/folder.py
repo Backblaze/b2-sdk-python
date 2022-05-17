@@ -311,7 +311,7 @@ class B2Folder(AbstractFolder):
         self.prefix = '' if self.folder_name == '' else self.folder_name + '/'
 
     def all_files(
-        self, reporter: Report, policies_manager: ScanPoliciesManager = DEFAULT_SCAN_MANAGER
+        self, reporter, policies_manager: ScanPoliciesManager = DEFAULT_SCAN_MANAGER
     ):
         """
         Yield all files.

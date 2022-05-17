@@ -33,7 +33,7 @@ Following are the important optional arguments that can be provided while initia
 .. code-block:: python
 
     >>> from b2sdk.v2 import ScanPoliciesManager
-    >>> from b2sdk.v2 import parse_sync_folder
+    >>> from b2sdk.v2 import parse_folder
     >>> from b2sdk.v2 import Synchronizer
     >>> from b2sdk.v2 import KeepOrDeleteMode, CompareVersionMode, NewerFileSyncMode
     >>> import time
@@ -42,8 +42,8 @@ Following are the important optional arguments that can be provided while initia
     >>> source = '/home/user1/b2_example'
     >>> destination = 'b2://example-mybucket-b2'
 
-    >>> source = parse_sync_folder(source, b2_api)
-    >>> destination = parse_sync_folder(destination, b2_api)
+    >>> source = parse_folder(source, b2_api)
+    >>> destination = parse_folder(destination, b2_api)
 
     >>> policies_manager = ScanPoliciesManager(exclude_all_symlinks=True)
 

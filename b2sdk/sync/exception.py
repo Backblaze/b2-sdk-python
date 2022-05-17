@@ -9,6 +9,7 @@
 ######################################################################
 
 from ..exception import B2SimpleError
+from ..scan.exception import BaseDirectoryError
 
 
 class IncompleteSync(B2SimpleError):
