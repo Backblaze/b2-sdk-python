@@ -8,73 +8,25 @@
 #
 ######################################################################
 
-import logging
 import concurrent.futures as futures
+import logging
+
 from enum import Enum, unique
 
 from ..bounded_queue_executor import BoundedQueueExecutor
-from .encryption_provider import AbstractSyncEncryptionSettingsProvider, SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER
-from .exception import InvalidArgument, IncompleteSync
+from ..scan.exception import InvalidArgument
 from ..scan.folder import AbstractFolder
 from ..scan.path import AbstractPath
+from ..scan.policies import DEFAULT_SCAN_MANAGER
+from ..scan.scan import zip_folders
+from .encryption_provider import SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER, AbstractSyncEncryptionSettingsProvider
+from .exception import IncompleteSync
 from .policy import CompareVersionMode, NewerFileSyncMode
 from .policy_manager import POLICY_MANAGER, SyncPolicyManager
 from .report import SyncReport
-from ..scan.policies import DEFAULT_SCAN_MANAGER
+
 
 logger = logging.getLogger(__name__)
-
-
-def next_or_none(iterator):
-    """
-    Return the next item from the iterator, or None if there are no more.
-    """
-    try:
-        return next(iterator)
-    except StopIteration:
-        return None
-
-
-def zip_folders(folder_a, folder_b, reporter, policies_manager=DEFAULT_SCAN_MANAGER):
-    """
-    Iterate over all of the files in the union of two folders,
-    matching file names.
-
-    Each item is a pair (file_a, file_b) with the corresponding file
-    in both folders.  Either file (but not both) will be None if the
-    file is in only one folder.
-
-    :param b2sdk.sync.folder.AbstractFolder folder_a: first folder object.
-    :param b2sdk.sync.folder.AbstractFolder folder_b: second folder object.
-    :param reporter: reporter object
-    :param policies_manager: policies manager object
-    :return: yields two element tuples
-    """
-
-    iter_a = folder_a.all_files(reporter, policies_manager)
-    iter_b = folder_b.all_files(reporter)
-
-    current_a = next_or_none(iter_a)
-    current_b = next_or_none(iter_b)
-
-    while current_a is not None or current_b is not None:
-        if current_a is None:
-            yield (None, current_b)
-            current_b = next_or_none(iter_b)
-        elif current_b is None:
-            yield (current_a, None)
-            current_a = next_or_none(iter_a)
-        elif current_a.relative_path < current_b.relative_path:
-            yield (current_a, None)
-            current_a = next_or_none(iter_a)
-        elif current_b.relative_path < current_a.relative_path:
-            yield (None, current_b)
-            current_b = next_or_none(iter_b)
-        else:
-            assert current_a.relative_path == current_b.relative_path
-            yield (current_a, current_b)
-            current_a = next_or_none(iter_a)
-            current_b = next_or_none(iter_b)
 
 
 def count_files(local_folder, reporter, policies_manager):
