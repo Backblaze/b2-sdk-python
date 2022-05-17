@@ -13,7 +13,7 @@ import re
 from typing import Optional, Union, Iterable
 
 from .exception import InvalidArgument, check_invalid_argument
-from .path import LocalSyncPath
+from .path import LocalPath
 from ..file_version import FileVersion
 
 logger = logging.getLogger(__name__)
@@ -107,8 +107,8 @@ class IntegerRange:
 
 class ScanPoliciesManager:
     """
-    Policy object used when scanning folders for syncing, used to decide
-    which files to include in the list of files to be synced.
+    Policy object used when scanning folders, used to decide
+    which files to include in the list of files.
 
     Code that scans through files should at least use should_exclude_file()
     to decide whether each file should be included; it will check include/exclude
@@ -186,9 +186,9 @@ class ScanPoliciesManager:
             return False
         return self._exclude_file_set.matches(relative_path)
 
-    def should_exclude_local_path(self, local_path: LocalSyncPath):
+    def should_exclude_local_path(self, local_path: LocalPath):
         """
-        Whether a local path should be excluded from the Sync or not.
+        Whether a local path should be excluded from the scan or not.
 
         This method assumes that the directory holding the `path_` has already been checked for exclusion.
         """
@@ -198,7 +198,7 @@ class ScanPoliciesManager:
 
     def should_exclude_b2_file_version(self, file_version: FileVersion, relative_path: str):
         """
-        Whether a b2 file version should be excluded from the Sync or not.
+        Whether a b2 file version should be excluded from the scan or not.
 
         This method assumes that the directory holding the `path_` has already been checked for exclusion.
         """
@@ -210,14 +210,14 @@ class ScanPoliciesManager:
 
     def should_exclude_b2_directory(self, dir_path: str):
         """
-        Given the path of a directory, relative to the sync point,
+        Given the path of a directory, relative to the scan point,
         decide if all of the files in it should be excluded from the scan.
         """
         return self._exclude_dir_set.matches(dir_path)
 
     def should_exclude_local_directory(self, dir_path: str):
         """
-        Given the path of a directory, relative to the sync point,
+        Given the path of a directory, relative to the scan point,
         decide if all of the files in it should be excluded from the scan.
         """
         return self._exclude_dir_set.matches(dir_path)

@@ -8,10 +8,10 @@
 #
 ######################################################################
 
+from ..scan.path import AbstractPath
 from .policy import CopyAndDeletePolicy, CopyAndKeepDaysPolicy, CopyPolicy, \
     DownAndDeletePolicy, DownAndKeepDaysPolicy, DownPolicy, UpAndDeletePolicy, \
     UpAndKeepDaysPolicy, UpPolicy
-from .path import AbstractSyncPath
 
 
 class SyncPolicyManager:
@@ -26,9 +26,9 @@ class SyncPolicyManager:
     def get_policy(
         self,
         sync_type,
-        source_path: AbstractSyncPath,
+        source_path: AbstractPath,
         source_folder,
-        dest_path: AbstractSyncPath,
+        dest_path: AbstractPath,
         dest_folder,
         now_millis,
         delete,
@@ -42,9 +42,9 @@ class SyncPolicyManager:
         Return a policy object.
 
         :param str sync_type: synchronization type
-        :param b2sdk.v2.AbstractSyncPath source_path: source file
+        :param b2sdk.v2.AbstractPath source_path: source file
         :param str source_folder: a source folder path
-        :param b2sdk.v2.AbstractSyncPath dest_path: destination file
+        :param b2sdk.v2.AbstractPath dest_path: destination file
         :param str dest_folder: a destination folder path
         :param int now_millis: current time in milliseconds
         :param bool delete: delete policy

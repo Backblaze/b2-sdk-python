@@ -13,7 +13,7 @@ from unittest import mock
 import pytest
 
 import apiver_deps
-from apiver_deps import AbstractFolder, B2Folder, LocalFolder, B2SyncPath, LocalSyncPath
+from apiver_deps import B2Folder, LocalFolder, LocalPath
 from apiver_deps import CompareVersionMode, NewerFileSyncMode, KeepOrDeleteMode
 from apiver_deps import DEFAULT_SCAN_MANAGER, POLICY_MANAGER, Synchronizer
 
@@ -69,10 +69,10 @@ class FakeB2Folder(B2Folder):
 class FakeLocalFolder(LocalFolder):
     def __init__(self, test_files):
         super().__init__('folder')
-        self.local_sync_paths = [self._local_sync_path(*test_file) for test_file in test_files]
+        self.local_paths = [self._local_path(*test_file) for test_file in test_files]
 
     def all_files(self, reporter, policies_manager=DEFAULT_SCAN_MANAGER):
-        for single_path in self.local_sync_paths:
+        for single_path in self.local_paths:
             if single_path.relative_path.endswith('/'):
                 if policies_manager.should_exclude_b2_directory(single_path.relative_path):
                     continue
@@ -84,11 +84,11 @@ class FakeLocalFolder(LocalFolder):
     def make_full_path(self, name):
         return '/dir/' + name
 
-    def _local_sync_path(self, name, mod_times, size=10):
+    def _local_path(self, name, mod_times, size=10):
         """
-        Makes a LocalSyncPath object for a local file.
+        Makes a LocalPath object for a local file.
         """
-        return LocalSyncPath(name, name, mod_times[0], size)
+        return LocalPath(name, name, mod_times[0], size)
 
 
 @pytest.fixture(scope='session')

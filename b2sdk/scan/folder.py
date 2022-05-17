@@ -16,9 +16,9 @@ import sys
 
 from abc import ABCMeta, abstractmethod
 from .exception import EmptyDirectory, EnvironmentEncodingError, UnsupportedFilename, NotADirectory, UnableToCreateDirectory
-from .path import B2SyncPath, LocalSyncPath
+from .path import B2Path, LocalPath
 from .report import SyncReport
-from .scan_policies import DEFAULT_SCAN_MANAGER, ScanPoliciesManager
+from .policies import DEFAULT_SCAN_MANAGER, ScanPoliciesManager
 from ..utils import fix_windows_path_limit, get_file_mtime, is_file_readable
 
 DRIVE_MATCHER = re.compile(r"^([A-Za-z]):([/\\])")
@@ -181,7 +181,7 @@ class LocalFolder(AbstractFolder):
         Yield a File object for each of the files anywhere under this folder, in the
         order they would appear in B2, unless the path is excluded by policies manager.
 
-        :param relative_dir_path: the path of this dir relative to the sync point, or '' if at sync point
+        :param relative_dir_path: the path of this dir relative to the scan point, or '' if at scan point
         """
         if not isinstance(local_dir, str):
             raise ValueError('folder path should be unicode: %s' % repr(local_dir))
@@ -216,7 +216,7 @@ class LocalFolder(AbstractFolder):
             local_path = os.path.join(local_dir, name)
             relative_file_path = join_b2_path(
                 relative_dir_path, name
-            )  # file path relative to the sync point
+            )  # file path relative to the scan point
 
             # Skip broken symlinks or other inaccessible files
             if not is_file_readable(local_path, reporter):
@@ -251,17 +251,17 @@ class LocalFolder(AbstractFolder):
                     file_mod_time = get_file_mtime(local_path)
                     file_size = os.path.getsize(local_path)
 
-                    local_sync_path = LocalSyncPath(
+                    local_scan_path = LocalPath(
                         absolute_path=self.make_full_path(relative_file_path),
                         relative_path=relative_file_path,
                         mod_time=file_mod_time,
                         size=file_size,
                     )
 
-                    if policies_manager.should_exclude_local_path(local_sync_path):
+                    if policies_manager.should_exclude_local_path(local_scan_path):
                         continue
 
-                    yield local_sync_path
+                    yield local_scan_path
 
     @classmethod
     def _handle_non_unicode_file_name(cls, name):
@@ -346,7 +346,7 @@ class B2Folder(AbstractFolder):
             self._validate_file_name(file_name)
 
             if current_name != file_name and current_name is not None and current_versions:
-                yield B2SyncPath(
+                yield B2Path(
                     relative_path=current_name,
                     selected_version=current_versions[0],
                     all_versions=current_versions
@@ -357,7 +357,7 @@ class B2Folder(AbstractFolder):
             current_versions.append(file_version)
 
         if current_name is not None and current_versions:
-            yield B2SyncPath(
+            yield B2Path(
                 relative_path=current_name,
                 selected_version=current_versions[0],
                 all_versions=current_versions

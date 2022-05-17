@@ -17,7 +17,7 @@ from ..bucket import Bucket
 
 from ..http_constants import SRC_LAST_MODIFIED_MILLIS
 from ..transfer.outbound.upload_source import UploadSourceLocalFile
-from .path import B2SyncPath
+from ..scan.path import B2Path
 from .report import SyncFileReporter
 
 logger = logging.getLogger(__name__)
@@ -209,13 +209,13 @@ class B2HideAction(AbstractAction):
 class B2DownloadAction(AbstractAction):
     def __init__(
         self,
-        source_path: B2SyncPath,
+        source_path: B2Path,
         b2_file_name: str,
         local_full_path: str,
         encryption_settings_provider: AbstractSyncEncryptionSettingsProvider,
     ):
         """
-        :param b2sdk.v2.B2SyncPath source_path: the file to be downloaded
+        :param b2sdk.v2.B2Path source_path: the file to be downloaded
         :param str b2_file_name: b2_file_name
         :param str local_full_path: a local file path
         :param b2sdk.v2.AbstractSyncEncryptionSettingsProvider encryption_settings_provider: encryption setting provider
@@ -306,7 +306,7 @@ class B2CopyAction(AbstractAction):
     def __init__(
         self,
         b2_file_name: str,
-        source_path: B2SyncPath,
+        source_path: B2Path,
         dest_b2_file_name,
         source_bucket: Bucket,
         destination_bucket: Bucket,
@@ -314,7 +314,7 @@ class B2CopyAction(AbstractAction):
     ):
         """
         :param str b2_file_name: a b2_file_name
-        :param b2sdk.v2.B2SyncPath source_path: the file to be copied
+        :param b2sdk.v2.B2Path source_path: the file to be copied
         :param str dest_b2_file_name: a name of a destination remote file
         :param Bucket source_bucket: bucket to copy from
         :param Bucket destination_bucket: bucket to copy to

@@ -15,12 +15,12 @@ from enum import Enum, unique
 from ..bounded_queue_executor import BoundedQueueExecutor
 from .encryption_provider import AbstractSyncEncryptionSettingsProvider, SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER
 from .exception import InvalidArgument, IncompleteSync
-from .folder import AbstractFolder
-from .path import AbstractSyncPath
+from ..scan.folder import AbstractFolder
+from ..scan.path import AbstractPath
 from .policy import CompareVersionMode, NewerFileSyncMode
 from .policy_manager import POLICY_MANAGER, SyncPolicyManager
 from .report import SyncReport
-from .scan_policies import DEFAULT_SCAN_MANAGER
+from ..scan.policies import DEFAULT_SCAN_MANAGER
 
 logger = logging.getLogger(__name__)
 
@@ -339,8 +339,8 @@ class Synchronizer:
     def _make_file_sync_actions(
         self,
         sync_type: str,
-        source_path: AbstractSyncPath,
-        dest_path: AbstractSyncPath,
+        source_path: AbstractPath,
+        dest_path: AbstractPath,
         source_folder: AbstractFolder,
         dest_folder: AbstractFolder,
         now_millis: int,
@@ -351,8 +351,8 @@ class Synchronizer:
         Yields the sequence of actions needed to sync the two files
 
         :param str sync_type: synchronization type
-        :param b2sdk.v2.AbstractSyncPath source_path: source file object
-        :param b2sdk.v2.AbstractSyncPath dest_path: destination file object
+        :param b2sdk.v2.AbstractPath source_path: source file object
+        :param b2sdk.v2.AbstractPath dest_path: destination file object
         :param b2sdk.v2.AbstractFolder source_folder: a source folder object
         :param b2sdk.v2.AbstractFolder dest_folder: a destination folder object
         :param int now_millis: current time in milliseconds

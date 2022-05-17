@@ -18,8 +18,8 @@ from ..exception import DestFileNewer
 from .encryption_provider import AbstractSyncEncryptionSettingsProvider, SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER
 from .action import LocalDeleteAction, B2CopyAction, B2DeleteAction, B2DownloadAction, B2HideAction, B2UploadAction
 from .exception import InvalidArgument
-from .folder import AbstractFolder
-from .path import AbstractSyncPath
+from ..scan.folder import AbstractFolder
+from ..scan.path import AbstractPath
 
 ONE_DAY_IN_MS = 24 * 60 * 60 * 1000
 
@@ -51,9 +51,9 @@ class AbstractFileSyncPolicy(metaclass=ABCMeta):
 
     def __init__(
         self,
-        source_path: AbstractSyncPath,
+        source_path: AbstractPath,
         source_folder: AbstractFolder,
-        dest_path: AbstractSyncPath,
+        dest_path: AbstractPath,
         dest_folder: AbstractFolder,
         now_millis: int,
         keep_days: int,
@@ -64,9 +64,9 @@ class AbstractFileSyncPolicy(metaclass=ABCMeta):
         AbstractSyncEncryptionSettingsProvider = SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER,
     ):
         """
-        :param b2sdk.v2.AbstractSyncPath source_path: source file object
+        :param b2sdk.v2.AbstractPath source_path: source file object
         :param b2sdk.v2.AbstractFolder source_folder: source folder object
-        :param b2sdk.v2.AbstractSyncPath dest_path: destination file object
+        :param b2sdk.v2.AbstractPath dest_path: destination file object
         :param b2sdk.v2.AbstractFolder dest_folder: destination folder object
         :param int now_millis: current time in milliseconds
         :param int keep_days: days to keep before delete
@@ -110,8 +110,8 @@ class AbstractFileSyncPolicy(metaclass=ABCMeta):
     @classmethod
     def files_are_different(
         cls,
-        source_path: AbstractSyncPath,
-        dest_path: AbstractSyncPath,
+        source_path: AbstractPath,
+        dest_path: AbstractPath,
         compare_threshold: Optional[int] = None,
         compare_version_mode: CompareVersionMode = CompareVersionMode.MODTIME,
         newer_file_mode: NewerFileSyncMode = NewerFileSyncMode.RAISE_ERROR,
@@ -120,8 +120,8 @@ class AbstractFileSyncPolicy(metaclass=ABCMeta):
         Compare two files and determine if the the destination file
         should be replaced by the source file.
 
-        :param b2sdk.v2.AbstractSyncPath source_path: source file object
-        :param b2sdk.v2.AbstractSyncPath dest_path: destination file object
+        :param b2sdk.v2.AbstractPath source_path: source file object
+        :param b2sdk.v2.AbstractPath dest_path: destination file object
         :param int compare_threshold: compare threshold when comparing by time or size
         :param b2sdk.v2.CompareVersionMode compare_version_mode: source file version comparator method
         :param b2sdk.v2.NewerFileSyncMode newer_file_mode: newer destination handling method
@@ -385,16 +385,16 @@ def make_b2_delete_note(version, index, transferred):
 
 
 def make_b2_delete_actions(
-    source_path: AbstractSyncPath,
-    dest_path: AbstractSyncPath,
+    source_path: AbstractPath,
+    dest_path: AbstractPath,
     dest_folder: AbstractFolder,
     transferred: bool,
 ):
     """
     Create the actions to delete files stored on B2, which are not present locally.
 
-    :param b2sdk.v2.AbstractSyncPath source_path: source file object
-    :param b2sdk.v2.AbstractSyncPath dest_path: destination file object
+    :param b2sdk.v2.AbstractPath source_path: source file object
+    :param b2sdk.v2.AbstractPath dest_path: destination file object
     :param b2sdk.v2.AbstractFolder dest_folder: destination folder
     :param bool transferred: if True, file has been transferred, False otherwise
     """
@@ -414,8 +414,8 @@ def make_b2_delete_actions(
 
 
 def make_b2_keep_days_actions(
-    source_path: AbstractSyncPath,
-    dest_path: AbstractSyncPath,
+    source_path: AbstractPath,
+    dest_path: AbstractPath,
     dest_folder: AbstractFolder,
     transferred: bool,
     keep_days: int,
@@ -431,8 +431,8 @@ def make_b2_keep_days_actions(
     only the 25-day old version can be deleted.  The 15 day-old version
     was visible 10 days ago.
 
-    :param b2sdk.v2.AbstractSyncPath source_path: source file object
-    :param b2sdk.v2.AbstractSyncPath dest_path: destination file object
+    :param b2sdk.v2.AbstractPath source_path: source file object
+    :param b2sdk.v2.AbstractPath dest_path: destination file object
     :param b2sdk.v2.AbstractFolder dest_folder: destination folder object
     :param bool transferred: if True, file has been transferred, False otherwise
     :param int keep_days: how many days to keep a file
