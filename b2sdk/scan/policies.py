@@ -10,11 +10,13 @@
 
 import logging
 import re
-from typing import Optional, Union, Iterable
 
+from typing import Iterable, Optional, Union
+
+from ..file_version import FileVersion
 from .exception import InvalidArgument, check_invalid_argument
 from .path import LocalPath
-from ..file_version import FileVersion
+
 
 logger = logging.getLogger(__name__)
 

@@ -11,7 +11,8 @@
 from typing import Tuple
 
 from b2sdk import v2
-from .file import File, B2File, FileVersion, B2FileVersion
+
+from .file import B2File, B2FileVersion, File, FileVersion
 
 
 # The goal is to create v1.File objects together with v1.FileVersion objects from v2.SyncPath objects

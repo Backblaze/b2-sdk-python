@@ -8,18 +8,19 @@
 #
 ######################################################################
 
+import logging
+
 from abc import ABCMeta, abstractmethod
 from enum import Enum, unique
 from typing import Optional
 
-import logging
-
 from ..exception import DestFileNewer
-from .encryption_provider import AbstractSyncEncryptionSettingsProvider, SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER
-from .action import LocalDeleteAction, B2CopyAction, B2DeleteAction, B2DownloadAction, B2HideAction, B2UploadAction
-from .exception import InvalidArgument
+from ..scan.exception import InvalidArgument
 from ..scan.folder import AbstractFolder
 from ..scan.path import AbstractPath
+from .action import B2CopyAction, B2DeleteAction, B2DownloadAction, B2HideAction, B2UploadAction, LocalDeleteAction
+from .encryption_provider import SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER, AbstractSyncEncryptionSettingsProvider
+
 
 ONE_DAY_IN_MS = 24 * 60 * 60 * 1000
 

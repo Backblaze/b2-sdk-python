@@ -8,17 +8,18 @@
 #
 ######################################################################
 
-from abc import ABCMeta, abstractmethod
-
 import logging
 import os
-from .encryption_provider import AbstractSyncEncryptionSettingsProvider
-from ..bucket import Bucket
 
+from abc import ABCMeta, abstractmethod
+
+from ..bucket import Bucket
 from ..http_constants import SRC_LAST_MODIFIED_MILLIS
-from ..transfer.outbound.upload_source import UploadSourceLocalFile
 from ..scan.path import B2Path
+from ..transfer.outbound.upload_source import UploadSourceLocalFile
+from .encryption_provider import AbstractSyncEncryptionSettingsProvider
 from .report import SyncFileReporter
+
 
 logger = logging.getLogger(__name__)
 
