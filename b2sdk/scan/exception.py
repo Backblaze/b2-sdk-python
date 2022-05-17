@@ -25,7 +25,7 @@ class EnvironmentEncodingError(B2Error):
         :type filename: str, bytes
         :param str encoding: file name encoding
         """
-        super(EnvironmentEncodingError, self).__init__()
+        super().__init__()
         self.filename = filename
         self.encoding = encoding
 
@@ -49,7 +49,7 @@ class InvalidArgument(B2Error):
         :param parameter_name: name of the function argument
         :param message: brief explanation of misconfiguration
         """
-        super(InvalidArgument, self).__init__()
+        super().__init__()
         self.parameter_name = parameter_name
         self.message = message
 
@@ -67,7 +67,7 @@ class UnsupportedFilename(B2Error):
         :param message: brief explanation of why the filename was not supported
         :param filename: name of the file which is not supported
         """
-        super(UnSyncableFilename, self).__init__()
+        super().__init__()
         self.filename = filename
         self.message = message
 
