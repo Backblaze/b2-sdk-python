@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Add 3.11.0-beta.1 to CI
 * Change Sphinx major version from 5 to 6
 * Extracted folder/bucket scanning into a new `scan` module
+* The interface of `ReplicationConfiguration` was flattened
 
 ## [1.16.0] - 2022-04-27
 

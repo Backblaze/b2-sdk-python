@@ -59,8 +59,7 @@ from apiver_deps import EncryptionAlgorithm, EncryptionSetting, EncryptionMode, 
 from apiver_deps import CopySource, UploadSourceLocalFile, WriteIntent
 from apiver_deps import BucketRetentionSetting, FileRetentionSetting, LegalHold, RetentionMode, RetentionPeriod, \
     NO_RETENTION_FILE_SETTING
-from apiver_deps import ReplicationConfiguration, ReplicationSourceConfiguration, \
-    ReplicationRule, ReplicationDestinationConfiguration
+from apiver_deps import ReplicationConfiguration, ReplicationRule
 
 pytestmark = [pytest.mark.apiver(from_ver=1)]
 
@@ -90,28 +89,24 @@ SSE_C_AES_FROM_SERVER = EncryptionSetting(
     key=EncryptionKey(key_id=None, secret=None),
 )
 REPLICATION = ReplicationConfiguration(
-    as_replication_source=ReplicationSourceConfiguration(
-        rules=[
-            ReplicationRule(
-                destination_bucket_id='c5f35d53a90a7ea284fb0719',
-                name='replication-us-west',
-            ),
-            ReplicationRule(
-                destination_bucket_id='55f34d53a96a7ea284fb0719',
-                name='replication-us-west-2',
-                file_name_prefix='replica/',
-                is_enabled=False,
-                priority=255,
-            ),
-        ],
-        source_application_key_id='10053d55ae26b790000000006',
-    ),
-    as_replication_destination=ReplicationDestinationConfiguration(
-        source_to_destination_key_mapping={
-            "10053d55ae26b790000000045": "10053d55ae26b790000000004",
-            "10053d55ae26b790000000046": "10053d55ae26b790030000004"
-        },
-    ),
+    rules=[
+        ReplicationRule(
+            destination_bucket_id='c5f35d53a90a7ea284fb0719',
+            name='replication-us-west',
+        ),
+        ReplicationRule(
+            destination_bucket_id='55f34d53a96a7ea284fb0719',
+            name='replication-us-west-2',
+            file_name_prefix='replica/',
+            is_enabled=False,
+            priority=255,
+        ),
+    ],
+    source_key_id='10053d55ae26b790000000006',
+    source_to_destination_key_mapping={
+        "10053d55ae26b790000000045": "10053d55ae26b790000000004",
+        "10053d55ae26b790000000046": "10053d55ae26b790030000004"
+    },
 )
 
 
@@ -1037,10 +1032,8 @@ class TestUpdate(TestCaseWithBucket):
     def test_empty_replication(self):
         self.bucket.update(
             replication=ReplicationConfiguration(
-                as_replication_source=ReplicationSourceConfiguration(rules=[],),
-                as_replication_destination=ReplicationDestinationConfiguration(
-                    source_to_destination_key_mapping={},
-                ),
+                rules=[],
+                source_to_destination_key_mapping={},
             ),
         )
 

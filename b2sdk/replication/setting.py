@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 from typing import ClassVar, Dict, List, Optional
 
 
-@dataclass
+@dataclass(kw_only=True, slots=True)
 class ReplicationRule:
     """
     Hold information about replication rule: destination bucket, priority,
@@ -79,44 +79,21 @@ class ReplicationRule:
         return cls(**kwargs)
 
 
-@dataclass
-class ReplicationSourceConfiguration:
+@dataclass(kw_only=True, slots=True)
+class ReplicationConfiguration:
     """
-    Hold information about bucket being a replication source
+    Hold information about bucket replication configuration
     """
-
+    # configuration as source:
     rules: List[ReplicationRule] = field(default_factory=list)
-    source_application_key_id: Optional[str] = None
-
-    def __post_init__(self):
-        if self.rules and not self.source_application_key_id:
-            raise ValueError("source_application_key_id must not be empty")
-
-    def serialize_to_json_for_request(self) -> Optional[dict]:
-        if self.rules or self.source_application_key_id:
-            return self.as_dict()
-
-    def as_dict(self) -> dict:
-        return {
-            "replicationRules": [rule.as_dict() for rule in self.rules],
-            "sourceApplicationKeyId": self.source_application_key_id,
-        }
-
-    @classmethod
-    def from_dict(cls, value_dict: dict) -> 'ReplicationSourceConfiguration':
-        return cls(
-            rules=[
-                ReplicationRule.from_dict(rule_dict) for rule_dict in value_dict['replicationRules']
-            ],
-            source_application_key_id=value_dict['sourceApplicationKeyId'],
-        )
-
-
-@dataclass
-class ReplicationDestinationConfiguration:
+    source_key_id: Optional[str] = None
+    # configuration as destination:
     source_to_destination_key_mapping: Dict[str, str] = field(default_factory=dict)
 
     def __post_init__(self):
+        if self.rules and not self.source_key_id:
+            raise ValueError("source_key_id must not be empty")
+
         for source, destination in self.source_to_destination_key_mapping.items():
             if not source or not destination:
                 raise ValueError(
@@ -124,35 +101,24 @@ class ReplicationDestinationConfiguration:
                      empty keys or values: ({}, {})".format(source, destination)
                 )
 
-    def serialize_to_json_for_request(self) -> Optional[dict]:
-        if self.source_to_destination_key_mapping:
-            return self.as_dict()
+    @property
+    def is_source(self) -> bool:
+        return bool(self.source_key_id)
 
-    def as_dict(self) -> dict:
+    def get_source_configuration_as_dict(self) -> dict:
         return {
-            'sourceToDestinationKeyMapping': self.source_to_destination_key_mapping,
+            'rules': self.rules,
+            'source_key_id': self.source_key_id,
         }
 
-    @classmethod
-    def from_dict(cls, value_dict: dict) -> 'ReplicationDestinationConfiguration':
-        return cls(source_to_destination_key_mapping=value_dict['sourceToDestinationKeyMapping'])
+    @property
+    def is_destination(self) -> bool:
+        return bool(self.source_to_destination_key_mapping)
 
-
-@dataclass
-class ReplicationConfiguration:
-    """
-    Hold information about bucket replication configuration
-    """
-
-    as_replication_source: ReplicationSourceConfiguration = field(
-        default_factory=ReplicationSourceConfiguration,
-    )
-    as_replication_destination: ReplicationDestinationConfiguration = field(
-        default_factory=ReplicationDestinationConfiguration,
-    )
-
-    def serialize_to_json_for_request(self) -> dict:
-        return self.as_dict()
+    def get_destination_configuration_as_dict(self) -> dict:
+        return {
+            'source_to_destination_key_mapping': self.source_to_destination_key_mapping,
+        }
 
     def as_dict(self) -> dict:
         """
@@ -191,65 +157,54 @@ class ReplicationConfiguration:
             }
 
         """
-        result = {}
-        if self.as_replication_source is not None:
-            result['asReplicationSource'
-                  ] = self.as_replication_source.serialize_to_json_for_request()
-        if self.as_replication_destination is not None:
-            result['asReplicationDestination'
-                  ] = self.as_replication_destination.serialize_to_json_for_request()
+
+        result = {
+            'asReplicationSource':
+                {
+                    "replicationRules": [rule.as_dict() for rule in self.rules],
+                    "sourceApplicationKeyId": self.source_key_id,
+                } if self.is_source else None,
+            'asReplicationDestination':
+                {
+                    'sourceToDestinationKeyMapping': self.source_to_destination_key_mapping,
+                } if self.is_destination else None,
+        }
+
         return result
+
+    serialize_to_json_for_request = as_dict
 
     @classmethod
     def from_dict(cls, value_dict: dict) -> 'ReplicationConfiguration':
-        replication_source_dict = value_dict.get('asReplicationSource')
-        as_replication_source = ReplicationSourceConfiguration.from_dict(
-            replication_source_dict
-        ) if replication_source_dict else ReplicationSourceConfiguration()
-
-        replication_destination_dict = value_dict.get('asReplicationDestination')
-        as_replication_destination = ReplicationDestinationConfiguration.from_dict(
-            replication_destination_dict
-        ) if replication_destination_dict else ReplicationDestinationConfiguration()
+        source_dict = value_dict.get('asReplicationSource') or {}
+        destination_dict = value_dict.get('asReplicationDestination') or {}
 
         return cls(
-            as_replication_source=as_replication_source,
-            as_replication_destination=as_replication_destination,
+            rules=[
+                ReplicationRule.from_dict(rule_dict)
+                for rule_dict in source_dict.get('replicationRules', [])
+            ],
+            source_key_id=source_dict.get('sourceApplicationKeyId'),
+            source_to_destination_key_mapping=destination_dict.get('sourceToDestinationKeyMapping')
+            or {},
         )
 
 
-@dataclass
+@dataclass(kw_only=True, slots=True)
 class ReplicationConfigurationFactory:
     is_client_authorized_to_read: bool
     value: Optional[ReplicationConfiguration]
 
     @classmethod
-    def from_bucket_dict(cls, bucket_dict: dict) -> Optional['ReplicationConfigurationFactory']:
+    def from_bucket_dict(cls, bucket_dict: dict) -> 'ReplicationConfigurationFactory':
         """
         Returns ReplicationConfigurationFactory for the given bucket dict
-        retrieved from the api, or None if no replication configured.
+        retrieved from the api.
         """
-        replication_dict = bucket_dict.get('replicationConfiguration')
-        if not replication_dict:
-            return cls(
-                is_client_authorized_to_read=True,
-                value=ReplicationConfiguration(),
-            )
+        replication_dict = bucket_dict.get('replicationConfiguration') or {}
+        value_dict = replication_dict.get('value') or {}
 
-        return cls.from_dict(replication_dict)
-
-    @classmethod
-    def from_dict(cls, value_dict: dict) -> 'ReplicationConfigurationFactory':
-        if not value_dict['isClientAuthorizedToRead']:
-            return cls(
-                is_client_authorized_to_read=False,
-                value=None,
-            )
-
-        replication_dict = value_dict['value']
-        replication_configuration = ReplicationConfiguration.from_dict(replication_dict) \
-            if replication_dict else ReplicationConfiguration()
         return cls(
-            is_client_authorized_to_read=True,
-            value=replication_configuration,
+            is_client_authorized_to_read=replication_dict.get('isClientAuthorizedToRead', True),
+            value=ReplicationConfiguration.from_dict(value_dict),
         )
