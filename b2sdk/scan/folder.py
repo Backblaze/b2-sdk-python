@@ -17,7 +17,6 @@ import sys
 from abc import ABCMeta, abstractmethod
 from .exception import EmptyDirectory, EnvironmentEncodingError, UnsupportedFilename, NotADirectory, UnableToCreateDirectory
 from .path import B2Path, LocalPath
-from .report import SyncReport
 from .policies import DEFAULT_SCAN_MANAGER, ScanPoliciesManager
 from ..utils import fix_windows_path_limit, get_file_mtime, is_file_readable
 
@@ -174,7 +173,7 @@ class LocalFolder(AbstractFolder):
             raise EmptyDirectory(self.root)
 
     def _walk_relative_paths(
-        self, local_dir: str, relative_dir_path: str, reporter: SyncReport,
+        self, local_dir: str, relative_dir_path: str, reporter,
         policies_manager: ScanPoliciesManager
     ):
         """
@@ -312,7 +311,7 @@ class B2Folder(AbstractFolder):
         self.prefix = '' if self.folder_name == '' else self.folder_name + '/'
 
     def all_files(
-        self, reporter: SyncReport, policies_manager: ScanPoliciesManager = DEFAULT_SCAN_MANAGER
+        self, reporter: Report, policies_manager: ScanPoliciesManager = DEFAULT_SCAN_MANAGER
     ):
         """
         Yield all files.

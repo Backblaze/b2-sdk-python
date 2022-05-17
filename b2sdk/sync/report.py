@@ -9,16 +9,20 @@
 ######################################################################
 
 import logging
-import threading
 import time
 
+from dataclasses import dataclass
+
 from ..progress import AbstractProgressListener
-from ..utils import format_and_scale_number, format_and_scale_fraction
+from ..scan.report import Report
+from ..utils import format_and_scale_fraction, format_and_scale_number
+
 
 logger = logging.getLogger(__name__)
 
 
-class SyncReport:
+@dataclass
+class SyncReport(Report):
     """
     Handle reporting progress for syncing.
 
@@ -33,160 +37,53 @@ class SyncReport:
     This class is THREAD SAFE, so it can be used from parallel sync threads.
     """
 
-    # Minimum time between displayed updates
-    UPDATE_INTERVAL = 0.1
-
-    def __init__(self, stdout, no_progress):
-        """
-        :param stdout: standard output file object
-        :param no_progress: if True, do not show progress
-        :type no_progress: bool
-        """
-        self.stdout = stdout
-        self.no_progress = no_progress
-        self.start_time = time.time()
-        self.total_count = 0
-        self.total_done = False
+    def __post_init__(self):
         self.compare_done = False
         self.compare_count = 0
         self.total_transfer_files = 0  # set in end_compare()
         self.total_transfer_bytes = 0  # set in end_compare()
         self.transfer_files = 0
         self.transfer_bytes = 0
-        self.current_line = ''
-        self._last_update_time = 0
-        self.closed = False
-        self.lock = threading.Lock()
-        self.encoding_warning_was_already_printed = False
-        self._update_progress()
-        self.warnings = []
-
-    def close(self):
-        """
-        Perform a clean-up.
-        """
-        with self.lock:
-            if not self.no_progress:
-                self._print_line('', False)
-            self.closed = True
-            for warning in self.warnings:
-                self._print_line(warning, True)
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.close()
-
-    def error(self, message):
-        """
-        Print an error, gracefully interleaving it with a progress bar.
-
-        :param message: an error message
-        :type message: str
-        """
-        self.print_completion(message)
-
-    def print_completion(self, message):
-        """
-        Remove the progress bar, prints a message, and puts the progress
-        bar back.
-
-        :param message: an error message
-        :type message: str
-        """
-        with self.lock:
-            if not self.closed:
-                self._print_line(message, True)
-                self._last_update_time = 0
-                self._update_progress()
+        super().__post_init__()
 
     def _update_progress(self):
-        if not self.closed and not self.no_progress:
-            now = time.time()
-            interval = now - self._last_update_time
-            if self.UPDATE_INTERVAL <= interval:
-                self._last_update_time = now
-                time_delta = time.time() - self.start_time
-                rate = 0 if time_delta == 0 else int(self.transfer_bytes / time_delta)
-                if not self.total_done:
-                    message = ' count: %d files   compare: %d files   updated: %d files   %s   %s' % (
-                        self.total_count,
-                        self.compare_count,
-                        self.transfer_files,
-                        format_and_scale_number(self.transfer_bytes, 'B'),
-                        format_and_scale_number(rate, 'B/s')
-                    )  # yapf: disable
-                elif not self.compare_done:
-                    message = ' compare: %d/%d files   updated: %d files   %s   %s' % (
-                        self.compare_count,
-                        self.total_count,
-                        self.transfer_files,
-                        format_and_scale_number(self.transfer_bytes, 'B'),
-                        format_and_scale_number(rate, 'B/s')
-                    )  # yapf: disable
-                else:
-                    message = ' compare: %d/%d files   updated: %d/%d files   %s   %s' % (
-                        self.compare_count,
-                        self.total_count,
-                        self.transfer_files,
-                        self.total_transfer_files,
-                        format_and_scale_fraction(self.transfer_bytes, self.total_transfer_bytes, 'B'),
-                        format_and_scale_number(rate, 'B/s')
-                    )  # yapf: disable
-                self._print_line(message, False)
+        if self.closed or self.no_progress:
+            return
 
-    def _print_line(self, line, newline):
-        """
-        Print a line to stdout.
+        now = time.time()
+        interval = now - self._last_update_time
+        if interval < self.UPDATE_INTERVAL:
+            return
 
-        :param line: a string without a \r or \n in it.
-        :type line: str
-        :param newline: True if the output should move to a new line after this one.
-        :type newline: bool
-        """
-        if len(line) < len(self.current_line):
-            line += ' ' * (len(self.current_line) - len(line))
-        try:
-            self.stdout.write(line)
-        except UnicodeEncodeError as encode_error:
-            if not self.encoding_warning_was_already_printed:
-                self.encoding_warning_was_already_printed = True
-                self.stdout.write(
-                    '!WARNING! this terminal cannot properly handle progress reporting.  encoding is %s.\n'
-                    % (self.stdout.encoding,)
-                )
-            self.stdout.write(line.encode('ascii', 'backslashreplace').decode())
-            logger.warning(
-                'could not output the following line with encoding %s on stdout due to %s: %s' %
-                (self.stdout.encoding, encode_error, line)
-            )
-        if newline:
-            self.stdout.write('\n')
-            self.current_line = ''
+        self._last_update_time = now
+        time_delta = time.time() - self.start_time
+        rate = 0 if time_delta == 0 else int(self.transfer_bytes / time_delta)
+        if not self.total_done:
+            message = ' count: %d files   compare: %d files   updated: %d files   %s   %s' % (
+                self.total_count,
+                self.compare_count,
+                self.transfer_files,
+                format_and_scale_number(self.transfer_bytes, 'B'),
+                format_and_scale_number(rate, 'B/s')
+            )  # yapf: disable
+        elif not self.compare_done:
+            message = ' compare: %d/%d files   updated: %d files   %s   %s' % (
+                self.compare_count,
+                self.total_count,
+                self.transfer_files,
+                format_and_scale_number(self.transfer_bytes, 'B'),
+                format_and_scale_number(rate, 'B/s')
+            )  # yapf: disable
         else:
-            self.stdout.write('\r')
-            self.current_line = line
-        self.stdout.flush()
-
-    def update_total(self, delta):
-        """
-        Report that more files have been found for comparison.
-
-        :param delta: number of files found since the last check
-        :type delta: int
-        """
-        with self.lock:
-            self.total_count += delta
-            self._update_progress()
-
-    def end_total(self):
-        """
-        Total files count is done. Can proceed to step 2.
-        """
-        with self.lock:
-            self.total_done = True
-            self._update_progress()
+            message = ' compare: %d/%d files   updated: %d/%d files   %s   %s' % (
+                self.compare_count,
+                self.total_count,
+                self.transfer_files,
+                self.total_transfer_files,
+                format_and_scale_fraction(self.transfer_bytes, self.total_transfer_bytes, 'B'),
+                format_and_scale_number(rate, 'B/s')
+            )  # yapf: disable
+        self._print_line(message, False)
 
     def update_compare(self, delta):
         """
@@ -228,29 +125,6 @@ class SyncReport:
             self.transfer_bytes += byte_delta
             self._update_progress()
 
-    def local_access_error(self, path):
-        """
-        Add a file access error message to the list of warnings.
-
-        :param path: file path
-        :type path: str
-        """
-        self.warnings.append('WARNING: %s could not be accessed (broken symlink?)' % (path,))
-
-    def local_permission_error(self, path):
-        """
-        Add a permission error message to the list of warnings.
-
-        :param path: file path
-        :type path: str
-        """
-        self.warnings.append(
-            'WARNING: %s could not be accessed (no permissions to read?)' % (path,)
-        )
-
-    def symlink_skipped(self, path):
-        pass
-
 
 class SyncFileReporter(AbstractProgressListener):
     """
@@ -261,7 +135,7 @@ class SyncFileReporter(AbstractProgressListener):
         """
         :param reporter: a reporter object
         """
-        super(SyncFileReporter, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.bytes_so_far = 0
         self.reporter = reporter
 
