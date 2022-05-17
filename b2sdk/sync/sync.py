@@ -359,7 +359,6 @@ class Synchronizer:
         :param b2sdk.v2.AbstractSyncEncryptionSettingsProvider encryption_settings_provider: encryption setting provider
         """
         delete = self.keep_days_or_delete == KeepOrDeleteMode.DELETE
-        keep_days = self.keep_days
 
         policy = self.sync_policy_manager.get_policy(
             sync_type,
@@ -369,7 +368,7 @@ class Synchronizer:
             dest_folder,
             now_millis,
             delete,
-            keep_days,
+            self.keep_days,
             self.newer_file_mode,
             self.compare_threshold,
             self.compare_version_mode,
