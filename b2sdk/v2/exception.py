@@ -11,6 +11,7 @@
 from b2sdk._v3.exception import *  # noqa
 
 v3BucketIdNotFound = BucketIdNotFound
+UnSyncableFilename = UnsupportedFilename
 
 
 # overridden to retain old style isinstance check and attributes
