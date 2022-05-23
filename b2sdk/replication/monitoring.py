@@ -15,6 +15,7 @@ from typing import Iterator, Optional, Tuple
 from ..api import B2Api
 from ..bucket import Bucket
 from ..scan.folder import B2Folder
+from ..scan.path import B2Path
 from ..scan.report import Report
 from ..scan.scan import zip_folders
 from .scan.policies import DEFAULT_SCAN_MANAGER, ScanPoliciesManager
@@ -124,7 +125,7 @@ class ReplicationMonitor:
         self,
         report: Optional[Report] = None,
         policies_manager: ScanPoliciesManager = DEFAULT_SCAN_MANAGER,
-    ) -> Iterator:
+    ) -> Iterator[Tuple[Optional[B2Path], Optional[B2Path]]]:
         """
         Iterate over files in source and destination and yield pairs that differ.
         Required for replication inspection in-depth.
