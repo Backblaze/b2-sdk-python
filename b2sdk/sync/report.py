@@ -55,7 +55,7 @@ class SyncReport(Report):
             return
 
         self._last_update_time = now
-        time_delta = time.time() - self.start_time
+        time_delta = now - self.start_time
         rate = 0 if time_delta == 0 else int(self.transfer_bytes / time_delta)
         if not self.total_done:
             message = ' count: %d files   compare: %d files   updated: %d files   %s   %s' % (
