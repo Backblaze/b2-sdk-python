@@ -13,12 +13,13 @@ import os
 import platform
 import re
 import sys
-
 from abc import ABCMeta, abstractmethod
-from .exception import EmptyDirectory, EnvironmentEncodingError, UnsupportedFilename, NotADirectory, UnableToCreateDirectory
+
+from ..utils import fix_windows_path_limit, get_file_mtime, is_file_readable
+from .exception import EmptyDirectory, EnvironmentEncodingError, NotADirectory, UnableToCreateDirectory, UnsupportedFilename
 from .path import B2Path, LocalPath
 from .policies import DEFAULT_SCAN_MANAGER, ScanPoliciesManager
-from ..utils import fix_windows_path_limit, get_file_mtime, is_file_readable
+from .report import Report
 
 DRIVE_MATCHER = re.compile(r"^([A-Za-z]):([/\\])")
 ABSOLUTE_PATH_MATCHER = re.compile(r"^(/)|^(\\)")
@@ -49,7 +50,7 @@ class AbstractFolder(metaclass=ABCMeta):
     """
 
     @abstractmethod
-    def all_files(self, reporter, policies_manager=DEFAULT_SCAN_MANAGER):
+    def all_files(self, reporter: Report, policies_manager=DEFAULT_SCAN_MANAGER):
         """
         Return an iterator over all of the files in the folder, in
         the order that B2 uses.
@@ -120,7 +121,7 @@ class LocalFolder(AbstractFolder):
         """
         return 'local'
 
-    def all_files(self, reporter, policies_manager=DEFAULT_SCAN_MANAGER):
+    def all_files(self, reporter: Report, policies_manager=DEFAULT_SCAN_MANAGER):
         """
         Yield all files.
 
@@ -310,7 +311,9 @@ class B2Folder(AbstractFolder):
         self.api = api
         self.prefix = '' if self.folder_name == '' else self.folder_name + '/'
 
-    def all_files(self, reporter, policies_manager: ScanPoliciesManager = DEFAULT_SCAN_MANAGER):
+    def all_files(
+        self, reporter: Report, policies_manager: ScanPoliciesManager = DEFAULT_SCAN_MANAGER
+    ):
         """
         Yield all files.
         """

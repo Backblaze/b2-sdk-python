@@ -10,7 +10,6 @@
 
 import logging
 import os
-
 from abc import ABCMeta, abstractmethod
 
 from ..bucket import Bucket
