@@ -19,54 +19,52 @@ from ..scan.report import Report
 from ..scan.scan import zip_folders
 from .scan.policies import DEFAULT_SCAN_MANAGER, ScanPoliciesManager
 from .setting import ReplicationRule
-from .types import ReplicationStatus
+from .types import CompletedReplicationStatus, ReplicationStatus
 
 
-class ExtendedReplicationStatus(ReplicationStatus):
-    """
-    FileVersion's ReplicationStatus, but with some statuses
-    which may be valuable for replication monitoring.
-    """
-    HAS_HIDDEN_MARKER = 'HAS_HIDDEN_MARKER'
-    HAS_SSE_C_ENABLED = 'HAS_SSE_C_ENABLED'
-    HAS_LARGE_METADATA = 'HAS_LARGE_METADATA'
-
-
-class ReplicationCounter(Counter):
-    """
-    Counter for accumulating number of files / bytes per ExtendedReplicationStatus.
-    """
+@dataclass
+class FilesBytesCounter:
+    def __post_init__(self):
+        self._files = Counter()
+        self._bytes = Counter()
 
     @property
-    def total(self) -> int:
-        """
-        Total count. Since one file may have multiple ExtendedReplicationStatusess,
-        this property is handy for counting real total count without duplicates.
-        """
-        return sum(count for status, count in self.items() if status in ReplicationStatus)
+    def files(self) -> Counter:
+        return self._files
+
+    @property
+    def bytes(self) -> Counter:
+        return self._bytes
+
+    @property
+    def total_files(self) -> int:
+        return sum(self._files.values())
+
+    @property
+    def total_bytes(self) -> int:
+        return sum(self._bytes.values())
 
 
-def count_files_and_bytes(bucket: Bucket) -> Tuple[ReplicationCounter, ReplicationCounter]:
-    """
-    Calculate (counter_files, counter_bytes), where each counter
-    maps ExtendedReplicationStatuses to number of occurrences.
-    """
-    counter_files = ReplicationCounter()
-    counter_bytes = ReplicationCounter()
+def count_files_and_bytes(bucket: Bucket) -> Tuple[FilesBytesCounter, FilesBytesCounter]:
+    counter, counter_completed = FilesBytesCounter(), FilesBytesCounter()
 
     for file_version in bucket.list_file_versions():
-        counter_files[file_version.status] += 1
-        counter_bytes[file_version.status] += file_version.size
+        counter.files[file_version.status] += 1
+        file_size = file_version.size
+        counter.bytes[file_version.status] += file_size
 
         if file_version.status == ReplicationStatus.COMPLETED:
             if file_version.has_hidden_marker:
-                counter_files[ExtendedReplicationStatus.HAS_HIDDEN_MARKER] += 1
+                counter_completed.files[CompletedReplicationStatus.HAS_HIDDEN_MARKER] += 1
+                counter_completed.bytes[CompletedReplicationStatus.HAS_HIDDEN_MARKER] += file_size
             if file_version.has_sse_c_enabled:
-                counter_files[ExtendedReplicationStatus.HAS_SSE_C_ENABLED] += 1
+                counter_completed.files[CompletedReplicationStatus.HAS_SSE_C_ENABLED] += 1
+                counter_completed.bytes[CompletedReplicationStatus.HAS_SSE_C_ENABLED] += file_size
             if file_version.has_large_metadata:
-                counter_files[ExtendedReplicationStatus.HAS_LARGE_METADATA] += 1
+                counter_completed.files[CompletedReplicationStatus.HAS_LARGE_METADATA] += 1
+                counter_completed.bytes[CompletedReplicationStatus.HAS_LARGE_METADATA] += file_size
 
-    return counter_files, counter_bytes
+    return counter, counter_completed
 
 
 @dataclass
@@ -138,23 +136,17 @@ class ReplicationMonitor:
             policies_manager=policies_manager,
         )
 
-    def get_source_stats(self) -> Tuple[
-        ReplicationCounter[ExtendedReplicationStatus],
-        ReplicationCounter[ExtendedReplicationStatus],
-    ]:
+    def get_source_stats(self) -> Tuple[FilesBytesCounter, FilesBytesCounter]:
         return count_files_and_bytes(self.bucket)
 
-    def get_destination_stats(self) -> Tuple[
-        ReplicationCounter[ExtendedReplicationStatus],
-        ReplicationCounter[ExtendedReplicationStatus],
-    ]:
+    def get_destination_stats(self) -> Tuple[FilesBytesCounter, FilesBytesCounter]:
         return count_files_and_bytes(self.destination_bucket)
 
     @property
-    def progress(self) -> Tuple[float, float]:
-        source_num_files, source_num_bytes = self.get_source_stats()
-        destination_num_files, destination_num_bytes = self.get_destination_stats()
+    def progress(self) -> Tuple[float, float]:  # (files, bytes)
+        source_counter, _ = self.get_source_stats()
+        destination_counter, _ = self.get_destination_stats()
         return (
-            destination_num_files.total() / source_num_files.total(),
-            destination_num_bytes.total() / source_num_bytes.total(),
+            destination_counter.total_files() / source_counter.total_files(),
+            destination_counter.total_bytes() / source_counter.total_bytes(),
         )
