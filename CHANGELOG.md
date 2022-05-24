@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Infrastructure
+* Add 3.11.0-beta.1 to CI
+
 ## [1.16.0] - 2022-04-27
 
 This release contains a preview of replication support. It allows for basic
