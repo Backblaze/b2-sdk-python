@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Infrastructure
+* Change Sphinx major version from 5 to 6
+
 ## [1.16.0] - 2022-04-27
 
 This release contains a preview of replication support. It allows for basic
