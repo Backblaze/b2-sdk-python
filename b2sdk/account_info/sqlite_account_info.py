@@ -53,10 +53,12 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
         SqliteAccountInfo currently checks locations in the following order:
 
         If ``profile`` arg is provided:
+
         * ``{XDG_CONFIG_HOME_ENV_VAR}/b2/db-<profile>.sqlite``, if ``{XDG_CONFIG_HOME_ENV_VAR}`` env var is set
         * ``{B2_ACCOUNT_INFO_PROFILE_FILE}``
 
         Otherwise:
+
         * ``file_name``, if truthy
         * ``{B2_ACCOUNT_INFO_ENV_VAR}`` env var's value, if set
         * ``{B2_ACCOUNT_INFO_DEFAULT_FILE}``, if it exists

@@ -6,7 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+* Add `include_existing_files` parameter to `ReplicationSetupHelper`
+
+### Fixed
+* Fix `AccountInfo.is_master_key()`
+* Fix docstring of `SqliteAccountInfo`
+
 ### Infrastructure
+* Add 3.11.0-beta.1 to CI
 * Change Sphinx major version from 5 to 6
 
 ## [1.16.0] - 2022-04-27

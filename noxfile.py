@@ -18,7 +18,14 @@ CI = os.environ.get('CI') is not None
 NOX_PYTHONS = os.environ.get('NOX_PYTHONS')
 SKIP_COVERAGE = os.environ.get('SKIP_COVERAGE') == 'true'
 
-PYTHON_VERSIONS = ['3.7', '3.8', '3.9', '3.10'] if NOX_PYTHONS is None else NOX_PYTHONS.split(',')
+PYTHON_VERSIONS = [
+    '3.7',
+    '3.8',
+    '3.9',
+    '3.10',
+    '3.11',
+] if NOX_PYTHONS is None else NOX_PYTHONS.split(',')
+
 PYTHON_DEFAULT_VERSION = PYTHON_VERSIONS[-1]
 
 PY_PATHS = ['b2sdk', 'test', 'noxfile.py', 'setup.py']

@@ -33,7 +33,7 @@ class ReplicationRule:
 
     REPLICATION_RULE_REGEX: ClassVar = re.compile(r'^[a-zA-Z0-9_\-]{1,64}$')
     MIN_PRIORITY: ClassVar[int] = 1
-    MAX_PRIORITY: ClassVar[int] = 2147483647
+    MAX_PRIORITY: ClassVar[int] = 2**31 - 1
 
     def __post_init__(self):
         if not self.destination_bucket_id:
