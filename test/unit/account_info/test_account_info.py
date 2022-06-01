@@ -64,6 +64,27 @@ class TestAccountInfo:
         assert account_info.is_same_key(application_key_id, realm) is expected
 
     @pytest.mark.parametrize(
+        'account_id,application_key_id,expected',
+        (
+            ('account_id', 'account_id', True),
+            ('account_id', 'ACCOUNT_ID', False),
+            ('account_id', '123account_id0000000000', True),
+            ('account_id', '234account_id0000000000', True),
+            ('account_id', '123account_id000000000', False),
+            ('account_id', '123account_id0000000001', False),
+            ('account_id', '123account_id00000000000', False),
+        ),
+    )
+    def test_is_master_key(self, account_id, application_key_id, expected):
+        account_info = self.account_info_factory()
+        account_data = self.account_info_default_data.copy()
+        account_data['account_id'] = account_id
+        account_data['application_key_id'] = application_key_id
+        account_info.set_auth_data(**account_data)
+
+        assert account_info.is_master_key() is expected, (account_id, application_key_id, expected)
+
+    @pytest.mark.parametrize(
         'account_id,realm,expected',
         (
             ('account_id', 'dev', True),
