@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+* Add `include_existing_files` parameter to `ReplicationSetupHelper`
+
 ### Fixed
 * Fix `AccountInfo.is_master_key()`
 
