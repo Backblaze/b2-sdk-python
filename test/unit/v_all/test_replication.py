@@ -2,7 +2,7 @@
 #
 # File: test/unit/v_all/test_replication.py
 #
-# Copyright 2021 Backblaze Inc. All Rights Reserved.
+# Copyright 2022 Backblaze Inc. All Rights Reserved.
 #
 # License https://www.backblaze.com/using_b2_code.html
 #
@@ -104,6 +104,7 @@ class TestReplication(TestBase):
             source_bucket=source_bucket,
             destination_bucket=destination_bucket,
             prefix='ad',
+            include_existing_files=True,
         )
 
         keymap = {k.key_name: k for k in self.api.list_keys()}
@@ -123,6 +124,7 @@ class TestReplication(TestBase):
                     file_name_prefix='ad',
                     is_enabled=True,
                     priority=133,
+                    include_existing_files=True,
                 ),
             ],
             source_application_key_id=old_source_application_key.id_,

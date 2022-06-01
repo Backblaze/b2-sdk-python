@@ -63,6 +63,7 @@ class ReplicationSetupHelper(metaclass=B2TraceMeta):
         name: Optional[str] = None,  #: name for the new replication rule
         priority: int = None,  #: priority for the new replication rule
         prefix: Optional[str] = None,
+        include_existing_files: bool = False,
     ) -> Tuple[Bucket, Bucket]:
 
         new_source_bucket = self.setup_source(
@@ -71,6 +72,7 @@ class ReplicationSetupHelper(metaclass=B2TraceMeta):
             prefix,
             name,
             priority,
+            include_existing_files,
         )
 
         new_destination_bucket = self.setup_destination(
@@ -160,6 +162,7 @@ class ReplicationSetupHelper(metaclass=B2TraceMeta):
         prefix: Optional[str] = None,
         name: Optional[str] = None,  #: name for the new replication rule
         priority: int = None,  #: priority for the new replication rule
+        include_existing_files: bool = False,
     ) -> Bucket:
         if prefix is None:
             prefix = ""
@@ -193,6 +196,7 @@ class ReplicationSetupHelper(metaclass=B2TraceMeta):
             priority=priority,
             destination_bucket_id=destination_bucket.id_,
             file_name_prefix=prefix,
+            include_existing_files=include_existing_files,
         )
         new_replication_configuration = ReplicationConfiguration(
             ReplicationSourceConfiguration(
