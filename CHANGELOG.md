@@ -7,7 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
-* Fix account info `is_master_key()`
+* Fix `AccountInfo.is_master_key()`
+
+### Infrastructure
+* Add 3.11.0-beta.1 to CI
 
 ## [1.16.0] - 2022-04-27
 
