@@ -52,7 +52,7 @@ class TestDownload(IntegrationTestBase):
                 assert f.download_version.content_sha1_verified
 
     def _file_helper(self, bucket, sha1_sum=None):
-        bytes_to_write = int(self.info.get_absolute_minimum_part_size()) + 1
+        bytes_to_write = int(self.info.get_absolute_minimum_part_size()) * 2 + 1
         with TempDir() as temp_dir:
             temp_dir = pathlib.Path(temp_dir)
             source_large_file = pathlib.Path(temp_dir) / 'source_large_file'
@@ -73,7 +73,7 @@ class TestDownload(IntegrationTestBase):
     def test_small(self):
         bucket = self.create_bucket()
         f = self._file_helper(bucket)
-        assert not f.download_version.content_sha1_verified
+        assert f.download_version.content_sha1_verified
 
     def test_small_unverified(self):
         bucket = self.create_bucket()
