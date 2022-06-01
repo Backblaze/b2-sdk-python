@@ -2,7 +2,7 @@
 #
 # File: test/unit/sync/test_sync.py
 #
-# Copyright 2020 Backblaze Inc. All Rights Reserved.
+# Copyright 2022 Backblaze Inc. All Rights Reserved.
 #
 # License https://www.backblaze.com/using_b2_code.html
 #
@@ -22,10 +22,11 @@ DAY = 86400000  # milliseconds
 TODAY = DAY * 100  # an arbitrary reference time for testing
 
 
-class TestSynchronizer:
-    class IllegalEnum(Enum):
-        ILLEGAL = 5100
+class IllegalEnum(Enum):
+    ILLEGAL = 5100
 
+
+class TestSynchronizer:
     @pytest.fixture(autouse=True)
     def setup(self, folder_factory, mocker, apiver):
         self.folder_factory = folder_factory
