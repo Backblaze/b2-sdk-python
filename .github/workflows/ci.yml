@@ -21,9 +21,10 @@ jobs:
         with:
           ignore_words_list: datas
       - name: Set up Python ${{ env.PYTHON_DEFAULT_VERSION }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v3
         with:
           python-version: ${{ env.PYTHON_DEFAULT_VERSION }}
+          cache: "pip"
       - name: Install dependencies
         run: python -m pip install --upgrade nox pip setuptools
       - name: Run linters
@@ -41,9 +42,10 @@ jobs:
         with:
           fetch-depth: 0
       - name: Set up Python ${{ env.PYTHON_DEFAULT_VERSION }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v3
         with:
           python-version: ${{ env.PYTHON_DEFAULT_VERSION }}
+          cache: "pip"
       - name: Install dependencies
         run: python -m pip install --upgrade nox pip setuptools
       - name: Build the distribution
@@ -61,9 +63,10 @@ jobs:
           fetch-depth: 0
       - name: Set up Python ${{ env.PYTHON_DEFAULT_VERSION }}
         if: ${{ env.B2_TEST_APPLICATION_KEY != '' && env.B2_TEST_APPLICATION_KEY_ID != '' }}  # TODO: skip this whole job instead
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v3
         with:
           python-version: ${{ env.PYTHON_DEFAULT_VERSION }}
+          cache: "pip"
       - name: Install dependencies
         if: ${{ env.B2_TEST_APPLICATION_KEY != '' && env.B2_TEST_APPLICATION_KEY_ID != '' }}  # TODO: skip this whole job instead
         run: python -m pip install --upgrade nox pip setuptools
@@ -95,9 +98,10 @@ jobs:
         with:
           fetch-depth: 0
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v3
         with:
           python-version: ${{ matrix.python-version }}
+          cache: "pip"
       - name: Install dependencies
         run: python -m pip install --upgrade nox pip setuptools
       - name: Run unit tests
@@ -115,9 +119,10 @@ jobs:
         with:
           fetch-depth: 0
       - name: Set up Python ${{ env.PYTHON_DEFAULT_VERSION }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v3
         with:
           python-version: ${{ env.PYTHON_DEFAULT_VERSION }}
+          cache: "pip"
       - name: Install dependencies
         env:
           DEBIAN_FRONTEND: noninteractive
