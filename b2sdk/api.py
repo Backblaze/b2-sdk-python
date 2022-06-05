@@ -221,7 +221,7 @@ class B2Api(metaclass=B2TraceMeta):
         :param str bucket_type: a bucket type, could be one of the following values: ``"allPublic"``, ``"allPrivate"``
         :param dict bucket_info: additional bucket info to store with the bucket
         :param dict cors_rules: bucket CORS rules to store with the bucket
-        :param dict lifecycle_rules: bucket lifecycle rules to store with the bucket
+        :param list lifecycle_rules: bucket lifecycle rules to store with the bucket
         :param b2sdk.v2.EncryptionSetting default_server_side_encryption: default server side encryption settings (``None`` if unknown)
         :param bool is_file_lock_enabled: boolean value specifies whether bucket is File Lock-enabled
         :param b2sdk.v2.ReplicationConfiguration replication: bucket replication rules or ``None``
