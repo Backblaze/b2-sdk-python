@@ -18,9 +18,9 @@ from ..encryption.setting import EncryptionMode
 from ..file_version import FileVersion
 from ..scan.folder import B2Folder
 from ..scan.path import B2Path
+from ..scan.policies import DEFAULT_SCAN_MANAGER, ScanPoliciesManager
 from ..scan.report import Report
 from ..scan.scan import zip_folders
-from .scan.policies import DEFAULT_SCAN_MANAGER, ScanPoliciesManager
 from .setting import ReplicationRule
 from .types import ReplicationStatus
 
@@ -66,7 +66,7 @@ class SourceAndDestinationFileReplicationStatus(FileReplicationStatus):
 
 @dataclass
 class ReplicationReport:
-    counter_by_status: Counter[FileReplicationStatus] = Counter()
+    counter_by_status: Counter[FileReplicationStatus] = field(default_factory=Counter)
     samples_by_status: Dict[FileReplicationStatus, Union[FileVersion, Tuple[FileVersion, FileVersion]]] = field(default_factory=dict)
 
     def add(self, source_file: B2Path, destination_file: Optional[B2Path] = None):
