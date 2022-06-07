@@ -27,55 +27,61 @@ from .setting import ReplicationRule
 from .types import ReplicationStatus
 
 
-class FileReplicationStatus:
+class FileAttrs:
     pass
 
 
 @dataclass(frozen=True)
-class SourceFileReplicationStatus(FileReplicationStatus):
+class SourceFileAttrs(FileAttrs):
     replication_status: ReplicationStatus
     has_hide_marker: bool
     has_sse_c_enabled: bool
     has_large_metadata: bool
-    # TODO: legal_hold
-    # TODO: retention
+    has_file_retention: bool
+    has_legal_hold: bool
 
     @classmethod
-    def from_file(cls, file: B2Path) -> 'SourceFileReplicationStatus':
+    def from_file(cls, file: B2Path) -> 'SourceFileAttrs':
         file_version = file.selected_version
         return cls(
             replication_status=file_version.replication_status,
             has_hide_marker=file.is_visible(),
             has_sse_c_enabled=file_version.server_side_encryption.mode == EncryptionMode.SSE_C,
-            has_large_metadata=file_version.has_large_metadata,
+            has_large_metadata=file_version.has_large_metadata,  # TODO
+            has_file_retention=file_version.has_file_retention,
+            has_legal_hold=file_version.has_legal_hold,
         )
 
 
 @dataclass(frozen=True)
-class SourceAndDestinationFileReplicationStatus(FileReplicationStatus):
-    replication_status: Tuple[ReplicationStatus, ReplicationStatus]
+class SourceAndDestinationFileAttrs(FileAttrs):
+    source: SourceFileAttrs
+    destination_replication_status: ReplicationStatus
+    metadata_differs: bool
     # TODO: more features
 
     @classmethod
-    def from_files(cls, source_file: B2Path, destination_file: B2Path) -> 'SourceAndDestinationFileReplicationStatus':
+    def from_files(cls, source_file: B2Path, destination_file: B2Path) -> 'SourceAndDestinationFileAttrs':
         source_version = source_file.selected_version
         destination_version = destination_file.selected_version
 
         return cls(
-            replication_status=(source_version.replication_status, destination_version.replication_status),
+            source_replication_status=SourceAndDestinationFileAttrs.from_file(source_file),
+            destination_replication_status=destination_version.replication_status,
+            metadata_differs=None,  # TODO
         )
 
 
 @dataclass
 class ReplicationReport:
-    counter_by_status: Counter[FileReplicationStatus] = field(default_factory=Counter)
-    samples_by_status: Dict[FileReplicationStatus, Union[FileVersion, Tuple[FileVersion, FileVersion]]] = field(default_factory=dict)
+    counter_by_status: Counter[FileAttrs] = field(default_factory=Counter)
+    samples_by_status: Dict[FileAttrs, Union[FileVersion, Tuple[FileVersion, FileVersion]]] = field(default_factory=dict)
 
     def add(self, source_file: B2Path, destination_file: Optional[B2Path] = None):
         if destination_file:
-            status = SourceAndDestinationFileReplicationStatus.from_files(source_file, destination_file)
+            status = SourceAndDestinationFileAttrs.from_files(source_file, destination_file)
         else:
-            status = SourceFileReplicationStatus.from_file(source_file)
+            status = SourceFileAttrs.from_file(source_file)
         self.counter_by_status[status] += 1
 
         if status not in self.samples_by_status:
@@ -105,20 +111,6 @@ class ReplicationMonitor:
     def source_api(self) -> B2Api:
         return self.bucket.api
 
-    # TODO: remove this
-    # @property
-    # def destination_api(self) -> B2Api:
-    #     api = B2Api(
-    #         account_info=self.source_api.account_info,
-    #         cache=self.source_api.cache,
-    #     )
-    #     api.authorize_account(
-    #         realm=self.source_api.account_info.get_realm(),
-    #         application_key_id=,
-    #         application_key,
-    #     )
-    #     return api
-
     @property
     def source_folder(self) -> B2Folder:
         return B2Folder(
@@ -130,19 +122,17 @@ class ReplicationMonitor:
     @property
     def destination_bucket(self) -> Bucket:
         destination_api = self.destination_api or self.source_api
-        return destination_api.get_bucket_by_id(
-            self.bucket.replication_configuration.destination_bucket_id,
-        )
+        return destination_api.get_bucket_by_id(self.rule.destination_bucket_id)
 
     @property
     def destination_folder(self) -> B2Folder:
         return B2Folder(
             bucket_name=self.destination_bucket.name,
-            folder_name='',  # TODO: check this
-            api=self.destination_api,
+            folder_name=self.rule.file_name_prefix,
+            api=self.destination_bucket.api,
         )
 
-    def iter_diff(self) -> Iterator[Tuple[Optional[B2Path], Optional[B2Path]]]:
+    def iter_pairs(self) -> Iterator[Tuple[Optional[B2Path], Optional[B2Path]]]:
         """
         Iterate over files in source and destination and yield pairs that differ.
         Required for replication inspection in-depth.
@@ -162,6 +152,6 @@ class ReplicationMonitor:
 
     def scan_source_and_destination(self) -> ReplicationReport:
         report = ReplicationReport()
-        for pair in self.iter_diff():
+        for pair in self.iter_pairs():
             report.add(*pair)
         return report
