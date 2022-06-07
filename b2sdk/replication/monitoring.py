@@ -8,6 +8,8 @@
 #
 ######################################################################
 
+import sys
+
 from collections import Counter
 from dataclasses import dataclass, field
 from typing import Dict, Iterator, Optional, Tuple, Union
@@ -89,7 +91,7 @@ class ReplicationMonitor:
     rule: ReplicationRule
     destination_api: Optional[B2Api] = None  # if None -> will use `api` of source (bucket)
 
-    report: Report = field(default_factory=Report)
+    report: Report = field(default_factory=lambda: Report(sys.stdout, False))
     scan_policies_manager: ScanPoliciesManager = DEFAULT_SCAN_MANAGER
 
     def __post_init__(self):
@@ -148,7 +150,7 @@ class ReplicationMonitor:
         yield from zip_folders(
             self.source_folder,
             self.destination_folder,
-            report=self.report,
+            reporter=self.report,
             policies_manager=self.scan_policies_manager,
         )
 
