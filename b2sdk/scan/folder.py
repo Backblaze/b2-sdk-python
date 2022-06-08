@@ -312,7 +312,9 @@ class B2Folder(AbstractFolder):
         self.folder_name = folder_name
         self.bucket = api.get_bucket_by_name(bucket_name)
         self.api = api
-        self.prefix = '' if self.folder_name == '' else self.folder_name + '/'
+        self.prefix = self.folder_name
+        if self.prefix and self.prefix[-1] != '/':
+            self.prefix += '/'
 
     def all_files(
         self, reporter: Report, policies_manager: ScanPoliciesManager = DEFAULT_SCAN_MANAGER

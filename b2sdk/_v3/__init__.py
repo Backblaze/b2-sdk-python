@@ -211,7 +211,11 @@ from b2sdk.scan.scan import zip_folders
 from b2sdk.replication.setting import ReplicationConfigurationFactory
 from b2sdk.replication.setting import ReplicationConfiguration
 from b2sdk.replication.setting import ReplicationRule
+from b2sdk.replication.types import ReplicationStatus
 from b2sdk.replication.setup import ReplicationSetupHelper
+from b2sdk.replication.monitoring import ReplicationMonitor
+from b2sdk.replication.monitoring import SourceFileAttrs
+from b2sdk.replication.monitoring import SourceAndDestinationFileAttrs
 
 # other
 
