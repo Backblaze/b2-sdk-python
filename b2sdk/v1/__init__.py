@@ -29,5 +29,6 @@ from b2sdk.v1.sync import (
     LocalFolder, B2Folder, parse_sync_folder, SyncReport, File, B2File, FileVersion,
     AbstractSyncEncryptionSettingsProvider
 )
+from b2sdk.v1.replication.monitoring import ReplicationMonitor
 
 B2RawApi = B2RawHTTPApi

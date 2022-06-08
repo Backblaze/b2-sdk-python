@@ -101,6 +101,8 @@ class ReplicationMonitor:
     report: Report = field(default_factory=lambda: Report(sys.stdout, False))
     scan_policies_manager: ScanPoliciesManager = DEFAULT_SCAN_MANAGER
 
+    B2_FOLDER_CLASS: ClassVar[Type] = B2Folder
+
     def __post_init__(self):
         if not self.bucket.replication_configuration:
             raise ValueError(f'Bucket {self.bucket} has no replication configuration')
@@ -113,8 +115,8 @@ class ReplicationMonitor:
         return self.bucket.api
 
     @property
-    def source_folder(self) -> B2Folder:
-        return B2Folder(
+    def source_folder(self) -> B2_FOLDER_CLASS:
+        return self.B2_FOLDER_CLASS(
             bucket_name=self.bucket.name,
             folder_name=self.rule.file_name_prefix,
             api=self.source_api,
@@ -123,14 +125,16 @@ class ReplicationMonitor:
     @property
     def destination_bucket(self) -> Bucket:
         destination_api = self.destination_api or self.source_api
-        return destination_api.get_bucket_by_id(self.rule.destination_bucket_id)
+        bucket_id = self.rule.destination_bucket_id
+        return destination_api.get_bucket_by_id(bucket_id)
 
     @property
-    def destination_folder(self) -> B2Folder:
-        return B2Folder(
-            bucket_name=self.destination_bucket.name,
+    def destination_folder(self) -> B2_FOLDER_CLASS:
+        destination_bucket = self.destination_bucket
+        return self.B2_FOLDER_CLASS(
+            bucket_name=destination_bucket.name,
             folder_name=self.rule.file_name_prefix,
-            api=self.destination_bucket.api,
+            api=destination_bucket.api,
         )
 
     def iter_pairs(self) -> Iterator[Tuple[Optional[B2Path], Optional[B2Path]]]:
@@ -147,7 +151,10 @@ class ReplicationMonitor:
 
     def scan_source(self) -> ReplicationReport:
         report = ReplicationReport()
-        for path in self.source_folder.all_files(policies_manager=self.scan_policies_manager):
+        for path in self.source_folder.all_files(
+            policies_manager=self.scan_policies_manager,
+            reporter=self.report,
+        ):
             report.add(path)
         return report
 
