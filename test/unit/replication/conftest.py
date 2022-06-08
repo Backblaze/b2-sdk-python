@@ -1,6 +1,6 @@
 import pytest
 
-from apiver_deps import B2Api, B2HttpApiConfig, Bucket, RawSimulator, StubAccountInfo
+from apiver_deps import B2Api, B2HttpApiConfig, Bucket, RawSimulator, ReplicationConfiguration, ReplicationMonitor, ReplicationRule, StubAccountInfo
 
 
 @pytest.fixture
@@ -15,14 +15,8 @@ def api() -> B2Api:
     account_id, master_key = simulator.create_account()
     api.authorize_account('production', account_id, master_key)
     # api_url = account_info.get_api_url()
-    # account_auth_token = account_info.get_account_auth_token()
-
+    # account_auth_token = account_info.get_account_auth_token()1
     return api
-
-
-@pytest.fixture
-def source_bucket(api) -> Bucket:
-    return api.create_bucket('source-bucket', 'allPublic')
 
 
 @pytest.fixture
@@ -31,7 +25,33 @@ def destination_bucket(api) -> Bucket:
 
 
 @pytest.fixture
+def source_bucket(api, destination_bucket) -> Bucket:
+    bucket = api.create_bucket('source-bucket', 'allPublic')
+
+    bucket.replication_configuration = ReplicationConfiguration(
+        rules=[
+            ReplicationRule(
+                destination_bucket_id=destination_bucket.id_,
+                name='name',
+                file_name_prefix='folder/',  # TODO: is last slash needed?
+            ),
+        ],
+        source_key_id='hoho|trololo',
+    )
+
+    return bucket
+
+
+@pytest.fixture
 def test_file(tmpdir) -> str:
     file = tmpdir.join('test.txt')
     file.write('whatever')
     return file
+
+
+@pytest.fixture
+def monitor(source_bucket) -> ReplicationMonitor:
+    return ReplicationMonitor(
+        source_bucket,
+        rule=source_bucket.replication_configuration.rules[0],
+    )

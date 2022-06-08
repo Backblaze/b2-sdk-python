@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: test/unit/replication/monitoring.py
+# File: test/unit/replication/test_monitoring.py
 #
 # Copyright 2022 Backblaze Inc. All Rights Reserved.
 #
@@ -8,8 +8,7 @@
 #
 ######################################################################
 
-from b2sdk.replication.monitoring import ReplicationMonitor
-from b2sdk.replication.setting import ReplicationConfiguration, ReplicationRule
+from apiver_deps import ReplicationMonitor, ReplicationRule, SourceAndDestinationFileAttrs, SourceFileAttrs, ReplicationStatus
 
 
 # def test_error_on_bucket_wo_replication(source_bucket):
@@ -23,19 +22,7 @@ from b2sdk.replication.setting import ReplicationConfiguration, ReplicationRule
 #         ReplicationMonitor(source_bucket, rule=ReplicationRule())
 
 
-def test_iter_pairs(source_bucket, destination_bucket, test_file):
-    source_bucket.replication_configuration = ReplicationConfiguration(
-        rules=[
-            ReplicationRule(
-                destination_bucket_id=destination_bucket.id_,
-                name='name',
-                file_name_prefix='folder/',  # TODO: is last slash needed?
-            ),
-        ],
-        source_key_id='hoho|trololo',
-    )
-
-    monitor = ReplicationMonitor(source_bucket, rule=source_bucket.replication_configuration.rules[0])
+def test_iter_pairs(source_bucket, destination_bucket, test_file, monitor):
 
     source_file = source_bucket.upload_local_file(test_file, 'folder/test.txt')
     source_subfolder_file = source_bucket.upload_local_file(test_file, 'folder/subfolder/test.txt')
@@ -55,8 +42,21 @@ def test_iter_pairs(source_bucket, destination_bucket, test_file):
     }
 
 
-def test_scan_source():
-    raise NotImplementedError()
+def test_scan_source(source_bucket, test_file, monitor):
+    # upload various types of files to source and get a report
+    files = [
+        source_bucket.upload_local_file(test_file, 'folder/test-1.txt'),
+        source_bucket.upload_local_file(test_file, 'folder/test-2.txt'),
+    ]
+    report = monitor.scan_source()
+    assert report.counter_by_status[SourceFileAttrs(
+        replication_status=None,
+        has_hide_marker=True,
+        has_sse_c_enabled=False,
+        has_large_metadata=False,
+        has_file_retention=False,
+        has_legal_hold=False,
+    )] == 2
 
 
 def test_scan_source_and_destination():
