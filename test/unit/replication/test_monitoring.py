@@ -8,7 +8,17 @@
 #
 ######################################################################
 
-from apiver_deps import ReplicationMonitor, ReplicationRule, SourceAndDestinationFileAttrs, SourceFileAttrs, ReplicationStatus
+from apiver_deps import EncryptionAlgorithm, EncryptionKey, EncryptionMode, EncryptionSetting, FileRetentionSetting, ReplicationMonitor, ReplicationRule, ReplicationStatus, RetentionMode, RetentionPeriod, SourceAndDestinationFileAttrs, SourceFileAttrs
+
+
+SSE_C_AES = EncryptionSetting(
+    mode=EncryptionMode.SSE_C,
+    algorithm=EncryptionAlgorithm.AES256,
+    key=EncryptionKey(secret=b'some_key', key_id='some-id'),
+)
+
+
+RETENTION_GOVERNANCE = FileRetentionSetting(RetentionMode.GOVERNANCE, retain_until=RetentionPeriod(days=1))
 
 
 # def test_error_on_bucket_wo_replication(source_bucket):
@@ -47,16 +57,64 @@ def test_scan_source(source_bucket, test_file, monitor):
     files = [
         source_bucket.upload_local_file(test_file, 'folder/test-1.txt'),
         source_bucket.upload_local_file(test_file, 'folder/test-2.txt'),
+        source_bucket.upload_local_file(test_file, 'not-in-folder.txt'),  # monitor should ignore this
+        source_bucket.upload_local_file(test_file, 'folder/test-3.txt', encryption=SSE_C_AES),
+        source_bucket.upload_local_file(test_file, 'folder/subfolder/test-4.txt', encryption=SSE_C_AES, file_retention=RETENTION_GOVERNANCE),
+        # file_retention: Optional[FileRetentionSetting] = None,
+        # legal_hold: Optional[LegalHold] = None,
     ]
     report = monitor.scan_source()
-    assert report.counter_by_status[SourceFileAttrs(
+    assert set(report.counter_by_status.items()) == {
+        (
+            SourceFileAttrs(
+                replication_status=None,
+                has_hide_marker=True,
+                has_sse_c_enabled=False,
+                has_large_metadata=False,
+                has_file_retention=False,
+                has_legal_hold=False,
+            ), 2
+        ),
+        (
+            SourceFileAttrs(
+                replication_status=None,
+                has_hide_marker=True,
+                has_sse_c_enabled=True,
+                has_large_metadata=False,
+                has_file_retention=False,
+                has_legal_hold=False,
+            ), 1
+        ),
+        (
+            SourceFileAttrs(
+                replication_status=None,
+                has_hide_marker=True,
+                has_sse_c_enabled=True,
+                has_large_metadata=False,
+                has_file_retention=True,
+                has_legal_hold=False,
+            ), 1
+        ),
+    }
+
+    # check that only first occurrence is captured as sample
+    assert report.samples_by_status[SourceFileAttrs(
         replication_status=None,
         has_hide_marker=True,
         has_sse_c_enabled=False,
         has_large_metadata=False,
         has_file_retention=False,
         has_legal_hold=False,
-    )] == 2
+    )] == files[0]
+
+    assert report.samples_by_status[SourceFileAttrs(
+        replication_status=None,
+        has_hide_marker=True,
+        has_sse_c_enabled=True,
+        has_large_metadata=False,
+        has_file_retention=True,
+        has_legal_hold=False,
+    )] == files[4]
 
 
 def test_scan_source_and_destination():
