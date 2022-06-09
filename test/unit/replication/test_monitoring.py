@@ -66,7 +66,7 @@ def test_scan_source(source_bucket, test_file, monitor):
             'dummy-key': 'a' * 2048,
         }),
     ]
-    report = monitor.scan_source()
+    report = monitor.scan(scan_destination=False)
 
     assert report.counter_by_status[ReplicationAttrs(**DEFAULT_REPLICATION_ATTRS)] == 2
 
@@ -118,7 +118,7 @@ def test_scan_source_and_destination(source_bucket, destination_bucket, test_fil
         }),
     ]
 
-    report = monitor.scan_source_and_destination()
+    report = monitor.scan(scan_destination=True)
 
     # match
     assert report.counter_by_status[ReplicationAttrs(**{

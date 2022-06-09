@@ -12,7 +12,9 @@ import sys
 
 from abc import ABCMeta, abstractclassmethod, abstractmethod
 from collections import Counter
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
+from queue import Queue
 from typing import ClassVar, Dict, Iterator, Optional, Tuple, Type
 
 from ..api import B2Api
@@ -122,8 +124,7 @@ class CountAndSampleReplicationReport(AbstractReplicationReport):
             source_file and source_file.selected_version,
             destination_file and destination_file.selected_version,
         )
-        if status not in self.samples_by_status_first:
-            self.samples_by_status_first[status] = sample
+        self.samples_by_status_first.setdefault(status, sample)
         self.samples_by_status_last[status] = sample
 
 
@@ -155,6 +156,7 @@ class ReplicationMonitor:
     scan_policies_manager: ScanPoliciesManager = DEFAULT_SCAN_MANAGER
 
     B2_FOLDER_CLASS: ClassVar[Type] = B2Folder
+    QUEUE_SIZE: ClassVar[int] = 100
 
     def __post_init__(self):
         if not self.bucket.replication_configuration:
@@ -205,32 +207,50 @@ class ReplicationMonitor:
             policies_manager=self.scan_policies_manager,
         )
 
-    def scan_source(self) -> AbstractReplicationReport:
+    def scan(self, scan_destination: bool = True) -> AbstractReplicationReport:
         """
-        Scan source bucket only and return replication report.
+        Scan source bucket (only, or with destination) and return replication report.
 
-        This may give limited replication information, since it only
+        No destination scan may give limited replication information, since it only
         checks files on the source bucket without checking whether
-        they we really replicated to destination.
-
-        May be handy if there is no access to replication destination.
+        they we really replicated to destination. It may be handy though
+        if there is no access to replication destination.
         """
         report = self.replication_report_class()
-        for path in self.source_folder.all_files(
-            policies_manager=self.scan_policies_manager,
-            reporter=self.report,
-        ):
-            report.add(path)
-        return report
 
-    def scan_source_and_destination(self) -> AbstractReplicationReport:
-        """
-        Scan both source and destination and return replication report.
+        thread_pool = ThreadPoolExecutor(max_workers=1)
+        queue = Queue(maxsize=self.QUEUE_SIZE)
 
-        This is an in-depth scan, with comparison of source and destination
-        files.
-        """
-        report = self.replication_report_class()
-        for pair in self.iter_pairs():
-            report.add(*pair)
+        with ThreadPoolExecutor(max_workers=2) as thread_pool:
+            if not scan_destination:
+                def fill_queue():
+                    for path in self.source_folder.all_files(
+                        policies_manager=self.scan_policies_manager,
+                        reporter=self.report,
+                    ):
+                        queue.put(path, block=True)
+
+                def consume_queue():
+                    while not queue.empty():
+                        path = queue.get(block=True)
+                        report.add(path)
+
+            else:
+                def fill_queue():
+                    for pair in self.iter_pairs():
+                        queue.put(pair, block=True)
+
+                def consume_queue():
+                    while not queue.empty():
+                        pair = queue.get(block=True)
+                        report.add(*pair)
+
+            futures = [
+                thread_pool.submit(fill_queue),
+                thread_pool.submit(consume_queue),
+            ]
+
+        for future in futures:
+            future.result()
+
         return report
