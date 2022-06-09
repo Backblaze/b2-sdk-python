@@ -62,40 +62,58 @@ def test_scan_source(source_bucket, test_file, monitor):
         source_bucket.upload_local_file(test_file, 'folder/subfolder/test-4.txt', encryption=SSE_C_AES, file_retention=RETENTION_GOVERNANCE),
         # file_retention: Optional[FileRetentionSetting] = None,
         # legal_hold: Optional[LegalHold] = None,
+        source_bucket.upload_local_file(test_file, 'folder/test-large-meta.txt', file_infos={
+            'dummy-key': 'a' * 2048,
+        }),
     ]
     report = monitor.scan_source()
-    assert set(report.counter_by_status.items()) == {
-        (
-            SourceFileAttrs(
-                replication_status=None,
-                has_hide_marker=True,
-                has_sse_c_enabled=False,
-                has_large_metadata=False,
-                has_file_retention=False,
-                has_legal_hold=False,
-            ), 2
-        ),
-        (
-            SourceFileAttrs(
-                replication_status=None,
-                has_hide_marker=True,
-                has_sse_c_enabled=True,
-                has_large_metadata=False,
-                has_file_retention=False,
-                has_legal_hold=False,
-            ), 1
-        ),
-        (
-            SourceFileAttrs(
-                replication_status=None,
-                has_hide_marker=True,
-                has_sse_c_enabled=True,
-                has_large_metadata=False,
-                has_file_retention=True,
-                has_legal_hold=False,
-            ), 1
-        ),
-    }
+
+    assert report.counter_by_status[SourceFileAttrs(
+        replication_status=None,
+        has_hide_marker=True,
+        has_sse_c_enabled=False,
+        has_large_metadata=False,
+        has_file_retention=False,
+        has_legal_hold=False,
+    )] == 2
+
+    assert report.counter_by_status[SourceFileAttrs(
+        replication_status=None,
+        has_hide_marker=True,
+        has_sse_c_enabled=True,
+        has_large_metadata=False,
+        has_file_retention=False,
+        has_legal_hold=False,
+    )] == 1
+
+    assert report.counter_by_status[SourceFileAttrs(
+        replication_status=None,
+        has_hide_marker=True,
+        has_sse_c_enabled=True,
+        has_large_metadata=False,
+        has_file_retention=True,
+        has_legal_hold=False,
+    )] == 1
+
+    assert report.counter_by_status[SourceFileAttrs(
+        replication_status=None,
+        has_hide_marker=True,
+        has_sse_c_enabled=True,
+        has_large_metadata=False,
+        has_file_retention=True,
+        has_legal_hold=False,
+    )] == 1
+
+    assert report.counter_by_status[SourceFileAttrs(
+        replication_status=None,
+        has_hide_marker=True,
+        has_sse_c_enabled=False,
+        has_large_metadata=True,
+        has_file_retention=False,
+        has_legal_hold=False,
+    )] == 1
+
+    # ---- first and last ----
 
     assert report.samples_by_status_first[SourceFileAttrs(
         replication_status=None,
@@ -114,15 +132,6 @@ def test_scan_source(source_bucket, test_file, monitor):
         has_file_retention=False,
         has_legal_hold=False,
     )][0] == files[1]
-
-    assert report.samples_by_status_last[SourceFileAttrs(
-        replication_status=None,
-        has_hide_marker=True,
-        has_sse_c_enabled=True,
-        has_large_metadata=False,
-        has_file_retention=True,
-        has_legal_hold=False,
-    )][0] == files[4]
 
 
 def test_scan_source_and_destination():
