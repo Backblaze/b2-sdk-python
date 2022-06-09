@@ -63,9 +63,7 @@ class SourceAndDestinationFileAttrs(FileAttrs):
 
     @classmethod
     def from_files(cls, source_file: B2Path, destination_file: B2Path) -> 'SourceAndDestinationFileAttrs':
-        source_version = source_file.selected_version
         destination_version = destination_file.selected_version
-
         return cls(
             source_replication_status=SourceAndDestinationFileAttrs.from_file(source_file),
             destination_replication_status=destination_version.replication_status,
