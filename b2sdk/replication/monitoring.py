@@ -82,7 +82,8 @@ class ReplicationReport:
 @dataclass
 class CountAndSampleReplicationReport(ReplicationReport):
     counter_by_status: Counter[FileAttrs] = field(default_factory=Counter)
-    samples_by_status: Dict[FileAttrs, Union[FileVersion, Tuple[FileVersion, FileVersion]]] = field(default_factory=dict)
+    samples_by_status_first: Dict[FileAttrs, Tuple[FileVersion, FileVersion]] = field(default_factory=dict)
+    samples_by_status_last: Dict[FileAttrs, Tuple[FileVersion, FileVersion]] = field(default_factory=dict)
 
     def add(self, source_file: B2Path, destination_file: Optional[B2Path] = None):
         if destination_file:
@@ -91,11 +92,13 @@ class CountAndSampleReplicationReport(ReplicationReport):
             status = SourceFileAttrs.from_file(source_file)
         self.counter_by_status[status] += 1
 
-        if status not in self.samples_by_status:
-            if destination_file:
-                self.samples_by_status[status] = (source_file.selected_version, destination_file.selected_version)
-            else:
-                self.samples_by_status[status] = source_file.selected_version
+        sample = (
+            source_file.selected_version,
+            destination_file and destination_file.selected_version,
+        )
+        if status not in self.samples_by_status_first:
+            self.samples_by_status_first[status] = sample
+        self.samples_by_status_last[status] = sample
 
 
 @dataclass

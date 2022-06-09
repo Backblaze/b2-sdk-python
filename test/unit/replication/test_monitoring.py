@@ -97,24 +97,32 @@ def test_scan_source(source_bucket, test_file, monitor):
         ),
     }
 
-    # check that only first occurrence is captured as sample
-    assert report.samples_by_status[SourceFileAttrs(
+    assert report.samples_by_status_first[SourceFileAttrs(
         replication_status=None,
         has_hide_marker=True,
         has_sse_c_enabled=False,
         has_large_metadata=False,
         has_file_retention=False,
         has_legal_hold=False,
-    )] == files[0]
+    )][0] == files[0]
 
-    assert report.samples_by_status[SourceFileAttrs(
+    assert report.samples_by_status_last[SourceFileAttrs(
+        replication_status=None,
+        has_hide_marker=True,
+        has_sse_c_enabled=False,
+        has_large_metadata=False,
+        has_file_retention=False,
+        has_legal_hold=False,
+    )][0] == files[1]
+
+    assert report.samples_by_status_last[SourceFileAttrs(
         replication_status=None,
         has_hide_marker=True,
         has_sse_c_enabled=True,
         has_large_metadata=False,
         has_file_retention=True,
         has_legal_hold=False,
-    )] == files[4]
+    )][0] == files[4]
 
 
 def test_scan_source_and_destination():
