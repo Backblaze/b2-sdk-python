@@ -10,9 +10,10 @@
 
 import sys
 
+from abc import ABCMeta, abstractclassmethod, abstractmethod
 from collections import Counter
 from dataclasses import dataclass, field
-from typing import ClassVar, Dict, Iterator, Optional, Tuple, Type, Union
+from typing import ClassVar, Dict, Iterator, Optional, Tuple, Type
 
 from ..api import B2Api
 from ..bucket import Bucket
@@ -28,89 +29,97 @@ from .setting import ReplicationRule
 from .types import ReplicationStatus
 
 
-class FileAttrs:
-    pass
-
-
 @dataclass(frozen=True)
-class SourceFileAttrs(FileAttrs):
+class AbstractReplicationAttrs(metaclass=ABCMeta):
     """
-    Some attributes of source files which are meaningful
+    Some attributes of files which are meaningful
     for replication monitoring and troubleshooting.
     """
-    replication_status: ReplicationStatus
-    has_hide_marker: bool
-    has_sse_c_enabled: bool
-    has_large_metadata: bool
-    has_file_retention: bool
-    has_legal_hold: bool
 
-    LARGE_METADATA_SIZE: ClassVar[int] = 2048
-
-    @classmethod
-    def from_file(cls, file: B2Path) -> 'SourceFileAttrs':
-        file_version = file.selected_version
-        return cls(
-            replication_status=file_version.replication_status,
-            has_hide_marker=file.is_visible(),
-            has_sse_c_enabled=file_version.server_side_encryption.mode == EncryptionMode.SSE_C,
-            has_large_metadata=file_version.headers_size >= cls.LARGE_METADATA_SIZE,
-            has_file_retention=file_version.file_retention is not NO_RETENTION_FILE_SETTING,
-            has_legal_hold=file_version.legal_hold is not LegalHold.UNSET,
-        )
+    @abstractclassmethod
+    def from_files(cls, source_file: Optional[B2Path], destination_file: Optional[B2Path]) -> 'AbstractReplicationAttrs':
+        pass
 
 
 @dataclass(frozen=True)
-class SourceAndDestinationFileAttrs(FileAttrs):
+class ReplicationAttrs(AbstractReplicationAttrs):
     """
     Some attributes of source and destination files and their relations
     which are meaningful for replication monitoring and troubleshooting.
     """
-    source: SourceFileAttrs
-    destination_replication_status: ReplicationStatus
-    metadata_differs: bool
-    # TODO: more features
+
+    # source attrs
+    source_replication_status: Optional[ReplicationStatus] = None
+    source_has_hide_marker: Optional[bool] = None
+    source_has_sse_c_enabled: Optional[bool] = None
+    source_has_large_metadata: Optional[bool] = None
+    source_has_file_retention: Optional[bool] = None
+    source_has_legal_hold: Optional[bool] = None
+
+    # destination attrs
+    destination_replication_status: Optional[ReplicationStatus] = None
+
+    # source & destination relation attrs
+    metadata_differs: Optional[bool] = None
+
+    LARGE_METADATA_SIZE: ClassVar[int] = 2048
 
     @classmethod
-    def from_files(cls, source_file: B2Path, destination_file: B2Path) -> 'SourceAndDestinationFileAttrs':
-        destination_version = destination_file.selected_version
-        return cls(
-            source_replication_status=SourceAndDestinationFileAttrs.from_file(source_file),
-            destination_replication_status=destination_version.replication_status,
-            metadata_differs=None,  # TODO
-        )
+    def from_files(cls, source_file: Optional[B2Path], destination_file: Optional[B2Path]) -> 'ReplicationAttrs':
+        params = {}
+
+        if source_file:
+            source_file_version = source_file.selected_version
+            params.update({
+                'source_replication_status': source_file_version.replication_status,
+                'source_has_hide_marker': source_file.is_visible(),
+                'source_has_sse_c_enabled': source_file_version.server_side_encryption.mode == EncryptionMode.SSE_C,
+                'source_has_large_metadata': source_file_version.headers_size >= cls.LARGE_METADATA_SIZE,
+                'source_has_file_retention': source_file_version.file_retention is not NO_RETENTION_FILE_SETTING,
+                'source_has_legal_hold': source_file_version.legal_hold is not LegalHold.UNSET,
+            })
+
+        if destination_file:
+            params.update({
+                'destination_replication_status': destination_file.selected_version.replication_status,
+            })
+
+        if source_file and destination_file:
+            params.update({
+                'metadata_differs': source_file.selected_version.file_info != destination_file.selected_version.file_info,
+            })
+
+        return cls(**params)
 
 
 @dataclass
-class ReplicationReport:
+class AbstractReplicationReport(metaclass=ABCMeta):
     """
     Aggregation of valuable information about file replication
     after scanning source and (optionally) destination folders.
     """
 
-    def add(self, source_file: B2Path, destination_file: Optional[B2Path]):
-        raise NotImplementedError()
+    @abstractmethod
+    def add(self, source_file: Optional[B2Path], destination_file: Optional[B2Path]):
+        pass
 
 
 @dataclass
-class CountAndSampleReplicationReport(ReplicationReport):
+class CountAndSampleReplicationReport(AbstractReplicationReport):
     """
-    Replication report which groups and counts files by their `FileAttrs` and
+    Replication report which groups and counts files by their `ReplicationAttrs` and
     also stores first and last seen examples of such files.
     """
-    counter_by_status: Counter[FileAttrs] = field(default_factory=Counter)
-    samples_by_status_first: Dict[FileAttrs, Tuple[FileVersion, FileVersion]] = field(default_factory=dict)
-    samples_by_status_last: Dict[FileAttrs, Tuple[FileVersion, FileVersion]] = field(default_factory=dict)
+    counter_by_status: Counter[ReplicationAttrs] = field(default_factory=Counter)
+    samples_by_status_first: Dict[ReplicationAttrs, Tuple[FileVersion, FileVersion]] = field(default_factory=dict)
+    samples_by_status_last: Dict[ReplicationAttrs, Tuple[FileVersion, FileVersion]] = field(default_factory=dict)
 
-    def add(self, source_file: B2Path, destination_file: Optional[B2Path] = None):
-        if destination_file:
-            status = SourceAndDestinationFileAttrs.from_files(source_file, destination_file)
-        else:
-            status = SourceFileAttrs.from_file(source_file)
+    def add(self, source_file: Optional[B2Path], destination_file: Optional[B2Path] = None):
+        status = ReplicationAttrs.from_files(source_file, destination_file)
         self.counter_by_status[status] += 1
 
         sample = (
-            source_file.selected_version,
+            source_file and source_file.selected_version,
             destination_file and destination_file.selected_version,
         )
         if status not in self.samples_by_status_first:
@@ -141,7 +150,7 @@ class ReplicationMonitor:
     bucket: Bucket
     rule: ReplicationRule
     destination_api: Optional[B2Api] = None  # if None -> will use `api` of source (bucket)
-    replication_report_class: Type[ReplicationReport] = CountAndSampleReplicationReport
+    replication_report_class: Type[AbstractReplicationReport] = CountAndSampleReplicationReport
     report: Report = field(default_factory=lambda: Report(sys.stdout, False))
     scan_policies_manager: ScanPoliciesManager = DEFAULT_SCAN_MANAGER
 
@@ -183,7 +192,7 @@ class ReplicationMonitor:
 
     def iter_pairs(self) -> Iterator[Tuple[Optional[B2Path], Optional[B2Path]]]:
         """
-        Iterate over files in source and destination and yield pairs that differ.
+        Iterate over files in source and destination and yield pairs.
         Required for replication inspection in-depth.
 
         Return pair of (source B2Path, destination B2Path). Source or destination
@@ -196,7 +205,7 @@ class ReplicationMonitor:
             policies_manager=self.scan_policies_manager,
         )
 
-    def scan_source(self) -> ReplicationReport:
+    def scan_source(self) -> AbstractReplicationReport:
         """
         Scan source bucket only and return replication report.
 
@@ -214,7 +223,7 @@ class ReplicationMonitor:
             report.add(path)
         return report
 
-    def scan_source_and_destination(self) -> ReplicationReport:
+    def scan_source_and_destination(self) -> AbstractReplicationReport:
         """
         Scan both source and destination and return replication report.
 
