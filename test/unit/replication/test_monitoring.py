@@ -18,7 +18,7 @@ SSE_C_AES = EncryptionSetting(
 )
 
 
-RETENTION_GOVERNANCE = FileRetentionSetting(RetentionMode.GOVERNANCE, retain_until=RetentionPeriod(days=1))
+RETENTION_GOVERNANCE = FileRetentionSetting(RetentionMode.GOVERNANCE, retain_until=1)
 
 
 # def test_error_on_bucket_wo_replication(source_bucket):
