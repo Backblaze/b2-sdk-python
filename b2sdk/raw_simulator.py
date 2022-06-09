@@ -1728,6 +1728,47 @@ class RawSimulator(AbstractRawApi):
             replication=replication,
         )
 
+    @classmethod
+    def get_upload_file_headers(
+        cls,
+        upload_auth_token,
+        file_name,
+        content_length,
+        content_type,
+        content_sha1,
+        file_infos: dict,
+        server_side_encryption: Optional[EncryptionSetting],
+        file_retention: Optional[FileRetentionSetting],
+        legal_hold: Optional[LegalHold],
+    ) -> dict:
+        headers = {
+            'Authorization': upload_auth_token,
+            'Content-Length': str(content_length),
+            'X-Bz-File-Name': b2_url_encode(file_name),
+            'Content-Type': content_type,
+            'X-Bz-Content-Sha1': content_sha1,
+        }
+        for k, v in file_infos.items():
+            headers[FILE_INFO_HEADER_PREFIX + k] = b2_url_encode(v)
+        if server_side_encryption is not None:
+            assert server_side_encryption.mode in (
+                EncryptionMode.NONE, EncryptionMode.SSE_B2, EncryptionMode.SSE_C
+            )
+
+            # # fix to allow calculating headers on unknown key - only for simulation
+            if server_side_encryption.mode == EncryptionMode.SSE_C and server_side_encryption.key.secret is None:
+                server_side_encryption.key.secret = b'secret'
+
+            server_side_encryption.add_to_upload_headers(headers)
+
+        if legal_hold is not None:
+            legal_hold.add_to_upload_headers(headers)
+
+        if file_retention is not None:
+            file_retention.add_to_to_upload_headers(headers)
+
+        return headers
+
     def upload_file(
         self,
         upload_url,
