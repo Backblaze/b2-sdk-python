@@ -23,7 +23,6 @@ from .path import AbstractPath, B2Path, LocalPath
 from .policies import DEFAULT_SCAN_MANAGER, ScanPoliciesManager
 from .report import Report
 
-
 DRIVE_MATCHER = re.compile(r"^([A-Za-z]):([/\\])")
 ABSOLUTE_PATH_MATCHER = re.compile(r"^(/)|^(\\)")
 RELATIVE_PATH_MATCHER = re.compile(
@@ -53,7 +52,8 @@ class AbstractFolder(metaclass=ABCMeta):
     """
 
     @abstractmethod
-    def all_files(self, reporter: Report, policies_manager=DEFAULT_SCAN_MANAGER) -> Iterator[AbstractPath]:
+    def all_files(self, reporter: Report,
+                  policies_manager=DEFAULT_SCAN_MANAGER) -> Iterator[AbstractPath]:
         """
         Return an iterator over all of the files in the folder, in
         the order that B2 uses.
@@ -124,7 +124,8 @@ class LocalFolder(AbstractFolder):
         """
         return 'local'
 
-    def all_files(self, reporter: Report, policies_manager=DEFAULT_SCAN_MANAGER) -> Iterator[LocalPath]:
+    def all_files(self, reporter: Report,
+                  policies_manager=DEFAULT_SCAN_MANAGER) -> Iterator[LocalPath]:
         """
         Yield all files.
 

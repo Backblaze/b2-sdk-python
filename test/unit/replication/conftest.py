@@ -1,3 +1,13 @@
+######################################################################
+#
+# File: test/unit/replication/conftest.py
+#
+# Copyright 2020 Backblaze Inc. All Rights Reserved.
+#
+# License https://www.backblaze.com/using_b2_code.html
+#
+######################################################################
+
 import pytest
 
 from apiver_deps import B2Api, B2HttpApiConfig, Bucket, RawSimulator, ReplicationConfiguration, ReplicationMonitor, ReplicationRule, StubAccountInfo

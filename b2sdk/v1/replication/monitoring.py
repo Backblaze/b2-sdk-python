@@ -1,3 +1,13 @@
+######################################################################
+#
+# File: b2sdk/v1/replication/monitoring.py
+#
+# Copyright 2022 Backblaze Inc. All Rights Reserved.
+#
+# License https://www.backblaze.com/using_b2_code.html
+#
+######################################################################
+
 from dataclasses import dataclass
 
 import b2sdk.v2 as v2

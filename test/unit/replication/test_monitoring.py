@@ -10,13 +10,11 @@
 
 from apiver_deps import EncryptionAlgorithm, EncryptionKey, EncryptionMode, EncryptionSetting, FileRetentionSetting, ReplicationAttrs, RetentionMode
 
-
 SSE_C_AES = EncryptionSetting(
     mode=EncryptionMode.SSE_C,
     algorithm=EncryptionAlgorithm.AES256,
     key=EncryptionKey(secret=b'some_key', key_id='some-id'),
 )
-
 
 RETENTION_GOVERNANCE = FileRetentionSetting(RetentionMode.GOVERNANCE, retain_until=1)
 
@@ -27,9 +25,7 @@ DEFAULT_REPLICATION_ATTRS = dict(
     source_has_large_metadata=False,
     source_has_file_retention=False,
     source_has_legal_hold=False,
-
     destination_replication_status=None,
-
     metadata_differs=None,
 )
 
@@ -39,13 +35,19 @@ def test_iter_pairs(source_bucket, destination_bucket, test_file, monitor):
     source_file = source_bucket.upload_local_file(test_file, 'folder/test.txt')
     source_subfolder_file = source_bucket.upload_local_file(test_file, 'folder/subfolder/test.txt')
 
-    destination_subfolder_file = destination_bucket.upload_local_file(test_file, 'folder/subfolder/test.txt')
-    destination_other_file = destination_bucket.upload_local_file(test_file, 'folder/subfolder/test2.txt')
+    destination_subfolder_file = destination_bucket.upload_local_file(
+        test_file, 'folder/subfolder/test.txt'
+    )
+    destination_other_file = destination_bucket.upload_local_file(
+        test_file, 'folder/subfolder/test2.txt'
+    )
 
-    pairs = [(
-        source_path and 'folder/' + source_path.relative_path,
-        destination_path and 'folder/' + destination_path.relative_path,
-    ) for source_path, destination_path in monitor.iter_pairs()]
+    pairs = [
+        (
+            source_path and 'folder/' + source_path.relative_path,
+            destination_path and 'folder/' + destination_path.relative_path,
+        ) for source_path, destination_path in monitor.iter_pairs()
+    ]
 
     assert set(pairs) == {
         (source_file.file_name, None),
@@ -59,42 +61,54 @@ def test_scan_source(source_bucket, test_file, monitor):
     files = [
         source_bucket.upload_local_file(test_file, 'folder/test-1.txt'),
         source_bucket.upload_local_file(test_file, 'folder/test-2.txt'),
-        source_bucket.upload_local_file(test_file, 'not-in-folder.txt'),  # monitor should ignore this
+        source_bucket.upload_local_file(test_file,
+                                        'not-in-folder.txt'),  # monitor should ignore this
         source_bucket.upload_local_file(test_file, 'folder/test-3.txt', encryption=SSE_C_AES),
-        source_bucket.upload_local_file(test_file, 'folder/subfolder/test-4.txt', encryption=SSE_C_AES, file_retention=RETENTION_GOVERNANCE),
-        source_bucket.upload_local_file(test_file, 'folder/test-large-meta.txt', file_infos={
-            'dummy-key': 'a' * 2048,
-        }),
+        source_bucket.upload_local_file(
+            test_file,
+            'folder/subfolder/test-4.txt',
+            encryption=SSE_C_AES,
+            file_retention=RETENTION_GOVERNANCE
+        ),
+        source_bucket.upload_local_file(
+            test_file, 'folder/test-large-meta.txt', file_infos={
+                'dummy-key': 'a' * 2048,
+            }
+        ),
     ]
     report = monitor.scan(scan_destination=False)
 
     assert report.counter_by_status[ReplicationAttrs(**DEFAULT_REPLICATION_ATTRS)] == 2
 
-    assert report.counter_by_status[ReplicationAttrs(**{
-        **DEFAULT_REPLICATION_ATTRS,
-        'source_has_sse_c_enabled': True,
-    })] == 1
+    assert report.counter_by_status[ReplicationAttrs(
+        **{
+            **DEFAULT_REPLICATION_ATTRS,
+            'source_has_sse_c_enabled': True,
+        }
+    )] == 1
 
-    assert report.counter_by_status[ReplicationAttrs(**{
-        **DEFAULT_REPLICATION_ATTRS,
-        'source_has_sse_c_enabled': True,
-        'source_has_file_retention': True,
-    })] == 1
+    assert report.counter_by_status[ReplicationAttrs(
+        **{
+            **DEFAULT_REPLICATION_ATTRS,
+            'source_has_sse_c_enabled': True,
+            'source_has_file_retention': True,
+        }
+    )] == 1
 
-    assert report.counter_by_status[ReplicationAttrs(**{
-        **DEFAULT_REPLICATION_ATTRS,
-        'source_has_large_metadata': True,
-    })] == 1
+    assert report.counter_by_status[ReplicationAttrs(
+        **{
+            **DEFAULT_REPLICATION_ATTRS,
+            'source_has_large_metadata': True,
+        }
+    )] == 1
 
     # ---- first and last ----
 
-    assert report.samples_by_status_first[ReplicationAttrs(
-        **DEFAULT_REPLICATION_ATTRS,
-    )][0] == files[0]
+    assert report.samples_by_status_first[ReplicationAttrs(**DEFAULT_REPLICATION_ATTRS,)
+                                         ][0] == files[0]
 
-    assert report.samples_by_status_last[ReplicationAttrs(
-        **DEFAULT_REPLICATION_ATTRS,
-    )][0] == files[1]
+    assert report.samples_by_status_last[ReplicationAttrs(**DEFAULT_REPLICATION_ATTRS,)
+                                        ][0] == files[1]
 
 
 def test_scan_source_and_destination(source_bucket, destination_bucket, test_file, monitor):
@@ -110,41 +124,53 @@ def test_scan_source_and_destination(source_bucket, destination_bucket, test_fil
         destination_bucket.upload_local_file(test_file, 'folder/test-3.txt'),
 
         # metadata differs
-        source_bucket.upload_local_file(test_file, 'folder/test-4.txt', file_infos={
-            'haha': 'hoho',
-        }),
-        destination_bucket.upload_local_file(test_file, 'folder/test-4.txt', file_infos={
-            'hehe': 'hihi',
-        }),
+        source_bucket.upload_local_file(
+            test_file, 'folder/test-4.txt', file_infos={
+                'haha': 'hoho',
+            }
+        ),
+        destination_bucket.upload_local_file(
+            test_file, 'folder/test-4.txt', file_infos={
+                'hehe': 'hihi',
+            }
+        ),
     ]
 
     report = monitor.scan(scan_destination=True)
 
     # match
-    assert report.counter_by_status[ReplicationAttrs(**{
-        **DEFAULT_REPLICATION_ATTRS,
-        'metadata_differs': False,
-    })] == 1
+    assert report.counter_by_status[ReplicationAttrs(
+        **{
+            **DEFAULT_REPLICATION_ATTRS,
+            'metadata_differs': False,
+        }
+    )] == 1
 
     # missing on destination
-    assert report.counter_by_status[ReplicationAttrs(**{
-        **DEFAULT_REPLICATION_ATTRS,
-        'destination_replication_status': None,
-    })] == 1
+    assert report.counter_by_status[ReplicationAttrs(
+        **{
+            **DEFAULT_REPLICATION_ATTRS,
+            'destination_replication_status': None,
+        }
+    )] == 1
 
     # missing on source
-    assert report.counter_by_status[ReplicationAttrs(**{
-        **DEFAULT_REPLICATION_ATTRS,
-        'source_replication_status': None,
-        'source_has_hide_marker': None,
-        'source_has_sse_c_enabled': None,
-        'source_has_large_metadata': None,
-        'source_has_file_retention': None,
-        'source_has_legal_hold': None,
-    })] == 1
+    assert report.counter_by_status[ReplicationAttrs(
+        **{
+            **DEFAULT_REPLICATION_ATTRS,
+            'source_replication_status': None,
+            'source_has_hide_marker': None,
+            'source_has_sse_c_enabled': None,
+            'source_has_large_metadata': None,
+            'source_has_file_retention': None,
+            'source_has_legal_hold': None,
+        }
+    )] == 1
 
     # metadata differs
-    assert report.counter_by_status[ReplicationAttrs(**{
-        **DEFAULT_REPLICATION_ATTRS,
-        'metadata_differs': True,
-    })] == 1
+    assert report.counter_by_status[ReplicationAttrs(
+        **{
+            **DEFAULT_REPLICATION_ATTRS,
+            'metadata_differs': True,
+        }
+    )] == 1

@@ -16,7 +16,6 @@ import pytest
 from apiver_deps import B2Folder, LocalFolder, LocalPath
 from apiver_deps import DEFAULT_SCAN_MANAGER
 
-
 if apiver_deps.V <= 1:
     from apiver_deps import FileVersionInfo as VFileVersion
 else:

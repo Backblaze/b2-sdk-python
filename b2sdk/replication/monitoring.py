@@ -39,7 +39,9 @@ class AbstractReplicationAttrs(metaclass=ABCMeta):
     """
 
     @abstractclassmethod
-    def from_files(cls, source_file: Optional[B2Path], destination_file: Optional[B2Path]) -> 'AbstractReplicationAttrs':
+    def from_files(
+        cls, source_file: Optional[B2Path], destination_file: Optional[B2Path]
+    ) -> 'AbstractReplicationAttrs':
         pass
 
 
@@ -67,29 +69,46 @@ class ReplicationAttrs(AbstractReplicationAttrs):
     LARGE_METADATA_SIZE: ClassVar[int] = 2048
 
     @classmethod
-    def from_files(cls, source_file: Optional[B2Path], destination_file: Optional[B2Path]) -> 'ReplicationAttrs':
+    def from_files(
+        cls, source_file: Optional[B2Path], destination_file: Optional[B2Path]
+    ) -> 'ReplicationAttrs':
         params = {}
 
         if source_file:
             source_file_version = source_file.selected_version
-            params.update({
-                'source_replication_status': source_file_version.replication_status,
-                'source_has_hide_marker': source_file.is_visible(),
-                'source_has_sse_c_enabled': source_file_version.server_side_encryption.mode == EncryptionMode.SSE_C,
-                'source_has_large_metadata': source_file_version.headers_size >= cls.LARGE_METADATA_SIZE,
-                'source_has_file_retention': source_file_version.file_retention is not NO_RETENTION_FILE_SETTING,
-                'source_has_legal_hold': source_file_version.legal_hold is not LegalHold.UNSET,
-            })
+            params.update(
+                {
+                    'source_replication_status':
+                        source_file_version.replication_status,
+                    'source_has_hide_marker':
+                        source_file.is_visible(),
+                    'source_has_sse_c_enabled':
+                        source_file_version.server_side_encryption.mode == EncryptionMode.SSE_C,
+                    'source_has_large_metadata':
+                        source_file_version.headers_size >= cls.LARGE_METADATA_SIZE,
+                    'source_has_file_retention':
+                        source_file_version.file_retention is not NO_RETENTION_FILE_SETTING,
+                    'source_has_legal_hold':
+                        source_file_version.legal_hold is not LegalHold.UNSET,
+                }
+            )
 
         if destination_file:
-            params.update({
-                'destination_replication_status': destination_file.selected_version.replication_status,
-            })
+            params.update(
+                {
+                    'destination_replication_status':
+                        destination_file.selected_version.replication_status,
+                }
+            )
 
         if source_file and destination_file:
-            params.update({
-                'metadata_differs': source_file.selected_version.file_info != destination_file.selected_version.file_info,
-            })
+            params.update(
+                {
+                    'metadata_differs':
+                        source_file.selected_version.file_info !=
+                        destination_file.selected_version.file_info,
+                }
+            )
 
         return cls(**params)
 
@@ -113,8 +132,12 @@ class CountAndSampleReplicationReport(AbstractReplicationReport):
     also stores first and last seen examples of such files.
     """
     counter_by_status: Counter[ReplicationAttrs] = field(default_factory=Counter)
-    samples_by_status_first: Dict[ReplicationAttrs, Tuple[FileVersion, FileVersion]] = field(default_factory=dict)
-    samples_by_status_last: Dict[ReplicationAttrs, Tuple[FileVersion, FileVersion]] = field(default_factory=dict)
+    samples_by_status_first: Dict[ReplicationAttrs, Tuple[FileVersion, FileVersion]] = field(
+        default_factory=dict
+    )
+    samples_by_status_last: Dict[ReplicationAttrs, Tuple[FileVersion, FileVersion]] = field(
+        default_factory=dict
+    )
 
     def add(self, source_file: Optional[B2Path], destination_file: Optional[B2Path] = None):
         status = ReplicationAttrs.from_files(source_file, destination_file)
@@ -223,6 +246,7 @@ class ReplicationMonitor:
 
         with ThreadPoolExecutor(max_workers=2) as thread_pool:
             if not scan_destination:
+
                 def fill_queue():
                     for path in self.source_folder.all_files(
                         policies_manager=self.scan_policies_manager,
@@ -236,6 +260,7 @@ class ReplicationMonitor:
                         report.add(path)
 
             else:
+
                 def fill_queue():
                     for pair in self.iter_pairs():
                         queue.put(pair, block=True)

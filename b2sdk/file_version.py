@@ -301,8 +301,7 @@ class FileVersion(BaseFileVersion):
             legal_hold=self.legal_hold,
         )
         headers_str = '\n'.join(
-            f'{key}: {value}' for key, value in headers.items()
-            if value is not None
+            f'{key}: {value}' for key, value in headers.items() if value is not None
         )
         return len(headers_str.encode('latin1'))
 
