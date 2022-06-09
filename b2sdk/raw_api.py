@@ -307,11 +307,11 @@ class AbstractRawApi(metaclass=ABCMeta):
     @abstractmethod
     def get_upload_file_headers(
         cls,
-        upload_auth_token,
-        file_name,
-        content_length,
-        content_type,
-        content_sha1,
+        upload_auth_token: str,
+        file_name: str,
+        content_length: int,
+        content_type: str,
+        content_sha1: str,
         file_infos: dict,
         server_side_encryption: Optional[EncryptionSetting],
         file_retention: Optional[FileRetentionSetting],
@@ -847,11 +847,11 @@ class B2RawHTTPApi(AbstractRawApi):
     @classmethod
     def get_upload_file_headers(
         cls,
-        upload_auth_token,
-        file_name,
-        content_length,
-        content_type,
-        content_sha1,
+        upload_auth_token: str,
+        file_name: str,
+        content_length: int,
+        content_type: str,
+        content_sha1: str,
         file_infos: dict,
         server_side_encryption: Optional[EncryptionSetting],
         file_retention: Optional[FileRetentionSetting],
