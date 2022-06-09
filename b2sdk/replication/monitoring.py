@@ -34,6 +34,10 @@ class FileAttrs:
 
 @dataclass(frozen=True)
 class SourceFileAttrs(FileAttrs):
+    """
+    Some attributes of source files which are meaningful
+    for replication monitoring and troubleshooting.
+    """
     replication_status: ReplicationStatus
     has_hide_marker: bool
     has_sse_c_enabled: bool
@@ -56,6 +60,10 @@ class SourceFileAttrs(FileAttrs):
 
 @dataclass(frozen=True)
 class SourceAndDestinationFileAttrs(FileAttrs):
+    """
+    Some attributes of source and destination files and their relations
+    which are meaningful for replication monitoring and troubleshooting.
+    """
     source: SourceFileAttrs
     destination_replication_status: ReplicationStatus
     metadata_differs: bool
@@ -73,12 +81,21 @@ class SourceAndDestinationFileAttrs(FileAttrs):
 
 @dataclass
 class ReplicationReport:
+    """
+    Aggregation of valuable information about file replication
+    after scanning source and (optionally) destination folders.
+    """
+
     def add(self, source_file: B2Path, destination_file: Optional[B2Path]):
         raise NotImplementedError()
 
 
 @dataclass
 class CountAndSampleReplicationReport(ReplicationReport):
+    """
+    Replication report which groups and counts files by their `FileAttrs` and
+    also stores first and last seen examples of such files.
+    """
     counter_by_status: Counter[FileAttrs] = field(default_factory=Counter)
     samples_by_status_first: Dict[FileAttrs, Tuple[FileVersion, FileVersion]] = field(default_factory=dict)
     samples_by_status_last: Dict[FileAttrs, Tuple[FileVersion, FileVersion]] = field(default_factory=dict)
@@ -101,11 +118,28 @@ class CountAndSampleReplicationReport(ReplicationReport):
 
 @dataclass
 class ReplicationMonitor:
+    """
+    Calculates source and (optionally) destination replication statistics.
+
+    :param b2sdk.v2.Bucket bucket: replication source bucket
+    :param b2sdk.v2.ReplicationRule rule: replication rule to be monitored;
+    should belong to `bucket`'s replication configuration
+    :param b2sdk.v2.B2Api destination_api: B2Api instance for destination
+    bucket; if destination bucket is on the same account as source bucket,
+    omit this parameter and then source bucket's B2Api will be used
+    :param type replication_report_class: subclass of ReplicationReport,
+    used to aggregate files to statistics
+    :param b2sdk.v2.Report report: instance of Report which will report
+    scanning progress, by default to stdout
+    :param b2sdk.v2.ScanPoliciesManager scan_policies_manager: a strategy to scan
+    files, so that several files that match some criteria may be omitted
+    :rtype: b2sdk.v2.ReplicationMonitor
+    """
+
     bucket: Bucket
     rule: ReplicationRule
     destination_api: Optional[B2Api] = None  # if None -> will use `api` of source (bucket)
     replication_report_class: Type[ReplicationReport] = CountAndSampleReplicationReport
-
     report: Report = field(default_factory=lambda: Report(sys.stdout, False))
     scan_policies_manager: ScanPoliciesManager = DEFAULT_SCAN_MANAGER
 
@@ -149,6 +183,9 @@ class ReplicationMonitor:
         """
         Iterate over files in source and destination and yield pairs that differ.
         Required for replication inspection in-depth.
+
+        Return pair of (source B2Path, destination B2Path). Source or destination
+        path may be missing if there's no corresponding destination/source file.
         """
         yield from zip_folders(
             self.source_folder,
@@ -158,6 +195,15 @@ class ReplicationMonitor:
         )
 
     def scan_source(self) -> ReplicationReport:
+        """
+        Scan source bucket only and return replication report.
+
+        This may give limited replication information, since it only
+        checks files on the source bucket without checking whether
+        they we really replicated to destination.
+
+        May be handy if there is no access to replication destination.
+        """
         report = self.replication_report_class()
         for path in self.source_folder.all_files(
             policies_manager=self.scan_policies_manager,
@@ -167,6 +213,12 @@ class ReplicationMonitor:
         return report
 
     def scan_source_and_destination(self) -> ReplicationReport:
+        """
+        Scan both source and destination and return replication report.
+
+        This is an in-depth scan, with comparison of source and destination
+        files.
+        """
         report = self.replication_report_class()
         for pair in self.iter_pairs():
             report.add(*pair)
