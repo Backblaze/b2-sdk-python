@@ -75,6 +75,12 @@ class SourceAndDestinationFileAttrs(FileAttrs):
 
 @dataclass
 class ReplicationReport:
+    def add(self, source_file: B2Path, destination_file: Optional[B2Path]):
+        raise NotImplementedError()
+
+
+@dataclass
+class CountAndSampleReplicationReport(ReplicationReport):
     counter_by_status: Counter[FileAttrs] = field(default_factory=Counter)
     samples_by_status: Dict[FileAttrs, Union[FileVersion, Tuple[FileVersion, FileVersion]]] = field(default_factory=dict)
 
@@ -97,6 +103,7 @@ class ReplicationMonitor:
     bucket: Bucket
     rule: ReplicationRule
     destination_api: Optional[B2Api] = None  # if None -> will use `api` of source (bucket)
+    replication_report_class: Type[ReplicationReport] = CountAndSampleReplicationReport
 
     report: Report = field(default_factory=lambda: Report(sys.stdout, False))
     scan_policies_manager: ScanPoliciesManager = DEFAULT_SCAN_MANAGER
@@ -150,7 +157,7 @@ class ReplicationMonitor:
         )
 
     def scan_source(self) -> ReplicationReport:
-        report = ReplicationReport()
+        report = self.replication_report_class()
         for path in self.source_folder.all_files(
             policies_manager=self.scan_policies_manager,
             reporter=self.report,
@@ -159,7 +166,7 @@ class ReplicationMonitor:
         return report
 
     def scan_source_and_destination(self) -> ReplicationReport:
-        report = ReplicationReport()
+        report = self.replication_report_class()
         for pair in self.iter_pairs():
             report.add(*pair)
         return report
