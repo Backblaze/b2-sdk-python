@@ -282,6 +282,30 @@ class FileVersion(BaseFileVersion):
             encryption=encryption,
         )
 
+    @property
+    def headers_size(self) -> int:
+        """
+        Return size of all metadata. B2 API has restrictions on headers that
+        may be passed along with the file (7000 or, in some cases, 2048 bytes):
+        https://www.backblaze.com/b2/docs/files.html#httpHeaderSizeLimit
+        """
+        headers = self.api.raw_api.get_upload_file_headers(
+            upload_auth_token=self.api.account_info.auth_token,
+            file_name=self.file_name,
+            content_length=self.size,
+            content_type=self.content_type,
+            content_sha1=self.content_sha1,
+            file_infos=self.file_info,
+            server_side_encryption=self.server_side_encryption,
+            file_retention=self.file_retention,
+            legal_hold=self.legal_hold,
+        )
+        headers_str = '\n'.join(
+            f'{key}: {value}' for key, value in headers.items()
+            if value is not None
+        )
+        return len(headers_str.encode('latin1'))
+
 
 class DownloadVersion(BaseFileVersion):
     """

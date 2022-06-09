@@ -45,6 +45,8 @@ class SourceFileAttrs(FileAttrs):
     has_file_retention: bool
     has_legal_hold: bool
 
+    LARGE_METADATA_SIZE: ClassVar[int] = 2048
+
     @classmethod
     def from_file(cls, file: B2Path) -> 'SourceFileAttrs':
         file_version = file.selected_version
@@ -52,7 +54,7 @@ class SourceFileAttrs(FileAttrs):
             replication_status=file_version.replication_status,
             has_hide_marker=file.is_visible(),
             has_sse_c_enabled=file_version.server_side_encryption.mode == EncryptionMode.SSE_C,
-            has_large_metadata=False,  # file_version.has_large_metadata,  # TODO
+            has_large_metadata=file_version.headers_size >= cls.LARGE_METADATA_SIZE,
             has_file_retention=file_version.file_retention is not NO_RETENTION_FILE_SETTING,
             has_legal_hold=file_version.legal_hold is not LegalHold.UNSET,
         )
