@@ -179,7 +179,7 @@ class ReplicationMonitor:
     scan_policies_manager: ScanPoliciesManager = DEFAULT_SCAN_MANAGER
 
     B2_FOLDER_CLASS: ClassVar[Type] = B2Folder
-    QUEUE_SIZE: ClassVar[int] = 100
+    QUEUE_SIZE: ClassVar[int] = 20_000
 
     def __post_init__(self):
         if not self.bucket.replication_configuration:
