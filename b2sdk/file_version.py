@@ -303,7 +303,7 @@ class FileVersion(BaseFileVersion):
         headers_str = '\n'.join(
             f'{key}: {value}' for key, value in headers.items() if value is not None
         )
-        return len(headers_str.encode('latin1'))
+        return len(headers_str.encode('utf8'))
 
 
 class DownloadVersion(BaseFileVersion):
