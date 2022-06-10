@@ -186,7 +186,7 @@ class ReplicationMonitor:
             raise ValueError(f'Bucket {self.bucket} has no replication configuration')
 
         if self.rule not in self.bucket.replication_configuration.rules:
-            raise ValueError(f'Rule {self.rule} is not a rule from {self.configuration=}')
+            raise ValueError(f'Rule {self.rule} is not a rule from {self.bucket}')
 
     @property
     def source_api(self) -> B2Api:
