@@ -131,7 +131,7 @@ class CountAndSampleReplicationReport(AbstractReplicationReport):
     Replication report which groups and counts files by their `ReplicationAttrs` and
     also stores first and last seen examples of such files.
     """
-    counter_by_status: Counter[ReplicationAttrs] = field(default_factory=Counter)
+    counter_by_status: Counter = field(default_factory=Counter)
     samples_by_status_first: Dict[ReplicationAttrs, Tuple[FileVersion, FileVersion]] = field(
         default_factory=dict
     )
