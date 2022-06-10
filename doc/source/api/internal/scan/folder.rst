@@ -1,7 +1,7 @@
-:mod:`b2sdk.sync.folder`
+:mod:`b2sdk.scan.folder`
 ==================================
 
-.. automodule:: b2sdk.sync.folder
+.. automodule:: b2sdk.scan.folder
     :members:
     :undoc-members:
     :show-inheritance:

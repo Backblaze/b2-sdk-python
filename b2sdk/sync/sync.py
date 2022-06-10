@@ -32,7 +32,7 @@ def count_files(local_folder, reporter, policies_manager):
     """
     Count all of the files in a local folder.
 
-    :param b2sdk.sync.folder.AbstractFolder local_folder: a folder object.
+    :param b2sdk.scan.folder.AbstractFolder local_folder: a folder object.
     :param reporter: reporter object
     """
     # Don't pass in a reporter to all_files.  Broken symlinks will be reported
@@ -156,8 +156,8 @@ class Synchronizer:
         source is also in the destination.  Deletes any file versions
         in the destination older than history_days.
 
-        :param b2sdk.sync.folder.AbstractFolder source_folder: source folder object
-        :param b2sdk.sync.folder.AbstractFolder dest_folder: destination folder object
+        :param b2sdk.scan.folder.AbstractFolder source_folder: source folder object
+        :param b2sdk.scan.folder.AbstractFolder dest_folder: destination folder object
         :param int now_millis: current time in milliseconds
         :param b2sdk.sync.report.SyncReport,None reporter: progress reporter
         :param b2sdk.v2.AbstractSyncEncryptionSettingsProvider encryption_settings_provider: encryption setting provider
