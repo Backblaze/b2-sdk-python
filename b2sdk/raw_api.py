@@ -304,7 +304,6 @@ class AbstractRawApi(metaclass=ABCMeta):
         pass
 
     @classmethod
-    @abstractmethod
     def get_upload_file_headers(
         cls,
         upload_auth_token: str,
@@ -317,7 +316,28 @@ class AbstractRawApi(metaclass=ABCMeta):
         file_retention: Optional[FileRetentionSetting],
         legal_hold: Optional[LegalHold],
     ) -> dict:
-        pass
+        headers = {
+            'Authorization': upload_auth_token,
+            'Content-Length': str(content_length),
+            'X-Bz-File-Name': b2_url_encode(file_name),
+            'Content-Type': content_type,
+            'X-Bz-Content-Sha1': content_sha1,
+        }
+        for k, v in file_infos.items():
+            headers[FILE_INFO_HEADER_PREFIX + k] = b2_url_encode(v)
+        if server_side_encryption is not None:
+            assert server_side_encryption.mode in (
+                EncryptionMode.NONE, EncryptionMode.SSE_B2, EncryptionMode.SSE_C
+            )
+            server_side_encryption.add_to_upload_headers(headers)
+
+        if legal_hold is not None:
+            legal_hold.add_to_upload_headers(headers)
+
+        if file_retention is not None:
+            file_retention.add_to_to_upload_headers(headers)
+
+        return headers
 
     @abstractmethod
     def upload_file(
@@ -843,42 +863,6 @@ class B2RawHTTPApi(AbstractRawApi):
         long_segment = max([len(segment.encode('utf-8')) for segment in filename.split('/')])
         if long_segment > 250:
             raise UnusableFileName("Filename segment too long (maximum 250 bytes in utf-8).")
-
-    @classmethod
-    def get_upload_file_headers(
-        cls,
-        upload_auth_token: str,
-        file_name: str,
-        content_length: int,
-        content_type: str,
-        content_sha1: str,
-        file_infos: dict,
-        server_side_encryption: Optional[EncryptionSetting],
-        file_retention: Optional[FileRetentionSetting],
-        legal_hold: Optional[LegalHold],
-    ) -> dict:
-        headers = {
-            'Authorization': upload_auth_token,
-            'Content-Length': str(content_length),
-            'X-Bz-File-Name': b2_url_encode(file_name),
-            'Content-Type': content_type,
-            'X-Bz-Content-Sha1': content_sha1,
-        }
-        for k, v in file_infos.items():
-            headers[FILE_INFO_HEADER_PREFIX + k] = b2_url_encode(v)
-        if server_side_encryption is not None:
-            assert server_side_encryption.mode in (
-                EncryptionMode.NONE, EncryptionMode.SSE_B2, EncryptionMode.SSE_C
-            )
-            server_side_encryption.add_to_upload_headers(headers)
-
-        if legal_hold is not None:
-            legal_hold.add_to_upload_headers(headers)
-
-        if file_retention is not None:
-            file_retention.add_to_to_upload_headers(headers)
-
-        return headers
 
     def upload_file(
         self,
