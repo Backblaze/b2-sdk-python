@@ -188,8 +188,6 @@ class ReplicationMonitor:
         if there is no access to replication destination.
         """
         report = self.REPORT_CLASS()
-
-        thread_pool = ThreadPoolExecutor(max_workers=1)
         queue = Queue(maxsize=self.QUEUE_SIZE)
 
         with ThreadPoolExecutor(max_workers=2) as thread_pool:
