@@ -8,8 +8,12 @@
 #
 ######################################################################
 
-from typing import Optional, Tuple
+from abc import ABCMeta, abstractclassmethod, abstractmethod
+from collections import Counter
+from dataclasses import dataclass, field
+from typing import ClassVar, Dict, Optional, Tuple, Type
 
+from ..file_version import FileVersion
 from .folder import AbstractFolder
 from .path import AbstractPath
 from .policies import DEFAULT_SCAN_MANAGER, ScanPoliciesManager
@@ -61,3 +65,49 @@ def zip_folders(
             yield (current_a, current_b)
             current_a = next(iter_a, None)
             current_b = next(iter_b, None)
+
+
+@dataclass(frozen=True)
+class AbstractScanResult(metaclass=ABCMeta):
+    """
+    Some attributes of files which are meaningful for monitoring and troubleshooting.
+    """
+
+    @abstractclassmethod
+    def from_files(cls, *files: Optional[AbstractPath]) -> 'AbstractScanResult':
+        pass
+
+
+@dataclass
+class AbstractScanReport(metaclass=ABCMeta):
+    """
+    Aggregation of valuable information about files after scanning.
+    """
+    SCAN_RESULT_CLASS: ClassVar[Type] = AbstractScanResult
+
+    @abstractmethod
+    def add(self, *files: Optional[AbstractPath]):
+        pass
+
+
+@dataclass
+class CountAndSampleScanReport(AbstractScanReport):
+    """
+    Scan report which groups and counts files by their `AbstractScanResult`s and
+    also stores first and last seen examples of such files.
+    """
+    counter_by_status: Counter = field(default_factory=Counter)
+    samples_by_status_first: Dict[AbstractScanResult, Tuple[FileVersion, ...]] = field(
+        default_factory=dict
+    )
+    samples_by_status_last: Dict[AbstractScanResult, Tuple[FileVersion, ...]] = field(
+        default_factory=dict
+    )
+
+    def add(self, *files: Optional[AbstractPath]):
+        status = self.SCAN_RESULT_CLASS.from_files(*files)
+        self.counter_by_status[status] += 1
+
+        sample = tuple(file and file.selected_version for file in files)
+        self.samples_by_status_first.setdefault(status, sample)
+        self.samples_by_status_last[status] = sample

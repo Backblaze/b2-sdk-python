@@ -10,43 +10,26 @@
 
 import sys
 
-from abc import ABCMeta, abstractclassmethod, abstractmethod
-from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from queue import Queue
-from typing import ClassVar, Dict, Iterator, Optional, Tuple, Type
+from typing import ClassVar, Iterator, Optional, Tuple, Type
 
 from ..api import B2Api
 from ..bucket import Bucket
 from ..encryption.setting import EncryptionMode
 from ..file_lock import NO_RETENTION_FILE_SETTING, LegalHold
-from ..file_version import FileVersion
 from ..scan.folder import B2Folder
 from ..scan.path import B2Path
 from ..scan.policies import DEFAULT_SCAN_MANAGER, ScanPoliciesManager
 from ..scan.report import Report
-from ..scan.scan import zip_folders
+from ..scan.scan import AbstractScanReport, AbstractScanResult, CountAndSampleScanReport, zip_folders
 from .setting import ReplicationRule
 from .types import ReplicationStatus
 
 
 @dataclass(frozen=True)
-class AbstractReplicationAttrs(metaclass=ABCMeta):
-    """
-    Some attributes of files which are meaningful
-    for replication monitoring and troubleshooting.
-    """
-
-    @abstractclassmethod
-    def from_files(
-        cls, source_file: Optional[B2Path], destination_file: Optional[B2Path]
-    ) -> 'AbstractReplicationAttrs':
-        pass
-
-
-@dataclass(frozen=True)
-class ReplicationAttrs(AbstractReplicationAttrs):
+class ReplicationScanResult(AbstractScanResult):
     """
     Some attributes of source and destination files and their relations
     which are meaningful for replication monitoring and troubleshooting.
@@ -70,8 +53,8 @@ class ReplicationAttrs(AbstractReplicationAttrs):
 
     @classmethod
     def from_files(
-        cls, source_file: Optional[B2Path], destination_file: Optional[B2Path]
-    ) -> 'ReplicationAttrs':
+        cls, source_file: Optional[B2Path] = None, destination_file: Optional[B2Path] = None
+    ) -> 'ReplicationScanResult':
         params = {}
 
         if source_file:
@@ -114,41 +97,8 @@ class ReplicationAttrs(AbstractReplicationAttrs):
 
 
 @dataclass
-class AbstractReplicationReport(metaclass=ABCMeta):
-    """
-    Aggregation of valuable information about file replication
-    after scanning source and (optionally) destination folders.
-    """
-
-    @abstractmethod
-    def add(self, source_file: Optional[B2Path], destination_file: Optional[B2Path]):
-        pass
-
-
-@dataclass
-class CountAndSampleReplicationReport(AbstractReplicationReport):
-    """
-    Replication report which groups and counts files by their `ReplicationAttrs` and
-    also stores first and last seen examples of such files.
-    """
-    counter_by_status: Counter = field(default_factory=Counter)
-    samples_by_status_first: Dict[ReplicationAttrs, Tuple[FileVersion, FileVersion]] = field(
-        default_factory=dict
-    )
-    samples_by_status_last: Dict[ReplicationAttrs, Tuple[FileVersion, FileVersion]] = field(
-        default_factory=dict
-    )
-
-    def add(self, source_file: Optional[B2Path], destination_file: Optional[B2Path] = None):
-        status = ReplicationAttrs.from_files(source_file, destination_file)
-        self.counter_by_status[status] += 1
-
-        sample = (
-            source_file and source_file.selected_version,
-            destination_file and destination_file.selected_version,
-        )
-        self.samples_by_status_first.setdefault(status, sample)
-        self.samples_by_status_last[status] = sample
+class ReplicationReport(CountAndSampleScanReport):
+    SCAN_RESULT_CLASS = ReplicationScanResult
 
 
 @dataclass
@@ -162,8 +112,6 @@ class ReplicationMonitor:
     :param b2sdk.v2.B2Api destination_api: B2Api instance for destination
     bucket; if destination bucket is on the same account as source bucket,
     omit this parameter and then source bucket's B2Api will be used
-    :param type replication_report_class: subclass of ReplicationReport,
-    used to aggregate files to statistics
     :param b2sdk.v2.Report report: instance of Report which will report
     scanning progress, by default to stdout
     :param b2sdk.v2.ScanPoliciesManager scan_policies_manager: a strategy to scan
@@ -174,10 +122,10 @@ class ReplicationMonitor:
     bucket: Bucket
     rule: ReplicationRule
     destination_api: Optional[B2Api] = None  # if None -> will use `api` of source (bucket)
-    replication_report_class: Type[AbstractReplicationReport] = CountAndSampleReplicationReport
     report: Report = field(default_factory=lambda: Report(sys.stdout, False))
     scan_policies_manager: ScanPoliciesManager = DEFAULT_SCAN_MANAGER
 
+    REPORT_CLASS: ClassVar[AbstractScanReport] = ReplicationReport
     B2_FOLDER_CLASS: ClassVar[Type] = B2Folder
     QUEUE_SIZE: ClassVar[int] = 20_000
 
@@ -230,7 +178,7 @@ class ReplicationMonitor:
             policies_manager=self.scan_policies_manager,
         )
 
-    def scan(self, scan_destination: bool = True) -> AbstractReplicationReport:
+    def scan(self, scan_destination: bool = True) -> AbstractScanReport:
         """
         Scan source bucket (only, or with destination) and return replication report.
 
@@ -239,7 +187,7 @@ class ReplicationMonitor:
         they we really replicated to destination. It may be handy though
         if there is no access to replication destination.
         """
-        report = self.replication_report_class()
+        report = self.REPORT_CLASS()
 
         thread_pool = ThreadPoolExecutor(max_workers=1)
         queue = Queue(maxsize=self.QUEUE_SIZE)

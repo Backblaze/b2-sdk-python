@@ -8,7 +8,7 @@
 #
 ######################################################################
 
-from apiver_deps import EncryptionAlgorithm, EncryptionKey, EncryptionMode, EncryptionSetting, FileRetentionSetting, ReplicationAttrs, RetentionMode
+from apiver_deps import EncryptionAlgorithm, EncryptionKey, EncryptionMode, EncryptionSetting, FileRetentionSetting, ReplicationScanResult, RetentionMode
 
 SSE_C_AES = EncryptionSetting(
     mode=EncryptionMode.SSE_C,
@@ -18,7 +18,7 @@ SSE_C_AES = EncryptionSetting(
 
 RETENTION_GOVERNANCE = FileRetentionSetting(RetentionMode.GOVERNANCE, retain_until=1)
 
-DEFAULT_REPLICATION_ATTRS = dict(
+DEFAULT_REPLICATION_RESULT = dict(
     source_replication_status=None,
     source_has_hide_marker=True,
     source_has_sse_c_enabled=False,
@@ -78,36 +78,36 @@ def test_scan_source(source_bucket, test_file, monitor):
     ]
     report = monitor.scan(scan_destination=False)
 
-    assert report.counter_by_status[ReplicationAttrs(**DEFAULT_REPLICATION_ATTRS)] == 2
+    assert report.counter_by_status[ReplicationScanResult(**DEFAULT_REPLICATION_RESULT)] == 2
 
-    assert report.counter_by_status[ReplicationAttrs(
+    assert report.counter_by_status[ReplicationScanResult(
         **{
-            **DEFAULT_REPLICATION_ATTRS,
+            **DEFAULT_REPLICATION_RESULT,
             'source_has_sse_c_enabled': True,
         }
     )] == 1
 
-    assert report.counter_by_status[ReplicationAttrs(
+    assert report.counter_by_status[ReplicationScanResult(
         **{
-            **DEFAULT_REPLICATION_ATTRS,
+            **DEFAULT_REPLICATION_RESULT,
             'source_has_sse_c_enabled': True,
             'source_has_file_retention': True,
         }
     )] == 1
 
-    assert report.counter_by_status[ReplicationAttrs(
+    assert report.counter_by_status[ReplicationScanResult(
         **{
-            **DEFAULT_REPLICATION_ATTRS,
+            **DEFAULT_REPLICATION_RESULT,
             'source_has_large_metadata': True,
         }
     )] == 1
 
     # ---- first and last ----
 
-    assert report.samples_by_status_first[ReplicationAttrs(**DEFAULT_REPLICATION_ATTRS,)
+    assert report.samples_by_status_first[ReplicationScanResult(**DEFAULT_REPLICATION_RESULT,)
                                          ][0] == files[0]
 
-    assert report.samples_by_status_last[ReplicationAttrs(**DEFAULT_REPLICATION_ATTRS,)
+    assert report.samples_by_status_last[ReplicationScanResult(**DEFAULT_REPLICATION_RESULT,)
                                         ][0] == files[1]
 
 
@@ -139,25 +139,25 @@ def test_scan_source_and_destination(source_bucket, destination_bucket, test_fil
     report = monitor.scan(scan_destination=True)
 
     # match
-    assert report.counter_by_status[ReplicationAttrs(
+    assert report.counter_by_status[ReplicationScanResult(
         **{
-            **DEFAULT_REPLICATION_ATTRS,
+            **DEFAULT_REPLICATION_RESULT,
             'metadata_differs': False,
         }
     )] == 1
 
     # missing on destination
-    assert report.counter_by_status[ReplicationAttrs(
+    assert report.counter_by_status[ReplicationScanResult(
         **{
-            **DEFAULT_REPLICATION_ATTRS,
+            **DEFAULT_REPLICATION_RESULT,
             'destination_replication_status': None,
         }
     )] == 1
 
     # missing on source
-    assert report.counter_by_status[ReplicationAttrs(
+    assert report.counter_by_status[ReplicationScanResult(
         **{
-            **DEFAULT_REPLICATION_ATTRS,
+            **DEFAULT_REPLICATION_RESULT,
             'source_replication_status': None,
             'source_has_hide_marker': None,
             'source_has_sse_c_enabled': None,
@@ -168,9 +168,9 @@ def test_scan_source_and_destination(source_bucket, destination_bucket, test_fil
     )] == 1
 
     # metadata differs
-    assert report.counter_by_status[ReplicationAttrs(
+    assert report.counter_by_status[ReplicationScanResult(
         **{
-            **DEFAULT_REPLICATION_ATTRS,
+            **DEFAULT_REPLICATION_RESULT,
             'metadata_differs': True,
         }
     )] == 1

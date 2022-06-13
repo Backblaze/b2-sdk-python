@@ -205,6 +205,9 @@ from b2sdk.scan.policies import RegexSet
 from b2sdk.scan.policies import ScanPoliciesManager
 from b2sdk.scan.report import Report
 from b2sdk.scan.scan import zip_folders
+from b2sdk.scan.scan import AbstractScanResult
+from b2sdk.scan.scan import AbstractScanReport
+from b2sdk.scan.scan import CountAndSampleScanReport
 
 # replication
 
@@ -213,10 +216,8 @@ from b2sdk.replication.setting import ReplicationConfiguration
 from b2sdk.replication.setting import ReplicationRule
 from b2sdk.replication.types import ReplicationStatus
 from b2sdk.replication.setup import ReplicationSetupHelper
-from b2sdk.replication.monitoring import AbstractReplicationAttrs
-from b2sdk.replication.monitoring import ReplicationAttrs
-from b2sdk.replication.monitoring import AbstractReplicationReport
-from b2sdk.replication.monitoring import CountAndSampleReplicationReport
+from b2sdk.replication.monitoring import ReplicationScanResult
+from b2sdk.replication.monitoring import ReplicationReport
 from b2sdk.replication.monitoring import ReplicationMonitor
 
 # other
