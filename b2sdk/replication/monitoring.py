@@ -190,38 +190,30 @@ class ReplicationMonitor:
         report = self.REPORT_CLASS()
         queue = Queue(maxsize=self.QUEUE_SIZE)
 
+        if not scan_destination:
+            def fill_queue():
+                for path in self.source_folder.all_files(
+                    policies_manager=self.scan_policies_manager,
+                    reporter=self.report,
+                ):
+                    queue.put((path,), block=True)
+        else:
+            def fill_queue():
+                for pair in self.iter_pairs():
+                    queue.put(pair, block=True)
+
+        def consume_queue():
+            while not queue.empty():
+                items = queue.get(block=True)
+                report.add(*items)
+
         with ThreadPoolExecutor(max_workers=2) as thread_pool:
-            if not scan_destination:
-
-                def fill_queue():
-                    for path in self.source_folder.all_files(
-                        policies_manager=self.scan_policies_manager,
-                        reporter=self.report,
-                    ):
-                        queue.put(path, block=True)
-
-                def consume_queue():
-                    while not queue.empty():
-                        path = queue.get(block=True)
-                        report.add(path)
-
-            else:
-
-                def fill_queue():
-                    for pair in self.iter_pairs():
-                        queue.put(pair, block=True)
-
-                def consume_queue():
-                    while not queue.empty():
-                        pair = queue.get(block=True)
-                        report.add(*pair)
-
             futures = [
                 thread_pool.submit(fill_queue),
                 thread_pool.submit(consume_queue),
             ]
 
-        for future in futures:
-            future.result()
+            for future in futures:
+                future.result()
 
         return report
