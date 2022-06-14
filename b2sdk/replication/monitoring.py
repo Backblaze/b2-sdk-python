@@ -68,7 +68,7 @@ class ReplicationScanResult(AbstractScanResult):
                     'source_has_sse_c_enabled':
                         source_file_version.server_side_encryption.mode == EncryptionMode.SSE_C,
                     'source_has_large_metadata':
-                        source_file_version.headers_size >= cls.LARGE_METADATA_SIZE,
+                        source_file_version.has_large_header,
                     'source_has_file_retention':
                         source_file_version.file_retention is not NO_RETENTION_FILE_SETTING,
                     'source_has_legal_hold':
@@ -191,6 +191,7 @@ class ReplicationMonitor:
         queue = Queue(maxsize=self.QUEUE_SIZE)
 
         if not scan_destination:
+
             def fill_queue():
                 for path in self.source_folder.all_files(
                     policies_manager=self.scan_policies_manager,
@@ -198,6 +199,7 @@ class ReplicationMonitor:
                 ):
                     queue.put((path,), block=True)
         else:
+
             def fill_queue():
                 for pair in self.iter_pairs():
                     queue.put(pair, block=True)

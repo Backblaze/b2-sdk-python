@@ -8,7 +8,7 @@
 #
 ######################################################################
 
-from apiver_deps import EncryptionAlgorithm, EncryptionKey, EncryptionMode, EncryptionSetting, FileRetentionSetting, ReplicationScanResult, RetentionMode
+from apiver_deps import EncryptionAlgorithm, EncryptionKey, EncryptionMode, EncryptionSetting, FileRetentionSetting, ReplicationScanResult, RetentionMode, SSE_B2_AES
 
 SSE_C_AES = EncryptionSetting(
     mode=EncryptionMode.SSE_C,
@@ -60,20 +60,31 @@ def test_scan_source(source_bucket, test_file, monitor):
     # upload various types of files to source and get a report
     files = [
         source_bucket.upload_local_file(test_file, 'folder/test-1.txt'),
-        source_bucket.upload_local_file(test_file, 'folder/test-2.txt'),
+        source_bucket.upload_local_file(test_file, 'folder/test-2.txt', encryption=SSE_B2_AES),
         source_bucket.upload_local_file(test_file,
                                         'not-in-folder.txt'),  # monitor should ignore this
         source_bucket.upload_local_file(test_file, 'folder/test-3.txt', encryption=SSE_C_AES),
+        source_bucket.upload_local_file(test_file, 'folder/test-4.txt', encryption=SSE_C_AES),
         source_bucket.upload_local_file(
             test_file,
-            'folder/subfolder/test-4.txt',
+            'folder/subfolder/test-5.txt',
             encryption=SSE_C_AES,
             file_retention=RETENTION_GOVERNANCE
         ),
         source_bucket.upload_local_file(
-            test_file, 'folder/test-large-meta.txt', file_infos={
+            test_file,
+            'folder/test-large-meta.txt',
+            file_infos={
+                'dummy-key': 'a' * 7000,
+            },
+        ),
+        source_bucket.upload_local_file(
+            test_file,
+            'folder/test-large-meta-encrypted.txt',
+            file_infos={
                 'dummy-key': 'a' * 2048,
-            }
+            },
+            encryption=SSE_C_AES,
         ),
     ]
     report = monitor.scan(scan_destination=False)
@@ -85,7 +96,7 @@ def test_scan_source(source_bucket, test_file, monitor):
             **DEFAULT_REPLICATION_RESULT,
             'source_has_sse_c_enabled': True,
         }
-    )] == 1
+    )] == 2
 
     assert report.counter_by_status[ReplicationScanResult(
         **{
@@ -98,6 +109,14 @@ def test_scan_source(source_bucket, test_file, monitor):
     assert report.counter_by_status[ReplicationScanResult(
         **{
             **DEFAULT_REPLICATION_RESULT,
+            'source_has_large_metadata': True,
+        }
+    )] == 1
+
+    assert report.counter_by_status[ReplicationScanResult(
+        **{
+            **DEFAULT_REPLICATION_RESULT,
+            'source_has_sse_c_enabled': True,
             'source_has_large_metadata': True,
         }
     )] == 1

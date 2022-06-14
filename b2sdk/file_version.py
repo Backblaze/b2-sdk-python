@@ -10,7 +10,7 @@
 
 from typing import Dict, Optional, Union, Tuple, TYPE_CHECKING
 
-from .encryption.setting import EncryptionSetting, EncryptionSettingFactory
+from .encryption.setting import EncryptionSetting, EncryptionSettingFactory, EncryptionMode
 from .replication.types import ReplicationStatus
 from .http_constants import FILE_INFO_HEADER_PREFIX_LOWER, SRC_LAST_MODIFIED_MILLIS
 from .file_lock import FileRetentionSetting, LegalHold, NO_RETENTION_FILE_SETTING
@@ -199,6 +199,9 @@ class FileVersion(BaseFileVersion):
         'action',
     ]
 
+    DEFAULT_HEADERS_LIMIT = 7000
+    ADVANCED_HEADERS_LIMIT = 2048
+
     def __init__(
         self,
         api: 'B2Api',
@@ -282,13 +285,7 @@ class FileVersion(BaseFileVersion):
             encryption=encryption,
         )
 
-    @property
-    def headers_size(self) -> int:
-        """
-        Return size of all metadata. B2 API has restrictions on headers that
-        may be passed along with the file (7000 or, in some cases, 2048 bytes):
-        https://www.backblaze.com/b2/docs/files.html#httpHeaderSizeLimit
-        """
+    def _get_upload_headers(self, omit_delimiters: bool = False) -> bytes:
         headers = self.api.raw_api.get_upload_file_headers(
             upload_auth_token=self.api.account_info.auth_token,
             file_name=self.file_name,
@@ -300,10 +297,32 @@ class FileVersion(BaseFileVersion):
             file_retention=self.file_retention,
             legal_hold=self.legal_hold,
         )
-        headers_str = '\n'.join(
-            f'{key}: {value}' for key, value in headers.items() if value is not None
+
+        newline, separator = ('\n', ': ') if not omit_delimiters else ('', '')
+        headers_str = newline.join(
+            f'{key}{separator}{value}' for key, value in headers.items() if value is not None
         )
-        return len(headers_str.encode('utf8'))
+        return headers_str.encode('utf8')
+
+    @property
+    def has_large_header(self) -> bool:
+        """
+        Determine whether FileVersion's info fits header size limit defined by B2.
+
+        See https://www.backblaze.com/b2/docs/files.html#httpHeaderSizeLimit.
+        """
+
+        # For files encrypted with Server-Side Encryption and/or in
+        # File Lock-enabled buckets, the limit is reduced to 2,048 bytes
+        if self.server_side_encryption.mode == EncryptionMode.SSE_C or \
+           self.file_retention != NO_RETENTION_FILE_SETTING or \
+           self.legal_hold in {LegalHold.ON, LegalHold.OFF}:  # File Lock-enabled bucket
+            if len(self._get_upload_headers(omit_delimiters=False)) > self.ADVANCED_HEADERS_LIMIT:
+                return True
+
+        # B2 limits the combined header size for the file name
+        # and all file info to 7,000 bytes
+        return len(self._get_upload_headers(omit_delimiters=True)) > self.DEFAULT_HEADERS_LIMIT
 
 
 class DownloadVersion(BaseFileVersion):
