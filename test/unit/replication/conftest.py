@@ -38,7 +38,7 @@ def destination_bucket(api) -> Bucket:
 def source_bucket(api, destination_bucket) -> Bucket:
     bucket = api.create_bucket('source-bucket', 'allPublic')
 
-    bucket.replication_configuration = ReplicationConfiguration(
+    bucket.replication = ReplicationConfiguration(
         rules=[
             ReplicationRule(
                 destination_bucket_id=destination_bucket.id_,
@@ -63,5 +63,5 @@ def test_file(tmpdir) -> str:
 def monitor(source_bucket) -> ReplicationMonitor:
     return ReplicationMonitor(
         source_bucket,
-        rule=source_bucket.replication_configuration.rules[0],
+        rule=source_bucket.replication.rules[0],
     )

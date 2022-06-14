@@ -130,10 +130,10 @@ class ReplicationMonitor:
     QUEUE_SIZE: ClassVar[int] = 20_000
 
     def __post_init__(self):
-        if not self.bucket.replication_configuration:
+        if not self.bucket.replication:
             raise ValueError(f'Bucket {self.bucket} has no replication configuration')
 
-        if self.rule not in self.bucket.replication_configuration.rules:
+        if self.rule not in self.bucket.replication.rules:
             raise ValueError(f'Rule {self.rule} is not a rule from {self.bucket}')
 
     @property
