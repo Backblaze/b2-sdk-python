@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
-class Report:
+class ProgressReport:
     """
     Handle reporting progress.
 
@@ -199,7 +199,7 @@ def sample_report_run():
     Generate a sample report.
     """
     import sys
-    report = Report(sys.stdout, False)
+    report = ProgressReport(sys.stdout, False)
 
     for i in range(20):
         report.update_total(1)

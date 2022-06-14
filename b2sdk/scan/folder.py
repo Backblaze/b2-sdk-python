@@ -21,7 +21,7 @@ from ..utils import fix_windows_path_limit, get_file_mtime, is_file_readable
 from .exception import EmptyDirectory, EnvironmentEncodingError, NotADirectory, UnableToCreateDirectory, UnsupportedFilename
 from .path import AbstractPath, B2Path, LocalPath
 from .policies import DEFAULT_SCAN_MANAGER, ScanPoliciesManager
-from .report import Report
+from .report import ProgressReport
 
 DRIVE_MATCHER = re.compile(r"^([A-Za-z]):([/\\])")
 ABSOLUTE_PATH_MATCHER = re.compile(r"^(/)|^(\\)")
@@ -52,7 +52,7 @@ class AbstractFolder(metaclass=ABCMeta):
     """
 
     @abstractmethod
-    def all_files(self, reporter: Report,
+    def all_files(self, reporter: ProgressReport,
                   policies_manager=DEFAULT_SCAN_MANAGER) -> Iterator[AbstractPath]:
         """
         Return an iterator over all of the files in the folder, in
@@ -124,7 +124,7 @@ class LocalFolder(AbstractFolder):
         """
         return 'local'
 
-    def all_files(self, reporter: Report,
+    def all_files(self, reporter: ProgressReport,
                   policies_manager=DEFAULT_SCAN_MANAGER) -> Iterator[LocalPath]:
         """
         Yield all files.
@@ -318,7 +318,9 @@ class B2Folder(AbstractFolder):
             self.prefix += '/'
 
     def all_files(
-        self, reporter: Report, policies_manager: ScanPoliciesManager = DEFAULT_SCAN_MANAGER
+        self,
+        reporter: ProgressReport,
+        policies_manager: ScanPoliciesManager = DEFAULT_SCAN_MANAGER
     ) -> Iterator[B2Path]:
         """
         Yield all files.

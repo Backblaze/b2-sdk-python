@@ -17,13 +17,13 @@ from ..file_version import FileVersion
 from .folder import AbstractFolder
 from .path import AbstractPath
 from .policies import DEFAULT_SCAN_MANAGER, ScanPoliciesManager
-from .report import Report
+from .report import ProgressReport
 
 
 def zip_folders(
     folder_a: AbstractFolder,
     folder_b: AbstractFolder,
-    reporter: Report,
+    reporter: ProgressReport,
     policies_manager: ScanPoliciesManager = DEFAULT_SCAN_MANAGER,
 ) -> Tuple[Optional[AbstractPath], Optional[AbstractPath]]:
     """

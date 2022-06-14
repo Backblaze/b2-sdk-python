@@ -12,6 +12,7 @@ from b2sdk._v3 import *  # noqa
 from b2sdk._v3 import parse_folder as parse_sync_folder
 from b2sdk._v3 import AbstractPath as AbstractSyncPath
 from b2sdk._v3 import LocalPath as LocalSyncPath
+from b2sdk._v3 import ProgressReport as Report
 
 from .api import B2Api
 from .b2http import B2Http

@@ -203,7 +203,7 @@ from b2sdk.scan.policies import DEFAULT_SCAN_MANAGER
 from b2sdk.scan.policies import IntegerRange
 from b2sdk.scan.policies import RegexSet
 from b2sdk.scan.policies import ScanPoliciesManager
-from b2sdk.scan.report import Report
+from b2sdk.scan.report import ProgressReport
 from b2sdk.scan.scan import zip_folders
 from b2sdk.scan.scan import AbstractScanResult
 from b2sdk.scan.scan import AbstractScanReport

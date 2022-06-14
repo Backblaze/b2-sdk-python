@@ -22,7 +22,7 @@ from ..file_lock import NO_RETENTION_FILE_SETTING, LegalHold
 from ..scan.folder import B2Folder
 from ..scan.path import B2Path
 from ..scan.policies import DEFAULT_SCAN_MANAGER, ScanPoliciesManager
-from ..scan.report import Report
+from ..scan.report import ProgressReport
 from ..scan.scan import AbstractScanReport, AbstractScanResult, CountAndSampleScanReport, zip_folders
 from .setting import ReplicationRule
 from .types import ReplicationStatus
@@ -112,7 +112,7 @@ class ReplicationMonitor:
     :param b2sdk.v2.B2Api destination_api: B2Api instance for destination
     bucket; if destination bucket is on the same account as source bucket,
     omit this parameter and then source bucket's B2Api will be used
-    :param b2sdk.v2.Report report: instance of Report which will report
+    :param b2sdk.v2.ProgressReport report: instance of ProgressReport which will report
     scanning progress, by default to stdout
     :param b2sdk.v2.ScanPoliciesManager scan_policies_manager: a strategy to scan
     files, so that several files that match some criteria may be omitted
@@ -122,7 +122,7 @@ class ReplicationMonitor:
     bucket: Bucket
     rule: ReplicationRule
     destination_api: Optional[B2Api] = None  # if None -> will use `api` of source (bucket)
-    report: Report = field(default_factory=lambda: Report(sys.stdout, False))
+    report: ProgressReport = field(default_factory=lambda: ProgressReport(sys.stdout, False))
     scan_policies_manager: ScanPoliciesManager = DEFAULT_SCAN_MANAGER
 
     REPORT_CLASS: ClassVar[AbstractScanReport] = ReplicationReport
