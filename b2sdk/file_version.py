@@ -287,7 +287,7 @@ class FileVersion(BaseFileVersion):
 
     def _get_upload_headers(self, omit_delimiters: bool = False) -> bytes:
         headers = self.api.raw_api.get_upload_file_headers(
-            upload_auth_token=self.api.account_info.auth_token,
+            upload_auth_token=self.api.account_info.get_account_auth_token(),
             file_name=self.file_name,
             content_length=self.size,
             content_type=self.content_type,
