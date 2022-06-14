@@ -198,15 +198,19 @@ class ReplicationMonitor:
                     reporter=self.report,
                 ):
                     queue.put((path,), block=True)
+                queue.put(None, block=True)
         else:
 
             def fill_queue():
                 for pair in self.iter_pairs():
                     queue.put(pair, block=True)
+                queue.put(None, block=True)
 
         def consume_queue():
-            while not queue.empty():
+            while True:
                 items = queue.get(block=True)
+                if items is None:  # using None as "end of queue" marker
+                    break
                 report.add(*items)
 
         with ThreadPoolExecutor(max_workers=2) as thread_pool:
