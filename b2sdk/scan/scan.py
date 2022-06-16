@@ -66,6 +66,8 @@ def zip_folders(
             current_a = next(iter_a, None)
             current_b = next(iter_b, None)
 
+    reporter.close()
+
 
 @dataclass(frozen=True)
 class AbstractScanResult(metaclass=ABCMeta):
