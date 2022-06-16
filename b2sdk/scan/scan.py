@@ -93,7 +93,7 @@ class AbstractScanReport(metaclass=ABCMeta):
 @dataclass
 class CountAndSampleScanReport(AbstractScanReport):
     """
-    Scan report which groups and counts files by their `AbstractScanResult`s and
+    Scan report which groups and counts files by their `AbstractScanResult` and
     also stores first and last seen examples of such files.
     """
     counter_by_status: Counter = field(default_factory=Counter)
