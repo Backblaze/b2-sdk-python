@@ -314,7 +314,7 @@ class FileVersion(BaseFileVersion):
 
         # For files encrypted with Server-Side Encryption and/or in
         # File Lock-enabled buckets, the limit is reduced to 2,048 bytes
-        if self.server_side_encryption.mode == EncryptionMode.SSE_C or \
+        if self.server_side_encryption.mode != EncryptionMode.NONE or \
            self.file_retention != NO_RETENTION_FILE_SETTING or \
            self.legal_hold in {LegalHold.ON, LegalHold.OFF}:  # File Lock-enabled bucket
             if len(self._get_upload_headers(omit_delimiters=False)) > self.ADVANCED_HEADERS_LIMIT:
