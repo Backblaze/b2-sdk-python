@@ -86,7 +86,7 @@ class AbstractScanReport(metaclass=ABCMeta):
     SCAN_RESULT_CLASS: ClassVar[Type] = AbstractScanResult
 
     @abstractmethod
-    def add(self, *files: Optional[AbstractPath]):
+    def add(self, *files: Optional[AbstractPath]) -> None:
         pass
 
 
@@ -104,7 +104,7 @@ class CountAndSampleScanReport(AbstractScanReport):
         default_factory=dict
     )
 
-    def add(self, *files: Optional[AbstractPath]):
+    def add(self, *files: Optional[AbstractPath]) -> None:
         status = self.SCAN_RESULT_CLASS.from_files(*files)
         self.counter_by_status[status] += 1
 
