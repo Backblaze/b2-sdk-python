@@ -72,7 +72,7 @@ class ReplicationScanResult(AbstractScanResult):
                     'source_has_file_retention':
                         source_file_version.file_retention is not NO_RETENTION_FILE_SETTING,
                     'source_has_legal_hold':
-                        source_file_version.legal_hold is not LegalHold.UNSET,
+                        source_file_version.legal_hold is LegalHold.ON,
                 }
             )
 
