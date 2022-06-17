@@ -48,6 +48,7 @@ class ReplicationScanResult(AbstractScanResult):
 
     # source & destination relation attrs
     metadata_differs: Optional[bool] = None
+    hash_differs: Optional[bool] = None
 
     LARGE_METADATA_SIZE: ClassVar[int] = 2048
 
@@ -85,11 +86,16 @@ class ReplicationScanResult(AbstractScanResult):
             )
 
         if source_file and destination_file:
+            source_version = source_file.selected_version
+            destination_version = destination_file.selected_version
+
             params.update(
                 {
                     'metadata_differs':
-                        source_file.selected_version.file_info !=
-                        destination_file.selected_version.file_info,
+                        source_version.file_info != destination_version.file_info,
+                    'hash_differs':
+                        (source_version.content_md5 != destination_version.content_md5) or
+                        (source_version.content_sha1 != destination_version.content_sha1)
                 }
             )
 

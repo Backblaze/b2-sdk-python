@@ -60,6 +60,13 @@ def test_file(tmpdir) -> str:
 
 
 @pytest.fixture
+def test_file_reversed(tmpdir) -> str:
+    file = tmpdir.join('test-reversed.txt')
+    file.write('revetahw')
+    return file
+
+
+@pytest.fixture
 def monitor(source_bucket) -> ReplicationMonitor:
     return ReplicationMonitor(
         source_bucket,

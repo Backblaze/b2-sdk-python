@@ -27,6 +27,7 @@ DEFAULT_REPLICATION_RESULT = dict(
     source_has_legal_hold=False,
     destination_replication_status=None,
     metadata_differs=None,
+    hash_differs=None,
 )
 
 
@@ -130,7 +131,9 @@ def test_scan_source(source_bucket, test_file, monitor):
                                         ][0] == files[1]
 
 
-def test_scan_source_and_destination(source_bucket, destination_bucket, test_file, monitor):
+def test_scan_source_and_destination(
+    source_bucket, destination_bucket, test_file, test_file_reversed, monitor
+):
     _ = [
         # match
         source_bucket.upload_local_file(test_file, 'folder/test-1.txt'),
@@ -153,6 +156,10 @@ def test_scan_source_and_destination(source_bucket, destination_bucket, test_fil
                 'hehe': 'hihi',
             }
         ),
+
+        # hash differs
+        source_bucket.upload_local_file(test_file, 'folder/test-5.txt'),
+        destination_bucket.upload_local_file(test_file_reversed, 'folder/test-5.txt'),
     ]
 
     report = monitor.scan(scan_destination=True)
@@ -162,6 +169,7 @@ def test_scan_source_and_destination(source_bucket, destination_bucket, test_fil
         **{
             **DEFAULT_REPLICATION_RESULT,
             'metadata_differs': False,
+            'hash_differs': False,
         }
     )] == 1
 
@@ -191,5 +199,15 @@ def test_scan_source_and_destination(source_bucket, destination_bucket, test_fil
         **{
             **DEFAULT_REPLICATION_RESULT,
             'metadata_differs': True,
+            'hash_differs': False,
+        }
+    )] == 1
+
+    # hash differs
+    assert report.counter_by_status[ReplicationScanResult(
+        **{
+            **DEFAULT_REPLICATION_RESULT,
+            'metadata_differs': False,
+            'hash_differs': True,
         }
     )] == 1
