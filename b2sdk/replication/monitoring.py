@@ -33,6 +33,9 @@ class ReplicationScanResult(AbstractScanResult):
     """
     Some attributes of source and destination files and their relations
     which are meaningful for replication monitoring and troubleshooting.
+
+    Please be aware that only latest file versions are inspected, so any
+    previous file versions are not represented in these results.
     """
 
     # source attrs
