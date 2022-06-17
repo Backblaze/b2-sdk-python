@@ -20,7 +20,7 @@ RETENTION_GOVERNANCE = FileRetentionSetting(RetentionMode.GOVERNANCE, retain_unt
 
 DEFAULT_REPLICATION_RESULT = dict(
     source_replication_status=None,
-    source_has_hide_marker=True,
+    source_has_hide_marker=False,
     source_has_sse_c_enabled=False,
     source_has_large_metadata=False,
     source_has_file_retention=False,
