@@ -214,13 +214,14 @@ class ReplicationSetupHelper(metaclass=B2TraceMeta):
     ) -> ApplicationKey:
         api = source_bucket.api
 
-        current_source_key = api.get_key(current_replication_configuration.source_key_id)
-        do_create_key = cls._should_make_new_source_key(
-            current_replication_configuration,
-            current_source_key,
-        )
-        if not do_create_key:
-            return current_source_key
+        if current_replication_configuration is not None:
+            current_source_key = api.get_key(current_replication_configuration.source_key_id)
+            do_create_key = cls._should_make_new_source_key(
+                current_replication_configuration,
+                current_source_key,
+            )
+            if not do_create_key:
+                return current_source_key
 
         new_key = cls._create_source_key(
             name=source_bucket.name[:91] + '-replisrc',
