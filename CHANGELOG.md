@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+* Add included_sources module, for keeping track of included modified third-party libraries
 * Add `include_existing_files` parameter to `ReplicationSetupHelper`
 
 ### Fixed
