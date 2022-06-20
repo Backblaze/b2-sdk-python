@@ -8,7 +8,7 @@
 #
 ######################################################################
 
-from random import Random
+from random import random
 import io
 import json
 import logging
@@ -18,7 +18,7 @@ import arrow
 import requests
 import time
 
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from .exception import (
     B2Error, B2RequestTimeoutDuringUpload, BadDateFormat, BrokenPipe, B2ConnectionError,
@@ -152,12 +152,16 @@ class B2Http:
        except B2Error as e:
            ...
 
+    Please note that the timeout/retry system, including class-level variables,
+    is not a part of the interface and is subject to change.
     """
 
-    # timeout for HTTP GET/POST requests
     TIMEOUT = 128
     TIMEOUT_FOR_COPY = 1200  # 20 minutes as server-side copy can take time
     TIMEOUT_FOR_UPLOAD = 128
+    TRY_COUNT_DATA = 20
+    TRY_COUNT_DOWNLOAD = 20
+    TRY_COUNT_HEAD = 5
 
     def __init__(self, api_config: B2HttpApiConfig = DEFAULT_HTTP_API_CONFIG):
         """
@@ -184,9 +188,9 @@ class B2Http:
         url,
         headers,
         data,
-        try_count=20,
+        try_count: int = TRY_COUNT_DATA,
         post_params=None,
-        force_timeout=None,
+        _timeout: Optional[int] = None,
     ):
         """
         Use like this:
@@ -216,7 +220,7 @@ class B2Http:
                 url,
                 headers=request_headers,
                 data=data,
-                timeout=force_timeout or self.TIMEOUT_FOR_UPLOAD,
+                timeout=_timeout or self.TIMEOUT_FOR_UPLOAD,
             )
             self._run_post_request_hooks('POST', url, request_headers, response)
             return response
@@ -237,7 +241,7 @@ class B2Http:
         finally:
             response.close()
 
-    def post_json_return_json(self, url, headers, params, try_count=5):
+    def post_json_return_json(self, url, headers, params, try_count: int = 5):
         """
         Use like this:
 
@@ -269,10 +273,10 @@ class B2Http:
             data,
             try_count,
             params,
-            force_timeout=timeout,
+            _timeout=timeout,
         )
 
-    def get_content(self, url, headers, try_count=20):
+    def get_content(self, url, headers, try_count: int = TRY_COUNT_DOWNLOAD):
         """
         Fetches content from a URL.
 
@@ -310,7 +314,12 @@ class B2Http:
         response = self._translate_and_retry(do_get, try_count, None)
         return ResponseContextManager(response)
 
-    def head_content(self, url: str, headers: Dict[str, Any], try_count: int = 5) -> Dict[str, Any]:
+    def head_content(
+        self,
+        url: str,
+        headers: Dict[str, Any],
+        try_count: int = TRY_COUNT_HEAD,
+    ) -> Dict[str, Any]:
         """
         Does a HEAD instead of a GET for the URL.
         The response's content is limited to the headers.
@@ -442,7 +451,6 @@ class B2Http:
         # For all but the last try, catch the exception.
         wait_time = 1.0
         max_wait_time = 64
-        rng = Random()
         for _ in range(try_count - 1):
             try:
                 return cls._translate_errors(fcn, post_params)
@@ -469,7 +477,7 @@ class B2Http:
                 if wait_time > max_wait_time:
                     # avoid clients synchronizing and causing a wave
                     # of requests when connectivity is restored
-                    wait_time = max_wait_time + rng.random()
+                    wait_time = max_wait_time + random()
 
         # If the last try gets an exception, it will be raised.
         return cls._translate_errors(fcn, post_params)

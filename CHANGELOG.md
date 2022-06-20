@@ -11,8 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 * Change the per part retry limit from 5 to 20 for data transfer operations. Please note that the retry system is not considered to be a part of the public interface and is subject to be adjusted
-* After the 10th retry do not wait more than 64 seconds between retry attempts
-* After the 5th retry wait a random amount of time (up to 1s) to prevent client synchronization
+* Do not wait more than 64 seconds between retry attempts (unless server asks for it)
+* On longer failures wait an additional (random, up to 1s) amount of time to prevent client synchronization
 
 ### Fixed
 * Fix `AccountInfo.is_master_key()`
