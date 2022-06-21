@@ -153,7 +153,12 @@ def raw_api_test_helper(raw_api, should_cleanup_old_buckets):
         api_url,
         account_auth_token,
         account_id,
-        ['listBuckets', 'listFiles', 'readFiles'],
+        [
+            'listBuckets',
+            'listFiles',
+            'readFiles',
+            'writeFiles',  # Pawel @ 2022-06-21: adding this to make tests pass with a weird server validator
+        ],
         'testReplicationSourceKey',
         None,
         None,
