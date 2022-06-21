@@ -162,6 +162,7 @@ class B2Http:
     TRY_COUNT_DATA = 20
     TRY_COUNT_DOWNLOAD = 20
     TRY_COUNT_HEAD = 5
+    TRY_COUNT_OTHER = 5
 
     def __init__(self, api_config: B2HttpApiConfig = DEFAULT_HTTP_API_CONFIG):
         """
@@ -241,7 +242,7 @@ class B2Http:
         finally:
             response.close()
 
-    def post_json_return_json(self, url, headers, params, try_count: int = 5):
+    def post_json_return_json(self, url, headers, params, try_count: int = TRY_COUNT_OTHER):
         """
         Use like this:
 
