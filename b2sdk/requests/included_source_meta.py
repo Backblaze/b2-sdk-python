@@ -9,21 +9,16 @@
 ######################################################################
 from b2sdk.included_sources import add_included_source, IncludedSourceMeta
 
-add_included_source(
-    IncludedSourceMeta(
-        'requests',
-        'Included in a revised form, in order to provide a functionality of NOT decompressing encoded content '
-        'when downloading', {
-            'NOTICE':
-                """
-Requests
+included_source_meta = IncludedSourceMeta(
+    'requests', 'Included in a revised form', {
+        'NOTICE':
+            """Requests
 Copyright 2019 Kenneth Reitz
 
 Copyright 2021 Backblaze Inc.
 Changes made to the original source:
 requests.models.Response.iter_content has been overridden to pass `decode_content=False` argument to `self.raw.stream`
-in order to NOT decompress data based on Content-Encoding header
-    """
-        }
-    )
+in order to NOT decompress data based on Content-Encoding header"""
+    }
 )
+add_included_source(included_source_meta)

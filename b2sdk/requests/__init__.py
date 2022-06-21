@@ -12,9 +12,7 @@
 """This file contains modified parts of the requests module (https://github.com/psf/requests, models.py), original
 Copyright 2019 Kenneth Reitz
 
-Changes made to the original source:
-requests.models.Response.iter_content has been overridden to pass `decode_content=False` argument to `self.raw.stream`
-in order to NOT decompress data based on Content-Encoding header
+Changes made to the original source: see NOTICE
 """
 
 from requests import Response, ConnectionError
