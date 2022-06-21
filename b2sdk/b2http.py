@@ -16,6 +16,7 @@ import socket
 
 import arrow
 import requests
+from requests.adapters import HTTPAdapter
 import time
 
 from typing import Any, Dict, Optional
@@ -25,7 +26,7 @@ from .exception import (
     B2RequestTimeout, ClockSkew, ConnectionReset, interpret_b2_error, UnknownError, UnknownHost
 )
 from .api_config import B2HttpApiConfig, DEFAULT_HTTP_API_CONFIG
-from .b2http_adapter import NotDecompressingHTTPAdapter
+from .requests import NotDecompressingResponse
 from .version import USER_AGENT
 
 logger = logging.getLogger(__name__)
@@ -486,6 +487,16 @@ class B2Http:
 
         # If the last try gets an exception, it will be raised.
         return cls._translate_errors(fcn, post_params)
+
+
+class NotDecompressingHTTPAdapter(HTTPAdapter):
+    """
+    HTTP adapter that uses :class:`b2sdk.requests.NotDecompressingResponse` instead of the default
+    :code:`requests.Response` class.
+    """
+
+    def build_response(self, req, resp):
+        return NotDecompressingResponse.from_builtin_response(super().build_response(req, resp))
 
 
 def test_http():
