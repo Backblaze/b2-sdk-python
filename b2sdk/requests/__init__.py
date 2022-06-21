@@ -22,6 +22,8 @@ from requests.exceptions import ChunkedEncodingError, ContentDecodingError, Stre
 from requests.utils import iter_slices, stream_decode_response_unicode
 from urllib3.exceptions import ProtocolError, DecodeError, ReadTimeoutError
 
+from . import included_source_meta
+
 
 class NotDecompressingResponse(Response):
     def iter_content(self, chunk_size=1, decode_unicode=False):
