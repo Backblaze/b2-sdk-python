@@ -21,7 +21,7 @@ import pytest
 
 from ..test_base import TestBase
 
-from .deps import AbstractFolder, B2Folder, LocalFolder
+from .deps import B2Folder, LocalFolder
 from .deps import BoundedQueueExecutor, zip_folders
 from .deps import LocalSyncPath, B2SyncPath
 from .deps import FileVersionInfo
@@ -451,8 +451,8 @@ class TestB2Folder(TestFolder):
 
         self.assertEqual(
             [
-                "B2SyncPath(inner/a.txt, [('a2', 2000, 'upload'), ('a1', 1000, 'upload')])",
-                "B2SyncPath(inner/b.txt, [('b2', 1999, 'upload'), ('b1', 1001, 'upload')])"
+                "B2Path(inner/a.txt, [('a2', 2000, 'upload'), ('a1', 1000, 'upload')])",
+                "B2Path(inner/b.txt, [('b2', 1999, 'upload'), ('b1', 1001, 'upload')])"
             ], [
                 str(f) for f in folder.all_files(self.reporter)
                 if f.relative_path in ('inner/a.txt', 'inner/b.txt')
@@ -465,7 +465,7 @@ class TestB2Folder(TestFolder):
         )
         folder = self.prepare_folder(use_file_versions_info=True)
         self.assertEqual(
-            ["B2SyncPath(inner/b.txt, [('b2', 1999, 'upload'), ('b1', 1001, 'upload')])"], [
+            ["B2Path(inner/b.txt, [('b2', 1999, 'upload'), ('b1', 1001, 'upload')])"], [
                 str(f) for f in folder.all_files(self.reporter, policies_manager=polices_manager)
                 if f.relative_path in ('inner/a.txt', 'inner/b.txt')
             ]

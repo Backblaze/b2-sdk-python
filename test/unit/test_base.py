@@ -8,13 +8,16 @@
 #
 ######################################################################
 
-from contextlib import contextmanager
-from typing import List, Optional
 import re
 import unittest
 
+from contextlib import contextmanager
+from typing import List, Optional
+
 import apiver_deps
+
 from apiver_deps import B2Api
+
 from b2sdk.v2 import FullApplicationKey
 
 

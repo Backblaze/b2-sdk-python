@@ -122,9 +122,9 @@ def make_folder_sync_actions(
     folder to the source folder.
 
     :param source_folder: source folder object
-    :type source_folder: b2sdk.sync.folder.AbstractFolder
+    :type source_folder: b2sdk.scan.folder.AbstractFolder
     :param dest_folder: destination folder object
-    :type dest_folder: b2sdk.sync.folder.AbstractFolder
+    :type dest_folder: b2sdk.scan.folder.AbstractFolder
     :param args: an object which holds command line arguments
     :param now_millis: current time in milliseconds
     :type now_millis: int
@@ -175,9 +175,9 @@ def sync_folders(
     in the destination older than history_days.
 
     :param source_folder: source folder object
-    :type source_folder: b2sdk.sync.folder.AbstractFolder
+    :type source_folder: b2sdk.scan.folder.AbstractFolder
     :param dest_folder: destination folder object
-    :type dest_folder: b2sdk.sync.folder.AbstractFolder
+    :type dest_folder: b2sdk.scan.folder.AbstractFolder
     :param args: an object which holds command line arguments
     :param now_millis: current time in milliseconds
     :type now_millis: int

@@ -968,13 +968,13 @@ class BucketSimulator:
 
     def upload_file(
         self,
-        upload_id,
-        upload_auth_token,
-        file_name,
-        content_length,
-        content_type,
-        content_sha1,
-        file_infos,
+        upload_id: str,
+        upload_auth_token: str,
+        file_name: str,
+        content_length: int,
+        content_type: str,
+        content_sha1: str,
+        file_infos: dict,
         data_stream,
         server_side_encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
@@ -1728,15 +1728,47 @@ class RawSimulator(AbstractRawApi):
             replication=replication,
         )
 
+    @classmethod
+    def get_upload_file_headers(
+        cls,
+        upload_auth_token: str,
+        file_name: str,
+        content_length: int,
+        content_type: str,
+        content_sha1: str,
+        file_infos: dict,
+        server_side_encryption: Optional[EncryptionSetting],
+        file_retention: Optional[FileRetentionSetting],
+        legal_hold: Optional[LegalHold],
+    ) -> dict:
+
+        # fix to allow calculating headers on unknown key - only for simulation
+        if server_side_encryption is not None \
+           and server_side_encryption.mode == EncryptionMode.SSE_C \
+           and server_side_encryption.key.secret is None:
+            server_side_encryption.key.secret = b'secret'
+
+        return super().get_upload_file_headers(
+            upload_auth_token=upload_auth_token,
+            file_name=file_name,
+            content_length=content_length,
+            content_type=content_type,
+            content_sha1=content_sha1,
+            file_infos=file_infos,
+            server_side_encryption=server_side_encryption,
+            file_retention=file_retention,
+            legal_hold=legal_hold,
+        )
+
     def upload_file(
         self,
-        upload_url,
-        upload_auth_token,
-        file_name,
-        content_length,
-        content_type,
-        content_sha1,
-        file_infos,
+        upload_url: str,
+        upload_auth_token: str,
+        file_name: str,
+        content_length: int,
+        content_type: str,
+        content_sha1: str,
+        file_infos: dict,
         data_stream,
         server_side_encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
@@ -1758,6 +1790,21 @@ class RawSimulator(AbstractRawApi):
                     EncryptionMode.NONE, EncryptionMode.SSE_B2, EncryptionMode.SSE_C
                 )
                 file_infos = server_side_encryption.add_key_id_to_file_info(file_infos)
+
+            # we don't really need headers further on
+            # but we still simulate their calculation
+            _ = self.get_upload_file_headers(
+                upload_auth_token=upload_auth_token,
+                file_name=file_name,
+                content_length=content_length,
+                content_type=content_type,
+                content_sha1=content_sha1,
+                file_infos=file_infos,
+                server_side_encryption=server_side_encryption,
+                file_retention=file_retention,
+                legal_hold=legal_hold,
+            )
+
             response = bucket.upload_file(
                 upload_id,
                 upload_auth_token,

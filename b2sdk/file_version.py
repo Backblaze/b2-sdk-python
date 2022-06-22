@@ -199,6 +199,10 @@ class FileVersion(BaseFileVersion):
         'action',
     ]
 
+    # defined at https://www.backblaze.com/b2/docs/files.html#httpHeaderSizeLimit
+    DEFAULT_HEADERS_LIMIT = 7000
+    ADVANCED_HEADERS_LIMIT = 2048
+
     def __init__(
         self,
         api: 'B2Api',
@@ -281,6 +285,41 @@ class FileVersion(BaseFileVersion):
             range_=range_,
             encryption=encryption,
         )
+
+    def _get_upload_headers(self) -> bytes:
+        """
+        Return encoded http headers, as when sending an upload request to b2 http api.
+        WARNING: the headers do not contain newlines between headers and spaces between
+        key and value. This implementation is in par with ADVANCED_HEADERS_LIMIT
+        and is reasonable only for `has_large_header` method
+        """
+        headers = self.api.raw_api.get_upload_file_headers(
+            upload_auth_token=self.api.account_info.get_account_auth_token(),
+            file_name=self.file_name,
+            content_length=self.size,
+            content_type=self.content_type,
+            content_sha1=self.content_sha1,
+            file_infos=self.file_info,
+            server_side_encryption=self.server_side_encryption,
+            file_retention=self.file_retention,
+            legal_hold=self.legal_hold,
+        )
+
+        headers_str = ''.join(
+            f'{key}{value}' for key, value in headers.items() if value is not None
+        )
+        return headers_str.encode('utf8')
+
+    @property
+    def has_large_header(self) -> bool:
+        """
+        Determine whether FileVersion's info fits header size limit defined by B2.
+        This function makes sense only for "advanced" buckets, i.e. those which
+        have Server-Side Encryption or File Lock enabled.
+
+        See https://www.backblaze.com/b2/docs/files.html#httpHeaderSizeLimit.
+        """
+        return len(self._get_upload_headers()) > self.ADVANCED_HEADERS_LIMIT
 
 
 class DownloadVersion(BaseFileVersion):

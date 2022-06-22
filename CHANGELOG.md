@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+As in version 1.16.0, the replication API may still be unstable in this release,
+though no known major changes to it are planned at this point. Early adopters may find it
+feasible to rely this implementation already.
+
 ### Added
 * Add included_sources module, for keeping track of included modified third-party libraries
 * Add `include_existing_files` parameter to `ReplicationSetupHelper`
@@ -16,6 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Change the per part retry limit from 5 to 20 for data transfer operations. Please note that the retry system is not considered to be a part of the public interface and is subject to be adjusted
 * Do not wait more than 64 seconds between retry attempts (unless server asks for it)
 * On longer failures wait an additional (random, up to 1s) amount of time to prevent client synchronization
+* Flatten `ReplicationConfiguration` interface
+* Reorder actions of `ReplicationSetupHelper` to avoid zombie rules
 
 ### Fixed
 * Fix: downloading compressed files and decompressing them on the fly now does not cause a TruncatedOutput error
@@ -26,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Infrastructure
 * Add 3.11.0-beta.1 to CI
 * Change Sphinx major version from 5 to 6
+* Extract folder/bucket scanning into a new `scan` module
 * Enable pip cache in CI
 
 ## [1.16.0] - 2022-04-27
@@ -109,7 +116,7 @@ Expect substantial amount of work on sdk interface:
 
 ### Changed
 * The `importlib-metadata` requirement is less strictly bound now (just >=3.3.0 for python > 3.5).
-* `B2Api` `update_file_legal_hold` and `update_file_retention_setting` now return the set values 
+* `B2Api` `update_file_legal_hold` and `update_file_retention_setting` now return the set values
 
 ### Added
 * `BucketIdNotFound` thrown based on B2 cloud response
@@ -125,7 +132,7 @@ Expect substantial amount of work on sdk interface:
 ## [1.11.0] - 2021-06-24
 
 ### Changed
-* apiver `v2` interface released. `from b2sdk.v2 import ...` is now the recommended import, 
+* apiver `v2` interface released. `from b2sdk.v2 import ...` is now the recommended import,
   but `from b2sdk.v1 import ...` works as before
 
 ## [1.10.0] - 2021-06-23
@@ -151,7 +158,7 @@ Expect substantial amount of work on sdk interface:
 * Old buckets (from past tests) are cleaned up before running integration tests in a single thread
 
 ### Removed
-* Remove deprecated `SyncReport` methods 
+* Remove deprecated `SyncReport` methods
 
 ## [1.9.0] - 2021-06-07
 
@@ -166,7 +173,7 @@ Expect substantial amount of work on sdk interface:
 * `B2Api` unittests for v0, v1 and v2 are now common
 * `B2Api.cancel_large_file` returns a `FileIdAndName` object instead of a `FileVersion` object in v2
 * `FileVersion` has a mandatory `api` parameter in v2
-* `B2Folder` holds a handle to B2Api 
+* `B2Folder` holds a handle to B2Api
 * `Bucket` unit tests for v1 and v2 are now common
 
 ### Fixed
@@ -195,7 +202,7 @@ Expect substantial amount of work on sdk interface:
 * Encryption settings, types and providers are now part of the public API
 
 ### Removed
-* Remove `Bucket.copy_file` and `Bucket.start_large_file` 
+* Remove `Bucket.copy_file` and `Bucket.start_large_file`
 * Remove `FileVersionInfo.format_ls_entry` and `FileVersionInfo.format_folder_ls_entry`
 
 ## [1.7.0] - 2021-04-22

@@ -71,14 +71,14 @@ from b2sdk.exception import SSECKeyIdMismatchInCopy
 from b2sdk.exception import SSECKeyError
 from b2sdk.exception import WrongEncryptionModeForBucketDefault
 from b2sdk.exception import interpret_b2_error
-from b2sdk.sync.exception import EmptyDirectory
-from b2sdk.sync.exception import EnvironmentEncodingError
 from b2sdk.sync.exception import IncompleteSync
-from b2sdk.sync.exception import InvalidArgument
-from b2sdk.sync.exception import NotADirectory
-from b2sdk.sync.exception import UnableToCreateDirectory
-from b2sdk.sync.exception import UnSyncableFilename
-from b2sdk.sync.exception import check_invalid_argument
+from b2sdk.scan.exception import UnableToCreateDirectory
+from b2sdk.scan.exception import EmptyDirectory
+from b2sdk.scan.exception import EnvironmentEncodingError
+from b2sdk.scan.exception import InvalidArgument
+from b2sdk.scan.exception import NotADirectory
+from b2sdk.scan.exception import UnsupportedFilename
+from b2sdk.scan.exception import check_invalid_argument
 
 __all__ = (
     'AccessDenied',
@@ -144,7 +144,7 @@ __all__ = (
     'UnknownHost',
     'UnrecognizedBucketType',
     'UnableToCreateDirectory',
-    'UnSyncableFilename',
+    'UnsupportedFilename',
     'UnsatisfiableRange',
     'UnusableFileName',
     'interpret_b2_error',

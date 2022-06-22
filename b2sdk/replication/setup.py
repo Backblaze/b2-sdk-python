@@ -26,7 +26,7 @@ from b2sdk.api import B2Api
 from b2sdk.application_key import ApplicationKey
 from b2sdk.bucket import Bucket
 from b2sdk.utils import B2TraceMeta
-from b2sdk.replication.setting import ReplicationConfiguration, ReplicationDestinationConfiguration, ReplicationRule, ReplicationSourceConfiguration
+from b2sdk.replication.setting import ReplicationConfiguration, ReplicationRule
 
 logger = logging.getLogger(__name__)
 
@@ -66,18 +66,28 @@ class ReplicationSetupHelper(metaclass=B2TraceMeta):
         include_existing_files: bool = False,
     ) -> Tuple[Bucket, Bucket]:
 
+        # setup source key
+        source_key = self._get_source_key(
+            source_bucket,
+            prefix,
+            source_bucket.replication,
+        )
+
+        # setup destination
+        new_destination_bucket = self.setup_destination(
+            source_key.id_,
+            destination_bucket,
+        )
+
+        # setup source
         new_source_bucket = self.setup_source(
             source_bucket,
+            source_key,
             destination_bucket,
             prefix,
             name,
             priority,
             include_existing_files,
-        )
-
-        new_destination_bucket = self.setup_destination(
-            new_source_bucket.replication.as_replication_source.source_application_key_id,
-            destination_bucket,
         )
 
         return new_source_bucket, new_destination_bucket
@@ -88,28 +98,26 @@ class ReplicationSetupHelper(metaclass=B2TraceMeta):
         destination_bucket: Bucket,
     ) -> Bucket:
         api: B2Api = destination_bucket.api
-        if destination_bucket.replication is None or destination_bucket.replication.as_replication_source is None:
-            source_configuration = None
-        else:
-            source_configuration = destination_bucket.replication.as_replication_source
 
-        if destination_bucket.replication is None or destination_bucket.replication.as_replication_destination is None:
-            destination_configuration = ReplicationDestinationConfiguration({})
-        else:
-            destination_configuration = destination_bucket.replication.as_replication_destination
+        # yapf: disable
+        source_configuration = destination_bucket.replication.get_source_configuration_as_dict(
+        ) if destination_bucket.replication else {}
+
+        destination_configuration = destination_bucket.replication.get_destination_configuration_as_dict(
+        ) if destination_bucket.replication else {'source_to_destination_key_mapping': {}}
 
         keys_to_purge, destination_key = self._get_destination_key(
             api,
             destination_bucket,
-            destination_configuration,
         )
+        # note: no clean up of keys_to_purge is actually done
 
-        destination_configuration.source_to_destination_key_mapping[source_key_id
-                                                                   ] = destination_key.id_
+        destination_configuration['source_to_destination_key_mapping'][source_key_id] = destination_key.id_
         new_replication_configuration = ReplicationConfiguration(
-            source_configuration,
-            destination_configuration,
+            **source_configuration,
+            **destination_configuration,
         )
+        # yapf: enable
         return destination_bucket.update(
             if_revision_is=destination_bucket.revision,
             replication=new_replication_configuration,
@@ -120,11 +128,12 @@ class ReplicationSetupHelper(metaclass=B2TraceMeta):
         cls,
         api: B2Api,
         destination_bucket: Bucket,
-        destination_configuration: ReplicationDestinationConfiguration,
     ):
         keys_to_purge = []
-        current_destination_key_ids = destination_configuration.source_to_destination_key_mapping.values(
-        )
+        if destination_bucket.replication is not None:
+            current_destination_key_ids = destination_bucket.replication.source_to_destination_key_mapping.values()  # yapf: disable
+        else:
+            current_destination_key_ids = []
         key = None
         for current_destination_key_id in current_destination_key_ids:
             # potential inefficiency here as we are fetching keys one by one, however
@@ -158,6 +167,7 @@ class ReplicationSetupHelper(metaclass=B2TraceMeta):
     def setup_source(
         self,
         source_bucket: Bucket,
+        source_key: ApplicationKey,
         destination_bucket: Bucket,
         prefix: Optional[str] = None,
         name: Optional[str] = None,  #: name for the new replication rule
@@ -167,21 +177,14 @@ class ReplicationSetupHelper(metaclass=B2TraceMeta):
         if prefix is None:
             prefix = ""
 
-        try:
-            current_source_rules = source_bucket.replication.as_replication_source.rules
-        except (NameError, AttributeError):
+        if source_bucket.replication:
+            current_source_rules = source_bucket.replication.rules
+            destination_configuration = source_bucket.replication.get_destination_configuration_as_dict(
+            )
+        else:
             current_source_rules = []
-        try:
-            destination_configuration = source_bucket.replication.as_replication_destination
-        except (NameError, AttributeError):
-            destination_configuration = None
+            destination_configuration = {}
 
-        source_key = self._get_source_key(
-            source_bucket,
-            prefix,
-            source_bucket.replication,
-            current_source_rules,
-        )
         priority = self._get_priority_for_new_rule(
             current_source_rules,
             priority,
@@ -199,11 +202,9 @@ class ReplicationSetupHelper(metaclass=B2TraceMeta):
             include_existing_files=include_existing_files,
         )
         new_replication_configuration = ReplicationConfiguration(
-            ReplicationSourceConfiguration(
-                source_application_key_id=source_key.id_,
-                rules=current_source_rules + [new_rr],
-            ),
-            destination_configuration,
+            source_key_id=source_key.id_,
+            rules=current_source_rules + [new_rr],
+            **destination_configuration,
         )
         return source_bucket.update(
             if_revision_is=source_bucket.revision,
@@ -216,19 +217,17 @@ class ReplicationSetupHelper(metaclass=B2TraceMeta):
         source_bucket: Bucket,
         prefix: str,
         current_replication_configuration: ReplicationConfiguration,
-        current_source_rules: Iterable[ReplicationRule],
     ) -> ApplicationKey:
         api = source_bucket.api
 
-        current_source_key = api.get_key(
-            current_replication_configuration.as_replication_source.source_application_key_id
-        )
-        do_create_key = cls._should_make_new_source_key(
-            current_replication_configuration,
-            current_source_key,
-        )
-        if not do_create_key:
-            return current_source_key
+        if current_replication_configuration is not None:
+            current_source_key = api.get_key(current_replication_configuration.source_key_id)
+            do_create_key = cls._should_make_new_source_key(
+                current_replication_configuration,
+                current_source_key,
+            )
+            if not do_create_key:
+                return current_source_key
 
         new_key = cls._create_source_key(
             name=source_bucket.name[:91] + '-replisrc',
@@ -243,14 +242,14 @@ class ReplicationSetupHelper(metaclass=B2TraceMeta):
         current_replication_configuration: ReplicationConfiguration,
         current_source_key: Optional[ApplicationKey],
     ) -> bool:
-        if current_replication_configuration.as_replication_source.source_application_key_id is None:
+        if current_replication_configuration.source_key_id is None:
             logger.debug('will create a new source key because no key is set')
             return True
 
         if current_source_key is None:
             logger.debug(
                 'will create a new source key because current key "%s" was deleted',
-                current_replication_configuration.as_replication_source.source_application_key_id,
+                current_replication_configuration.source_key_id,
             )
             return True
 

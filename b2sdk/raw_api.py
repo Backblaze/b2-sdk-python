@@ -303,6 +303,42 @@ class AbstractRawApi(metaclass=ABCMeta):
     ):
         pass
 
+    @classmethod
+    def get_upload_file_headers(
+        cls,
+        upload_auth_token: str,
+        file_name: str,
+        content_length: int,
+        content_type: str,
+        content_sha1: str,
+        file_infos: dict,
+        server_side_encryption: Optional[EncryptionSetting],
+        file_retention: Optional[FileRetentionSetting],
+        legal_hold: Optional[LegalHold],
+    ) -> dict:
+        headers = {
+            'Authorization': upload_auth_token,
+            'Content-Length': str(content_length),
+            'X-Bz-File-Name': b2_url_encode(file_name),
+            'Content-Type': content_type,
+            'X-Bz-Content-Sha1': content_sha1,
+        }
+        for k, v in file_infos.items():
+            headers[FILE_INFO_HEADER_PREFIX + k] = b2_url_encode(v)
+        if server_side_encryption is not None:
+            assert server_side_encryption.mode in (
+                EncryptionMode.NONE, EncryptionMode.SSE_B2, EncryptionMode.SSE_C
+            )
+            server_side_encryption.add_to_upload_headers(headers)
+
+        if legal_hold is not None:
+            legal_hold.add_to_upload_headers(headers)
+
+        if file_retention is not None:
+            file_retention.add_to_to_upload_headers(headers)
+
+        return headers
+
     @abstractmethod
     def upload_file(
         self,
@@ -857,27 +893,17 @@ class B2RawHTTPApi(AbstractRawApi):
         """
         # Raise UnusableFileName if the file_name doesn't meet the rules.
         self.check_b2_filename(file_name)
-        headers = {
-            'Authorization': upload_auth_token,
-            'Content-Length': str(content_length),
-            'X-Bz-File-Name': b2_url_encode(file_name),
-            'Content-Type': content_type,
-            'X-Bz-Content-Sha1': content_sha1,
-        }
-        for k, v in file_infos.items():
-            headers[FILE_INFO_HEADER_PREFIX + k] = b2_url_encode(v)
-        if server_side_encryption is not None:
-            assert server_side_encryption.mode in (
-                EncryptionMode.NONE, EncryptionMode.SSE_B2, EncryptionMode.SSE_C
-            )
-            server_side_encryption.add_to_upload_headers(headers)
-
-        if legal_hold is not None:
-            legal_hold.add_to_upload_headers(headers)
-
-        if file_retention is not None:
-            file_retention.add_to_to_upload_headers(headers)
-
+        headers = self.get_upload_file_headers(
+            upload_auth_token=upload_auth_token,
+            file_name=file_name,
+            content_length=content_length,
+            content_type=content_type,
+            content_sha1=content_sha1,
+            file_infos=file_infos,
+            server_side_encryption=server_side_encryption,
+            file_retention=file_retention,
+            legal_hold=legal_hold,
+        )
         return self.b2_http.post_content_return_json(upload_url, headers, data_stream)
 
     def upload_part(

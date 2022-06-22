@@ -28,7 +28,7 @@ Synchronization
 .. code-block:: python
 
     >>> from b2sdk.v2 import ScanPoliciesManager
-    >>> from b2sdk.v2 import parse_sync_folder
+    >>> from b2sdk.v2 import parse_folder
     >>> from b2sdk.v2 import Synchronizer
     >>> from b2sdk.v2 import SyncReport
     >>> import time
@@ -37,8 +37,8 @@ Synchronization
     >>> source = '/home/user1/b2_example'
     >>> destination = 'b2://example-mybucket-b2'
 
-    >>> source = parse_sync_folder(source, b2_api)
-    >>> destination = parse_sync_folder(destination, b2_api)
+    >>> source = parse_folder(source, b2_api)
+    >>> destination = parse_folder(destination, b2_api)
 
     >>> policies_manager = ScanPoliciesManager(exclude_all_symlinks=True)
 

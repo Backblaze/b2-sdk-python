@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: b2sdk/sync/path.py
+# File: b2sdk/scan/path.py
 #
 # Copyright 2021 Backblaze Inc. All Rights Reserved.
 #
@@ -14,7 +14,7 @@ from typing import List
 from ..file_version import FileVersion
 
 
-class AbstractSyncPath(ABC):
+class AbstractPath(ABC):
     """
     Represent a path in a source or destination folder - be it B2 or local
     """
@@ -34,7 +34,7 @@ class AbstractSyncPath(ABC):
         )
 
 
-class LocalSyncPath(AbstractSyncPath):
+class LocalPath(AbstractPath):
     __slots__ = ['absolute_path', 'relative_path', 'mod_time', 'size']
 
     def __init__(self, absolute_path: str, relative_path: str, mod_time: int, size: int):
@@ -52,7 +52,7 @@ class LocalSyncPath(AbstractSyncPath):
         )
 
 
-class B2SyncPath(AbstractSyncPath):
+class B2Path(AbstractPath):
     __slots__ = ['relative_path', 'selected_version', 'all_versions']
 
     def __init__(
