@@ -16,5 +16,5 @@ from b2sdk.requests.included_source_meta import included_source_meta
 
 
 def test_requests_notice_file():
-    with (pathlib.Path(requests.__file__) / '..' / 'NOTICE').open('r') as notice_file:
+    with (pathlib.Path(requests.__file__).parent / 'NOTICE').open('r') as notice_file:
         assert notice_file.read() == included_source_meta.files['NOTICE']

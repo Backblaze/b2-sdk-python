@@ -49,7 +49,6 @@ Internal API
    api/internal/session
    api/internal/raw_api
    api/internal/b2http
-   api/internal/b2http_adapter
    api/internal/requests
    api/internal/utils
    api/internal/cache
