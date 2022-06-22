@@ -6,17 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-As in version 1.16.0, the replication API may still be unstable in this release,
-though no known major changes to it are planned at this point. Early adopters may find it
-feasible to rely this implementation already.
+## [1.17.0] - 2022-06-23
+
+As in version 1.16.0, the replication API may still be unstable, however
+no backward-incompatible changes are planned at this point.
 
 ### Added
-* Add included_sources module, for keeping track of included modified third-party libraries
+* Add `included_sources` module for keeping track of included modified third-party libraries
 * Add `include_existing_files` parameter to `ReplicationSetupHelper`
 
 ### Changed
-* Downloading compressed files with `Content-Encoding` header set no longer causes them to be decompressed on the fly - 
-  it's an option
+* Downloading compressed files with `Content-Encoding` header set no longer causes them to be decompressed on the fly - it's an option
 * Change the per part retry limit from 5 to 20 for data transfer operations. Please note that the retry system is not considered to be a part of the public interface and is subject to be adjusted
 * Do not wait more than 64 seconds between retry attempts (unless server asks for it)
 * On longer failures wait an additional (random, up to 1s) amount of time to prevent client synchronization
@@ -356,7 +356,9 @@ has changed.
 ### Added
 Initial official release of SDK as a separate package (until now it was a part of B2 CLI)
 
-[Unreleased]: https://github.com/Backblaze/b2-sdk-python/compare/v1.15.0...HEAD
+[Unreleased]: https://github.com/Backblaze/b2-sdk-python/compare/v1.17.0...HEAD
+[1.17.0]: https://github.com/Backblaze/b2-sdk-python/compare/v1.16.0...v1.17.0
+[1.16.0]: https://github.com/Backblaze/b2-sdk-python/compare/v1.15.0...v1.16.0
 [1.15.0]: https://github.com/Backblaze/b2-sdk-python/compare/v1.14.1...v1.15.0
 [1.14.1]: https://github.com/Backblaze/b2-sdk-python/compare/v1.14.0...v1.14.1
 [1.14.0]: https://github.com/Backblaze/b2-sdk-python/compare/v1.13.0...v1.14.0
