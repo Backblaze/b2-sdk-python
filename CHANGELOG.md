@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.17.1] - 2022-06-23
+
+### Fixed
+* Fix importing scan module
+
 ## [1.17.0] - 2022-06-23
 
 As in version 1.16.0, the replication API may still be unstable, however
@@ -356,7 +361,8 @@ has changed.
 ### Added
 Initial official release of SDK as a separate package (until now it was a part of B2 CLI)
 
-[Unreleased]: https://github.com/Backblaze/b2-sdk-python/compare/v1.17.0...HEAD
+[Unreleased]: https://github.com/Backblaze/b2-sdk-python/compare/v1.17.1...HEAD
+[1.17.1]: https://github.com/Backblaze/b2-sdk-python/compare/v1.17.0...v1.17.1
 [1.17.0]: https://github.com/Backblaze/b2-sdk-python/compare/v1.16.0...v1.17.0
 [1.16.0]: https://github.com/Backblaze/b2-sdk-python/compare/v1.15.0...v1.16.0
 [1.15.0]: https://github.com/Backblaze/b2-sdk-python/compare/v1.14.1...v1.15.0
