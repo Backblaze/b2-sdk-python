@@ -222,6 +222,7 @@ from b2sdk.replication.monitoring import ReplicationMonitor
 
 # other
 
+from b2sdk.included_sources import get_included_sources
 from b2sdk.b2http import B2Http
 from b2sdk.api_config import B2HttpApiConfig
 from b2sdk.api_config import DEFAULT_HTTP_API_CONFIG

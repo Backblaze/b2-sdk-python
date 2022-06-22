@@ -11,20 +11,26 @@ though no known major changes to it are planned at this point. Early adopters ma
 feasible to rely this implementation already.
 
 ### Added
+* Add included_sources module, for keeping track of included modified third-party libraries
 * Add `include_existing_files` parameter to `ReplicationSetupHelper`
 
 ### Changed
+* Change the per part retry limit from 5 to 20 for data transfer operations. Please note that the retry system is not considered to be a part of the public interface and is subject to be adjusted
+* Do not wait more than 64 seconds between retry attempts (unless server asks for it)
+* On longer failures wait an additional (random, up to 1s) amount of time to prevent client synchronization
+* Flatten `ReplicationConfiguration` interface
 * Reorder actions of `ReplicationSetupHelper` to avoid zombie rules
 
 ### Fixed
 * Fix `AccountInfo.is_master_key()`
 * Fix docstring of `SqliteAccountInfo`
+* Fix lifecycle rule type in the docs
 
 ### Infrastructure
 * Add 3.11.0-beta.1 to CI
 * Change Sphinx major version from 5 to 6
-* Extracted folder/bucket scanning into a new `scan` module
-* The interface of `ReplicationConfiguration` was flattened
+* Extract folder/bucket scanning into a new `scan` module
+* Enable pip cache in CI
 
 ## [1.16.0] - 2022-04-27
 
