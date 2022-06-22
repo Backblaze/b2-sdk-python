@@ -66,18 +66,28 @@ class ReplicationSetupHelper(metaclass=B2TraceMeta):
         include_existing_files: bool = False,
     ) -> Tuple[Bucket, Bucket]:
 
+        # setup source key
+        source_key = self._get_source_key(
+            source_bucket,
+            prefix,
+            source_bucket.replication,
+        )
+
+        # setup destination
+        new_destination_bucket = self.setup_destination(
+            source_key.id_,
+            destination_bucket,
+        )
+
+        # setup source
         new_source_bucket = self.setup_source(
             source_bucket,
+            source_key,
             destination_bucket,
             prefix,
             name,
             priority,
             include_existing_files,
-        )
-
-        new_destination_bucket = self.setup_destination(
-            new_source_bucket.replication.source_key_id,
-            destination_bucket,
         )
 
         return new_source_bucket, new_destination_bucket
@@ -89,24 +99,25 @@ class ReplicationSetupHelper(metaclass=B2TraceMeta):
     ) -> Bucket:
         api: B2Api = destination_bucket.api
 
+        # yapf: disable
         source_configuration = destination_bucket.replication.get_source_configuration_as_dict(
         ) if destination_bucket.replication else {}
 
         destination_configuration = destination_bucket.replication.get_destination_configuration_as_dict(
-        ) if destination_bucket.replication else {}
+        ) if destination_bucket.replication else {'source_to_destination_key_mapping': {}}
 
         keys_to_purge, destination_key = self._get_destination_key(
             api,
             destination_bucket,
-            destination_configuration,
         )
+        # note: no clean up of keys_to_purge is actually done
 
-        destination_configuration['source_to_destination_key_mapping'][source_key_id
-                                                                      ] = destination_key.id_
+        destination_configuration['source_to_destination_key_mapping'][source_key_id] = destination_key.id_
         new_replication_configuration = ReplicationConfiguration(
             **source_configuration,
             **destination_configuration,
         )
+        # yapf: enable
         return destination_bucket.update(
             if_revision_is=destination_bucket.revision,
             replication=new_replication_configuration,
@@ -117,11 +128,12 @@ class ReplicationSetupHelper(metaclass=B2TraceMeta):
         cls,
         api: B2Api,
         destination_bucket: Bucket,
-        destination_configuration: dict,
     ):
         keys_to_purge = []
-        current_destination_key_ids = destination_configuration['source_to_destination_key_mapping'
-                                                               ].values()
+        if destination_bucket.replication is not None:
+            current_destination_key_ids = destination_bucket.replication.source_to_destination_key_mapping.values()  # yapf: disable
+        else:
+            current_destination_key_ids = []
         key = None
         for current_destination_key_id in current_destination_key_ids:
             # potential inefficiency here as we are fetching keys one by one, however
@@ -155,6 +167,7 @@ class ReplicationSetupHelper(metaclass=B2TraceMeta):
     def setup_source(
         self,
         source_bucket: Bucket,
+        source_key: ApplicationKey,
         destination_bucket: Bucket,
         prefix: Optional[str] = None,
         name: Optional[str] = None,  #: name for the new replication rule
@@ -172,12 +185,6 @@ class ReplicationSetupHelper(metaclass=B2TraceMeta):
             current_source_rules = []
             destination_configuration = {}
 
-        source_key = self._get_source_key(
-            source_bucket,
-            prefix,
-            source_bucket.replication,
-            current_source_rules,
-        )
         priority = self._get_priority_for_new_rule(
             current_source_rules,
             priority,
@@ -210,7 +217,6 @@ class ReplicationSetupHelper(metaclass=B2TraceMeta):
         source_bucket: Bucket,
         prefix: str,
         current_replication_configuration: ReplicationConfiguration,
-        current_source_rules: Iterable[ReplicationRule],
     ) -> ApplicationKey:
         api = source_bucket.api
 

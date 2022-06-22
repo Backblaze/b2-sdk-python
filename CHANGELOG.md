@@ -6,8 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+As in version 1.16.0, the replication API may still be unstable in this release,
+though no known major changes to it are planned at this point. Early adopters may find it
+feasible to rely this implementation already.
+
 ### Added
 * Add `include_existing_files` parameter to `ReplicationSetupHelper`
+
+### Changed
+* Reorder actions of `ReplicationSetupHelper` to avoid zombie rules
 
 ### Fixed
 * Fix `AccountInfo.is_master_key()`
