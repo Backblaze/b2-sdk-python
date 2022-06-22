@@ -108,6 +108,8 @@ class DownloadedFile:
         self.check_hash = check_hash
 
     def _validate_download(self, bytes_read, actual_sha1):
+        if self.download_version.content_encoding is not None and self.download_version.api.api_config.decode_content:
+            return
         if self.range_ is None:
             if bytes_read != self.download_version.content_length:
                 raise TruncatedOutput(bytes_read, self.download_version.content_length)

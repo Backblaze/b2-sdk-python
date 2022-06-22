@@ -49,6 +49,7 @@ Internal API
    api/internal/session
    api/internal/raw_api
    api/internal/b2http
+   api/internal/requests
    api/internal/utils
    api/internal/cache
    api/internal/stream/chained

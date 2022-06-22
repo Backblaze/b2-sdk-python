@@ -8,17 +8,15 @@
 #
 ######################################################################
 
+import gzip
 import io
 import pathlib
 from unittest import mock
 
-import pytest
-
 from b2sdk.v2 import *
 
-from .bucket_cleaner import BucketCleaner
 from .fixtures import *  # pyflakes: disable
-from .helpers import GENERAL_BUCKET_NAME_PREFIX
+from .helpers import authorize
 from .base import IntegrationTestBase
 
 
@@ -79,3 +77,35 @@ class TestDownload(IntegrationTestBase):
         bucket = self.create_bucket()
         f = self._file_helper(bucket, sha1_sum='do_not_verify')
         assert not f.download_version.content_sha1_verified
+
+    def test_gzip(self):
+        bucket = self.create_bucket()
+        with TempDir() as temp_dir:
+            temp_dir = pathlib.Path(temp_dir)
+            source_file = temp_dir / 'compressed_file.gz'
+            downloaded_uncompressed_file = temp_dir / 'downloaded_uncompressed_file'
+            downloaded_compressed_file = temp_dir / 'downloaded_compressed_file'
+
+            data_to_write = b"I'm about to be compressed and sent to the cloud, yay!\n" * 100  # too short files failed somehow
+            with gzip.open(source_file, 'wb') as gzip_file:
+                gzip_file.write(data_to_write)
+            file_version = bucket.upload_local_file(
+                str(source_file), 'gzipped_file', file_infos={'b2-content-encoding': 'gzip'}
+            )
+            self.b2_api.download_file_by_id(file_id=file_version.id_).save_to(
+                str(downloaded_compressed_file)
+            )
+            with open(downloaded_compressed_file, 'rb') as dcf:
+                downloaded_data = dcf.read()
+                with open(source_file, 'rb') as sf:
+                    source_data = sf.read()
+                    assert downloaded_data == source_data
+
+            decompressing_api, _ = authorize(
+                self.b2_auth_data, B2HttpApiConfig(decode_content=True)
+            )
+            decompressing_api.download_file_by_id(file_id=file_version.id_).save_to(
+                str(downloaded_uncompressed_file)
+            )
+            with open(downloaded_uncompressed_file, 'rb') as duf:
+                assert duf.read() == data_to_write

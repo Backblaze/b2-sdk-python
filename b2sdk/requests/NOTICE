@@ -1,0 +1,7 @@
+Requests
+Copyright 2019 Kenneth Reitz
+
+Copyright 2021 Backblaze Inc.
+Changes made to the original source:
+requests.models.Response.iter_content has been overridden to pass `decode_content=False` argument to `self.raw.stream`
+in order to NOT decompress data based on Content-Encoding header

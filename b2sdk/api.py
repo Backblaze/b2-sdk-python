@@ -148,6 +148,7 @@ class B2Api(metaclass=B2TraceMeta):
         self.session = self.SESSION_CLASS(
             account_info=account_info, cache=cache, api_config=api_config
         )
+        self.api_config = api_config
         self.file_version_factory = self.FILE_VERSION_FACTORY_CLASS(self)
         self.download_version_factory = self.DOWNLOAD_VERSION_FACTORY_CLASS(self)
         self.services = self.SERVICES_CLASS(
