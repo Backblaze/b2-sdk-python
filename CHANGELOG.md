@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+* Fix a race in progress reporter
+
 ## [1.17.1] - 2022-06-23
 
 ### Fixed
