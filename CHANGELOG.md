@@ -12,12 +12,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Fix a race in progress reporter
 * Fix import of replication
 
-## [1.17.1] - 2022-06-23
+## [1.17.1] - 2022-06-23 [YANKED]
 
 ### Fixed
 * Fix importing scan module
 
-## [1.17.0] - 2022-06-23
+## [1.17.0] - 2022-06-23 [YANKED]
 
 As in version 1.16.0, the replication API may still be unstable, however
 no backward-incompatible changes are planned at this point.
