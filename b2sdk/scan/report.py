@@ -84,10 +84,9 @@ class ProgressReport:
         :type message: str
         """
         with self.lock:
-            if not self.closed:
-                self._print_line(message, True)
-                self._last_update_time = 0
-                self._update_progress()
+            self._print_line(message, True)
+            self._last_update_time = 0
+            self._update_progress()
 
     def update_count(self, delta: int):
         """
