@@ -11,6 +11,7 @@
 import gzip
 import io
 import pathlib
+from pprint import pprint
 from unittest import mock
 
 from b2sdk.v2 import *
@@ -76,7 +77,9 @@ class TestDownload(IntegrationTestBase):
     def test_small_unverified(self):
         bucket = self.create_bucket()
         f = self._file_helper(bucket, sha1_sum='do_not_verify')
-        assert not f.download_version.content_sha1_verified
+        if f.download_version.content_sha1_verified:
+            pprint(f.download_version._get_args_for_clone())
+            assert not f.download_version.content_sha1_verified
 
     def test_gzip(self):
         bucket = self.create_bucket()
