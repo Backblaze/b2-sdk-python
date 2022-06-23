@@ -166,7 +166,7 @@ def cover(session):
     session.run('coverage', 'erase')
 
 
-@nox.session(python=PYTHON_DEFAULT_VERSION)
+@nox.session(python=PYTHON_VERSIONS)
 def build(session):
     """Build the distribution."""
     # TODO: consider using wheel as well
@@ -185,6 +185,10 @@ def build(session):
 
         version = os.environ['GITHUB_REF'].replace('refs/tags/v', '')
         print('::set-output name=version::', version, sep='')
+
+    session.cd('dist')  # makes local imports impossible
+    session.run('pip', 'install', glob('b2sdk-*.tar.gz')[0])
+    session.run('python', '-c', 'from b2sdk import v0, v1, v2')
 
 
 @nox.session(python=PYTHON_DEFAULT_VERSION)
