@@ -11,47 +11,7 @@ env:
   SKIP_COVERAGE_PYTHON_VERSION_PREFIX: "pypy"
 
 jobs:
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-      - uses: codespell-project/actions-codespell@2391250ab05295bddd51e36a8c6295edb6343b0e
-        with:
-          ignore_words_list: datas
-      - name: Set up Python ${{ env.PYTHON_DEFAULT_VERSION }}
-        uses: actions/setup-python@v3
-        with:
-          python-version: ${{ env.PYTHON_DEFAULT_VERSION }}
-          cache: "pip"
-      - name: Install dependencies
-        run: python -m pip install --upgrade nox pip setuptools
-      - name: Run linters
-        run: nox -vs lint
-      - name: Validate changelog
-        if: ${{ ! startsWith(github.ref, 'refs/heads/dependabot/') }}
-        uses: zattoo/changelog@v1
-        with:
-          token: ${{ github.token }}
-  build:
-    needs: lint
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-      - name: Set up Python ${{ env.PYTHON_DEFAULT_VERSION }}
-        uses: actions/setup-python@v3
-        with:
-          python-version: ${{ env.PYTHON_DEFAULT_VERSION }}
-          cache: "pip"
-      - name: Install dependencies
-        run: python -m pip install --upgrade nox pip setuptools
-      - name: Build the distribution
-        run: nox -vs build
   cleanup_buckets:
-    needs: lint
     env:
       B2_TEST_APPLICATION_KEY: ${{ secrets.B2_TEST_APPLICATION_KEY }}
       B2_TEST_APPLICATION_KEY_ID: ${{ secrets.B2_TEST_APPLICATION_KEY_ID }}
