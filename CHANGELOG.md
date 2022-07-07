@@ -21,8 +21,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 * Fix importing scan module
+* Fix `FileVersion._get_upload_headers` when encryption key is `None`
 
-## [1.17.0] - 2022-06-23 [YANKED]
+## [1.17.0] - 2022-06-23
 
 As in version 1.16.0, the replication API may still be unstable, however
 no backward-incompatible changes are planned at this point.
