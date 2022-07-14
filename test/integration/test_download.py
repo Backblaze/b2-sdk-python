@@ -54,7 +54,9 @@ class TestDownload(IntegrationTestBase):
                     # if we are here, that's not the production server!
                     assert f.download_version.content_sha1_verified  # large files don't have sha1, lets not check
 
-    def _file_helper(self, bucket, sha1_sum=None, bytes_to_write: Optional[int] = None) -> DownloadVersion:
+    def _file_helper(
+        self, bucket, sha1_sum=None, bytes_to_write: Optional[int] = None
+    ) -> DownloadVersion:
         bytes_to_write = bytes_to_write or int(self.info.get_absolute_minimum_part_size()) * 2 + 1
         with TempDir() as temp_dir:
             temp_dir = pathlib.Path(temp_dir)
