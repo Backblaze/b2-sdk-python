@@ -17,6 +17,12 @@ class EncryptionAlgorithm(Enum):
 
     AES256 = 'AES256'
 
+    def get_length(self) -> int:
+        if self is EncryptionAlgorithm.AES256:
+            return 256
+
+        raise NotImplementedError()
+
 
 @unique
 class EncryptionMode(Enum):

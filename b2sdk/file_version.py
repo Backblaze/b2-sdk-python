@@ -318,7 +318,7 @@ class FileVersion(BaseFileVersion):
         sse = self.server_side_encryption
         if sse and sse.key and sse.key.secret is None:
             sse = deepcopy(sse)
-            sse.key.secret = b'secret'
+            sse.key.secret = b'*' * sse.algorithm.get_length()
 
         headers = self.api.raw_api.get_upload_file_headers(
             upload_auth_token=self.api.account_info.get_account_auth_token(),
