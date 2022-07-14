@@ -9,6 +9,7 @@
 ######################################################################
 
 from typing import Dict, Optional, Union, Tuple, TYPE_CHECKING
+import re
 
 from .encryption.setting import EncryptionSetting, EncryptionSettingFactory
 from .replication.types import ReplicationStatus
@@ -47,6 +48,13 @@ class BaseFileVersion:
         'mod_time_millis',
         'replication_status',
     ]
+    _TYPE_MATCHER = re.compile('[a-z0-9]+_[a-z0-9]+_f([0-9]).*')
+    _FILE_TYPE = {
+        1: 'small',
+        2: 'large',
+        3: 'part',
+        4: 'tiny',
+    }
 
     def __init__(
         self,
@@ -178,6 +186,15 @@ class BaseFileVersion:
             self.id_, self.file_name, file_retention, bypass_governance
         )
         return self._clone(file_retention=file_retention)
+
+    def _type(self):
+        """
+        FOR TEST PURPOSES ONLY
+        not guaranteed to work for perpetuity (using undocumented server behavior)
+        """
+        m = self._TYPE_MATCHER.match(self.id_)
+        assert m, self.id_
+        return self._FILE_TYPE[int(m.group(1))]
 
 
 class FileVersion(BaseFileVersion):
