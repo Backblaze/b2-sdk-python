@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Fix download integration tests on non-production environments
 * Add `B2_DEBUG_HTTP` env variable to enable network-level test debugging
 * Disable changelog validation temporarily
+* Fix `FileVersion._get_upload_headers` when encryption key is `None`
 
 ## [1.17.2] - 2022-06-24
 
@@ -21,9 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 * Fix importing scan module
-* Fix `FileVersion._get_upload_headers` when encryption key is `None`
 
-## [1.17.0] - 2022-06-23
+## [1.17.0] - 2022-06-23 [YANKED]
 
 As in version 1.16.0, the replication API may still be unstable, however
 no backward-incompatible changes are planned at this point.
