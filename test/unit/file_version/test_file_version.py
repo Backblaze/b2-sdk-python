@@ -9,7 +9,6 @@
 ######################################################################
 
 import pytest
-import os.path
 
 import apiver_deps
 from apiver_deps import B2Api
@@ -141,6 +140,34 @@ class TestFileVersion:
         assert isinstance(ret, FileIdAndName)
         with pytest.raises(FileNotPresent):
             self.bucket.get_file_info_by_name(self.file_version.file_name)
+
+    def test_file_version_upload_headers(self):
+        file_version = self.file_version._clone(
+            server_side_encryption=EncryptionSetting(
+                EncryptionMode.SSE_C,
+                EncryptionAlgorithm.AES256,
+                EncryptionKey(None, None),
+            ),
+        )
+
+        assert file_version._get_upload_headers() == """
+            Authorization: auth_token_0
+            Content-Length: 7
+            X-Bz-File-Name: test_file
+            Content-Type: b2/x-auto
+            X-Bz-Content-Sha1: 0feca720e2c29dafb2c900713ba560e03b758711
+            X-Bz-Server-Side-Encryption-Customer-Algorithm: AES256
+            X-Bz-Server-Side-Encryption-Customer-Key: KioqKioqKioqKioqKioqKioqKioqKioqKioqKioqKio=
+            X-Bz-Server-Side-Encryption-Customer-Key-Md5: SaaDheEjzuynJH8eW6AEpQ==
+            X-Bz-File-Legal-Hold: off
+            X-Bz-File-Retention-Mode: None
+            X-Bz-File-Retention-Retain-Until-Timestamp: None
+        """.strip().replace(': ', '').replace(' ', '').replace('\n', '').encode('utf8')
+
+        assert not file_version.has_large_header
+
+        file_version.file_info['dummy'] = 'a' * 2000  # make metadata > 2k bytes
+        assert file_version.has_large_header
 
     # FileVersion.download tests are not here, because another test file already has all the facilities for such test
     # prepared
