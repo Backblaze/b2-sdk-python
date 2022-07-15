@@ -6,11 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.17.3] - 2022-07-15
+
+### Fixed
+* Fix `FileVersion._get_upload_headers` when encryption key is `None`
+
 ### Infrastructure
 * Fix download integration tests on non-production environments
 * Add `B2_DEBUG_HTTP` env variable to enable network-level test debugging
 * Disable changelog validation temporarily
-* Fix `FileVersion._get_upload_headers` when encryption key is `None`
 
 ## [1.17.2] - 2022-06-24
 
@@ -373,7 +377,8 @@ has changed.
 ### Added
 Initial official release of SDK as a separate package (until now it was a part of B2 CLI)
 
-[Unreleased]: https://github.com/Backblaze/b2-sdk-python/compare/v1.17.2...HEAD
+[Unreleased]: https://github.com/Backblaze/b2-sdk-python/compare/v1.17.3...HEAD
+[1.17.3]: https://github.com/Backblaze/b2-sdk-python/compare/v1.17.2...v1.17.3
 [1.17.2]: https://github.com/Backblaze/b2-sdk-python/compare/v1.17.1...v1.17.2
 [1.17.1]: https://github.com/Backblaze/b2-sdk-python/compare/v1.17.0...v1.17.1
 [1.17.0]: https://github.com/Backblaze/b2-sdk-python/compare/v1.16.0...v1.17.0
