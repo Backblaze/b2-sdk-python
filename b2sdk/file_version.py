@@ -9,6 +9,8 @@
 ######################################################################
 
 from typing import Dict, Optional, Union, Tuple, TYPE_CHECKING
+import re
+from copy import deepcopy
 
 from .encryption.setting import EncryptionSetting, EncryptionSettingFactory
 from .replication.types import ReplicationStatus
@@ -47,6 +49,13 @@ class BaseFileVersion:
         'mod_time_millis',
         'replication_status',
     ]
+    _TYPE_MATCHER = re.compile('[a-z0-9]+_[a-z0-9]+_f([0-9]).*')
+    _FILE_TYPE = {
+        1: 'small',
+        2: 'large',
+        3: 'part',
+        4: 'tiny',
+    }
 
     def __init__(
         self,
@@ -179,6 +188,15 @@ class BaseFileVersion:
         )
         return self._clone(file_retention=file_retention)
 
+    def _type(self):
+        """
+        FOR TEST PURPOSES ONLY
+        not guaranteed to work for perpetuity (using undocumented server behavior)
+        """
+        m = self._TYPE_MATCHER.match(self.id_)
+        assert m, self.id_
+        return self._FILE_TYPE[int(m.group(1))]
+
 
 class FileVersion(BaseFileVersion):
     """
@@ -293,6 +311,15 @@ class FileVersion(BaseFileVersion):
         key and value. This implementation is in par with ADVANCED_HEADERS_LIMIT
         and is reasonable only for `has_large_header` method
         """
+
+        # sometimes secret is not available, but we want to calculate headers
+        # size anyway; to bypass this, we use a fake encryption setting
+        # with a fake key
+        sse = self.server_side_encryption
+        if sse and sse.key and sse.key.secret is None:
+            sse = deepcopy(sse)
+            sse.key.secret = b'*' * sse.algorithm.get_length()
+
         headers = self.api.raw_api.get_upload_file_headers(
             upload_auth_token=self.api.account_info.get_account_auth_token(),
             file_name=self.file_name,
@@ -300,7 +327,7 @@ class FileVersion(BaseFileVersion):
             content_type=self.content_type,
             content_sha1=self.content_sha1,
             file_infos=self.file_info,
-            server_side_encryption=self.server_side_encryption,
+            server_side_encryption=sse,
             file_retention=self.file_retention,
             legal_hold=self.legal_hold,
         )

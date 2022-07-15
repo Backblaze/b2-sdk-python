@@ -9,6 +9,8 @@
 ######################################################################
 
 from typing import Optional
+import http.client
+import os
 import random
 import string
 
@@ -21,6 +23,11 @@ from .helpers import GENERAL_BUCKET_NAME_PREFIX, BUCKET_NAME_LENGTH, BUCKET_CREA
 
 
 class IntegrationTestBase:
+    @pytest.fixture(autouse=True)
+    def set_http_debug(self):
+        if os.environ.get('B2_DEBUG_HTTP'):
+            http.client.HTTPConnection.debuglevel = 1
+
     @pytest.fixture(autouse=True)
     def save_settings(self, dont_cleanup_old_buckets, b2_auth_data):
         type(self).dont_cleanup_old_buckets = dont_cleanup_old_buckets

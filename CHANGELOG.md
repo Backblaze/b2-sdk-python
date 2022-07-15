@@ -6,8 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+
 ### Added
 * Nothing
+
+### Infrastructure
+* Fix download integration tests on non-production environments
+* Add `B2_DEBUG_HTTP` env variable to enable network-level test debugging
+* Disable changelog validation temporarily
+* Fix `FileVersion._get_upload_headers` when encryption key is `None`
 
 ## [1.17.2] - 2022-06-24
 
