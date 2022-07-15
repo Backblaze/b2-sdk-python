@@ -19,7 +19,7 @@ class EncryptionAlgorithm(Enum):
 
     def get_length(self) -> int:
         if self is EncryptionAlgorithm.AES256:
-            return 256
+            return int(256 / 8)
 
         raise NotImplementedError()
 
