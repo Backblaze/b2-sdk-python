@@ -41,7 +41,7 @@ class ReplicationScanResult(AbstractScanResult):
     # source attrs
     source_replication_status: Optional[ReplicationStatus] = None
     source_has_hide_marker: Optional[bool] = None
-    source_has_sse_c_enabled: Optional[bool] = None
+    source_encryption_mode: Optional[EncryptionMode] = None
     source_has_large_metadata: Optional[bool] = None
     source_has_file_retention: Optional[bool] = None
     source_has_legal_hold: Optional[bool] = None
@@ -69,8 +69,8 @@ class ReplicationScanResult(AbstractScanResult):
                         source_file_version.replication_status,
                     'source_has_hide_marker':
                         not source_file.is_visible(),
-                    'source_has_sse_c_enabled':
-                        source_file_version.server_side_encryption.mode == EncryptionMode.SSE_C,
+                    'source_encryption_mode':
+                        source_file_version.server_side_encryption.mode,
                     'source_has_large_metadata':
                         source_file_version.has_large_header,
                     'source_has_file_retention':
