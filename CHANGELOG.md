@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+* Fix: replace `ReplicationScanResult.source_has_sse_c_enabled` with `source_encryption_mode`
+
 ## [1.17.3] - 2022-07-15
 
 ### Fixed
