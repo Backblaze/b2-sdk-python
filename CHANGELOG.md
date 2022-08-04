@@ -6,8 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.17.4] - 2022-08-04
+
 ### Fixed
-* Fix: replace `ReplicationScanResult.source_has_sse_c_enabled` with `source_encryption_mode`
+* Replace `ReplicationScanResult.source_has_sse_c_enabled` with `source_encryption_mode`
 
 ### Infrastructure
 * Re-enable changelog validation
@@ -383,7 +385,8 @@ has changed.
 ### Added
 Initial official release of SDK as a separate package (until now it was a part of B2 CLI)
 
-[Unreleased]: https://github.com/Backblaze/b2-sdk-python/compare/v1.17.3...HEAD
+[Unreleased]: https://github.com/Backblaze/b2-sdk-python/compare/v1.17.4...HEAD
+[1.17.4]: https://github.com/Backblaze/b2-sdk-python/compare/v1.17.3...v1.17.4
 [1.17.3]: https://github.com/Backblaze/b2-sdk-python/compare/v1.17.2...v1.17.3
 [1.17.2]: https://github.com/Backblaze/b2-sdk-python/compare/v1.17.1...v1.17.2
 [1.17.1]: https://github.com/Backblaze/b2-sdk-python/compare/v1.17.0...v1.17.1
