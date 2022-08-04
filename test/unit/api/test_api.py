@@ -480,3 +480,29 @@ class TestApi:
             'appKeyId9',
         ]
         assert isinstance(keys[0], ApplicationKey)
+
+    @pytest.mark.apiver(from_ver=2)
+    def test_get_key(self):
+        self._authorize_account()
+        key = self.api.create_key(['readFiles'], 'testkey')
+
+        assert self.api.get_key(key.id_) is not None
+
+        self.api.delete_key(key)
+        assert self.api.get_key(key.id_) is None
+
+        assert self.api.get_key('non-existent') is None
+
+    @pytest.mark.apiver(to_ver=1)
+    def test_get_key_old(self):
+        self._authorize_account()
+
+        key = self.api.create_key(['readFiles'], 'testkey')
+        key_id = key['applicationKeyId']
+
+        assert self.api.get_key(key_id) is not None
+
+        self.api.delete_key(key_id)
+        assert self.api.get_key(key_id) is None
+
+        assert self.api.get_key('non-existent') is None
