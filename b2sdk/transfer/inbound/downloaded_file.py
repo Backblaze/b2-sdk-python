@@ -79,6 +79,9 @@ class MtimeUpdatedFile(io.IOBase):
         self.file.close()
         set_file_mtime(self.path_, self.mod_time_to_set)
 
+    def __str__(self):
+        return str(self.path_)
+
 
 class DownloadedFile:
     """
