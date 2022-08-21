@@ -33,31 +33,47 @@ class TestDatabseMigrations:
     def test_upgrade_1_default_allowed(self):
         """The 'allowed' field should be the default for upgraded databases."""
         old_account_info = self.sqlite_account_info_factory(schema_0=True)
-        old_account_info.set_auth_data_with_schema_0_for_test(**self.account_info_default_data)
-        new_account_info = self.sqlite_account_info_factory(file_name=old_account_info.filename)
+        old_account_info.set_auth_data_with_schema_0_for_test(
+            **self.account_info_default_data
+        )
+        new_account_info = self.sqlite_account_info_factory(
+            file_name=old_account_info.filename
+        )
 
         assert AbstractAccountInfo.DEFAULT_ALLOWED == new_account_info.get_allowed()
 
     def test_upgrade_2_default_app_key(self):
         """The 'application_key_id' field should default to the account ID."""
         old_account_info = self.sqlite_account_info_factory(schema_0=True)
-        old_account_info.set_auth_data_with_schema_0_for_test(**self.account_info_default_data)
-        new_account_info = self.sqlite_account_info_factory(file_name=old_account_info.filename)
+        old_account_info.set_auth_data_with_schema_0_for_test(
+            **self.account_info_default_data
+        )
+        new_account_info = self.sqlite_account_info_factory(
+            file_name=old_account_info.filename
+        )
 
         assert 'account_id' == new_account_info.get_application_key_id()
 
     def test_upgrade_3_default_s3_api_url(self):
         """The 's3_api_url' field should be set."""
         old_account_info = self.sqlite_account_info_factory(schema_0=True)
-        old_account_info.set_auth_data_with_schema_0_for_test(**self.account_info_default_data)
-        new_account_info = self.sqlite_account_info_factory(file_name=old_account_info.filename)
+        old_account_info.set_auth_data_with_schema_0_for_test(
+            **self.account_info_default_data
+        )
+        new_account_info = self.sqlite_account_info_factory(
+            file_name=old_account_info.filename
+        )
 
         assert '' == new_account_info.get_s3_api_url()
 
     def test_migrate_to_4(self):
         old_account_info = self.sqlite_account_info_factory(schema_0=True)
-        old_account_info.set_auth_data_with_schema_0_for_test(**self.account_info_default_data)
-        new_account_info = self.sqlite_account_info_factory(file_name=old_account_info.filename)
+        old_account_info.set_auth_data_with_schema_0_for_test(
+            **self.account_info_default_data
+        )
+        new_account_info = self.sqlite_account_info_factory(
+            file_name=old_account_info.filename
+        )
 
         with new_account_info._get_connection() as conn:
             sizes = conn.execute(
@@ -78,7 +94,9 @@ class TestSqliteAccountProfileFileLocation:
 
     def test_profile_and_file_name_conflict(self):
         with pytest.raises(ValueError):
-            SqliteAccountInfo._get_user_account_info_path(file_name='foo', profile='bar')
+            SqliteAccountInfo._get_user_account_info_path(
+                file_name='foo', profile='bar'
+            )
 
     def test_profile_and_env_var_conflict(self, monkeypatch):
         monkeypatch.setenv(B2_ACCOUNT_INFO_ENV_VAR, 'foo')
@@ -87,14 +105,18 @@ class TestSqliteAccountProfileFileLocation:
 
     def test_profile_and_xdg_config_env_var(self, monkeypatch):
         monkeypatch.setenv(XDG_CONFIG_HOME_ENV_VAR, os.path.join('~', 'custom'))
-        account_info_path = SqliteAccountInfo._get_user_account_info_path(profile='secondary')
+        account_info_path = SqliteAccountInfo._get_user_account_info_path(
+            profile='secondary'
+        )
         assert account_info_path == os.path.expanduser(
             os.path.join('~', 'custom', 'b2', 'db-secondary.sqlite')
         )
 
     def test_profile(self):
         account_info_path = SqliteAccountInfo._get_user_account_info_path(profile='foo')
-        assert account_info_path == os.path.expanduser(os.path.join('~', '.b2db-foo.sqlite'))
+        assert account_info_path == os.path.expanduser(
+            os.path.join('~', '.b2db-foo.sqlite')
+        )
 
     def test_file_name(self):
         account_info_path = SqliteAccountInfo._get_user_account_info_path(

@@ -19,7 +19,12 @@ from .encryption.setting import EncryptionSetting
 from .replication.setting import ReplicationConfiguration
 from .exception import BucketIdNotFound, NonExistentBucket, RestrictedBucket
 from .file_lock import FileRetentionSetting, LegalHold
-from .file_version import DownloadVersionFactory, FileIdAndName, FileVersion, FileVersionFactory
+from .file_version import (
+    DownloadVersionFactory,
+    FileIdAndName,
+    FileVersion,
+    FileVersionFactory,
+)
 from .large_file.services import LargeFileServices
 from .raw_api import API_VERSION
 from .progress import AbstractProgressListener
@@ -50,7 +55,8 @@ def url_for_api(info, api_name):
 
 
 class Services:
-    """ Gathers objects that provide high level logic over raw api usage. """
+    """Gathers objects that provide high level logic over raw api usage."""
+
     UPLOAD_MANAGER_CLASS = staticmethod(UploadManager)
     COPY_MANAGER_CLASS = staticmethod(CopyManager)
     DOWNLOAD_MANAGER_CLASS = staticmethod(DownloadManager)
@@ -80,7 +86,9 @@ class Services:
         self.upload_manager = self.UPLOAD_MANAGER_CLASS(
             services=self, max_workers=max_upload_workers
         )
-        self.copy_manager = self.COPY_MANAGER_CLASS(services=self, max_workers=max_copy_workers)
+        self.copy_manager = self.COPY_MANAGER_CLASS(
+            services=self, max_workers=max_copy_workers
+        )
         self.download_manager = self.DOWNLOAD_MANAGER_CLASS(
             services=self,
             max_workers=max_download_workers,
@@ -110,6 +118,7 @@ class B2Api(metaclass=B2TraceMeta):
     The class also keeps a cache of information needed to access the
     service, such as auth tokens and upload URLs.
     """
+
     BUCKET_FACTORY_CLASS = staticmethod(BucketFactory)
     BUCKET_CLASS = staticmethod(Bucket)
     SESSION_CLASS = staticmethod(B2Session)
@@ -243,11 +252,15 @@ class B2Api(metaclass=B2TraceMeta):
             replication=replication,
         )
         bucket = self.BUCKET_FACTORY_CLASS.from_api_bucket_dict(self, response)
-        assert name == bucket.name, 'API created a bucket with different name\
-                                     than requested: %s != %s' % (name, bucket.name)
-        assert bucket_type == bucket.type_, 'API created a bucket with different type\
-                                             than requested: %s != %s' % (
-            bucket_type, bucket.type_
+        assert name == bucket.name, (
+            'API created a bucket with different name\
+                                     than requested: %s != %s'
+            % (name, bucket.name)
+        )
+        assert bucket_type == bucket.type_, (
+            'API created a bucket with different type\
+                                             than requested: %s != %s'
+            % (bucket_type, bucket.type_)
         )
         self.cache.save_bucket(bucket)
         return bucket
@@ -452,7 +465,9 @@ class B2Api(metaclass=B2TraceMeta):
         """
         self.check_bucket_name_restrictions(bucket_name)
         return '%s/file/%s/%s' % (
-            self.account_info.get_download_url(), bucket_name, b2_url_encode(file_name)
+            self.account_info.get_download_url(),
+            bucket_name,
+            b2_url_encode(file_name),
         )
 
     # keys
@@ -481,7 +496,7 @@ class B2Api(metaclass=B2TraceMeta):
             key_name=key_name,
             valid_duration_seconds=valid_duration_seconds,
             bucket_id=bucket_id,
-            name_prefix=name_prefix
+            name_prefix=name_prefix,
         )
 
         assert set(response['capabilities']) == set(capabilities)
@@ -508,8 +523,9 @@ class B2Api(metaclass=B2TraceMeta):
         response = self.session.delete_key(application_key_id=application_key_id)
         return ApplicationKey.from_api_response(response)
 
-    def list_keys(self, start_application_key_id: Optional[str] = None
-                 ) -> Generator[ApplicationKey, None, None]:
+    def list_keys(
+        self, start_application_key_id: Optional[str] = None
+    ) -> Generator[ApplicationKey, None, None]:
         """
         List application keys. Lazily perform requests to B2 cloud and return all keys.
 

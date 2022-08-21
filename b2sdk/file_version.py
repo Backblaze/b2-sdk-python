@@ -33,6 +33,7 @@ class BaseFileVersion:
 
     :ivar size - size of the whole file (for "upload" markers)
     """
+
     __slots__ = [
         'id_',
         'api',
@@ -77,7 +78,9 @@ class BaseFileVersion:
         self.file_name = file_name
         self.size = size
         self.content_type = content_type
-        self.content_sha1, self.content_sha1_verified = self._decode_content_sha1(content_sha1)
+        self.content_sha1, self.content_sha1_verified = self._decode_content_sha1(
+            content_sha1
+        )
         self.file_info = file_info or {}
         self.upload_timestamp = upload_timestamp
         self.server_side_encryption = server_side_encryption
@@ -93,7 +96,7 @@ class BaseFileVersion:
     @classmethod
     def _decode_content_sha1(cls, content_sha1):
         if content_sha1.startswith(UNVERIFIED_CHECKSUM_PREFIX):
-            return content_sha1[len(UNVERIFIED_CHECKSUM_PREFIX):], False
+            return content_sha1[len(UNVERIFIED_CHECKSUM_PREFIX) :], False
         return content_sha1, True
 
     @classmethod
@@ -117,7 +120,9 @@ class BaseFileVersion:
             'file_name': self.file_name,
             'size': self.size,
             'content_type': self.content_type,
-            'content_sha1': self._encode_content_sha1(self.content_sha1, self.content_sha1_verified),
+            'content_sha1': self._encode_content_sha1(
+                self.content_sha1, self.content_sha1_verified
+            ),
             'file_info': self.file_info,
             'upload_timestamp': self.upload_timestamp,
             'server_side_encryption': self.server_side_encryption,
@@ -127,7 +132,7 @@ class BaseFileVersion:
         }  # yapf: disable
 
     def as_dict(self):
-        """ represents the object as a dict which looks almost exactly like the raw api output for upload/list """
+        """represents the object as a dict which looks almost exactly like the raw api output for upload/list"""
         result = {
             'fileId': self.id_,
             'fileName': self.file_name,
@@ -147,7 +152,9 @@ class BaseFileVersion:
             result['contentSha1'] = self._encode_content_sha1(
                 self.content_sha1, self.content_sha1_verified
             )
-        result['replicationStatus'] = self.replication_status and self.replication_status.value
+        result['replicationStatus'] = (
+            self.replication_status and self.replication_status.value
+        )
 
         return result
 
@@ -161,7 +168,7 @@ class BaseFileVersion:
     def __repr__(self):
         return '%s(%s)' % (
             self.__class__.__name__,
-            ', '.join(repr(getattr(self, attr)) for attr in self._all_slots())
+            ', '.join(repr(getattr(self, attr)) for attr in self._all_slots()),
         )
 
     def _all_slots(self):
@@ -175,7 +182,9 @@ class BaseFileVersion:
         return self.api.delete_file_version(self.id_, self.file_name)
 
     def update_legal_hold(self, legal_hold: LegalHold) -> 'BaseFileVersion':
-        legal_hold = self.api.update_file_legal_hold(self.id_, self.file_name, legal_hold)
+        legal_hold = self.api.update_file_legal_hold(
+            self.id_, self.file_name, legal_hold
+        )
         return self._clone(legal_hold=legal_hold)
 
     def update_retention(
@@ -353,6 +362,7 @@ class DownloadVersion(BaseFileVersion):
     """
     A structure which represents metadata of an initialized download
     """
+
     __slots__ = [
         'range_',
         'content_disposition',
@@ -469,8 +479,9 @@ class FileVersionFactory:
         into a :py:class:`b2sdk.v2.FileVersion` object.
 
         """
-        assert file_version_dict.get('action') is None or force_action is None, \
-            'action was provided by both info_dict and function argument'
+        assert (
+            file_version_dict.get('action') is None or force_action is None
+        ), 'action was provided by both info_dict and function argument'
         action = file_version_dict.get('action') or force_action
         file_name = file_version_dict['fileName']
         id_ = file_version_dict['fileId']
@@ -485,14 +496,18 @@ class FileVersionFactory:
         content_sha1 = file_version_dict.get('contentSha1')
         content_md5 = file_version_dict.get('contentMd5')
         file_info = file_version_dict.get('fileInfo')
-        server_side_encryption = EncryptionSettingFactory.from_file_version_dict(file_version_dict)
+        server_side_encryption = EncryptionSettingFactory.from_file_version_dict(
+            file_version_dict
+        )
         file_retention = FileRetentionSetting.from_file_version_dict(file_version_dict)
 
         legal_hold = LegalHold.from_file_version_dict(file_version_dict)
 
         replication_status_value = file_version_dict.get('replicationStatus')
-        replication_status = replication_status_value and ReplicationStatus[
-            replication_status_value.upper()]
+        replication_status = (
+            replication_status_value
+            and ReplicationStatus[replication_status_value.upper()]
+        )
 
         return self.FILE_VERSION_CLASS(
             self.api,
@@ -558,7 +573,9 @@ class DownloadVersionFactory:
             content_sha1=headers['x-bz-content-sha1'],
             file_info=file_info,
             upload_timestamp=int(headers['x-bz-upload-timestamp']),
-            server_side_encryption=EncryptionSettingFactory.from_response_headers(headers),
+            server_side_encryption=EncryptionSettingFactory.from_response_headers(
+                headers
+            ),
             range_=range_,
             content_disposition=headers.get('Content-Disposition'),
             content_length=content_length,
@@ -588,11 +605,15 @@ class FileIdAndName:
         return cls(response['fileId'], response['fileName'])
 
     def as_dict(self):
-        """ represents the object as a dict which looks almost exactly like the raw api output for delete_file_version """
+        """represents the object as a dict which looks almost exactly like the raw api output for delete_file_version"""
         return {'action': 'delete', 'fileId': self.file_id, 'fileName': self.file_name}
 
     def __eq__(self, other):
-        return (self.file_id == other.file_id and self.file_name == other.file_name)
+        return self.file_id == other.file_id and self.file_name == other.file_name
 
     def __repr__(self):
-        return '%s(%s, %s)' % (self.__class__.__name__, repr(self.file_id), repr(self.file_name))
+        return '%s(%s, %s)' % (
+            self.__class__.__name__,
+            repr(self.file_id),
+            repr(self.file_name),
+        )

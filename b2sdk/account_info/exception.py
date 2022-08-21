@@ -8,7 +8,7 @@
 #
 ######################################################################
 
-from abc import (ABCMeta)
+from abc import ABCMeta
 
 from ..exception import B2Error
 
@@ -17,6 +17,7 @@ class AccountInfoError(B2Error, metaclass=ABCMeta):
     """
     Base class for all account info errors.
     """
+
     pass
 
 
@@ -34,8 +35,9 @@ class CorruptAccountInfo(AccountInfoError):
         self.file_name = file_name
 
     def __str__(self):
-        return 'Account info file (%s) appears corrupted.  Try removing and then re-authorizing the account.' % (
-            self.file_name,
+        return (
+            'Account info file (%s) appears corrupted.  Try removing and then re-authorizing the account.'
+            % (self.file_name,)
         )
 
 

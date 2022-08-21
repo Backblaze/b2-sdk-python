@@ -26,7 +26,9 @@ class TestDownload(IntegrationTestBase):
     def test_large_file(self):
         bucket = self.create_bucket()
         with mock.patch.object(
-            self.info, '_recommended_part_size', new=self.info.get_absolute_minimum_part_size()
+            self.info,
+            '_recommended_part_size',
+            new=self.info.get_absolute_minimum_part_size(),
         ):
             download_manager = self.b2_api.services.download_manager
             with mock.patch.object(
@@ -39,7 +41,7 @@ class TestDownload(IntegrationTestBase):
                         max_chunk_size=download_manager.MAX_CHUNK_SIZE,
                         thread_pool=download_manager._thread_pool,
                     )
-                ]
+                ],
             ):
 
                 # let's check that small file downloads fail with these settings
@@ -47,17 +49,23 @@ class TestDownload(IntegrationTestBase):
                 with pytest.raises(ValueError) as exc_info:
                     with io.BytesIO() as io_:
                         bucket.download_file_by_name('a_single_zero').save(io_)
-                assert exc_info.value.args == ('no strategy suitable for download was found!',)
+                assert exc_info.value.args == (
+                    'no strategy suitable for download was found!',
+                )
 
                 f = self._file_helper(bucket)
                 if zero._type() != 'large':
                     # if we are here, that's not the production server!
-                    assert f.download_version.content_sha1_verified  # large files don't have sha1, lets not check
+                    assert (
+                        f.download_version.content_sha1_verified
+                    )  # large files don't have sha1, lets not check
 
     def _file_helper(
         self, bucket, sha1_sum=None, bytes_to_write: Optional[int] = None
     ) -> DownloadVersion:
-        bytes_to_write = bytes_to_write or int(self.info.get_absolute_minimum_part_size()) * 2 + 1
+        bytes_to_write = (
+            bytes_to_write or int(self.info.get_absolute_minimum_part_size()) * 2 + 1
+        )
         with TempDir() as temp_dir:
             temp_dir = pathlib.Path(temp_dir)
             source_small_file = pathlib.Path(temp_dir) / 'source_small_file'
@@ -72,7 +80,9 @@ class TestDownload(IntegrationTestBase):
 
             f = bucket.download_file_by_name('small_file')
             f.save_to(target_small_file)
-            assert hex_sha1_of_file(source_small_file) == hex_sha1_of_file(target_small_file)
+            assert hex_sha1_of_file(source_small_file) == hex_sha1_of_file(
+                target_small_file
+            )
         return f
 
     def test_small(self):
@@ -95,11 +105,15 @@ class TestDownload(IntegrationTestBase):
             downloaded_uncompressed_file = temp_dir / 'downloaded_uncompressed_file'
             downloaded_compressed_file = temp_dir / 'downloaded_compressed_file'
 
-            data_to_write = b"I'm about to be compressed and sent to the cloud, yay!\n" * 100  # too short files failed somehow
+            data_to_write = (
+                b"I'm about to be compressed and sent to the cloud, yay!\n" * 100
+            )  # too short files failed somehow
             with gzip.open(source_file, 'wb') as gzip_file:
                 gzip_file.write(data_to_write)
             file_version = bucket.upload_local_file(
-                str(source_file), 'gzipped_file', file_infos={'b2-content-encoding': 'gzip'}
+                str(source_file),
+                'gzipped_file',
+                file_infos={'b2-content-encoding': 'gzip'},
             )
             self.b2_api.download_file_by_id(file_id=file_version.id_).save_to(
                 str(downloaded_compressed_file)

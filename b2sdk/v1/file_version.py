@@ -49,7 +49,9 @@ class FileVersionInfo(v2.FileVersion):
         self.file_name = file_name
         self.size = size and int(size)
         self.content_type = content_type
-        self.content_sha1, self.content_sha1_verified = self._decode_content_sha1(content_sha1)
+        self.content_sha1, self.content_sha1_verified = self._decode_content_sha1(
+            content_sha1
+        )
         self.account_id = account_id
         self.bucket_id = bucket_id
         self.content_md5 = content_md5
@@ -66,7 +68,9 @@ class FileVersionInfo(v2.FileVersion):
         with suppress(KeyError):
             del kwargs['replication_status']
         self.replication_status = None
-        assert not kwargs  # after we get rid of everything we don't support in this apiver, this should be empty
+        assert (
+            not kwargs
+        )  # after we get rid of everything we don't support in this apiver, this should be empty
 
         if v2.SRC_LAST_MODIFIED_MILLIS in self.file_info:
             self.mod_time_millis = int(self.file_info[v2.SRC_LAST_MODIFIED_MILLIS])
@@ -107,10 +111,14 @@ class FileVersionInfo(v2.FileVersion):
         Fetch all the information about this file version and return a new FileVersion object.
         This method does NOT change the object it is called on.
         """
-        return self.api.file_version_factory.from_api_response(self.api.get_file_info(self.id_))
+        return self.api.file_version_factory.from_api_response(
+            self.api.get_file_info(self.id_)
+        )
 
 
-def file_version_info_from_new_file_version(file_version: v2.FileVersion) -> FileVersionInfo:
+def file_version_info_from_new_file_version(
+    file_version: v2.FileVersion,
+) -> FileVersionInfo:
     return FileVersionInfo(
         **{
             att_name: getattr(file_version, att_name)
@@ -144,7 +152,9 @@ def translate_single_file_version(func):
 # override to return old style FileVersionInfo
 class FileVersionInfoFactory(v2.FileVersionFactory):
 
-    from_api_response = translate_single_file_version(v2.FileVersionFactory.from_api_response)
+    from_api_response = translate_single_file_version(
+        v2.FileVersionFactory.from_api_response
+    )
 
     def from_response_headers(self, headers):
 
@@ -160,13 +170,17 @@ class FileVersionInfoFactory(v2.FileVersionFactory):
             upload_timestamp=int(headers['x-bz-upload-timestamp']),
             action='upload',
             content_md5=None,
-            server_side_encryption=v2.EncryptionSettingFactory.from_response_headers(headers),
+            server_side_encryption=v2.EncryptionSettingFactory.from_response_headers(
+                headers
+            ),
             file_retention=v2.FileRetentionSetting.from_response_headers(headers),
             legal_hold=v2.LegalHold.from_response_headers(headers),
         )
 
 
-def file_version_info_from_id_and_name(file_id_and_name: v2.FileIdAndName, api: 'v1api.B2Api'):
+def file_version_info_from_id_and_name(
+    file_id_and_name: v2.FileIdAndName, api: 'v1api.B2Api'
+):
     return FileVersionInfo(
         id_=file_id_and_name.file_id,
         file_name=file_id_and_name.file_name,

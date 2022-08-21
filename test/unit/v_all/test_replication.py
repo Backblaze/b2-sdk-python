@@ -16,7 +16,11 @@ from apiver_deps import B2HttpApiConfig
 from apiver_deps import InMemoryCache
 from apiver_deps import InMemoryAccountInfo
 from apiver_deps import RawSimulator
-from apiver_deps import ReplicationConfiguration, ReplicationRule, ReplicationSetupHelper
+from apiver_deps import (
+    ReplicationConfiguration,
+    ReplicationRule,
+    ReplicationSetupHelper,
+)
 from ..test_base import TestBase
 
 logger = logging.getLogger(__name__)
@@ -27,13 +31,17 @@ class TestReplication(TestBase):
         self.account_info = InMemoryAccountInfo()
         self.cache = InMemoryCache()
         self.api = B2Api(
-            self.account_info, self.cache, api_config=B2HttpApiConfig(_raw_api_class=RawSimulator)
+            self.account_info,
+            self.cache,
+            api_config=B2HttpApiConfig(_raw_api_class=RawSimulator),
         )
         self.raw_api = self.api.session.raw_api
         self.application_key_id, self.master_key = self.raw_api.create_account()
 
     def _authorize_account(self):
-        self.api.authorize_account('production', self.application_key_id, self.master_key)
+        self.api.authorize_account(
+            'production', self.application_key_id, self.master_key
+        )
 
     @pytest.mark.apiver(from_ver=2)
     def test_setup_both(self):
@@ -50,6 +58,7 @@ class TestReplication(TestBase):
         )
 
         from pprint import pprint
+
         pprint([k.as_dict() for k in self.api.list_keys()])
 
         keymap = {k.key_name: k for k in self.api.list_keys()}

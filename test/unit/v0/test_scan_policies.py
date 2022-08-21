@@ -22,7 +22,9 @@ class TestScanPolicies(TestBase):
         self.assertFalse(DEFAULT_SCAN_MANAGER.should_exclude_file('a'))
 
     def test_exclude_include(self):
-        policy = ScanPoliciesManager(exclude_file_regexes=('a', 'b'), include_file_regexes=('ab',))
+        policy = ScanPoliciesManager(
+            exclude_file_regexes=('a', 'b'), include_file_regexes=('ab',)
+        )
         self.assertTrue(policy.should_exclude_file('alfa'))
         self.assertTrue(policy.should_exclude_file('bravo'))
         self.assertFalse(policy.should_exclude_file('abend'))

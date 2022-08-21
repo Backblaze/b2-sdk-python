@@ -40,7 +40,7 @@ class CopySource(OrigCopySource):
 
 
 def part(source_or_def_list, *offset_len):
-    """ Helper for building emerge parts from outbound sources defs. Makes planner tests easier to read.
+    """Helper for building emerge parts from outbound sources defs. Makes planner tests easier to read.
 
     Possible "def" structures:
 
@@ -611,15 +611,27 @@ class TestEmergePlanner(TestBase):
                 upload_subparts = emerge_part_def.upload_subparts
                 expected_subparts = expected_part_def.upload_subparts
                 self.assertEqual(len(upload_subparts), len(expected_subparts))
-                for subpart, expected_subpart in zip(upload_subparts, expected_subparts):
+                for subpart, expected_subpart in zip(
+                    upload_subparts, expected_subparts
+                ):
                     self.assertIs(subpart.__class__, expected_subpart.__class__)
-                    self.assertIs(subpart.outbound_source, expected_subpart.outbound_source)
-                    self.assertEqual(subpart.relative_offset, expected_subpart.relative_offset)
+                    self.assertIs(
+                        subpart.outbound_source, expected_subpart.outbound_source
+                    )
+                    self.assertEqual(
+                        subpart.relative_offset, expected_subpart.relative_offset
+                    )
                     self.assertEqual(subpart.length, expected_subpart.length)
             else:
                 if isinstance(emerge_part_def, UploadEmergePartDefinition):
-                    self.assertIs(emerge_part_def.upload_source, expected_part_def.upload_source)
+                    self.assertIs(
+                        emerge_part_def.upload_source, expected_part_def.upload_source
+                    )
                 else:
-                    self.assertIs(emerge_part_def.copy_source, expected_part_def.copy_source)
-                self.assertEqual(emerge_part_def.relative_offset, expected_part_def.relative_offset)
+                    self.assertIs(
+                        emerge_part_def.copy_source, expected_part_def.copy_source
+                    )
+                self.assertEqual(
+                    emerge_part_def.relative_offset, expected_part_def.relative_offset
+                )
                 self.assertEqual(emerge_part_def.length, expected_part_def.length)

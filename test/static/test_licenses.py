@@ -22,6 +22,8 @@ def test_files_headers():
             )  # glob('**/*.py') on Windows returns "b2\bucket.py" (wrong slash)
             head = ''.join(islice(fd, 9))
             if 'All Rights Reserved' not in head:
-                pytest.fail('Missing "All Rights Reserved" in the header in: {}'.format(file))
+                pytest.fail(
+                    'Missing "All Rights Reserved" in the header in: {}'.format(file)
+                )
             if file not in head:
                 pytest.fail('Wrong file name in the header in: {}'.format(file))

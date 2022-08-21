@@ -16,7 +16,10 @@ import urllib.parse
 
 from ..http_constants import SSE_C_KEY_ID_FILE_INFO_KEY_NAME, SSE_C_KEY_ID_HEADER
 from ..utils import b64_of_bytes, md5_of_bytes
-from .types import ENCRYPTION_MODES_WITH_MANDATORY_ALGORITHM, ENCRYPTION_MODES_WITH_MANDATORY_KEY
+from .types import (
+    ENCRYPTION_MODES_WITH_MANDATORY_ALGORITHM,
+    ENCRYPTION_MODES_WITH_MANDATORY_KEY,
+)
 from .types import EncryptionAlgorithm, EncryptionMode
 
 logger = logging.getLogger(__name__)
@@ -24,6 +27,7 @@ logger = logging.getLogger(__name__)
 
 class _UnknownKeyId(enum.Enum):
     """The purpose of this enum is to provide a sentinel that can be used with type annotations."""
+
     unknown_key_id = 0
 
 
@@ -40,9 +44,12 @@ class EncryptionKey:
     in encrypted file's fileInfo, or UNKNOWN_KEY_ID when that information is missing.
     The secret may be None, if encryption metadata is read from the server.
     """
+
     SECRET_REPR = '******'
 
-    def __init__(self, secret: Optional[bytes], key_id: Union[str, None, _UnknownKeyId]):
+    def __init__(
+        self, secret: Optional[bytes], key_id: Union[str, None, _UnknownKeyId]
+    ):
         self.secret = secret
         self.key_id = key_id
 
@@ -102,19 +109,32 @@ class EncryptionSetting:
         self.algorithm = algorithm
         self.key = key
         if self.mode == EncryptionMode.NONE and (self.algorithm or self.key):
-            raise ValueError("cannot specify algorithm or key for 'plaintext' encryption mode")
-        if self.mode in ENCRYPTION_MODES_WITH_MANDATORY_ALGORITHM and not self.algorithm:
-            raise ValueError('must specify algorithm for encryption mode %s' % (self.mode,))
+            raise ValueError(
+                "cannot specify algorithm or key for 'plaintext' encryption mode"
+            )
+        if (
+            self.mode in ENCRYPTION_MODES_WITH_MANDATORY_ALGORITHM
+            and not self.algorithm
+        ):
+            raise ValueError(
+                'must specify algorithm for encryption mode %s' % (self.mode,)
+            )
         if self.mode in ENCRYPTION_MODES_WITH_MANDATORY_KEY and not self.key:
             raise ValueError(
-                'must specify key for encryption mode %s and algorithm %s' %
-                (self.mode, self.algorithm)
+                'must specify key for encryption mode %s and algorithm %s'
+                % (self.mode, self.algorithm)
             )
 
     def __eq__(self, other):
         if other is None:
-            raise ValueError('cannot compare a known encryption setting to an unknown one')
-        return self.mode == other.mode and self.algorithm == other.algorithm and self.key == other.key
+            raise ValueError(
+                'cannot compare a known encryption setting to an unknown one'
+            )
+        return (
+            self.mode == other.mode
+            and self.algorithm == other.algorithm
+            and self.key == other.key
+        )
 
     def serialize_to_json_for_request(self):
         if self.key and self.key.secret is None:
@@ -168,10 +188,13 @@ class EncryptionSetting:
             self._add_sse_c_headers(headers)
             if self.key.key_id is not None:
                 header = SSE_C_KEY_ID_HEADER
-                if headers.get(header) is not None and headers[header] != self.key.key_id:
+                if (
+                    headers.get(header) is not None
+                    and headers[header] != self.key.key_id
+                ):
                     raise ValueError(
-                        'Ambiguous key id set: "%s" in headers and "%s" in %s' %
-                        (headers[header], self.key.key_id, self.__class__.__name__)
+                        'Ambiguous key id set: "%s" in headers and "%s" in %s'
+                        % (headers[header], self.key.key_id, self.__class__.__name__)
                     )
                 headers[header] = urllib.parse.quote(str(self.key.key_id))
         else:
@@ -204,19 +227,28 @@ class EncryptionSetting:
             raise ValueError('Cannot add an unknown key id to file info')
         if file_info is None:
             file_info = {}
-        if file_info.get(SSE_C_KEY_ID_FILE_INFO_KEY_NAME) is not None and file_info[
-            SSE_C_KEY_ID_FILE_INFO_KEY_NAME] != self.key.key_id:
+        if (
+            file_info.get(SSE_C_KEY_ID_FILE_INFO_KEY_NAME) is not None
+            and file_info[SSE_C_KEY_ID_FILE_INFO_KEY_NAME] != self.key.key_id
+        ):
             raise ValueError(
-                'Ambiguous key id set: "%s" in file_info and "%s" in %s' % (
-                    file_info[SSE_C_KEY_ID_FILE_INFO_KEY_NAME], self.key.key_id,
-                    self.__class__.__name__
+                'Ambiguous key id set: "%s" in file_info and "%s" in %s'
+                % (
+                    file_info[SSE_C_KEY_ID_FILE_INFO_KEY_NAME],
+                    self.key.key_id,
+                    self.__class__.__name__,
                 )
             )
         file_info[SSE_C_KEY_ID_FILE_INFO_KEY_NAME] = self.key.key_id
         return file_info
 
     def __repr__(self):
-        return '<%s(%s, %s, %s)>' % (self.__class__.__name__, self.mode, self.algorithm, self.key)
+        return '<%s(%s, %s, %s)>' % (
+            self.__class__.__name__,
+            self.mode,
+            self.algorithm,
+            self.key,
+        )
 
 
 class EncryptionSettingFactory:
@@ -346,7 +378,9 @@ class EncryptionSettingFactory:
         return EncryptionSetting(EncryptionMode.NONE)
 
 
-SSE_NONE = EncryptionSetting(mode=EncryptionMode.NONE,)
+SSE_NONE = EncryptionSetting(
+    mode=EncryptionMode.NONE,
+)
 """
 Commonly used "no encryption" setting
 """

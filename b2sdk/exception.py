@@ -20,7 +20,9 @@ UPLOAD_TOKEN_USED_CONCURRENTLY_ERROR_MESSAGE_RE = re.compile(
     r'^more than one upload using auth token (?P<token>[^)]+)$'
 )
 
-COPY_SOURCE_TOO_BIG_ERROR_MESSAGE_RE = re.compile(r'^Copy source too big: (?P<size>[\d]+)$')
+COPY_SOURCE_TOO_BIG_ERROR_MESSAGE_RE = re.compile(
+    r'^Copy source too big: (?P<size>[\d]+)$'
+)
 
 logger = logging.getLogger(__name__)
 
@@ -216,13 +218,16 @@ class DestFileNewer(B2Error):
         self.source_prefix = source_prefix
 
     def __str__(self):
-        return 'source file is older than destination: %s%s with a time of %s cannot be synced to %s%s with a time of %s, unless a valid newer_file_mode is provided' % (
-            self.source_prefix,
-            self.source_path.relative_path,
-            self.source_path.mod_time,
-            self.dest_prefix,
-            self.dest_path.relative_path,
-            self.dest_path.mod_time,
+        return (
+            'source file is older than destination: %s%s with a time of %s cannot be synced to %s%s with a time of %s, unless a valid newer_file_mode is provided'
+            % (
+                self.source_prefix,
+                self.source_path.relative_path,
+                self.source_path.mod_time,
+                self.dest_prefix,
+                self.dest_path.relative_path,
+                self.dest_path.mod_time,
+            )
         )
 
     def should_retry_http(self):
@@ -244,8 +249,12 @@ class FileOrBucketNotFound(ResourceNotFound):
         self.file_id_or_name = file_id_or_name
 
     def __str__(self):
-        file_str = ('file [%s]' % self.file_id_or_name) if self.file_id_or_name else 'a file'
-        bucket_str = ('bucket [%s]' % self.bucket_name) if self.bucket_name else 'a bucket'
+        file_str = (
+            ('file [%s]' % self.file_id_or_name) if self.file_id_or_name else 'a file'
+        )
+        bucket_str = (
+            ('bucket [%s]' % self.bucket_name) if self.bucket_name else 'a bucket'
+        )
         return 'Could not find %s within %s' % (file_str, bucket_str)
 
 
@@ -267,7 +276,9 @@ class FileNameNotAllowed(NotAllowedByAppKeyError):
 
 class FileNotPresent(FileOrBucketNotFound):
     def __str__(self):  # overridden to retain message across prev versions
-        return "File not present%s" % (': ' + self.file_id_or_name if self.file_id_or_name else "")
+        return "File not present%s" % (
+            ': ' + self.file_id_or_name if self.file_id_or_name else ""
+        )
 
 
 class UnusableFileName(B2SimpleError):
@@ -277,6 +288,7 @@ class UnusableFileName(B2SimpleError):
     Could possibly use InvalidUploadSource, but this is intended for the filename on the
     server, which could differ.  https://www.backblaze.com/b2/docs/files.html.
     """
+
     pass
 
 
@@ -295,11 +307,14 @@ class InvalidRange(B2Error):
         self.range_ = range_
 
     def __str__(self):
-        return 'A range of %d-%d was requested (size of %d), but cloud could only serve %d of that' % (
-            self.range_[0],
-            self.range_[1],
-            self.range_[1] - self.range_[0] + 1,
-            self.content_length,
+        return (
+            'A range of %d-%d was requested (size of %d), but cloud could only serve %d of that'
+            % (
+                self.range_[0],
+                self.range_[1],
+                self.range_[1] - self.range_[0] + 1,
+                self.content_length,
+            )
         )
 
 
@@ -349,8 +364,9 @@ class InvalidAuthToken(Unauthorized):
     """
 
     def __init__(self, message, code):
-        super(InvalidAuthToken,
-              self).__init__('Invalid authorization token. Server said: ' + message, code)
+        super(InvalidAuthToken, self).__init__(
+            'Invalid authorization token. Server said: ' + message, code
+        )
 
 
 class RestrictedBucket(B2Error):
@@ -382,7 +398,9 @@ class MaxRetriesExceeded(B2Error):
         self.exception_info_list = exception_info_list
 
     def __str__(self):
-        exceptions = '\n'.join(str(wrapped_error) for wrapped_error in self.exception_info_list)
+        exceptions = '\n'.join(
+            str(wrapped_error) for wrapped_error in self.exception_info_list
+        )
         return 'FAILED to upload after %s tries. Encountered exceptions: %s' % (
             self.limit,
             exceptions,
@@ -395,7 +413,9 @@ class MissingPart(B2SimpleError):
 
 class NonExistentBucket(FileOrBucketNotFound):
     def __str__(self):  # overridden to retain message across prev versions
-        return "No such bucket%s" % (': ' + self.bucket_name if self.bucket_name else "")
+        return "No such bucket%s" % (
+            ': ' + self.bucket_name if self.bucket_name else ""
+        )
 
 
 class FileSha1Mismatch(B2SimpleError):
@@ -500,8 +520,10 @@ class SSECKeyError(AccessDenied):
 
 class RetentionWriteError(AccessDenied):
     def __str__(self):
-        return "Auth token not authorized to write retention or file already in 'compliance' mode or " \
-               "bypassGovernance=true parameter missing"
+        return (
+            "Auth token not authorized to write retention or file already in 'compliance' mode or "
+            "bypassGovernance=true parameter missing"
+        )
 
 
 class WrongEncryptionModeForBucketDefault(InvalidUserInput):
@@ -523,16 +545,15 @@ def interpret_b2_error(
     code: Optional[str],
     message: Optional[str],
     response_headers: Dict[str, Any],
-    post_params: Optional[Dict[str, Any]] = None
+    post_params: Optional[Dict[str, Any]] = None,
 ) -> B2Error:
     post_params = post_params or {}
     if status == 400 and code == "already_hidden":
         return FileAlreadyHidden(post_params.get('fileName'))
     elif status == 400 and code == 'bad_json':
         return BadJson(message)
-    elif (
-        (status == 400 and code in ("no_such_file", "file_not_present")) or
-        (status == 404 and code == "not_found")
+    elif (status == 400 and code in ("no_such_file", "file_not_present")) or (
+        status == 404 and code == "not_found"
     ):
         # hide_file returns 400 and "no_such_file"
         # delete_file_version returns 400 and "file_not_present"
@@ -555,7 +576,11 @@ def interpret_b2_error(
         return PartSha1Mismatch(post_params.get('fileId'))
     elif status == 400 and code == "bad_bucket_id":
         return BucketIdNotFound(post_params.get('bucketId'))
-    elif status == 400 and code in ('bad_request', 'auth_token_limit', 'source_too_large'):
+    elif status == 400 and code in (
+        'bad_request',
+        'auth_token_limit',
+        'source_too_large',
+    ):
         # it's "bad_request" on 2022-03-29, but will become 'auth_token_limit' in 2022-04  # TODO: cleanup after 2022-05-01
         matcher = UPLOAD_TOKEN_USED_CONCURRENTLY_ERROR_MESSAGE_RE.match(message)
         if matcher is not None:

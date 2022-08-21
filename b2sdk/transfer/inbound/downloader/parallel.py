@@ -60,9 +60,10 @@ class ParallelDownloader(AbstractDownloader):
     def is_suitable(self, download_version: DownloadVersion, allow_seeking: bool):
         if not super().is_suitable(download_version, allow_seeking):
             return False
-        return self._get_number_of_streams(
-            download_version.content_length
-        ) >= 2 and download_version.content_length >= 2 * self.min_part_size
+        return (
+            self._get_number_of_streams(download_version.content_length) >= 2
+            and download_version.content_length >= 2 * self.min_part_size
+        )
 
     def _get_number_of_streams(self, content_length):
         num_streams = content_length // self.min_part_size
@@ -118,7 +119,9 @@ class ParallelDownloader(AbstractDownloader):
         if self._check_hash:
             # we skip hashing if we would not check it - hasher object is actually a EmptyHasher instance
             # but we avoid here reading whole file (except for the first part) from disk again
-            self._finish_hashing(first_part, file, hasher, download_version.content_length)
+            self._finish_hashing(
+                first_part, file, hasher, download_version.content_length
+            )
 
         return bytes_written, hasher.hexdigest()
 
@@ -135,7 +138,7 @@ class ParallelDownloader(AbstractDownloader):
             if not data:
                 break
             if current_offset + len(data) >= last_offset:
-                to_hash = data[:last_offset - current_offset]
+                to_hash = data[: last_offset - current_offset]
                 stop = True
             else:
                 to_hash = data
@@ -145,8 +148,15 @@ class ParallelDownloader(AbstractDownloader):
                 break
 
     def _get_parts(
-        self, response, session, writer, hasher, first_part, parts_to_download, chunk_size,
-        encryption
+        self,
+        response,
+        session,
+        writer,
+        hasher,
+        first_part,
+        parts_to_download,
+        chunk_size,
+        encryption,
     ):
         stream = self._thread_pool.submit(
             download_first_part,
@@ -255,7 +265,7 @@ def download_first_part(
     stop = False
     for data in response.iter_content(chunk_size=chunk_size):
         if first_offset + bytes_read + len(data) >= last_offset:
-            to_write = data[:last_offset - bytes_read]
+            to_write = data[: last_offset - bytes_read]
             stop = True
         else:
             to_write = data
@@ -270,14 +280,18 @@ def download_first_part(
     response.close()
 
     url = response.request.url
-    tries_left = 5 - 1  # this is hardcoded because we are going to replace the entire retry interface soon, so we'll avoid deprecation here and keep it private
+    tries_left = (
+        5 - 1
+    )  # this is hardcoded because we are going to replace the entire retry interface soon, so we'll avoid deprecation here and keep it private
     while tries_left and bytes_read < actual_part_size:
         cloud_range = starting_cloud_range.subrange(
             bytes_read, actual_part_size - 1
         )  # first attempt was for the whole file, but retries are bound correctly
         logger.debug(
             'download attempts remaining: %i, bytes read already: %i. Getting range %s now.',
-            tries_left, bytes_read, cloud_range
+            tries_left,
+            bytes_read,
+            cloud_range,
         )
         with session.download_file_from_url(
             url,
@@ -319,7 +333,9 @@ def download_non_first_part(
         cloud_range = starting_cloud_range.subrange(bytes_read, actual_part_size - 1)
         logger.debug(
             'download attempts remaining: %i, bytes read already: %i. Getting range %s now.',
-            retries_left, bytes_read, cloud_range
+            retries_left,
+            bytes_read,
+            cloud_range,
         )
         with session.download_file_from_url(
             url,
@@ -351,7 +367,10 @@ def gen_parts(cloud_range, local_range, part_count):
     Generate a sequence of PartToDownload to download a large file as
     a collection of parts.
     """
-    assert cloud_range.size() == local_range.size(), (cloud_range.size(), local_range.size())
+    assert cloud_range.size() == local_range.size(), (
+        cloud_range.size(),
+        local_range.size(),
+    )
     assert 0 < part_count <= cloud_range.size()
     offset = 0
     remaining_size = cloud_range.size()

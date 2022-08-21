@@ -120,7 +120,9 @@ class UploadManager(TransferManager, ThreadPoolMixin):
         if finished_parts is not None and part_number in finished_parts:
             # Report this part finished
             part = finished_parts[part_number]
-            large_file_upload_state.update_part_bytes(part_upload_source.get_content_length())
+            large_file_upload_state.update_part_bytes(
+                part_upload_source.get_content_length()
+            )
 
             # Return SHA1 hash
             return {'contentSha1': part.content_sha1}
@@ -145,7 +147,9 @@ class UploadManager(TransferManager, ThreadPoolMixin):
                     if part_upload_source.is_sha1_known():
                         content_sha1 = part_upload_source.get_content_sha1()
                     else:
-                        input_stream = StreamWithHash(input_stream, stream_length=content_length)
+                        input_stream = StreamWithHash(
+                            input_stream, stream_length=content_length
+                        )
                         content_sha1 = HEX_DIGITS_AT_END
                     # it is important that `len()` works on `input_stream`
                     response = self.services.session.upload_part(
@@ -214,9 +218,13 @@ class UploadManager(TransferManager, ThreadPoolMixin):
                         )
                         if content_sha1 == HEX_DIGITS_AT_END:
                             content_sha1 = input_stream.hash
-                        assert content_sha1 == 'do_not_verify' or content_sha1 == response[
-                            'contentSha1'], '%s != %s' % (content_sha1, response['contentSha1'])
-                        return self.services.api.file_version_factory.from_api_response(response)
+                        assert (
+                            content_sha1 == 'do_not_verify'
+                            or content_sha1 == response['contentSha1']
+                        ), '%s != %s' % (content_sha1, response['contentSha1'])
+                        return self.services.api.file_version_factory.from_api_response(
+                            response
+                        )
 
                 except B2Error as e:
                     if not e.should_retry_upload():

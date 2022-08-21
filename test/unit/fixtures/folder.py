@@ -61,7 +61,8 @@ class FakeB2Folder(B2Folder):
                 content_type='text/plain',
                 content_sha1='content_sha1',
                 **mandatory_kwargs,
-            ) for mod_time in mod_times
+            )
+            for mod_time in mod_times
         ]  # yapf disable
 
 
@@ -73,7 +74,9 @@ class FakeLocalFolder(LocalFolder):
     def all_files(self, reporter, policies_manager=DEFAULT_SCAN_MANAGER):
         for single_path in self.local_paths:
             if single_path.relative_path.endswith('/'):
-                if policies_manager.should_exclude_b2_directory(single_path.relative_path):
+                if policies_manager.should_exclude_b2_directory(
+                    single_path.relative_path
+                ):
                     continue
             else:
                 if policies_manager.should_exclude_local_path(single_path):

@@ -8,7 +8,16 @@
 #
 ######################################################################
 
-from apiver_deps import EncryptionAlgorithm, EncryptionKey, EncryptionMode, EncryptionSetting, FileRetentionSetting, ReplicationScanResult, RetentionMode, SSE_B2_AES
+from apiver_deps import (
+    EncryptionAlgorithm,
+    EncryptionKey,
+    EncryptionMode,
+    EncryptionSetting,
+    FileRetentionSetting,
+    ReplicationScanResult,
+    RetentionMode,
+    SSE_B2_AES,
+)
 
 SSE_C_AES = EncryptionSetting(
     mode=EncryptionMode.SSE_C,
@@ -34,7 +43,9 @@ DEFAULT_REPLICATION_RESULT = dict(
 def test_iter_pairs(source_bucket, destination_bucket, test_file, monitor):
 
     source_file = source_bucket.upload_local_file(test_file, 'folder/test.txt')
-    source_subfolder_file = source_bucket.upload_local_file(test_file, 'folder/subfolder/test.txt')
+    source_subfolder_file = source_bucket.upload_local_file(
+        test_file, 'folder/subfolder/test.txt'
+    )
 
     destination_subfolder_file = destination_bucket.upload_local_file(
         test_file, 'folder/subfolder/test.txt'
@@ -47,7 +58,8 @@ def test_iter_pairs(source_bucket, destination_bucket, test_file, monitor):
         (
             source_path and 'folder/' + source_path.relative_path,
             destination_path and 'folder/' + destination_path.relative_path,
-        ) for source_path, destination_path in monitor.iter_pairs()
+        )
+        for source_path, destination_path in monitor.iter_pairs()
     ]
 
     assert set(pairs) == {
@@ -62,16 +74,23 @@ def test_scan_source(source_bucket, test_file, monitor):
     files = [
         source_bucket.upload_local_file(test_file, 'folder/test-1-1.txt'),
         source_bucket.upload_local_file(test_file, 'folder/test-1-2.txt'),
-        source_bucket.upload_local_file(test_file, 'folder/test-2.txt', encryption=SSE_B2_AES),
-        source_bucket.upload_local_file(test_file,
-                                        'not-in-folder.txt'),  # monitor should ignore this
-        source_bucket.upload_local_file(test_file, 'folder/test-3.txt', encryption=SSE_C_AES),
-        source_bucket.upload_local_file(test_file, 'folder/test-4.txt', encryption=SSE_C_AES),
+        source_bucket.upload_local_file(
+            test_file, 'folder/test-2.txt', encryption=SSE_B2_AES
+        ),
+        source_bucket.upload_local_file(
+            test_file, 'not-in-folder.txt'
+        ),  # monitor should ignore this
+        source_bucket.upload_local_file(
+            test_file, 'folder/test-3.txt', encryption=SSE_C_AES
+        ),
+        source_bucket.upload_local_file(
+            test_file, 'folder/test-4.txt', encryption=SSE_C_AES
+        ),
         source_bucket.upload_local_file(
             test_file,
             'folder/subfolder/test-5.txt',
             encryption=SSE_C_AES,
-            file_retention=RETENTION_GOVERNANCE
+            file_retention=RETENTION_GOVERNANCE,
         ),
         source_bucket.upload_local_file(
             test_file,
@@ -91,52 +110,92 @@ def test_scan_source(source_bucket, test_file, monitor):
     ]
     report = monitor.scan(scan_destination=False)
 
-    assert report.counter_by_status[ReplicationScanResult(**DEFAULT_REPLICATION_RESULT)] == 2
+    assert (
+        report.counter_by_status[ReplicationScanResult(**DEFAULT_REPLICATION_RESULT)]
+        == 2
+    )
 
-    assert report.counter_by_status[ReplicationScanResult(
-        **{
-            **DEFAULT_REPLICATION_RESULT,
-            'source_encryption_mode': EncryptionMode.SSE_B2,
-        }
-    )] == 1
+    assert (
+        report.counter_by_status[
+            ReplicationScanResult(
+                **{
+                    **DEFAULT_REPLICATION_RESULT,
+                    'source_encryption_mode': EncryptionMode.SSE_B2,
+                }
+            )
+        ]
+        == 1
+    )
 
-    assert report.counter_by_status[ReplicationScanResult(
-        **{
-            **DEFAULT_REPLICATION_RESULT,
-            'source_encryption_mode': EncryptionMode.SSE_C,
-        }
-    )] == 2
+    assert (
+        report.counter_by_status[
+            ReplicationScanResult(
+                **{
+                    **DEFAULT_REPLICATION_RESULT,
+                    'source_encryption_mode': EncryptionMode.SSE_C,
+                }
+            )
+        ]
+        == 2
+    )
 
-    assert report.counter_by_status[ReplicationScanResult(
-        **{
-            **DEFAULT_REPLICATION_RESULT,
-            'source_encryption_mode': EncryptionMode.SSE_C,
-            'source_has_file_retention': True,
-        }
-    )] == 1
+    assert (
+        report.counter_by_status[
+            ReplicationScanResult(
+                **{
+                    **DEFAULT_REPLICATION_RESULT,
+                    'source_encryption_mode': EncryptionMode.SSE_C,
+                    'source_has_file_retention': True,
+                }
+            )
+        ]
+        == 1
+    )
 
-    assert report.counter_by_status[ReplicationScanResult(
-        **{
-            **DEFAULT_REPLICATION_RESULT,
-            'source_has_large_metadata': True,
-        }
-    )] == 1
+    assert (
+        report.counter_by_status[
+            ReplicationScanResult(
+                **{
+                    **DEFAULT_REPLICATION_RESULT,
+                    'source_has_large_metadata': True,
+                }
+            )
+        ]
+        == 1
+    )
 
-    assert report.counter_by_status[ReplicationScanResult(
-        **{
-            **DEFAULT_REPLICATION_RESULT,
-            'source_encryption_mode': EncryptionMode.SSE_C,
-            'source_has_large_metadata': True,
-        }
-    )] == 1
+    assert (
+        report.counter_by_status[
+            ReplicationScanResult(
+                **{
+                    **DEFAULT_REPLICATION_RESULT,
+                    'source_encryption_mode': EncryptionMode.SSE_C,
+                    'source_has_large_metadata': True,
+                }
+            )
+        ]
+        == 1
+    )
 
     # ---- first and last ----
 
-    assert report.samples_by_status_first[ReplicationScanResult(**DEFAULT_REPLICATION_RESULT,)
-                                         ][0] == files[0]
+    assert (
+        report.samples_by_status_first[
+            ReplicationScanResult(
+                **DEFAULT_REPLICATION_RESULT,
+            )
+        ][0]
+        == files[0]
+    )
 
-    assert report.samples_by_status_last[ReplicationScanResult(**DEFAULT_REPLICATION_RESULT,)
-                                        ][0] == files[1]
+    assert (
+        report.samples_by_status_last[
+            ReplicationScanResult(
+                **DEFAULT_REPLICATION_RESULT,
+            )
+        ][0]
+        == files[1]
+    )
 
 
 def test_scan_source_and_destination(
@@ -146,25 +205,25 @@ def test_scan_source_and_destination(
         # match
         source_bucket.upload_local_file(test_file, 'folder/test-1.txt'),
         destination_bucket.upload_local_file(test_file, 'folder/test-1.txt'),
-
         # missing on destination
         source_bucket.upload_local_file(test_file, 'folder/test-2.txt'),
-
         # missing on source
         destination_bucket.upload_local_file(test_file, 'folder/test-3.txt'),
-
         # metadata differs
         source_bucket.upload_local_file(
-            test_file, 'folder/test-4.txt', file_infos={
+            test_file,
+            'folder/test-4.txt',
+            file_infos={
                 'haha': 'hoho',
-            }
+            },
         ),
         destination_bucket.upload_local_file(
-            test_file, 'folder/test-4.txt', file_infos={
+            test_file,
+            'folder/test-4.txt',
+            file_infos={
                 'hehe': 'hihi',
-            }
+            },
         ),
-
         # hash differs
         source_bucket.upload_local_file(test_file, 'folder/test-5.txt'),
         destination_bucket.upload_local_file(test_file_reversed, 'folder/test-5.txt'),
@@ -173,49 +232,74 @@ def test_scan_source_and_destination(
     report = monitor.scan(scan_destination=True)
 
     # match
-    assert report.counter_by_status[ReplicationScanResult(
-        **{
-            **DEFAULT_REPLICATION_RESULT,
-            'metadata_differs': False,
-            'hash_differs': False,
-        }
-    )] == 1
+    assert (
+        report.counter_by_status[
+            ReplicationScanResult(
+                **{
+                    **DEFAULT_REPLICATION_RESULT,
+                    'metadata_differs': False,
+                    'hash_differs': False,
+                }
+            )
+        ]
+        == 1
+    )
 
     # missing on destination
-    assert report.counter_by_status[ReplicationScanResult(
-        **{
-            **DEFAULT_REPLICATION_RESULT,
-            'destination_replication_status': None,
-        }
-    )] == 1
+    assert (
+        report.counter_by_status[
+            ReplicationScanResult(
+                **{
+                    **DEFAULT_REPLICATION_RESULT,
+                    'destination_replication_status': None,
+                }
+            )
+        ]
+        == 1
+    )
 
     # missing on source
-    assert report.counter_by_status[ReplicationScanResult(
-        **{
-            **DEFAULT_REPLICATION_RESULT,
-            'source_replication_status': None,
-            'source_has_hide_marker': None,
-            'source_encryption_mode': None,
-            'source_has_large_metadata': None,
-            'source_has_file_retention': None,
-            'source_has_legal_hold': None,
-        }
-    )] == 1
+    assert (
+        report.counter_by_status[
+            ReplicationScanResult(
+                **{
+                    **DEFAULT_REPLICATION_RESULT,
+                    'source_replication_status': None,
+                    'source_has_hide_marker': None,
+                    'source_encryption_mode': None,
+                    'source_has_large_metadata': None,
+                    'source_has_file_retention': None,
+                    'source_has_legal_hold': None,
+                }
+            )
+        ]
+        == 1
+    )
 
     # metadata differs
-    assert report.counter_by_status[ReplicationScanResult(
-        **{
-            **DEFAULT_REPLICATION_RESULT,
-            'metadata_differs': True,
-            'hash_differs': False,
-        }
-    )] == 1
+    assert (
+        report.counter_by_status[
+            ReplicationScanResult(
+                **{
+                    **DEFAULT_REPLICATION_RESULT,
+                    'metadata_differs': True,
+                    'hash_differs': False,
+                }
+            )
+        ]
+        == 1
+    )
 
     # hash differs
-    assert report.counter_by_status[ReplicationScanResult(
-        **{
-            **DEFAULT_REPLICATION_RESULT,
-            'metadata_differs': False,
-            'hash_differs': True,
-        }
-    )] == 1
+    assert (
+        report.counter_by_status[
+            ReplicationScanResult(
+                **{
+                    **DEFAULT_REPLICATION_RESULT,
+                    'metadata_differs': False,
+                    'hash_differs': True,
+                }
+            )
+        ]
+        == 1
+    )

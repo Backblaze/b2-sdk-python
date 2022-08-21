@@ -29,6 +29,7 @@
 
 import os
 import sys
+
 sys.path.append(os.path.abspath('../..'))
 
 from b2sdk.version import VERSION
@@ -134,7 +135,7 @@ autodoc_default_options = {
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-#html_static_path = ['_static']
+# html_static_path = ['_static']
 
 # Custom sidebar templates, must be a dictionary that maps document names
 # to template names.
@@ -142,14 +143,13 @@ autodoc_default_options = {
 # This is required for the alabaster theme
 # refs: http://alabaster.readthedocs.io/en/latest/installation.html#sidebars
 html_sidebars = {
-    '**':
-        [
-            'about.html',
-            'navigation.html',
-            'relations.html',  # needs 'show_related': True theme option to display
-            'searchbox.html',
-            'donate.html',
-        ]
+    '**': [
+        'about.html',
+        'navigation.html',
+        'relations.html',  # needs 'show_related': True theme option to display
+        'searchbox.html',
+        'donate.html',
+    ]
 }
 
 # -- Options for HTMLHelp output ------------------------------------------
@@ -163,15 +163,12 @@ latex_elements = {
     # The paper size ('letterpaper' or 'a4paper').
     #
     # 'papersize': 'letterpaper',
-
     # The font size ('10pt', '11pt' or '12pt').
     #
     # 'pointsize': '10pt',
-
     # Additional stuff for the LaTeX preamble.
     #
     # 'preamble': '',
-
     # Latex figure (float) alignment
     #
     # 'figure_align': 'htbp',
@@ -197,8 +194,13 @@ man_pages = [(master_doc, 'b2_python_sdk', u'B2 Python SDK Documentation', [auth
 #  dir menu entry, description, category)
 texinfo_documents = [
     (
-        master_doc, 'B2_Python_SDK', u'B2 Python SDK Documentation', author, 'B2_Python_SDK',
-        'Backblaze Python SDK', 'Miscellaneous'
+        master_doc,
+        'B2_Python_SDK',
+        u'B2 Python SDK Documentation',
+        author,
+        'B2_Python_SDK',
+        'Backblaze Python SDK',
+        'Miscellaneous',
     ),
 ]
 

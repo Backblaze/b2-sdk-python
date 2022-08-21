@@ -61,12 +61,11 @@ class BaseApplicationKey:
         }
         return {
             **mandatory_args,
-            **{key: value
-               for key, value in optional_args.items() if value is not None},
+            **{key: value for key, value in optional_args.items() if value is not None},
         }
 
     def has_capabilities(self, capabilities) -> bool:
-        """ checks whether the key has ALL of the given capabilities """
+        """checks whether the key has ALL of the given capabilities"""
         return len(set(capabilities) - set(self.capabilities)) == 0
 
     def as_dict(self):
@@ -85,8 +84,7 @@ class BaseApplicationKey:
         }
         return {
             **mandatory_keys,
-            **{key: value
-               for key, value in optional_keys.items() if value is not None},
+            **{key: value for key, value in optional_keys.items() if value is not None},
         }
 
 

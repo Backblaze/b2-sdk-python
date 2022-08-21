@@ -45,7 +45,9 @@ class TestApi:
         self.account_info = InMemoryAccountInfo()
         self.cache = DummyCache()
         self.api = B2Api(
-            self.account_info, self.cache, api_config=B2HttpApiConfig(_raw_api_class=RawSimulator)
+            self.account_info,
+            self.cache,
+            api_config=B2HttpApiConfig(_raw_api_class=RawSimulator),
         )
         self.raw_api = self.api.session.raw_api
         (self.application_key_id, self.master_key) = self.raw_api.create_account()
@@ -73,18 +75,11 @@ class TestApi:
                 'fileName': 'file',
                 'fileRetention': {
                     'isClientAuthorizedToRead': True,
-                    'value': {
-                        'mode': None
-                    }
+                    'value': {'mode': None},
                 },
-                'legalHold': {
-                    'isClientAuthorizedToRead': True,
-                    'value': None
-                },
-                'serverSideEncryption': {
-                    'mode': 'none'
-                },
-                'uploadTimestamp': 5000
+                'legalHold': {'isClientAuthorizedToRead': True, 'value': None},
+                'serverSideEncryption': {'mode': 'none'},
+                'uploadTimestamp': 5000,
             }
         else:
             assert isinstance(result, VFileVersion)
@@ -105,27 +100,19 @@ class TestApi:
                     'lifecycleRules': [],
                     'options': set(),
                     'revision': 1,
-                    'defaultServerSideEncryption':
-                        {
-                            'isClientAuthorizedToRead': True,
-                            'value': {
-                                'mode': 'none'
-                            },
+                    'defaultServerSideEncryption': {
+                        'isClientAuthorizedToRead': True,
+                        'value': {'mode': 'none'},
+                    },
+                    'fileLockConfiguration': {
+                        'isClientAuthorizedToRead': True,
+                        'value': {
+                            'defaultRetention': {'mode': None, 'period': None},
+                            'isFileLockEnabled': None,
                         },
-                    'fileLockConfiguration':
-                        {
-                            'isClientAuthorizedToRead': True,
-                            'value':
-                                {
-                                    'defaultRetention': {
-                                        'mode': None,
-                                        'period': None
-                                    },
-                                    'isFileLockEnabled': None
-                                }
-                        },
+                    },
                 },
-                marks=pytest.mark.apiver(to_ver=0)
+                marks=pytest.mark.apiver(to_ver=0),
             ),
         ],
     )
@@ -145,7 +132,9 @@ class TestApi:
         self._authorize_account()
         self.api.create_bucket('bucket1', 'allPrivate')
         self.api.create_bucket('bucket2', 'allPrivate')
-        assert [b.name for b in self.api.list_buckets(bucket_name='bucket1')] == ['bucket1']
+        assert [b.name for b in self.api.list_buckets(bucket_name='bucket1')] == [
+            'bucket1'
+        ]
 
     def test_buckets_with_encryption(self):
         self._authorize_account()
@@ -153,8 +142,12 @@ class TestApi:
             mode=EncryptionMode.SSE_B2,
             algorithm=EncryptionAlgorithm.AES256,
         )
-        no_encryption = EncryptionSetting(mode=EncryptionMode.NONE,)
-        unknown_encryption = EncryptionSetting(mode=EncryptionMode.UNKNOWN,)
+        no_encryption = EncryptionSetting(
+            mode=EncryptionMode.NONE,
+        )
+        unknown_encryption = EncryptionSetting(
+            mode=EncryptionMode.UNKNOWN,
+        )
 
         b1 = self.api.create_bucket(
             'bucket1',
@@ -184,8 +177,7 @@ class TestApi:
         key = create_key(self.api, ['listBuckets'], 'key1')
         self.api.authorize_account('production', key.id_, key.application_key)
         buckets = {
-            b.name: b
-            for b in self.api.list_buckets()  # scan again with new key
+            b.name: b for b in self.api.list_buckets()  # scan again with new key
         }
 
         assert buckets['bucket1'].default_server_side_encryption == unknown_encryption
@@ -202,19 +194,26 @@ class TestApi:
             mode=EncryptionMode.SSE_B2,
             algorithm=EncryptionAlgorithm.AES256,
         )
-        no_encryption = EncryptionSetting(mode=EncryptionMode.NONE,)
+        no_encryption = EncryptionSetting(
+            mode=EncryptionMode.NONE,
+        )
         if not should_be_encrypted:
             assert bucket.default_server_side_encryption == no_encryption
         else:
             assert bucket.default_server_side_encryption == sse_b2_aes
             assert bucket.default_server_side_encryption.mode == EncryptionMode.SSE_B2
-            assert bucket.default_server_side_encryption.algorithm == EncryptionAlgorithm.AES256
+            assert (
+                bucket.default_server_side_encryption.algorithm
+                == EncryptionAlgorithm.AES256
+            )
 
     def test_list_buckets_with_id(self):
         self._authorize_account()
         bucket = self.api.create_bucket('bucket1', 'allPrivate')
         self.api.create_bucket('bucket2', 'allPrivate')
-        assert [b.name for b in self.api.list_buckets(bucket_id=bucket.id_)] == ['bucket1']
+        assert [b.name for b in self.api.list_buckets(bucket_id=bucket.id_)] == [
+            'bucket1'
+        ]
 
     def test_reauthorize_with_app_key(self):
         # authorize and create a key
@@ -236,7 +235,9 @@ class TestApi:
         self.api.create_bucket('bucket2', 'allPrivate')
         key = create_key(self.api, ['listBuckets'], 'key1', bucket_id=bucket1.id_)
         self.api.authorize_account('production', key.id_, key.application_key)
-        assert [b.name for b in self.api.list_buckets(bucket_name=bucket1.name)] == ['bucket1']
+        assert [b.name for b in self.api.list_buckets(bucket_name=bucket1.name)] == [
+            'bucket1'
+        ]
 
     def test_get_bucket_by_name_with_bucket_restriction(self):
         self._authorize_account()
@@ -273,14 +274,20 @@ class TestApi:
         self.api.authorize_account('production', key.id_, key.application_key)
         with pytest.raises(RestrictedBucket) as excinfo:
             self.api.list_buckets(bucket_id='not the one bound to the key')
-        assert str(excinfo.value) == 'Application key is restricted to bucket: %s' % (bucket1.id_,)
+        assert str(excinfo.value) == 'Application key is restricted to bucket: %s' % (
+            bucket1.id_,
+        )
 
     def _authorize_account(self):
-        self.api.authorize_account('production', self.application_key_id, self.master_key)
+        self.api.authorize_account(
+            'production', self.application_key_id, self.master_key
+        )
 
     def test_update_file_retention(self):
         self._authorize_account()
-        bucket = self.api.create_bucket('bucket1', 'allPrivate', is_file_lock_enabled=True)
+        bucket = self.api.create_bucket(
+            'bucket1', 'allPrivate', is_file_lock_enabled=True
+        )
         created_file = bucket.upload_bytes(b'hello world', 'file')
         assert created_file.file_retention == NO_RETENTION_FILE_SETTING
         new_retention = FileRetentionSetting(RetentionMode.COMPLIANCE, 100)
@@ -296,7 +303,9 @@ class TestApi:
 
     def test_update_legal_hold(self):
         self._authorize_account()
-        bucket = self.api.create_bucket('bucket1', 'allPrivate', is_file_lock_enabled=True)
+        bucket = self.api.create_bucket(
+            'bucket1', 'allPrivate', is_file_lock_enabled=True
+        )
         created_file = bucket.upload_bytes(b'hello world', 'file')
         assert created_file.legal_hold == LegalHold.UNSET
         new_legal_hold = LegalHold.ON
@@ -343,9 +352,15 @@ class TestApi:
     @pytest.mark.apiver(to_ver=1)
     def test_provide_raw_api_v1(self):
         from apiver_deps import B2RawApi  # test for legacy name
+
         old_style_api = B2Api(raw_api=B2RawApi(B2Http(user_agent_append='test append')))
-        new_style_api = B2Api(api_config=B2HttpApiConfig(user_agent_append='test append'))
-        assert old_style_api.session.raw_api.b2_http.user_agent == new_style_api.session.raw_api.b2_http.user_agent
+        new_style_api = B2Api(
+            api_config=B2HttpApiConfig(user_agent_append='test append')
+        )
+        assert (
+            old_style_api.session.raw_api.b2_http.user_agent
+            == new_style_api.session.raw_api.b2_http.user_agent
+        )
         with pytest.raises(InvalidArgument):
             B2Api(
                 raw_api=B2RawApi(B2Http(user_agent_append='test append')),
@@ -387,8 +402,11 @@ class TestApi:
         assert create_result.key_name == 'testkey'
         assert create_result.capabilities == ['readFiles']
         assert create_result.account_id == self.account_info.get_account_id()
-        assert (now + 100 -
-                10) * 1000 < create_result.expiration_timestamp_millis < (now + 100 + 10) * 1000
+        assert (
+            (now + 100 - 10) * 1000
+            < create_result.expiration_timestamp_millis
+            < (now + 100 + 10) * 1000
+        )
         assert create_result.bucket_id == bucket.id_
         assert create_result.name_prefix == 'name'
         # assert create_result.options == ...  TODO
@@ -415,7 +433,10 @@ class TestApi:
             assert delete_result.key_name == create_result.key_name
             assert delete_result.capabilities == create_result.capabilities
             assert delete_result.account_id == create_result.account_id
-            assert delete_result.expiration_timestamp_millis == create_result.expiration_timestamp_millis
+            assert (
+                delete_result.expiration_timestamp_millis
+                == create_result.expiration_timestamp_millis
+            )
             assert delete_result.bucket_id == create_result.bucket_id
             assert delete_result.name_prefix == create_result.name_prefix
 
@@ -436,7 +457,8 @@ class TestApi:
                 'expirationTimestamp': None,
                 'keyName': 'testkey%s' % (ind,),
                 'namePrefix': None,
-            } for ind in [
+            }
+            for ind in [
                 0,
                 1,
                 10,

@@ -19,7 +19,13 @@ import pytest
 from b2sdk.v2 import current_time_millis
 
 from .bucket_cleaner import BucketCleaner
-from .helpers import GENERAL_BUCKET_NAME_PREFIX, BUCKET_NAME_LENGTH, BUCKET_CREATED_AT_MILLIS, bucket_name_part, authorize
+from .helpers import (
+    GENERAL_BUCKET_NAME_PREFIX,
+    BUCKET_NAME_LENGTH,
+    BUCKET_CREATED_AT_MILLIS,
+    bucket_name_part,
+    authorize,
+)
 
 
 class IntegrationTestBase:
@@ -35,7 +41,9 @@ class IntegrationTestBase:
 
     @classmethod
     def setup_class(cls):
-        cls.this_run_bucket_name_prefix = GENERAL_BUCKET_NAME_PREFIX + bucket_name_part(8)
+        cls.this_run_bucket_name_prefix = GENERAL_BUCKET_NAME_PREFIX + bucket_name_part(
+            8
+        )
 
     @classmethod
     def teardown_class(cls):
@@ -66,5 +74,5 @@ class IntegrationTestBase:
         return self.b2_api.create_bucket(
             self.generate_bucket_name(),
             'allPublic',
-            bucket_info={BUCKET_CREATED_AT_MILLIS: str(current_time_millis())}
+            bucket_info={BUCKET_CREATED_AT_MILLIS: str(current_time_millis())},
         )

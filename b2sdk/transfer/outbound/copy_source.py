@@ -25,7 +25,9 @@ class CopySource(OutboundTransferSource):
         source_content_type=None,
     ):
         if not length and offset > 0:
-            raise ValueError('Cannot copy with non zero offset and unknown or zero length')
+            raise ValueError(
+                'Cannot copy with non zero offset and unknown or zero length'
+            )
         self.file_id = file_id
         self.length = length
         self.offset = offset
@@ -78,5 +80,5 @@ class CopySource(OutboundTransferSource):
             range_length,
             encryption=self.encryption,
             source_file_info=self.source_file_info,
-            source_content_type=self.source_content_type
+            source_content_type=self.source_content_type,
         )

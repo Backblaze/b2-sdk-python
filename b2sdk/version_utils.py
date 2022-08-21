@@ -20,7 +20,9 @@ from b2sdk.version import VERSION
 class AbstractVersionDecorator(metaclass=ABCMeta):
     WHAT = NotImplemented  # 'function', 'method', 'class' etc
 
-    def __init__(self, changed_version, cutoff_version=None, reason='', current_version=None):
+    def __init__(
+        self, changed_version, cutoff_version=None, reason='', current_version=None
+    ):
         """
         Changed_version, cutoff_version and current_version are version strings.
         """
@@ -48,19 +50,25 @@ class AbstractVersionDecorator(metaclass=ABCMeta):
         The actual implementation of decorator. Needs self.source to be set before it's called.
         """
         if self.cutoff_version is not None:
-            assert self.changed_version < self.cutoff_version, '%s decorator is set to start renaming %s %r starting at version %s and finishing in %s. It needs to start at a lower version and finish at a higher version.' % (
-                self.__class__.__name__,
-                self.WHAT,
-                self.source,
-                self.changed_version,
-                self.cutoff_version,
+            assert self.changed_version < self.cutoff_version, (
+                '%s decorator is set to start renaming %s %r starting at version %s and finishing in %s. It needs to start at a lower version and finish at a higher version.'
+                % (
+                    self.__class__.__name__,
+                    self.WHAT,
+                    self.source,
+                    self.changed_version,
+                    self.cutoff_version,
+                )
             )
-            assert self.current_version < self.cutoff_version, '%s decorator is still used in version %s when old %s name %r was scheduled to be dropped in %s. It is time to remove the mapping.' % (
-                self.__class__.__name__,
-                self.current_version,
-                self.WHAT,
-                self.source,
-                self.cutoff_version,
+            assert self.current_version < self.cutoff_version, (
+                '%s decorator is still used in version %s when old %s name %r was scheduled to be dropped in %s. It is time to remove the mapping.'
+                % (
+                    self.__class__.__name__,
+                    self.current_version,
+                    self.WHAT,
+                    self.source,
+                    self.cutoff_version,
+                )
             )
 
 
@@ -74,13 +82,16 @@ class AbstractDeprecator(AbstractVersionDecorator):
     @abstractmethod
     def __call__(self, func):
         super(AbstractDeprecator, self).__call__(func)
-        assert self.changed_version <= self.current_version, '%s decorator indicates that the replacement of %s %r should take place in the future version %s, while the current version is %s. It looks like should be _discouraged_ at this point and not _deprecated_ yet. Consider using %r decorator instead.' % (
-            self.__class__.__name__,
-            self.WHAT,
-            self.source,
-            self.changed_version,
-            self.cutoff_version,
-            self.ALTERNATIVE_DECORATOR,
+        assert self.changed_version <= self.current_version, (
+            '%s decorator indicates that the replacement of %s %r should take place in the future version %s, while the current version is %s. It looks like should be _discouraged_ at this point and not _deprecated_ yet. Consider using %r decorator instead.'
+            % (
+                self.__class__.__name__,
+                self.WHAT,
+                self.source,
+                self.changed_version,
+                self.cutoff_version,
+                self.ALTERNATIVE_DECORATOR,
+            )
         )
 
 
@@ -97,6 +108,7 @@ class rename_argument(AbstractDeprecator):
     5
     >>>
     """
+
     WHAT = 'argument'
     ALTERNATIVE_DECORATOR = 'discourage_argument'
 
@@ -109,15 +121,19 @@ class rename_argument(AbstractDeprecator):
 
         @wraps(func)
         def wrapper(*args, **kwargs):
-            message = '%r is not an argument of the decorated function so it cannot be remapped to from a deprecated parameter name' % (
-                self.target,
+            message = (
+                '%r is not an argument of the decorated function so it cannot be remapped to from a deprecated parameter name'
+                % (self.target,)
             )
             signature = inspect.getfullargspec(func)
-            assert self.target in signature.args or self.target in signature.kwonlyargs, message
+            assert (
+                self.target in signature.args or self.target in signature.kwonlyargs
+            ), message
 
             if self.source in kwargs:
-                assert self.target not in kwargs, 'both argument names were provided: %r (deprecated) and %r (new)' % (
-                    self.source, self.target
+                assert self.target not in kwargs, (
+                    'both argument names were provided: %r (deprecated) and %r (new)'
+                    % (self.source, self.target)
                 )
                 kwargs[self.target] = kwargs[self.source]
                 del kwargs[self.source]
@@ -152,6 +168,7 @@ class rename_function(AbstractDeprecator):
     >>>
 
     """
+
     WHAT = 'function'
     ALTERNATIVE_DECORATOR = 'discourage_function'
 

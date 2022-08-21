@@ -16,7 +16,7 @@ from b2sdk.stream.base import ReadOnlyStreamMixin
 
 
 class ChainedStream(ReadOnlyStreamMixin, io.IOBase):
-    """ Chains multiple streams in single stream, sort of what :py:class:`itertools.chain` does for iterators.
+    """Chains multiple streams in single stream, sort of what :py:class:`itertools.chain` does for iterators.
 
     Cleans up buffers of underlying streams when closed.
 
@@ -42,7 +42,7 @@ class ChainedStream(ReadOnlyStreamMixin, io.IOBase):
 
     @property
     def stream(self):
-        """ Return currently processed stream. """
+        """Return currently processed stream."""
         if self._current_stream is None:
             self._next_stream()
         return self._current_stream
@@ -75,7 +75,9 @@ class ChainedStream(ReadOnlyStreamMixin, io.IOBase):
         :param int whence: only allowed value is ``0``
         """
         if pos != 0 or whence != 0:
-            raise io.UnsupportedOperation('Chained stream can only be seeked to beginning')
+            raise io.UnsupportedOperation(
+                'Chained stream can only be seeked to beginning'
+            )
 
         self._reset_chain()
 
@@ -138,17 +140,17 @@ class ChainedStream(ReadOnlyStreamMixin, io.IOBase):
 
 
 class StreamOpener(metaclass=ABCMeta):
-    """ Abstract class to define stream opener with cleanup. """
+    """Abstract class to define stream opener with cleanup."""
 
     @abstractmethod
     def __call__(self):
-        """ Create or open the stream to read and return.
+        """Create or open the stream to read and return.
 
         Can be called multiple times, but streamed data may be cached and reused.
         """
 
     def cleanup(self):
-        """ Clean up stream opener after chained stream closes.
+        """Clean up stream opener after chained stream closes.
 
         Can be used for cleaning cached data that are stored in memory
         to allow resetting chained stream without getting this data more than once,

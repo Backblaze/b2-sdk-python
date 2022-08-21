@@ -20,7 +20,13 @@ import concurrent.futures as futures
 from decimal import Decimal
 from urllib.parse import quote, unquote_plus
 
-from logfury.v1 import DefaultTraceAbstractMeta, DefaultTraceMeta, limit_trace_arguments, disable_trace, trace_call
+from logfury.v1 import (
+    DefaultTraceAbstractMeta,
+    DefaultTraceMeta,
+    limit_trace_arguments,
+    disable_trace,
+    trace_call,
+)
 
 
 def b2_url_encode(s):
@@ -185,7 +191,9 @@ def validate_b2_file_name(name):
     if chr(127) in name:
         raise ValueError("file names must not contain DEL")
     if any(250 < len(segment) for segment in name_utf8.split(b'/')):
-        raise ValueError("file names segments (between '/') can be at most 250 utf-8 bytes")
+        raise ValueError(
+            "file names segments (between '/') can be at most 250 utf-8 bytes"
+        )
 
 
 def is_file_readable(local_path, reporter=None):
@@ -388,6 +396,7 @@ class B2TraceMeta(DefaultTraceMeta):
     """
     Trace all public method calls, except for ones with names that begin with `get_`.
     """
+
     pass
 
 
@@ -396,6 +405,7 @@ class B2TraceMetaAbstract(DefaultTraceAbstractMeta):
     Default class for tracers, to be set as
     a metaclass for abstract base classes.
     """
+
     pass
 
 
@@ -416,6 +426,7 @@ class ConcurrentUsedAuthTokenGuard:
     def __enter__(self):
         if not self.lock.acquire(False):
             from b2sdk.exception import UploadTokenUsedConcurrently
+
             raise UploadTokenUsedConcurrently(self.token)
 
     def __exit__(self, exc_type, exc_val, exc_tb):

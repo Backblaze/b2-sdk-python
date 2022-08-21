@@ -31,7 +31,9 @@ class PartProgressReporter(AbstractProgressListener):
         self.prev_byte_count = 0
 
     def bytes_completed(self, byte_count):
-        self.large_file_upload_state.update_part_bytes(byte_count - self.prev_byte_count)
+        self.large_file_upload_state.update_part_bytes(
+            byte_count - self.prev_byte_count
+        )
         self.prev_byte_count = byte_count
 
     def close(self):

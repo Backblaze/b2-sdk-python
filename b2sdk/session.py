@@ -20,7 +20,7 @@ from b2sdk.b2http import B2Http
 from b2sdk.cache import AbstractCache, AuthInfoCache, DummyCache
 from b2sdk.encryption.setting import EncryptionSetting
 from b2sdk.replication.setting import ReplicationConfiguration
-from b2sdk.exception import (InvalidAuthToken, Unauthorized)
+from b2sdk.exception import InvalidAuthToken, Unauthorized
 from b2sdk.file_lock import BucketRetentionSetting, FileRetentionSetting, LegalHold
 from b2sdk.raw_api import ALL_CAPABILITIES, REALM_URLS
 from b2sdk.api_config import B2HttpApiConfig, DEFAULT_HTTP_API_CONFIG
@@ -38,9 +38,10 @@ class TokenType(Enum):
 
 class B2Session:
     """
-        A facade that supplies the correct api_url and account_auth_token
-        to methods of underlying raw_api and reauthorizes if necessary.
+    A facade that supplies the correct api_url and account_auth_token
+    to methods of underlying raw_api and reauthorizes if necessary.
     """
+
     SQLITE_ACCOUNT_INFO_CLASS = staticmethod(SqliteAccountInfo)
     B2HTTP_CLASS = staticmethod(B2Http)
 
@@ -48,7 +49,7 @@ class B2Session:
         self,
         account_info: Optional[AbstractAccountInfo] = None,
         cache: Optional[AbstractCache] = None,
-        api_config: B2HttpApiConfig = DEFAULT_HTTP_API_CONFIG
+        api_config: B2HttpApiConfig = DEFAULT_HTTP_API_CONFIG,
     ):
         """
         Initialize Session using given account info.
@@ -111,7 +112,9 @@ class B2Session:
         """
         # Authorize
         realm_url = REALM_URLS.get(realm, realm)
-        response = self.raw_api.authorize_account(realm_url, application_key_id, application_key)
+        response = self.raw_api.authorize_account(
+            realm_url, application_key_id, application_key
+        )
         account_id = response['accountId']
         allowed = response['allowed']
 
@@ -131,7 +134,7 @@ class B2Session:
             realm=realm,
             s3_api_url=response['s3ApiUrl'],
             allowed=allowed,
-            application_key_id=application_key_id
+            application_key_id=application_key_id,
         )
 
     def cancel_large_file(self, file_id):
@@ -163,7 +166,13 @@ class B2Session:
         )
 
     def create_key(
-        self, account_id, capabilities, key_name, valid_duration_seconds, bucket_id, name_prefix
+        self,
+        account_id,
+        capabilities,
+        key_name,
+        valid_duration_seconds,
+        bucket_id,
+        name_prefix,
     ):
         return self._wrap_default_token(
             self.raw_api.create_key,
@@ -179,10 +188,14 @@ class B2Session:
         return self._wrap_default_token(self.raw_api.delete_key, application_key_id)
 
     def delete_bucket(self, account_id, bucket_id):
-        return self._wrap_default_token(self.raw_api.delete_bucket, account_id, bucket_id)
+        return self._wrap_default_token(
+            self.raw_api.delete_bucket, account_id, bucket_id
+        )
 
     def delete_file_version(self, file_id, file_name):
-        return self._wrap_default_token(self.raw_api.delete_file_version, file_id, file_name)
+        return self._wrap_default_token(
+            self.raw_api.delete_file_version, file_id, file_name
+        )
 
     def download_file_from_url(
         self, url, range_=None, encryption: Optional[EncryptionSetting] = None
@@ -196,19 +209,27 @@ class B2Session:
         )
 
     def finish_large_file(self, file_id, part_sha1_array):
-        return self._wrap_default_token(self.raw_api.finish_large_file, file_id, part_sha1_array)
-
-    def get_download_authorization(self, bucket_id, file_name_prefix, valid_duration_in_seconds):
         return self._wrap_default_token(
-            self.raw_api.get_download_authorization, bucket_id, file_name_prefix,
-            valid_duration_in_seconds
+            self.raw_api.finish_large_file, file_id, part_sha1_array
+        )
+
+    def get_download_authorization(
+        self, bucket_id, file_name_prefix, valid_duration_in_seconds
+    ):
+        return self._wrap_default_token(
+            self.raw_api.get_download_authorization,
+            bucket_id,
+            file_name_prefix,
+            valid_duration_in_seconds,
         )
 
     def get_file_info_by_id(self, file_id: str) -> Dict[str, Any]:
         return self._wrap_default_token(self.raw_api.get_file_info_by_id, file_id)
 
     def get_file_info_by_name(self, bucket_name: str, file_name: str) -> Dict[str, Any]:
-        return self._wrap_default_token(self.raw_api.get_file_info_by_name, bucket_name, file_name)
+        return self._wrap_default_token(
+            self.raw_api.get_file_info_by_name, bucket_name, file_name
+        )
 
     def get_upload_url(self, bucket_id):
         return self._wrap_default_token(self.raw_api.get_upload_url, bucket_id)
@@ -384,7 +405,9 @@ class B2Session:
         )
 
     def get_download_url_by_id(self, file_id):
-        return self.raw_api.get_download_url_by_id(self.account_info.get_download_url(), file_id)
+        return self.raw_api.get_download_url_by_id(
+            self.account_info.get_download_url(), file_id
+        )
 
     def get_download_url_by_name(self, bucket_name, file_name):
         return self.raw_api.get_download_url_by_name(
@@ -490,7 +513,9 @@ class B2Session:
         if bucket_name is not None:
             key_messages.append("restricted to bucket '" + bucket_name + "'")
         if name_prefix is not None:
-            key_messages.append("restricted to files that start with '" + name_prefix + "'")
+            key_messages.append(
+                "restricted to files that start with '" + name_prefix + "'"
+            )
         if not key_messages:
             key_messages.append('with no restrictions')
 
@@ -531,13 +556,17 @@ class B2Session:
     def _upload_small(self, f, bucket_id, *args, **kwargs):
         upload_url, upload_auth_token = self._get_upload_data(bucket_id)
         response = f(upload_url, upload_auth_token, *args, **kwargs)
-        self.account_info.put_bucket_upload_url(bucket_id, upload_url, upload_auth_token)
+        self.account_info.put_bucket_upload_url(
+            bucket_id, upload_url, upload_auth_token
+        )
         return response
 
     def _upload_part(self, f, file_id, *args, **kwargs):
         upload_url, upload_auth_token = self._get_upload_part_data(file_id)
         response = f(upload_url, upload_auth_token, *args, **kwargs)
-        self.account_info.put_large_file_upload_url(file_id, upload_url, upload_auth_token)
+        self.account_info.put_large_file_upload_url(
+            file_id, upload_url, upload_auth_token
+        )
         return response
 
     def update_file_retention(

@@ -18,8 +18,18 @@ from ..exception import DestFileNewer
 from ..scan.exception import InvalidArgument
 from ..scan.folder import AbstractFolder
 from ..scan.path import AbstractPath
-from .action import B2CopyAction, B2DeleteAction, B2DownloadAction, B2HideAction, B2UploadAction, LocalDeleteAction
-from .encryption_provider import SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER, AbstractSyncEncryptionSettingsProvider
+from .action import (
+    B2CopyAction,
+    B2DeleteAction,
+    B2DownloadAction,
+    B2HideAction,
+    B2UploadAction,
+    LocalDeleteAction,
+)
+from .encryption_provider import (
+    SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER,
+    AbstractSyncEncryptionSettingsProvider,
+)
 
 ONE_DAY_IN_MS = 24 * 60 * 60 * 1000
 
@@ -28,15 +38,19 @@ logger = logging.getLogger(__name__)
 
 @unique
 class NewerFileSyncMode(Enum):
-    """ Mode of handling files newer on destination than on source """
+    """Mode of handling files newer on destination than on source"""
+
     SKIP = 101  #: skip syncing such file
-    REPLACE = 102  #: replace the file on the destination with the (older) file on source
+    REPLACE = (
+        102  #: replace the file on the destination with the (older) file on source
+    )
     RAISE_ERROR = 103  #: raise a non-transient error, failing the sync operation
 
 
 @unique
 class CompareVersionMode(Enum):
-    """ Mode of comparing versions of files to determine what should be synced and what shouldn't """
+    """Mode of comparing versions of files to determine what should be synced and what shouldn't"""
+
     MODTIME = 201  #: use file modification time on source filesystem
     SIZE = 202  #: compare using file size
     NONE = 203  #: compare using file name only
@@ -46,6 +60,7 @@ class AbstractFileSyncPolicy(metaclass=ABCMeta):
     """
     Abstract policy class.
     """
+
     DESTINATION_PREFIX = NotImplemented
     SOURCE_PREFIX = NotImplemented
 
@@ -60,8 +75,7 @@ class AbstractFileSyncPolicy(metaclass=ABCMeta):
         newer_file_mode: NewerFileSyncMode,
         compare_threshold: int,
         compare_version_mode: CompareVersionMode = CompareVersionMode.MODTIME,
-        encryption_settings_provider:
-        AbstractSyncEncryptionSettingsProvider = SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER,
+        encryption_settings_provider: AbstractSyncEncryptionSettingsProvider = SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER,
     ):
         """
         :param b2sdk.v2.AbstractPath source_path: source file object
@@ -164,7 +178,10 @@ class AbstractFileSyncPolicy(metaclass=ABCMeta):
                         return False
                     else:
                         raise DestFileNewer(
-                            dest_path, source_path, cls.DESTINATION_PREFIX, cls.SOURCE_PREFIX
+                            dest_path,
+                            source_path,
+                            cls.DESTINATION_PREFIX,
+                            cls.SOURCE_PREFIX,
                         )
 
         # Compare using file size
@@ -223,6 +240,7 @@ class DownPolicy(AbstractFileSyncPolicy):
     """
     File is synced down (from the cloud to disk).
     """
+
     DESTINATION_PREFIX = 'local://'
     SOURCE_PREFIX = 'b2://'
 
@@ -239,6 +257,7 @@ class UpPolicy(AbstractFileSyncPolicy):
     """
     File is synced up (from disk the cloud).
     """
+
     DESTINATION_PREFIX = 'b2://'
     SOURCE_PREFIX = 'local://'
 
@@ -302,7 +321,7 @@ class DownAndDeletePolicy(DownPolicy):
         ):
             yield LocalDeleteAction(
                 self._dest_path.relative_path,
-                self._dest_folder.make_full_path(self._dest_path.relative_path)
+                self._dest_folder.make_full_path(self._dest_path.relative_path),
             )
 
 
@@ -310,6 +329,7 @@ class DownAndKeepDaysPolicy(DownPolicy):
     """
     File is synced down (from the cloud to disk) and the keepDays flag is SET.
     """
+
     pass
 
 
@@ -317,6 +337,7 @@ class CopyPolicy(AbstractFileSyncPolicy):
     """
     File is copied (server-side).
     """
+
     DESTINATION_PREFIX = 'b2://'
     SOURCE_PREFIX = 'b2://'
 
@@ -462,7 +483,8 @@ def make_b2_keep_days_actions(
         # Do we need to hide this version?
         if version_index == 0 and source_path is None and version.action == 'upload':
             yield B2HideAction(
-                dest_path.relative_path, dest_folder.make_full_path(dest_path.relative_path)
+                dest_path.relative_path,
+                dest_folder.make_full_path(dest_path.relative_path),
             )
 
         # Can we start deleting? Once we start deleting, all older

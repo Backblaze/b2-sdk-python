@@ -47,12 +47,16 @@ def _translate_local_path_to_file(path: v2.LocalSyncPath) -> File:
     return File(path.relative_path, [version])
 
 
-_path_translation_map = {'b2': _translate_b2_path_to_file, 'local': _translate_local_path_to_file}
+_path_translation_map = {
+    'b2': _translate_b2_path_to_file,
+    'local': _translate_local_path_to_file,
+}
 
 
 # The goal is to create v2.SyncPath objects from v1.File objects
-def make_paths_from_files(dest_file: File, source_file: File,
-                          sync_type: str) -> Tuple[v2.AbstractSyncPath, v2.AbstractSyncPath]:
+def make_paths_from_files(
+    dest_file: File, source_file: File, sync_type: str
+) -> Tuple[v2.AbstractSyncPath, v2.AbstractSyncPath]:
     assert sync_type in ('b2-to-b2', 'b2-to-local', 'local-to-b2')
     sync_type_split = sync_type.split('-')
 
@@ -78,8 +82,11 @@ def _translate_local_file_to_path(file: File) -> v2.AbstractSyncPath:
         absolute_path=file.latest_version().id_,
         relative_path=file.name,
         mod_time=file.latest_version().mod_time,
-        size=file.latest_version().size
+        size=file.latest_version().size,
     )
 
 
-_file_translation_map = {'b2': _translate_b2_file_to_path, 'local': _translate_local_file_to_path}
+_file_translation_map = {
+    'b2': _translate_b2_file_to_path,
+    'local': _translate_local_file_to_path,
+}

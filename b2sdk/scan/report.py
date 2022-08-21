@@ -112,7 +112,7 @@ class ProgressReport:
         message = ' count: %d/%d   %s' % (
             self.count,
             self.total_count,
-            format_and_scale_number(rate, '/s')
+            format_and_scale_number(rate, '/s'),
         )  # yapf: disable
 
         self._print_line(message, False)
@@ -139,8 +139,8 @@ class ProgressReport:
                 )
             self.stdout.write(line.encode('ascii', 'backslashreplace').decode())
             logger.warning(
-                'could not output the following line with encoding %s on stdout due to %s: %s' %
-                (self.stdout.encoding, encode_error, line)
+                'could not output the following line with encoding %s on stdout due to %s: %s'
+                % (self.stdout.encoding, encode_error, line)
             )
         if newline:
             self.stdout.write('\n')
@@ -176,7 +176,9 @@ class ProgressReport:
         :param path: file path
         :type path: str
         """
-        self.warnings.append('WARNING: %s could not be accessed (broken symlink?)' % (path,))
+        self.warnings.append(
+            'WARNING: %s could not be accessed (broken symlink?)' % (path,)
+        )
 
     def local_permission_error(self, path):
         """
@@ -198,6 +200,7 @@ def sample_report_run():
     Generate a sample report.
     """
     import sys
+
     report = ProgressReport(sys.stdout, False)
 
     for i in range(20):

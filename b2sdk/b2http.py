@@ -22,8 +22,17 @@ import time
 from typing import Any, Dict, Optional
 
 from .exception import (
-    B2Error, B2RequestTimeoutDuringUpload, BadDateFormat, BrokenPipe, B2ConnectionError,
-    B2RequestTimeout, ClockSkew, ConnectionReset, interpret_b2_error, UnknownError, UnknownHost
+    B2Error,
+    B2RequestTimeoutDuringUpload,
+    BadDateFormat,
+    BrokenPipe,
+    B2ConnectionError,
+    B2RequestTimeout,
+    ClockSkew,
+    ConnectionReset,
+    interpret_b2_error,
+    UnknownError,
+    UnknownHost,
 )
 from .api_config import B2HttpApiConfig, DEFAULT_HTTP_API_CONFIG
 from .requests import NotDecompressingResponse
@@ -247,7 +256,9 @@ class B2Http:
         finally:
             response.close()
 
-    def post_json_return_json(self, url, headers, params, try_count: int = TRY_COUNT_OTHER):
+    def post_json_return_json(
+        self, url, headers, params, try_count: int = TRY_COUNT_OTHER
+    ):
         """
         Use like this:
 
@@ -388,11 +399,16 @@ class B2Http:
             response = fcn()
             if response.status_code not in [200, 206]:
                 # Decode the error object returned by the service
-                error = json.loads(response.content.decode('utf-8')) if response.content else {}
+                error = (
+                    json.loads(response.content.decode('utf-8'))
+                    if response.content
+                    else {}
+                )
                 extra_error_keys = error.keys() - ('code', 'status', 'message')
                 if extra_error_keys:
                     logger.debug(
-                        'received error has extra (unsupported) keys: %s', extra_error_keys
+                        'received error has extra (unsupported) keys: %s',
+                        extra_error_keys,
                     )
                 raise interpret_b2_error(
                     int(error.get('status', response.status_code)),
@@ -442,7 +458,9 @@ class B2Http:
                 if 'ECONNRESET' in text:
                     raise ConnectionReset()
 
-            logger.exception('_translate_errors has intercepted an unexpected exception')
+            logger.exception(
+                '_translate_errors has intercepted an unexpected exception'
+            )
             raise UnknownError(text)
 
     @classmethod
@@ -496,7 +514,9 @@ class NotDecompressingHTTPAdapter(HTTPAdapter):
     """
 
     def build_response(self, req, resp):
-        return NotDecompressingResponse.from_builtin_response(super().build_response(req, resp))
+        return NotDecompressingResponse.from_builtin_response(
+            super().build_response(req, resp)
+        )
 
 
 def test_http():
@@ -549,7 +569,9 @@ def test_http():
     print('TEST: broken pipe')
     try:
         data = io.BytesIO(b'\x00' * 10000000)
-        b2_http.post_content_return_json('https://api.backblazeb2.com/bad_url', {}, data)
+        b2_http.post_content_return_json(
+            'https://api.backblazeb2.com/bad_url', {}, data
+        )
         assert False, 'should have failed with broken pipe'
     except BrokenPipe:
         pass
@@ -557,7 +579,9 @@ def test_http():
     # Generic connection error
     print('TEST: generic connection error')
     try:
-        with b2_http.get_content('https://www.backblazeb2.com:80/bad_url', {}) as response:
+        with b2_http.get_content(
+            'https://www.backblazeb2.com:80/bad_url', {}
+        ) as response:
             assert False, 'should have failed with connection error'
             response.iter_content()  # make pyflakes happy
     except B2ConnectionError:

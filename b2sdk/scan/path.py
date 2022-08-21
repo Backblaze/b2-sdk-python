@@ -30,14 +30,19 @@ class AbstractPath(ABC):
 
     def __repr__(self):
         return '%s(%s, %s, %s)' % (
-            self.__class__.__name__, repr(self.relative_path), repr(self.mod_time), repr(self.size)
+            self.__class__.__name__,
+            repr(self.relative_path),
+            repr(self.mod_time),
+            repr(self.size),
         )
 
 
 class LocalPath(AbstractPath):
     __slots__ = ['absolute_path', 'relative_path', 'mod_time', 'size']
 
-    def __init__(self, absolute_path: str, relative_path: str, mod_time: int, size: int):
+    def __init__(
+        self, absolute_path: str, relative_path: str, mod_time: int, size: int
+    ):
         self.absolute_path = absolute_path
         super().__init__(relative_path, mod_time, size)
 
@@ -46,9 +51,10 @@ class LocalPath(AbstractPath):
 
     def __eq__(self, other):
         return (
-            self.absolute_path == other.absolute_path and
-            self.relative_path == other.relative_path and self.mod_time == other.mod_time and
-            self.size == other.size
+            self.absolute_path == other.absolute_path
+            and self.relative_path == other.relative_path
+            and self.mod_time == other.mod_time
+            and self.size == other.size
         )
 
 
@@ -56,7 +62,10 @@ class B2Path(AbstractPath):
     __slots__ = ['relative_path', 'selected_version', 'all_versions']
 
     def __init__(
-        self, relative_path: str, selected_version: FileVersion, all_versions: List[FileVersion]
+        self,
+        relative_path: str,
+        selected_version: FileVersion,
+        all_versions: List[FileVersion],
     ):
         self.selected_version = selected_version
         self.all_versions = all_versions
@@ -75,18 +84,22 @@ class B2Path(AbstractPath):
 
     def __repr__(self):
         return '%s(%s, [%s])' % (
-            self.__class__.__name__, self.relative_path, ', '.join(
-                '(%s, %s, %s)' % (
+            self.__class__.__name__,
+            self.relative_path,
+            ', '.join(
+                '(%s, %s, %s)'
+                % (
                     repr(fv.id_),
                     repr(fv.mod_time_millis),
                     repr(fv.action),
-                ) for fv in self.all_versions
-            )
+                )
+                for fv in self.all_versions
+            ),
         )
 
     def __eq__(self, other):
         return (
-            self.relative_path == other.relative_path and
-            self.selected_version == other.selected_version and
-            self.all_versions == other.all_versions
+            self.relative_path == other.relative_path
+            and self.selected_version == other.selected_version
+            and self.all_versions == other.all_versions
         )

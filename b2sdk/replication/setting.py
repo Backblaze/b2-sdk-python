@@ -44,7 +44,8 @@ class ReplicationRule:
 
         if not (self.MIN_PRIORITY <= self.priority <= self.MAX_PRIORITY):
             raise ValueError(
-                'priority should be within [%d, %d] interval' % (
+                'priority should be within [%d, %d] interval'
+                % (
                     self.MIN_PRIORITY,
                     self.MAX_PRIORITY,
                 )
@@ -84,6 +85,7 @@ class ReplicationConfiguration:
     """
     Hold information about bucket replication configuration
     """
+
     # configuration as source:
     rules: List[ReplicationRule] = field(default_factory=list)
     source_key_id: Optional[str] = None
@@ -98,7 +100,9 @@ class ReplicationConfiguration:
             if not source or not destination:
                 raise ValueError(
                     "source_to_destination_key_mapping must not contain \
-                     empty keys or values: ({}, {})".format(source, destination)
+                     empty keys or values: ({}, {})".format(
+                        source, destination
+                    )
                 )
 
     @property
@@ -159,15 +163,17 @@ class ReplicationConfiguration:
         """
 
         result = {
-            'asReplicationSource':
-                {
-                    "replicationRules": [rule.as_dict() for rule in self.rules],
-                    "sourceApplicationKeyId": self.source_key_id,
-                } if self.is_source else None,
-            'asReplicationDestination':
-                {
-                    'sourceToDestinationKeyMapping': self.source_to_destination_key_mapping,
-                } if self.is_destination else None,
+            'asReplicationSource': {
+                "replicationRules": [rule.as_dict() for rule in self.rules],
+                "sourceApplicationKeyId": self.source_key_id,
+            }
+            if self.is_source
+            else None,
+            'asReplicationDestination': {
+                'sourceToDestinationKeyMapping': self.source_to_destination_key_mapping,
+            }
+            if self.is_destination
+            else None,
         }
 
         return result
@@ -185,7 +191,9 @@ class ReplicationConfiguration:
                 for rule_dict in source_dict.get('replicationRules', [])
             ],
             source_key_id=source_dict.get('sourceApplicationKeyId'),
-            source_to_destination_key_mapping=destination_dict.get('sourceToDestinationKeyMapping')
+            source_to_destination_key_mapping=destination_dict.get(
+                'sourceToDestinationKeyMapping'
+            )
             or {},
         )
 
@@ -205,6 +213,8 @@ class ReplicationConfigurationFactory:
         value_dict = replication_dict.get('value') or {}
 
         return cls(
-            is_client_authorized_to_read=replication_dict.get('isClientAuthorizedToRead', True),
+            is_client_authorized_to_read=replication_dict.get(
+                'isClientAuthorizedToRead', True
+            ),
             value=ReplicationConfiguration.from_dict(value_dict),
         )

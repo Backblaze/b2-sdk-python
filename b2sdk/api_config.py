@@ -24,7 +24,7 @@ class B2HttpApiConfig:
         install_clock_skew_hook: bool = True,
         user_agent_append: Optional[str] = None,
         _raw_api_class: Optional[Type[AbstractRawApi]] = None,
-        decode_content: bool = False
+        decode_content: bool = False,
     ):
         """
         A structure with params to be passed to low level API.

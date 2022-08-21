@@ -12,7 +12,9 @@ from .exception import InvalidArgument
 from .folder import B2Folder, LocalFolder
 
 
-def parse_folder(folder_name, api, local_folder_class=LocalFolder, b2_folder_class=B2Folder):
+def parse_folder(
+    folder_name, api, local_folder_class=LocalFolder, b2_folder_class=B2Folder
+):
     """
     Take either a local path, or a B2 path, and returns a Folder
     object for it.

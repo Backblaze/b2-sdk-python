@@ -9,9 +9,17 @@
 ######################################################################
 
 from ..scan.path import AbstractPath
-from .policy import CopyAndDeletePolicy, CopyAndKeepDaysPolicy, CopyPolicy, \
-    DownAndDeletePolicy, DownAndKeepDaysPolicy, DownPolicy, UpAndDeletePolicy, \
-    UpAndKeepDaysPolicy, UpPolicy
+from .policy import (
+    CopyAndDeletePolicy,
+    CopyAndKeepDaysPolicy,
+    CopyPolicy,
+    DownAndDeletePolicy,
+    DownAndKeepDaysPolicy,
+    DownPolicy,
+    UpAndDeletePolicy,
+    UpAndKeepDaysPolicy,
+    UpPolicy,
+)
 
 
 class SyncPolicyManager:
@@ -100,7 +108,8 @@ class SyncPolicyManager:
             else:
                 return CopyPolicy
         raise NotImplementedError(
-            'invalid sync type: %s, keep_days: %s, delete: %s' % (
+            'invalid sync type: %s, keep_days: %s, delete: %s'
+            % (
                 sync_type,
                 keep_days,
                 delete,

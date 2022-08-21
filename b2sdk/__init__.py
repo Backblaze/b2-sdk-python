@@ -22,6 +22,7 @@ class UrllibWarningFilter:
 logging.getLogger('urllib3.connectionpool').addFilter(UrllibWarningFilter())
 
 import b2sdk.version
+
 __version__ = b2sdk.version.VERSION
 assert __version__  # PEP-0396
 
@@ -32,4 +33,5 @@ except ImportError:
     pass
 else:
     import warnings
+
     warnings.simplefilter("ignore", ArrowParseWarning)

@@ -25,7 +25,7 @@ class B2Session(v2.B2Session):
         account_info=None,
         cache=None,
         raw_api: v2.B2RawHTTPApi = None,
-        api_config: Optional[v2.B2HttpApiConfig] = None
+        api_config: Optional[v2.B2HttpApiConfig] = None,
     ):
         if raw_api is not None and api_config is not None:
             raise InvalidArgument(
@@ -48,7 +48,9 @@ class B2Session(v2.B2Session):
         """
         # Authorize
         realm_url = self.account_info.REALM_URLS.get(realm, realm)
-        response = self.raw_api.authorize_account(realm_url, application_key_id, application_key)
+        response = self.raw_api.authorize_account(
+            realm_url, application_key_id, application_key
+        )
         account_id = response['accountId']
         allowed = response['allowed']
 
@@ -67,5 +69,5 @@ class B2Session(v2.B2Session):
             realm=realm,
             s3_api_url=response['s3ApiUrl'],
             allowed=allowed,
-            application_key_id=application_key_id
+            application_key_id=application_key_id,
         )

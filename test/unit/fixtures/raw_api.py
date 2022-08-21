@@ -40,5 +40,7 @@ def fake_b2_raw_api_responses():
 def fake_b2_raw_api(mocker, fake_b2http, fake_b2_raw_api_responses):
     raw_api = mocker.MagicMock(name='FakeB2RawHTTPApi', spec=B2RawHTTPApi)
     raw_api.b2_http = fake_b2http
-    raw_api.authorize_account.return_value = fake_b2_raw_api_responses['authorize_account']
+    raw_api.authorize_account.return_value = fake_b2_raw_api_responses[
+        'authorize_account'
+    ]
     return raw_api

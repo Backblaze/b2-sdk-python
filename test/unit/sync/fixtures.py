@@ -10,7 +10,14 @@
 
 import pytest
 
-from apiver_deps import DEFAULT_SCAN_MANAGER, POLICY_MANAGER, CompareVersionMode, KeepOrDeleteMode, NewerFileSyncMode, Synchronizer
+from apiver_deps import (
+    DEFAULT_SCAN_MANAGER,
+    POLICY_MANAGER,
+    CompareVersionMode,
+    KeepOrDeleteMode,
+    NewerFileSyncMode,
+    Synchronizer,
+)
 
 
 @pytest.fixture(scope='session')

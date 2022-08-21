@@ -31,7 +31,7 @@ GIGABYTE = 1000 * MEGABYTE
 
 
 class UploadBuffer:
-    """ data container used by EmergePlanner for temporary storage of write intents """
+    """data container used by EmergePlanner for temporary storage of write intents"""
 
     def __init__(self, start_offset, buff=None):
         self._start_offset = start_offset
@@ -76,12 +76,13 @@ class UploadBuffer:
             if start_idx == 0:
                 start_offset = self.start_offset
             else:
-                start_offset = self._buff[start_idx - 1:start_idx][0][1]
+                start_offset = self._buff[start_idx - 1 : start_idx][0][1]
         return self.__class__(start_offset, buff_slice)
 
 
 class EmergePlanner:
-    """ Creates a list of actions required for advanced creation of an object in the cloud from an iterator of write intent objects """
+    """Creates a list of actions required for advanced creation of an object in the cloud from an iterator of write intent objects"""
+
     DEFAULT_MIN_PART_SIZE = 5 * MEGABYTE
     DEFAULT_RECOMMENDED_UPLOAD_PART_SIZE = 100 * MEGABYTE
     DEFAULT_MAX_PART_SIZE = 5 * GIGABYTE
@@ -93,9 +94,15 @@ class EmergePlanner:
         max_part_size=None,
     ):
         self.min_part_size = min_part_size or self.DEFAULT_MIN_PART_SIZE
-        self.recommended_upload_part_size = recommended_upload_part_size or self.DEFAULT_RECOMMENDED_UPLOAD_PART_SIZE
+        self.recommended_upload_part_size = (
+            recommended_upload_part_size or self.DEFAULT_RECOMMENDED_UPLOAD_PART_SIZE
+        )
         self.max_part_size = max_part_size or self.DEFAULT_MAX_PART_SIZE
-        assert self.min_part_size <= self.recommended_upload_part_size <= self.max_part_size
+        assert (
+            self.min_part_size
+            <= self.recommended_upload_part_size
+            <= self.max_part_size
+        )
 
     @classmethod
     def from_account_info(
@@ -103,13 +110,19 @@ class EmergePlanner:
         account_info,
         min_part_size=None,
         recommended_upload_part_size=None,
-        max_part_size=None
+        max_part_size=None,
     ):
         if recommended_upload_part_size is None:
             recommended_upload_part_size = account_info.get_recommended_part_size()
-        if min_part_size is None and recommended_upload_part_size < cls.DEFAULT_MIN_PART_SIZE:
+        if (
+            min_part_size is None
+            and recommended_upload_part_size < cls.DEFAULT_MIN_PART_SIZE
+        ):
             min_part_size = recommended_upload_part_size
-        if max_part_size is None and recommended_upload_part_size > cls.DEFAULT_MAX_PART_SIZE:
+        if (
+            max_part_size is None
+            and recommended_upload_part_size > cls.DEFAULT_MAX_PART_SIZE
+        ):
             max_part_size = recommended_upload_part_size
         kwargs = {
             'min_part_size': min_part_size,
@@ -119,23 +132,29 @@ class EmergePlanner:
         return cls(**{key: value for key, value in kwargs.items() if value is not None})
 
     def get_emerge_plan(self, write_intents):
-        write_intents = sorted(write_intents, key=lambda intent: intent.destination_offset)
+        write_intents = sorted(
+            write_intents, key=lambda intent: intent.destination_offset
+        )
 
         # the upload part size recommended by the server causes errors with files larger than 1TB
         # (with the current 100MB part size and 10000 part count limit).
         # Therefore here we increase the recommended upload part size if needed.
         # the constant is for handling mixed upload/copy in concatenate etc
-        max_destination_offset = max(intent.destination_end_offset for intent in write_intents)
+        max_destination_offset = max(
+            intent.destination_end_offset for intent in write_intents
+        )
         self.recommended_upload_part_size = max(
             self.recommended_upload_part_size,
             min(
                 ceil(1.5 * max_destination_offset / 10000),
                 self.max_part_size,
-            )
+            ),
         )
-        assert self.min_part_size <= self.recommended_upload_part_size <= self.max_part_size, (
-            self.min_part_size, self.recommended_upload_part_size, self.max_part_size
-        )
+        assert (
+            self.min_part_size
+            <= self.recommended_upload_part_size
+            <= self.max_part_size
+        ), (self.min_part_size, self.recommended_upload_part_size, self.max_part_size)
         return self._get_emerge_plan(write_intents, EmergePlan)
 
     def get_streaming_emerge_plan(self, write_intent_iterator):
@@ -144,7 +163,9 @@ class EmergePlanner:
     def _get_emerge_plan(self, write_intent_iterator, plan_class):
         return plan_class(
             self._get_emerge_parts(
-                self._select_intent_fragments(self._validatation_iterator(write_intent_iterator))
+                self._select_intent_fragments(
+                    self._validatation_iterator(write_intent_iterator)
+                )
             )
         )
 
@@ -189,7 +210,10 @@ class EmergePlanner:
             # should we flush the upload buffer or do we have to add a chunk of the copy first?
             if current_intent.is_copy() and current_len >= min_part_size:
                 # check if we can flush upload buffer or there is some missing bytes to fill it to `min_part_size`
-                if upload_buffer.intent_count() > 0 and upload_buffer.length < min_part_size:
+                if (
+                    upload_buffer.intent_count() > 0
+                    and upload_buffer.length < min_part_size
+                ):
                     missing_length = min_part_size - upload_buffer.length
                 else:
                     missing_length = 0
@@ -246,12 +270,17 @@ class EmergePlanner:
                     yield self._get_upload_part(upload_buffer_part)
 
     def _get_upload_part(self, upload_buffer):
-        """ Build emerge part from upload buffer. """
-        if upload_buffer.intent_count() == 1 and upload_buffer.get_intent(0).is_upload():
+        """Build emerge part from upload buffer."""
+        if (
+            upload_buffer.intent_count() == 1
+            and upload_buffer.get_intent(0).is_upload()
+        ):
             intent = upload_buffer.get_intent(0)
             relative_offset = upload_buffer.start_offset - intent.destination_offset
             length = upload_buffer.length
-            definition = UploadEmergePartDefinition(intent.outbound_source, relative_offset, length)
+            definition = UploadEmergePartDefinition(
+                intent.outbound_source, relative_offset, length
+            )
         else:
             subparts = []
             fragment_start = upload_buffer.start_offset
@@ -264,13 +293,15 @@ class EmergePlanner:
                     subpart_class = RemoteSourceUploadSubpart
                 else:
                     raise RuntimeError('This cannot happen!!!')
-                subparts.append(subpart_class(intent.outbound_source, relative_offset, length))
+                subparts.append(
+                    subpart_class(intent.outbound_source, relative_offset, length)
+                )
                 fragment_start = fragment_end
             definition = UploadSubpartsEmergePartDefinition(subparts)
         return EmergePart(definition)
 
     def _get_copy_parts(self, copy_intent, start_offset, end_offset):
-        """ Split copy intent to emerge parts. """
+        """Split copy intent to emerge parts."""
         fragment_length = end_offset - start_offset
         part_count = int(fragment_length / self.max_part_size)
         last_part_length = fragment_length % self.max_part_size
@@ -287,17 +318,20 @@ class EmergePlanner:
             base_part_size = int(fragment_length / part_count)
             size_remainder = fragment_length % part_count
             part_sizes = [
-                base_part_size + (1 if i < size_remainder else 0) for i in range(part_count)
+                base_part_size + (1 if i < size_remainder else 0)
+                for i in range(part_count)
             ]
 
         copy_source = copy_intent.outbound_source
         relative_offset = start_offset - copy_intent.destination_offset
         for part_size in part_sizes:
-            yield EmergePart(CopyEmergePartDefinition(copy_source, relative_offset, part_size))
+            yield EmergePart(
+                CopyEmergePartDefinition(copy_source, relative_offset, part_size)
+            )
             relative_offset += part_size
 
     def _buff_split(self, upload_buffer):
-        """ Split upload buffer to parts candidates - smaller upload buffers.
+        """Split upload buffer to parts candidates - smaller upload buffers.
 
         :rtype iterator[b2sdk.transfer.emerge.planner.planner.UploadBuffer]:
         """
@@ -305,7 +339,10 @@ class EmergePlanner:
             return
         tail_buffer = upload_buffer
         while True:
-            if tail_buffer.length < self.recommended_upload_part_size + self.min_part_size:
+            if (
+                tail_buffer.length
+                < self.recommended_upload_part_size + self.min_part_size
+            ):
                 # `EmergePlanner_buff_partition` can split in such way that tail part
                 # can be smaller than `min_part_size` - to avoid unnecessary download of possible
                 # incoming copy intent, we don't split further
@@ -315,7 +352,7 @@ class EmergePlanner:
             yield head_buff
 
     def _buff_partition(self, upload_buffer):
-        """ Split upload buffer to two parts (smaller upload buffers).
+        """Split upload buffer to two parts (smaller upload buffers).
 
         In result left part cannot be split more, and nothing can be assumed about right part.
 
@@ -340,7 +377,7 @@ class EmergePlanner:
         return left_buff, UploadBuffer(left_buff.end_offset)
 
     def _select_intent_fragments(self, write_intent_iterator):
-        """ Select overapping write intent fragments to use.
+        """Select overapping write intent fragments to use.
 
         To solve overlapping intents selection, intents can be split to smaller fragments.
         Those fragments are yieled as soon as decision can be made to use them,
@@ -370,7 +407,9 @@ class EmergePlanner:
             upload_intents = list(
                 upload_intents_state.state_update(last_sent_offset, incoming_offset)
             )
-            copy_intents = list(copy_intents_state.state_update(last_sent_offset, incoming_offset))
+            copy_intents = list(
+                copy_intents_state.state_update(last_sent_offset, incoming_offset)
+            )
 
             intent_fragments = self._merge_intent_fragments(
                 last_sent_offset,
@@ -385,7 +424,9 @@ class EmergePlanner:
             if incoming_offset is not None and last_sent_offset < incoming_offset:
                 raise ValueError(
                     'Cannot emerge file with holes. '
-                    'Found hole range: ({}, {})'.format(last_sent_offset, incoming_offset)
+                    'Found hole range: ({}, {})'.format(
+                        last_sent_offset, incoming_offset
+                    )
                 )
 
             if incoming_intent is None:
@@ -399,7 +440,7 @@ class EmergePlanner:
                 raise RuntimeError('This should not happen at all!')
 
     def _merge_intent_fragments(self, start_offset, upload_intents, copy_intents):
-        """ Select "competing" upload and copy fragments.
+        """Select "competing" upload and copy fragments.
 
         Upload and copy fragments may overlap so we need to choose right one
         to use - copy fragments are prioritized unless this fragment is unprotected
@@ -436,19 +477,23 @@ class EmergePlanner:
                 return
 
     def _validatation_iterator(self, write_intents):
-        """ Iterate over write intents and validate length and order. """
+        """Iterate over write intents and validate length and order."""
         last_offset = 0
         for write_intent in write_intents:
             if write_intent.length is None:
-                raise ValueError('Planner cannot support write intents of unknown length')
+                raise ValueError(
+                    'Planner cannot support write intents of unknown length'
+                )
             if write_intent.destination_offset < last_offset:
-                raise ValueError('Write intent stream have to be sorted by destination offset')
+                raise ValueError(
+                    'Write intent stream have to be sorted by destination offset'
+                )
             last_offset = write_intent.destination_offset
             yield write_intent
 
 
 class IntentsState:
-    """ Store and process state of incoming write intents to solve
+    """Store and process state of incoming write intents to solve
     overlapping intents selection in streaming manner.
 
     It does not check if intents are of the same kind (upload/copy), but the intention
@@ -470,7 +515,7 @@ class IntentsState:
         self._next_intent_end = None
 
     def add(self, incoming_intent):
-        """ Add incoming intent to state.
+        """Add incoming intent to state.
 
         It has to called *after* ``IntentsState.state_update`` but it is not verified.
         """
@@ -486,7 +531,7 @@ class IntentsState:
             self._set_next_intent(incoming_intent)
 
     def state_update(self, last_sent_offset, incoming_offset):
-        """ Update the state using incoming intent offset.
+        """Update the state using incoming intent offset.
 
         It has to be called *before* ``IntentsState.add`` and even if incoming intent
         would not be added to this intents state. It would yield a state of this stream
@@ -511,9 +556,11 @@ class IntentsState:
             return
 
         if (
-            self._current_intent is None and self._next_intent is not None and (
-                self._next_intent.destination_offset != effective_incoming_offset or
-                incoming_offset is None
+            self._current_intent is None
+            and self._next_intent is not None
+            and (
+                self._next_intent.destination_offset != effective_incoming_offset
+                or incoming_offset is None
             )
         ):
             self._set_current_intent(self._next_intent, last_sent_offset)
@@ -521,8 +568,9 @@ class IntentsState:
 
         # current and next can be both not None at this point only if they overlap
         if (
-            self._current_intent is not None and self._next_intent is not None and
-            effective_incoming_offset > self._current_intent_end
+            self._current_intent is not None
+            and self._next_intent is not None
+            and effective_incoming_offset > self._current_intent_end
         ):
             # incoming intent does not overlap with current intent
             # so we switch to next because we are sure that we will have to use it anyway
@@ -539,7 +587,9 @@ class IntentsState:
                 )
                 if remaining_len > 0:
                     last_sent_offset += remaining_len
-                    if not self._can_be_protected(last_sent_offset, self._next_intent_end):
+                    if not self._can_be_protected(
+                        last_sent_offset, self._next_intent_end
+                    ):
                         last_sent_offset = self._current_intent_end
                     yield self._current_intent, last_sent_offset, True
                 self._set_current_intent(self._next_intent, last_sent_offset)
@@ -569,7 +619,7 @@ class IntentsState:
             self._next_intent_end = None
 
     def _is_current_intent_protected(self):
-        """ States if current intent is protected.
+        """States if current intent is protected.
 
         Intent can be split to smaller fragments, but to choose upload over "small copy"
         we need to know for fragment if it is a "small copy" or not. In result of solving
@@ -580,7 +630,9 @@ class IntentsState:
         that used length of this intent is smaller than ``protected_intent_length`` and the algorithm
         was unable to avoid this.
         """
-        return self._can_be_protected(self._current_intent_start, self._current_intent_end)
+        return self._can_be_protected(
+            self._current_intent_start, self._current_intent_end
+        )
 
     def _can_be_protected(self, start, end):
         return end - start >= self.protected_intent_length
@@ -621,13 +673,17 @@ class EmergePlan(BaseEmergePlan):
         if all(part.is_hashable() for part in self.emerge_parts):
             return None
 
-        json_id = json.dumps([emerge_part.get_part_id() for emerge_part in self.emerge_parts])
+        json_id = json.dumps(
+            [emerge_part.get_part_id() for emerge_part in self.emerge_parts]
+        )
         return hashlib.sha1(json_id.encode()).hexdigest()
 
 
 class StreamingEmergePlan(BaseEmergePlan):
     def __init__(self, emerge_parts_iterator):
-        emerge_parts, self._is_large_file = self._peek_for_large_file(emerge_parts_iterator)
+        emerge_parts, self._is_large_file = self._peek_for_large_file(
+            emerge_parts_iterator
+        )
         super(StreamingEmergePlan, self).__init__(emerge_parts)
 
     def is_large_file(self):

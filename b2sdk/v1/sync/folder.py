@@ -27,7 +27,8 @@ def translate_errors(func):
             raise Exception('unable to create directory %s' % (ex.path,))
         except exception.EmptyDirectory as ex:
             raise exception.CommandError(
-                'Directory %s is empty.  Use --allowEmptySource to sync anyway.' % (ex.path,)
+                'Directory %s is empty.  Use --allowEmptySource to sync anyway.'
+                % (ex.path,)
             )
 
     return wrapper

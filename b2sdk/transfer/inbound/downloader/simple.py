@@ -45,7 +45,9 @@ class SimpleDownloader(AbstractDownloader):
             digest.update(data)
             bytes_read += len(data)
 
-        assert actual_size >= 1  # code below does `actual_size - 1`, but it should never reach that part with an empty file
+        assert (
+            actual_size >= 1
+        )  # code below does `actual_size - 1`, but it should never reach that part with an empty file
 
         # now, normally bytes_read == download_version.content_length, but sometimes there is a timeout
         # or something and the server closes connection, while neither tcp or http have a problem
@@ -62,7 +64,9 @@ class SimpleDownloader(AbstractDownloader):
             # but this is a very rare case and so it is not worth the optimization
             logger.debug(
                 're-download attempts remaining: %i, bytes read already: %i. Getting range %s now.',
-                retries_left, bytes_read, new_range
+                retries_left,
+                bytes_read,
+                new_range,
             )
             with session.download_file_from_url(
                 response.request.url,

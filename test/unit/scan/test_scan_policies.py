@@ -25,17 +25,29 @@ class TestScanPoliciesManager:
         'param,exception',
         [
             pytest.param(
-                'exclude_dir_regexes', InvalidArgument, marks=pytest.mark.apiver(from_ver=2)
+                'exclude_dir_regexes',
+                InvalidArgument,
+                marks=pytest.mark.apiver(from_ver=2),
             ),
             pytest.param(
-                'exclude_file_regexes', InvalidArgument, marks=pytest.mark.apiver(from_ver=2)
+                'exclude_file_regexes',
+                InvalidArgument,
+                marks=pytest.mark.apiver(from_ver=2),
             ),
             pytest.param(
-                'include_file_regexes', InvalidArgument, marks=pytest.mark.apiver(from_ver=2)
+                'include_file_regexes',
+                InvalidArgument,
+                marks=pytest.mark.apiver(from_ver=2),
             ),
-            pytest.param('exclude_dir_regexes', re.error, marks=pytest.mark.apiver(to_ver=1)),
-            pytest.param('exclude_file_regexes', re.error, marks=pytest.mark.apiver(to_ver=1)),
-            pytest.param('include_file_regexes', re.error, marks=pytest.mark.apiver(to_ver=1)),
+            pytest.param(
+                'exclude_dir_regexes', re.error, marks=pytest.mark.apiver(to_ver=1)
+            ),
+            pytest.param(
+                'exclude_file_regexes', re.error, marks=pytest.mark.apiver(to_ver=1)
+            ),
+            pytest.param(
+                'include_file_regexes', re.error, marks=pytest.mark.apiver(to_ver=1)
+            ),
         ],
     )
     def test_illegal_regex(self, param, exception):
@@ -52,13 +64,23 @@ class TestScanPoliciesManager:
         'param,exception',
         [
             pytest.param(
-                'exclude_modified_before', InvalidArgument, marks=pytest.mark.apiver(from_ver=2)
+                'exclude_modified_before',
+                InvalidArgument,
+                marks=pytest.mark.apiver(from_ver=2),
             ),
             pytest.param(
-                'exclude_modified_after', InvalidArgument, marks=pytest.mark.apiver(from_ver=2)
+                'exclude_modified_after',
+                InvalidArgument,
+                marks=pytest.mark.apiver(from_ver=2),
             ),
-            pytest.param('exclude_modified_before', ValueError, marks=pytest.mark.apiver(to_ver=1)),
-            pytest.param('exclude_modified_after', ValueError, marks=pytest.mark.apiver(to_ver=1)),
+            pytest.param(
+                'exclude_modified_before',
+                ValueError,
+                marks=pytest.mark.apiver(to_ver=1),
+            ),
+            pytest.param(
+                'exclude_modified_after', ValueError, marks=pytest.mark.apiver(to_ver=1)
+            ),
         ],
     )
     def test_illegal_timestamp(self, param, exception):

@@ -18,7 +18,13 @@ from abc import ABCMeta, abstractmethod
 from typing import Iterator
 
 from ..utils import fix_windows_path_limit, get_file_mtime, is_file_readable
-from .exception import EmptyDirectory, EnvironmentEncodingError, NotADirectory, UnableToCreateDirectory, UnsupportedFilename
+from .exception import (
+    EmptyDirectory,
+    EnvironmentEncodingError,
+    NotADirectory,
+    UnableToCreateDirectory,
+    UnsupportedFilename,
+)
 from .path import AbstractPath, B2Path, LocalPath
 from .policies import DEFAULT_SCAN_MANAGER, ScanPoliciesManager
 from .report import ProgressReport
@@ -26,16 +32,16 @@ from .report import ProgressReport
 DRIVE_MATCHER = re.compile(r"^([A-Za-z]):([/\\])")
 ABSOLUTE_PATH_MATCHER = re.compile(r"^(/)|^(\\)")
 RELATIVE_PATH_MATCHER = re.compile(
-                           # "abc" and "xyz" represent anything, including "nothing"
-    r"^(\.\.[/\\])|" +     # ../abc or ..\abc
-    r"^(\.[/\\])|" +       # ./abc or .\abc
-    r"([/\\]\.\.[/\\])|" + # abc/../xyz or abc\..\xyz or abc\../xyz or abc/..\xyz
-    r"([/\\]\.[/\\])|" +   # abc/./xyz or abc\.\xyz or abc\./xyz or abc/.\xyz
-    r"([/\\]\.\.)$|" +     # abc/.. or abc\..
-    r"([/\\]\.)$|" +       # abc/. or abc\.
-    r"^(\.\.)$|" +         # just ".."
-    r"([/\\][/\\])|" +     # abc\/xyz or abc/\xyz or abc//xyz or abc\\xyz
-    r"^(\.)$"              # just "."
+    # "abc" and "xyz" represent anything, including "nothing"
+    r"^(\.\.[/\\])|"
+    + r"^(\.[/\\])|"  # ../abc or ..\abc
+    + r"([/\\]\.\.[/\\])|"  # ./abc or .\abc
+    + r"([/\\]\.[/\\])|"  # abc/../xyz or abc\..\xyz or abc\../xyz or abc/..\xyz
+    + r"([/\\]\.\.)$|"  # abc/./xyz or abc\.\xyz or abc\./xyz or abc/.\xyz
+    + r"([/\\]\.)$|"  # abc/.. or abc\..
+    + r"^(\.\.)$|"  # abc/. or abc\.
+    + r"([/\\][/\\])|"  # just ".."
+    + r"^(\.)$"  # abc\/xyz or abc/\xyz or abc//xyz or abc\\xyz  # just "."
 )  # yapf: disable
 
 logger = logging.getLogger(__name__)
@@ -52,8 +58,9 @@ class AbstractFolder(metaclass=ABCMeta):
     """
 
     @abstractmethod
-    def all_files(self, reporter: ProgressReport,
-                  policies_manager=DEFAULT_SCAN_MANAGER) -> Iterator[AbstractPath]:
+    def all_files(
+        self, reporter: ProgressReport, policies_manager=DEFAULT_SCAN_MANAGER
+    ) -> Iterator[AbstractPath]:
         """
         Return an iterator over all of the files in the folder, in
         the order that B2 uses.
@@ -124,8 +131,9 @@ class LocalFolder(AbstractFolder):
         """
         return 'local'
 
-    def all_files(self, reporter: ProgressReport,
-                  policies_manager=DEFAULT_SCAN_MANAGER) -> Iterator[LocalPath]:
+    def all_files(
+        self, reporter: ProgressReport, policies_manager=DEFAULT_SCAN_MANAGER
+    ) -> Iterator[LocalPath]:
         """
         Yield all files.
 
@@ -178,8 +186,11 @@ class LocalFolder(AbstractFolder):
             raise EmptyDirectory(self.root)
 
     def _walk_relative_paths(
-        self, local_dir: str, relative_dir_path: str, reporter,
-        policies_manager: ScanPoliciesManager
+        self,
+        local_dir: str,
+        relative_dir_path: str,
+        reporter,
+        policies_manager: ScanPoliciesManager,
     ):
         """
         Yield a File object for each of the files anywhere under this folder, in the
@@ -214,7 +225,7 @@ class LocalFolder(AbstractFolder):
             if '/' in name:
                 raise UnsupportedFilename(
                     "scan does not support file names that include '/'",
-                    "%s in dir %s" % (name, local_dir)
+                    "%s in dir %s" % (name, local_dir),
                 )
 
             local_path = os.path.join(local_dir, name)
@@ -320,7 +331,7 @@ class B2Folder(AbstractFolder):
     def all_files(
         self,
         reporter: ProgressReport,
-        policies_manager: ScanPoliciesManager = DEFAULT_SCAN_MANAGER
+        policies_manager: ScanPoliciesManager = DEFAULT_SCAN_MANAGER,
     ) -> Iterator[B2Path]:
         """
         Yield all files.
@@ -336,7 +347,7 @@ class B2Folder(AbstractFolder):
             assert file_version.file_name.startswith(self.prefix)
             if file_version.action == 'start':
                 continue
-            file_name = file_version.file_name[len(self.prefix):]
+            file_name = file_version.file_name[len(self.prefix) :]
             if last_ignored_dir is not None and file_name.startswith(last_ignored_dir):
                 continue
 
@@ -353,11 +364,15 @@ class B2Folder(AbstractFolder):
 
             self._validate_file_name(file_name)
 
-            if current_name != file_name and current_name is not None and current_versions:
+            if (
+                current_name != file_name
+                and current_name is not None
+                and current_versions
+            ):
                 yield B2Path(
                     relative_path=current_name,
                     selected_version=current_versions[0],
-                    all_versions=current_versions
+                    all_versions=current_versions,
                 )
                 current_versions = []
 
@@ -368,7 +383,7 @@ class B2Folder(AbstractFolder):
             yield B2Path(
                 relative_path=current_name,
                 selected_version=current_versions[0],
-                all_versions=current_versions
+                all_versions=current_versions,
             )
 
     def get_file_versions(self):
@@ -383,7 +398,8 @@ class B2Folder(AbstractFolder):
         # Do not allow relative paths in file names
         if RELATIVE_PATH_MATCHER.search(file_name):
             raise UnsupportedFilename(
-                "scan does not support file names that include relative paths", file_name
+                "scan does not support file names that include relative paths",
+                file_name,
             )
         # Do not allow absolute paths in file names
         if ABSOLUTE_PATH_MATCHER.search(file_name):

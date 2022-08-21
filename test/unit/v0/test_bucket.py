@@ -32,17 +32,35 @@ from .deps import B2Api
 from .deps import LargeFileUploadState
 from .deps import DownloadDestBytes, PreSeekedDownloadDest
 from .deps import FileVersionInfo
-from .deps import LegalHold, FileRetentionSetting, RetentionMode, NO_RETENTION_FILE_SETTING
+from .deps import (
+    LegalHold,
+    FileRetentionSetting,
+    RetentionMode,
+    NO_RETENTION_FILE_SETTING,
+)
 from .deps import MetadataDirectiveMode
 from .deps import Part
 from .deps import AbstractProgressListener
-from .deps import StubAccountInfo, RawSimulator, BucketSimulator, FakeResponse, FileSimulator
+from .deps import (
+    StubAccountInfo,
+    RawSimulator,
+    BucketSimulator,
+    FakeResponse,
+    FileSimulator,
+)
 from .deps import ParallelDownloader
 from .deps import SimpleDownloader
 from .deps import UploadSourceBytes
 from .deps import hex_sha1_of_bytes, TempDir
-from .deps import EncryptionAlgorithm, EncryptionSetting, EncryptionSettingFactory, EncryptionMode, \
-    EncryptionKey, SSE_NONE, SSE_B2_AES
+from .deps import (
+    EncryptionAlgorithm,
+    EncryptionSetting,
+    EncryptionSettingFactory,
+    EncryptionMode,
+    EncryptionKey,
+    SSE_NONE,
+    SSE_B2_AES,
+)
 from .deps import CopySource, UploadSourceLocalFile, WriteIntent
 
 SSE_C_AES = EncryptionSetting(
@@ -205,7 +223,9 @@ class TestReauthorization(TestCaseWithBucket):
                 self.__called = True
                 raise InvalidAuthToken('message', 401)
 
-        self.simulator.create_bucket = InvalidAuthTokenWrapper(self.simulator.create_bucket)
+        self.simulator.create_bucket = InvalidAuthTokenWrapper(
+            self.simulator.create_bucket
+        )
         self.bucket = self.api.create_bucket('your-bucket', 'allPublic')
 
 
@@ -221,20 +241,34 @@ class TestListParts(TestCaseWithBucket):
         large_file_upload_state = mock.MagicMock()
         large_file_upload_state.has_error.return_value = False
         self.api.services.upload_manager.upload_part(
-            self.bucket_id, file1.file_id, UploadSourceBytes(content), 1, large_file_upload_state
+            self.bucket_id,
+            file1.file_id,
+            UploadSourceBytes(content),
+            1,
+            large_file_upload_state,
         ).result()
         self.api.services.upload_manager.upload_part(
-            self.bucket_id, file1.file_id, UploadSourceBytes(content), 2, large_file_upload_state
+            self.bucket_id,
+            file1.file_id,
+            UploadSourceBytes(content),
+            2,
+            large_file_upload_state,
         ).result()
         self.api.services.upload_manager.upload_part(
-            self.bucket_id, file1.file_id, UploadSourceBytes(content), 3, large_file_upload_state
+            self.bucket_id,
+            file1.file_id,
+            UploadSourceBytes(content),
+            3,
+            large_file_upload_state,
         ).result()
         expected_parts = [
             Part('9999', 1, 11, content_sha1),
             Part('9999', 2, 11, content_sha1),
             Part('9999', 3, 11, content_sha1),
         ]
-        self.assertEqual(expected_parts, list(self.bucket.list_parts(file1.file_id, batch_size=1)))
+        self.assertEqual(
+            expected_parts, list(self.bucket.list_parts(file1.file_id, batch_size=1))
+        )
 
 
 class TestUploadPart(TestCaseWithBucket):
@@ -246,8 +280,11 @@ class TestUploadPart(TestCaseWithBucket):
         large_file_upload_state.set_error('test error')
         try:
             self.bucket.api.services.upload_manager.upload_part(
-                self.bucket.id_, file1.file_id, UploadSourceBytes(content), 1,
-                large_file_upload_state
+                self.bucket.id_,
+                file1.file_id,
+                UploadSourceBytes(content),
+                1,
+                large_file_upload_state,
             ).result()
             self.fail('should have thrown')
         except AlreadyFailed:
@@ -267,7 +304,8 @@ class TestListUnfinished(TestCaseWithBucket):
         file2 = self.bucket.start_large_file('file2.txt', 'text/plain', {})
         file3 = self.bucket.start_large_file('file3.txt', 'text/plain', {})
         self.assertEqual(
-            [file1, file2, file3], list(self.bucket.list_unfinished_large_files(batch_size=1))
+            [file1, file2, file3],
+            list(self.bucket.list_unfinished_large_files(batch_size=1)),
         )
 
     def _make_file(self, file_id, file_name):
@@ -283,7 +321,14 @@ class TestGetFileInfo(TestCaseWithBucket):
 
         self.assertIsInstance(info, FileVersionInfo)
         expected = (
-            a_id, 'a', 11, 'upload', 'b2/x-auto', 'none', NO_RETENTION_FILE_SETTING, LegalHold.UNSET
+            a_id,
+            'a',
+            11,
+            'upload',
+            'b2/x-auto',
+            'none',
+            NO_RETENTION_FILE_SETTING,
+            LegalHold.UNSET,
         )
         actual = (
             info.id_,
@@ -305,7 +350,9 @@ class TestGetFileInfo(TestCaseWithBucket):
         legal_hold = LegalHold.ON
         file_retention = FileRetentionSetting(RetentionMode.COMPLIANCE, 100)
 
-        bucket.upload_bytes(data, 'a', file_retention=file_retention, legal_hold=legal_hold)
+        bucket.upload_bytes(
+            data, 'a', file_retention=file_retention, legal_hold=legal_hold
+        )
 
         file_version = bucket.get_file_info_by_name('a')
 
@@ -315,16 +362,19 @@ class TestGetFileInfo(TestCaseWithBucket):
         low_perm_account_info = StubAccountInfo()
         low_perm_api = B2Api(low_perm_account_info, raw_api=self.simulator)
         low_perm_key_resp = self.api.create_key(
-            key_name='lowperm', capabilities=[
+            key_name='lowperm',
+            capabilities=[
                 'listKeys',
                 'listBuckets',
                 'listFiles',
                 'readFiles',
-            ]
+            ],
         )
 
         low_perm_api.authorize_account(
-            'production', low_perm_key_resp['applicationKeyId'], low_perm_key_resp['applicationKey']
+            'production',
+            low_perm_key_resp['applicationKeyId'],
+            low_perm_key_resp['applicationKey'],
         )
         low_perm_bucket = low_perm_api.get_bucket_by_name('my-bucket-with-file-lock')
 
@@ -362,7 +412,9 @@ class TestLs(TestCaseWithBucket):
         self.bucket.upload_bytes(data, 'bb')
         self.bucket.upload_bytes(data, 'ccc')
         expected = [
-            ('a', 11, 'upload', None), ('bb', 11, 'upload', None), ('ccc', 11, 'upload', None)
+            ('a', 11, 'upload', None),
+            ('bb', 11, 'upload', None),
+            ('ccc', 11, 'upload', None),
         ]
         self.assertBucketContents(expected, '')
 
@@ -375,8 +427,9 @@ class TestLs(TestCaseWithBucket):
         self.bucket.upload_bytes(data, 'bb/3')
         self.bucket.upload_bytes(data, 'ccc')
         expected = [
-            ('bb/1', 11, 'upload', None), ('bb/2/sub1', 11, 'upload', 'bb/2/'),
-            ('bb/3', 11, 'upload', None)
+            ('bb/1', 11, 'upload', None),
+            ('bb/2/sub1', 11, 'upload', 'bb/2/'),
+            ('bb/3', 11, 'upload', None),
         ]
         self.assertBucketContents(expected, 'bb', fetch_count=1)
 
@@ -398,7 +451,9 @@ class TestLs(TestCaseWithBucket):
         ]
         actual = [
             (info.id_, info.file_name, info.size, info.action, folder)
-            for (info, folder) in self.bucket.ls('bb', show_versions=True, fetch_count=1)
+            for (info, folder) in self.bucket.ls(
+                'bb', show_versions=True, fetch_count=1
+            )
         ]
         self.assertEqual(expected, actual)
 
@@ -442,7 +497,11 @@ class TestListVersions(TestCaseWithBucket):
         # c_id = self.bucket.upload_bytes(data, 'c', encryption=SSE_NONE).id_  # TODO
         self.bucket.copy(a_id, 'd', destination_encryption=SSE_B2_AES)
         self.bucket.copy(
-            b_id, 'e', destination_encryption=SSE_C_AES, file_info={}, content_type='text/plain'
+            b_id,
+            'e',
+            destination_encryption=SSE_C_AES,
+            file_info={},
+            content_type='text/plain',
         )
 
         actual = [info for info in self.bucket.list_file_versions('a')['files']][0]
@@ -470,13 +529,19 @@ class TestCopyFile(TestCaseWithBucket):
     def test_copy_without_optional_params(self):
         file_id = self._make_file()
         self.bucket.copy_file(file_id, 'hello_new.txt')
-        expected = [('hello.txt', 11, 'upload', None), ('hello_new.txt', 11, 'upload', None)]
+        expected = [
+            ('hello.txt', 11, 'upload', None),
+            ('hello_new.txt', 11, 'upload', None),
+        ]
         self.assertBucketContents(expected, '', show_versions=True)
 
     def test_copy_with_range(self):
         file_id = self._make_file()
         self.bucket.copy_file(file_id, 'hello_new.txt', bytes_range=(3, 9))
-        expected = [('hello.txt', 11, 'upload', None), ('hello_new.txt', 7, 'upload', None)]
+        expected = [
+            ('hello.txt', 11, 'upload', None),
+            ('hello_new.txt', 7, 'upload', None),
+        ]
         self.assertBucketContents(expected, '', show_versions=True)
 
     def test_copy_with_invalid_metadata(self):
@@ -573,13 +638,15 @@ class TestCopyFile(TestCaseWithBucket):
                     resulting_file_version = self.bucket.copy(
                         file_id,
                         'copied_file',
-                        file_retention=FileRetentionSetting(RetentionMode.COMPLIANCE, 100),
+                        file_retention=FileRetentionSetting(
+                            RetentionMode.COMPLIANCE, 100
+                        ),
                         legal_hold=LegalHold.ON,
                         max_part_size=400,
                     )
                     self.assertEqual(
                         FileRetentionSetting(RetentionMode.COMPLIANCE, 100),
-                        resulting_file_version.file_retention
+                        resulting_file_version.file_retention,
                     )
                     self.assertEqual(LegalHold.ON, resulting_file_version.legal_hold)
 
@@ -605,16 +672,18 @@ class TestCopyFile(TestCaseWithBucket):
                         file_id=a_id,
                         destination_encryption=SSE_C_AES,
                         file_info={'new': 'value'},
-                        content_type='text/plain'
-                    ), SSE_C_AES_NO_SECRET
+                        content_type='text/plain',
+                    ),
+                    SSE_C_AES_NO_SECRET,
                 ),
                 (
                     dict(
                         file_id=a_id,
                         destination_encryption=SSE_C_AES,
                         source_file_info={'old': 'value'},
-                        source_content_type='text/plain'
-                    ), SSE_C_AES_NO_SECRET
+                        source_content_type='text/plain',
+                    ),
+                    SSE_C_AES_NO_SECRET,
                 ),
                 (dict(file_id=b_id), SSE_NONE),
                 (dict(file_id=b_id, source_encryption=SSE_B2_AES), SSE_NONE),
@@ -622,8 +691,9 @@ class TestCopyFile(TestCaseWithBucket):
                     dict(
                         file_id=b_id,
                         source_encryption=SSE_B2_AES,
-                        destination_encryption=SSE_B2_AES
-                    ), SSE_B2_AES
+                        destination_encryption=SSE_B2_AES,
+                    ),
+                    SSE_B2_AES,
                 ),
                 (
                     dict(
@@ -631,8 +701,9 @@ class TestCopyFile(TestCaseWithBucket):
                         source_encryption=SSE_B2_AES,
                         destination_encryption=SSE_C_AES,
                         file_info={'new': 'value'},
-                        content_type='text/plain'
-                    ), SSE_C_AES_NO_SECRET
+                        content_type='text/plain',
+                    ),
+                    SSE_C_AES_NO_SECRET,
                 ),
                 (
                     dict(
@@ -640,29 +711,35 @@ class TestCopyFile(TestCaseWithBucket):
                         source_encryption=SSE_B2_AES,
                         destination_encryption=SSE_C_AES,
                         source_file_info={'old': 'value'},
-                        source_content_type='text/plain'
-                    ), SSE_C_AES_NO_SECRET
+                        source_content_type='text/plain',
+                    ),
+                    SSE_C_AES_NO_SECRET,
                 ),
                 (
                     dict(
                         file_id=c_id,
                         source_encryption=SSE_C_AES,
                         file_info={'new': 'value'},
-                        content_type='text/plain'
-                    ), SSE_NONE
+                        content_type='text/plain',
+                    ),
+                    SSE_NONE,
                 ),
                 (
                     dict(
                         file_id=c_id,
                         source_encryption=SSE_C_AES,
                         source_file_info={'old': 'value'},
-                        source_content_type='text/plain'
-                    ), SSE_NONE
+                        source_content_type='text/plain',
+                    ),
+                    SSE_NONE,
                 ),
                 (
                     dict(
-                        file_id=c_id, source_encryption=SSE_C_AES, destination_encryption=SSE_C_AES
-                    ), SSE_C_AES_NO_SECRET
+                        file_id=c_id,
+                        source_encryption=SSE_C_AES,
+                        destination_encryption=SSE_C_AES,
+                    ),
+                    SSE_C_AES_NO_SECRET,
                 ),
                 (
                     dict(
@@ -670,8 +747,9 @@ class TestCopyFile(TestCaseWithBucket):
                         source_encryption=SSE_C_AES,
                         destination_encryption=SSE_B2_AES,
                         source_file_info={'old': 'value'},
-                        source_content_type='text/plain'
-                    ), SSE_B2_AES
+                        source_content_type='text/plain',
+                    ),
+                    SSE_B2_AES,
                 ),
                 (
                     dict(
@@ -679,8 +757,9 @@ class TestCopyFile(TestCaseWithBucket):
                         source_encryption=SSE_C_AES,
                         destination_encryption=SSE_B2_AES,
                         file_info={'new': 'value'},
-                        content_type='text/plain'
-                    ), SSE_B2_AES
+                        content_type='text/plain',
+                    ),
+                    SSE_B2_AES,
                 ),
                 (
                     dict(
@@ -688,8 +767,9 @@ class TestCopyFile(TestCaseWithBucket):
                         source_encryption=SSE_C_AES,
                         destination_encryption=SSE_C_AES_2,
                         source_file_info={'old': 'value'},
-                        source_content_type='text/plain'
-                    ), SSE_C_AES_2_NO_SECRET
+                        source_content_type='text/plain',
+                    ),
+                    SSE_C_AES_2_NO_SECRET,
                 ),
                 (
                     dict(
@@ -697,14 +777,19 @@ class TestCopyFile(TestCaseWithBucket):
                         source_encryption=SSE_C_AES,
                         destination_encryption=SSE_C_AES_2,
                         file_info={'new': 'value'},
-                        content_type='text/plain'
-                    ), SSE_C_AES_2_NO_SECRET
+                        content_type='text/plain',
+                    ),
+                    SSE_C_AES_2_NO_SECRET,
                 ),
             ]:
                 with self.subTest(kwargs=kwargs, length=length, data=data):
-                    file_info = self.bucket.copy(**kwargs, new_file_name='new_file', length=length)
+                    file_info = self.bucket.copy(
+                        **kwargs, new_file_name='new_file', length=length
+                    )
                     self.assertTrue(isinstance(file_info, FileVersionInfo))
-                    self.assertEqual(file_info.server_side_encryption, expected_encryption)
+                    self.assertEqual(
+                        file_info.server_side_encryption, expected_encryption
+                    )
 
     def _make_file(self, bucket=None):
         data = b'hello world'
@@ -746,7 +831,9 @@ class TestUpload(TestCaseWithBucket):
             path = os.path.join(d, 'file1')
             data = b'hello world'
             write_file(path, data)
-            file_info = self.bucket.upload_local_file(path, 'file1', encryption=SSE_B2_AES)
+            file_info = self.bucket.upload_local_file(
+                path, 'file1', encryption=SSE_B2_AES
+            )
             self.assertTrue(isinstance(file_info, FileVersionInfo))
             self.assertEqual(file_info.server_side_encryption, SSE_B2_AES)
             self._check_file_contents('file1', data)
@@ -756,7 +843,9 @@ class TestUpload(TestCaseWithBucket):
             path = os.path.join(d, 'file1')
             data = b'hello world'
             write_file(path, data)
-            file_info = self.bucket.upload_local_file(path, 'file1', encryption=SSE_C_AES)
+            file_info = self.bucket.upload_local_file(
+                path, 'file1', encryption=SSE_C_AES
+            )
             self.assertTrue(isinstance(file_info, FileVersionInfo))
             self.assertEqual(SSE_C_AES_NO_SECRET, file_info.server_side_encryption)
             self._check_file_contents('file1', data)
@@ -772,7 +861,7 @@ class TestUpload(TestCaseWithBucket):
                 'file1',
                 encryption=SSE_C_AES,
                 file_retention=retention,
-                legal_hold=LegalHold.ON
+                legal_hold=LegalHold.ON,
             )
             self._check_file_contents('file1', data)
             self.assertEqual(retention, file_info.file_retention)
@@ -792,7 +881,9 @@ class TestUpload(TestCaseWithBucket):
             self.bucket.upload_local_file(path, 'file1')
             self._check_file_contents('file1', data)
 
-    @pytest.mark.skipif(platform.system() == 'Windows', reason='no os.mkfifo() on Windows')
+    @pytest.mark.skipif(
+        platform.system() == 'Windows', reason='no os.mkfifo() on Windows'
+    )
     def test_upload_fifo(self):
         with TempDir() as d:
             path = os.path.join(d, 'file1')
@@ -800,7 +891,9 @@ class TestUpload(TestCaseWithBucket):
             with self.assertRaises(InvalidUploadSource):
                 self.bucket.upload_local_file(path, 'file1')
 
-    @pytest.mark.skipif(platform.system() == 'Windows', reason='no os.symlink() on Windows')
+    @pytest.mark.skipif(
+        platform.system() == 'Windows', reason='no os.symlink() on Windows'
+    )
     def test_upload_dead_symlink(self):
         with TempDir() as d:
             path = os.path.join(d, 'file1')
@@ -838,7 +931,9 @@ class TestUpload(TestCaseWithBucket):
         large_file_id = self._start_large_file('file1')
         self._upload_part(large_file_id, 1, data[:part_size])
         progress_listener = StubProgressListener()
-        file_info = self.bucket.upload_bytes(data, 'file1', progress_listener=progress_listener)
+        file_info = self.bucket.upload_bytes(
+            data, 'file1', progress_listener=progress_listener
+        )
         self.assertEqual(large_file_id, file_info.id_)
         self._check_file_contents('file1', data)
         self.assertTrue(progress_listener.is_valid())
@@ -848,8 +943,12 @@ class TestUpload(TestCaseWithBucket):
         data = self._make_data(part_size * 3)
         large_file_id = self._start_large_file('file1')
         progress_listener = StubProgressListener()
-        file_info = self.bucket.upload_bytes(data, 'file1', progress_listener=progress_listener)
-        self.assertNotEqual(large_file_id, file_info.id_)  # it's not a match if there are no parts
+        file_info = self.bucket.upload_bytes(
+            data, 'file1', progress_listener=progress_listener
+        )
+        self.assertNotEqual(
+            large_file_id, file_info.id_
+        )  # it's not a match if there are no parts
         self._check_file_contents('file1', data)
         self.assertTrue(progress_listener.is_valid())
 
@@ -858,10 +957,12 @@ class TestUpload(TestCaseWithBucket):
         data = self._make_data(part_size * 3)
         large_file_id = self._start_large_file('file1')
         self._upload_part(large_file_id, 1, data[:part_size])
-        self._upload_part(large_file_id, 2, data[part_size:2 * part_size])
-        self._upload_part(large_file_id, 3, data[2 * part_size:])
+        self._upload_part(large_file_id, 2, data[part_size : 2 * part_size])
+        self._upload_part(large_file_id, 3, data[2 * part_size :])
         progress_listener = StubProgressListener()
-        file_info = self.bucket.upload_bytes(data, 'file1', progress_listener=progress_listener)
+        file_info = self.bucket.upload_bytes(
+            data, 'file1', progress_listener=progress_listener
+        )
         self.assertEqual(large_file_id, file_info.id_)
         self._check_file_contents('file1', data)
         self.assertTrue(progress_listener.is_valid())
@@ -870,9 +971,13 @@ class TestUpload(TestCaseWithBucket):
         part_size = self.simulator.MIN_PART_SIZE
         data = self._make_data(part_size * 3)
         large_file_id = self._start_large_file('file1')
-        self._upload_part(large_file_id, 3, data[:part_size])  # wrong part number for this data
+        self._upload_part(
+            large_file_id, 3, data[:part_size]
+        )  # wrong part number for this data
         progress_listener = StubProgressListener()
-        file_info = self.bucket.upload_bytes(data, 'file1', progress_listener=progress_listener)
+        file_info = self.bucket.upload_bytes(
+            data, 'file1', progress_listener=progress_listener
+        )
         self.assertNotEqual(large_file_id, file_info.id_)
         self._check_file_contents('file1', data)
         self.assertTrue(progress_listener.is_valid())
@@ -881,9 +986,11 @@ class TestUpload(TestCaseWithBucket):
         part_size = self.simulator.MIN_PART_SIZE
         data = self._make_data(part_size * 3)
         large_file_id = self._start_large_file('file1')
-        self._upload_part(large_file_id, 1, data[:part_size + 1])  # one byte to much
+        self._upload_part(large_file_id, 1, data[: part_size + 1])  # one byte to much
         progress_listener = StubProgressListener()
-        file_info = self.bucket.upload_bytes(data, 'file1', progress_listener=progress_listener)
+        file_info = self.bucket.upload_bytes(
+            data, 'file1', progress_listener=progress_listener
+        )
         self.assertNotEqual(large_file_id, file_info.id_)
         self._check_file_contents('file1', data)
         self.assertTrue(progress_listener.is_valid())
@@ -895,7 +1002,10 @@ class TestUpload(TestCaseWithBucket):
         self._upload_part(large_file_id, 1, data[:part_size])
         progress_listener = StubProgressListener()
         file_info = self.bucket.upload_bytes(
-            data, 'file1', progress_listener=progress_listener, file_infos={'property': 'value1'}
+            data,
+            'file1',
+            progress_listener=progress_listener,
+            file_infos={'property': 'value1'},
         )
         self.assertEqual(large_file_id, file_info.id_)
         self._check_file_contents('file1', data)
@@ -908,7 +1018,10 @@ class TestUpload(TestCaseWithBucket):
         self._upload_part(large_file_id, 1, data[:part_size])
         progress_listener = StubProgressListener()
         file_info = self.bucket.upload_bytes(
-            data, 'file1', progress_listener=progress_listener, file_infos={'property': 'value2'}
+            data,
+            'file1',
+            progress_listener=progress_listener,
+            file_infos={'property': 'value2'},
         )
         self.assertNotEqual(large_file_id, file_info.id_)
         self._check_file_contents('file1', data)
@@ -918,7 +1031,12 @@ class TestUpload(TestCaseWithBucket):
         if file_info is None:
             file_info = {}
         large_file_info = self.simulator.start_large_file(
-            self.api_url, self.account_auth_token, self.bucket_id, file_name, None, file_info
+            self.api_url,
+            self.account_auth_token,
+            self.bucket_id,
+            file_name,
+            None,
+            file_info,
         )
         return large_file_info['fileId']
 
@@ -928,8 +1046,12 @@ class TestUpload(TestCaseWithBucket):
             self.api_url, self.account_auth_token, large_file_id
         )
         self.simulator.upload_part(
-            upload_info['uploadUrl'], upload_info['authorizationToken'], part_number,
-            len(part_data), hex_sha1_of_bytes(part_data), part_stream
+            upload_info['uploadUrl'],
+            upload_info['authorizationToken'],
+            part_number,
+            len(part_data),
+            hex_sha1_of_bytes(part_data),
+            part_stream,
         )
 
     def _check_file_contents(self, file_name, expected_contents):
@@ -941,7 +1063,9 @@ class TestUpload(TestCaseWithBucket):
 
 class TestConcatenate(TestCaseWithBucket):
     def _create_remote(self, sources, file_name, encryption=None):
-        return self.bucket.concatenate(sources, file_name=file_name, encryption=encryption)
+        return self.bucket.concatenate(
+            sources, file_name=file_name, encryption=encryption
+        )
 
     def test_create_remote(self):
         data = b'hello world'
@@ -957,12 +1081,14 @@ class TestConcatenate(TestCaseWithBucket):
                     UploadSourceLocalFile(path),
                     CopySource(f2_id, length=len(data), offset=0),
                 ],
-                file_name='created_file'
+                file_name='created_file',
             )
             self.assertIsInstance(created_file, FileVersionInfo)
             actual = (
-                created_file.id_, created_file.file_name, created_file.size,
-                created_file.server_side_encryption
+                created_file.id_,
+                created_file.file_name,
+                created_file.size,
+                created_file.server_side_encryption,
             )
             expected = ('9997', 'created_file', 33, SSE_NONE)
             self.assertEqual(expected, actual)
@@ -976,24 +1102,30 @@ class TestConcatenate(TestCaseWithBucket):
                 write_file(path, data)
                 created_file = self._create_remote(
                     [
-                        CopySource(f1_id, length=len(data), offset=0, encryption=SSE_C_AES),
+                        CopySource(
+                            f1_id, length=len(data), offset=0, encryption=SSE_C_AES
+                        ),
                         UploadSourceLocalFile(path),
-                        CopySource(f2_id, length=len(data), offset=0, encryption=SSE_C_AES_2),
+                        CopySource(
+                            f2_id, length=len(data), offset=0, encryption=SSE_C_AES_2
+                        ),
                     ],
                     file_name='created_file_%s' % (len(data),),
-                    encryption=SSE_C_AES
+                    encryption=SSE_C_AES,
                 )
             self.assertIsInstance(created_file, FileVersionInfo)
             actual = (
-                created_file.id_, created_file.file_name, created_file.size,
-                created_file.server_side_encryption
+                created_file.id_,
+                created_file.file_name,
+                created_file.size,
+                created_file.server_side_encryption,
             )
             expected = (
                 mock.ANY,
                 'created_file_%s' % (len(data),),
                 mock.ANY,  # FIXME: this should be equal to len(data) * 3,
                 # but there is a problem in the simulator/test code somewhere
-                SSE_C_AES_NO_SECRET
+                SSE_C_AES_NO_SECRET,
             )
             self.assertEqual(expected, actual)
 
@@ -1003,13 +1135,15 @@ class TestCreateFile(TestConcatenate):
         return self.bucket.create_file(
             [wi for wi in WriteIntent.wrap_sources_iterator(sources)],
             file_name=file_name,
-            encryption=encryption
+            encryption=encryption,
         )
 
 
 class TestConcatenateStream(TestConcatenate):
     def _create_remote(self, sources, file_name, encryption=None):
-        return self.bucket.concatenate_stream(sources, file_name=file_name, encryption=encryption)
+        return self.bucket.concatenate_stream(
+            sources, file_name=file_name, encryption=encryption
+        )
 
 
 class TestCreateFileStream(TestConcatenate):
@@ -1017,7 +1151,7 @@ class TestCreateFileStream(TestConcatenate):
         return self.bucket.create_file_stream(
             [wi for wi in WriteIntent.wrap_sources_iterator(sources)],
             file_name=file_name,
-            encryption=encryption
+            encryption=encryption,
         )
 
 
@@ -1055,7 +1189,9 @@ class DownloadTests:
         self._verify(self.DATA, check_progress_listener=False)
 
     def test_download_by_name_progress(self):
-        self.bucket.download_file_by_name('file1', self.download_dest, self.progress_listener)
+        self.bucket.download_file_by_name(
+            'file1', self.download_dest, self.progress_listener
+        )
         self._verify(self.DATA)
 
     def test_download_by_id_progress(self):
@@ -1066,13 +1202,19 @@ class DownloadTests:
 
     def test_download_by_id_progress_partial(self):
         self.bucket.download_file_by_id(
-            self.file_info.id_, self.download_dest, self.progress_listener, range_=(3, 9)
+            self.file_info.id_,
+            self.download_dest,
+            self.progress_listener,
+            range_=(3, 9),
         )
         self._verify('defghij')
 
     def test_download_by_id_progress_exact_range(self):
         self.bucket.download_file_by_id(
-            self.file_info.id_, self.download_dest, self.progress_listener, range_=(0, 18)
+            self.file_info.id_,
+            self.download_dest,
+            self.progress_listener,
+            range_=(0, 18),
         )
         self._verify(self.DATA)
 
@@ -1167,22 +1309,28 @@ class DownloadTests:
 
 
 class EmptyFileDownloadScenarioMixin:
-    """ use with DownloadTests, but not for TestDownloadParallel as it does not like empty files """
+    """use with DownloadTests, but not for TestDownloadParallel as it does not like empty files"""
 
     def test_download_by_name_empty_file(self):
         self.file_info = self.bucket.upload_bytes(b'', 'empty')
-        self.bucket.download_file_by_name('empty', self.download_dest, self.progress_listener)
+        self.bucket.download_file_by_name(
+            'empty', self.download_dest, self.progress_listener
+        )
         self._verify('')
 
 
 # actual tests
 
 
-class TestDownloadDefault(DownloadTests, EmptyFileDownloadScenarioMixin, TestCaseWithBucket):
+class TestDownloadDefault(
+    DownloadTests, EmptyFileDownloadScenarioMixin, TestCaseWithBucket
+):
     pass
 
 
-class TestDownloadSimple(DownloadTests, EmptyFileDownloadScenarioMixin, TestCaseWithBucket):
+class TestDownloadSimple(
+    DownloadTests, EmptyFileDownloadScenarioMixin, TestCaseWithBucket
+):
     def setUp(self):
         super(TestDownloadSimple, self).setUp()
         download_manager = self.bucket.api.services.download_manager

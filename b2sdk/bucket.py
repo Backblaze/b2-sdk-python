@@ -31,7 +31,10 @@ from .file_lock import (
 )
 from .file_version import DownloadVersion, FileVersion
 from .progress import AbstractProgressListener, DoNothingProgressListener
-from .replication.setting import ReplicationConfiguration, ReplicationConfigurationFactory
+from .replication.setting import (
+    ReplicationConfiguration,
+    ReplicationConfigurationFactory,
+)
 from .transfer.emerge.executor import AUTO_CONTENT_TYPE
 from .transfer.emerge.write_intent import WriteIntent
 from .transfer.inbound.downloaded_file import DownloadedFile
@@ -177,7 +180,7 @@ class Bucket(metaclass=B2TraceMeta):
                 default_server_side_encryption=default_server_side_encryption,
                 default_retention=default_retention,
                 replication=replication,
-            )
+            ),
         )
 
     def cancel_large_file(self, file_id):
@@ -320,7 +323,7 @@ class Bucket(metaclass=B2TraceMeta):
         folder_to_list: str = '',
         latest_only: bool = True,
         recursive: bool = False,
-        fetch_count: Optional[int] = 10000
+        fetch_count: Optional[int] = 10000,
     ):
         """
         Pretend that folders exist and yields the information about the files in a folder.
@@ -365,7 +368,9 @@ class Bucket(metaclass=B2TraceMeta):
         session = self.api.session
         while True:
             if latest_only:
-                response = session.list_file_names(self.id_, start_file_name, fetch_count, prefix)
+                response = session.list_file_names(
+                    self.id_, start_file_name, fetch_count, prefix
+                )
             else:
                 response = session.list_file_versions(
                     self.id_, start_file_name, start_file_id, fetch_count, prefix
@@ -375,7 +380,7 @@ class Bucket(metaclass=B2TraceMeta):
                 if not file_version.file_name.startswith(prefix):
                     # We're past the files we care about
                     return
-                after_prefix = file_version.file_name[len(prefix):]
+                after_prefix = file_version.file_name[len(prefix) :]
                 if '/' not in after_prefix or recursive:
                     # This is not a folder, so we'll print it out and
                     # continue on.
@@ -412,7 +417,9 @@ class Bucket(metaclass=B2TraceMeta):
                     prefix + current_dir[:-1] + '0',
                 )
 
-    def list_unfinished_large_files(self, start_file_id=None, batch_size=None, prefix=None):
+    def list_unfinished_large_files(
+        self, start_file_id=None, batch_size=None, prefix=None
+    ):
         """
         A generator that yields an :py:class:`b2sdk.v2.UnfinishedLargeFile` for each
         unfinished large file in the bucket, starting at the given file, filtering by prefix.
@@ -498,7 +505,9 @@ class Bucket(metaclass=B2TraceMeta):
         :param bool legal_hold: legal hold setting
         :rtype: b2sdk.v2.FileVersion
         """
-        upload_source = UploadSourceLocalFile(local_path=local_file, content_sha1=sha1_sum)
+        upload_source = UploadSourceLocalFile(
+            local_path=local_file, content_sha1=sha1_sum
+        )
         return self.upload(
             upload_source,
             file_name,
@@ -953,7 +962,9 @@ class Bucket(metaclass=B2TraceMeta):
         result['lifecycleRules'] = self.lifecycle_rules
         result['revision'] = self.revision
         result['options'] = self.options_set
-        result['defaultServerSideEncryption'] = self.default_server_side_encryption.as_dict()
+        result[
+            'defaultServerSideEncryption'
+        ] = self.default_server_side_encryption.as_dict()
         result['isFileLockEnabled'] = self.is_file_lock_enabled
         result['defaultRetention'] = self.default_retention.as_dict()
         result['replication'] = self.replication and self.replication.as_dict()
@@ -968,6 +979,7 @@ class BucketFactory:
     """
     This is a factory for creating bucket objects from different kind of objects.
     """
+
     BUCKET_CLASS = staticmethod(Bucket)
 
     @classmethod
@@ -979,7 +991,10 @@ class BucketFactory:
         :param requests.Response response: response object
         :rtype: b2sdk.v2.Bucket
         """
-        return [cls.from_api_bucket_dict(api, bucket_dict) for bucket_dict in response['buckets']]
+        return [
+            cls.from_api_bucket_dict(api, bucket_dict)
+            for bucket_dict in response['buckets']
+        ]
 
     @classmethod
     def from_api_bucket_dict(cls, api, bucket_dict):
@@ -1066,10 +1081,16 @@ class BucketFactory:
         options = set(bucket_dict['options'])
 
         if 'defaultServerSideEncryption' not in bucket_dict:
-            raise UnexpectedCloudBehaviour('server did not provide `defaultServerSideEncryption`')
-        default_server_side_encryption = EncryptionSettingFactory.from_bucket_dict(bucket_dict)
+            raise UnexpectedCloudBehaviour(
+                'server did not provide `defaultServerSideEncryption`'
+            )
+        default_server_side_encryption = EncryptionSettingFactory.from_bucket_dict(
+            bucket_dict
+        )
         file_lock_configuration = FileLockConfiguration.from_bucket_dict(bucket_dict)
-        replication = ReplicationConfigurationFactory.from_bucket_dict(bucket_dict).value
+        replication = ReplicationConfigurationFactory.from_bucket_dict(
+            bucket_dict
+        ).value
         return cls.BUCKET_CLASS(
             api,
             bucket_id,

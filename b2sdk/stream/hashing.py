@@ -40,7 +40,9 @@ class StreamWithHash(ReadOnlyStreamMixin, StreamWithLengthWrapper):
         :param int pos: position in the stream
         """
         if pos != 0 or whence != 0:
-            raise io.UnsupportedOperation('Stream with hash can only be seeked to beginning')
+            raise io.UnsupportedOperation(
+                'Stream with hash can only be seeked to beginning'
+            )
         self.digest = self.get_digest()
         self.hash = None
         self.hash_read = 0
@@ -69,7 +71,7 @@ class StreamWithHash(ReadOnlyStreamMixin, StreamWithLengthWrapper):
         if self.hash is not None:
             # The end of stream was reached, return hash now
             size = size or len(self.hash)
-            data += str.encode(self.hash[self.hash_read:self.hash_read + size])
+            data += str.encode(self.hash[self.hash_read : self.hash_read + size])
             self.hash_read += size
         return data
 

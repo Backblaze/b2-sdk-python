@@ -86,7 +86,9 @@ class TestRawAPIFilenames(TestBase):
         # Names with unicode values < 32, and DEL aren't allowed.
         self._should_raise(u'hey' + CHAR_UNDER_32, "contains code.*less than 32")
         # Unicode in the filename shouldn't break the exception message.
-        self._should_raise(TWO_BYTE_UNICHR + CHAR_UNDER_32, "contains code.*less than 32")
+        self._should_raise(
+            TWO_BYTE_UNICHR + CHAR_UNDER_32, "contains code.*less than 32"
+        )
         self._should_raise(DEL_CHAR, "DEL.*not allowed")
 
         # Names can't start or end with '/' or contain '//'
@@ -112,16 +114,22 @@ class TestUpdateBucket(BucketTestBase):
 
     def test_assertion_raises(self):
         with pytest.raises(AssertionError):
-            self.raw_api.update_bucket('test', 'account_auth_token', 'account_id', 'bucket_id')
+            self.raw_api.update_bucket(
+                'test', 'account_auth_token', 'account_id', 'bucket_id'
+            )
 
     @pytest.mark.parametrize(
-        'bucket_type,bucket_info,default_retention', (
+        'bucket_type,bucket_info,default_retention',
+        (
             (None, {}, None),
             (
-                'allPublic', None,
-                BucketRetentionSetting(RetentionMode.COMPLIANCE, RetentionPeriod(years=1))
+                'allPublic',
+                None,
+                BucketRetentionSetting(
+                    RetentionMode.COMPLIANCE, RetentionPeriod(years=1)
+                ),
             ),
-        )
+        ),
     )
     def test_assertion_not_raises(self, bucket_type, bucket_info, default_retention):
         self.raw_api.update_bucket(
@@ -135,14 +143,17 @@ class TestUpdateBucket(BucketTestBase):
         )
 
     @pytest.mark.parametrize(
-        'encryption_setting,', (
+        'encryption_setting,',
+        (
             EncryptionSetting(
                 mode=EncryptionMode.SSE_C,
                 algorithm=EncryptionAlgorithm.AES256,
-                key=EncryptionKey(b'key', 'key-id')
+                key=EncryptionKey(b'key', 'key-id'),
             ),
-            EncryptionSetting(mode=EncryptionMode.UNKNOWN,),
-        )
+            EncryptionSetting(
+                mode=EncryptionMode.UNKNOWN,
+            ),
+        ),
     )
     def test_update_bucket_wrong_encryption(self, encryption_setting):
         with pytest.raises(WrongEncryptionModeForBucketDefault):
@@ -160,14 +171,17 @@ class TestCreateBucket(BucketTestBase):
     """Test creating bucket."""
 
     @pytest.mark.parametrize(
-        'encryption_setting,', (
+        'encryption_setting,',
+        (
             EncryptionSetting(
                 mode=EncryptionMode.SSE_C,
                 algorithm=EncryptionAlgorithm.AES256,
-                key=EncryptionKey(b'key', 'key-id')
+                key=EncryptionKey(b'key', 'key-id'),
             ),
-            EncryptionSetting(mode=EncryptionMode.UNKNOWN,),
-        )
+            EncryptionSetting(
+                mode=EncryptionMode.UNKNOWN,
+            ),
+        ),
     )
     def test_create_bucket_wrong_encryption(self, encryption_setting):
 

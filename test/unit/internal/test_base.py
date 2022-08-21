@@ -31,6 +31,9 @@ class TestBase(unittest.TestCase):
             yield
         except expected_exception as e:
             if not re.search(expected_regexp, str(e)):
-                assert False, "expected message '%s', but got '%s'" % (expected_regexp, str(e))
+                assert False, "expected message '%s', but got '%s'" % (
+                    expected_regexp,
+                    str(e),
+                )
         else:
             assert False, 'should have thrown %s' % (expected_exception,)

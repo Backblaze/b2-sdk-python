@@ -19,7 +19,10 @@ from ..scan.folder import AbstractFolder
 from ..scan.path import AbstractPath
 from ..scan.policies import DEFAULT_SCAN_MANAGER
 from ..scan.scan import zip_folders
-from .encryption_provider import SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER, AbstractSyncEncryptionSettingsProvider
+from .encryption_provider import (
+    SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER,
+    AbstractSyncEncryptionSettingsProvider,
+)
 from .exception import IncompleteSync
 from .policy import CompareVersionMode, NewerFileSyncMode
 from .policy_manager import POLICY_MANAGER, SyncPolicyManager
@@ -44,7 +47,8 @@ def count_files(local_folder, reporter, policies_manager):
 
 @unique
 class KeepOrDeleteMode(Enum):
-    """ Mode of dealing with old versions of files on the destination """
+    """Mode of dealing with old versions of files on the destination"""
+
     DELETE = 301  #: delete the old version as soon as the new one has been uploaded
     KEEP_BEFORE_DELETE = 302  #: keep the old versions of the file for a configurable number of days before deleting them, always keeping the newest version
     NO_DELETE = 303  #: keep old versions of the file, do not delete anything
@@ -109,7 +113,9 @@ class Synchronizer:
         self.compare_threshold = compare_threshold or 0
         self.dry_run = dry_run
         self.allow_empty_source = allow_empty_source
-        self.policies_manager = policies_manager  # actually it should be called scan_policies_manager
+        self.policies_manager = (
+            policies_manager  # actually it should be called scan_policies_manager
+        )
         self.sync_policy_manager = sync_policy_manager
         self.max_workers = max_workers
         self._validate()
@@ -130,10 +136,14 @@ class Synchronizer:
                 'must be one of :%s' % KeepOrDeleteMode.__members__,
             )
 
-        if self.keep_days_or_delete == KeepOrDeleteMode.KEEP_BEFORE_DELETE and self.keep_days is None:
+        if (
+            self.keep_days_or_delete == KeepOrDeleteMode.KEEP_BEFORE_DELETE
+            and self.keep_days is None
+        ):
             raise InvalidArgument(
                 'keep_days',
-                'is required when keep_days_or_delete is %s' % KeepOrDeleteMode.KEEP_BEFORE_DELETE,
+                'is required when keep_days_or_delete is %s'
+                % KeepOrDeleteMode.KEEP_BEFORE_DELETE,
             )
 
         if self.compare_version_mode not in tuple(CompareVersionMode):
@@ -148,8 +158,7 @@ class Synchronizer:
         dest_folder,
         now_millis,
         reporter,
-        encryption_settings_provider:
-        AbstractSyncEncryptionSettingsProvider = SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER,
+        encryption_settings_provider: AbstractSyncEncryptionSettingsProvider = SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER,
     ):
         """
         Syncs two folders.  Always ensures that every file in the
@@ -184,12 +193,16 @@ class Synchronizer:
         # when syncing lots of files.
         unbounded_executor = futures.ThreadPoolExecutor(max_workers=self.max_workers)
         queue_limit = self.max_workers + 1000
-        sync_executor = BoundedQueueExecutor(unbounded_executor, queue_limit=queue_limit)
+        sync_executor = BoundedQueueExecutor(
+            unbounded_executor, queue_limit=queue_limit
+        )
 
         if source_type == 'local' and reporter is not None:
             # Start the thread that counts the local files. That's the operation
             # that should be fastest, and it provides scale for the progress reporting.
-            sync_executor.submit(count_files, source_folder, reporter, self.policies_manager)
+            sync_executor.submit(
+                count_files, source_folder, reporter, self.policies_manager
+            )
 
         # Bucket for scheduling actions.
         # For bucket-to-bucket sync, the bucket for the API calls should be the destination.
@@ -223,8 +236,7 @@ class Synchronizer:
         now_millis: int,
         reporter: SyncReport,
         policies_manager: SyncPolicyManager = DEFAULT_SCAN_MANAGER,
-        encryption_settings_provider:
-        AbstractSyncEncryptionSettingsProvider = SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER,
+        encryption_settings_provider: AbstractSyncEncryptionSettingsProvider = SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER,
     ):
         """
         Yield a sequence of actions that will sync the destination
@@ -237,9 +249,13 @@ class Synchronizer:
         :param b2sdk.v2.ScanPolicyManager policies_manager: object which decides which files to process
         :param b2sdk.v2.AbstractSyncEncryptionSettingsProvider encryption_settings_provider: encryption setting provider
         """
-        if self.keep_days_or_delete == KeepOrDeleteMode.KEEP_BEFORE_DELETE and dest_folder.folder_type(
-        ) == 'local':
-            raise InvalidArgument('keep_days_or_delete', 'cannot be used for local files')
+        if (
+            self.keep_days_or_delete == KeepOrDeleteMode.KEEP_BEFORE_DELETE
+            and dest_folder.folder_type() == 'local'
+        ):
+            raise InvalidArgument(
+                'keep_days_or_delete', 'cannot be used for local files'
+            )
 
         source_type = source_folder.folder_type()
         dest_type = dest_folder.folder_type()
@@ -258,7 +274,9 @@ class Synchronizer:
             if source_path is None:
                 logger.debug('determined that %s is not present on source', dest_path)
             elif dest_path is None:
-                logger.debug('determined that %s is not present on destination', source_path)
+                logger.debug(
+                    'determined that %s is not present on destination', source_path
+                )
 
             if source_path is not None:
                 if source_type == 'b2':
@@ -295,8 +313,7 @@ class Synchronizer:
         source_folder: AbstractFolder,
         dest_folder: AbstractFolder,
         now_millis: int,
-        encryption_settings_provider:
-        AbstractSyncEncryptionSettingsProvider = SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER,
+        encryption_settings_provider: AbstractSyncEncryptionSettingsProvider = SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER,
     ):
         """
         Yields the sequence of actions needed to sync the two files

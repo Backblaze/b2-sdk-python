@@ -36,7 +36,7 @@ class TestAuthorizeAccount:
                     allowed=mock.ANY,
                     application_key_id='123',
                 ),
-                marks=pytest.mark.apiver(from_ver=2)
+                marks=pytest.mark.apiver(from_ver=2),
             ),
             pytest.param(
                 dict(
@@ -51,7 +51,7 @@ class TestAuthorizeAccount:
                     allowed=mock.ANY,
                     application_key_id='123',
                 ),
-                marks=pytest.mark.apiver(to_ver=1)
+                marks=pytest.mark.apiver(to_ver=1),
             ),
         ],
     )
@@ -62,7 +62,9 @@ class TestAuthorizeAccount:
             'http://api.backblazeb2.xyz:8180', '123', '456'
         )
         assert self.b2_session.cache.clear.called is False
-        self.b2_session.account_info.set_auth_data.assert_called_once_with(**authorize_call_kwargs)
+        self.b2_session.account_info.set_auth_data.assert_called_once_with(
+            **authorize_call_kwargs
+        )
 
     def test_clear_cache(self):
         self.b2_session.account_info.is_same_account.return_value = False

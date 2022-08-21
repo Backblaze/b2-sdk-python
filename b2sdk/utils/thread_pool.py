@@ -18,6 +18,7 @@ class ThreadPoolMixin(metaclass=B2TraceMetaAbstract):
     """
     Mixin class with ThreadPoolExecutor.
     """
+
     DEFAULT_THREAD_POOL_CLASS = staticmethod(ThreadPoolExecutor)
 
     def __init__(
@@ -30,6 +31,9 @@ class ThreadPoolMixin(metaclass=B2TraceMetaAbstract):
         :param thread_pool: thread pool to be used
         :param max_workers: maximum number of worker threads (ignored if thread_pool is not None)
         """
-        self._thread_pool = thread_pool if thread_pool is not None \
+        self._thread_pool = (
+            thread_pool
+            if thread_pool is not None
             else self.DEFAULT_THREAD_POOL_CLASS(max_workers=max_workers)
+        )
         super().__init__(**kwargs)

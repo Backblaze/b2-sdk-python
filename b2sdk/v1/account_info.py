@@ -84,7 +84,7 @@ class MinimumPartSizeTranslator:
         realm,
         s3_api_url=None,
         allowed=None,
-        application_key_id=None
+        application_key_id=None,
     ):
         if 's3_api_url' in inspect.getfullargspec(super()._set_auth_data).args:
             s3_kwargs = dict(s3_api_url=s3_api_url)
@@ -153,8 +153,17 @@ class AbstractAccountInfo(OldAccountInfoMethods, v2.AbstractAccountInfo):
 
     @abstractmethod
     def _set_auth_data(
-        self, account_id, auth_token, api_url, download_url, minimum_part_size, application_key,
-        realm, s3_api_url, allowed, application_key_id
+        self,
+        account_id,
+        auth_token,
+        api_url,
+        download_url,
+        minimum_part_size,
+        application_key,
+        realm,
+        s3_api_url,
+        allowed,
+        application_key_id,
     ):
         """
         Actually store the auth data.  Can assume that 'allowed' is present and valid.
@@ -165,7 +174,9 @@ class AbstractAccountInfo(OldAccountInfoMethods, v2.AbstractAccountInfo):
         # Keep the old signature
 
 
-class InMemoryAccountInfo(MinimumPartSizeTranslator, OldAccountInfoMethods, v2.InMemoryAccountInfo):
+class InMemoryAccountInfo(
+    MinimumPartSizeTranslator, OldAccountInfoMethods, v2.InMemoryAccountInfo
+):
     pass
 
 
@@ -173,7 +184,9 @@ class UrlPoolAccountInfo(OldAccountInfoMethods, v2.UrlPoolAccountInfo):
     pass
 
 
-class SqliteAccountInfo(MinimumPartSizeTranslator, OldAccountInfoMethods, v2.SqliteAccountInfo):
+class SqliteAccountInfo(
+    MinimumPartSizeTranslator, OldAccountInfoMethods, v2.SqliteAccountInfo
+):
     def __init__(self, file_name=None, last_upgrade_to_run=None):
         """
         If ``file_name`` argument is empty or ``None``, path from ``B2_ACCOUNT_INFO`` environment variable is used. If that is not available, a default of ``~/.b2_account_info`` is used.
@@ -188,5 +201,7 @@ class SqliteAccountInfo(MinimumPartSizeTranslator, OldAccountInfoMethods, v2.Sql
         super().__init__(file_name=file_name, last_upgrade_to_run=last_upgrade_to_run)
 
 
-class StubAccountInfo(MinimumPartSizeTranslator, OldAccountInfoMethods, v2.StubAccountInfo):
+class StubAccountInfo(
+    MinimumPartSizeTranslator, OldAccountInfoMethods, v2.StubAccountInfo
+):
     REALM_URLS = {'production': 'http://production.example.com'}

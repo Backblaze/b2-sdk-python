@@ -37,13 +37,19 @@ except TypeError:
 
 
 class ReplicationSetupHelper(metaclass=B2TraceMeta):
-    """ class with various methods that help with setting up repliction """
-    PRIORITY_OFFSET: ClassVar[int] = 5  #: how far to to put the new rule from the existing rules
+    """class with various methods that help with setting up repliction"""
+
+    PRIORITY_OFFSET: ClassVar[
+        int
+    ] = 5  #: how far to to put the new rule from the existing rules
     DEFAULT_PRIORITY: ClassVar[
         int
-    ] = ReplicationRule.DEFAULT_PRIORITY  #: what priority to set if there are no preexisting rules
+    ] = (
+        ReplicationRule.DEFAULT_PRIORITY
+    )  #: what priority to set if there are no preexisting rules
     MAX_PRIORITY: ClassVar[
-        int] = ReplicationRule.MAX_PRIORITY  #: maximum allowed priority of a replication rule
+        int
+    ] = ReplicationRule.MAX_PRIORITY  #: maximum allowed priority of a replication rule
     DEFAULT_SOURCE_CAPABILITIES: ClassVar[Tuple[str, ...]] = (
         'readFiles',
         'readFileLegalHolds',
@@ -131,7 +137,9 @@ class ReplicationSetupHelper(metaclass=B2TraceMeta):
     ):
         keys_to_purge = []
         if destination_bucket.replication is not None:
-            current_destination_key_ids = destination_bucket.replication.source_to_destination_key_mapping.values()  # yapf: disable
+            current_destination_key_ids = (
+                destination_bucket.replication.source_to_destination_key_mapping.values()
+            )  # yapf: disable
         else:
             current_destination_key_ids = []
         key = None
@@ -143,18 +151,25 @@ class ReplicationSetupHelper(metaclass=B2TraceMeta):
             if current_destination_key is None:
                 logger.debug(
                     'zombie key found in replication destination_configuration.source_to_destination_key_mapping: %s',
-                    current_destination_key_id
+                    current_destination_key_id,
                 )
                 keys_to_purge.append(current_destination_key_id)
                 continue
-            if current_destination_key.has_capabilities(
-                cls.DEFAULT_DESTINATION_CAPABILITIES
-            ) and not current_destination_key.name_prefix:
-                logger.debug('matching destination key found: %s', current_destination_key_id)
+            if (
+                current_destination_key.has_capabilities(
+                    cls.DEFAULT_DESTINATION_CAPABILITIES
+                )
+                and not current_destination_key.name_prefix
+            ):
+                logger.debug(
+                    'matching destination key found: %s', current_destination_key_id
+                )
                 key = current_destination_key
                 # not breaking here since we want to fill the purge list
             else:
-                logger.info('non-matching destination key found: %s', current_destination_key)
+                logger.info(
+                    'non-matching destination key found: %s', current_destination_key
+                )
         if not key:
             logger.debug("no matching key found, making a new one")
             key = cls._create_destination_key(
@@ -179,7 +194,8 @@ class ReplicationSetupHelper(metaclass=B2TraceMeta):
 
         if source_bucket.replication:
             current_source_rules = source_bucket.replication.rules
-            destination_configuration = source_bucket.replication.get_destination_configuration_as_dict(
+            destination_configuration = (
+                source_bucket.replication.get_destination_configuration_as_dict()
             )
         else:
             current_source_rules = []
@@ -221,7 +237,9 @@ class ReplicationSetupHelper(metaclass=B2TraceMeta):
         api = source_bucket.api
 
         if current_replication_configuration is not None:
-            current_source_key = api.get_key(current_replication_configuration.source_key_id)
+            current_source_key = api.get_key(
+                current_replication_configuration.source_key_id
+            )
             do_create_key = cls._should_make_new_source_key(
                 current_replication_configuration,
                 current_source_key,

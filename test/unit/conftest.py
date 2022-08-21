@@ -19,7 +19,8 @@ pytest.register_assert_rewrite('test.unit')
 
 def get_api_versions():
     return [
-        str(Path(p).parent.name) for p in sorted(glob(str(Path(__file__).parent / 'v*/apiver/')))
+        str(Path(p).parent.name)
+        for p in sorted(glob(str(Path(__file__).parent / 'v*/apiver/')))
     ]
 
 
@@ -40,10 +41,12 @@ def pytest_addoption(parser):
 @pytest.hookimpl
 def pytest_configure(config):
     """Add apiver test folder to the path and add "apiver" marker used by `pytest_runtest_setup`."""
-    sys.path.insert(0, str(Path(__file__).parent / config.getoption('--api') / 'apiver'))
+    sys.path.insert(
+        0, str(Path(__file__).parent / config.getoption('--api') / 'apiver')
+    )
     config.addinivalue_line(
         'markers',
-        'apiver(*args, *, from_ver=0, to_ver=sys.maxsize): mark test to run only for specific apivers'
+        'apiver(*args, *, from_ver=0, to_ver=sys.maxsize): mark test to run only for specific apivers',
     )
 
 
@@ -137,7 +140,9 @@ def pytest_runtest_setup(item):
             from_ver = mark.kwargs.get('from_ver', 0)
             to_ver = mark.kwargs.get('to_ver', sys.maxsize)
             if not (from_ver <= int_ver <= to_ver):
-                pytest.skip('test requires apiver to be in range: [%d, %d]' % (from_ver, to_ver))
+                pytest.skip(
+                    'test requires apiver to be in range: [%d, %d]' % (from_ver, to_ver)
+                )
 
 
 @pytest.fixture(scope='session')

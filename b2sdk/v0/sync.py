@@ -20,7 +20,10 @@ from b2sdk.v1 import KeepOrDeleteMode
 from b2sdk.v1 import DEFAULT_SCAN_MANAGER
 from b2sdk.v1 import SyncReport
 from b2sdk.v1 import Synchronizer as SynchronizerV1
-from b2sdk.v1 import AbstractSyncEncryptionSettingsProvider, SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER
+from b2sdk.v1 import (
+    AbstractSyncEncryptionSettingsProvider,
+    SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +44,9 @@ class Synchronizer(SynchronizerV1):
             for i in super(Synchronizer, self)._make_file_sync_actions(*args, **kwargs):
                 yield i
         except DestFileNewerV1 as e:
-            raise DestFileNewer(e.dest_file, e.source_file, e.dest_prefix, e.source_prefix)
+            raise DestFileNewer(
+                e.dest_file, e.source_file, e.dest_prefix, e.source_prefix
+            )
 
     def sync_folders(self, *args, **kwargs):
         try:
@@ -113,8 +118,7 @@ def make_folder_sync_actions(
     now_millis,
     reporter,
     policies_manager=DEFAULT_SCAN_MANAGER,
-    encryption_settings_provider:
-    AbstractSyncEncryptionSettingsProvider = SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER,
+    encryption_settings_provider: AbstractSyncEncryptionSettingsProvider = SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER,
 ):
     """
     This is deprecated. Use the new Synchronizer class.
@@ -147,7 +151,7 @@ def make_folder_sync_actions(
             now_millis,
             reporter,
             policies_manager=policies_manager,
-            encryption_settings_provider=encryption_settings_provider
+            encryption_settings_provider=encryption_settings_provider,
         )
     except InvalidArgument as e:
         raise CommandError('--%s %s' % (e.parameter_name, e.message))
@@ -165,8 +169,7 @@ def sync_folders(
     policies_manager=DEFAULT_SCAN_MANAGER,
     dry_run=False,
     allow_empty_source=False,
-    encryption_settings_provider:
-    AbstractSyncEncryptionSettingsProvider = SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER,
+    encryption_settings_provider: AbstractSyncEncryptionSettingsProvider = SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER,
 ):
     """
     This is deprecated. Use the new Synchronizer class.
@@ -207,5 +210,5 @@ def sync_folders(
             dest_folder,
             now_millis,
             reporter,
-            encryption_settings_provider=encryption_settings_provider
+            encryption_settings_provider=encryption_settings_provider,
         )

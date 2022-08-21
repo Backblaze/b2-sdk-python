@@ -187,7 +187,9 @@ from b2sdk.sync.sync import Synchronizer
 from b2sdk.sync.encryption_provider import AbstractSyncEncryptionSettingsProvider
 from b2sdk.sync.encryption_provider import BasicSyncEncryptionSettingsProvider
 from b2sdk.sync.encryption_provider import ServerDefaultSyncEncryptionSettingsProvider
-from b2sdk.sync.encryption_provider import SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER
+from b2sdk.sync.encryption_provider import (
+    SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER,
+)
 
 # scan
 

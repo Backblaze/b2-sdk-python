@@ -16,7 +16,11 @@ Changes made to the original source: see NOTICE
 """
 
 from requests import Response, ConnectionError
-from requests.exceptions import ChunkedEncodingError, ContentDecodingError, StreamConsumedError
+from requests.exceptions import (
+    ChunkedEncodingError,
+    ContentDecodingError,
+    StreamConsumedError,
+)
 from requests.utils import iter_slices, stream_decode_response_unicode
 from urllib3.exceptions import ProtocolError, DecodeError, ReadTimeoutError
 
@@ -52,7 +56,9 @@ class NotDecompressingResponse(Response):
         if self._content_consumed and isinstance(self._content, bool):
             raise StreamConsumedError()
         elif chunk_size is not None and not isinstance(chunk_size, int):
-            raise TypeError("chunk_size must be an int, it is instead a %s." % type(chunk_size))
+            raise TypeError(
+                "chunk_size must be an int, it is instead a %s." % type(chunk_size)
+            )
         # simulate reading small chunks of the content
         reused_chunks = iter_slices(self._content, chunk_size)
 

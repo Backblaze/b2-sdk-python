@@ -13,7 +13,11 @@ from typing import Optional
 
 from b2sdk.encryption.setting import EncryptionMode, EncryptionSetting
 from b2sdk.http_constants import SSE_C_KEY_ID_FILE_INFO_KEY_NAME
-from b2sdk.exception import AlreadyFailed, CopyArgumentsMismatch, SSECKeyIdMismatchInCopy
+from b2sdk.exception import (
+    AlreadyFailed,
+    CopyArgumentsMismatch,
+    SSECKeyIdMismatchInCopy,
+)
 from b2sdk.file_lock import FileRetentionSetting, LegalHold
 from b2sdk.raw_api import MetadataDirectiveMode
 from b2sdk.transfer.transfer_manager import TransferManager
@@ -109,7 +113,10 @@ class CopyManager(TransferManager, ThreadPoolMixin):
                         (``None`` if unknown)
         """
         # b2_copy_part doesn't need SSE-B2. Large file encryption is decided on b2_start_large_file.
-        if destination_encryption is not None and destination_encryption.mode == EncryptionMode.SSE_B2:
+        if (
+            destination_encryption is not None
+            and destination_encryption.mode == EncryptionMode.SSE_B2
+        ):
             destination_encryption = None
 
         # Check if this part was uploaded before
@@ -167,7 +174,11 @@ class CopyManager(TransferManager, ThreadPoolMixin):
                         'File info can be not set only when content type is not set'
                     )
                 metadata_directive = MetadataDirectiveMode.REPLACE
-            metadata_directive, file_info, content_type = self.establish_sse_c_file_metadata(
+            (
+                metadata_directive,
+                file_info,
+                content_type,
+            ) = self.establish_sse_c_file_metadata(
                 metadata_directive=metadata_directive,
                 destination_file_info=file_info,
                 destination_content_type=content_type,
@@ -189,7 +200,9 @@ class CopyManager(TransferManager, ThreadPoolMixin):
                 legal_hold=legal_hold,
                 file_retention=file_retention,
             )
-            file_version = self.services.api.file_version_factory.from_api_response(response)
+            file_version = self.services.api.file_version_factory.from_api_response(
+                response
+            )
             if progress_listener is not None:
                 progress_listener.bytes_completed(file_version.size)
 
@@ -206,24 +219,35 @@ class CopyManager(TransferManager, ThreadPoolMixin):
         source_file_info: Optional[dict],
         source_content_type: Optional[str],
     ):
-        assert metadata_directive in (MetadataDirectiveMode.REPLACE, MetadataDirectiveMode.COPY)
+        assert metadata_directive in (
+            MetadataDirectiveMode.REPLACE,
+            MetadataDirectiveMode.COPY,
+        )
 
         if metadata_directive == MetadataDirectiveMode.REPLACE:
             if destination_server_side_encryption:
-                destination_file_info = destination_server_side_encryption.add_key_id_to_file_info(
-                    destination_file_info
+                destination_file_info = (
+                    destination_server_side_encryption.add_key_id_to_file_info(
+                        destination_file_info
+                    )
                 )
             return metadata_directive, destination_file_info, destination_content_type
 
         source_key_id = None
         destination_key_id = None
 
-        if destination_server_side_encryption is not None and destination_server_side_encryption.key is not None and \
-                destination_server_side_encryption.key.key_id is not None:
+        if (
+            destination_server_side_encryption is not None
+            and destination_server_side_encryption.key is not None
+            and destination_server_side_encryption.key.key_id is not None
+        ):
             destination_key_id = destination_server_side_encryption.key.key_id
 
-        if source_server_side_encryption is not None and source_server_side_encryption.key is not None and \
-                source_server_side_encryption.key.key_id is not None:
+        if (
+            source_server_side_encryption is not None
+            and source_server_side_encryption.key is not None
+            and source_server_side_encryption.key.key_id is not None
+        ):
             source_key_id = source_server_side_encryption.key.key_id
 
         if source_key_id == destination_key_id:
@@ -233,16 +257,22 @@ class CopyManager(TransferManager, ThreadPoolMixin):
             raise SSECKeyIdMismatchInCopy(
                 'attempting to copy file using %s without providing source_file_info '
                 'and source_content_type for differing sse_c_key_ids: source="%s", '
-                'destination="%s"' %
-                (MetadataDirectiveMode.COPY, source_key_id, destination_key_id)
+                'destination="%s"'
+                % (MetadataDirectiveMode.COPY, source_key_id, destination_key_id)
             )
 
         destination_file_info = source_file_info.copy()
         destination_file_info.pop(SSE_C_KEY_ID_FILE_INFO_KEY_NAME, None)
         if destination_server_side_encryption:
-            destination_file_info = destination_server_side_encryption.add_key_id_to_file_info(
-                destination_file_info
+            destination_file_info = (
+                destination_server_side_encryption.add_key_id_to_file_info(
+                    destination_file_info
+                )
             )
         destination_content_type = source_content_type
 
-        return MetadataDirectiveMode.REPLACE, destination_file_info, destination_content_type
+        return (
+            MetadataDirectiveMode.REPLACE,
+            destination_file_info,
+            destination_content_type,
+        )

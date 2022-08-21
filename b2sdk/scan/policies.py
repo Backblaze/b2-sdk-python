@@ -90,10 +90,14 @@ class IntegerRange:
         self._end = end
 
         if self._begin and self._begin < 0:
-            raise ValueError('begin time can not be less than 0, use None for the infinity')
+            raise ValueError(
+                'begin time can not be less than 0, use None for the infinity'
+            )
 
         if self._end and self._end < 0:
-            raise ValueError('end time can not be less than 0, use None for the infinity')
+            raise ValueError(
+                'end time can not be less than 0, use None for the infinity'
+            )
 
     def __contains__(self, item):
         ge_begin, le_end = True, True
@@ -150,22 +154,28 @@ class ScanPoliciesManager:
         if include_file_regexes and not exclude_file_regexes:
             raise InvalidArgument(
                 'include_file_regexes',
-                'cannot be used without exclude_file_regexes at the same time'
+                'cannot be used without exclude_file_regexes at the same time',
             )
 
         with check_invalid_argument(
-            'exclude_dir_regexes', 'wrong regex was given for excluding directories', re.error
+            'exclude_dir_regexes',
+            'wrong regex was given for excluding directories',
+            re.error,
         ):
             self._exclude_dir_set = RegexSet(exclude_dir_regexes)
             self._exclude_file_because_of_dir_set = RegexSet(
                 map(convert_dir_regex_to_dir_prefix_regex, exclude_dir_regexes)
             )
         with check_invalid_argument(
-            'exclude_file_regexes', 'wrong regex was given for excluding files', re.error
+            'exclude_file_regexes',
+            'wrong regex was given for excluding files',
+            re.error,
         ):
             self._exclude_file_set = RegexSet(exclude_file_regexes)
         with check_invalid_argument(
-            'include_file_regexes', 'wrong regex was given for including files', re.error
+            'include_file_regexes',
+            'wrong regex was given for including files',
+            re.error,
         ):
             self._include_file_set = RegexSet(include_file_regexes)
         self.exclude_all_symlinks = exclude_all_symlinks
@@ -197,7 +207,9 @@ class ScanPoliciesManager:
             return True
         return self._should_exclude_relative_path(local_path.relative_path)
 
-    def should_exclude_b2_file_version(self, file_version: FileVersion, relative_path: str):
+    def should_exclude_b2_file_version(
+        self, file_version: FileVersion, relative_path: str
+    ):
         """
         Whether a b2 file version should be excluded from the scan or not.
 

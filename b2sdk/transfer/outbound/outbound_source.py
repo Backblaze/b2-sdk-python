@@ -12,7 +12,7 @@ from abc import ABCMeta, abstractmethod
 
 
 class OutboundTransferSource(metaclass=ABCMeta):
-    """ Abstract class for defining outbound transfer sources.
+    """Abstract class for defining outbound transfer sources.
 
     Supported outbound transfer sources are:
 
@@ -33,12 +33,12 @@ class OutboundTransferSource(metaclass=ABCMeta):
 
     @abstractmethod
     def is_upload(self):
-        """ Return if outbound source is an upload source.
+        """Return if outbound source is an upload source.
         :rtype bool:
         """
 
     @abstractmethod
     def is_copy(self):
-        """ Return if outbound source is a copy source.
+        """Return if outbound source is a copy source.
         :rtype bool:
         """

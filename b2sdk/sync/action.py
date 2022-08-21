@@ -156,7 +156,9 @@ class B2UploadAction(AbstractAction):
 
     def __str__(self):
         return 'b2_upload(%s, %s, %s)' % (
-            self.local_full_path, self.b2_file_name, self.mod_time_millis
+            self.local_full_path,
+            self.b2_file_name,
+            self.mod_time_millis,
         )
 
 
@@ -289,11 +291,11 @@ class B2DownloadAction(AbstractAction):
         reporter.print_completion('dnload ' + self.source_path.relative_path)
 
     def __str__(self):
-        return (
-            'b2_download(%s, %s, %s, %d)' % (
-                self.b2_file_name, self.source_path.selected_version.id_, self.local_full_path,
-                self.source_path.mod_time
-            )
+        return 'b2_download(%s, %s, %s, %d)' % (
+            self.b2_file_name,
+            self.source_path.selected_version.id_,
+            self.local_full_path,
+            self.source_path.mod_time,
         )
 
 
@@ -347,15 +349,19 @@ class B2CopyAction(AbstractAction):
         else:
             progress_listener = None
 
-        source_encryption = self.encryption_settings_provider.get_source_setting_for_copy(
-            bucket=self.source_bucket,
-            source_file_version=self.source_path.selected_version,
+        source_encryption = (
+            self.encryption_settings_provider.get_source_setting_for_copy(
+                bucket=self.source_bucket,
+                source_file_version=self.source_path.selected_version,
+            )
         )
 
-        destination_encryption = self.encryption_settings_provider.get_destination_setting_for_copy(
-            bucket=self.destination_bucket,
-            source_file_version=self.source_path.selected_version,
-            dest_b2_file_name=self.dest_b2_file_name,
+        destination_encryption = (
+            self.encryption_settings_provider.get_destination_setting_for_copy(
+                bucket=self.destination_bucket,
+                source_file_version=self.source_path.selected_version,
+                dest_b2_file_name=self.dest_b2_file_name,
+            )
         )
 
         bucket.copy(
@@ -380,11 +386,11 @@ class B2CopyAction(AbstractAction):
         reporter.print_completion('copy ' + self.source_path.relative_path)
 
     def __str__(self):
-        return (
-            'b2_copy(%s, %s, %s, %d)' % (
-                self.b2_file_name, self.source_path.selected_version.id_, self.dest_b2_file_name,
-                self.source_path.mod_time
-            )
+        return 'b2_copy(%s, %s, %s, %d)' % (
+            self.b2_file_name,
+            self.source_path.selected_version.id_,
+            self.dest_b2_file_name,
+            self.source_path.mod_time,
         )
 
 

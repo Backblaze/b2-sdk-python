@@ -71,7 +71,8 @@ class TestB2Session(TestBase):
         )
         self.raw_api.get_file_info_by_id.side_effect = Unauthorized('', 'code')
         with self.assertRaisesRegexp(
-            Unauthorized, r'unauthorized for application key with no restrictions \(code\)'
+            Unauthorized,
+            r'unauthorized for application key with no restrictions \(code\)',
         ):
             self.session.get_file_info_by_id(None)
 
@@ -85,6 +86,6 @@ class TestB2Session(TestBase):
         self.raw_api.get_file_info_by_id.side_effect = Unauthorized('no_go', 'code')
         with self.assertRaisesRegexp(
             Unauthorized,
-            r"no_go for application key with capabilities 'readFiles', restricted to bucket 'my-bucket', restricted to files that start with 'prefix/' \(code\)"
+            r"no_go for application key with capabilities 'readFiles', restricted to bucket 'my-bucket', restricted to files that start with 'prefix/' \(code\)",
         ):
             self.session.get_file_info_by_id(None)

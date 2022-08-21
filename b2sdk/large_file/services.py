@@ -32,7 +32,9 @@ class LargeFileServices:
         """
         batch_size = batch_size or 100
         while True:
-            response = self.services.session.list_parts(file_id, start_part_number, batch_size)
+            response = self.services.session.list_parts(
+                file_id, start_part_number, batch_size
+            )
             for part_dict in response['parts']:
                 yield PartFactory.from_list_parts_dict(part_dict)
             start_part_number = response.get('nextPartNumber')

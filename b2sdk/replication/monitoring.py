@@ -23,7 +23,12 @@ from ..scan.folder import B2Folder
 from ..scan.path import B2Path
 from ..scan.policies import DEFAULT_SCAN_MANAGER, ScanPoliciesManager
 from ..scan.report import ProgressReport
-from ..scan.scan import AbstractScanReport, AbstractScanResult, CountAndSampleScanReport, zip_folders
+from ..scan.scan import (
+    AbstractScanReport,
+    AbstractScanResult,
+    CountAndSampleScanReport,
+    zip_folders,
+)
 from .setting import ReplicationRule
 from .types import ReplicationStatus
 
@@ -57,7 +62,9 @@ class ReplicationScanResult(AbstractScanResult):
 
     @classmethod
     def from_files(
-        cls, source_file: Optional[B2Path] = None, destination_file: Optional[B2Path] = None
+        cls,
+        source_file: Optional[B2Path] = None,
+        destination_file: Optional[B2Path] = None,
     ) -> 'ReplicationScanResult':
         params = {}
 
@@ -65,26 +72,21 @@ class ReplicationScanResult(AbstractScanResult):
             source_file_version = source_file.selected_version
             params.update(
                 {
-                    'source_replication_status':
-                        source_file_version.replication_status,
-                    'source_has_hide_marker':
-                        not source_file.is_visible(),
-                    'source_encryption_mode':
-                        source_file_version.server_side_encryption.mode,
-                    'source_has_large_metadata':
-                        source_file_version.has_large_header,
-                    'source_has_file_retention':
-                        source_file_version.file_retention is not NO_RETENTION_FILE_SETTING,
-                    'source_has_legal_hold':
-                        source_file_version.legal_hold is LegalHold.ON,
+                    'source_replication_status': source_file_version.replication_status,
+                    'source_has_hide_marker': not source_file.is_visible(),
+                    'source_encryption_mode': source_file_version.server_side_encryption.mode,
+                    'source_has_large_metadata': source_file_version.has_large_header,
+                    'source_has_file_retention': source_file_version.file_retention
+                    is not NO_RETENTION_FILE_SETTING,
+                    'source_has_legal_hold': source_file_version.legal_hold
+                    is LegalHold.ON,
                 }
             )
 
         if destination_file:
             params.update(
                 {
-                    'destination_replication_status':
-                        destination_file.selected_version.replication_status,
+                    'destination_replication_status': destination_file.selected_version.replication_status,
                 }
             )
 
@@ -94,11 +96,14 @@ class ReplicationScanResult(AbstractScanResult):
 
             params.update(
                 {
-                    'metadata_differs':
-                        source_version.file_info != destination_version.file_info,
-                    'hash_differs':
-                        (source_version.content_md5 != destination_version.content_md5) or
-                        (source_version.content_sha1 != destination_version.content_sha1)
+                    'metadata_differs': source_version.file_info
+                    != destination_version.file_info,
+                    'hash_differs': (
+                        source_version.content_md5 != destination_version.content_md5
+                    )
+                    or (
+                        source_version.content_sha1 != destination_version.content_sha1
+                    ),
                 }
             )
 
@@ -130,8 +135,12 @@ class ReplicationMonitor:
 
     bucket: Bucket
     rule: ReplicationRule
-    destination_api: Optional[B2Api] = None  # if None -> will use `api` of source (bucket)
-    report: ProgressReport = field(default_factory=lambda: ProgressReport(sys.stdout, False))
+    destination_api: Optional[
+        B2Api
+    ] = None  # if None -> will use `api` of source (bucket)
+    report: ProgressReport = field(
+        default_factory=lambda: ProgressReport(sys.stdout, False)
+    )
     scan_policies_manager: ScanPoliciesManager = DEFAULT_SCAN_MANAGER
 
     REPORT_CLASS: ClassVar[AbstractScanReport] = ReplicationReport
@@ -208,6 +217,7 @@ class ReplicationMonitor:
                 ):
                     queue.put((path,), block=True)
                 queue.put(None, block=True)
+
         else:
 
             def fill_queue():

@@ -82,7 +82,11 @@ class TestAccountInfo:
         account_data['application_key_id'] = application_key_id
         account_info.set_auth_data(**account_data)
 
-        assert account_info.is_master_key() is expected, (account_id, application_key_id, expected)
+        assert account_info.is_master_key() is expected, (
+            account_id,
+            application_key_id,
+            expected,
+        )
 
     @pytest.mark.parametrize(
         'account_id,realm,expected',
@@ -101,7 +105,10 @@ class TestAccountInfo:
 
     @pytest.mark.parametrize(
         's3_api_url',
-        ('https://s3.us-east-123.backblazeb2.com', 'https://s3.us-west-321.backblazeb2.com')
+        (
+            'https://s3.us-east-123.backblazeb2.com',
+            'https://s3.us-west-321.backblazeb2.com',
+        ),
     )
     def test_s3_api_url(self, s3_api_url):
         account_info = self.account_info_factory()
@@ -199,22 +206,28 @@ class AccountInfoBase(metaclass=ABCMeta):
             capabilities=['readFiles'],
             namePrefix=None,
         )
-        account_info.set_auth_data(**{
-            **account_info_default_data,
-            'allowed': allowed,
-        })
+        account_info.set_auth_data(
+            **{
+                **account_info_default_data,
+                'allowed': allowed,
+            }
+        )
         assert allowed == account_info.get_allowed()
 
     def test_clear_bucket_upload_data(self):
         account_info = self._make_info()
-        account_info.put_bucket_upload_url('bucket-0', 'http://bucket-0', 'bucket-0_auth')
+        account_info.put_bucket_upload_url(
+            'bucket-0', 'http://bucket-0', 'bucket-0_auth'
+        )
         account_info.clear_bucket_upload_data('bucket-0')
         assert (None, None) == account_info.take_bucket_upload_url('bucket-0')
 
     def test_large_file_upload_urls(self):
         account_info = self._make_info()
         account_info.put_large_file_upload_url('file_0', 'http://file_0', 'auth_0')
-        assert ('http://file_0', 'auth_0') == account_info.take_large_file_upload_url('file_0')
+        assert ('http://file_0', 'auth_0') == account_info.take_large_file_upload_url(
+            'file_0'
+        )
         assert (None, None) == account_info.take_large_file_upload_url('file_0')
 
     def test_clear_large_file_upload_urls(self):
@@ -231,19 +244,33 @@ class AccountInfoBase(metaclass=ABCMeta):
         assert account_info.get_bucket_id_or_none_from_bucket_name('my-bucket') is None
         assert account_info.get_bucket_name_or_none_from_bucket_id('bucket-0') is None
         account_info.save_bucket(bucket)
-        assert 'bucket-0' == account_info.get_bucket_id_or_none_from_bucket_name('my-bucket')
-        assert 'my-bucket' == account_info.get_bucket_name_or_none_from_bucket_id('bucket-0')
+        assert 'bucket-0' == account_info.get_bucket_id_or_none_from_bucket_name(
+            'my-bucket'
+        )
+        assert 'my-bucket' == account_info.get_bucket_name_or_none_from_bucket_id(
+            'bucket-0'
+        )
         if self.PERSISTENCE:
-            assert 'bucket-0' == self._make_info(
-            ).get_bucket_id_or_none_from_bucket_name('my-bucket')
-            assert 'my-bucket' == self._make_info(
-            ).get_bucket_name_or_none_from_bucket_id('bucket-0')
+            assert (
+                'bucket-0'
+                == self._make_info().get_bucket_id_or_none_from_bucket_name('my-bucket')
+            )
+            assert (
+                'my-bucket'
+                == self._make_info().get_bucket_name_or_none_from_bucket_id('bucket-0')
+            )
         account_info.remove_bucket_name('my-bucket')
         assert account_info.get_bucket_id_or_none_from_bucket_name('my-bucket') is None
         assert account_info.get_bucket_name_or_none_from_bucket_id('bucket-0') is None
         if self.PERSISTENCE:
-            assert self._make_info().get_bucket_id_or_none_from_bucket_name('my-bucket') is None
-            assert self._make_info().get_bucket_name_or_none_from_bucket_id('bucket-0') is None
+            assert (
+                self._make_info().get_bucket_id_or_none_from_bucket_name('my-bucket')
+                is None
+            )
+            assert (
+                self._make_info().get_bucket_name_or_none_from_bucket_id('bucket-0')
+                is None
+            )
 
     def test_refresh_bucket(self):
         account_info = self._make_info()
@@ -254,8 +281,13 @@ class AccountInfoBase(metaclass=ABCMeta):
         assert 'bucket-0' == account_info.get_bucket_id_or_none_from_bucket_name('a')
         assert 'a' == account_info.get_bucket_name_or_none_from_bucket_id('bucket-0')
         if self.PERSISTENCE:
-            assert 'bucket-0' == self._make_info().get_bucket_id_or_none_from_bucket_name('a')
-            assert 'a' == self._make_info().get_bucket_name_or_none_from_bucket_id('bucket-0')
+            assert (
+                'bucket-0'
+                == self._make_info().get_bucket_id_or_none_from_bucket_name('a')
+            )
+            assert 'a' == self._make_info().get_bucket_name_or_none_from_bucket_id(
+                'bucket-0'
+            )
 
     @pytest.mark.apiver(to_ver=1)
     def test_account_info_up_to_v1(self):
@@ -268,7 +300,7 @@ class AccountInfoBase(metaclass=ABCMeta):
             100,
             'app_key',
             'realm',
-            application_key_id='key_id'
+            application_key_id='key_id',
         )
 
         object_instances = [account_info]
@@ -345,7 +377,8 @@ class TestSqliteAccountInfo(AccountInfoBase):
 
         yield
         for cleanup_method in [
-            lambda: os.unlink(self.db_path), lambda: shutil.rmtree(self.test_home)
+            lambda: os.unlink(self.db_path),
+            lambda: shutil.rmtree(self.test_home),
         ]:
             try:
                 cleanup_method()
@@ -360,7 +393,9 @@ class TestSqliteAccountInfo(AccountInfoBase):
         """
         Test that a new database won't be readable by just any user
         """
-        s = SqliteAccountInfo(file_name=self.db_path,)
+        s = SqliteAccountInfo(
+            file_name=self.db_path,
+        )
         mode = os.stat(self.db_path).st_mode
         assert stat.filemode(mode) == '-rw-------'
 
@@ -376,7 +411,7 @@ class TestSqliteAccountInfo(AccountInfoBase):
 
     @pytest.mark.skipif(
         platform.system() == 'Windows',
-        reason='it fails to upgrade on Windows, not worth to fix it anymore'
+        reason='it fails to upgrade on Windows, not worth to fix it anymore',
     )
     def test_convert_from_json(self):
         """
@@ -390,7 +425,7 @@ class TestSqliteAccountInfo(AccountInfoBase):
             application_key='application_key',
             download_url='download_url',
             minimum_part_size=5000,
-            realm='production'
+            realm='production',
         )
         with open(self.db_path, 'wb') as f:
             f.write(json.dumps(data).encode('utf-8'))
@@ -433,7 +468,9 @@ class TestSqliteAccountInfo(AccountInfoBase):
                 }
             )
             if apiver in ['v0', 'v1']:
-                expected_path = os.path.abspath(os.path.join(self.test_home, '.b2_account_info'))
+                expected_path = os.path.abspath(
+                    os.path.join(self.test_home, '.b2_account_info')
+                )
             else:
                 assert os.path.exists(os.path.join(d, 'b2'))
                 expected_path = os.path.abspath(os.path.join(d, 'b2', 'account_info'))

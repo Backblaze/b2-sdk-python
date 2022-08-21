@@ -10,7 +10,16 @@
 
 import pytest
 
-from apiver_deps import B2Api, B2HttpApiConfig, Bucket, RawSimulator, ReplicationConfiguration, ReplicationMonitor, ReplicationRule, StubAccountInfo
+from apiver_deps import (
+    B2Api,
+    B2HttpApiConfig,
+    Bucket,
+    RawSimulator,
+    ReplicationConfiguration,
+    ReplicationMonitor,
+    ReplicationRule,
+    StubAccountInfo,
+)
 
 
 @pytest.fixture

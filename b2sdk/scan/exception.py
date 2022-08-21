@@ -76,8 +76,9 @@ class UnsupportedFilename(B2Error):
 
 
 @contextmanager
-def check_invalid_argument(parameter_name: str, message: str,
-                           *exceptions: Type[Exception]) -> Iterator[None]:
+def check_invalid_argument(
+    parameter_name: str, message: str, *exceptions: Type[Exception]
+) -> Iterator[None]:
     """Raise `InvalidArgument` in case of one of given exception was thrown."""
     try:
         yield
