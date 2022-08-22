@@ -205,20 +205,20 @@ class WriterThread(threading.Thread):
         self.file = file
         self.queue = queue.Queue(max_queue_depth)
         self.total = 0
-        self.stats_collector = StatsCollector(str(self.file))
+        self.stats_collector = StatsCollector(str(self.file), 'seek')
         super(WriterThread, self).__init__()
     def run(self):
         file = self.file
         queue_get = self.queue.get
-        stats_collector_get_append = self.stats_collector.get.append
-        stats_collector_seek_append = self.stats_collector.seek.append
+        stats_collector_read_append = self.stats_collector.read.append
+        stats_collector_other_append = self.stats_collector.other.append
         stats_collector_write_append = self.stats_collector.write.append
         start = perf_counter_ns()
         while 1:
 
-            before_get = perf_counter_ns()
+            before_read = perf_counter_ns()
             shutdown, offset, data = queue_get()
-            stats_collector_get_append(perf_counter_ns()-before_get)
+            stats_collector_read_append(perf_counter_ns()-before_read)
 
             if shutdown:
                 break
@@ -227,7 +227,7 @@ class WriterThread(threading.Thread):
             after_seek = perf_counter_ns()
             file.write(data)
             after_write = perf_counter_ns()
-            stats_collector_seek_append(after_seek-before_seek)
+            stats_collector_other_append(after_seek-before_seek)
             stats_collector_write_append(after_write-after_seek)
             self.total += len(data)
         self.stats_collector.total = perf_counter_ns()-start

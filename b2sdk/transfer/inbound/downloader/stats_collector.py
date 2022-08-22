@@ -20,15 +20,19 @@ logger = logging.getLogger(__name__)
 @dataclass
 class StatsCollector:
     name: str
+    other_name: str  #: other statistic, typically "seek" or "hash"
     total: Optional[int] = None
-    seek: List[int] = field(default_factory=list)
+    other: List[int] = field(default_factory=list)
     write: List[int] = field(default_factory=list)
-    get: List[int] = field(default_factory=list)
+    read: List[int] = field(default_factory=list)
     def report(self):
-        logger.info('download stats | %s | TTFB: %.3f ms', self.name, self.get[0] / 1000000)
-        logger.info('download stats | %s | get() without TTFB: %.3f ms',self.name,  sum(self.get[1:]) / 1000000)
-        logger.info('download stats | %s | seek() total: %.3f ms', self.name, sum(self.seek) / 1000000)
-        logger.info('download stats | %s | write() total: %.3f ms', self.name, sum(self.write) / 1000000)
+        if self.read:
+            logger.info('download stats | %s | TTFB: %.3f ms', self.name, self.read[0] / 1000000)
+            logger.info('download stats | %s | read() without TTFB: %.3f ms',self.name,  sum(self.read[1:]) / 1000000)
+        if self.other:
+            logger.info('download stats | %s | %s total: %.3f ms', self.name, self.other_name, sum(self.other) / 1000000)
+        if self.write:
+            logger.info('download stats | %s | write() total: %.3f ms', self.name, sum(self.write) / 1000000)
         if self.total is not None:
-            overhead = self.total - sum(self.write) - sum(self.seek) - sum(self.get)
+            overhead = self.total - sum(self.write) - sum(self.other) - sum(self.read)
             logger.info('download stats | %s | overhead: %.3f ms', self.name, overhead / 1000000)
