@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-* Logging performance summary of parallel download writer threads
+* Logging performance summary of parallel download threads
 
 ### Fixed
 * Fix: replace `ReplicationScanResult.source_has_sse_c_enabled` with `source_encryption_mode`
