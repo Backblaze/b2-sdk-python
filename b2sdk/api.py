@@ -63,6 +63,7 @@ class Services:
         max_download_workers: Optional[int] = None,
         save_to_buffer_size: Optional[int] = None,
         check_download_hash: bool = True,
+        max_download_streams_per_file: Optional[int] = None,
     ):
         """
         Initialize Services object using given session.
@@ -73,6 +74,7 @@ class Services:
         :param max_download_workers: maximum number of download threads
         :param save_to_buffer_size: buffer size to use when writing files using DownloadedFile.save_to
         :param check_download_hash: whether to check hash of downloaded files. Can be disabled for files with internal checksums, for example, or to forcefully retrieve objects with corrupted payload or hash value
+        :param max_download_streams_per_file: how many streams to use for parallel downloader
         """
         self.api = api
         self.session = api.session
@@ -86,6 +88,7 @@ class Services:
             max_workers=max_download_workers,
             write_buffer_size=save_to_buffer_size,
             check_hash=check_download_hash,
+            max_streams=max_download_streams_per_file,
         )
         self.emerger = Emerger(self)
 
@@ -128,6 +131,7 @@ class B2Api(metaclass=B2TraceMeta):
         max_download_workers: Optional[int] = None,
         save_to_buffer_size: Optional[int] = None,
         check_download_hash: bool = True,
+        max_download_streams_per_file: Optional[int] = None,
     ):
         """
         Initialize the API using the given account info.
@@ -144,6 +148,7 @@ class B2Api(metaclass=B2TraceMeta):
         :param max_download_workers: maximum number of download threads
         :param save_to_buffer_size: buffer size to use when writing files using DownloadedFile.save_to
         :param check_download_hash: whether to check hash of downloaded files. Can be disabled for files with internal checksums, for example, or to forcefully retrieve objects with corrupted payload or hash value
+        :param max_download_streams_per_file: number of streams for parallel download manager
         """
         self.session = self.SESSION_CLASS(
             account_info=account_info, cache=cache, api_config=api_config
@@ -158,6 +163,7 @@ class B2Api(metaclass=B2TraceMeta):
             max_download_workers=max_download_workers,
             save_to_buffer_size=save_to_buffer_size,
             check_download_hash=check_download_hash,
+            max_download_streams_per_file=max_download_streams_per_file,
         )
 
     @property
