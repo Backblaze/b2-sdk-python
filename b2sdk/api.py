@@ -9,6 +9,7 @@
 ######################################################################
 
 from typing import Optional, Tuple, List, Generator
+from contextlib import suppress
 
 from .account_info.abstract import AbstractAccountInfo
 from .api_config import B2HttpApiConfig, DEFAULT_HTTP_API_CONFIG
@@ -539,10 +540,13 @@ class B2Api(metaclass=B2TraceMeta):
 
         Raises an exception if profile is not permitted to list keys.
         """
-        return next(
-            self.list_keys(start_application_key_id=key_id),
-            None,
-        )
+        with suppress(StopIteration):
+            key = next(self.list_keys(start_application_key_id=key_id))
+
+            # list_keys() may return some other key if `key_id` does not exist;
+            # thus manually check that we retrieved the right key
+            if key.id_ == key_id:
+                return key
 
     # other
     def get_file_info(self, file_id: str) -> FileVersion:

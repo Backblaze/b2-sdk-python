@@ -204,3 +204,7 @@ class B2Api(v2.B2Api):
 
     def delete_key(self, application_key_id):
         return super().delete_key_by_id(application_key_id).as_dict()
+
+    def get_key(self, key_id: str) -> Optional[dict]:
+        keys = self.list_keys(start_application_key_id=key_id)['keys']
+        return next((key for key in keys if key['applicationKeyId'] == key_id), None)
