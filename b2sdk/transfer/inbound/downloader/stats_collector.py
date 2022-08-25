@@ -18,7 +18,8 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class StatsCollector:
-    name: str
+    name: str  #: file name or object url
+    detail: str  #: description of the thread, ex. "10000000:20000000" or "writer"
     other_name: str  #: other statistic, typically "seek" or "hash"
     total: Optional[int] = None
     other: List[int] = field(default_factory=list)
@@ -27,21 +28,24 @@ class StatsCollector:
 
     def report(self):
         if self.read:
-            logger.info('download stats | %s | TTFB: %.3f ms', self.name, self.read[0] / 1000000)
+            logger.info('download stats | %s | TTFB: %.3f ms', self, self.read[0] / 1000000)
             logger.info(
-                'download stats | %s | read() without TTFB: %.3f ms', self.name,
+                'download stats | %s | read() without TTFB: %.3f ms', self,
                 sum(self.read[1:]) / 1000000
             )
         if self.other:
             logger.info(
-                'download stats | %s | %s total: %.3f ms', self.name, self.other_name,
+                'download stats | %s | %s total: %.3f ms', self, self.other_name,
                 sum(self.other) / 1000000
             )
         if self.write:
             logger.info(
-                'download stats | %s | write() total: %.3f ms', self.name,
+                'download stats | %s | write() total: %.3f ms', self,
                 sum(self.write) / 1000000
             )
         if self.total is not None:
             overhead = self.total - sum(self.write) - sum(self.other) - sum(self.read)
-            logger.info('download stats | %s | overhead: %.3f ms', self.name, overhead / 1000000)
+            logger.info('download stats | %s | overhead: %.3f ms', self, overhead / 1000000)
+
+    def __str__(self):
+        return f'{self.name}[{self.detail}]'
