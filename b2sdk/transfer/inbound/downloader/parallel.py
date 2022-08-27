@@ -318,7 +318,6 @@ def download_first_part(
         bytes_read += len(to_write)
         if stop:
             break
-        before_read = perf_counter_ns()
 
     # since we got everything we need from original response, close the socket and free the buffer
     # to avoid a timeout exception during hashing and other trouble
