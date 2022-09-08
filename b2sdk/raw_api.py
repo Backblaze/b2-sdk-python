@@ -288,6 +288,7 @@ class AbstractRawApi(metaclass=ABCMeta):
         default_server_side_encryption: Optional[EncryptionSetting] = None,
         default_retention: Optional[BucketRetentionSetting] = None,
         replication: Optional[ReplicationConfiguration] = None,
+        is_file_lock_enabled: Optional[bool] = None,
     ):
         pass
 
@@ -740,6 +741,7 @@ class B2RawHTTPApi(AbstractRawApi):
         default_server_side_encryption: Optional[EncryptionSetting] = None,
         default_retention: Optional[BucketRetentionSetting] = None,
         replication: Optional[ReplicationConfiguration] = None,
+        is_file_lock_enabled: Optional[bool] = None,
     ):
         kwargs = {}
         if if_revision_is is not None:
@@ -761,6 +763,8 @@ class B2RawHTTPApi(AbstractRawApi):
             kwargs['defaultRetention'] = default_retention.serialize_to_json_for_request()
         if replication is not None:
             kwargs['replicationConfiguration'] = replication.serialize_to_json_for_request()
+        if is_file_lock_enabled is not None:
+            kwargs['fileLockEnabled'] = is_file_lock_enabled
 
         assert kwargs
 

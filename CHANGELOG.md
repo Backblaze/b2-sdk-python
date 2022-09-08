@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+* Add `is_file_lock_enabled` parameter to `Bucket.update()` and related methods
+
 ### Fixed
 * Replace `ReplicationScanResult.source_has_sse_c_enabled` with `source_encryption_mode`
 * Fix `B2Api.get_key()` and `RawSimulator.delete_key()`

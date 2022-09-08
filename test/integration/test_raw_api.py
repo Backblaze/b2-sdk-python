@@ -19,6 +19,7 @@ import pytest
 
 from b2sdk.b2http import B2Http
 from b2sdk.encryption.setting import EncryptionAlgorithm, EncryptionMode, EncryptionSetting
+from b2sdk.exception import DisablingFileLockNotSupported
 from b2sdk.replication.setting import ReplicationConfiguration, ReplicationRule
 from b2sdk.replication.types import ReplicationStatus
 from b2sdk.file_lock import BucketRetentionSetting, NO_RETENTION_FILE_SETTING, RetentionMode, RetentionPeriod
@@ -519,8 +520,23 @@ def raw_api_test_helper(raw_api, should_cleanup_old_buckets):
         default_retention=BucketRetentionSetting(
             mode=RetentionMode.GOVERNANCE, period=RetentionPeriod(days=1)
         ),
+        is_file_lock_enabled=True,
     )
     assert first_bucket_revision < updated_bucket['revision']
+
+    # NOTE: this update_bucket call is only here to be able to find out the error code returned by
+    # the server if an attempt is made to disable file lock.  It has to be done here since the CLI
+    # by design does not allow disabling file lock at all (i.e. there is no --fileLockEnabled=false
+    # option or anything equivalent to that).
+    with pytest.raises(DisablingFileLockNotSupported):
+        raw_api.update_bucket(
+            api_url,
+            account_auth_token,
+            account_id,
+            bucket_id,
+            'allPrivate',
+            is_file_lock_enabled=False,
+        )
 
     # Clean up this test.
     _clean_and_delete_bucket(raw_api, api_url, account_auth_token, account_id, bucket_id)

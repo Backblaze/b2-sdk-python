@@ -150,6 +150,7 @@ class Bucket(metaclass=B2TraceMeta):
         default_server_side_encryption: Optional[EncryptionSetting] = None,
         default_retention: Optional[BucketRetentionSetting] = None,
         replication: Optional[ReplicationConfiguration] = None,
+        is_file_lock_enabled: Optional[bool] = None,
     ) -> 'Bucket':
         """
         Update various bucket parameters.
@@ -161,7 +162,8 @@ class Bucket(metaclass=B2TraceMeta):
         :param if_revision_is: revision number, update the info **only if** *revision* equals to *if_revision_is*
         :param default_server_side_encryption: default server side encryption settings (``None`` if unknown)
         :param default_retention: bucket default retention setting
-        :param replication: replication rules for the bucket;
+        :param replication: replication rules for the bucket
+        :param bool is_file_lock_enabled: specifies whether bucket should get File Lock-enabled
         """
         account_id = self.api.account_info.get_account_id()
         return self.api.BUCKET_FACTORY_CLASS.from_api_bucket_dict(
@@ -177,6 +179,7 @@ class Bucket(metaclass=B2TraceMeta):
                 default_server_side_encryption=default_server_side_encryption,
                 default_retention=default_retention,
                 replication=replication,
+                is_file_lock_enabled=is_file_lock_enabled,
             )
         )
 

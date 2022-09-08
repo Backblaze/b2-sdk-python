@@ -517,6 +517,16 @@ class CopyArgumentsMismatch(InvalidUserInput):
     pass
 
 
+class DisablingFileLockNotSupported(B2Error):
+    def __str__(self):
+        return "Disabling file lock is not supported"
+
+
+class SourceReplicationConflict(B2Error):
+    def __str__(self):
+        return "Operation not supported for buckets with source replication"
+
+
 @trace_call(logger)
 def interpret_b2_error(
     status: int,
@@ -569,6 +579,10 @@ def interpret_b2_error(
             return CopySourceTooBig(size)
 
         return BadRequest(message, code)
+    elif status == 400 and code == 'disabling_file_lock_not_allowed':
+        raise DisablingFileLockNotSupported()
+    elif status == 400 and code == 'source_replication_conflict':
+        raise SourceReplicationConflict()
     elif status == 400:
         return BadRequest(message, code)
     elif status == 401 and code in ("bad_auth_token", "expired_auth_token"):
