@@ -13,7 +13,7 @@
 
 # core
 
-from b2sdk.api import B2Api
+from b2sdk.api import B2Api, BucketTrackingMixin
 from b2sdk.api import Services
 from b2sdk.bucket import Bucket
 from b2sdk.bucket import BucketFactory
