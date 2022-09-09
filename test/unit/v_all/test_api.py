@@ -10,7 +10,7 @@
 
 import pytest
 
-from apiver_deps import B2Api
+from apiver_deps import B2Api, BucketTrackingMixin
 from apiver_deps import B2HttpApiConfig
 from apiver_deps import Bucket
 from apiver_deps import InMemoryCache
@@ -102,11 +102,13 @@ class TestServices:
         assert download_manager.strategies[0].max_streams == kwargs['max_download_streams_per_file']
 
 
-class TestApi(TestBase):
+class TestApiBase(TestBase):
+    B2_API_CLASS = B2Api
+
     def setUp(self):
         self.account_info = InMemoryAccountInfo()
         self.cache = InMemoryCache()
-        self.api = B2Api(
+        self.api = self.B2_API_CLASS(
             self.account_info, self.cache, api_config=B2HttpApiConfig(_raw_api_class=RawSimulator)
         )
         self.raw_api = self.api.session.raw_api
@@ -115,6 +117,8 @@ class TestApi(TestBase):
     def _authorize_account(self):
         self.api.authorize_account('production', self.application_key_id, self.master_key)
 
+
+class TestApi(TestApiBase):
     @pytest.mark.apiver(to_ver=1)
     def test_get_bucket_by_id_up_to_v1(self):
         bucket = self.api.get_bucket_by_id("this id doesn't even exist")
@@ -158,3 +162,24 @@ class TestApi(TestBase):
         download_url = self.api.get_download_url_for_fileid('file-id')
 
         assert download_url == 'http://download.example.com/b2api/v2/b2_download_file_by_id?fileId=file-id'
+
+
+class TestBucketTrackingMixin(TestApiBase):
+    class BucketTrackingApi(BucketTrackingMixin, B2Api):
+        pass
+
+    B2_API_CLASS = BucketTrackingApi
+
+    def test_bucket_tracking(self):
+        self._authorize_account()
+
+        bucket_1, bucket_2, bucket_3 = [
+            self.api.create_bucket(f'bucket-{i + 1}', 'allPrivate') for i in range(3)
+        ]
+
+        self.api.delete_bucket(bucket_2)
+        self.api.delete_bucket(bucket_3)
+
+        bucket_4 = self.api.create_bucket('bucket-4', 'allPrivate')
+
+        assert {bucket.id_ for bucket in self.api.buckets} == {bucket_1.id_, bucket_4.id_}
