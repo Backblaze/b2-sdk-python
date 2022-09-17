@@ -1400,6 +1400,9 @@ class RawSimulator(AbstractRawApi):
                 'application key does not exist: %s' % (application_key_id,),
                 'bad_request',
             )
+        self.all_application_keys = [
+            key for key in self.all_application_keys if key.application_key_id != application_key_id
+        ]
         return key_sim.as_key()
 
     def finish_large_file(self, api_url, account_auth_token, file_id, part_sha1_array):

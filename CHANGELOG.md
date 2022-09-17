@@ -7,10 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+* Logging performance summary of parallel download threads
 * Add `max_download_streams_per_file` parameter to B2Api class and underlying structures
 
 ### Fixed
 * Replace `ReplicationScanResult.source_has_sse_c_enabled` with `source_encryption_mode`
+* Fix `B2Api.get_key()` and `RawSimulator.delete_key()`
+* Fix calling `CopySizeTooBig` exception
 
 ### Infrastructure
 * Fix nox's deprecated `session.install()` calls

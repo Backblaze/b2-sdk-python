@@ -36,6 +36,9 @@ class AbstractStreamWithProgress(StreamWrapper):
         self.bytes_completed += delta
         self.progress_listener.bytes_completed(self.bytes_completed + self.offset)
 
+    def __str__(self):
+        return str(self.stream)
+
 
 class ReadingStreamWithProgress(AbstractStreamWithProgress):
     """
