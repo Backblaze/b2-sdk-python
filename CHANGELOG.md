@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 * Logging performance summary of parallel download threads
 
+### Changed
+* Use `ParallelDownloader` for small files too (separate fetcher/writer threads increase performance)
+
 ### Fixed
 * Replace `ReplicationScanResult.source_has_sse_c_enabled` with `source_encryption_mode`
 * Fix `B2Api.get_key()` and `RawSimulator.delete_key()`

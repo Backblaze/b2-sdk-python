@@ -64,7 +64,7 @@ class ParallelDownloader(AbstractDownloader):
             return False
         return self._get_number_of_streams(
             download_version.content_length
-        ) >= 2 and download_version.content_length >= 2 * self.min_part_size
+        ) >= 1 and download_version.content_length >= 2 * self.min_part_size
 
     def _get_number_of_streams(self, content_length):
         num_streams = content_length // self.min_part_size
