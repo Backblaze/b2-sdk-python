@@ -48,7 +48,7 @@ class DownloadManager(TransferManager, ThreadPoolMixin, metaclass=B2TraceMetaAbs
         self,
         write_buffer_size: Optional[int] = None,
         check_hash: bool = True,
-        max_streams: Optional[int] = None,
+        max_download_streams_per_file: Optional[int] = None,
         **kwargs
     ):
         """
@@ -64,7 +64,7 @@ class DownloadManager(TransferManager, ThreadPoolMixin, metaclass=B2TraceMetaAbs
                 align_factor=write_buffer_size,
                 thread_pool=self._thread_pool,
                 check_hash=check_hash,
-                max_streams=max_streams,
+                max_streams=max_download_streams_per_file,
             ),
             self.SIMPLE_DOWNLOADER_CLASS(
                 min_chunk_size=self.MIN_CHUNK_SIZE,

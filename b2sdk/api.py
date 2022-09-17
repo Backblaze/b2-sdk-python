@@ -88,7 +88,7 @@ class Services:
             max_workers=max_download_workers,
             write_buffer_size=save_to_buffer_size,
             check_hash=check_download_hash,
-            max_streams=max_download_streams_per_file,
+            max_download_streams_per_file=max_download_streams_per_file,
         )
         self.emerger = Emerger(self)
 
