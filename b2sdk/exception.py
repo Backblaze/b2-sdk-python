@@ -12,6 +12,7 @@ from abc import ABCMeta
 
 import logging
 import re
+import warnings
 from typing import Any, Dict, Optional
 
 from .utils import camelcase_to_underscore, trace_call
@@ -527,6 +528,11 @@ class SourceReplicationConflict(B2Error):
         return "Operation not supported for buckets with source replication"
 
 
+class EnablingFileLockOnRestrictedBucket(B2Error):
+    def __str__(self):
+        return "Turning on file lock for a restricted bucket is not allowed"
+
+
 @trace_call(logger)
 def interpret_b2_error(
     status: int,
@@ -565,25 +571,39 @@ def interpret_b2_error(
         return PartSha1Mismatch(post_params.get('fileId'))
     elif status == 400 and code == "bad_bucket_id":
         return BucketIdNotFound(post_params.get('bucketId'))
-    elif status == 400 and code in ('bad_request', 'auth_token_limit', 'source_too_large'):
-        # it's "bad_request" on 2022-03-29, but will become 'auth_token_limit' in 2022-04  # TODO: cleanup after 2022-05-01
+    elif status == 400 and code == "auth_token_limit":
         matcher = UPLOAD_TOKEN_USED_CONCURRENTLY_ERROR_MESSAGE_RE.match(message)
-        if matcher is not None:
-            token = matcher.group('token')
-            return UploadTokenUsedConcurrently(token)
-
-        # it's "bad_request" on 2022-03-29, but will become 'source_too_large' in 2022-04  # TODO: cleanup after 2022-05-01
+        assert matcher is not None, f"unexpected error message: {message}"
+        token = matcher.group('token')
+        return UploadTokenUsedConcurrently(token)
+    elif status == 400 and code == "source_too_large":
         matcher = COPY_SOURCE_TOO_BIG_ERROR_MESSAGE_RE.match(message)
-        if matcher is not None:
-            size = int(matcher.group('size'))
-            return CopySourceTooBig(size)
+        assert matcher is not None, f"unexpected error message: {message}"
+        size = int(matcher.group('size'))
+        return CopySourceTooBig(size)
+    elif status == 400 and code == 'file_lock_conflict':
+        return DisablingFileLockNotSupported()
+    elif status == 400 and code == 'source_replication_conflict':
+        return SourceReplicationConflict()
+    elif status == 400 and code == 'restricted_bucket_conflict':
+        return EnablingFileLockOnRestrictedBucket()
+    elif status == 400 and code == 'bad_request':
+
+        # it's "bad_request" on 2022-09-14, but will become 'disabling_file_lock_not_allowed'  # TODO: cleanup after 2022-09-22
+        if message == 'fileLockEnabled value of false is not allowed when bucket is already file lock enabled.':
+            return DisablingFileLockNotSupported()
+
+        # it's "bad_request" on 2022-09-14, but will become 'source_replication_conflict'  # TODO: cleanup after 2022-09-22
+        if message == 'Turning on file lock for an existing bucket having source replication configuration is not allowed.':
+            return SourceReplicationConflict()
+
+        # it's "bad_request" on 2022-09-14, but will become 'disabling_file_lock_not_allowed'  # TODO: cleanup after 2022-09-22
+        if message == 'Turning on file lock for a restricted bucket is not allowed.':
+            return EnablingFileLockOnRestrictedBucket()
 
         return BadRequest(message, code)
-    elif status == 400 and code == 'disabling_file_lock_not_allowed':
-        raise DisablingFileLockNotSupported()
-    elif status == 400 and code == 'source_replication_conflict':
-        raise SourceReplicationConflict()
     elif status == 400:
+        warnings.warn(f"bad request exception with an unknown `code`. message={message}, code={code}")
         return BadRequest(message, code)
     elif status == 401 and code in ("bad_auth_token", "expired_auth_token"):
         return InvalidAuthToken(message, code)
