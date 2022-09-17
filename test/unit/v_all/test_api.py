@@ -27,6 +27,7 @@ class TestServices(TestBase):
         self.account_info = InMemoryAccountInfo()
         self.cache = InMemoryCache()
 
+    @pytest.mark.apiver(from_ver=2)
     def test_api_initialization(self):
         class DummyA:
             def __init__(self, *args, **kwargs):
