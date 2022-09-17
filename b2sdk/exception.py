@@ -566,7 +566,7 @@ def interpret_b2_error(
         matcher = COPY_SOURCE_TOO_BIG_ERROR_MESSAGE_RE.match(message)
         if matcher is not None:
             size = int(matcher.group('size'))
-            return CopySourceTooBig(size)
+            return CopySourceTooBig(message, code, size)
 
         return BadRequest(message, code)
     elif status == 400:
