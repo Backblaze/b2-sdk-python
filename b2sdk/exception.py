@@ -580,7 +580,7 @@ def interpret_b2_error(
         matcher = COPY_SOURCE_TOO_BIG_ERROR_MESSAGE_RE.match(message)
         assert matcher is not None, f"unexpected error message: {message}"
         size = int(matcher.group('size'))
-        return CopySourceTooBig(size)
+        return CopySourceTooBig((message, code, size)
     elif status == 400 and code == 'file_lock_conflict':
         return DisablingFileLockNotSupported()
     elif status == 400 and code == 'source_replication_conflict':
