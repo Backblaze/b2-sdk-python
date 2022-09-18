@@ -580,7 +580,7 @@ def interpret_b2_error(
         matcher = COPY_SOURCE_TOO_BIG_ERROR_MESSAGE_RE.match(message)
         assert matcher is not None, f"unexpected error message: {message}"
         size = int(matcher.group('size'))
-        return CopySourceTooBig((message, code, size)
+        return CopySourceTooBig(message, code, size)
     elif status == 400 and code == 'file_lock_conflict':
         return DisablingFileLockNotSupported()
     elif status == 400 and code == 'source_replication_conflict':
@@ -597,13 +597,15 @@ def interpret_b2_error(
         if message == 'Turning on file lock for an existing bucket having source replication configuration is not allowed.':
             return SourceReplicationConflict()
 
-        # it's "bad_request" on 2022-09-14, but will become 'disabling_file_lock_not_allowed'  # TODO: cleanup after 2022-09-22
+        # it's "bad_request" on 2022-09-14, but will become 'restricted_bucket_conflict'  # TODO: cleanup after 2022-09-22
         if message == 'Turning on file lock for a restricted bucket is not allowed.':
             return EnablingFileLockOnRestrictedBucket()
 
         return BadRequest(message, code)
     elif status == 400:
-        warnings.warn(f"bad request exception with an unknown `code`. message={message}, code={code}")
+        warnings.warn(
+            f"bad request exception with an unknown `code`. message={message}, code={code}"
+        )
         return BadRequest(message, code)
     elif status == 401 and code in ("bad_auth_token", "expired_auth_token"):
         return InvalidAuthToken(message, code)
