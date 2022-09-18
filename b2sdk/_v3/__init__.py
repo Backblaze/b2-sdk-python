@@ -184,6 +184,7 @@ from b2sdk.sync.report import SyncFileReporter
 from b2sdk.sync.report import SyncReport
 from b2sdk.sync.sync import KeepOrDeleteMode
 from b2sdk.sync.sync import Synchronizer
+from b2sdk.sync.sync import UploadMode
 from b2sdk.sync.encryption_provider import AbstractSyncEncryptionSettingsProvider
 from b2sdk.sync.encryption_provider import BasicSyncEncryptionSettingsProvider
 from b2sdk.sync.encryption_provider import ServerDefaultSyncEncryptionSettingsProvider

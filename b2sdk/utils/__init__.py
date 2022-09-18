@@ -17,10 +17,11 @@ import shutil
 import tempfile
 import time
 import concurrent.futures as futures
+from abc import abstractmethod
 from collections.abc import Iterator
 from decimal import Decimal
 from itertools import chain
-from typing import Tuple
+from typing import Tuple, Optional
 from urllib.parse import quote, unquote_plus
 
 from logfury.v1 import DefaultTraceAbstractMeta, DefaultTraceMeta, limit_trace_arguments, disable_trace, trace_call
@@ -89,21 +90,20 @@ def choose_part_ranges(content_length, minimum_part_size):
     return parts
 
 
-# TODO: When dropping support for Python 3.7 use typing.Protocol to specify that
-# input_stream is an object with a read() method.
-def hex_sha1_of_stream(input_stream, content_length: int) -> Sha1HexDigest:
+# TODO: When dropping support for Python 3.7 use typing.Protocol to specify what
+# methods input_stream, digest and returned objects should expose.  The defined
+# protocols could be used as type hints in this and related functions.
+def update_digest_from_stream(digest: object, input_stream: object, content_length: int) -> object:
     """
-    Return the 40-character hex SHA1 checksum of the first content_length
-    bytes in the input stream.
+    Update and return `digest` with data read from `input_stream`
 
-    :param input_stream: stream object, which exposes read() method
+    :param digest: a digest object, which exposes an `update()` method
+    :param input_stream: stream object, which exposes a `read()` method
     :param content_length: expected length of the stream
     :type content_length: int
-    :rtype: Sha1HexDigest
     """
     remaining = content_length
     block_size = 1024 * 1024
-    digest = hashlib.sha1()
     while remaining != 0:
         to_read = min(remaining, block_size)
         data = input_stream.read(to_read)
@@ -113,10 +113,25 @@ def hex_sha1_of_stream(input_stream, content_length: int) -> Sha1HexDigest:
             )
         digest.update(data)
         remaining -= to_read
-    return digest.hexdigest()
+    return digest
 
 
-def hex_sha1_of_unlimited_stream(input_stream, limit=None):
+def hex_sha1_of_stream(input_stream: object, content_length: int) -> Sha1HexDigest:
+    """
+    Return the 40-character hex SHA1 checksum of the first content_length
+    bytes in the input stream.
+
+    :param input_stream: stream object, which exposes read() method
+    :param content_length: expected length of the stream
+    :type content_length: int
+    :rtype: str
+    """
+    return update_digest_from_stream(hashlib.sha1(), input_stream, content_length).hexdigest()
+
+
+def hex_sha1_of_unlimited_stream(
+    input_stream: object, limit: Optional[int] = None
+) -> Sha1HexDigest:
     block_size = 1024 * 1024
     content_length = 0
     digest = hashlib.sha1()
@@ -134,12 +149,12 @@ def hex_sha1_of_unlimited_stream(input_stream, limit=None):
             return digest.hexdigest(), content_length
 
 
-def hex_sha1_of_file(path_):
+def hex_sha1_of_file(path_) -> Sha1HexDigest:
     with open(path_, 'rb') as file:
         return hex_sha1_of_unlimited_stream(file)
 
 
-def hex_sha1_of_bytes(data: bytes) -> str:
+def hex_sha1_of_bytes(data: bytes) -> Sha1HexDigest:
     """
     Return the 40-character hex SHA1 checksum of the data.
     """

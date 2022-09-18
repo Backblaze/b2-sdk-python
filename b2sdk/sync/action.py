@@ -8,11 +8,14 @@
 #
 ######################################################################
 
+import functools
 import logging
 import os
 from abc import ABCMeta, abstractmethod
+from typing import Optional
 
 from ..bucket import Bucket
+from ..file_version import FileVersion
 from ..http_constants import SRC_LAST_MODIFIED_MILLIS
 from ..scan.path import B2Path
 from ..transfer.outbound.upload_source import UploadSourceLocalFile
@@ -109,6 +112,7 @@ class B2UploadAction(AbstractAction):
         self.mod_time_millis = mod_time_millis
         self.size = size
         self.encryption_settings_provider = encryption_settings_provider
+        self.large_file_sha1 = None
 
     def get_bytes(self):
         """
@@ -117,6 +121,16 @@ class B2UploadAction(AbstractAction):
         :rtype: int
         """
         return self.size
+
+    @functools.cached_property
+    def _upload_source(self):
+        """ Upload source if the file was to be uploaded in full """
+        # NOTE: We're caching this to ensure that sha1 is not recalculated.
+        return UploadSourceLocalFile(self.local_full_path)
+
+    def get_all_sources(self):
+        """ Get list of sources required to complete this upload """
+        return [self._upload_source]
 
     def do_action(self, bucket, reporter):
         """
@@ -136,12 +150,21 @@ class B2UploadAction(AbstractAction):
             file_info=file_info,
             length=self.size,
         )
-        bucket.upload(
-            UploadSourceLocalFile(self.local_full_path),
+
+        sources = self.get_all_sources()
+        large_file_sha1 = None
+
+        if len(sources) > 1:
+            # The upload will be incremental, calculate the large_file_sha1
+            large_file_sha1 = self._upload_source.get_content_sha1()
+
+        bucket.concatenate(
+            sources,
             self.b2_file_name,
-            file_info=file_info,
             progress_listener=progress_listener,
+            file_info=file_info,
             encryption=encryption,
+            large_file_sha1=large_file_sha1,
         )
 
     def do_report(self, bucket, reporter):
@@ -157,6 +180,41 @@ class B2UploadAction(AbstractAction):
     def __str__(self):
         return 'b2_upload(%s, %s, %s)' % (
             self.local_full_path, self.b2_file_name, self.mod_time_millis
+        )
+
+
+class B2IncrementalUploadAction(B2UploadAction):
+    def __init__(
+        self,
+        local_full_path,
+        relative_name,
+        b2_file_name,
+        mod_time_millis,
+        size,
+        encryption_settings_provider: AbstractSyncEncryptionSettingsProvider,
+        file_version: Optional[FileVersion] = None,
+        absolute_minimum_part_size: int = None,
+    ):
+        """
+        :param str local_full_path: a local file path
+        :param str relative_name: a relative file name
+        :param str b2_file_name: a name of a new remote file
+        :param int mod_time_millis: file modification time in milliseconds
+        :param int size: a file size
+        :param b2sdk.v2.AbstractSyncEncryptionSettingsProvider encryption_settings_provider: encryption setting provider
+        :param b2sdk.v2.FileVersion file_version: version of file currently on the server
+        :param int absolute_minimum_part_size: minimum file part size for large files
+        """
+        super().__init__(
+            local_full_path, relative_name, b2_file_name, mod_time_millis, size,
+            encryption_settings_provider
+        )
+        self.file_version = file_version
+        self.absolute_minimum_part_size = absolute_minimum_part_size
+
+    def get_all_sources(self):
+        return self._upload_source.get_incremental_sources(
+            self.file_version, self.absolute_minimum_part_size
         )
 
 

@@ -66,6 +66,7 @@ from apiver_deps import BucketRetentionSetting, FileRetentionSetting, LegalHold,
     NO_RETENTION_FILE_SETTING
 from apiver_deps import ReplicationConfiguration, ReplicationRule
 from apiver_deps import LARGE_FILE_SHA1
+from apiver_deps import UploadMode
 
 pytestmark = [pytest.mark.apiver(from_ver=1)]
 
@@ -1413,6 +1414,54 @@ class TestUpload(TestCaseWithBucket):
             self.assertEqual(file_info.server_side_encryption, SSE_NONE)
             print(file_info.as_dict())
             self.assertEqual(file_info.as_dict()['serverSideEncryption'], {'mode': 'none'})
+
+    @pytest.mark.apiver(from_ver=2)
+    def test_upload_local_file_incremental(self):
+        with TempDir() as d:
+            path = os.path.join(d, 'file1')
+
+            small_data = b'Hello world!'
+            big_data = self._make_data(self.simulator.MIN_PART_SIZE * 3)
+            DATA = [
+                big_data,
+                big_data + small_data,
+                big_data + small_data + big_data,
+                small_data,
+                small_data + small_data,
+                small_data.upper() + small_data,
+            ]
+
+            last_data = None
+            for data in DATA:
+                # figure out if this particular upload should be incremental
+                should_be_incremental = (
+                    last_data and data.startswith(last_data) and
+                    len(last_data) >= self.simulator.MIN_PART_SIZE
+                )
+
+                # if it's incremental, then there should be two sources concatenated, otherwise one
+                expected_source_count = 2 if should_be_incremental else 1
+
+                # is the result file expected to be a large file
+                expected_large_file = should_be_incremental or len(
+                    data
+                ) > self.simulator.MIN_PART_SIZE
+
+                write_file(path, data)
+                with mock.patch.object(
+                    self.bucket, 'concatenate', wraps=self.bucket.concatenate
+                ) as mocked_concatenate:
+                    file_info = self.bucket.upload_local_file(
+                        path, 'file1', upload_mode=UploadMode.INCREMENTAL
+                    )
+                    mocked_concatenate.assert_called_once()
+                    assert len(mocked_concatenate.call_args.args[0]) == expected_source_count
+
+                self._check_file_contents('file1', data)
+                if expected_large_file:
+                    self._check_large_file_sha1('file1', hex_sha1_of_bytes(data))
+
+                last_data = data
 
     @pytest.mark.skipif(platform.system() == 'Windows', reason='no os.mkfifo() on Windows')
     def test_upload_fifo(self):

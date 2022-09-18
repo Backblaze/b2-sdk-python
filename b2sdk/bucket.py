@@ -38,7 +38,7 @@ from .transfer.emerge.executor import AUTO_CONTENT_TYPE
 from .transfer.emerge.write_intent import WriteIntent
 from .transfer.inbound.downloaded_file import DownloadedFile
 from .transfer.outbound.copy_source import CopySource
-from .transfer.outbound.upload_source import UploadSourceBytes, UploadSourceLocalFile
+from .transfer.outbound.upload_source import UploadSourceBytes, UploadSourceLocalFile, UploadMode
 from .utils import (
     B2TraceMeta,
     b2_url_encode,
@@ -528,6 +528,7 @@ class Bucket(metaclass=B2TraceMeta):
         encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
+        upload_mode: UploadMode = UploadMode.FULL,
     ):
         """
         Upload a file on local disk to a B2 file.
@@ -546,11 +547,30 @@ class Bucket(metaclass=B2TraceMeta):
         :param b2sdk.v2.EncryptionSetting encryption: encryption settings (``None`` if unknown)
         :param b2sdk.v2.FileRetentionSetting file_retention: file retention setting
         :param bool legal_hold: legal hold setting
+        :param b2sdk.v2.UploadMode upload_mode: desired upload mode
         :rtype: b2sdk.v2.FileVersion
         """
         upload_source = UploadSourceLocalFile(local_path=local_file, content_sha1=sha1_sum)
-        return self.upload(
-            upload_source,
+        sources = [upload_source]
+        large_file_sha1 = sha1_sum
+
+        if upload_mode == UploadMode.INCREMENTAL:
+            try:
+                existing_file_info = self.get_file_info_by_name(file_name)
+            except FileNotPresent:
+                pass
+            else:
+                sources = upload_source.get_incremental_sources(
+                    existing_file_info,
+                    self.api.session.account_info.get_absolute_minimum_part_size()
+                )
+
+                if len(sources) > 1 and not large_file_sha1:
+                    # the upload will be incremental, but the SHA1 sum is unknown, calculate it now
+                    large_file_sha1 = upload_source.get_content_sha1()
+
+        return self.concatenate(
+            sources,
             file_name,
             content_type=content_type,
             file_info=file_infos,
@@ -559,6 +579,7 @@ class Bucket(metaclass=B2TraceMeta):
             encryption=encryption,
             file_retention=file_retention,
             legal_hold=legal_hold,
+            large_file_sha1=large_file_sha1,
         )
 
     def upload(

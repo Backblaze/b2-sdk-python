@@ -12,9 +12,9 @@ from unittest import mock
 from enum import Enum
 from functools import partial
 
-from apiver_deps import UpPolicy, B2DownloadAction, AbstractSyncEncryptionSettingsProvider, UploadSourceLocalFile, SyncPolicyManager
+from apiver_deps import UpPolicy, B2DownloadAction, AbstractSyncEncryptionSettingsProvider, UploadSourceLocalFileRange, UploadSourceLocalFile, SyncPolicyManager
 from apiver_deps_exception import DestFileNewer, InvalidArgument
-from apiver_deps import KeepOrDeleteMode, NewerFileSyncMode, CompareVersionMode
+from apiver_deps import KeepOrDeleteMode, NewerFileSyncMode, CompareVersionMode, FileVersion
 import pytest
 from ..fixtures.folder import *
 from .fixtures import *
@@ -475,7 +475,7 @@ class TestSynchronizer:
             ('b2', 'b2', ['b2_copy(folder/a.txt, id_a_200, folder/a.txt, 200)']),
         ],
     )
-    def test_never(self, synchronizer, src_type, dst_type, expected):
+    def test_newer(self, synchronizer, src_type, dst_type, expected):
         src = self.folder_factory(src_type, ('a.txt', [200]))
         dst = self.folder_factory(dst_type, ('a.txt', [100]))
         self.assert_folder_sync_actions(synchronizer, src, dst, expected)
@@ -771,12 +771,13 @@ class TestSynchronizer:
                 pass
 
         assert bucket.mock_calls == [
-            mock.call.upload(
+            mock.call.concatenate(
                 mock.ANY,
                 'folder/directory/a.txt',
                 file_info={'src_last_modified_millis': '100'},
                 progress_listener=mock.ANY,
-                encryption=encryption
+                encryption=encryption,
+                large_file_sha1=None,
             )
         ]
 
@@ -870,6 +871,71 @@ class TestSynchronizer:
         expected = ['b2_upload(/dir/a.txt, folder/a.txt, 200)']
         self.assert_folder_sync_actions(synchronizer, src, dst, expected)
 
+    # FIXME: rewrite this test to not use mock.call checks when all of Synchronizers tests are rewritten to test_bucket
+    # style - i.e. with simulated api and fake files returned from methods.
+    @pytest.mark.apiver(from_ver=2)
+    @pytest.mark.parametrize(
+        "local_size,remote_size,local_sha1,local_partial_sha1,remote_sha1,should_be_incremental",
+        [
+            (2000, 1000, "ff" * 20, "aa" * 20, "aa" * 20, True),  # incremental upload possible
+            (2000, 999, "ff" * 20, "aa" * 20, "aa" * 20, False),  # uploaded part too small
+            (2000, 1000, "ff" * 20, "aa" * 20, None, False),  # remote sha unknown
+            (2000, 1000, "ff" * 20, "aa" * 20, "bb" * 20, False),  # remote sha mismatch
+            (2000, 3000, "ff" * 20, "aa" * 20, "bb" * 20, False),  # remote file bigger
+        ]
+    )
+    def test_incremental_upload(
+        self, synchronizer_factory, local_size, remote_size, local_sha1, local_partial_sha1,
+        remote_sha1, should_be_incremental
+    ):
+
+        synchronizer = synchronizer_factory(
+            upload_mode=UploadMode.INCREMENTAL, absolute_minimum_part_size=1000
+        )
+
+        src = self.folder_factory('local', ('a.txt', [200], local_size))
+        dst = self.folder_factory('b2', ('a.txt', [100], remote_size))
+
+        upload_action = next(
+            iter(self._make_folder_sync_actions(synchronizer, src, dst, TODAY, self.reporter))
+        )
+
+        bucket = mock.MagicMock()
+
+        def _get_hexdigest(self, size=local_size):
+            if size == local_size:
+                return local_sha1
+            elif size == remote_size:
+                return local_partial_sha1
+            else:
+                assert False
+
+        def check_path_and_get_size(self):
+            self.content_length = local_size
+
+        with (
+            mock.patch.object(UploadSourceLocalFile, '_get_hexdigest', _get_hexdigest),
+            mock.patch.object(
+                UploadSourceLocalFile, 'check_path_and_get_size', check_path_and_get_size
+            ),
+            mock.patch.object(
+                UploadSourceLocalFileRange, 'check_path_and_get_size', check_path_and_get_size
+            ), mock.patch.object(FileVersion, 'get_content_sha1', return_value=remote_sha1)
+        ):
+            upload_action.do_action(bucket, self.reporter)
+
+        assert bucket.mock_calls == [
+            mock.call.concatenate(
+                mock.ANY,
+                'folder/a.txt',
+                file_info=mock.ANY,
+                progress_listener=mock.ANY,
+                encryption=None,
+                large_file_sha1=local_sha1 if should_be_incremental else None,
+            )
+        ]
+        assert len(bucket.mock_calls[0].args[0]) == 2 if should_be_incremental else 1
+
 
 class TstEncryptionSettingsProvider(AbstractSyncEncryptionSettingsProvider):
     def __init__(self, source_encryption_setting, destination_encryption_setting):
@@ -897,3 +963,7 @@ class TstEncryptionSettingsProvider(AbstractSyncEncryptionSettingsProvider):
 
     def get_setting_for_download(self, *a, **kw):
         """overwritten in __init__"""
+
+
+class TestIncrementalUploadAction:
+    pass

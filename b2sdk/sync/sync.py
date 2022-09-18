@@ -12,6 +12,7 @@ import concurrent.futures as futures
 import logging
 
 from enum import Enum, unique
+from typing import Optional
 
 from ..bounded_queue_executor import BoundedQueueExecutor
 from ..scan.exception import InvalidArgument
@@ -19,6 +20,7 @@ from ..scan.folder import AbstractFolder
 from ..scan.path import AbstractPath
 from ..scan.policies import DEFAULT_SCAN_MANAGER
 from ..scan.scan import zip_folders
+from ..transfer.outbound.upload_source import UploadMode
 from .encryption_provider import SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER, AbstractSyncEncryptionSettingsProvider
 from .exception import IncompleteSync
 from .policy import CompareVersionMode, NewerFileSyncMode
@@ -87,6 +89,8 @@ class Synchronizer:
         compare_threshold=None,
         keep_days=None,
         sync_policy_manager: SyncPolicyManager = POLICY_MANAGER,
+        upload_mode: UploadMode = UploadMode.FULL,
+        absolute_minimum_part_size: Optional[int] = None,
     ):
         """
         Initialize synchronizer class and validate arguments
@@ -101,6 +105,8 @@ class Synchronizer:
         :param int compare_threshold: should be greater than 0, default is 0
         :param int keep_days: if keep_days_or_delete is `b2sdk.v2.KeepOrDeleteMode.KEEP_BEFORE_DELETE`, then this should be greater than 0
         :param SyncPolicyManager sync_policy_manager: object which decides what to do with each file (upload, download, delete, copy, hide etc)
+        :param b2sdk.v2.UploadMode upload_mode: determines how file uploads are handled
+        :param int absolute_minimum_part_size: minimum file part size for large files
         """
         self.newer_file_mode = newer_file_mode
         self.keep_days_or_delete = keep_days_or_delete
@@ -112,6 +118,8 @@ class Synchronizer:
         self.policies_manager = policies_manager  # actually it should be called scan_policies_manager
         self.sync_policy_manager = sync_policy_manager
         self.max_workers = max_workers
+        self.upload_mode = upload_mode
+        self.absolute_minimum_part_size = absolute_minimum_part_size
         self._validate()
 
     def _validate(self):
@@ -324,5 +332,7 @@ class Synchronizer:
             self.compare_threshold,
             self.compare_version_mode,
             encryption_settings_provider=encryption_settings_provider,
+            upload_mode=self.upload_mode,
+            absolute_minimum_part_size=self.absolute_minimum_part_size,
         )
         return policy.get_all_actions()

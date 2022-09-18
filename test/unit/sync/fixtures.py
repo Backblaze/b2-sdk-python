@@ -10,7 +10,8 @@
 
 import pytest
 
-from apiver_deps import DEFAULT_SCAN_MANAGER, POLICY_MANAGER, CompareVersionMode, KeepOrDeleteMode, NewerFileSyncMode, Synchronizer
+import apiver_deps
+from apiver_deps import DEFAULT_SCAN_MANAGER, POLICY_MANAGER, CompareVersionMode, KeepOrDeleteMode, NewerFileSyncMode, Synchronizer, UploadMode
 
 
 @pytest.fixture(scope='session')
@@ -25,19 +26,39 @@ def synchronizer_factory():
         compare_version_mode=CompareVersionMode.MODTIME,
         compare_threshold=None,
         sync_policy_manager=POLICY_MANAGER,
+        upload_mode=UploadMode.FULL,
+        absolute_minimum_part_size=None,
     ):
-        return Synchronizer(
-            1,
-            policies_manager=policies_manager,
-            dry_run=dry_run,
-            allow_empty_source=allow_empty_source,
-            newer_file_mode=newer_file_mode,
-            keep_days_or_delete=keep_days_or_delete,
-            keep_days=keep_days,
-            compare_version_mode=compare_version_mode,
-            compare_threshold=compare_threshold,
-            sync_policy_manager=sync_policy_manager,
-        )
+        if apiver_deps.V < 2:
+            assert upload_mode == UploadMode.FULL, "upload_mode not supported in apiver < 2"
+            assert absolute_minimum_part_size is None, "absolute_minimum_part_size not supported in apiver < 2"
+            return Synchronizer(
+                1,
+                policies_manager=policies_manager,
+                dry_run=dry_run,
+                allow_empty_source=allow_empty_source,
+                newer_file_mode=newer_file_mode,
+                keep_days_or_delete=keep_days_or_delete,
+                keep_days=keep_days,
+                compare_version_mode=compare_version_mode,
+                compare_threshold=compare_threshold,
+                sync_policy_manager=sync_policy_manager,
+            )
+        else:
+            return Synchronizer(
+                1,
+                policies_manager=policies_manager,
+                dry_run=dry_run,
+                allow_empty_source=allow_empty_source,
+                newer_file_mode=newer_file_mode,
+                keep_days_or_delete=keep_days_or_delete,
+                keep_days=keep_days,
+                compare_version_mode=compare_version_mode,
+                compare_threshold=compare_threshold,
+                sync_policy_manager=sync_policy_manager,
+                upload_mode=upload_mode,
+                absolute_minimum_part_size=absolute_minimum_part_size,
+            )
 
     return get_synchronizer
 
