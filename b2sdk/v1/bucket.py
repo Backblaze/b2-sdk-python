@@ -209,6 +209,7 @@ class Bucket(v2.Bucket):
         if_revision_is: Optional[int] = None,
         default_server_side_encryption: Optional[v2.EncryptionSetting] = None,
         default_retention: Optional[v2.BucketRetentionSetting] = None,
+        is_file_lock_enabled: Optional[bool] = None,
         **kwargs
     ):
         """
@@ -221,6 +222,7 @@ class Bucket(v2.Bucket):
         :param if_revision_is: revision number, update the info **only if** *revision* equals to *if_revision_is*
         :param default_server_side_encryption: default server side encryption settings (``None`` if unknown)
         :param default_retention: bucket default retention setting
+        :param bool is_file_lock_enabled: specifies whether bucket should get File Lock-enabled
         """
         # allow common tests to execute without hitting attributeerror
 
@@ -240,6 +242,7 @@ class Bucket(v2.Bucket):
             if_revision_is=if_revision_is,
             default_server_side_encryption=default_server_side_encryption,
             default_retention=default_retention,
+            is_file_lock_enabled=is_file_lock_enabled,
         )
 
     def ls(

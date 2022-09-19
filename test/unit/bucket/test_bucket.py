@@ -23,15 +23,18 @@ from apiver_deps_exception import (
     AlreadyFailed,
     B2Error,
     B2RequestTimeoutDuringUpload,
+    BadRequest,
     BucketIdNotFound,
+    DisablingFileLockNotSupported,
+    FileSha1Mismatch,
     InvalidAuthToken,
     InvalidMetadataDirective,
     InvalidRange,
     InvalidUploadSource,
     MaxRetriesExceeded,
-    UnsatisfiableRange,
-    FileSha1Mismatch,
     SSECKeyError,
+    SourceReplicationConflict,
+    UnsatisfiableRange,
 )
 if apiver_deps.V <= 1:
     from apiver_deps import DownloadDestBytes, PreSeekedDownloadDest
@@ -1062,6 +1065,54 @@ class TestUpdate(TestCaseWithBucket):
 
         not_updated_bucket = self.api.get_bucket_by_name(self.bucket.name)
         self.assertEqual([{'life': 'is life'}], not_updated_bucket.lifecycle_rules)
+
+    def test_is_file_lock_enabled(self):
+        assert not self.bucket.is_file_lock_enabled
+
+        # set is_file_lock_enabled to False when it's already false
+        self.bucket.update(is_file_lock_enabled=False)
+        updated_bucket = self.api.get_bucket_by_name(self.bucket.name)
+        assert not updated_bucket.is_file_lock_enabled
+
+        # sunny day scenario
+        self.bucket.update(is_file_lock_enabled=True)
+        updated_bucket = self.api.get_bucket_by_name(self.bucket.name)
+        assert updated_bucket.is_file_lock_enabled
+        assert self.simulator.bucket_name_to_bucket[self.bucket.name].is_file_lock_enabled
+
+        # attempt to clear is_file_lock_enabled
+        with pytest.raises(DisablingFileLockNotSupported):
+            self.bucket.update(is_file_lock_enabled=False)
+        updated_bucket = self.api.get_bucket_by_name(self.bucket.name)
+        assert updated_bucket.is_file_lock_enabled
+
+        # attempt to set is_file_lock_enabled when it's already set
+        self.bucket.update(is_file_lock_enabled=True)
+        updated_bucket = self.api.get_bucket_by_name(self.bucket.name)
+        assert updated_bucket.is_file_lock_enabled
+
+    @pytest.mark.apiver(from_ver=2)
+    def test_is_file_lock_enabled_source_replication(self):
+        assert not self.bucket.is_file_lock_enabled
+
+        # attempt to set is_file_lock_enabled with source replication enabled
+        self.bucket.update(replication=REPLICATION)
+        with pytest.raises(SourceReplicationConflict):
+            self.bucket.update(is_file_lock_enabled=True)
+        updated_bucket = self.bucket.update(replication=REPLICATION)
+        assert not updated_bucket.is_file_lock_enabled
+
+        # sunny day scenario
+        self.bucket.update(
+            replication=ReplicationConfiguration(
+                rules=[],
+                source_to_destination_key_mapping={},
+            )
+        )
+        self.bucket.update(is_file_lock_enabled=True)
+        updated_bucket = self.api.get_bucket_by_name(self.bucket.name)
+        assert updated_bucket.is_file_lock_enabled
+        assert self.simulator.bucket_name_to_bucket[self.bucket.name].is_file_lock_enabled
 
 
 class TestUpload(TestCaseWithBucket):
