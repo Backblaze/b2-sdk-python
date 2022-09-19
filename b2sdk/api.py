@@ -84,6 +84,7 @@ class Services:
             services=self, max_workers=max_upload_workers
         )
         self.copy_manager = self.COPY_MANAGER_CLASS(services=self, max_workers=max_copy_workers)
+        assert max_download_streams_per_file is None or max_download_streams_per_file >= 1
         self.download_manager = self.DOWNLOAD_MANAGER_CLASS(
             services=self,
             max_workers=max_download_workers,
