@@ -16,6 +16,7 @@ FILE_INFO_HEADER_PREFIX_LOWER = FILE_INFO_HEADER_PREFIX.lower()
 
 # Standard names for file info entries
 SRC_LAST_MODIFIED_MILLIS = 'src_last_modified_millis'
+LARGE_FILE_SHA1 = 'large_file_sha1'
 
 # Special X-Bz-Content-Sha1 value to verify checksum at the end
 HEX_DIGITS_AT_END = 'hex_digits_at_end'

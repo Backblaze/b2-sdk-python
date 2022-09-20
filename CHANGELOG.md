@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 * Authorizing a key for a single bucket ensures that this bucket is cached
 * `Bucket.ls` operation supports wildcard matching strings
+* Add `large_file_sha1` support
 
 ### Infrastructure
 * Additional tests for listing files/versions

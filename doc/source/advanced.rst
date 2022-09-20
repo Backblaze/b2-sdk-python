@@ -321,7 +321,7 @@ To support automatic continuation, some advanced methods create a plan before st
 If that is not available, ``large_file_id`` can be extracted via callback during the operation start. It can then be passed into the subsequent call to continue the same task, though the responsibility for passing the exact same input is then on the user of the function. Please see :ref:`advanced method support table <advanced_methods_support_table>` to see where automatic continuation is supported. ``large_file_id`` can also be passed if automatic continuation is available in order to avoid issues where multiple matching upload sessions are matching the transfer.
 
 
-Continuation of create/concantenate
+Continuation of create/concatenate
 ===================================
 
 :meth:`b2sdk.v2.Bucket.create_file` supports automatic continuation or manual continuation. :meth:`b2sdk.v2.Bucket.create_file_stream` supports only manual continuation for local-only inputs. The situation looks the same for :meth:`b2sdk.v2.Bucket.concatenate` and :meth:`b2sdk.v2.Bucket.concatenate_stream` (streamed version supports only manual continuation of local sources). Also :meth:`b2sdk.v2.Bucket.upload` and :meth:`b2sdk.v2.Bucket.copy` support both automatic and manual continuation.
@@ -376,3 +376,14 @@ No continuation
 
 
 Note, that this only forces start of a new large file - it is still possible to continue the process with either auto or manual modes.
+
+
+****************************
+SHA-1 hashes for large files
+****************************
+
+Depending on the number and size of sources and the size of the result file, the SDK may decide to use the large file API to create a file on the server.  In such cases the file's SHA-1 won't be stored on the server in the ``X-Bz-Content-Sha1`` header, but it may optionally be stored with the file in the ``large_file_sha1`` entry in the ``file_info``, as per [B2 integration checklist](https://www.backblaze.com/b2/docs/integration_checklist.html).
+
+In basic scenarios, large files uploaded to the server will have a ``large_file_sha1`` element added automatically to their ``file_info``.  However, when concatenating multiple sources, it may be impossible for the SDK to figure out the SHA-1 automatically.  In such cases, the SHA-1 can be provided using the ``large_file_sha1`` parameter to :meth:`b2sdk.v2.Bucket.create_file`, :meth:`b2sdk.v2.Bucket.concatenate` and their stream equivalents.  If the parameter is skipped or ``None``, the result file may not have the ``large_file_sha1`` value set.
+
+Note that the provided SHA-1 value is not verified.

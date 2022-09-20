@@ -13,11 +13,12 @@ import io
 import os
 
 from abc import abstractmethod
+from typing import Optional
 
 from b2sdk.exception import InvalidUploadSource
 from b2sdk.stream.range import RangeOfInputStream, wrap_with_range
 from b2sdk.transfer.outbound.outbound_source import OutboundTransferSource
-from b2sdk.utils import hex_sha1_of_stream, hex_sha1_of_unlimited_stream
+from b2sdk.utils import hex_sha1_of_stream, hex_sha1_of_unlimited_stream, Sha1HexDigest
 
 
 class AbstractUploadSource(OutboundTransferSource):
@@ -38,6 +39,9 @@ class AbstractUploadSource(OutboundTransferSource):
         data can be read.
         :return:
         """
+
+    def get_large_file_sha1(self) -> Optional[Sha1HexDigest]:
+        return self.get_content_sha1()
 
     def is_upload(self):
         return True

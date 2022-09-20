@@ -17,10 +17,15 @@ import shutil
 import tempfile
 import time
 import concurrent.futures as futures
+from collections.abc import Iterator
 from decimal import Decimal
+from itertools import chain
+from typing import Tuple
 from urllib.parse import quote, unquote_plus
 
 from logfury.v1 import DefaultTraceAbstractMeta, DefaultTraceMeta, limit_trace_arguments, disable_trace, trace_call
+
+Sha1HexDigest = str
 
 
 def b2_url_encode(s):
@@ -84,7 +89,9 @@ def choose_part_ranges(content_length, minimum_part_size):
     return parts
 
 
-def hex_sha1_of_stream(input_stream, content_length):
+# TODO: When dropping support for Python 3.7 use typing.Protocol to specify that
+# input_stream is an object with a read() method.
+def hex_sha1_of_stream(input_stream, content_length: int) -> Sha1HexDigest:
     """
     Return the 40-character hex SHA1 checksum of the first content_length
     bytes in the input stream.
@@ -92,7 +99,7 @@ def hex_sha1_of_stream(input_stream, content_length):
     :param input_stream: stream object, which exposes read() method
     :param content_length: expected length of the stream
     :type content_length: int
-    :rtype: str
+    :rtype: Sha1HexDigest
     """
     remaining = content_length
     block_size = 1024 * 1024
@@ -431,6 +438,24 @@ def current_time_millis():
     File times are in integer milliseconds, to avoid roundoff errors.
     """
     return int(round(time.time() * 1000))
+
+
+def iterator_peek(iterator: Iterator, count: int) -> Tuple[list, Iterator]:
+    """
+    Get the `count` first elements yielded by `iterator`.
+
+    The function will read `count` elements from `iterator` or less if the end is reached first.  Returns a tuple
+    consisting of a list of retrieved elements and an iterator equivalent to the input iterator.
+    """
+
+    ret = []
+    for _ in range(count):
+        try:
+            ret.append(next(iterator))
+        except StopIteration:
+            break
+
+    return ret, chain(ret, iterator)
 
 
 assert disable_trace

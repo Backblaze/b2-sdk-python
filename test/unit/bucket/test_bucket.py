@@ -65,6 +65,7 @@ from apiver_deps import CopySource, UploadSourceLocalFile, WriteIntent
 from apiver_deps import BucketRetentionSetting, FileRetentionSetting, LegalHold, RetentionMode, RetentionPeriod, \
     NO_RETENTION_FILE_SETTING
 from apiver_deps import ReplicationConfiguration, ReplicationRule
+from apiver_deps import LARGE_FILE_SHA1
 
 pytestmark = [pytest.mark.apiver(from_ver=1)]
 
@@ -255,6 +256,14 @@ class TestCaseWithBucket(TestBase):
     def _check_file_contents(self, file_name, expected_contents):
         contents = self._download_file(file_name)
         self.assertEqual(expected_contents, contents)
+
+    def _check_large_file_sha1(self, file_name, expected_sha1):
+        file_info = self.bucket.get_file_info_by_name(file_name).file_info
+        if expected_sha1:
+            assert LARGE_FILE_SHA1 in file_info
+            assert file_info[LARGE_FILE_SHA1] == expected_sha1
+        else:
+            assert LARGE_FILE_SHA1 not in file_info
 
     def _download_file(self, file_name):
         with FileSimulator.dont_check_encryption():
@@ -903,6 +912,7 @@ class TestCopyFile(TestCaseWithBucket):
         else:
             self.bucket.copy(file_id, 'hello_new.txt', offset=3, length=7)
         self._check_file_contents('hello_new.txt', b'lo worl')
+        self._check_large_file_sha1('hello_new.txt', None)
         expected = [('hello.txt', 11, 'upload', None), ('hello_new.txt', 7, 'upload', None)]
         self.assertBucketContents(expected, '', show_versions=True)
 
@@ -1322,6 +1332,7 @@ class TestUpload(TestCaseWithBucket):
         file_info = self.bucket.upload_bytes(data, 'file1')
         self.assertTrue(isinstance(file_info, VFileVersionInfo))
         self._check_file_contents('file1', data)
+        self._check_large_file_sha1('file1', None)
         self.assertEqual(file_info.server_side_encryption, SSE_NONE)
 
     def test_upload_bytes_file_retention(self):
@@ -1331,6 +1342,7 @@ class TestUpload(TestCaseWithBucket):
             data, 'file1', file_retention=retention, legal_hold=LegalHold.ON
         )
         self._check_file_contents('file1', data)
+        self._check_large_file_sha1('file1', None)
         self.assertEqual(retention, file_info.file_retention)
         self.assertEqual(LegalHold.ON, file_info.legal_hold)
 
@@ -1396,6 +1408,7 @@ class TestUpload(TestCaseWithBucket):
             write_file(path, data)
             file_info = self.bucket.upload_local_file(path, 'file1')
             self._check_file_contents('file1', data)
+            self._check_large_file_sha1('file1', None)
             self.assertTrue(isinstance(file_info, VFileVersionInfo))
             self.assertEqual(file_info.server_side_encryption, SSE_NONE)
             print(file_info.as_dict())
@@ -1454,8 +1467,9 @@ class TestUpload(TestCaseWithBucket):
     def test_upload_large(self):
         data = self._make_data(self.simulator.MIN_PART_SIZE * 3)
         progress_listener = StubProgressListener()
-        self.bucket.upload_bytes(data, 'file1', progress_listener=progress_listener)
+        print(self.bucket.upload_bytes(data, 'file1', progress_listener=progress_listener))
         self._check_file_contents('file1', data)
+        self._check_large_file_sha1('file1', hex_sha1_of_bytes(data))
         self.assertTrue(progress_listener.is_valid())
 
     def test_upload_local_large_file(self):
@@ -1465,6 +1479,7 @@ class TestUpload(TestCaseWithBucket):
             write_file(path, data)
             self.bucket.upload_local_file(path, 'file1')
             self._check_file_contents('file1', data)
+            self._check_large_file_sha1('file1', hex_sha1_of_bytes(data))
 
     def test_upload_local_large_file_over_10k_parts(self):
         pytest.skip('this test is really slow and impedes development')  # TODO: fix it
@@ -1474,6 +1489,7 @@ class TestUpload(TestCaseWithBucket):
             write_file(path, data)
             self.bucket.upload_local_file(path, 'file1')
             self._check_file_contents('file1', data)
+            self._check_large_file_sha1('file1', hex_sha1_of_bytes(data))
 
     def test_create_file_over_10k_parts(self):
         data = b'hello world' * 20000
