@@ -32,6 +32,19 @@ class OutboundTransferSource(metaclass=ABCMeta):
         """
 
     @abstractmethod
+    def get_large_file_sha1(self):
+        """
+        Return a 40-character string containing the hex SHA1 checksum, which can be used as the `large_file_sha1` entry.
+
+        This method is only used if a large file is constructed from only a single source.  If that source's hash is known,
+        the result file's SHA1 checksum will be the same and can be copied.
+
+        If the source's sha1 is unknown and can't be calculated, `None` is returned. 
+ 
+        :rtype str:
+        """
+
+    @abstractmethod
     def is_upload(self):
         """ Return if outbound source is an upload source.
         :rtype bool:

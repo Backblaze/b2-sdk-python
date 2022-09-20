@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+* Add `large_file_sha1` support
+
 ## [1.18.0] - 2022-09-20
 
 ### Added

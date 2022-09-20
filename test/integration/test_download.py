@@ -49,10 +49,14 @@ class TestDownload(IntegrationTestBase):
                         bucket.download_file_by_name('a_single_zero').save(io_)
                 assert exc_info.value.args == ('no strategy suitable for download was found!',)
 
-                f = self._file_helper(bucket)
+                f, sha1 = self._file_helper(bucket)
                 if zero._type() != 'large':
                     # if we are here, that's not the production server!
                     assert f.download_version.content_sha1_verified  # large files don't have sha1, lets not check
+
+                file_info = f.download_version.file_info
+                assert LARGE_FILE_SHA1 in file_info
+                assert file_info[LARGE_FILE_SHA1] == sha1
 
     def _file_helper(
         self, bucket, sha1_sum=None, bytes_to_write: Optional[int] = None
@@ -72,17 +76,19 @@ class TestDownload(IntegrationTestBase):
 
             f = bucket.download_file_by_name('small_file')
             f.save_to(target_small_file)
-            assert hex_sha1_of_file(source_small_file) == hex_sha1_of_file(target_small_file)
-        return f
+
+            source_sha1 = hex_sha1_of_file(source_small_file)
+            assert source_sha1 == hex_sha1_of_file(target_small_file)
+        return f, source_sha1[0]
 
     def test_small(self):
         bucket = self.create_bucket()
-        f = self._file_helper(bucket, bytes_to_write=1)
+        f, _ = self._file_helper(bucket, bytes_to_write=1)
         assert f.download_version.content_sha1_verified
 
     def test_small_unverified(self):
         bucket = self.create_bucket()
-        f = self._file_helper(bucket, sha1_sum='do_not_verify', bytes_to_write=1)
+        f, _ = self._file_helper(bucket, sha1_sum='do_not_verify', bytes_to_write=1)
         if f.download_version.content_sha1_verified:
             pprint(f.download_version._get_args_for_clone())
             assert not f.download_version.content_sha1_verified

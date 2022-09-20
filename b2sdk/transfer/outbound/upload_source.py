@@ -39,6 +39,9 @@ class AbstractUploadSource(OutboundTransferSource):
         :return:
         """
 
+    def get_large_file_sha1(self):
+        return self.get_content_sha1()
+
     def is_upload(self):
         return True
 

@@ -10,12 +10,14 @@
 
 import logging
 from typing import Optional
+from collections.abc import Iterator
 
 from b2sdk.encryption.setting import EncryptionSetting
 from b2sdk.file_lock import FileRetentionSetting, LegalHold
-from b2sdk.utils import B2TraceMetaAbstract
+from b2sdk.http_constants import LARGE_FILE_SHA1
 from b2sdk.transfer.emerge.executor import EmergeExecutor
 from b2sdk.transfer.emerge.planner.planner import EmergePlanner
+from b2sdk.utils import B2TraceMetaAbstract, iterator_peek
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +42,24 @@ class Emerger(metaclass=B2TraceMetaAbstract):
         self.services = services
         self.emerge_executor = EmergeExecutor(services)
 
+    @staticmethod
+    def _update_file_info_with_large_file_sha1(
+        file_info, write_intents, emerge_plan, large_file_sha1
+    ):
+        if not emerge_plan.is_large_file():
+            # Emerge plan doesn't construct a large file, no point setting the large_file_sha1
+            return file_info
+
+        if not large_file_sha1 and len(write_intents) == 1:
+            # large_file_sha1 was not given explicitly, but there's just one write intent, perhaps it has a hash
+            large_file_sha1 = write_intents[0].get_large_file_sha1()
+
+        if large_file_sha1:
+            file_info = file_info or {}
+            file_info[LARGE_FILE_SHA1] = large_file_sha1
+
+        return file_info
+
     def emerge(
         self,
         bucket_id,
@@ -55,6 +75,7 @@ class Emerger(metaclass=B2TraceMetaAbstract):
         legal_hold: Optional[LegalHold] = None,
         min_part_size=None,
         max_part_size=None,
+        large_file_sha1=None,
     ):
         """
         Create a new file (object in the cloud, really) from an iterable (list, tuple etc) of write intents.
@@ -69,6 +90,7 @@ class Emerger(metaclass=B2TraceMetaAbstract):
 
         :param int min_part_size: lower limit of part size for the transfer planner, in bytes
         :param int max_part_size: upper limit of part size for the transfer planner, in bytes
+        :param str,None large_file_sha1: SHA-1 hash of the result file or ``None`` if unknown
         """
         # WARNING: time spent trying to extract common parts of emerge() and emerge_stream()
         # into a separate method: 20min. You can try it too, but please increment the timer honestly.
@@ -79,6 +101,11 @@ class Emerger(metaclass=B2TraceMetaAbstract):
             max_part_size=max_part_size,
         )
         emerge_plan = planner.get_emerge_plan(write_intents)  # <--
+
+        file_info = self._update_file_info_with_large_file_sha1(
+            file_info, write_intents, emerge_plan, large_file_sha1
+        )
+
         return self.emerge_executor.execute_emerge_plan(
             emerge_plan,
             bucket_id,
@@ -108,6 +135,7 @@ class Emerger(metaclass=B2TraceMetaAbstract):
         legal_hold: Optional[LegalHold] = None,
         min_part_size=None,
         max_part_size=None,
+        large_file_sha1=None,
     ):
         """
         Create a new file (object in the cloud, really) from a stream of write intents.
@@ -130,14 +158,26 @@ class Emerger(metaclass=B2TraceMetaAbstract):
 
         :param int min_part_size: lower limit of part size for the transfer planner, in bytes
         :param int max_part_size: upper limit of part size for the transfer planner, in bytes
-
+        :param str,None large_file_sha1: result file SHA1 hash or ``None`` if not known
         """
         planner = self.get_emerge_planner(
             min_part_size=min_part_size,
             recommended_upload_part_size=recommended_upload_part_size,
             max_part_size=max_part_size,
         )
+
+        # ensure that write_intent_iterator is an iterator (and not just iterable, like a list)
+        if not isinstance(write_intent_iterator, Iterator):
+            write_intent_iterator = iter(write_intent_iterator)
+
+        first_write_intents, write_intent_iterator = iterator_peek(write_intent_iterator, 2)
+
         emerge_plan = planner.get_streaming_emerge_plan(write_intent_iterator)  # <--
+
+        file_info = self._update_file_info_with_large_file_sha1(
+            file_info, first_write_intents, emerge_plan, large_file_sha1
+        )
+
         return self.emerge_executor.execute_emerge_plan(
             emerge_plan,
             bucket_id,

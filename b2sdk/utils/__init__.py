@@ -18,6 +18,7 @@ import tempfile
 import time
 import concurrent.futures as futures
 from decimal import Decimal
+from itertools import chain
 from urllib.parse import quote, unquote_plus
 
 from logfury.v1 import DefaultTraceAbstractMeta, DefaultTraceMeta, limit_trace_arguments, disable_trace, trace_call
@@ -431,6 +432,24 @@ def current_time_millis():
     File times are in integer milliseconds, to avoid roundoff errors.
     """
     return int(round(time.time() * 1000))
+
+
+def iterator_peek(iterator, count):
+    """
+    Get the `count` first elements yielded by `iterator`.
+
+    The function will read `count` elements from `iterator` or less if the end is reached first.  Returns a tuple
+    consisting of a list of retrieved elements and an iterator equivalent to the input iterator.
+    """
+
+    ret = []
+    for _ in range(count):
+        try:
+            ret.append(next(iterator))
+        except StopIteration:
+            break
+
+    return ret, chain(ret, iterator)
 
 
 assert disable_trace

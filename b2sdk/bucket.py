@@ -575,6 +575,7 @@ class Bucket(metaclass=B2TraceMeta):
         legal_hold: Optional[LegalHold] = None,
         min_part_size=None,
         max_part_size=None,
+        large_file_sha1=None,
     ):
         """
         Creates a new file in this bucket using an iterable (list, tuple etc) of remote or local sources.
@@ -601,6 +602,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param bool legal_hold: legal hold setting
         :param int min_part_size: lower limit of part size for the transfer planner, in bytes
         :param int max_part_size: upper limit of part size for the transfer planner, in bytes
+        :param str,None large_file_sha1: SHA-1 hash of the result file or ``None`` if unknown
         """
         return self._create_file(
             self.api.services.emerger.emerge,
@@ -616,6 +618,7 @@ class Bucket(metaclass=B2TraceMeta):
             legal_hold=legal_hold,
             min_part_size=min_part_size,
             max_part_size=max_part_size,
+            large_file_sha1=None,
         )
 
     def create_file_stream(
@@ -632,6 +635,7 @@ class Bucket(metaclass=B2TraceMeta):
         legal_hold: Optional[LegalHold] = None,
         min_part_size=None,
         max_part_size=None,
+        large_file_sha1=None,
     ):
         """
         Creates a new file in this bucket using a stream of multiple remote or local sources.
@@ -660,6 +664,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param bool legal_hold: legal hold setting
         :param int min_part_size: lower limit of part size for the transfer planner, in bytes
         :param int max_part_size: upper limit of part size for the transfer planner, in bytes
+        :param str,None large_file_sha1: SHA-1 hash of the result file or ``None`` if unknown
         """
         return self._create_file(
             self.api.services.emerger.emerge_stream,
@@ -675,6 +680,7 @@ class Bucket(metaclass=B2TraceMeta):
             legal_hold=legal_hold,
             min_part_size=min_part_size,
             max_part_size=max_part_size,
+            large_file_sha1=large_file_sha1,
         )
 
     def _create_file(
@@ -692,6 +698,7 @@ class Bucket(metaclass=B2TraceMeta):
         legal_hold: Optional[LegalHold] = None,
         min_part_size=None,
         max_part_size=None,
+        large_file_sha1=None,
     ):
         validate_b2_file_name(file_name)
         progress_listener = progress_listener or DoNothingProgressListener()
@@ -710,6 +717,7 @@ class Bucket(metaclass=B2TraceMeta):
             legal_hold=legal_hold,
             min_part_size=min_part_size,
             max_part_size=max_part_size,
+            large_file_sha1=large_file_sha1,
         )
 
     def concatenate(
@@ -726,6 +734,7 @@ class Bucket(metaclass=B2TraceMeta):
         legal_hold: Optional[LegalHold] = None,
         min_part_size=None,
         max_part_size=None,
+        large_file_sha1=None,
     ):
         """
         Creates a new file in this bucket by concatenating multiple remote or local sources.
@@ -749,9 +758,10 @@ class Bucket(metaclass=B2TraceMeta):
         :param bool legal_hold: legal hold setting
         :param int min_part_size: lower limit of part size for the transfer planner, in bytes
         :param int max_part_size: upper limit of part size for the transfer planner, in bytes
+        :param str,None large_file_sha1: SHA-1 hash of the result file or ``None`` if unknown
         """
         return self.create_file(
-            WriteIntent.wrap_sources_iterator(outbound_sources),
+            list(WriteIntent.wrap_sources_iterator(outbound_sources)),
             file_name,
             content_type=content_type,
             file_info=file_info,
@@ -763,6 +773,7 @@ class Bucket(metaclass=B2TraceMeta):
             legal_hold=legal_hold,
             min_part_size=min_part_size,
             max_part_size=max_part_size,
+            large_file_sha1=large_file_sha1,
         )
 
     def concatenate_stream(
@@ -777,6 +788,7 @@ class Bucket(metaclass=B2TraceMeta):
         encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
+        large_file_sha1: Optional[str] = None,
     ):
         """
         Creates a new file in this bucket by concatenating stream of multiple remote or local sources.
@@ -799,6 +811,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param b2sdk.v2.EncryptionSetting encryption: encryption setting (``None`` if unknown)
         :param b2sdk.v2.FileRetentionSetting file_retention: file retention setting
         :param bool legal_hold: legal hold setting
+        :param str,None large_file_sha1: SHA-1 hash of the result file or ``None`` if unknown
         """
         return self.create_file_stream(
             WriteIntent.wrap_sources_iterator(outbound_sources_iterator),
@@ -811,6 +824,7 @@ class Bucket(metaclass=B2TraceMeta):
             encryption=encryption,
             file_retention=file_retention,
             legal_hold=legal_hold,
+            large_file_sha1=large_file_sha1,
         )
 
     def get_download_url(self, filename):

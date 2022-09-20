@@ -16,6 +16,7 @@ from typing import Optional
 from b2sdk.encryption.setting import EncryptionSetting
 from b2sdk.exception import MaxFileSizeExceeded
 from b2sdk.file_lock import FileRetentionSetting, LegalHold, NO_RETENTION_FILE_SETTING
+from b2sdk.http_constants import LARGE_FILE_SHA1
 from b2sdk.transfer.outbound.large_file_upload_state import LargeFileUploadState
 from b2sdk.transfer.outbound.upload_source import UploadSourceStream
 
@@ -345,6 +346,10 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
                 best_match_parts_len = finished_parts_len
         return best_match_file, best_match_parts
 
+    @staticmethod
+    def _get_file_info_without_large_file_sha1(file_info):
+        return {k: v for k, v in file_info.items() if k != LARGE_FILE_SHA1}
+
     def _match_unfinished_file_if_possible(
         self,
         bucket_id,
@@ -363,13 +368,26 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
         This is only possible if the application key being used allows ``listFiles`` access.
         """
         file_retention = file_retention or NO_RETENTION_FILE_SETTING
+        file_info_without_large_file_sha1 = {
+            k: v
+            for k, v in file_info.items() if k != LARGE_FILE_SHA1
+        }
         for file_ in self.services.large_file.list_unfinished_large_files(
             bucket_id, prefix=file_name
         ):
             if file_.file_name != file_name:
                 continue
             if file_.file_info != file_info:
-                continue
+                if (LARGE_FILE_SHA1 in file_.file_info) == (LARGE_FILE_SHA1 in file_info):
+                    # large_file_sha1 is present or missing in both file infos
+                    continue
+
+                if self._get_file_info_without_large_file_sha1(
+                    file_.file_info
+                ) != file_info_without_large_file_sha1:
+                    # ignoring the large_file_sha1 file infos are still different
+                    continue
+
             # FIXME: what if `encryption is None` - match ANY encryption? :)
             if encryption is not None and encryption != file_.encryption:
                 continue
