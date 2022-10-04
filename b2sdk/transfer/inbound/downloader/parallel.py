@@ -8,22 +8,22 @@
 #
 ######################################################################
 
+import logging
+import queue
+import threading
 from concurrent import futures
 from io import IOBase
 from time import perf_counter_ns
 from typing import Optional
-import logging
-import queue
-import threading
 
 from requests.models import Response
 
-from .abstract import AbstractDownloader
-from .stats_collector import StatsCollector
 from b2sdk.encryption.setting import EncryptionSetting
 from b2sdk.file_version import DownloadVersion
 from b2sdk.session import B2Session
 from b2sdk.utils.range_ import Range
+from .abstract import AbstractDownloader
+from .stats_collector import StatsCollector
 
 logger = logging.getLogger(__name__)
 
@@ -219,27 +219,25 @@ class WriterThread(threading.Thread):
     def run(self):
         file = self.file
         queue_get = self.queue.get
-        stats_collector_read_append = self.stats_collector.read.append
-        stats_collector_other_append = self.stats_collector.other.append
-        stats_collector_write_append = self.stats_collector.write.append
-        start = perf_counter_ns()
-        while 1:
+        stats_collector_read = self.stats_collector.read
+        stats_collector_other = self.stats_collector.other
+        stats_collector_write = self.stats_collector.write
 
-            before_read = perf_counter_ns()
-            shutdown, offset, data = queue_get()
-            stats_collector_read_append(perf_counter_ns() - before_read)
+        with self.stats_collector.total:
+            while 1:
+                with stats_collector_read:
+                    shutdown, offset, data = queue_get()
 
-            if shutdown:
-                break
-            before_seek = perf_counter_ns()
-            file.seek(offset)
-            after_seek = perf_counter_ns()
-            file.write(data)
-            after_write = perf_counter_ns()
-            stats_collector_other_append(after_seek - before_seek)
-            stats_collector_write_append(after_write - after_seek)
-            self.total += len(data)
-        self.stats_collector.total = perf_counter_ns() - start
+                if shutdown:
+                    break
+
+                with stats_collector_other:
+                    file.seek(offset)
+
+                with stats_collector_write:
+                    file.write(data)
+
+                self.total += len(data)
 
     def __enter__(self):
         self.start()
@@ -294,67 +292,74 @@ def download_first_part(
     stop = False
 
     stats_collector = StatsCollector(response.url, f'{first_offset}:{last_offset}', 'hash')
-    stats_collector_read_append = stats_collector.read.append
-    stats_collector_other_append = stats_collector.other.append
-    stats_collector_write_append = stats_collector.write.append
-    start = before_read = perf_counter_ns()
-    for data in response.iter_content(chunk_size=chunk_size):
-        stats_collector_read_append(perf_counter_ns() - before_read)
-        if first_offset + bytes_read + len(data) >= last_offset:
-            to_write = data[:last_offset - bytes_read]
-            stop = True
-        else:
-            to_write = data
-        before_put = perf_counter_ns()
-        writer_queue_put((False, first_offset + bytes_read, to_write))
 
-        before_hash = perf_counter_ns()
-        hasher_update(to_write)
-        after_hash = perf_counter_ns()
+    with stats_collector.total:
 
-        stats_collector_write_append(before_hash - before_put)
-        stats_collector_other_append(after_hash - before_hash)
+        stats_collector_read = stats_collector.read
+        stats_collector_other = stats_collector.other
+        stats_collector_write = stats_collector.write
+        response_iterator = response.iter_content(chunk_size=chunk_size)
 
-        bytes_read += len(to_write)
-        if stop:
-            break
+        while True:
+            with stats_collector_read:
+                try:
+                    data = next(response_iterator)
+                except StopIteration:
+                    break
 
-    # since we got everything we need from original response, close the socket and free the buffer
-    # to avoid a timeout exception during hashing and other trouble
-    response.close()
+            if first_offset + bytes_read + len(data) >= last_offset:
+                to_write = data[:last_offset - bytes_read]
+                stop = True
+            else:
+                to_write = data
 
-    url = response.request.url
-    tries_left = 5 - 1  # this is hardcoded because we are going to replace the entire retry interface soon, so we'll avoid deprecation here and keep it private
-    while tries_left and bytes_read < actual_part_size:
-        cloud_range = starting_cloud_range.subrange(
-            bytes_read, actual_part_size - 1
-        )  # first attempt was for the whole file, but retries are bound correctly
-        logger.debug(
-            'download attempts remaining: %i, bytes read already: %i. Getting range %s now.',
-            tries_left, bytes_read, cloud_range
-        )
-        with session.download_file_from_url(
-            url,
-            cloud_range.as_tuple(),
-            encryption=encryption,
-        ) as response:
-            before_read = perf_counter_ns()
-            for to_write in response.iter_content(chunk_size=chunk_size):
-                stats_collector_read_append(perf_counter_ns() - before_read)
-
-                before_put = perf_counter_ns()
+            with stats_collector_write:
                 writer_queue_put((False, first_offset + bytes_read, to_write))
-                before_hash = perf_counter_ns()
+
+            with stats_collector_other:
                 hasher_update(to_write)
-                after_hash = perf_counter_ns()
 
-                stats_collector_write_append(before_hash - before_put)
-                stats_collector_other_append(after_hash - before_hash)
+            bytes_read += len(to_write)
+            if stop:
+                break
 
-                bytes_read += len(to_write)
-                before_read = perf_counter_ns()
-        tries_left -= 1
-    stats_collector.total = perf_counter_ns() - start
+        # since we got everything we need from original response, close the socket and free the buffer
+        # to avoid a timeout exception during hashing and other trouble
+        response.close()
+
+        url = response.request.url
+        tries_left = 5 - 1  # this is hardcoded because we are going to replace the entire retry interface soon, so we'll avoid deprecation here and keep it private
+        while tries_left and bytes_read < actual_part_size:
+            cloud_range = starting_cloud_range.subrange(
+                bytes_read, actual_part_size - 1
+            )  # first attempt was for the whole file, but retries are bound correctly
+            logger.debug(
+                'download attempts remaining: %i, bytes read already: %i. Getting range %s now.',
+                tries_left, bytes_read, cloud_range
+            )
+            with session.download_file_from_url(
+                url,
+                cloud_range.as_tuple(),
+                encryption=encryption,
+            ) as response:
+                response_iterator = response.iter_content(chunk_size=chunk_size)
+
+                while True:
+                    with stats_collector_read:
+                        try:
+                            to_write = next(response_iterator)
+                        except StopIteration:
+                            break
+
+                    with stats_collector_write:
+                        writer_queue_put((False, first_offset + bytes_read, to_write))
+
+                    with stats_collector_other:
+                        hasher_update(to_write)
+
+                    bytes_read += len(to_write)
+            tries_left -= 1
+
     stats_collector.report()
 
 
@@ -389,25 +394,29 @@ def download_non_first_part(
             retries_left, bytes_read, cloud_range
         )
         stats_collector = StatsCollector(url, f'{cloud_range.start}:{cloud_range.end}', 'none')
-        stats_collector_read_append = stats_collector.read.append
-        stats_collector_write_append = stats_collector.write.append
-        start = before_read = perf_counter_ns()
-        with session.download_file_from_url(
-            url,
-            cloud_range.as_tuple(),
-            encryption=encryption,
-        ) as response:
-            before_read = perf_counter_ns()
-            for to_write in response.iter_content(chunk_size=chunk_size):
-                after_read = perf_counter_ns()
-                writer_queue_put((False, start_range + bytes_read, to_write))
-                after_write = perf_counter_ns()
-                stats_collector_read_append(after_read - before_read)
-                stats_collector_write_append(after_write - after_read)
-                bytes_read += len(to_write)
-                before_read = perf_counter_ns()
-        retries_left -= 1
-        stats_collector.total = perf_counter_ns() - start
+        stats_collector_read = stats_collector.read
+        stats_collector_write = stats_collector.write
+        with stats_collector.total:
+            with session.download_file_from_url(
+                url,
+                cloud_range.as_tuple(),
+                encryption=encryption,
+            ) as response:
+                response_iterator = response.iter_content(chunk_size=chunk_size)
+
+                while True:
+                    with stats_collector_read:
+                        try:
+                            to_write = next(response_iterator)
+                        except StopIteration:
+                            break
+
+                    with stats_collector_write:
+                        writer_queue_put((False, start_range + bytes_read, to_write))
+
+                    bytes_read += len(to_write)
+            retries_left -= 1
+
         stats_collector.report()
 
 
