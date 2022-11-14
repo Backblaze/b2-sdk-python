@@ -522,6 +522,149 @@ class TestLs(TestCaseWithBucket):
         expected = [('hello.txt', 15, 'upload', None)]
         self.assertBucketContents(expected, '', show_versions=True)
 
+    @pytest.mark.apiver(from_ver=2)
+    def test_wildcard_matching(self):
+        data = b'hello world'
+        self.bucket.upload_bytes(data, 'a')
+        self.bucket.upload_bytes(data, 'b/1/test-1.txt')
+        self.bucket.upload_bytes(data, 'b/2/test-2.csv')
+        self.bucket.upload_bytes(data, 'b/2/test-3.txt')
+        self.bucket.upload_bytes(data, 'b/3/test-4.jpg')
+        self.bucket.upload_bytes(data, 'b/3/test-4.txt')
+        self.bucket.upload_bytes(data, 'b/3/test-5.txt')
+        expected = [
+            ('b/1/test-1.txt', len(data), 'upload', None),
+            ('b/2/test-3.txt', len(data), 'upload', None),
+            ('b/3/test-4.txt', len(data), 'upload', None),
+            ('b/3/test-5.txt', len(data), 'upload', None),
+        ]
+        actual = [
+            (info.file_name, info.size, info.action, folder)
+            for (info, folder) in self.bucket_ls('b/*.txt', fetch_count=100, with_wildcard=True)
+        ]
+        self.assertEqual(expected, actual)
+
+    @pytest.mark.apiver(from_ver=2)
+    def test_wildcard_matching_including_root(self):
+        data = b'hello world'
+        self.bucket.upload_bytes(data, 'b/1/test.txt')
+        self.bucket.upload_bytes(data, 'b/2/test.txt')
+        self.bucket.upload_bytes(data, 'b/3/test.txt')
+        self.bucket.upload_bytes(data, 'test.txt')
+        expected = [
+            ('b/1/test.txt', len(data), 'upload', None),
+            ('b/2/test.txt', len(data), 'upload', None),
+            ('b/3/test.txt', len(data), 'upload', None),
+            ('test.txt', len(data), 'upload', None),
+        ]
+        actual = [
+            (info.file_name, info.size, info.action, folder)
+            for (info, folder) in self.bucket_ls('*.txt', fetch_count=1, with_wildcard=True)
+        ]
+        self.assertEqual(expected, actual)
+
+    @pytest.mark.apiver(from_ver=2)
+    def test_wildcard_matching_directory(self):
+        data = b'hello world'
+        self.bucket.upload_bytes(data, 'a')
+        self.bucket.upload_bytes(data, 'b/2/test.txt')
+        self.bucket.upload_bytes(data, 'b/3/test.jpg')
+        self.bucket.upload_bytes(data, 'b/3/test.txt')
+        self.bucket.upload_bytes(data, 'c/4/test.txt')
+        expected = [
+            ('b/2/test.txt', len(data), 'upload', None),
+            ('b/3/test.txt', len(data), 'upload', None),
+        ]
+        actual = [
+            (info.file_name, info.size, info.action, folder)
+            for (info, folder) in self.bucket_ls('b/*/test.txt', fetch_count=1, with_wildcard=True)
+        ]
+        self.assertEqual(expected, actual)
+
+    @pytest.mark.apiver(from_ver=2)
+    def test_single_character_matching(self):
+        data = b'hello world'
+        self.bucket.upload_bytes(data, 'a')
+        self.bucket.upload_bytes(data, 'b/2/test.csv')
+        self.bucket.upload_bytes(data, 'b/2/test.txt')
+        self.bucket.upload_bytes(data, 'b/2/test.tsv')
+        expected = [
+            ('b/2/test.csv', len(data), 'upload', None),
+            ('b/2/test.tsv', len(data), 'upload', None),
+        ]
+        actual = [
+            (info.file_name, info.size, info.action, folder)
+            for (info, folder) in self.bucket_ls('b/2/test.?sv', fetch_count=1, with_wildcard=True)
+        ]
+        self.assertEqual(expected, actual)
+
+    @pytest.mark.apiver(from_ver=2)
+    def test_sequence_matching(self):
+        data = b'hello world'
+        self.bucket.upload_bytes(data, 'a')
+        self.bucket.upload_bytes(data, 'b/2/test.csv')
+        self.bucket.upload_bytes(data, 'b/2/test.ksv')
+        self.bucket.upload_bytes(data, 'b/2/test.tsv')
+        expected = [
+            ('b/2/test.csv', len(data), 'upload', None),
+            ('b/2/test.tsv', len(data), 'upload', None),
+        ]
+        actual = [
+            (info.file_name, info.size, info.action, folder)
+            for (info, folder) in self.bucket_ls('b/2/test.[tc]sv', fetch_count=1, with_wildcard=True)
+        ]
+        self.assertEqual(expected, actual)
+
+    @pytest.mark.apiver(from_ver=2)
+    def test_negative_sequence_matching(self):
+        data = b'hello world'
+        self.bucket.upload_bytes(data, 'a')
+        self.bucket.upload_bytes(data, 'b/2/test.csv')
+        self.bucket.upload_bytes(data, 'b/2/test.ksv')
+        self.bucket.upload_bytes(data, 'b/2/test.tsv')
+        expected = [
+            ('b/2/test.tsv', len(data), 'upload', None),
+        ]
+        actual = [
+            (info.file_name, info.size, info.action, folder)
+            for (info, folder) in self.bucket_ls('b/2/test.[!ck]sv', fetch_count=1, with_wildcard=True)
+        ]
+        self.assertEqual(expected, actual)
+
+    @pytest.mark.apiver(from_ver=2)
+    def test_matching_wildcard_named_file(self):
+        data = b'hello world'
+        self.bucket.upload_bytes(data, 'a/*.txt')
+        self.bucket.upload_bytes(data, 'a/1.txt')
+        self.bucket.upload_bytes(data, 'a/2.txt')
+        expected = [
+            ('a/*.txt', len(data), 'upload', None),
+            ('a/1.txt', len(data), 'upload', None),
+            ('a/2.txt', len(data), 'upload', None),
+        ]
+        actual = [
+            (info.file_name, info.size, info.action, folder)
+            for (info, folder) in self.bucket_ls('a/*.txt', fetch_count=1, with_wildcard=True)
+        ]
+        self.assertEqual(expected, actual)
+
+    @pytest.mark.apiver(from_ver=2)
+    def test_matching_single_question_mark_named_file(self):
+        data = b'hello world'
+        self.bucket.upload_bytes(data, 'b/?.txt')
+        self.bucket.upload_bytes(data, 'b/a.txt')
+        self.bucket.upload_bytes(data, 'b/b.txt')
+        expected = [
+            ('b/?.txt', len(data), 'upload', None),
+            ('b/a.txt', len(data), 'upload', None),
+            ('b/b.txt', len(data), 'upload', None),
+        ]
+        actual = [
+            (info.file_name, info.size, info.action, folder)
+            for (info, folder) in self.bucket_ls('b/?.txt', fetch_count=1, with_wildcard=True)
+        ]
+        self.assertEqual(expected, actual)
+
 
 class TestGetFreshState(TestCaseWithBucket):
     def test_ok(self):

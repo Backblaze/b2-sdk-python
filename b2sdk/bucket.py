@@ -30,6 +30,7 @@ from .file_lock import (
     LegalHold,
 )
 from .file_version import DownloadVersion, FileVersion
+from .glob_matcher import GlobMatcher
 from .progress import AbstractProgressListener, DoNothingProgressListener
 from .replication.setting import ReplicationConfiguration, ReplicationConfigurationFactory
 from .transfer.emerge.executor import AUTO_CONTENT_TYPE
@@ -323,7 +324,8 @@ class Bucket(metaclass=B2TraceMeta):
         folder_to_list: str = '',
         latest_only: bool = True,
         recursive: bool = False,
-        fetch_count: Optional[int] = 10000
+        fetch_count: Optional[int] = 10000,
+        with_wildcard: bool = False,
     ):
         """
         Pretend that folders exist and yields the information about the files in a folder.
@@ -342,17 +344,26 @@ class Bucket(metaclass=B2TraceMeta):
                               when ``True``, just returns info about the most recent versions
         :param recursive: if ``True``, list folders recursively
         :param fetch_count: how many entries to return or ``None`` to use the default. Acceptable values: 1 - 10000
+        :param with_wildcard: Accept "*", "?", "[]" and "[!]" in folder_to_list similarly to what shell does
         :rtype: generator[tuple[b2sdk.v2.FileVersion, str]]
         :returns: generator of (file_version, folder_name) tuples
 
         .. note::
             In case of `recursive=True`, folder_name is returned only for first file in the folder.
         """
+        matcher = None
+        if with_wildcard:
+            matcher = GlobMatcher(folder_to_list)
+
         # Every file returned must have a name that starts with the
         # folder name and a "/".
         prefix = folder_to_list
         if prefix != '' and not prefix.endswith('/'):
             prefix += '/'
+
+        # However, if we're running with glob-matching, we should fetch a better prefix from it.
+        if matcher:
+            prefix = matcher.get_prefix()
 
         # Loop until all files in the named directory have been listed.
         # The starting point of the first list_file_names request is the
@@ -378,8 +389,12 @@ class Bucket(metaclass=B2TraceMeta):
                 if not file_version.file_name.startswith(prefix):
                     # We're past the files we care about
                     return
+                if matcher and not matcher.does_match(file_version.file_name):
+                    # File doesn't match our wildcard rules
+                    continue
                 after_prefix = file_version.file_name[len(prefix):]
-                if '/' not in after_prefix or recursive:
+                # In case of wildcards, we don't care about folders at all, and it's recursive by default.
+                if '/' not in after_prefix or recursive or with_wildcard:
                     # This is not a folder, so we'll print it out and
                     # continue on.
                     yield file_version, None
