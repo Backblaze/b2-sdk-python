@@ -2177,12 +2177,13 @@ class DecodeTests(DecodeTestsBase, TestCaseWithBucket):
 
 # Listing where every other response returns no entries and pointer to the next file
 
+
 class EmptyListBucketSimulator(BucketSimulator):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Whenever we receive a list request, if it's the first time
         # for this particular ``start_file_name``, we'll return
-        # an empty response pointing to the same file as the next one.
+        # an empty response pointing to the same file.
         self.last_queried_file = None
 
     def list_file_versions(
