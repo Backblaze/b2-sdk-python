@@ -373,8 +373,9 @@ class Bucket(metaclass=B2TraceMeta):
                     continue
 
                 starter_index = folder_to_list.index(wildcard_character)
-                # +1 to include the starter character
-                path = pathlib.PurePath(folder_to_list[:starter_index + 1])
+                # +1 to include the starter character.  Using posix path to
+                # ensure consistent behaviour on Windows (e.g. case sensitivity).
+                path = pathlib.PurePosixPath(folder_to_list[:starter_index + 1])
                 parent_path = str(path.parent)
                 # Path considers dot to be the empty path.
                 # There's no shorter path than that.
