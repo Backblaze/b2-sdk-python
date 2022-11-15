@@ -361,7 +361,7 @@ class Bucket(metaclass=B2TraceMeta):
 
         # If we're running with wildcard-matching, we could get
         # a different prefix from it.  We search for the first
-        # occurence of any of the special characters and fetch
+        # occurrence of any of the special characters and fetch
         # parent path from that place.
         # Examples:
         #   'b/c/*.txt' –> 'b/c/'
