@@ -359,10 +359,10 @@ class Bucket(metaclass=B2TraceMeta):
         if prefix != '' and not prefix.endswith('/'):
             prefix += '/'
 
-        # However, if we're running with glob-matching, we could possibly
-        # get a different prefix from it.  We're searching for a parent
-        # directory for the first place where we get any of the wildcard
-        # characters.
+        # If we're running with wildcard-matching, we could get
+        # a different prefix from it.  We search for the first
+        # occurence of any of the special characters and fetch
+        # parent path from that place.
         # Examples:
         #   'b/c/*.txt' –> 'b/c/'
         #   '*.txt' –> ''
