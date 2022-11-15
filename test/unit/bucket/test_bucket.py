@@ -2173,3 +2173,62 @@ class DecodeTests(DecodeTestsBase, TestCaseWithBucket):
     def test_file_info_4(self):
         download_version = self.bucket.get_file_info_by_name('test.txt%253Ffoo%253Dbar')
         assert download_version.file_name == 'test.txt%253Ffoo%253Dbar'
+
+
+# Listing where every other response returns no entries and pointer to the next file
+
+class EmptyListBucketSimulator(BucketSimulator):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Whenever we receive a list request, if it's the first time
+        # for this particular ``start_file_name``, we'll return
+        # an empty response pointing to the same file as the next one.
+        self.last_queried_file = None
+
+    def list_file_versions(
+        self,
+        account_auth_token,
+        start_file_name=None,
+        start_file_id=None,
+        max_file_count=None,
+        prefix=None,
+    ):
+        if self.last_queried_file != start_file_name:
+            self.last_queried_file = start_file_name
+            return dict(files=[], nextFileName=start_file_name, nextFileId=start_file_id)
+        return super().list_file_versions(
+            account_auth_token,
+            start_file_name,
+            start_file_id,
+            max_file_count,
+            prefix,
+        )
+
+    def list_file_names(
+        self,
+        account_auth_token,
+        start_file_name=None,
+        max_file_count=None,
+        prefix=None,
+    ):
+        if self.last_queried_file != start_file_name:
+            self.last_queried_file = start_file_name
+            return dict(files=[], nextFileName=start_file_name)
+        return super().list_file_names(
+            account_auth_token,
+            start_file_name,
+            max_file_count,
+            prefix,
+        )
+
+
+class EmptyListSimulator(RawSimulator):
+    BUCKET_SIMULATOR_CLASS = EmptyListBucketSimulator
+
+
+class TestEmptyListVersions(TestListVersions):
+    RAW_SIMULATOR_CLASS = EmptyListSimulator
+
+
+class TestEmptyLs(TestLs):
+    RAW_SIMULATOR_CLASS = EmptyListSimulator
