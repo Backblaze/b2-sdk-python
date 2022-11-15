@@ -540,7 +540,7 @@ class TestLs(TestCaseWithBucket):
         ]
         actual = [
             (info.file_name, info.size, info.action, folder)
-            for (info, folder) in self.bucket_ls('b/*.txt', fetch_count=100, with_wildcard=True)
+            for (info, folder) in self.bucket_ls('b/*.txt', with_wildcard=True)
         ]
         self.assertEqual(expected, actual)
 
@@ -559,7 +559,7 @@ class TestLs(TestCaseWithBucket):
         ]
         actual = [
             (info.file_name, info.size, info.action, folder)
-            for (info, folder) in self.bucket_ls('*.txt', fetch_count=1, with_wildcard=True)
+            for (info, folder) in self.bucket_ls('*.txt', with_wildcard=True)
         ]
         self.assertEqual(expected, actual)
 
@@ -577,7 +577,7 @@ class TestLs(TestCaseWithBucket):
         ]
         actual = [
             (info.file_name, info.size, info.action, folder)
-            for (info, folder) in self.bucket_ls('b/*/test.txt', fetch_count=1, with_wildcard=True)
+            for (info, folder) in self.bucket_ls('b/*/test.txt', with_wildcard=True)
         ]
         self.assertEqual(expected, actual)
 
@@ -594,7 +594,7 @@ class TestLs(TestCaseWithBucket):
         ]
         actual = [
             (info.file_name, info.size, info.action, folder)
-            for (info, folder) in self.bucket_ls('b/2/test.?sv', fetch_count=1, with_wildcard=True)
+            for (info, folder) in self.bucket_ls('b/2/test.?sv', with_wildcard=True)
         ]
         self.assertEqual(expected, actual)
 
@@ -611,7 +611,7 @@ class TestLs(TestCaseWithBucket):
         ]
         actual = [
             (info.file_name, info.size, info.action, folder)
-            for (info, folder) in self.bucket_ls('b/2/test.[tc]sv', fetch_count=1, with_wildcard=True)
+            for (info, folder) in self.bucket_ls('b/2/test.[tc]sv', with_wildcard=True)
         ]
         self.assertEqual(expected, actual)
 
@@ -627,7 +627,7 @@ class TestLs(TestCaseWithBucket):
         ]
         actual = [
             (info.file_name, info.size, info.action, folder)
-            for (info, folder) in self.bucket_ls('b/2/test.[!ck]sv', fetch_count=1, with_wildcard=True)
+            for (info, folder) in self.bucket_ls('b/2/test.[!ck]sv', with_wildcard=True)
         ]
         self.assertEqual(expected, actual)
 
@@ -644,7 +644,7 @@ class TestLs(TestCaseWithBucket):
         ]
         actual = [
             (info.file_name, info.size, info.action, folder)
-            for (info, folder) in self.bucket_ls('a/*.txt', fetch_count=1, with_wildcard=True)
+            for (info, folder) in self.bucket_ls('a/*.txt', with_wildcard=True)
         ]
         self.assertEqual(expected, actual)
 
@@ -661,7 +661,7 @@ class TestLs(TestCaseWithBucket):
         ]
         actual = [
             (info.file_name, info.size, info.action, folder)
-            for (info, folder) in self.bucket_ls('b/?.txt', fetch_count=1, with_wildcard=True)
+            for (info, folder) in self.bucket_ls('b/?.txt', with_wildcard=True)
         ]
         self.assertEqual(expected, actual)
 

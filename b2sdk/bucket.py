@@ -8,7 +8,9 @@
 #
 ######################################################################
 
+import fnmatch
 import logging
+import pathlib
 
 from typing import Optional, Tuple
 
@@ -30,7 +32,6 @@ from .file_lock import (
     LegalHold,
 )
 from .file_version import DownloadVersion, FileVersion
-from .glob_matcher import GlobMatcher
 from .progress import AbstractProgressListener, DoNothingProgressListener
 from .replication.setting import ReplicationConfiguration, ReplicationConfigurationFactory
 from .transfer.emerge.executor import AUTO_CONTENT_TYPE
@@ -341,29 +342,47 @@ class Bucket(metaclass=B2TraceMeta):
         :param folder_to_list: the name of the folder to list; must not start with "/".
                                Empty string means top-level folder
         :param latest_only: when ``False`` returns info about all versions of a file,
-                              when ``True``, just returns info about the most recent versions
+                            when ``True``, just returns info about the most recent versions
         :param recursive: if ``True``, list folders recursively
         :param fetch_count: how many entries to return or ``None`` to use the default. Acceptable values: 1 - 10000
-        :param with_wildcard: Accept "*", "?", "[]" and "[!]" in folder_to_list similarly to what shell does
+        :param with_wildcard: Accepts "*", "?", "[]" and "[!]" in folder_to_list, similarly to what shell does.
+                              If ``True``, automatically assumes recursive was enabled
         :rtype: generator[tuple[b2sdk.v2.FileVersion, str]]
         :returns: generator of (file_version, folder_name) tuples
 
         .. note::
             In case of `recursive=True`, folder_name is returned only for first file in the folder.
         """
-        matcher = None
-        if with_wildcard:
-            matcher = GlobMatcher(folder_to_list)
-
         # Every file returned must have a name that starts with the
         # folder name and a "/".
         prefix = folder_to_list
         if prefix != '' and not prefix.endswith('/'):
             prefix += '/'
 
-        # However, if we're running with glob-matching, we should fetch a better prefix from it.
-        if matcher:
-            prefix = matcher.get_prefix()
+        # However, if we're running with glob-matching, we could possibly
+        # get a different prefix from it.  We're searching for a parent
+        # directory for the first place where we get any of the wildcard
+        # characters.
+        # Examples:
+        #   'b/c/*.txt' –> 'b/c/'
+        #   '*.txt' –> ''
+        #   'a/*/result.[ct]sv' –> 'a/'
+        if with_wildcard:
+            for wildcard_character in ['*', '?', '[']:
+                if wildcard_character not in folder_to_list:
+                    continue
+
+                starter_index = folder_to_list.index(wildcard_character)
+                # +1 to include the starter character
+                path = pathlib.PurePath(folder_to_list[:starter_index + 1])
+                parent_path = str(path.parent)
+                # Path considers dot to be the empty path.
+                # There's no shorter path than that.
+                if parent_path == '.':
+                    prefix = ''
+                    break
+                if len(parent_path) < len(prefix):
+                    prefix = parent_path
 
         # Loop until all files in the named directory have been listed.
         # The starting point of the first list_file_names request is the
@@ -389,7 +408,9 @@ class Bucket(metaclass=B2TraceMeta):
                 if not file_version.file_name.startswith(prefix):
                     # We're past the files we care about
                     return
-                if matcher and not matcher.does_match(file_version.file_name):
+                if with_wildcard and not fnmatch.fnmatchcase(
+                    file_version.file_name, folder_to_list
+                ):
                     # File doesn't match our wildcard rules
                     continue
                 after_prefix = file_version.file_name[len(prefix):]
