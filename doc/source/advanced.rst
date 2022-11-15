@@ -184,7 +184,7 @@ Change the middle of the remote file
 For more information see :meth:`b2sdk.v2.Bucket.create_file`.
 
 
-Synthetize a file from local and remote parts
+Synthesize a file from local and remote parts
 =============================================
 
 This is useful for expert usage patterns such as:
