@@ -2191,7 +2191,7 @@ class EmptyListBucketSimulator(BucketSimulator):
         account_auth_token,
         start_file_name=None,
         start_file_id=None,
-        max_file_count=None,
+        max_file_count=None,  # noqa
         prefix=None,
     ):
         if self.last_queried_file != start_file_name:
@@ -2201,7 +2201,7 @@ class EmptyListBucketSimulator(BucketSimulator):
             account_auth_token,
             start_file_name,
             start_file_id,
-            max_file_count,
+            1,  # Forcing only a single file per response.
             prefix,
         )
 
@@ -2209,7 +2209,7 @@ class EmptyListBucketSimulator(BucketSimulator):
         self,
         account_auth_token,
         start_file_name=None,
-        max_file_count=None,
+        max_file_count=None,  # noqa
         prefix=None,
     ):
         if self.last_queried_file != start_file_name:
@@ -2218,7 +2218,7 @@ class EmptyListBucketSimulator(BucketSimulator):
         return super().list_file_names(
             account_auth_token,
             start_file_name,
-            max_file_count,
+            1,  # Forcing only a single file per response.
             prefix,
         )
 
