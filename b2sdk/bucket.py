@@ -360,7 +360,9 @@ class Bucket(metaclass=B2TraceMeta):
         # Every file returned must have a name that starts with the
         # folder name and a "/".
         prefix = folder_to_list
-        if prefix != '' and not prefix.endswith('/'):
+        # In case of wildcards, we don't assume that this is folder that we're searching through.
+        # It could be an exact file, e.g. 'a/b.txt' that we're trying to locate.
+        if prefix != '' and not prefix.endswith('/') and not with_wildcard:
             prefix += '/'
 
         # If we're running with wildcard-matching, we could get

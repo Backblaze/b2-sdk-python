@@ -675,6 +675,20 @@ class TestLs(TestCaseWithBucket):
             # Since ls is a generator, we need to actually fetch something from it.
             next(self.bucket_ls('*.txt', recursive=False, with_wildcard=True))
 
+    @pytest.mark.apiver(from_ver=2)
+    def test_matching_exact_filename(self):
+        data = b'hello world'
+        self.bucket.upload_bytes(data, 'b/a.txt')
+        self.bucket.upload_bytes(data, 'b/b.txt')
+        expected = [
+            ('b/a.txt', len(data), 'upload', None),
+        ]
+        actual = [
+            (info.file_name, info.size, info.action, folder)
+            for (info, folder) in self.bucket_ls('b/a.txt', recursive=True, with_wildcard=True)
+        ]
+        self.assertEqual(expected, actual)
+
 
 class TestGetFreshState(TestCaseWithBucket):
     def test_ok(self):
