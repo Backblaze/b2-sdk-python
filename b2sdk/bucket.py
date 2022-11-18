@@ -347,6 +347,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param fetch_count: how many entries to return or ``None`` to use the default. Acceptable values: 1 - 10000
         :param with_wildcard: Accepts "*", "?", "[]" and "[!]" in folder_to_list, similarly to what shell does.
                               As of 1.18.1 it can only be enabled when recursive is also enabled.
+                              Also, in this mode, folder_to_list is considered to be a filename or a pattern.
         :rtype: generator[tuple[b2sdk.v2.FileVersion, str]]
         :returns: generator of (file_version, folder_name) tuples
 
