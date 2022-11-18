@@ -346,13 +346,17 @@ class Bucket(metaclass=B2TraceMeta):
         :param recursive: if ``True``, list folders recursively
         :param fetch_count: how many entries to return or ``None`` to use the default. Acceptable values: 1 - 10000
         :param with_wildcard: Accepts "*", "?", "[]" and "[!]" in folder_to_list, similarly to what shell does.
-                              If ``True``, automatically assumes recursive was enabled
+                              As of 1.18.1 it can only be enabled when recursive is also enabled.
         :rtype: generator[tuple[b2sdk.v2.FileVersion, str]]
         :returns: generator of (file_version, folder_name) tuples
 
         .. note::
             In case of `recursive=True`, folder_name is returned only for first file in the folder.
         """
+        # Ensure that recursive is enabled when with_wildcard is enabled.
+        if with_wildcard and not recursive:
+            raise ValueError('with_wildcard requires recursive to be turned on as well')
+
         # Every file returned must have a name that starts with the
         # folder name and a "/".
         prefix = folder_to_list
@@ -361,18 +365,19 @@ class Bucket(metaclass=B2TraceMeta):
 
         # If we're running with wildcard-matching, we could get
         # a different prefix from it.  We search for the first
-        # occurrence of any of the special characters and fetch
+        # occurrence of the special characters and fetch
         # parent path from that place.
         # Examples:
         #   'b/c/*.txt' –> 'b/c/'
         #   '*.txt' –> ''
         #   'a/*/result.[ct]sv' –> 'a/'
         if with_wildcard:
-            for wildcard_character in ['*', '?', '[']:
-                if wildcard_character not in folder_to_list:
+            for wildcard_character in '*?[':
+                try:
+                    starter_index = folder_to_list.index(wildcard_character)
+                except ValueError:
                     continue
 
-                starter_index = folder_to_list.index(wildcard_character)
                 # +1 to include the starter character.  Using posix path to
                 # ensure consistent behaviour on Windows (e.g. case sensitivity).
                 path = pathlib.PurePosixPath(folder_to_list[:starter_index + 1])
@@ -382,6 +387,8 @@ class Bucket(metaclass=B2TraceMeta):
                 if parent_path == '.':
                     prefix = ''
                     break
+                # We could receive paths in different stage, e.g. 'a/*/result.[ct]sv' has two
+                # possible parent paths: 'a/' and 'a/*/', with the first one being the correct one
                 if len(parent_path) < len(prefix):
                     prefix = parent_path
 
@@ -416,7 +423,7 @@ class Bucket(metaclass=B2TraceMeta):
                     continue
                 after_prefix = file_version.file_name[len(prefix):]
                 # In case of wildcards, we don't care about folders at all, and it's recursive by default.
-                if '/' not in after_prefix or recursive or with_wildcard:
+                if '/' not in after_prefix or recursive:
                     # This is not a folder, so we'll print it out and
                     # continue on.
                     yield file_version, None

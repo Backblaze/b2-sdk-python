@@ -540,7 +540,7 @@ class TestLs(TestCaseWithBucket):
         ]
         actual = [
             (info.file_name, info.size, info.action, folder)
-            for (info, folder) in self.bucket_ls('b/*.txt', with_wildcard=True)
+            for (info, folder) in self.bucket_ls('b/*.txt', recursive=True, with_wildcard=True)
         ]
         self.assertEqual(expected, actual)
 
@@ -559,7 +559,7 @@ class TestLs(TestCaseWithBucket):
         ]
         actual = [
             (info.file_name, info.size, info.action, folder)
-            for (info, folder) in self.bucket_ls('*.txt', with_wildcard=True)
+            for (info, folder) in self.bucket_ls('*.txt', recursive=True, with_wildcard=True)
         ]
         self.assertEqual(expected, actual)
 
@@ -577,7 +577,8 @@ class TestLs(TestCaseWithBucket):
         ]
         actual = [
             (info.file_name, info.size, info.action, folder)
-            for (info, folder) in self.bucket_ls('b/*/test.txt', with_wildcard=True)
+            for (info,
+                 folder) in self.bucket_ls('b/*/test.txt', recursive=True, with_wildcard=True)
         ]
         self.assertEqual(expected, actual)
 
@@ -594,7 +595,8 @@ class TestLs(TestCaseWithBucket):
         ]
         actual = [
             (info.file_name, info.size, info.action, folder)
-            for (info, folder) in self.bucket_ls('b/2/test.?sv', with_wildcard=True)
+            for (info,
+                 folder) in self.bucket_ls('b/2/test.?sv', recursive=True, with_wildcard=True)
         ]
         self.assertEqual(expected, actual)
 
@@ -611,7 +613,8 @@ class TestLs(TestCaseWithBucket):
         ]
         actual = [
             (info.file_name, info.size, info.action, folder)
-            for (info, folder) in self.bucket_ls('b/2/test.[tc]sv', with_wildcard=True)
+            for (info,
+                 folder) in self.bucket_ls('b/2/test.[tc]sv', recursive=True, with_wildcard=True)
         ]
         self.assertEqual(expected, actual)
 
@@ -627,7 +630,8 @@ class TestLs(TestCaseWithBucket):
         ]
         actual = [
             (info.file_name, info.size, info.action, folder)
-            for (info, folder) in self.bucket_ls('b/2/test.[!ck]sv', with_wildcard=True)
+            for (info,
+                 folder) in self.bucket_ls('b/2/test.[!ck]sv', recursive=True, with_wildcard=True)
         ]
         self.assertEqual(expected, actual)
 
@@ -644,7 +648,7 @@ class TestLs(TestCaseWithBucket):
         ]
         actual = [
             (info.file_name, info.size, info.action, folder)
-            for (info, folder) in self.bucket_ls('a/*.txt', with_wildcard=True)
+            for (info, folder) in self.bucket_ls('a/*.txt', recursive=True, with_wildcard=True)
         ]
         self.assertEqual(expected, actual)
 
@@ -661,9 +665,15 @@ class TestLs(TestCaseWithBucket):
         ]
         actual = [
             (info.file_name, info.size, info.action, folder)
-            for (info, folder) in self.bucket_ls('b/?.txt', with_wildcard=True)
+            for (info, folder) in self.bucket_ls('b/?.txt', recursive=True, with_wildcard=True)
         ]
         self.assertEqual(expected, actual)
+
+    @pytest.mark.apiver(from_ver=2)
+    def test_wildcard_requires_recursive(self):
+        with pytest.raises(ValueError):
+            # Since ls is a generator, we need to actually fetch something from it.
+            next(self.bucket_ls('*.txt', recursive=False, with_wildcard=True))
 
 
 class TestGetFreshState(TestCaseWithBucket):

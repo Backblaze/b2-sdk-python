@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-* `Bucket` `ls` operation supports wildcard matching strings
+* `Bucket.ls` operation supports wildcard matching strings
 
 ## [1.18.0] - 2022-09-20
 
