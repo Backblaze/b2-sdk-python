@@ -45,7 +45,7 @@ Streaming interface
 
 Some object creation methods start writing data before reading the whole input (iterator). This can be used to write objects that do not have fully known contents without writing them first locally, so that they could be copied. Such usage pattern can be relevant to small devices which stream data to B2 from an external NAS, where caching large files such as media files or virtual machine images is not an option.
 
-Please see :ref:`advanced method support table <advanced_methods_support_table>` to see where streaming interface is supported. 
+Please see :ref:`advanced method support table <advanced_methods_support_table>` to see where streaming interface is supported.
 
 Continuation
 ============
@@ -184,7 +184,7 @@ Change the middle of the remote file
 For more information see :meth:`b2sdk.v2.Bucket.create_file`.
 
 
-Synthetize a file from local and remote parts
+Synthesize a file from local and remote parts
 =============================================
 
 This is useful for expert usage patterns such as:
