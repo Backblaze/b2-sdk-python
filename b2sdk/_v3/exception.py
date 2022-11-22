@@ -54,6 +54,7 @@ from b2sdk.exception import NonExistentBucket
 from b2sdk.exception import NotAllowedByAppKeyError
 from b2sdk.exception import PartSha1Mismatch
 from b2sdk.exception import RestrictedBucket
+from b2sdk.exception import RestrictedBucketMissing
 from b2sdk.exception import RetentionWriteError
 from b2sdk.exception import SSECKeyError
 from b2sdk.exception import SSECKeyIdMismatchInCopy
@@ -134,6 +135,7 @@ __all__ = (
     'NotAllowedByAppKeyError',
     'PartSha1Mismatch',
     'RestrictedBucket',
+    'RestrictedBucketMissing',
     'RetentionWriteError',
     'ServiceError',
     'SourceReplicationConflict',

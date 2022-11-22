@@ -16,7 +16,7 @@ import re
 import threading
 import time
 
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from typing import Optional
 
 from b2sdk.http_constants import FILE_INFO_HEADER_PREFIX, HEX_DIGITS_AT_END
@@ -91,6 +91,7 @@ class KeySimulator:
         self.capabilities = capabilities
         self.expiration_timestamp_or_none = expiration_timestamp_or_none
         self.bucket_id_or_none = bucket_id_or_none
+        self.bucket_name_or_none = bucket_name_or_none
         self.name_prefix_or_none = name_prefix_or_none
 
     def as_key(self):
@@ -121,6 +122,7 @@ class KeySimulator:
         """
         return dict(
             bucketId=self.bucket_id_or_none,
+            bucketName=self.bucket_name_or_none,
             capabilities=self.capabilities,
             namePrefix=self.name_prefix_or_none,
         )
@@ -1305,10 +1307,13 @@ class RawSimulator(AbstractRawApi):
         self.app_key_counter += 1
         application_key_id = 'appKeyId%d' % (index,)
         app_key = 'appKey%d' % (index,)
-        if bucket_id is None:
-            bucket_name_or_none = None
-        else:
-            bucket_name_or_none = self._get_bucket_by_id(bucket_id).bucket_name
+        bucket_name_or_none = None
+        if bucket_id is not None:
+            # It is possible for bucketId to be filled and bucketName to be empty.
+            # It can happen when the bucket was deleted.
+            with suppress(NonExistentBucket):
+                bucket_name_or_none = self._get_bucket_by_id(bucket_id).bucket_name
+
         key_sim = KeySimulator(
             account_id=account_id,
             name=key_name,
