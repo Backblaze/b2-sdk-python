@@ -2186,6 +2186,17 @@ class EmptyListBucketSimulator(BucketSimulator):
         # an empty response pointing to the same file.
         self.last_queried_file = None
 
+    def _should_return_empty(self, file_name: str) -> bool:
+        # Note that every other request is empty – the logic is as follows:
+        #   1st request – unknown start name – empty response
+        #   2nd request – known start name – normal response with a proper next filename
+        #   3rd request – unknown start name (as it's the next filename from the previous request) – empty response
+        #   4th request – known start name
+        # etc. This works especially well when using limiter of number of files fetched set to 1.
+        should_return_empty = self.last_queried_file != file_name
+        self.last_queried_file = file_name
+        return should_return_empty
+
     def list_file_versions(
         self,
         account_auth_token,
@@ -2194,8 +2205,7 @@ class EmptyListBucketSimulator(BucketSimulator):
         max_file_count=None,  # noqa
         prefix=None,
     ):
-        if self.last_queried_file != start_file_name:
-            self.last_queried_file = start_file_name
+        if self._should_return_empty(start_file_name):
             return dict(files=[], nextFileName=start_file_name, nextFileId=start_file_id)
         return super().list_file_versions(
             account_auth_token,
@@ -2212,8 +2222,7 @@ class EmptyListBucketSimulator(BucketSimulator):
         max_file_count=None,  # noqa
         prefix=None,
     ):
-        if self.last_queried_file != start_file_name:
-            self.last_queried_file = start_file_name
+        if self._should_return_empty(start_file_name):
             return dict(files=[], nextFileName=start_file_name)
         return super().list_file_names(
             account_auth_token,
