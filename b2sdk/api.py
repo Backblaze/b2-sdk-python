@@ -18,7 +18,7 @@ from .cache import AbstractCache
 from .bucket import Bucket, BucketFactory
 from .encryption.setting import EncryptionSetting
 from .replication.setting import ReplicationConfiguration
-from .exception import BucketIdNotFound, NonExistentBucket, RestrictedBucket
+from .exception import BucketIdNotFound, NonExistentBucket, RestrictedBucket, RestrictedBucketMissing
 from .file_lock import FileRetentionSetting, LegalHold
 from .file_version import DownloadVersionFactory, FileIdAndName, FileVersion, FileVersionFactory
 from .large_file.services import LargeFileServices
@@ -201,6 +201,22 @@ class B2Api(metaclass=B2TraceMeta):
         :param str application_key: user's :term:`application key`
         """
         self.session.authorize_account(realm, application_key_id, application_key)
+
+        # If the key is restricted to the bucket, pre-populate the cache with it
+        allowed = self.account_info.get_allowed()
+
+        allowed_bucket_id = allowed.get('bucketId')
+        if allowed_bucket_id is not None:
+            # If we have bucketId set we still need to check bucketName. If the bucketName is None,
+            # it means that the bucketId belongs to a bucket that was already removed.
+            allowed_bucket_name = allowed.get('bucketName')
+            if allowed_bucket_name is not None:
+                self.cache.save_bucket(
+                    self.BUCKET_CLASS(self, allowed_bucket_id, name=allowed_bucket_name)
+                )
+            else:
+                # This key is restricted to a single bucket that doesn't exist.
+                raise RestrictedBucketMissing()
 
     def get_account_id(self):
         """
