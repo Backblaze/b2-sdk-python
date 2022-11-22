@@ -2218,6 +2218,7 @@ class TestAuthorizeForBucket(TestCaseWithBucket):
         with self.assertRaises(RestrictedBucketMissing):
             self.api.authorize_account('production', key.id_, key.application_key)
 
+
 # Listing where every other response returns no entries and pointer to the next file
 class EmptyListBucketSimulator(BucketSimulator):
     def __init__(self, *args, **kwargs):
