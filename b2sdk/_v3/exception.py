@@ -26,17 +26,18 @@ from b2sdk.exception import BadFileInfo
 from b2sdk.exception import BadJson
 from b2sdk.exception import BadRequest
 from b2sdk.exception import BadUploadUrl
-from b2sdk.exception import BucketIdNotFound
 from b2sdk.exception import BrokenPipe
+from b2sdk.exception import BucketIdNotFound
 from b2sdk.exception import BucketNotAllowed
-from b2sdk.exception import CapabilityNotAllowed
 from b2sdk.exception import CapExceeded
+from b2sdk.exception import CapabilityNotAllowed
 from b2sdk.exception import ChecksumMismatch
 from b2sdk.exception import ClockSkew
 from b2sdk.exception import Conflict
 from b2sdk.exception import ConnectionReset
 from b2sdk.exception import CopyArgumentsMismatch
 from b2sdk.exception import DestFileNewer
+from b2sdk.exception import DisablingFileLockNotSupported
 from b2sdk.exception import DuplicateBucketName
 from b2sdk.exception import FileAlreadyHidden
 from b2sdk.exception import FileNameNotAllowed
@@ -54,11 +55,14 @@ from b2sdk.exception import NotAllowedByAppKeyError
 from b2sdk.exception import PartSha1Mismatch
 from b2sdk.exception import RestrictedBucket
 from b2sdk.exception import RetentionWriteError
+from b2sdk.exception import SSECKeyError
+from b2sdk.exception import SSECKeyIdMismatchInCopy
 from b2sdk.exception import ServiceError
+from b2sdk.exception import SourceReplicationConflict
 from b2sdk.exception import StorageCapExceeded
 from b2sdk.exception import TooManyRequests
-from b2sdk.exception import TransientErrorMixin
 from b2sdk.exception import TransactionCapExceeded
+from b2sdk.exception import TransientErrorMixin
 from b2sdk.exception import TruncatedOutput
 from b2sdk.exception import Unauthorized
 from b2sdk.exception import UnexpectedCloudBehaviour
@@ -67,18 +71,16 @@ from b2sdk.exception import UnknownHost
 from b2sdk.exception import UnrecognizedBucketType
 from b2sdk.exception import UnsatisfiableRange
 from b2sdk.exception import UnusableFileName
-from b2sdk.exception import SSECKeyIdMismatchInCopy
-from b2sdk.exception import SSECKeyError
 from b2sdk.exception import WrongEncryptionModeForBucketDefault
 from b2sdk.exception import interpret_b2_error
-from b2sdk.sync.exception import EmptyDirectory
-from b2sdk.sync.exception import EnvironmentEncodingError
 from b2sdk.sync.exception import IncompleteSync
-from b2sdk.sync.exception import InvalidArgument
-from b2sdk.sync.exception import NotADirectory
-from b2sdk.sync.exception import UnableToCreateDirectory
-from b2sdk.sync.exception import UnSyncableFilename
-from b2sdk.sync.exception import check_invalid_argument
+from b2sdk.scan.exception import UnableToCreateDirectory
+from b2sdk.scan.exception import EmptyDirectory
+from b2sdk.scan.exception import EnvironmentEncodingError
+from b2sdk.scan.exception import InvalidArgument
+from b2sdk.scan.exception import NotADirectory
+from b2sdk.scan.exception import UnsupportedFilename
+from b2sdk.scan.exception import check_invalid_argument
 
 __all__ = (
     'AccessDenied',
@@ -100,8 +102,8 @@ __all__ = (
     'BrokenPipe',
     'BucketIdNotFound',
     'BucketNotAllowed',
-    'CapabilityNotAllowed',
     'CapExceeded',
+    'CapabilityNotAllowed',
     'ChecksumMismatch',
     'ClockSkew',
     'Conflict',
@@ -109,6 +111,7 @@ __all__ = (
     'CopyArgumentsMismatch',
     'CorruptAccountInfo',
     'DestFileNewer',
+    'DisablingFileLockNotSupported',
     'DuplicateBucketName',
     'EmptyDirectory',
     'EnvironmentEncodingError',
@@ -133,19 +136,20 @@ __all__ = (
     'RestrictedBucket',
     'RetentionWriteError',
     'ServiceError',
+    'SourceReplicationConflict',
     'StorageCapExceeded',
     'TooManyRequests',
     'TransactionCapExceeded',
     'TransientErrorMixin',
     'TruncatedOutput',
+    'UnableToCreateDirectory',
     'Unauthorized',
     'UnexpectedCloudBehaviour',
     'UnknownError',
     'UnknownHost',
     'UnrecognizedBucketType',
-    'UnableToCreateDirectory',
-    'UnSyncableFilename',
     'UnsatisfiableRange',
+    'UnsupportedFilename',
     'UnusableFileName',
     'interpret_b2_error',
     'check_invalid_argument',

@@ -19,7 +19,8 @@ import pytest
 
 from b2sdk.b2http import B2Http
 from b2sdk.encryption.setting import EncryptionAlgorithm, EncryptionMode, EncryptionSetting
-from b2sdk.replication.setting import ReplicationConfiguration, ReplicationSourceConfiguration, ReplicationRule, ReplicationDestinationConfiguration
+from b2sdk.exception import DisablingFileLockNotSupported
+from b2sdk.replication.setting import ReplicationConfiguration, ReplicationRule
 from b2sdk.replication.types import ReplicationStatus
 from b2sdk.file_lock import BucketRetentionSetting, NO_RETENTION_FILE_SETTING, RetentionMode, RetentionPeriod
 from b2sdk.raw_api import ALL_CAPABILITIES, B2RawHTTPApi, REALM_URLS
@@ -90,8 +91,8 @@ def raw_api_test_helper(raw_api, should_cleanup_old_buckets):
     # b2_authorize_account
     print('b2_authorize_account')
     auth_dict = authorize_raw_api(raw_api)
-    missing_capabilities = set(ALL_CAPABILITIES) - set(['readBuckets']
-                                                      ) - set(auth_dict['allowed']['capabilities'])
+    missing_capabilities = set(ALL_CAPABILITIES) - {'readBuckets', 'listAllBucketNames'
+                                                   } - set(auth_dict['allowed']['capabilities'])
     assert not missing_capabilities, 'it appears that the raw_api integration test is being run with a non-full key. Missing capabilities: %s' % (
         missing_capabilities,
     )
@@ -153,7 +154,12 @@ def raw_api_test_helper(raw_api, should_cleanup_old_buckets):
         api_url,
         account_auth_token,
         account_id,
-        ['listBuckets', 'listFiles', 'readFiles'],
+        [
+            'listBuckets',
+            'listFiles',
+            'readFiles',
+            'writeFiles',  # Pawel @ 2022-06-21: adding this to make tests pass with a weird server validator
+        ],
         'testReplicationSourceKey',
         None,
         None,
@@ -175,16 +181,14 @@ def raw_api_test_helper(raw_api, should_cleanup_old_buckets):
             'allPublic',
             is_file_lock_enabled=True,
             replication=ReplicationConfiguration(
-                as_replication_source=ReplicationSourceConfiguration(
-                    rules=[
-                        ReplicationRule(
-                            destination_bucket_id=bucket_id,
-                            include_existing_files=True,
-                            name='test-rule',
-                        ),
-                    ],
-                    source_application_key_id=replication_source_key,
-                ),
+                rules=[
+                    ReplicationRule(
+                        destination_bucket_id=bucket_id,
+                        include_existing_files=True,
+                        name='test-rule',
+                    ),
+                ],
+                source_key_id=replication_source_key,
             ),
         )
         assert 'replicationConfiguration' in replication_source_bucket_dict
@@ -257,11 +261,9 @@ def raw_api_test_helper(raw_api, should_cleanup_old_buckets):
             bucket_id,
             'allPublic',
             replication=ReplicationConfiguration(
-                as_replication_destination=ReplicationDestinationConfiguration(
-                    source_to_destination_key_mapping={
-                        replication_source_key: replication_destination_key,
-                    },
-                ),
+                source_to_destination_key_mapping={
+                    replication_source_key: replication_destination_key,
+                },
             ),
         )
         assert bucket_dict['replicationConfiguration'] == {
@@ -518,8 +520,23 @@ def raw_api_test_helper(raw_api, should_cleanup_old_buckets):
         default_retention=BucketRetentionSetting(
             mode=RetentionMode.GOVERNANCE, period=RetentionPeriod(days=1)
         ),
+        is_file_lock_enabled=True,
     )
     assert first_bucket_revision < updated_bucket['revision']
+
+    # NOTE: this update_bucket call is only here to be able to find out the error code returned by
+    # the server if an attempt is made to disable file lock.  It has to be done here since the CLI
+    # by design does not allow disabling file lock at all (i.e. there is no --fileLockEnabled=false
+    # option or anything equivalent to that).
+    with pytest.raises(DisablingFileLockNotSupported):
+        raw_api.update_bucket(
+            api_url,
+            account_auth_token,
+            account_id,
+            bucket_id,
+            'allPrivate',
+            is_file_lock_enabled=False,
+        )
 
     # Clean up this test.
     _clean_and_delete_bucket(raw_api, api_url, account_auth_token, account_id, bucket_id)

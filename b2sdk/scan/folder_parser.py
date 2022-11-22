@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: b2sdk/sync/folder_parser.py
+# File: b2sdk/scan/folder_parser.py
 #
 # Copyright 2019 Backblaze Inc. All Rights Reserved.
 #
@@ -12,13 +12,12 @@ from .exception import InvalidArgument
 from .folder import B2Folder, LocalFolder
 
 
-def parse_sync_folder(folder_name, api, local_folder_class=LocalFolder, b2_folder_class=B2Folder):
+def parse_folder(folder_name, api, local_folder_class=LocalFolder, b2_folder_class=B2Folder):
     """
     Take either a local path, or a B2 path, and returns a Folder
     object for it.
 
-    B2 paths look like: b2://bucketName/path/name.  The '//' is optional,
-    because the previous sync command didn't use it.
+    B2 paths look like: b2://bucketName/path/name.  The '//' is optional.
 
     Anything else is treated like a local folder.
 

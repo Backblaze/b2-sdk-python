@@ -2,7 +2,7 @@
 #
 # File: test/unit/sync/test_sync.py
 #
-# Copyright 2020 Backblaze Inc. All Rights Reserved.
+# Copyright 2022 Backblaze Inc. All Rights Reserved.
 #
 # License https://www.backblaze.com/using_b2_code.html
 #
@@ -12,20 +12,22 @@ from unittest import mock
 from enum import Enum
 from functools import partial
 
-from apiver_deps import UpPolicy, B2DownloadAction, B2UploadAction, B2CopyAction, AbstractSyncEncryptionSettingsProvider, UploadSourceLocalFile, SyncPolicyManager
+from apiver_deps import UpPolicy, B2DownloadAction, AbstractSyncEncryptionSettingsProvider, UploadSourceLocalFile, SyncPolicyManager
 from apiver_deps_exception import DestFileNewer, InvalidArgument
-from b2sdk.utils import TempDir
-
+from apiver_deps import KeepOrDeleteMode, NewerFileSyncMode, CompareVersionMode
+import pytest
+from ..fixtures.folder import *
 from .fixtures import *
 
 DAY = 86400000  # milliseconds
 TODAY = DAY * 100  # an arbitrary reference time for testing
 
 
-class TestSynchronizer:
-    class IllegalEnum(Enum):
-        ILLEGAL = 5100
+class IllegalEnum(Enum):
+    ILLEGAL = 5100
 
+
+class TestSynchronizer:
     @pytest.fixture(autouse=True)
     def setup(self, folder_factory, mocker, apiver):
         self.folder_factory = folder_factory

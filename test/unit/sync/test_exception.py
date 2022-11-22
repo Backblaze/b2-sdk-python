@@ -14,7 +14,7 @@ from apiver_deps_exception import (
     EnvironmentEncodingError,
     InvalidArgument,
     IncompleteSync,
-    UnSyncableFilename,
+    UnsupportedFilename,
     check_invalid_argument,
 )
 
@@ -41,10 +41,10 @@ export LANG=en_US.UTF-8""", str(e)
         except IncompleteSync as e:
             assert str(e) == 'Incomplete sync: ', str(e)
 
-    def test_unsyncablefilename_error(self):
+    def test_unsupportedfilename_error(self):
         try:
-            raise UnSyncableFilename('message', 'filename')
-        except UnSyncableFilename as e:
+            raise UnsupportedFilename('message', 'filename')
+        except UnsupportedFilename as e:
             assert str(e) == 'message: filename', str(e)
 
 

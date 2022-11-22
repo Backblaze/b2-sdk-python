@@ -331,6 +331,7 @@ class B2Session:
         default_server_side_encryption: Optional[EncryptionSetting] = None,
         default_retention: Optional[BucketRetentionSetting] = None,
         replication: Optional[ReplicationConfiguration] = None,
+        is_file_lock_enabled: Optional[bool] = None,
     ):
         return self._wrap_default_token(
             self.raw_api.update_bucket,
@@ -344,6 +345,7 @@ class B2Session:
             default_server_side_encryption=default_server_side_encryption,
             default_retention=default_retention,
             replication=replication,
+            is_file_lock_enabled=is_file_lock_enabled,
         )
 
     def upload_file(

@@ -8,80 +8,31 @@
 #
 ######################################################################
 
-import logging
 import concurrent.futures as futures
+import logging
+
 from enum import Enum, unique
 
 from ..bounded_queue_executor import BoundedQueueExecutor
-from .encryption_provider import AbstractSyncEncryptionSettingsProvider, SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER
-from .exception import InvalidArgument, IncompleteSync
-from .folder import AbstractFolder
-from .path import AbstractSyncPath
+from ..scan.exception import InvalidArgument
+from ..scan.folder import AbstractFolder
+from ..scan.path import AbstractPath
+from ..scan.policies import DEFAULT_SCAN_MANAGER
+from ..scan.scan import zip_folders
+from .encryption_provider import SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER, AbstractSyncEncryptionSettingsProvider
+from .exception import IncompleteSync
 from .policy import CompareVersionMode, NewerFileSyncMode
 from .policy_manager import POLICY_MANAGER, SyncPolicyManager
 from .report import SyncReport
-from .scan_policies import DEFAULT_SCAN_MANAGER
 
 logger = logging.getLogger(__name__)
-
-
-def next_or_none(iterator):
-    """
-    Return the next item from the iterator, or None if there are no more.
-    """
-    try:
-        return next(iterator)
-    except StopIteration:
-        return None
-
-
-def zip_folders(folder_a, folder_b, reporter, policies_manager=DEFAULT_SCAN_MANAGER):
-    """
-    Iterate over all of the files in the union of two folders,
-    matching file names.
-
-    Each item is a pair (file_a, file_b) with the corresponding file
-    in both folders.  Either file (but not both) will be None if the
-    file is in only one folder.
-
-    :param b2sdk.sync.folder.AbstractFolder folder_a: first folder object.
-    :param b2sdk.sync.folder.AbstractFolder folder_b: second folder object.
-    :param reporter: reporter object
-    :param policies_manager: policies manager object
-    :return: yields two element tuples
-    """
-
-    iter_a = folder_a.all_files(reporter, policies_manager)
-    iter_b = folder_b.all_files(reporter)
-
-    current_a = next_or_none(iter_a)
-    current_b = next_or_none(iter_b)
-
-    while current_a is not None or current_b is not None:
-        if current_a is None:
-            yield (None, current_b)
-            current_b = next_or_none(iter_b)
-        elif current_b is None:
-            yield (current_a, None)
-            current_a = next_or_none(iter_a)
-        elif current_a.relative_path < current_b.relative_path:
-            yield (current_a, None)
-            current_a = next_or_none(iter_a)
-        elif current_b.relative_path < current_a.relative_path:
-            yield (None, current_b)
-            current_b = next_or_none(iter_b)
-        else:
-            assert current_a.relative_path == current_b.relative_path
-            yield (current_a, current_b)
-            current_a = next_or_none(iter_a)
-            current_b = next_or_none(iter_b)
 
 
 def count_files(local_folder, reporter, policies_manager):
     """
     Count all of the files in a local folder.
 
-    :param b2sdk.sync.folder.AbstractFolder local_folder: a folder object.
+    :param b2sdk.scan.folder.AbstractFolder local_folder: a folder object.
     :param reporter: reporter object
     """
     # Don't pass in a reporter to all_files.  Broken symlinks will be reported
@@ -205,8 +156,8 @@ class Synchronizer:
         source is also in the destination.  Deletes any file versions
         in the destination older than history_days.
 
-        :param b2sdk.sync.folder.AbstractFolder source_folder: source folder object
-        :param b2sdk.sync.folder.AbstractFolder dest_folder: destination folder object
+        :param b2sdk.scan.folder.AbstractFolder source_folder: source folder object
+        :param b2sdk.scan.folder.AbstractFolder dest_folder: destination folder object
         :param int now_millis: current time in milliseconds
         :param b2sdk.sync.report.SyncReport,None reporter: progress reporter
         :param b2sdk.v2.AbstractSyncEncryptionSettingsProvider encryption_settings_provider: encryption setting provider
@@ -339,8 +290,8 @@ class Synchronizer:
     def _make_file_sync_actions(
         self,
         sync_type: str,
-        source_path: AbstractSyncPath,
-        dest_path: AbstractSyncPath,
+        source_path: AbstractPath,
+        dest_path: AbstractPath,
         source_folder: AbstractFolder,
         dest_folder: AbstractFolder,
         now_millis: int,
@@ -351,15 +302,14 @@ class Synchronizer:
         Yields the sequence of actions needed to sync the two files
 
         :param str sync_type: synchronization type
-        :param b2sdk.v2.AbstractSyncPath source_path: source file object
-        :param b2sdk.v2.AbstractSyncPath dest_path: destination file object
+        :param b2sdk.v2.AbstractPath source_path: source file object
+        :param b2sdk.v2.AbstractPath dest_path: destination file object
         :param b2sdk.v2.AbstractFolder source_folder: a source folder object
         :param b2sdk.v2.AbstractFolder dest_folder: a destination folder object
         :param int now_millis: current time in milliseconds
         :param b2sdk.v2.AbstractSyncEncryptionSettingsProvider encryption_settings_provider: encryption setting provider
         """
         delete = self.keep_days_or_delete == KeepOrDeleteMode.DELETE
-        keep_days = self.keep_days
 
         policy = self.sync_policy_manager.get_policy(
             sync_type,
@@ -369,7 +319,7 @@ class Synchronizer:
             dest_folder,
             now_millis,
             delete,
-            keep_days,
+            self.keep_days,
             self.newer_file_mode,
             self.compare_threshold,
             self.compare_version_mode,

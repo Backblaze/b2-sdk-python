@@ -6,6 +6,73 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.18.0] - 2022-09-20
+
+### Added
+* Logging performance summary of parallel download threads
+* Add `max_download_streams_per_file` parameter to B2Api class and underlying structures
+* Add `is_file_lock_enabled` parameter to `Bucket.update()` and related methods
+
+### Fixed
+* Replace `ReplicationScanResult.source_has_sse_c_enabled` with `source_encryption_mode`
+* Fix `B2Api.get_key()` and `RawSimulator.delete_key()`
+* Fix calling `CopySizeTooBig` exception
+
+### Infrastructure
+* Fix nox's deprecated `session.install()` calls
+* Re-enable changelog validation in CI
+* StatsCollector contains context managers for gathering performance statistics
+
+## [1.17.3] - 2022-07-15
+
+### Fixed
+* Fix `FileVersion._get_upload_headers` when encryption key is `None`
+
+### Infrastructure
+* Fix download integration tests on non-production environments
+* Add `B2_DEBUG_HTTP` env variable to enable network-level test debugging
+* Disable changelog validation temporarily
+
+## [1.17.2] - 2022-06-24
+
+### Fixed
+* Fix a race in progress reporter
+* Fix import of replication
+
+## [1.17.1] - 2022-06-23 [YANKED]
+
+### Fixed
+* Fix importing scan module
+
+## [1.17.0] - 2022-06-23 [YANKED]
+
+As in version 1.16.0, the replication API may still be unstable, however
+no backward-incompatible changes are planned at this point.
+
+### Added
+* Add `included_sources` module for keeping track of included modified third-party libraries
+* Add `include_existing_files` parameter to `ReplicationSetupHelper`
+
+### Changed
+* Downloading compressed files with `Content-Encoding` header set no longer causes them to be decompressed on the fly - it's an option
+* Change the per part retry limit from 5 to 20 for data transfer operations. Please note that the retry system is not considered to be a part of the public interface and is subject to be adjusted
+* Do not wait more than 64 seconds between retry attempts (unless server asks for it)
+* On longer failures wait an additional (random, up to 1s) amount of time to prevent client synchronization
+* Flatten `ReplicationConfiguration` interface
+* Reorder actions of `ReplicationSetupHelper` to avoid zombie rules
+
+### Fixed
+* Fix: downloading compressed files and decompressing them on the fly now does not cause a TruncatedOutput error
+* Fix `AccountInfo.is_master_key()`
+* Fix docstring of `SqliteAccountInfo`
+* Fix lifecycle rule type in the docs
+
+### Infrastructure
+* Add 3.11.0-beta.1 to CI
+* Change Sphinx major version from 5 to 6
+* Extract folder/bucket scanning into a new `scan` module
+* Enable pip cache in CI
+
 ## [1.16.0] - 2022-04-27
 
 This release contains a preview of replication support. It allows for basic
@@ -87,7 +154,7 @@ Expect substantial amount of work on sdk interface:
 
 ### Changed
 * The `importlib-metadata` requirement is less strictly bound now (just >=3.3.0 for python > 3.5).
-* `B2Api` `update_file_legal_hold` and `update_file_retention_setting` now return the set values 
+* `B2Api` `update_file_legal_hold` and `update_file_retention_setting` now return the set values
 
 ### Added
 * `BucketIdNotFound` thrown based on B2 cloud response
@@ -103,7 +170,7 @@ Expect substantial amount of work on sdk interface:
 ## [1.11.0] - 2021-06-24
 
 ### Changed
-* apiver `v2` interface released. `from b2sdk.v2 import ...` is now the recommended import, 
+* apiver `v2` interface released. `from b2sdk.v2 import ...` is now the recommended import,
   but `from b2sdk.v1 import ...` works as before
 
 ## [1.10.0] - 2021-06-23
@@ -129,7 +196,7 @@ Expect substantial amount of work on sdk interface:
 * Old buckets (from past tests) are cleaned up before running integration tests in a single thread
 
 ### Removed
-* Remove deprecated `SyncReport` methods 
+* Remove deprecated `SyncReport` methods
 
 ## [1.9.0] - 2021-06-07
 
@@ -144,7 +211,7 @@ Expect substantial amount of work on sdk interface:
 * `B2Api` unittests for v0, v1 and v2 are now common
 * `B2Api.cancel_large_file` returns a `FileIdAndName` object instead of a `FileVersion` object in v2
 * `FileVersion` has a mandatory `api` parameter in v2
-* `B2Folder` holds a handle to B2Api 
+* `B2Folder` holds a handle to B2Api
 * `Bucket` unit tests for v1 and v2 are now common
 
 ### Fixed
@@ -173,7 +240,7 @@ Expect substantial amount of work on sdk interface:
 * Encryption settings, types and providers are now part of the public API
 
 ### Removed
-* Remove `Bucket.copy_file` and `Bucket.start_large_file` 
+* Remove `Bucket.copy_file` and `Bucket.start_large_file`
 * Remove `FileVersionInfo.format_ls_entry` and `FileVersionInfo.format_folder_ls_entry`
 
 ## [1.7.0] - 2021-04-22
@@ -327,7 +394,13 @@ has changed.
 ### Added
 Initial official release of SDK as a separate package (until now it was a part of B2 CLI)
 
-[Unreleased]: https://github.com/Backblaze/b2-sdk-python/compare/v1.15.0...HEAD
+[Unreleased]: https://github.com/Backblaze/b2-sdk-python/compare/v1.18.0...HEAD
+[1.18.0]: https://github.com/Backblaze/b2-sdk-python/compare/v1.17.3...v1.18.0
+[1.17.3]: https://github.com/Backblaze/b2-sdk-python/compare/v1.17.2...v1.17.3
+[1.17.2]: https://github.com/Backblaze/b2-sdk-python/compare/v1.17.1...v1.17.2
+[1.17.1]: https://github.com/Backblaze/b2-sdk-python/compare/v1.17.0...v1.17.1
+[1.17.0]: https://github.com/Backblaze/b2-sdk-python/compare/v1.16.0...v1.17.0
+[1.16.0]: https://github.com/Backblaze/b2-sdk-python/compare/v1.15.0...v1.16.0
 [1.15.0]: https://github.com/Backblaze/b2-sdk-python/compare/v1.14.1...v1.15.0
 [1.14.1]: https://github.com/Backblaze/b2-sdk-python/compare/v1.14.0...v1.14.1
 [1.14.0]: https://github.com/Backblaze/b2-sdk-python/compare/v1.13.0...v1.14.0

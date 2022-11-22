@@ -8,20 +8,22 @@
 #
 ######################################################################
 
-from concurrent import futures
-from io import IOBase
-from typing import Optional
 import logging
 import queue
 import threading
+from concurrent import futures
+from io import IOBase
+from time import perf_counter_ns
+from typing import Optional
 
 from requests.models import Response
 
-from .abstract import AbstractDownloader
 from b2sdk.encryption.setting import EncryptionSetting
 from b2sdk.file_version import DownloadVersion
 from b2sdk.session import B2Session
 from b2sdk.utils.range_ import Range
+from .abstract import AbstractDownloader
+from .stats_collector import StatsCollector
 
 logger = logging.getLogger(__name__)
 
@@ -118,7 +120,15 @@ class ParallelDownloader(AbstractDownloader):
         if self._check_hash:
             # we skip hashing if we would not check it - hasher object is actually a EmptyHasher instance
             # but we avoid here reading whole file (except for the first part) from disk again
+            before_hash = perf_counter_ns()
             self._finish_hashing(first_part, file, hasher, download_version.content_length)
+            after_hash = perf_counter_ns()
+            logger.info(
+                'download stats | %s | %s total: %.3f ms',
+                file,
+                'finish_hash',
+                (after_hash - before_hash) / 1000000,
+            )
 
         return bytes_written, hasher.hexdigest()
 
@@ -203,18 +213,31 @@ class WriterThread(threading.Thread):
         self.file = file
         self.queue = queue.Queue(max_queue_depth)
         self.total = 0
+        self.stats_collector = StatsCollector(str(self.file), 'writer', 'seek')
         super(WriterThread, self).__init__()
 
     def run(self):
         file = self.file
         queue_get = self.queue.get
-        while 1:
-            shutdown, offset, data = queue_get()
-            if shutdown:
-                break
-            file.seek(offset)
-            file.write(data)
-            self.total += len(data)
+        stats_collector_read = self.stats_collector.read
+        stats_collector_other = self.stats_collector.other
+        stats_collector_write = self.stats_collector.write
+
+        with self.stats_collector.total:
+            while 1:
+                with stats_collector_read:
+                    shutdown, offset, data = queue_get()
+
+                if shutdown:
+                    break
+
+                with stats_collector_other:
+                    file.seek(offset)
+
+                with stats_collector_write:
+                    file.write(data)
+
+                self.total += len(data)
 
     def __enter__(self):
         self.start()
@@ -223,6 +246,7 @@ class WriterThread(threading.Thread):
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.queue.put((True, None, None))
         self.join()
+        self.stats_collector.report()
 
 
 def download_first_part(
@@ -243,6 +267,19 @@ def download_first_part(
     :param chunk_size: size (in bytes) of read data chunks
     :param encryption: encryption mode, algorithm and key
     """
+    # This function contains a loop that has heavy impact on performance.
+    # It has not been broken down to several small functions due to fear of
+    # performance overhead of calling a python function. Advanced performance optimization
+    # techniques are in use here, for example avoiding internal python getattr calls by
+    # caching function signatures in local variables. Most of this code was written in
+    # times where python 2.7 (or maybe even 2.6) had to be supported, so maybe some
+    # of those optimizations could be removed without affecting performance.
+    #
+    # Due to reports of hard to debug performance issues, this code has also been riddled
+    # with performance measurements. A known issue is GCP VMs which have more network speed
+    # than storage speed, but end users have different issues with network and storage.
+    # Basic tools to figure out where the time is being spent is a must for long-term
+    # maintainability.
 
     writer_queue_put = writer.queue.put
     hasher_update = hasher.update
@@ -253,42 +290,76 @@ def download_first_part(
 
     bytes_read = 0
     stop = False
-    for data in response.iter_content(chunk_size=chunk_size):
-        if first_offset + bytes_read + len(data) >= last_offset:
-            to_write = data[:last_offset - bytes_read]
-            stop = True
-        else:
-            to_write = data
-        writer_queue_put((False, first_offset + bytes_read, to_write))
-        hasher_update(to_write)
-        bytes_read += len(to_write)
-        if stop:
-            break
 
-    # since we got everything we need from original response, close the socket and free the buffer
-    # to avoid a timeout exception during hashing and other trouble
-    response.close()
+    stats_collector = StatsCollector(response.url, f'{first_offset}:{last_offset}', 'hash')
+    stats_collector_read = stats_collector.read
+    stats_collector_other = stats_collector.other
+    stats_collector_write = stats_collector.write
 
-    url = response.request.url
-    tries_left = 5 - 1  # this is hardcoded because we are going to replace the entire retry interface soon, so we'll avoid deprecation here and keep it private
-    while tries_left and bytes_read < actual_part_size:
-        cloud_range = starting_cloud_range.subrange(
-            bytes_read, actual_part_size - 1
-        )  # first attempt was for the whole file, but retries are bound correctly
-        logger.debug(
-            'download attempts remaining: %i, bytes read already: %i. Getting range %s now.',
-            tries_left, bytes_read, cloud_range
-        )
-        with session.download_file_from_url(
-            url,
-            cloud_range.as_tuple(),
-            encryption=encryption,
-        ) as response:
-            for to_write in response.iter_content(chunk_size=chunk_size):
+    with stats_collector.total:
+        response_iterator = response.iter_content(chunk_size=chunk_size)
+
+        while True:
+            with stats_collector_read:
+                try:
+                    data = next(response_iterator)
+                except StopIteration:
+                    break
+
+            if first_offset + bytes_read + len(data) >= last_offset:
+                to_write = data[:last_offset - bytes_read]
+                stop = True
+            else:
+                to_write = data
+
+            with stats_collector_write:
                 writer_queue_put((False, first_offset + bytes_read, to_write))
+
+            with stats_collector_other:
                 hasher_update(to_write)
-                bytes_read += len(to_write)
-        tries_left -= 1
+
+            bytes_read += len(to_write)
+            if stop:
+                break
+
+        # since we got everything we need from original response, close the socket and free the buffer
+        # to avoid a timeout exception during hashing and other trouble
+        response.close()
+
+        url = response.request.url
+        tries_left = 5 - 1  # this is hardcoded because we are going to replace the entire retry interface soon, so we'll avoid deprecation here and keep it private
+        while tries_left and bytes_read < actual_part_size:
+            cloud_range = starting_cloud_range.subrange(
+                bytes_read, actual_part_size - 1
+            )  # first attempt was for the whole file, but retries are bound correctly
+            logger.debug(
+                'download attempts remaining: %i, bytes read already: %i. Getting range %s now.',
+                tries_left, bytes_read, cloud_range
+            )
+            with session.download_file_from_url(
+                url,
+                cloud_range.as_tuple(),
+                encryption=encryption,
+            ) as response:
+                response_iterator = response.iter_content(chunk_size=chunk_size)
+
+                while True:
+                    with stats_collector_read:
+                        try:
+                            to_write = next(response_iterator)
+                        except StopIteration:
+                            break
+
+                    with stats_collector_write:
+                        writer_queue_put((False, first_offset + bytes_read, to_write))
+
+                    with stats_collector_other:
+                        hasher_update(to_write)
+
+                    bytes_read += len(to_write)
+            tries_left -= 1
+
+    stats_collector.report()
 
 
 def download_non_first_part(
@@ -321,15 +392,32 @@ def download_non_first_part(
             'download attempts remaining: %i, bytes read already: %i. Getting range %s now.',
             retries_left, bytes_read, cloud_range
         )
-        with session.download_file_from_url(
-            url,
-            cloud_range.as_tuple(),
-            encryption=encryption,
-        ) as response:
-            for to_write in response.iter_content(chunk_size=chunk_size):
-                writer_queue_put((False, start_range + bytes_read, to_write))
-                bytes_read += len(to_write)
-        retries_left -= 1
+        stats_collector = StatsCollector(url, f'{cloud_range.start}:{cloud_range.end}', 'none')
+        stats_collector_read = stats_collector.read
+        stats_collector_write = stats_collector.write
+
+        with stats_collector.total:
+            with session.download_file_from_url(
+                url,
+                cloud_range.as_tuple(),
+                encryption=encryption,
+            ) as response:
+                response_iterator = response.iter_content(chunk_size=chunk_size)
+
+                while True:
+                    with stats_collector_read:
+                        try:
+                            to_write = next(response_iterator)
+                        except StopIteration:
+                            break
+
+                    with stats_collector_write:
+                        writer_queue_put((False, start_range + bytes_read, to_write))
+
+                    bytes_read += len(to_write)
+            retries_left -= 1
+
+        stats_collector.report()
 
 
 class PartToDownload:

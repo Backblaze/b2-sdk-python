@@ -9,6 +9,7 @@
 ######################################################################
 
 from typing import Optional
+import os
 import random
 import string
 
@@ -26,8 +27,9 @@ def bucket_name_part(length):
     return ''.join(random.choice(BUCKET_NAME_CHARS) for _ in range(length))
 
 
-def authorize(b2_auth_data):
+def authorize(b2_auth_data, api_config=DEFAULT_HTTP_API_CONFIG):
     info = InMemoryAccountInfo()
-    b2_api = B2Api(info)
-    b2_api.authorize_account("production", *b2_auth_data)
+    b2_api = B2Api(info, api_config=api_config)
+    realm = os.environ.get('B2_TEST_ENVIRONMENT', 'production')
+    b2_api.authorize_account(realm, *b2_auth_data)
     return b2_api, info

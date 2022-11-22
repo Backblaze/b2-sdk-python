@@ -49,6 +49,7 @@ Internal API
    api/internal/session
    api/internal/raw_api
    api/internal/b2http
+   api/internal/requests
    api/internal/utils
    api/internal/cache
    api/internal/stream/chained
@@ -56,14 +57,15 @@ Internal API
    api/internal/stream/progress
    api/internal/stream/range
    api/internal/stream/wrapper
+   api/internal/scan/folder_parser
+   api/internal/scan/folder
+   api/internal/scan/path
+   api/internal/scan/policies
+   api/internal/scan/scan
    api/internal/sync/action
    api/internal/sync/exception
-   api/internal/sync/folder
-   api/internal/sync/folder_parser
-   api/internal/sync/path
    api/internal/sync/policy
    api/internal/sync/policy_manager
-   api/internal/sync/scan_policies
    api/internal/sync/sync
    api/internal/transfer/inbound/downloader/abstract
    api/internal/transfer/inbound/downloader/parallel

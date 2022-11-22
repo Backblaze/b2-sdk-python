@@ -164,14 +164,7 @@ from b2sdk.sync.action import B2DownloadAction
 from b2sdk.sync.action import B2HideAction
 from b2sdk.sync.action import B2UploadAction
 from b2sdk.sync.action import LocalDeleteAction
-from b2sdk.sync.exception import EnvironmentEncodingError
 from b2sdk.sync.exception import IncompleteSync
-from b2sdk.sync.exception import InvalidArgument
-from b2sdk.sync.folder import AbstractFolder
-from b2sdk.sync.folder import B2Folder
-from b2sdk.sync.folder import LocalFolder
-from b2sdk.sync.folder_parser import parse_sync_folder
-from b2sdk.sync.path import AbstractSyncPath, B2SyncPath, LocalSyncPath
 from b2sdk.sync.policy import AbstractFileSyncPolicy
 from b2sdk.sync.policy import CompareVersionMode
 from b2sdk.sync.policy import NewerFileSyncMode
@@ -189,30 +182,47 @@ from b2sdk.sync.policy_manager import SyncPolicyManager
 from b2sdk.sync.policy_manager import POLICY_MANAGER
 from b2sdk.sync.report import SyncFileReporter
 from b2sdk.sync.report import SyncReport
-from b2sdk.sync.scan_policies import DEFAULT_SCAN_MANAGER
-from b2sdk.sync.scan_policies import IntegerRange
-from b2sdk.sync.scan_policies import RegexSet
-from b2sdk.sync.scan_policies import ScanPoliciesManager
-from b2sdk.sync.scan_policies import convert_dir_regex_to_dir_prefix_regex
 from b2sdk.sync.sync import KeepOrDeleteMode
 from b2sdk.sync.sync import Synchronizer
-from b2sdk.sync.sync import zip_folders
 from b2sdk.sync.encryption_provider import AbstractSyncEncryptionSettingsProvider
 from b2sdk.sync.encryption_provider import BasicSyncEncryptionSettingsProvider
 from b2sdk.sync.encryption_provider import ServerDefaultSyncEncryptionSettingsProvider
 from b2sdk.sync.encryption_provider import SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER
 
+# scan
+
+from b2sdk.scan.exception import EnvironmentEncodingError
+from b2sdk.scan.exception import InvalidArgument
+from b2sdk.scan.folder import AbstractFolder
+from b2sdk.scan.folder import B2Folder
+from b2sdk.scan.folder import LocalFolder
+from b2sdk.scan.folder_parser import parse_folder
+from b2sdk.scan.path import AbstractPath, B2Path, LocalPath
+from b2sdk.scan.policies import convert_dir_regex_to_dir_prefix_regex
+from b2sdk.scan.policies import DEFAULT_SCAN_MANAGER
+from b2sdk.scan.policies import IntegerRange
+from b2sdk.scan.policies import RegexSet
+from b2sdk.scan.policies import ScanPoliciesManager
+from b2sdk.scan.report import ProgressReport
+from b2sdk.scan.scan import zip_folders
+from b2sdk.scan.scan import AbstractScanResult
+from b2sdk.scan.scan import AbstractScanReport
+from b2sdk.scan.scan import CountAndSampleScanReport
+
 # replication
 
 from b2sdk.replication.setting import ReplicationConfigurationFactory
 from b2sdk.replication.setting import ReplicationConfiguration
-from b2sdk.replication.setting import ReplicationSourceConfiguration
 from b2sdk.replication.setting import ReplicationRule
-from b2sdk.replication.setting import ReplicationDestinationConfiguration
+from b2sdk.replication.types import ReplicationStatus
 from b2sdk.replication.setup import ReplicationSetupHelper
+from b2sdk.replication.monitoring import ReplicationScanResult
+from b2sdk.replication.monitoring import ReplicationReport
+from b2sdk.replication.monitoring import ReplicationMonitor
 
 # other
 
+from b2sdk.included_sources import get_included_sources
 from b2sdk.b2http import B2Http
 from b2sdk.api_config import B2HttpApiConfig
 from b2sdk.api_config import DEFAULT_HTTP_API_CONFIG

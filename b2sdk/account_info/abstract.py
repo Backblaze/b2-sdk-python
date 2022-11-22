@@ -127,7 +127,17 @@ class AbstractAccountInfo(metaclass=B2TraceMetaAbstract):
             return False
 
     def is_master_key(self) -> bool:
-        return self.get_account_id() == self.get_application_key_id()
+        application_key_id = self.get_application_key_id()
+        account_id = self.get_account_id()
+        new_style_master_key_suffix = '0000000000'
+        if account_id == application_key_id:
+            return True  # old style
+        if len(application_key_id
+              ) == (3 + len(account_id) + len(new_style_master_key_suffix)):  # 3 for cluster id
+            # new style
+            if application_key_id.endswith(account_id + new_style_master_key_suffix):
+                return True
+        return False
 
     @abstractmethod
     def get_account_id(self):

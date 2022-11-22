@@ -23,15 +23,18 @@ from apiver_deps_exception import (
     AlreadyFailed,
     B2Error,
     B2RequestTimeoutDuringUpload,
+    BadRequest,
     BucketIdNotFound,
+    DisablingFileLockNotSupported,
+    FileSha1Mismatch,
     InvalidAuthToken,
     InvalidMetadataDirective,
     InvalidRange,
     InvalidUploadSource,
     MaxRetriesExceeded,
-    UnsatisfiableRange,
-    FileSha1Mismatch,
     SSECKeyError,
+    SourceReplicationConflict,
+    UnsatisfiableRange,
 )
 if apiver_deps.V <= 1:
     from apiver_deps import DownloadDestBytes, PreSeekedDownloadDest
@@ -59,8 +62,7 @@ from apiver_deps import EncryptionAlgorithm, EncryptionSetting, EncryptionMode, 
 from apiver_deps import CopySource, UploadSourceLocalFile, WriteIntent
 from apiver_deps import BucketRetentionSetting, FileRetentionSetting, LegalHold, RetentionMode, RetentionPeriod, \
     NO_RETENTION_FILE_SETTING
-from apiver_deps import ReplicationConfiguration, ReplicationSourceConfiguration, \
-    ReplicationRule, ReplicationDestinationConfiguration
+from apiver_deps import ReplicationConfiguration, ReplicationRule
 
 pytestmark = [pytest.mark.apiver(from_ver=1)]
 
@@ -90,28 +92,24 @@ SSE_C_AES_FROM_SERVER = EncryptionSetting(
     key=EncryptionKey(key_id=None, secret=None),
 )
 REPLICATION = ReplicationConfiguration(
-    as_replication_source=ReplicationSourceConfiguration(
-        rules=[
-            ReplicationRule(
-                destination_bucket_id='c5f35d53a90a7ea284fb0719',
-                name='replication-us-west',
-            ),
-            ReplicationRule(
-                destination_bucket_id='55f34d53a96a7ea284fb0719',
-                name='replication-us-west-2',
-                file_name_prefix='replica/',
-                is_enabled=False,
-                priority=255,
-            ),
-        ],
-        source_application_key_id='10053d55ae26b790000000006',
-    ),
-    as_replication_destination=ReplicationDestinationConfiguration(
-        source_to_destination_key_mapping={
-            "10053d55ae26b790000000045": "10053d55ae26b790000000004",
-            "10053d55ae26b790000000046": "10053d55ae26b790030000004"
-        },
-    ),
+    rules=[
+        ReplicationRule(
+            destination_bucket_id='c5f35d53a90a7ea284fb0719',
+            name='replication-us-west',
+        ),
+        ReplicationRule(
+            destination_bucket_id='55f34d53a96a7ea284fb0719',
+            name='replication-us-west-2',
+            file_name_prefix='replica/',
+            is_enabled=False,
+            priority=255,
+        ),
+    ],
+    source_key_id='10053d55ae26b790000000006',
+    source_to_destination_key_mapping={
+        "10053d55ae26b790000000045": "10053d55ae26b790000000004",
+        "10053d55ae26b790000000046": "10053d55ae26b790030000004",
+    },
 )
 
 
@@ -957,7 +955,9 @@ class TestUpdate(TestCaseWithBucket):
             bucket_type='allPrivate',
             bucket_info={'info': 'o'},
             cors_rules={'andrea': 'corr'},
-            lifecycle_rules={'life': 'is life'},
+            lifecycle_rules=[{
+                'life': 'is life'
+            }],
             default_server_side_encryption=SSE_B2_AES,
             default_retention=BucketRetentionSetting(
                 RetentionMode.COMPLIANCE, RetentionPeriod(years=7)
@@ -1004,9 +1004,9 @@ class TestUpdate(TestCaseWithBucket):
                                     'isFileLockEnabled': None
                                 }
                         },
-                    'lifecycleRules': {
+                    'lifecycleRules': [{
                         'life': 'is life'
-                    },
+                    }],
                     'options': set(),
                     'revision': 2
                 }, result
@@ -1019,7 +1019,7 @@ class TestUpdate(TestCaseWithBucket):
                 'type_': 'allPrivate',
                 'bucket_info': {'info': 'o'},
                 'cors_rules': {'andrea': 'corr'},
-                'lifecycle_rules': {'life': 'is life'},
+                'lifecycle_rules': [{'life': 'is life'}],
                 'options_set': set(),
                 'default_server_side_encryption': SSE_B2_AES,
                 'default_retention': BucketRetentionSetting(RetentionMode.COMPLIANCE, RetentionPeriod(years=7)),
@@ -1037,32 +1037,82 @@ class TestUpdate(TestCaseWithBucket):
     def test_empty_replication(self):
         self.bucket.update(
             replication=ReplicationConfiguration(
-                as_replication_source=ReplicationSourceConfiguration(rules=[],),
-                as_replication_destination=ReplicationDestinationConfiguration(
-                    source_to_destination_key_mapping={},
-                ),
+                rules=[],
+                source_to_destination_key_mapping={},
             ),
         )
 
     def test_update_if_revision_is(self):
         current_revision = self.bucket.revision
         self.bucket.update(
-            lifecycle_rules={'life': 'is life'},
+            lifecycle_rules=[{
+                'life': 'is life'
+            }],
             if_revision_is=current_revision,
         )
         updated_bucket = self.api.get_bucket_by_name(self.bucket.name)
-        self.assertEqual({'life': 'is life'}, updated_bucket.lifecycle_rules)
+        self.assertEqual([{'life': 'is life'}], updated_bucket.lifecycle_rules)
 
         try:
             self.bucket.update(
-                lifecycle_rules={'another': 'life'},
+                lifecycle_rules=[{
+                    'another': 'life'
+                }],
                 if_revision_is=current_revision,  # this is now the old revision
             )
         except Exception:
             pass
 
         not_updated_bucket = self.api.get_bucket_by_name(self.bucket.name)
-        self.assertEqual({'life': 'is life'}, not_updated_bucket.lifecycle_rules)
+        self.assertEqual([{'life': 'is life'}], not_updated_bucket.lifecycle_rules)
+
+    def test_is_file_lock_enabled(self):
+        assert not self.bucket.is_file_lock_enabled
+
+        # set is_file_lock_enabled to False when it's already false
+        self.bucket.update(is_file_lock_enabled=False)
+        updated_bucket = self.api.get_bucket_by_name(self.bucket.name)
+        assert not updated_bucket.is_file_lock_enabled
+
+        # sunny day scenario
+        self.bucket.update(is_file_lock_enabled=True)
+        updated_bucket = self.api.get_bucket_by_name(self.bucket.name)
+        assert updated_bucket.is_file_lock_enabled
+        assert self.simulator.bucket_name_to_bucket[self.bucket.name].is_file_lock_enabled
+
+        # attempt to clear is_file_lock_enabled
+        with pytest.raises(DisablingFileLockNotSupported):
+            self.bucket.update(is_file_lock_enabled=False)
+        updated_bucket = self.api.get_bucket_by_name(self.bucket.name)
+        assert updated_bucket.is_file_lock_enabled
+
+        # attempt to set is_file_lock_enabled when it's already set
+        self.bucket.update(is_file_lock_enabled=True)
+        updated_bucket = self.api.get_bucket_by_name(self.bucket.name)
+        assert updated_bucket.is_file_lock_enabled
+
+    @pytest.mark.apiver(from_ver=2)
+    def test_is_file_lock_enabled_source_replication(self):
+        assert not self.bucket.is_file_lock_enabled
+
+        # attempt to set is_file_lock_enabled with source replication enabled
+        self.bucket.update(replication=REPLICATION)
+        with pytest.raises(SourceReplicationConflict):
+            self.bucket.update(is_file_lock_enabled=True)
+        updated_bucket = self.bucket.update(replication=REPLICATION)
+        assert not updated_bucket.is_file_lock_enabled
+
+        # sunny day scenario
+        self.bucket.update(
+            replication=ReplicationConfiguration(
+                rules=[],
+                source_to_destination_key_mapping={},
+            )
+        )
+        self.bucket.update(is_file_lock_enabled=True)
+        updated_bucket = self.api.get_bucket_by_name(self.bucket.name)
+        assert updated_bucket.is_file_lock_enabled
+        assert self.simulator.bucket_name_to_bucket[self.bucket.name].is_file_lock_enabled
 
 
 class TestUpload(TestCaseWithBucket):

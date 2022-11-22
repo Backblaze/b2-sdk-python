@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: test/unit/sync/test_scan_policies.py
+# File: test/unit/scan/test_scan_policies.py
 #
 # Copyright 2020 Backblaze Inc. All Rights Reserved.
 #
