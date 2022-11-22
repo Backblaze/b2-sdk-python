@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 * Authorizing a key for a single bucket ensures that this bucket is cached
 
+### Infrastructure
+* Additional tests for listing files/versions
+
 ## [1.18.0] - 2022-09-20
 
 ### Added
