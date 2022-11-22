@@ -616,6 +616,4 @@ class B2Api(metaclass=B2TraceMeta):
         if allowed_bucket_name is None:
             raise RestrictedBucketMissing()
 
-        self.cache.save_bucket(
-            self.BUCKET_CLASS(self, allowed_bucket_id, name=allowed_bucket_name)
-        )
+        self.cache.save_bucket(self.BUCKET_CLASS(self, allowed_bucket_id, name=allowed_bucket_name))
