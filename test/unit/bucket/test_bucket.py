@@ -2173,3 +2173,72 @@ class DecodeTests(DecodeTestsBase, TestCaseWithBucket):
     def test_file_info_4(self):
         download_version = self.bucket.get_file_info_by_name('test.txt%253Ffoo%253Dbar')
         assert download_version.file_name == 'test.txt%253Ffoo%253Dbar'
+
+
+# Listing where every other response returns no entries and pointer to the next file
+
+
+class EmptyListBucketSimulator(BucketSimulator):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Whenever we receive a list request, if it's the first time
+        # for this particular ``start_file_name``, we'll return
+        # an empty response pointing to the same file.
+        self.last_queried_file = None
+
+    def _should_return_empty(self, file_name: str) -> bool:
+        # Note that every other request is empty – the logic is as follows:
+        #   1st request – unknown start name – empty response
+        #   2nd request – known start name – normal response with a proper next filename
+        #   3rd request – unknown start name (as it's the next filename from the previous request) – empty response
+        #   4th request – known start name
+        # etc. This works especially well when using limiter of number of files fetched set to 1.
+        should_return_empty = self.last_queried_file != file_name
+        self.last_queried_file = file_name
+        return should_return_empty
+
+    def list_file_versions(
+        self,
+        account_auth_token,
+        start_file_name=None,
+        start_file_id=None,
+        max_file_count=None,  # noqa
+        prefix=None,
+    ):
+        if self._should_return_empty(start_file_name):
+            return dict(files=[], nextFileName=start_file_name, nextFileId=start_file_id)
+        return super().list_file_versions(
+            account_auth_token,
+            start_file_name,
+            start_file_id,
+            1,  # Forcing only a single file per response.
+            prefix,
+        )
+
+    def list_file_names(
+        self,
+        account_auth_token,
+        start_file_name=None,
+        max_file_count=None,  # noqa
+        prefix=None,
+    ):
+        if self._should_return_empty(start_file_name):
+            return dict(files=[], nextFileName=start_file_name)
+        return super().list_file_names(
+            account_auth_token,
+            start_file_name,
+            1,  # Forcing only a single file per response.
+            prefix,
+        )
+
+
+class EmptyListSimulator(RawSimulator):
+    BUCKET_SIMULATOR_CLASS = EmptyListBucketSimulator
+
+
+class TestEmptyListVersions(TestListVersions):
+    RAW_SIMULATOR_CLASS = EmptyListSimulator
+
+
+class TestEmptyLs(TestLs):
+    RAW_SIMULATOR_CLASS = EmptyListSimulator
