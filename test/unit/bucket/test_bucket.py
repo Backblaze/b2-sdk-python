@@ -527,6 +527,202 @@ class TestLs(TestCaseWithBucket):
         expected = [('hello.txt', 15, 'upload', None)]
         self.assertBucketContents(expected, '', show_versions=True)
 
+    def test_non_recursive_returns_folder_names(self):
+        data = b'hello world'
+        self.bucket.upload_bytes(data, 'a')
+        self.bucket.upload_bytes(data, 'b/1/test-1.txt')
+        self.bucket.upload_bytes(data, 'b/2/test-2.txt')
+        self.bucket.upload_bytes(data, 'b/3/test-3.txt')
+        self.bucket.upload_bytes(data, 'b/3/test-4.txt')
+        # Since inside `b` there are 3 directories, we get three results,
+        # with a first file for each of them.
+        expected = [
+            ('b/1/test-1.txt', len(data), 'upload', 'b/1/'),
+            ('b/2/test-2.txt', len(data), 'upload', 'b/2/'),
+            ('b/3/test-3.txt', len(data), 'upload', 'b/3/'),
+        ]
+        actual = [
+            (info.file_name, info.size, info.action, folder)
+            for (info, folder) in self.bucket_ls('b/')
+        ]
+        self.assertEqual(expected, actual)
+
+    def test_recursive_returns_no_folder_names(self):
+        data = b'hello world'
+        self.bucket.upload_bytes(data, 'a')
+        self.bucket.upload_bytes(data, 'b/1/test-1.txt')
+        self.bucket.upload_bytes(data, 'b/2/test-2.txt')
+        self.bucket.upload_bytes(data, 'b/3/test-3.txt')
+        self.bucket.upload_bytes(data, 'b/3/test-4.txt')
+        expected = [
+            ('b/1/test-1.txt', len(data), 'upload', None),
+            ('b/2/test-2.txt', len(data), 'upload', None),
+            ('b/3/test-3.txt', len(data), 'upload', None),
+            ('b/3/test-4.txt', len(data), 'upload', None),
+        ]
+        actual = [
+            (info.file_name, info.size, info.action, folder)
+            for (info, folder) in self.bucket_ls('b/', recursive=True)
+        ]
+        self.assertEqual(expected, actual)
+
+    def test_wildcard_matching(self):
+        data = b'hello world'
+        self.bucket.upload_bytes(data, 'a')
+        self.bucket.upload_bytes(data, 'b/1/test-1.txt')
+        self.bucket.upload_bytes(data, 'b/2/test-2.csv')
+        self.bucket.upload_bytes(data, 'b/2/test-3.txt')
+        self.bucket.upload_bytes(data, 'b/3/test-4.jpg')
+        self.bucket.upload_bytes(data, 'b/3/test-4.txt')
+        self.bucket.upload_bytes(data, 'b/3/test-5.txt')
+        expected = [
+            ('b/1/test-1.txt', len(data), 'upload', None),
+            ('b/2/test-3.txt', len(data), 'upload', None),
+            ('b/3/test-4.txt', len(data), 'upload', None),
+            ('b/3/test-5.txt', len(data), 'upload', None),
+        ]
+        actual = [
+            (info.file_name, info.size, info.action, folder)
+            for (info, folder) in self.bucket_ls('b/*.txt', recursive=True, with_wildcard=True)
+        ]
+        self.assertEqual(expected, actual)
+
+    def test_wildcard_matching_including_root(self):
+        data = b'hello world'
+        self.bucket.upload_bytes(data, 'b/1/test.txt')
+        self.bucket.upload_bytes(data, 'b/2/test.txt')
+        self.bucket.upload_bytes(data, 'b/3/test.txt')
+        self.bucket.upload_bytes(data, 'test.txt')
+        expected = [
+            ('b/1/test.txt', len(data), 'upload', None),
+            ('b/2/test.txt', len(data), 'upload', None),
+            ('b/3/test.txt', len(data), 'upload', None),
+            ('test.txt', len(data), 'upload', None),
+        ]
+        actual = [
+            (info.file_name, info.size, info.action, folder)
+            for (info, folder) in self.bucket_ls('*.txt', recursive=True, with_wildcard=True)
+        ]
+        self.assertEqual(expected, actual)
+
+    def test_wildcard_matching_directory(self):
+        data = b'hello world'
+        self.bucket.upload_bytes(data, 'a')
+        self.bucket.upload_bytes(data, 'b/2/test.txt')
+        self.bucket.upload_bytes(data, 'b/3/test.jpg')
+        self.bucket.upload_bytes(data, 'b/3/test.txt')
+        self.bucket.upload_bytes(data, 'c/4/test.txt')
+        expected = [
+            ('b/2/test.txt', len(data), 'upload', None),
+            ('b/3/test.txt', len(data), 'upload', None),
+        ]
+        actual = [
+            (info.file_name, info.size, info.action, folder)
+            for (info,
+                 folder) in self.bucket_ls('b/*/test.txt', recursive=True, with_wildcard=True)
+        ]
+        self.assertEqual(expected, actual)
+
+    def test_single_character_matching(self):
+        data = b'hello world'
+        self.bucket.upload_bytes(data, 'a')
+        self.bucket.upload_bytes(data, 'b/2/test.csv')
+        self.bucket.upload_bytes(data, 'b/2/test.txt')
+        self.bucket.upload_bytes(data, 'b/2/test.tsv')
+        expected = [
+            ('b/2/test.csv', len(data), 'upload', None),
+            ('b/2/test.tsv', len(data), 'upload', None),
+        ]
+        actual = [
+            (info.file_name, info.size, info.action, folder)
+            for (info,
+                 folder) in self.bucket_ls('b/2/test.?sv', recursive=True, with_wildcard=True)
+        ]
+        self.assertEqual(expected, actual)
+
+    def test_sequence_matching(self):
+        data = b'hello world'
+        self.bucket.upload_bytes(data, 'a')
+        self.bucket.upload_bytes(data, 'b/2/test.csv')
+        self.bucket.upload_bytes(data, 'b/2/test.ksv')
+        self.bucket.upload_bytes(data, 'b/2/test.tsv')
+        expected = [
+            ('b/2/test.csv', len(data), 'upload', None),
+            ('b/2/test.tsv', len(data), 'upload', None),
+        ]
+        actual = [
+            (info.file_name, info.size, info.action, folder)
+            for (info,
+                 folder) in self.bucket_ls('b/2/test.[tc]sv', recursive=True, with_wildcard=True)
+        ]
+        self.assertEqual(expected, actual)
+
+    def test_negative_sequence_matching(self):
+        data = b'hello world'
+        self.bucket.upload_bytes(data, 'a')
+        self.bucket.upload_bytes(data, 'b/2/test.csv')
+        self.bucket.upload_bytes(data, 'b/2/test.ksv')
+        self.bucket.upload_bytes(data, 'b/2/test.tsv')
+        expected = [
+            ('b/2/test.tsv', len(data), 'upload', None),
+        ]
+        actual = [
+            (info.file_name, info.size, info.action, folder)
+            for (info,
+                 folder) in self.bucket_ls('b/2/test.[!ck]sv', recursive=True, with_wildcard=True)
+        ]
+        self.assertEqual(expected, actual)
+
+    def test_matching_wildcard_named_file(self):
+        data = b'hello world'
+        self.bucket.upload_bytes(data, 'a/*.txt')
+        self.bucket.upload_bytes(data, 'a/1.txt')
+        self.bucket.upload_bytes(data, 'a/2.txt')
+        expected = [
+            ('a/*.txt', len(data), 'upload', None),
+            ('a/1.txt', len(data), 'upload', None),
+            ('a/2.txt', len(data), 'upload', None),
+        ]
+        actual = [
+            (info.file_name, info.size, info.action, folder)
+            for (info, folder) in self.bucket_ls('a/*.txt', recursive=True, with_wildcard=True)
+        ]
+        self.assertEqual(expected, actual)
+
+    def test_matching_single_question_mark_named_file(self):
+        data = b'hello world'
+        self.bucket.upload_bytes(data, 'b/?.txt')
+        self.bucket.upload_bytes(data, 'b/a.txt')
+        self.bucket.upload_bytes(data, 'b/b.txt')
+        expected = [
+            ('b/?.txt', len(data), 'upload', None),
+            ('b/a.txt', len(data), 'upload', None),
+            ('b/b.txt', len(data), 'upload', None),
+        ]
+        actual = [
+            (info.file_name, info.size, info.action, folder)
+            for (info, folder) in self.bucket_ls('b/?.txt', recursive=True, with_wildcard=True)
+        ]
+        self.assertEqual(expected, actual)
+
+    def test_wildcard_requires_recursive(self):
+        with pytest.raises(ValueError):
+            # Since ls is a generator, we need to actually fetch something from it.
+            next(self.bucket_ls('*.txt', recursive=False, with_wildcard=True))
+
+    def test_matching_exact_filename(self):
+        data = b'hello world'
+        self.bucket.upload_bytes(data, 'b/a.txt')
+        self.bucket.upload_bytes(data, 'b/b.txt')
+        expected = [
+            ('b/a.txt', len(data), 'upload', None),
+        ]
+        actual = [
+            (info.file_name, info.size, info.action, folder)
+            for (info, folder) in self.bucket_ls('b/a.txt', recursive=True, with_wildcard=True)
+        ]
+        self.assertEqual(expected, actual)
+
 
 class TestGetFreshState(TestCaseWithBucket):
     def test_ok(self):
