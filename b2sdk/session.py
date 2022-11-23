@@ -131,7 +131,7 @@ class B2Session:
             realm=realm,
             s3_api_url=response['s3ApiUrl'],
             allowed=allowed,
-            application_key_id=application_key_id
+            application_key_id=application_key_id,
         )
 
     def cancel_large_file(self, file_id):

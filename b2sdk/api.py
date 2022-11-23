@@ -12,13 +12,14 @@ from typing import Optional, Tuple, List, Generator
 from contextlib import suppress
 
 from .account_info.abstract import AbstractAccountInfo
+from .account_info.exception import MissingAccountData
 from .api_config import B2HttpApiConfig, DEFAULT_HTTP_API_CONFIG
 from .application_key import ApplicationKey, BaseApplicationKey, FullApplicationKey
 from .cache import AbstractCache
 from .bucket import Bucket, BucketFactory
 from .encryption.setting import EncryptionSetting
 from .replication.setting import ReplicationConfiguration
-from .exception import BucketIdNotFound, NonExistentBucket, RestrictedBucket
+from .exception import BucketIdNotFound, NonExistentBucket, RestrictedBucket, RestrictedBucketMissing
 from .file_lock import FileRetentionSetting, LegalHold
 from .file_version import DownloadVersionFactory, FileIdAndName, FileVersion, FileVersionFactory
 from .large_file.services import LargeFileServices
@@ -201,6 +202,7 @@ class B2Api(metaclass=B2TraceMeta):
         :param str application_key: user's :term:`application key`
         """
         self.session.authorize_account(realm, application_key_id, application_key)
+        self._populate_bucket_cache_from_key()
 
     def get_account_id(self):
         """
@@ -595,3 +597,23 @@ class B2Api(metaclass=B2TraceMeta):
         if allowed_bucket_identifier is not None:
             if allowed_bucket_identifier != value:
                 raise RestrictedBucket(allowed_bucket_identifier)
+
+    def _populate_bucket_cache_from_key(self):
+        # If the key is restricted to the bucket, pre-populate the cache with it
+        try:
+            allowed = self.account_info.get_allowed()
+        except MissingAccountData:
+            return
+
+        allowed_bucket_id = allowed.get('bucketId')
+        if allowed_bucket_id is None:
+            return
+
+        allowed_bucket_name = allowed.get('bucketName')
+
+        # If we have bucketId set we still need to check bucketName. If the bucketName is None,
+        # it means that the bucketId belongs to a bucket that was already removed.
+        if allowed_bucket_name is None:
+            raise RestrictedBucketMissing()
+
+        self.cache.save_bucket(self.BUCKET_CLASS(self, allowed_bucket_id, name=allowed_bucket_name))

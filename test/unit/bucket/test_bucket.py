@@ -32,6 +32,7 @@ from apiver_deps_exception import (
     InvalidRange,
     InvalidUploadSource,
     MaxRetriesExceeded,
+    RestrictedBucketMissing,
     SSECKeyError,
     SourceReplicationConflict,
     UnsatisfiableRange,
@@ -57,6 +58,7 @@ from apiver_deps import ParallelDownloader
 from apiver_deps import Range
 from apiver_deps import SimpleDownloader
 from apiver_deps import UploadSourceBytes
+from apiver_deps import DummyCache, InMemoryCache
 from apiver_deps import hex_sha1_of_bytes, TempDir
 from apiver_deps import EncryptionAlgorithm, EncryptionSetting, EncryptionMode, EncryptionKey, SSE_NONE, SSE_B2_AES
 from apiver_deps import CopySource, UploadSourceLocalFile, WriteIntent
@@ -200,10 +202,13 @@ def bucket_ls(bucket, *args, show_versions=False, **kwargs):
 
 class TestCaseWithBucket(TestBase):
     RAW_SIMULATOR_CLASS = RawSimulator
+    CACHE_CLASS = DummyCache
 
     def get_api(self):
         return B2Api(
-            self.account_info, api_config=B2HttpApiConfig(_raw_api_class=self.RAW_SIMULATOR_CLASS)
+            self.account_info,
+            cache=self.CACHE_CLASS(),
+            api_config=B2HttpApiConfig(_raw_api_class=self.RAW_SIMULATOR_CLASS),
         )
 
     def setUp(self):
@@ -215,7 +220,7 @@ class TestCaseWithBucket(TestBase):
         self.api.authorize_account('production', self.account_id, self.master_key)
         self.api_url = self.account_info.get_api_url()
         self.account_auth_token = self.account_info.get_account_auth_token()
-        self.bucket = self.api.create_bucket('my-bucket', 'allPublic')
+        self.bucket = self.api.create_bucket(self.bucket_name, 'allPublic')
         self.bucket_id = self.bucket.id_
 
     def bucket_ls(self, *args, show_versions=False, **kwargs):
@@ -2369,3 +2374,109 @@ class DecodeTests(DecodeTestsBase, TestCaseWithBucket):
     def test_file_info_4(self):
         download_version = self.bucket.get_file_info_by_name('test.txt%253Ffoo%253Dbar')
         assert download_version.file_name == 'test.txt%253Ffoo%253Dbar'
+
+
+class TestAuthorizeForBucket(TestCaseWithBucket):
+    CACHE_CLASS = InMemoryCache
+
+    @pytest.mark.apiver(from_ver=2)
+    def test_authorize_for_bucket_ensures_cache(self):
+        key = create_key(
+            self.api,
+            key_name='singlebucket',
+            capabilities=[
+                'listBuckets',
+            ],
+            bucket_id=self.bucket_id,
+        )
+
+        self.api.authorize_account('production', key.id_, key.application_key)
+
+        # Check whether the bucket fetching performs an API call.
+        with mock.patch.object(self.api, 'list_buckets') as mock_list_buckets:
+            self.api.get_bucket_by_id(self.bucket_id)
+            mock_list_buckets.assert_not_called()
+
+            self.api.get_bucket_by_name(self.bucket_name)
+            mock_list_buckets.assert_not_called()
+
+    @pytest.mark.apiver(from_ver=2)
+    def test_authorize_for_non_existing_bucket(self):
+        key = create_key(
+            self.api,
+            key_name='singlebucket',
+            capabilities=[
+                'listBuckets',
+            ],
+            bucket_id=self.bucket_id + 'x',
+        )
+
+        with self.assertRaises(RestrictedBucketMissing):
+            self.api.authorize_account('production', key.id_, key.application_key)
+
+
+# Listing where every other response returns no entries and pointer to the next file
+class EmptyListBucketSimulator(BucketSimulator):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Whenever we receive a list request, if it's the first time
+        # for this particular ``start_file_name``, we'll return
+        # an empty response pointing to the same file.
+        self.last_queried_file = None
+
+    def _should_return_empty(self, file_name: str) -> bool:
+        # Note that every other request is empty – the logic is as follows:
+        #   1st request – unknown start name – empty response
+        #   2nd request – known start name – normal response with a proper next filename
+        #   3rd request – unknown start name (as it's the next filename from the previous request) – empty response
+        #   4th request – known start name
+        # etc. This works especially well when using limiter of number of files fetched set to 1.
+        should_return_empty = self.last_queried_file != file_name
+        self.last_queried_file = file_name
+        return should_return_empty
+
+    def list_file_versions(
+        self,
+        account_auth_token,
+        start_file_name=None,
+        start_file_id=None,
+        max_file_count=None,  # noqa
+        prefix=None,
+    ):
+        if self._should_return_empty(start_file_name):
+            return dict(files=[], nextFileName=start_file_name, nextFileId=start_file_id)
+        return super().list_file_versions(
+            account_auth_token,
+            start_file_name,
+            start_file_id,
+            1,  # Forcing only a single file per response.
+            prefix,
+        )
+
+    def list_file_names(
+        self,
+        account_auth_token,
+        start_file_name=None,
+        max_file_count=None,  # noqa
+        prefix=None,
+    ):
+        if self._should_return_empty(start_file_name):
+            return dict(files=[], nextFileName=start_file_name)
+        return super().list_file_names(
+            account_auth_token,
+            start_file_name,
+            1,  # Forcing only a single file per response.
+            prefix,
+        )
+
+
+class EmptyListSimulator(RawSimulator):
+    BUCKET_SIMULATOR_CLASS = EmptyListBucketSimulator
+
+
+class TestEmptyListVersions(TestListVersions):
+    RAW_SIMULATOR_CLASS = EmptyListSimulator
+
+
+class TestEmptyLs(TestLs):
+    RAW_SIMULATOR_CLASS = EmptyListSimulator

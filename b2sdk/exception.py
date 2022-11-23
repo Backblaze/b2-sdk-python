@@ -39,7 +39,7 @@ class B2Error(Exception, metaclass=ABCMeta):
         # If the exception is caused by a b2 server response,
         # the server MAY have included instructions to pause the thread before issuing any more requests
         self.retry_after_seconds = None
-        super(B2Error, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     @property
     def prefix(self):
@@ -82,7 +82,7 @@ class B2SimpleError(B2Error, metaclass=ABCMeta):
     """
 
     def __str__(self):
-        return '%s: %s' % (self.prefix, super(B2SimpleError, self).__str__())
+        return '%s: %s' % (self.prefix, super().__str__())
 
 
 class NotAllowedByAppKeyError(B2SimpleError, metaclass=ABCMeta):
@@ -134,7 +134,7 @@ class CapabilityNotAllowed(NotAllowedByAppKeyError):
 
 class ChecksumMismatch(TransientErrorMixin, B2Error):
     def __init__(self, checksum_type, expected, actual):
-        super(ChecksumMismatch, self).__init__()
+        super().__init__()
         self.checksum_type = checksum_type
         self.expected = expected
         self.actual = actual
@@ -168,7 +168,7 @@ class ClockSkew(B2HttpCallbackPostRequestException):
         """
         :param int clock_skew_seconds: The difference: local_clock - server_clock
         """
-        super(ClockSkew, self).__init__()
+        super().__init__()
         self.clock_skew_seconds = clock_skew_seconds
 
     def __str__(self):
@@ -210,7 +210,7 @@ class B2RequestTimeoutDuringUpload(B2RequestTimeout):
 
 class DestFileNewer(B2Error):
     def __init__(self, dest_path, source_path, dest_prefix, source_prefix):
-        super(DestFileNewer, self).__init__()
+        super().__init__()
         self.dest_path = dest_path
         self.source_path = source_path
         self.dest_prefix = dest_prefix
@@ -240,7 +240,7 @@ class ResourceNotFound(B2SimpleError):
 
 class FileOrBucketNotFound(ResourceNotFound):
     def __init__(self, bucket_name=None, file_id_or_name=None):
-        super(FileOrBucketNotFound, self).__init__()
+        super().__init__()
         self.bucket_name = bucket_name
         self.file_id_or_name = file_id_or_name
 
@@ -291,7 +291,7 @@ class SSECKeyIdMismatchInCopy(InvalidMetadataDirective):
 
 class InvalidRange(B2Error):
     def __init__(self, content_length, range_):
-        super(InvalidRange, self).__init__()
+        super().__init__()
         self.content_length = content_length
         self.range_ = range_
 
@@ -310,7 +310,7 @@ class InvalidUploadSource(B2SimpleError):
 
 class BadRequest(B2Error):
     def __init__(self, message, code):
-        super(BadRequest, self).__init__()
+        super().__init__()
         self.message = message
         self.code = code
 
@@ -326,7 +326,7 @@ class CopySourceTooBig(BadRequest):
 
 class Unauthorized(B2Error):
     def __init__(self, message, code):
-        super(Unauthorized, self).__init__()
+        super().__init__()
         self.message = message
         self.code = code
 
@@ -350,22 +350,29 @@ class InvalidAuthToken(Unauthorized):
     """
 
     def __init__(self, message, code):
-        super(InvalidAuthToken,
-              self).__init__('Invalid authorization token. Server said: ' + message, code)
+        super().__init__('Invalid authorization token. Server said: ' + message, code)
 
 
 class RestrictedBucket(B2Error):
     def __init__(self, bucket_name):
-        super(RestrictedBucket, self).__init__()
+        super().__init__()
         self.bucket_name = bucket_name
 
     def __str__(self):
         return 'Application key is restricted to bucket: %s' % self.bucket_name
 
 
+class RestrictedBucketMissing(RestrictedBucket):
+    def __init__(self):
+        super().__init__('')
+
+    def __str__(self):
+        return 'Application key is restricted to a bucket that doesn\'t exist'
+
+
 class MaxFileSizeExceeded(B2Error):
     def __init__(self, size, max_allowed_size):
-        super(MaxFileSizeExceeded, self).__init__()
+        super().__init__()
         self.size = size
         self.max_allowed_size = max_allowed_size
 
@@ -378,7 +385,7 @@ class MaxFileSizeExceeded(B2Error):
 
 class MaxRetriesExceeded(B2Error):
     def __init__(self, limit, exception_info_list):
-        super(MaxRetriesExceeded, self).__init__()
+        super().__init__()
         self.limit = limit
         self.exception_info_list = exception_info_list
 
@@ -405,7 +412,7 @@ class FileSha1Mismatch(B2SimpleError):
 
 class PartSha1Mismatch(B2Error):
     def __init__(self, key):
-        super(PartSha1Mismatch, self).__init__()
+        super().__init__()
         self.key = key
 
     def __str__(self):
@@ -435,7 +442,7 @@ class TransactionCapExceeded(CapExceeded):
 
 class TooManyRequests(B2Error):
     def __init__(self, retry_after_seconds=None):
-        super(TooManyRequests, self).__init__()
+        super().__init__()
         self.retry_after_seconds = retry_after_seconds
 
     def __str__(self):
@@ -447,7 +454,7 @@ class TooManyRequests(B2Error):
 
 class TruncatedOutput(TransientErrorMixin, B2Error):
     def __init__(self, bytes_read, file_size):
-        super(TruncatedOutput, self).__init__()
+        super().__init__()
         self.bytes_read = bytes_read
         self.file_size = file_size
 
@@ -482,7 +489,7 @@ class UnsatisfiableRange(B2Error):
 
 class UploadTokenUsedConcurrently(B2Error):
     def __init__(self, token):
-        super(UploadTokenUsedConcurrently, self).__init__()
+        super().__init__()
         self.token = token
 
     def __str__(self):
