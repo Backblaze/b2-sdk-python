@@ -561,7 +561,6 @@ class TestLs(TestCaseWithBucket):
         ]
         self.assertEqual(expected, actual)
 
-    @pytest.mark.apiver(from_ver=1)
     def test_wildcard_matching(self):
         data = b'hello world'
         self.bucket.upload_bytes(data, 'a')
@@ -583,7 +582,6 @@ class TestLs(TestCaseWithBucket):
         ]
         self.assertEqual(expected, actual)
 
-    @pytest.mark.apiver(from_ver=2)
     def test_wildcard_matching_including_root(self):
         data = b'hello world'
         self.bucket.upload_bytes(data, 'b/1/test.txt')
@@ -602,7 +600,6 @@ class TestLs(TestCaseWithBucket):
         ]
         self.assertEqual(expected, actual)
 
-    @pytest.mark.apiver(from_ver=2)
     def test_wildcard_matching_directory(self):
         data = b'hello world'
         self.bucket.upload_bytes(data, 'a')
@@ -621,7 +618,6 @@ class TestLs(TestCaseWithBucket):
         ]
         self.assertEqual(expected, actual)
 
-    @pytest.mark.apiver(from_ver=2)
     def test_single_character_matching(self):
         data = b'hello world'
         self.bucket.upload_bytes(data, 'a')
@@ -639,7 +635,6 @@ class TestLs(TestCaseWithBucket):
         ]
         self.assertEqual(expected, actual)
 
-    @pytest.mark.apiver(from_ver=2)
     def test_sequence_matching(self):
         data = b'hello world'
         self.bucket.upload_bytes(data, 'a')
@@ -657,7 +652,6 @@ class TestLs(TestCaseWithBucket):
         ]
         self.assertEqual(expected, actual)
 
-    @pytest.mark.apiver(from_ver=2)
     def test_negative_sequence_matching(self):
         data = b'hello world'
         self.bucket.upload_bytes(data, 'a')
@@ -674,7 +668,6 @@ class TestLs(TestCaseWithBucket):
         ]
         self.assertEqual(expected, actual)
 
-    @pytest.mark.apiver(from_ver=2)
     def test_matching_wildcard_named_file(self):
         data = b'hello world'
         self.bucket.upload_bytes(data, 'a/*.txt')
@@ -691,7 +684,6 @@ class TestLs(TestCaseWithBucket):
         ]
         self.assertEqual(expected, actual)
 
-    @pytest.mark.apiver(from_ver=2)
     def test_matching_single_question_mark_named_file(self):
         data = b'hello world'
         self.bucket.upload_bytes(data, 'b/?.txt')
@@ -708,13 +700,11 @@ class TestLs(TestCaseWithBucket):
         ]
         self.assertEqual(expected, actual)
 
-    @pytest.mark.apiver(from_ver=2)
     def test_wildcard_requires_recursive(self):
         with pytest.raises(ValueError):
             # Since ls is a generator, we need to actually fetch something from it.
             next(self.bucket_ls('*.txt', recursive=False, with_wildcard=True))
 
-    @pytest.mark.apiver(from_ver=2)
     def test_matching_exact_filename(self):
         data = b'hello world'
         self.bucket.upload_bytes(data, 'b/a.txt')
