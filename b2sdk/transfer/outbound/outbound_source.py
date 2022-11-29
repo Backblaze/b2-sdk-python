@@ -26,19 +26,19 @@ class OutboundTransferSource(metaclass=ABCMeta):
     """
 
     @abstractmethod
-    def get_content_length(self):
+    def get_content_length(self) -> int:
         """
-        Return the number of bytes of data in the file.
-        """
-
-    @abstractmethod
-    def is_upload(self):
-        """ Return if outbound source is an upload source.
-        :rtype bool:
+        Returns the number of bytes of data in the file.
         """
 
     @abstractmethod
-    def is_copy(self):
-        """ Return if outbound source is a copy source.
-        :rtype bool:
+    def is_upload(self) -> bool:
+        """
+        Returns if outbound source is an upload source.
+        """
+
+    @abstractmethod
+    def is_copy(self) -> bool:
+        """
+        Returns if outbound source is a copy source.
         """
