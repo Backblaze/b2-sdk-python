@@ -1400,18 +1400,6 @@ class TestUpload(TestCaseWithBucket):
         self._check_file_contents('path/to/file1', data)
         self.assertTrue(progress_listener.is_valid())
 
-    def test_upload_stdin_stream(self):
-        with TempDir() as d:
-            path = os.path.join(d, 'file1')
-            data = self._make_data(self.simulator.MIN_PART_SIZE * 3)
-            write_file(path, data)
-
-            with open(path, 'rb') as new_stdin:
-                with mock.patch('sys.stdin', new_stdin):
-                    self.bucket.upload_stdin('file1')
-
-            self._check_file_contents('file1', data)
-
     def _start_large_file(self, file_name, file_info=None):
         if file_info is None:
             file_info = {}
