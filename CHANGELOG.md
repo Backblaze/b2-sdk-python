@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 * Authorizing a key for a single bucket ensures that this bucket is cached
+* Documentation for AbstractUploadSource and its children
 
 ### Infrastructure
 * Additional tests for listing files/versions
