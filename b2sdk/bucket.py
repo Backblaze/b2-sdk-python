@@ -36,7 +36,7 @@ from .transfer.emerge.executor import AUTO_CONTENT_TYPE
 from .transfer.emerge.write_intent import WriteIntent
 from .transfer.inbound.downloaded_file import DownloadedFile
 from .transfer.outbound.copy_source import CopySource
-from .transfer.outbound.upload_source import UploadSourceBytes, UploadSourceLocalFile
+from .transfer.outbound.upload_source import UploadSourceBytes, UploadSourceLocalFile, UploadSourceStdinStream
 from .utils import (
     B2TraceMeta,
     b2_url_encode,
@@ -502,6 +502,47 @@ class Bucket(metaclass=B2TraceMeta):
         :rtype: b2sdk.v2.FileVersion
         """
         upload_source = UploadSourceLocalFile(local_path=local_file, content_sha1=sha1_sum)
+        return self.upload(
+            upload_source,
+            file_name,
+            content_type=content_type,
+            file_info=file_infos,
+            min_part_size=min_part_size,
+            progress_listener=progress_listener,
+            encryption=encryption,
+            file_retention=file_retention,
+            legal_hold=legal_hold,
+        )
+
+    def upload_stdin(
+        self,
+        file_name,
+        buffer_size_bytes=None,
+        content_type=None,
+        file_infos=None,
+        sha1_sum=None,
+        min_part_size=None,
+        progress_listener=None,
+        encryption: Optional[EncryptionSetting] = None,
+        file_retention: Optional[FileRetentionSetting] = None,
+        legal_hold: Optional[LegalHold] = None,
+    ):
+        """
+        Upload data streamed from stdin to a B2 file.
+
+        :param str file_name: a file name of the new B2 file
+        :param int buffer_size_bytes: size of the buffer used to read from stdin or ``None`` to use default 1MB
+        :param str,None content_type: the MIME type, or ``None`` to accept the default based on file extension of the B2 file name
+        :param dict,None file_infos: a file info to store with the file or ``None`` to not store anything
+        :param str,None sha1_sum: file SHA1 hash or ``None`` to compute it automatically
+        :param int min_part_size: a minimum size of a part
+        :param b2sdk.v2.AbstractProgressListener,None progress_listener: a progress listener object to use, or ``None`` to not report progress
+        :param b2sdk.v2.EncryptionSetting encryption: encryption settings (``None`` if unknown)
+        :param b2sdk.v2.FileRetentionSetting file_retention: file retention setting
+        :param bool legal_hold: legal hold setting
+        :rtype: b2sdk.v2.FileVersion
+        """
+        upload_source = UploadSourceStdinStream(buffer_size_bytes, sha1_sum)
         return self.upload(
             upload_source,
             file_name,

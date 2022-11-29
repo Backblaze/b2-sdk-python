@@ -13,9 +13,11 @@ import io
 import os
 
 from abc import abstractmethod
+from typing import Optional
 
 from b2sdk.exception import InvalidUploadSource
 from b2sdk.stream.range import RangeOfInputStream, wrap_with_range
+from b2sdk.stream.stdin import StdinStream
 from b2sdk.transfer.outbound.outbound_source import OutboundTransferSource
 from b2sdk.utils import hex_sha1_of_stream, hex_sha1_of_unlimited_stream
 
@@ -217,3 +219,18 @@ class UploadSourceStreamRange(UploadSourceStream):
         return RangeOfInputStream(
             super(UploadSourceStreamRange, self).open(), self._offset, self._content_length
         )
+
+
+class UploadSourceStdinStream(AbstractUploadSource):
+    def __init__(self, buffer_size: Optional[int] = None, stream_sha1: Optional[str] = None):
+        self.stream = StdinStream(buffer_size)
+        self.stream_sha1 = stream_sha1
+
+    def get_content_sha1(self) -> Optional[str]:
+        return self.stream_sha1
+
+    def open(self):
+        return self.stream
+
+    def get_content_length(self) -> Optional[int]:
+        return None
