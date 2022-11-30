@@ -1402,10 +1402,8 @@ class TestUpload(TestCaseWithBucket):
 
     def test_upload_stream(self):
         data = self._make_data(self.simulator.MIN_PART_SIZE * 50)
-        progress_listener = StubProgressListener()
-        self.bucket.upload_unbound_stream(io.BytesIO(data), 'file1', progress_listener=progress_listener)
+        self.bucket.upload_unbound_stream(io.BytesIO(data), 'file1')
         self._check_file_contents('file1', data)
-        self.assertTrue(progress_listener.is_valid())
 
     def _start_large_file(self, file_name, file_info=None):
         if file_info is None:

@@ -530,7 +530,7 @@ class Bucket(metaclass=B2TraceMeta):
         max_part_size: Optional[int] = None,
         buffers_count: int = 1,
         read_size: int = 8192,
-        unused_buffer_timeout_seconds: float = 30.0,
+        unused_buffer_timeout_seconds: float = 3600.0,
     ):
         """
         Upload an unbound file-like read-only object to a B2 file.
