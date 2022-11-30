@@ -34,6 +34,7 @@ from .progress import AbstractProgressListener, DoNothingProgressListener
 from .replication.setting import ReplicationConfiguration, ReplicationConfigurationFactory
 from .transfer.emerge.executor import AUTO_CONTENT_TYPE
 from .transfer.emerge.write_intent import WriteIntent
+from .transfer.emerge.unbound_write_intent import unbound_write_intent_generator
 from .transfer.inbound.downloaded_file import DownloadedFile
 from .transfer.outbound.copy_source import CopySource
 from .transfer.outbound.upload_source import UploadSourceBytes, UploadSourceLocalFile
@@ -504,6 +505,67 @@ class Bucket(metaclass=B2TraceMeta):
         upload_source = UploadSourceLocalFile(local_path=local_file, content_sha1=sha1_sum)
         return self.upload(
             upload_source,
+            file_name,
+            content_type=content_type,
+            file_info=file_infos,
+            min_part_size=min_part_size,
+            progress_listener=progress_listener,
+            encryption=encryption,
+            file_retention=file_retention,
+            legal_hold=legal_hold,
+        )
+
+    def upload_unbound_stream(
+        self,
+        read_only_object,
+        file_name,
+        content_type=None,
+        file_infos=None,
+        min_part_size=None,
+        progress_listener=None,
+        encryption: Optional[EncryptionSetting] = None,
+        file_retention: Optional[FileRetentionSetting] = None,
+        legal_hold: Optional[LegalHold] = None,
+    ):
+        """
+        Upload an unbound file-like read-only object to a B2 file.
+
+        It is assumed that this object is streamed like stdin or socket, and the size is not known apriori.
+        It is up to caller to ensure that this object is open and available through the whole streaming process.
+
+        If stdin is to be passed, consider opening it in binary mode, if possible on the platform:
+
+        .. code-block:: python
+
+            with open(sys.stdin.fileno(), mode='rb', buffering=min_part_size, closefd=False) as source:
+                bucket.upload_unbound_stream(source, 'target-file')
+
+        For platforms without file descriptors, one can use the following:
+
+        .. code-block:: python
+
+            bucket.upload_unbound_stream(sys.stdin.buffer, 'target-file')
+
+        but note that buffering in this case is depending on interpreter mode.
+
+        :param file-like-object read_only_object: any object containing read method accepting size of the read
+        :param str file_name: a file name of the new B2 file
+        :param str,None content_type: the MIME type, or ``None`` to accept the default based on file extension of the B2 file name
+        :param dict,None file_infos: a file info to store with the file or ``None`` to not store anything
+        :param int min_part_size: a minimum size of a part, if ``None`` a recommended size is used
+        :param b2sdk.v2.AbstractProgressListener,None progress_listener: a progress listener object to use, or ``None`` to not report progress
+        :param b2sdk.v2.EncryptionSetting encryption: encryption settings (``None`` if unknown)
+        :param b2sdk.v2.FileRetentionSetting file_retention: file retention setting
+        :param bool legal_hold: legal hold setting
+        :rtype: b2sdk.v2.FileVersion
+        """
+        buffer_size = min_part_size
+        if buffer_size is None:
+            planner = self.api.services.emerger.get_emerge_planner()
+            buffer_size = planner.recommended_upload_part_size
+
+        return self.create_file_stream(
+            unbound_write_intent_generator(read_only_object, buffer_size),
             file_name,
             content_type=content_type,
             file_info=file_infos,
