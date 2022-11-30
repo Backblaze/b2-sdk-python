@@ -1,3 +1,13 @@
+######################################################################
+#
+# File: b2sdk/transfer/emerge/unbound_write_intent.py
+#
+# Copyright 2022 Backblaze Inc. All Rights Reserved.
+#
+# License https://www.backblaze.com/using_b2_code.html
+#
+######################################################################
+
 import hashlib
 import io
 import queue
@@ -15,7 +25,12 @@ class Wrapper(io.BytesIO):
     when reading is finished from it, it pops itself.
     """
 
-    def __init__(self, data: Union[bytes, bytearray], queue_for_done: queue.Queue, timeout_seconds: float):
+    def __init__(
+        self,
+        data: Union[bytes, bytearray],
+        queue_for_done: queue.Queue,
+        timeout_seconds: float,
+    ):
         super().__init__(data)
 
         self.queue = queue_for_done
@@ -55,7 +70,12 @@ class Wrapper(io.BytesIO):
 
 
 class UnboundSourceBytes(AbstractUploadSource):
-    def __init__(self, bytes_data: bytearray, buffer_queue: queue.Queue, timeout_seconds: float):
+    def __init__(
+        self,
+        bytes_data: bytearray,
+        buffer_queue: queue.Queue,
+        timeout_seconds: float,
+    ):
         self.bytes_data = bytes_data
         self.stream = Wrapper(self.bytes_data, buffer_queue, timeout_seconds)
         # Prepare sha1 of the chunk to ensure that nothing have to iterate over our data.
@@ -119,8 +139,13 @@ class UnboundWriteIntentGenerator:
             if len(self.buffer) == 0:
                 break
 
-            # Create an upload source bytes from it. Note that this will block in case we have no more free slots.
-            source = UnboundSourceBytes(self.buffer, self.buffer_limit_queue, self.queue_timeout_seconds)
+            # Create an upload source bytes from it. Note that this
+            # will block in case we have no more free slots.
+            source = UnboundSourceBytes(
+                self.buffer,
+                self.buffer_limit_queue,
+                self.queue_timeout_seconds,
+            )
 
             intent = WriteIntent(source, destination_offset=offset)
             yield intent
