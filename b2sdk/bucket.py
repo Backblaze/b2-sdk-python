@@ -34,7 +34,7 @@ from .progress import AbstractProgressListener, DoNothingProgressListener
 from .replication.setting import ReplicationConfiguration, ReplicationConfigurationFactory
 from .transfer.emerge.executor import AUTO_CONTENT_TYPE
 from .transfer.emerge.write_intent import WriteIntent
-from .transfer.emerge.unbound_write_intent import unbound_write_intent_generator
+from .transfer.emerge.unbound_write_intent import UnboundWriteIntentGenerator
 from .transfer.inbound.downloaded_file import DownloadedFile
 from .transfer.outbound.copy_source import CopySource
 from .transfer.outbound.upload_source import UploadSourceBytes, UploadSourceLocalFile
@@ -520,12 +520,17 @@ class Bucket(metaclass=B2TraceMeta):
         read_only_object,
         file_name,
         content_type=None,
-        file_infos=None,
-        min_part_size=None,
+        file_info=None,
         progress_listener=None,
+        recommended_upload_part_size=None,
         encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
+        min_part_size: Optional[int] = None,
+        max_part_size: Optional[int] = None,
+        buffers_count: int = 1,
+        read_size: int = 8192,
+        unused_buffer_timeout_seconds: float = 30.0,
     ):
         """
         Upload an unbound file-like read-only object to a B2 file.
@@ -551,29 +556,44 @@ class Bucket(metaclass=B2TraceMeta):
         :param file-like-object read_only_object: any object containing read method accepting size of the read
         :param str file_name: a file name of the new B2 file
         :param str,None content_type: the MIME type, or ``None`` to accept the default based on file extension of the B2 file name
-        :param dict,None file_infos: a file info to store with the file or ``None`` to not store anything
-        :param int min_part_size: a minimum size of a part, if ``None`` a recommended size is used
+        :param dict,None file_info: a file info to store with the file or ``None`` to not store anything
         :param b2sdk.v2.AbstractProgressListener,None progress_listener: a progress listener object to use, or ``None`` to not report progress
         :param b2sdk.v2.EncryptionSetting encryption: encryption settings (``None`` if unknown)
         :param b2sdk.v2.FileRetentionSetting file_retention: file retention setting
         :param bool legal_hold: legal hold setting
+        :param int min_part_size: a minimum size of a part
+        :param int,None recommended_upload_part_size: the recommended part size to use for uploading local sources
+                        or ``None`` to determine automatically; also size of the read buffer.
+        :param int max_part_size: a maximum size of a part
         :rtype: b2sdk.v2.FileVersion
         """
-        buffer_size = min_part_size
+        buffer_size = recommended_upload_part_size
         if buffer_size is None:
             planner = self.api.services.emerger.get_emerge_planner()
             buffer_size = planner.recommended_upload_part_size
 
-        return self.create_file_stream(
-            unbound_write_intent_generator(read_only_object, buffer_size),
+        return self._create_file(
+            self.api.services.emerger.emerge_unbound,
+            UnboundWriteIntentGenerator(
+                read_only_object,
+                buffer_size,
+                read_size=read_size,
+                queue_size=buffers_count,
+                queue_timeout_seconds=unused_buffer_timeout_seconds,
+            ).iterator(),
             file_name,
             content_type=content_type,
-            file_info=file_infos,
-            min_part_size=min_part_size,
+            file_info=file_info,
             progress_listener=progress_listener,
             encryption=encryption,
             file_retention=file_retention,
             legal_hold=legal_hold,
+            min_part_size=min_part_size,
+            recommended_upload_part_size=recommended_upload_part_size,
+            max_part_size=max_part_size,
+            # This is a parameter for EmergeExecutor.execute_emerge_plan telling him
+            # how many buffers in parallel he can handle at once.
+            max_queue_size=buffers_count,
         )
 
     def upload(
@@ -754,6 +774,7 @@ class Bucket(metaclass=B2TraceMeta):
         legal_hold: Optional[LegalHold] = None,
         min_part_size=None,
         max_part_size=None,
+        **kwargs
     ):
         validate_b2_file_name(file_name)
         progress_listener = progress_listener or DoNothingProgressListener()
@@ -772,6 +793,7 @@ class Bucket(metaclass=B2TraceMeta):
             legal_hold=legal_hold,
             min_part_size=min_part_size,
             max_part_size=max_part_size,
+            **kwargs
         )
 
     def concatenate(

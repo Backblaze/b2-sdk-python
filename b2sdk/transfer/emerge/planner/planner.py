@@ -141,6 +141,20 @@ class EmergePlanner:
     def get_streaming_emerge_plan(self, write_intent_iterator):
         return self._get_emerge_plan(write_intent_iterator, StreamingEmergePlan)
 
+    def get_unbound_emerge_plan(self, write_intent_iterator):
+        return UnboundEmergePlan(self._get_simple_emerge_parts(write_intent_iterator))
+
+    def _get_simple_emerge_parts(self, write_intent_iterator):
+        # Assumption here is that we need to do no magic. We are receiving a read-only stream
+        # that cannot be seeked and is only for uploading purposes. Moreover, we assume that
+        # each write intent we received is a nice, enclosed buffer.
+        for write_intent in write_intent_iterator:
+            yield UploadEmergePartDefinition(
+                write_intent.outbound_source,
+                relative_offset=0,
+                length=write_intent.length,
+            )
+
     def _get_emerge_plan(self, write_intent_iterator, plan_class):
         return plan_class(
             self._get_emerge_parts(
@@ -649,6 +663,21 @@ class StreamingEmergePlan(BaseEmergePlan):
             return iter([first_part]), False
         else:
             return chain([first_part, second_part], emerge_parts_iterator), True
+
+
+class UnboundEmergePlan(BaseEmergePlan):
+    def __init__(self, emerge_parts_iterator):
+        super().__init__(emerge_parts_iterator)
+
+    def is_large_file(self):
+        # Unbound streams have to always be sent in chunks.
+        return True
+
+    def get_total_length(self):
+        return None
+
+    def get_plan_id(self):
+        return None
 
 
 class EmergePart:
