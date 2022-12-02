@@ -37,6 +37,11 @@ class IOWrapper(io.BytesIO):
     time should be equal to size of the queue + 1 (the one that is waiting
     to be added). Note that it can vary slightly in rare cases, when
     the buffer is read in full and retried.
+
+    Note that this stream should go through ``emerge_unbound``, as it's the only
+    one that skips ``_get_emerge_parts`` and pushes buffers to the cloud
+    exactly as they come. This way we can (somewhat) rely on check whether
+    reading of this wrapper returned no more data.
     """
 
     def __init__(
@@ -46,18 +51,13 @@ class IOWrapper(io.BytesIO):
     ):
         super().__init__(data)
 
-        self.length = len(data)
         self.already_done = False
         self.release_function = release_function
 
     def read(self, size: Optional[int] = None) -> bytes:
         result = super().read(size)
 
-        # Marking end of reading process when we got to the end of data as well as no more data was received.
-        # Note that the process this is going through ensures that the data is read exactly once.
-        # SHA1 is already calculated and planner shouldn't be using `_get_emerge_parts` on iterator that
-        # runs this operation.
-        is_done = self.tell() == self.length and len(result) == 0
+        is_done = len(result) == 0
         if is_done and not self.already_done:
             self.already_done = True
             self.release_function()
@@ -66,15 +66,24 @@ class IOWrapper(io.BytesIO):
 
 
 class UnboundSourceBytes(AbstractUploadSource):
+    """
+    Upload source that deals with a chunk of unbound data.
+
+    It ensures that the data it provides doesn't have to be iterated
+    over more than once. To do that, we have ensured that both length
+    and sha1 is known. Also, it should be used only with ``emerge_unbound``,
+    as it's the only plan that pushes buffers directly to the cloud.
+    """
+
     def __init__(
         self,
         bytes_data: bytearray,
         release_function: Callable[[], None],
     ):
-        self.bytes_data = bytes_data
-        self.stream = IOWrapper(self.bytes_data, release_function)
-        # Prepare sha1 of the chunk to ensure that nothing have to iterate over our data.
-        self.chunk_sha1 = hashlib.sha1(self.bytes_data).hexdigest()
+        self.length = len(bytes_data)
+        # Prepare sha1 of the chunk to ensure that nothing have to iterate over our stream to calculate it.
+        self.chunk_sha1 = hashlib.sha1(bytes_data).hexdigest()
+        self.stream = IOWrapper(bytes_data, release_function)
 
     def get_content_sha1(self):
         return self.chunk_sha1
@@ -83,11 +92,13 @@ class UnboundSourceBytes(AbstractUploadSource):
         return self.stream
 
     def get_content_length(self):
-        return len(self.bytes_data)
+        return self.length
 
 
 class UnboundWriteIntentGenerator:
-    DONE_MARKER = object()
+    """
+
+    """
 
     def __init__(
         self,
@@ -97,16 +108,14 @@ class UnboundWriteIntentGenerator:
         queue_size: int,
         queue_timeout_seconds: float,
     ):
-        # Note that limiting of the buffer size to a minimum of 5MB happens in the bucket.
         assert queue_size >= 1 and read_size > 0 and buffer_size_bytes > 0 and queue_timeout_seconds > 0.0
 
         self.read_only_source = read_only_source
-        self.buffer_size_bytes = buffer_size_bytes
         self.read_size = read_size
-        self.queue_timeout_seconds = queue_timeout_seconds
 
-        # Limit on this queue puts a limit on chunks fetched in parallel.
+        self.buffer_size_bytes = buffer_size_bytes
         self.buffer_limit_queue = queue.Queue(maxsize=queue_size)
+        self.queue_timeout_seconds = queue_timeout_seconds
 
         self.buffer = bytearray()
         self.leftovers_buffer = bytearray()
@@ -116,19 +125,13 @@ class UnboundWriteIntentGenerator:
         offset = 0
 
         while not datastream_done:
-            # Wait for an empty slot. This way we ensure that buffer
-            # is downloaded only when there's a place for it.
-            try:
-                self.buffer_limit_queue.put(1, timeout=self.queue_timeout_seconds)
-            except queue.Full:
-                raise UnboundStreamBufferTimeout()
+            self._wait_for_free_buffer_slot()
 
             # In very small buffer sizes and large read sizes we could
             # land with multiple buffers read at once. This should happen
             # only in tests.
             self._trim_to_leftovers()
 
-            # Download data up to the buffer_size_bytes.
             while len(self.buffer) < self.buffer_size_bytes:
                 data = self.read_only_source.read(self.read_size)
                 if len(data) == 0:
@@ -158,6 +161,15 @@ class UnboundWriteIntentGenerator:
     def _rotate_leftovers(self) -> None:
         self.buffer = self.leftovers_buffer
         self.leftovers_buffer = bytearray()
+
+    def _wait_for_free_buffer_slot(self) -> None:
+        # Inserted item is only a placeholder. If we fail to insert it in given time, it means
+        # that system is unable to process data quickly enough. By default, this timeout is around
+        # a really large value (counted in minutes, not seconds) to indicate weird behaviour.
+        try:
+            self.buffer_limit_queue.put(1, timeout=self.queue_timeout_seconds)
+        except queue.Full:
+            raise UnboundStreamBufferTimeout()
 
     def _release_buffer(self) -> None:
         # Pull one element from the queue of waiting elements.
