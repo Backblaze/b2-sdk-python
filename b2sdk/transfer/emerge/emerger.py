@@ -80,7 +80,6 @@ class Emerger(metaclass=B2TraceMetaAbstract):
             max_queue_size=max_queue_size,
         )
 
-
     def emerge(
         self,
         bucket_id,
