@@ -40,6 +40,47 @@ class Emerger(metaclass=B2TraceMetaAbstract):
         self.services = services
         self.emerge_executor = EmergeExecutor(services)
 
+    def _emerge(
+        self,
+        emerge_function,
+        bucket_id,
+        write_intents_iterable,
+        file_name,
+        content_type,
+        file_info,
+        progress_listener,
+        recommended_upload_part_size=None,
+        continue_large_file_id=None,
+        max_queue_size=None,
+        encryption: Optional[EncryptionSetting] = None,
+        file_retention: Optional[FileRetentionSetting] = None,
+        legal_hold: Optional[LegalHold] = None,
+        min_part_size=None,
+        max_part_size=None,
+    ):
+        planner = self.get_emerge_planner(
+            min_part_size=min_part_size,
+            recommended_upload_part_size=recommended_upload_part_size,
+            max_part_size=max_part_size,
+        )
+        emerge_plan = emerge_function(planner, write_intents_iterable)
+        return self.emerge_executor.execute_emerge_plan(
+            emerge_plan,
+            bucket_id,
+            file_name,
+            content_type,
+            file_info,
+            progress_listener,
+            continue_large_file_id=continue_large_file_id,
+            encryption=encryption,
+            file_retention=file_retention,
+            legal_hold=legal_hold,
+            # Max queue size is only used in case of large files.
+            # Passing anything for small files does nothing.
+            max_queue_size=max_queue_size,
+        )
+
+
     def emerge(
         self,
         bucket_id,
@@ -66,22 +107,22 @@ class Emerger(metaclass=B2TraceMetaAbstract):
         :param str,None content_type: the MIME type or ``None`` to determine automatically
         :param dict,None file_info: a file info to store with the file or ``None`` to not store anything
         :param b2sdk.v2.AbstractProgressListener progress_listener: a progress listener object to use
-
+        :param int,None recommended_upload_part_size: the recommended part size to use for uploading local sources
+                        or ``None`` to determine automatically, but remote sources would be copied with
+                        maximum possible part size
+        :param str,None continue_large_file_id: large file id that should be selected to resume file creation
+                        for multipart upload/copy, if ``None`` in multipart case it would always start a new
+                        large file
+        :param b2sdk.v2.EncryptionSetting encryption: encryption settings (``None`` if unknown)
+        :param b2sdk.v2.FileRetentionSetting file_retention: file retention setting
+        :param bool legal_hold: legal hold setting
         :param int min_part_size: lower limit of part size for the transfer planner, in bytes
         :param int max_part_size: upper limit of part size for the transfer planner, in bytes
         """
-        # WARNING: time spent trying to extract common parts of emerge() and emerge_stream()
-        # into a separate method: 27min. You can try it too, but please increment the timer honestly.
-        # Problematic lines are marked with a "<--".
-        planner = self.get_emerge_planner(
-            min_part_size=min_part_size,
-            recommended_upload_part_size=recommended_upload_part_size,
-            max_part_size=max_part_size,
-        )
-        emerge_plan = planner.get_emerge_plan(write_intents)  # <--
-        return self.emerge_executor.execute_emerge_plan(
-            emerge_plan,
+        return self._emerge(
+            EmergePlanner.get_emerge_plan,
             bucket_id,
+            write_intents,
             file_name,
             content_type,
             file_info,
@@ -90,6 +131,9 @@ class Emerger(metaclass=B2TraceMetaAbstract):
             encryption=encryption,
             file_retention=file_retention,
             legal_hold=legal_hold,
+            recommended_upload_part_size=recommended_upload_part_size,
+            min_part_size=min_part_size,
+            max_part_size=max_part_size,
         )
 
     def emerge_stream(
@@ -124,6 +168,7 @@ class Emerger(metaclass=B2TraceMetaAbstract):
         :param str,None continue_large_file_id: large file id that should be selected to resume file creation
                         for multipart upload/copy, if ``None`` in multipart case it would always start a new
                         large file
+        :param int max_queue_size: parallelization level
         :param b2sdk.v2.EncryptionSetting encryption: encryption settings (``None`` if unknown)
         :param b2sdk.v2.FileRetentionSetting file_retention: file retention setting
         :param bool legal_hold: legal hold setting
@@ -132,24 +177,22 @@ class Emerger(metaclass=B2TraceMetaAbstract):
         :param int max_part_size: upper limit of part size for the transfer planner, in bytes
 
         """
-        planner = self.get_emerge_planner(
-            min_part_size=min_part_size,
-            recommended_upload_part_size=recommended_upload_part_size,
-            max_part_size=max_part_size,
-        )
-        emerge_plan = planner.get_streaming_emerge_plan(write_intent_iterator)  # <--
-        return self.emerge_executor.execute_emerge_plan(
-            emerge_plan,
+        return self._emerge(
+            EmergePlanner.get_streaming_emerge_plan,
             bucket_id,
+            write_intent_iterator,
             file_name,
             content_type,
             file_info,
             progress_listener,
             continue_large_file_id=continue_large_file_id,
-            max_queue_size=max_queue_size,  # <--
+            max_queue_size=max_queue_size,
             encryption=encryption,
             file_retention=file_retention,
             legal_hold=legal_hold,
+            recommended_upload_part_size=recommended_upload_part_size,
+            min_part_size=min_part_size,
+            max_part_size=max_part_size,
         )
 
     def emerge_unbound(
@@ -162,7 +205,7 @@ class Emerger(metaclass=B2TraceMetaAbstract):
         progress_listener,
         recommended_upload_part_size=None,
         continue_large_file_id=None,
-        max_queue_size=DEFAULT_STREAMING_MAX_QUEUE_SIZE,
+        max_queue_size=1,
         encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
@@ -184,6 +227,7 @@ class Emerger(metaclass=B2TraceMetaAbstract):
         :param str,None continue_large_file_id: large file id that should be selected to resume file creation
                         for multipart upload/copy, if ``None`` in multipart case it would always start a new
                         large file
+        :param int max_queue_size: parallelization level, should be equal to the number of buffers available in parallel
         :param b2sdk.v2.EncryptionSetting encryption: encryption settings (``None`` if unknown)
         :param b2sdk.v2.FileRetentionSetting file_retention: file retention setting
         :param bool legal_hold: legal hold setting
@@ -191,24 +235,22 @@ class Emerger(metaclass=B2TraceMetaAbstract):
         :param int min_part_size: lower limit of part size for the transfer planner, in bytes
         :param int max_part_size: upper limit of part size for the transfer planner, in bytes
         """
-        planner = self.get_emerge_planner(
-            min_part_size=min_part_size,
-            recommended_upload_part_size=recommended_upload_part_size,
-            max_part_size=max_part_size,
-        )
-        emerge_plan = planner.get_unbound_emerge_plan(write_intent_iterator)  # <--
-        return self.emerge_executor.execute_emerge_plan(
-            emerge_plan,
+        return self._emerge(
+            EmergePlanner.get_unbound_emerge_plan,
             bucket_id,
+            write_intent_iterator,
             file_name,
             content_type,
             file_info,
             progress_listener,
             continue_large_file_id=continue_large_file_id,
-            max_queue_size=max_queue_size,  # <--
+            max_queue_size=max_queue_size,
             encryption=encryption,
             file_retention=file_retention,
             legal_hold=legal_hold,
+            recommended_upload_part_size=recommended_upload_part_size,
+            min_part_size=min_part_size,
+            max_part_size=max_part_size,
         )
 
     def get_emerge_planner(
