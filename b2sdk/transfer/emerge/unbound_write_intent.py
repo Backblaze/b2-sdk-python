@@ -24,6 +24,9 @@ from b2sdk.transfer.outbound.upload_source import AbstractUploadSource
 
 
 class UnboundStreamBufferTimeout(B2SimpleError):
+    """
+    Raised when there is no space for a new buffer for a certain amount of time.
+    """
     pass
 
 
@@ -42,6 +45,9 @@ class IOWrapper(io.BytesIO):
     one that skips ``_get_emerge_parts`` and pushes buffers to the cloud
     exactly as they come. This way we can (somewhat) rely on check whether
     reading of this wrapper returned no more data.
+
+    It is assumed that this object is owned by a single thread at a time.
+    For that reason, no additional synchronisation is provided.
     """
 
     def __init__(
@@ -49,6 +55,17 @@ class IOWrapper(io.BytesIO):
         data: Union[bytes, bytearray],
         release_function: Callable[[], None],
     ):
+        """
+        Prepares a new ``io.BytesIO`` structure that will call
+        a ``release_function`` when buffer is read in full.
+
+        ``release_function`` can be called from another thread.
+        It is called exactly once, when the read returns
+        an empty buffer for the first time.
+
+        :param data: data to be provided as a stream
+        :param release_function: function to be called when all the data was read
+        """
         super().__init__(data)
 
         self.already_done = False
@@ -80,6 +97,14 @@ class UnboundSourceBytes(AbstractUploadSource):
         bytes_data: bytearray,
         release_function: Callable[[], None],
     ):
+        """
+        Prepares a new ```UploadSource`` that can be used with ``WriteIntent``.
+
+        Calculates SHA1 and length of the data.
+
+        :param bytes_data: data that should be uploaded, IOWrapper for this data is created.
+        :param release_function: function to be called when all the ``bytes_data`` is uploaded.
+        """
         self.length = len(bytes_data)
         # Prepare sha1 of the chunk to ensure that nothing have to iterate over our stream to calculate it.
         self.chunk_sha1 = hashlib.sha1(bytes_data).hexdigest()
@@ -97,7 +122,10 @@ class UnboundSourceBytes(AbstractUploadSource):
 
 class UnboundWriteIntentGenerator:
     """
+    Generator that creates new write intents as data is streamed from an external source.
 
+    It tries to ensure that at most ``queue_size`` buffers with size ``buffer_size_bytes``
+    are allocated at any given moment.
     """
 
     def __init__(
@@ -108,6 +136,20 @@ class UnboundWriteIntentGenerator:
         queue_size: int,
         queue_timeout_seconds: float,
     ):
+        """
+        Prepares a new intent generator for given source.
+
+        ``queue_size`` is handled on a best-effort basis. It's possible, in rare cases, that there will be more buffers
+        available at once. With current implementation that would be the case when the whole buffer was read, but on
+        the very last byte the server stopped responding and a retry is issued.
+
+        :param read_only_source: Python object that has a ``read`` method.
+        :param buffer_size_bytes: Size of a single buffer that we're to download from the source and push to the cloud.
+        :param read_size: Size of a single read to be performed on ``read_only_source``.
+        :param queue_size: Maximal amount of buffers that will be created.
+        :param queue_timeout_seconds: Iterator will wait at most this many seconds for an empty slot
+                                      for a buffer. After that time it's considered an error.
+        """
         assert queue_size >= 1 and read_size > 0 and buffer_size_bytes > 0 and queue_timeout_seconds > 0.0
 
         self.read_only_source = read_only_source
@@ -121,6 +163,9 @@ class UnboundWriteIntentGenerator:
         self.leftovers_buffer = bytearray()
 
     def iterator(self) -> Iterator[WriteIntent]:
+        """
+        Creates new ``WriteIntent`` objects as the data is pulled from the ``read_only_source``.
+        """
         datastream_done = False
         offset = 0
 
@@ -141,7 +186,10 @@ class UnboundWriteIntentGenerator:
                 self.buffer += data
                 self._trim_to_leftovers()
 
+            # If we've just started a new buffer and got an empty read on it,
+            # we have no data to send and the process is finished.
             if len(self.buffer) == 0:
+                self._release_buffer()
                 break
 
             source = UnboundSourceBytes(self.buffer, self._release_buffer)
