@@ -11,42 +11,44 @@
 import hashlib
 import io
 import queue
-from typing import Iterator, Optional, Union
+from typing import (
+    Callable,
+    Iterator,
+    Optional,
+    Union,
+)
 
+from b2sdk.exception import B2SimpleError
 from b2sdk.transfer.emerge.write_intent import WriteIntent
 from b2sdk.transfer.outbound.upload_source import AbstractUploadSource
 
 
-class Wrapper(io.BytesIO):
+class UnboundStreamBufferTimeout(B2SimpleError):
+    pass
+
+
+class IOWrapper(io.BytesIO):
     """
-    Wrapper for BytesIO that knows when it has ended.
+    Wrapper for BytesIO that knows when it has been read in full.
 
     When created, it tries to put itself into a waiting queue,
-    when reading is finished from it, it pops itself.
+    when reading is finished from it (a final, empty read is returned),
+    it pops itself. Effectively, number of buffers in memory at any given
+    time should be equal to size of the queue + 1 (the one that is waiting
+    to be added). Note that it can vary slightly in rare cases, when
+    the buffer is read in full and retried.
     """
 
     def __init__(
         self,
         data: Union[bytes, bytearray],
-        queue_for_done: queue.Queue,
-        timeout_seconds: float,
+        release_function: Callable[[], None],
     ):
         super().__init__(data)
 
-        self.queue = queue_for_done
         self.length = len(data)
-        self.timeout_seconds = timeout_seconds
         self.already_done = False
-
-        # This will block whenever new item is added. This way we restrict amount of chunks
-        # streamed from the source and amount of memory used. Note that if given chunk is not cleared
-        # in timeout_seconds, we abort the operation.
-        # Note that the element has no meaning, it's just something to take the space in the queue
-        # and limit the reading processes.
-        try:
-            self.queue.put(self, timeout=self.timeout_seconds)
-        except queue.Full:
-            pass
+        self.release_function = release_function
 
     def read(self, size: Optional[int] = None) -> bytes:
         result = super().read(size)
@@ -58,13 +60,7 @@ class Wrapper(io.BytesIO):
         is_done = self.tell() == self.length and len(result) == 0
         if is_done and not self.already_done:
             self.already_done = True
-            # Pull one element from the queue of waiting elements.
-            # Note that it doesn't matter which element we pull.
-            # Each of them is just a placeholder that limits amount of memory used.
-            try:
-                self.queue.get(timeout=self.timeout_seconds)
-            except queue.Empty:
-                pass
+            self.release_function()
 
         return result
 
@@ -73,11 +69,10 @@ class UnboundSourceBytes(AbstractUploadSource):
     def __init__(
         self,
         bytes_data: bytearray,
-        buffer_queue: queue.Queue,
-        timeout_seconds: float,
+        release_function: Callable[[], None],
     ):
         self.bytes_data = bytes_data
-        self.stream = Wrapper(self.bytes_data, buffer_queue, timeout_seconds)
+        self.stream = IOWrapper(self.bytes_data, release_function)
         # Prepare sha1 of the chunk to ensure that nothing have to iterate over our data.
         self.chunk_sha1 = hashlib.sha1(self.bytes_data).hexdigest()
 
@@ -121,10 +116,17 @@ class UnboundWriteIntentGenerator:
         offset = 0
 
         while not datastream_done:
+            # Wait for an empty slot. This way we ensure that buffer
+            # is downloaded only when there's a place for it.
+            try:
+                self.buffer_limit_queue.put(1, timeout=self.queue_timeout_seconds)
+            except queue.Full:
+                raise UnboundStreamBufferTimeout()
+
             # In very small buffer sizes and large read sizes we could
             # land with multiple buffers read at once. This should happen
             # only in tests.
-            self.trim_to_leftovers()
+            self._trim_to_leftovers()
 
             # Download data up to the buffer_size_bytes.
             while len(self.buffer) < self.buffer_size_bytes:
@@ -134,33 +136,35 @@ class UnboundWriteIntentGenerator:
                     break
 
                 self.buffer += data
-                self.trim_to_leftovers()
+                self._trim_to_leftovers()
 
             if len(self.buffer) == 0:
                 break
 
-            # Create an upload source bytes from it. Note that this
-            # will block in case we have no more free slots.
-            source = UnboundSourceBytes(
-                self.buffer,
-                self.buffer_limit_queue,
-                self.queue_timeout_seconds,
-            )
-
+            source = UnboundSourceBytes(self.buffer, self._release_buffer)
             intent = WriteIntent(source, destination_offset=offset)
             yield intent
 
-            # Move further.
             offset += len(self.buffer)
-            self.rotate_leftovers()
+            self._rotate_leftovers()
 
-    def trim_to_leftovers(self) -> None:
+    def _trim_to_leftovers(self) -> None:
         if len(self.buffer) <= self.buffer_size_bytes:
             return
         remainder = len(self.buffer) - self.buffer_size_bytes
         self.leftovers_buffer += self.buffer[-remainder:]
         self.buffer = self.buffer[:-remainder]
 
-    def rotate_leftovers(self) -> None:
+    def _rotate_leftovers(self) -> None:
         self.buffer = self.leftovers_buffer
         self.leftovers_buffer = bytearray()
+
+    def _release_buffer(self) -> None:
+        # Pull one element from the queue of waiting elements.
+        # Note that it doesn't matter which element we pull.
+        # Each of them is just a placeholder. Since we know that we've put them there,
+        # there is no need to actually wait. The queue should contain at least one element if we got here.
+        try:
+            self.buffer_limit_queue.get_nowait()
+        except queue.Empty as error:
+            raise RuntimeError('Buffer pulled twice from the queue.') from error

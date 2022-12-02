@@ -528,7 +528,7 @@ class Bucket(metaclass=B2TraceMeta):
         legal_hold: Optional[LegalHold] = None,
         min_part_size: Optional[int] = None,
         max_part_size: Optional[int] = None,
-        buffers_count: int = 2,
+        buffers_count: int = 1,
         read_size: int = 8192,
         unused_buffer_timeout_seconds: float = 3600.0,
     ):
@@ -574,13 +574,13 @@ class Bucket(metaclass=B2TraceMeta):
                         or ``None`` to determine automatically; also size of the read buffer and size of the chunks
                         being sent to the B2
         :param int max_part_size: a maximum size of a part
-        :param int buffers_count: desired number of buffers allocated, cannot be smaller than 2
+        :param int buffers_count: desired number of buffers allocated, cannot be smaller than 1
         :param int read_size: size of a single read operation performed on the ``read_only_object``
         :param float unused_buffer_timeout_seconds: amount of time that a buffer can be idle before returning error
         :rtype: b2sdk.v2.FileVersion
         """
-        if buffers_count < 2:
-            raise ValueError('buffers_count has to be set to at least 2')
+        if buffers_count <= 0:
+            raise ValueError('buffers_count has to be a positive integer')
         if read_size <= 0:
             raise ValueError('read_size has to be a positive integer')
         if unused_buffer_timeout_seconds <= 0.0:
@@ -591,17 +591,13 @@ class Bucket(metaclass=B2TraceMeta):
             planner = self.api.services.emerger.get_emerge_planner()
             buffer_size = planner.recommended_upload_part_size
 
-        # One buffer is the one that's streamed and
-        # waiting to be added to the buffers queue.
-        actual_buffers_count = buffers_count - 1
-
         return self._create_file(
             self.api.services.emerger.emerge_unbound,
             UnboundWriteIntentGenerator(
                 read_only_object,
                 buffer_size,
                 read_size=read_size,
-                queue_size=actual_buffers_count,
+                queue_size=buffers_count,
                 queue_timeout_seconds=unused_buffer_timeout_seconds,
             ).iterator(),
             file_name,
@@ -615,8 +611,10 @@ class Bucket(metaclass=B2TraceMeta):
             recommended_upload_part_size=recommended_upload_part_size,
             max_part_size=max_part_size,
             # This is a parameter for EmergeExecutor.execute_emerge_plan telling him
-            # how many buffers in parallel he can handle at once.
-            max_queue_size=actual_buffers_count,
+            # how many buffers in parallel he can handle at once. If we have more than one buffer,
+            # we ensure that one buffer is always downloading data from the stream while other
+            # are being uploaded.
+            max_queue_size=max(1, buffers_count - 1),
         )
 
     def upload(
