@@ -226,5 +226,5 @@ class UnboundWriteIntentGenerator:
         # there is no need to actually wait. The queue should contain at least one element if we got here.
         try:
             self.buffer_limit_queue.get_nowait()
-        except queue.Empty as error:
+        except queue.Empty as error:  # pragma: nocover
             raise RuntimeError('Buffer pulled twice from the queue.') from error
