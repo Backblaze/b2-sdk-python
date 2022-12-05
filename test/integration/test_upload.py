@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: test/integration/test_download.py
+# File: test/integration/test_upload.py
 #
 # Copyright 2021 Backblaze Inc. All Rights Reserved.
 #

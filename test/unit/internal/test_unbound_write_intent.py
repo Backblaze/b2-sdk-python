@@ -104,11 +104,16 @@ class TestUnboundWriteIntentGenerator(TestBase):
         for write_intent in self.iterator:
             buffer_stream = write_intent.outbound_source.open()  # noqa
             read_data = buffer_stream.read(1)
-            self.assertEqual(self.data[write_intent.destination_offset].to_bytes(1, 'big'), read_data)
+            self.assertEqual(
+                self.data[write_intent.destination_offset].to_bytes(1, 'big'),
+                read_data,
+            )
             empty_data = buffer_stream.read(1)
             self.assertEqual(0, len(empty_data))
 
             data_loaded.append((read_data, write_intent.destination_offset))
 
-        expected_data_loaded = [(byte.to_bytes(1, 'big'), idx) for idx, byte in enumerate(self.data)]
+        expected_data_loaded = [
+            (byte.to_bytes(1, 'big'), idx) for idx, byte in enumerate(self.data)
+        ]
         self.assertCountEqual(expected_data_loaded, data_loaded)
