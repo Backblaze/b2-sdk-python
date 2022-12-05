@@ -149,8 +149,10 @@ class EmergePlanner:
         2. we don't want to pull more data than actually needed;
         3. all the data is ordered;
         4. we don't want anything else to touch our buffers.
+        Furthermore, we're using StreamingEmergePlan, as it checks whether we have one or more
+        chunks to work with, and picks a proper upload method.
         """
-        return UnboundEmergePlan(self._get_simple_emerge_parts(write_intent_iterator))
+        return StreamingEmergePlan(self._get_simple_emerge_parts(write_intent_iterator))
 
     def _get_simple_emerge_parts(self, write_intent_iterator):
         # Assumption here is that we need to do no magic. We are receiving
@@ -672,21 +674,6 @@ class StreamingEmergePlan(BaseEmergePlan):
             return iter([first_part]), False
         else:
             return chain([first_part, second_part], emerge_parts_iterator), True
-
-
-class UnboundEmergePlan(BaseEmergePlan):
-    def __init__(self, emerge_parts_iterator):
-        super().__init__(emerge_parts_iterator)
-
-    def is_large_file(self):
-        # Unbound streams have to always be sent in chunks.
-        return True
-
-    def get_total_length(self):
-        return None
-
-    def get_plan_id(self):
-        return None
 
 
 class EmergePart:

@@ -83,6 +83,9 @@ class TestUnboundWriteIntentGenerator(TestBase):
             io.BytesIO(self.data),
             buffer_size_bytes=1,
             read_size=1,
+            # From the perspective of the UnboundWriteIntentGenerator itself, the queue size
+            # can be any positive integer. Bucket requires it to be at least two, so that
+            # it can determine the upload method.
             queue_size=1,
             queue_timeout_seconds=0.1,
         )

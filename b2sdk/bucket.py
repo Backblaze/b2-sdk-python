@@ -528,7 +528,7 @@ class Bucket(metaclass=B2TraceMeta):
         legal_hold: Optional[LegalHold] = None,
         min_part_size: Optional[int] = None,
         max_part_size: Optional[int] = None,
-        buffers_count: int = 1,
+        buffers_count: int = 2,
         read_size: int = 8192,
         unused_buffer_timeout_seconds: float = 3600.0,
     ):
@@ -556,10 +556,11 @@ class Bucket(metaclass=B2TraceMeta):
         ``min_part_size``, ``recommended_upload_part_size`` and ``max_part_size`` should all be greater than 5MB.
         This is the minimal size of a chunk that is to be uploaded.
 
-        ``buffers_count`` describes a desired number of buffers that are to be used. Minimal amount is two, which means
-        that one buffer is being downloaded from the ``read_only_object`` and another one is being sent to the B2.
+        ``buffers_count`` describes a desired number of buffers that are to be used. Minimal amount is two, as we need
+        to determine the method of uploading this stream (if there's only a single buffer we send it as a normal file,
+        if there are at least two – as a large file).
         In rare cases, namely when the whole buffer was sent, but there was an error during sending of last bytes
-        and a retry was issued, another buffer will be allocated.
+        and a retry was issued, another buffer (above the aforementioned limit) will be allocated.
 
         :param file-like-object read_only_object: any object containing read method accepting size of the read
         :param str file_name: a file name of the new B2 file
@@ -574,13 +575,13 @@ class Bucket(metaclass=B2TraceMeta):
                         or ``None`` to determine automatically; also size of the read buffer and size of the chunks
                         being sent to the B2
         :param int max_part_size: a maximum size of a part
-        :param int buffers_count: desired number of buffers allocated, cannot be smaller than 1
+        :param int buffers_count: desired number of buffers allocated, cannot be smaller than 2
         :param int read_size: size of a single read operation performed on the ``read_only_object``
         :param float unused_buffer_timeout_seconds: amount of time that a buffer can be idle before returning error
         :rtype: b2sdk.v2.FileVersion
         """
-        if buffers_count <= 0:
-            raise ValueError('buffers_count has to be a positive integer')
+        if buffers_count <= 1:
+            raise ValueError('buffers_count has to be at least 2')
         if read_size <= 0:
             raise ValueError('read_size has to be a positive integer')
         if unused_buffer_timeout_seconds <= 0.0:
@@ -611,10 +612,9 @@ class Bucket(metaclass=B2TraceMeta):
             recommended_upload_part_size=recommended_upload_part_size,
             max_part_size=max_part_size,
             # This is a parameter for EmergeExecutor.execute_emerge_plan telling him
-            # how many buffers in parallel he can handle at once. If we have more than one buffer,
-            # we ensure that one buffer is always downloading data from the stream while other
-            # are being uploaded.
-            max_queue_size=max(1, buffers_count - 1),
+            # how many buffers in parallel he can handle at once. We ensure that one buffer
+            # is always downloading data from the stream while other are being uploaded.
+            max_queue_size=buffers_count - 1,
         )
 
     def upload(
