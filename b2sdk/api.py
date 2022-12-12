@@ -614,6 +614,6 @@ class B2Api(metaclass=B2TraceMeta):
         # If we have bucketId set we still need to check bucketName. If the bucketName is None,
         # it means that the bucketId belongs to a bucket that was already removed.
         if allowed_bucket_name is None:
-            raise RestrictedBucketMissing()
+            raise RestrictedBucketMissing(allowed_bucket_id)
 
         self.cache.save_bucket(self.BUCKET_CLASS(self, allowed_bucket_id, name=allowed_bucket_name))

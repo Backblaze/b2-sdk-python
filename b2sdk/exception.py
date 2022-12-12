@@ -363,11 +363,12 @@ class RestrictedBucket(B2Error):
 
 
 class RestrictedBucketMissing(RestrictedBucket):
-    def __init__(self):
-        super().__init__('')
+    def __init__(self, bucket_id: int):
+        super().__init__(None)
+        self.bucket_id = bucket_id
 
     def __str__(self):
-        return 'Application key is restricted to a bucket that doesn\'t exist'
+        return "ERROR: application key is restricted to bucket id '%s', which no longer exists" % self.bucket_id
 
 
 class MaxFileSizeExceeded(B2Error):
