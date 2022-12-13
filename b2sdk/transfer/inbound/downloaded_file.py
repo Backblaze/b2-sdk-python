@@ -21,6 +21,9 @@ from ...stream.progress import WritingStreamWithProgress
 
 from b2sdk.exception import (
     ChecksumMismatch,
+    DestinationDirectoryDoesntAllowOperation,
+    DestinationDirectoryDoesntExist,
+    DestinationIsADirectory,
     TruncatedOutput,
 )
 from b2sdk.utils import set_file_mtime
@@ -70,7 +73,15 @@ class MtimeUpdatedFile(io.IOBase):
         return self.file.tell()
 
     def __enter__(self):
-        self.file = open(self.path_, self.mode, buffering=self.buffering)
+        try:
+            self.file = open(self.path_, self.mode, buffering=self.buffering)
+        except FileNotFoundError as ex:
+            raise DestinationDirectoryDoesntExist() from ex
+        except IsADirectoryError as ex:
+            raise DestinationIsADirectory() from ex
+        except PermissionError as ex:
+            raise DestinationDirectoryDoesntAllowOperation() from ex
+
         self.write = self.file.write
         self.read = self.file.read
         return self

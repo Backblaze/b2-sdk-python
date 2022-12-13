@@ -540,6 +540,22 @@ class EnablingFileLockOnRestrictedBucket(B2Error):
         return "Turning on file lock for a restricted bucket is not allowed"
 
 
+class DestinationDirectoryError(B2Error):
+    pass
+
+
+class DestinationDirectoryDoesntExist(DestinationDirectoryError):
+    pass
+
+
+class DestinationIsADirectory(DestinationDirectoryError):
+    pass
+
+
+class DestinationDirectoryDoesntAllowOperation(DestinationDirectoryError):
+    pass
+
+
 @trace_call(logger)
 def interpret_b2_error(
     status: int,

@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Authorizing a key for a single bucket ensures that this bucket is cached
 * `Bucket.ls` operation supports wildcard matching strings
 
+### Fixed
+* Raw OSError exceptions are not thrown when using `DownloadedFile.save_to` to a path that doesn't exist, is a directory or the user doesn't have permissions to write to
+
 ### Infrastructure
 * Additional tests for listing files/versions
 * Ensured that changelog validation only happens on pull requests

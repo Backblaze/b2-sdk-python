@@ -16,7 +16,6 @@ import re
 import shutil
 import tempfile
 import time
-import concurrent.futures as futures
 from decimal import Decimal
 from urllib.parse import quote, unquote_plus
 

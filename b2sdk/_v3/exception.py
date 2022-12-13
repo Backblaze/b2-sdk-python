@@ -37,6 +37,9 @@ from b2sdk.exception import Conflict
 from b2sdk.exception import ConnectionReset
 from b2sdk.exception import CopyArgumentsMismatch
 from b2sdk.exception import DestFileNewer
+from b2sdk.exception import DestinationDirectoryDoesntAllowOperation
+from b2sdk.exception import DestinationDirectoryDoesntExist
+from b2sdk.exception import DestinationIsADirectory
 from b2sdk.exception import DisablingFileLockNotSupported
 from b2sdk.exception import DuplicateBucketName
 from b2sdk.exception import FileAlreadyHidden
@@ -112,6 +115,9 @@ __all__ = (
     'CopyArgumentsMismatch',
     'CorruptAccountInfo',
     'DestFileNewer',
+    'DestinationDirectoryDoesntAllowOperation',
+    'DestinationDirectoryDoesntExist',
+    'DestinationIsADirectory',
     'DisablingFileLockNotSupported',
     'DuplicateBucketName',
     'EmptyDirectory',
