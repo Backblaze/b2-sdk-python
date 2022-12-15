@@ -250,7 +250,8 @@ class Bucket(v2.Bucket):
         folder_to_list: str = '',
         show_versions: bool = False,
         recursive: bool = False,
-        fetch_count: Optional[int] = 10000
+        fetch_count: Optional[int] = 10000,
+        **kwargs
     ):
         """
         Pretend that folders exist and yields the information about the files in a folder.
@@ -273,9 +274,9 @@ class Bucket(v2.Bucket):
         :returns: generator of (file_version, folder_name) tuples
 
         .. note::
-            In case of `recursive=True`, folder_name is returned only for first file in the folder.
+            In case of `recursive=True`, folder_name is not returned.
         """
-        return super().ls(folder_to_list, not show_versions, recursive, fetch_count)
+        return super().ls(folder_to_list, not show_versions, recursive, fetch_count, **kwargs)
 
 
 def download_file_and_return_info_dict(

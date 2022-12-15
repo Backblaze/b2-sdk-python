@@ -8,7 +8,9 @@
 #
 ######################################################################
 
+import fnmatch
 import logging
+import pathlib
 
 from typing import Optional, Tuple
 
@@ -323,7 +325,8 @@ class Bucket(metaclass=B2TraceMeta):
         folder_to_list: str = '',
         latest_only: bool = True,
         recursive: bool = False,
-        fetch_count: Optional[int] = 10000
+        fetch_count: Optional[int] = 10000,
+        with_wildcard: bool = False,
     ):
         """
         Pretend that folders exist and yields the information about the files in a folder.
@@ -339,20 +342,58 @@ class Bucket(metaclass=B2TraceMeta):
         :param folder_to_list: the name of the folder to list; must not start with "/".
                                Empty string means top-level folder
         :param latest_only: when ``False`` returns info about all versions of a file,
-                              when ``True``, just returns info about the most recent versions
+                            when ``True``, just returns info about the most recent versions
         :param recursive: if ``True``, list folders recursively
         :param fetch_count: how many entries to return or ``None`` to use the default. Acceptable values: 1 - 10000
+        :param with_wildcard: Accepts "*", "?", "[]" and "[!]" in folder_to_list, similarly to what shell does.
+                              As of 1.19.0 it can only be enabled when recursive is also enabled.
+                              Also, in this mode, folder_to_list is considered to be a filename or a pattern.
         :rtype: generator[tuple[b2sdk.v2.FileVersion, str]]
         :returns: generator of (file_version, folder_name) tuples
 
         .. note::
-            In case of `recursive=True`, folder_name is returned only for first file in the folder.
+            In case of `recursive=True`, folder_name is not returned.
         """
+        # Ensure that recursive is enabled when with_wildcard is enabled.
+        if with_wildcard and not recursive:
+            raise ValueError('with_wildcard requires recursive to be turned on as well')
+
         # Every file returned must have a name that starts with the
         # folder name and a "/".
         prefix = folder_to_list
-        if prefix != '' and not prefix.endswith('/'):
+        # In case of wildcards, we don't assume that this is folder that we're searching through.
+        # It could be an exact file, e.g. 'a/b.txt' that we're trying to locate.
+        if prefix != '' and not prefix.endswith('/') and not with_wildcard:
             prefix += '/'
+
+        # If we're running with wildcard-matching, we could get
+        # a different prefix from it.  We search for the first
+        # occurrence of the special characters and fetch
+        # parent path from that place.
+        # Examples:
+        #   'b/c/*.txt' –> 'b/c/'
+        #   '*.txt' –> ''
+        #   'a/*/result.[ct]sv' –> 'a/'
+        if with_wildcard:
+            for wildcard_character in '*?[':
+                try:
+                    starter_index = folder_to_list.index(wildcard_character)
+                except ValueError:
+                    continue
+
+                # +1 to include the starter character.  Using posix path to
+                # ensure consistent behaviour on Windows (e.g. case sensitivity).
+                path = pathlib.PurePosixPath(folder_to_list[:starter_index + 1])
+                parent_path = str(path.parent)
+                # Path considers dot to be the empty path.
+                # There's no shorter path than that.
+                if parent_path == '.':
+                    prefix = ''
+                    break
+                # We could receive paths in different stage, e.g. 'a/*/result.[ct]sv' has two
+                # possible parent paths: 'a/' and 'a/*/', with the first one being the correct one
+                if len(parent_path) < len(prefix):
+                    prefix = parent_path
 
         # Loop until all files in the named directory have been listed.
         # The starting point of the first list_file_names request is the
@@ -378,7 +419,13 @@ class Bucket(metaclass=B2TraceMeta):
                 if not file_version.file_name.startswith(prefix):
                     # We're past the files we care about
                     return
+                if with_wildcard and not fnmatch.fnmatchcase(
+                    file_version.file_name, folder_to_list
+                ):
+                    # File doesn't match our wildcard rules
+                    continue
                 after_prefix = file_version.file_name[len(prefix):]
+                # In case of wildcards, we don't care about folders at all, and it's recursive by default.
                 if '/' not in after_prefix or recursive:
                     # This is not a folder, so we'll print it out and
                     # continue on.
