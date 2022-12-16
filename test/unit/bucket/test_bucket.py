@@ -1443,17 +1443,15 @@ class TestUpload(TestCaseWithBucket):
                 expected_source_count = 2 if should_be_incremental else 1
 
                 # is the result file expected to be a large file
-                expected_large_file = should_be_incremental or len(
-                    data
-                ) > self.simulator.MIN_PART_SIZE
+                expected_large_file = \
+                    should_be_incremental or \
+                    len(data) > self.simulator.MIN_PART_SIZE
 
                 write_file(path, data)
                 with mock.patch.object(
                     self.bucket, 'concatenate', wraps=self.bucket.concatenate
                 ) as mocked_concatenate:
-                    file_info = self.bucket.upload_local_file(
-                        path, 'file1', upload_mode=UploadMode.INCREMENTAL
-                    )
+                    self.bucket.upload_local_file(path, 'file1', upload_mode=UploadMode.INCREMENTAL)
                     mocked_concatenate.assert_called_once()
                     assert len(mocked_concatenate.call_args.args[0]) == expected_source_count
 
