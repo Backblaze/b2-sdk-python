@@ -1516,7 +1516,7 @@ class TestUpload(TestCaseWithBucket):
     def test_upload_large(self):
         data = self._make_data(self.simulator.MIN_PART_SIZE * 3)
         progress_listener = StubProgressListener()
-        print(self.bucket.upload_bytes(data, 'file1', progress_listener=progress_listener))
+        self.bucket.upload_bytes(data, 'file1', progress_listener=progress_listener)
         self._check_file_contents('file1', data)
         self._check_large_file_sha1('file1', hex_sha1_of_bytes(data))
         self.assertTrue(progress_listener.is_valid())

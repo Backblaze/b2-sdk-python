@@ -14,15 +14,15 @@ import logging
 import os
 
 from abc import abstractmethod
-from typing import Optional
 from enum import Enum, unique
+from typing import Callable, Optional, Union
 
 from b2sdk.exception import InvalidUploadSource
 from b2sdk.http_constants import DEFAULT_MIN_PART_SIZE
 from b2sdk.stream.range import RangeOfInputStream, wrap_with_range
 from b2sdk.transfer.outbound.copy_source import CopySource
 from b2sdk.transfer.outbound.outbound_source import OutboundTransferSource
-from b2sdk.utils import hex_sha1_of_stream, hex_sha1_of_unlimited_stream, Sha1HexDigest, update_digest_from_stream
+from b2sdk.utils import hex_sha1_of_unlimited_stream, Sha1HexDigest, update_digest_from_stream
 
 logger = logging.getLogger(__name__)
 
@@ -40,34 +40,44 @@ class AbstractUploadSource(OutboundTransferSource):
     """
 
     @abstractmethod
-    def get_content_sha1(self):
+    def get_content_sha1(self) -> Optional[Sha1HexDigest]:
         """
-        Return a 40-character string containing the hex SHA1 checksum of the data in the file.
+        Returns a 40-character string containing the hex SHA1 checksum of the data in the file.
         """
 
     @abstractmethod
-    def open(self):
+    def open(self) -> io.IOBase:
         """
-        Return a binary file-like object from which the
-        data can be read.
-        :return:
+        Returns a binary file-like object from which the data can be read.
         """
 
-    def get_large_file_sha1(self) -> Optional[Sha1HexDigest]:
-        return self.get_content_sha1()
-
-    def is_upload(self):
+    def is_upload(self) -> bool:
         return True
 
-    def is_copy(self):
+    def is_copy(self) -> bool:
         return False
 
-    def is_sha1_known(self):
+    def is_sha1_known(self) -> bool:
+        """
+        Returns information whether SHA1 of the source is currently available.
+        Note that negative result doesn't mean that SHA1 is not available.
+        Calling ``get_content_sha1`` can still provide a valid digest.
+        """
         return False
 
 
 class UploadSourceBytes(AbstractUploadSource):
-    def __init__(self, data_bytes, content_sha1=None):
+    def __init__(
+        self,
+        data_bytes: Union[bytes, bytearray],
+        content_sha1: Optional[Sha1HexDigest] = None,
+    ):
+        """
+        Initialize upload source using given bytes.
+
+        :param data_bytes: Data that is to be uploaded.
+        :param content_sha1: SHA1 hexdigest of the data, or ``None``.
+        """
         self.data_bytes = data_bytes
         self.content_sha1 = content_sha1
 
@@ -95,7 +105,17 @@ class UploadSourceBytes(AbstractUploadSource):
 
 
 class UploadSourceLocalFileBase(AbstractUploadSource):
-    def __init__(self, local_path, content_sha1=None):
+    def __init__(
+        self,
+        local_path: Union[os.PathLike, str],
+        content_sha1: Optional[Sha1HexDigest] = None,
+    ):
+        """
+        Initialize upload source using provided path.
+
+        :param local_path: Any path-like object that points to a file to be uploaded.
+        :param content_sha1: SHA1 hexdigest of the data, or ``None``.
+        """
         self.local_path = local_path
         self.content_length = 0
         self.content_sha1 = content_sha1
@@ -157,8 +177,23 @@ class UploadSourceLocalFileBase(AbstractUploadSource):
 
 
 class UploadSourceLocalFileRange(UploadSourceLocalFileBase):
-    def __init__(self, local_path, content_sha1=None, offset=0, length=None):
-        super(UploadSourceLocalFileRange, self).__init__(local_path, content_sha1)
+    def __init__(
+        self,
+        local_path: Union[os.PathLike, str],
+        content_sha1: Optional[Sha1HexDigest] = None,
+        offset: int = 0,
+        length: Optional[int] = None,
+    ):
+        """
+        Initialize upload source using provided path.
+
+        :param local_path: Any path-like object that points to a file to be uploaded.
+        :param content_sha1: SHA1 hexdigest of the data, or ``None``.
+        :param offset: Position in the file where upload should start from.
+        :param length: Amount of data to be uploaded. If ``None``, length of
+                      the remainder of the file is taken.
+        """
+        super().__init__(local_path, content_sha1)
         self.file_size = self.content_length
         self.offset = offset
         if length is None:
@@ -253,7 +288,21 @@ class UploadSourceLocalFile(UploadSourceLocalFileBase):
 
 
 class UploadSourceStream(AbstractUploadSource):
-    def __init__(self, stream_opener, stream_length=None, stream_sha1=None):
+    def __init__(
+        self,
+        stream_opener: Callable[[], io.IOBase],
+        stream_length: Optional[int] = None,
+        stream_sha1: Optional[Sha1HexDigest] = None,
+    ):
+        """
+        Initialize upload source using arbitrary function.
+
+        :param stream_opener: A function that opens a stream for uploading.
+        :param stream_length: Length of the stream. If ``None``, data will be calculated
+                      from the stream the first time it's required.
+        :param stream_sha1: SHA1 of the stream. If ``None``, data will be calculated from
+                      the stream the first time it's required.
+        """
         self.stream_opener = stream_opener
         self._content_length = stream_length
         self._content_sha1 = stream_sha1
@@ -293,7 +342,23 @@ class UploadSourceStream(AbstractUploadSource):
 
 
 class UploadSourceStreamRange(UploadSourceStream):
-    def __init__(self, stream_opener, offset, stream_length, stream_sha1=None):
+    def __init__(
+        self,
+        stream_opener: Callable[[], io.IOBase],
+        offset: int = 0,
+        stream_length: Optional[int] = None,
+        stream_sha1: Optional[Sha1HexDigest] = None,
+    ):
+        """
+        Initialize upload source using arbitrary function.
+
+        :param stream_opener: A function that opens a stream for uploading.
+        :param offset: Offset from which stream should be uploaded.
+        :param stream_length: Length of the stream. If ``None``, data will be calculated
+                      from the stream the first time it's required.
+        :param stream_sha1: SHA1 of the stream. If ``None``, data will be calculated from
+                      the stream the first time it's required.
+        """
         super(UploadSourceStreamRange, self).__init__(
             stream_opener,
             stream_length=stream_length,

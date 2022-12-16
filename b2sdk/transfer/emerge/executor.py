@@ -12,7 +12,7 @@ import logging
 import threading
 
 from abc import ABCMeta, abstractmethod
-from typing import Optional
+from typing import Dict, Optional
 
 from b2sdk.encryption.setting import EncryptionSetting
 from b2sdk.exception import MaxFileSizeExceeded
@@ -349,9 +349,16 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
                 best_match_parts_len = finished_parts_len
         return best_match_file, best_match_parts
 
-    @staticmethod
-    def _get_file_info_without_large_file_sha1(file_info):
-        return {k: v for k, v in file_info.items() if k != LARGE_FILE_SHA1}
+    @classmethod
+    def _get_file_info_without_large_file_sha1(
+        cls,
+        file_info: Optional[Dict[str, str]],
+    ) -> Optional[Dict[str, str]]:
+        if not file_info or LARGE_FILE_SHA1 not in file_info:
+            return file_info
+        out_file_info = dict(file_info)
+        del out_file_info[LARGE_FILE_SHA1]
+        return out_file_info
 
     def _match_unfinished_file_if_possible(
         self,
