@@ -29,9 +29,9 @@ class OutboundTransferSource(metaclass=ABCMeta):
     """
 
     @abstractmethod
-    def get_content_length(self):
+    def get_content_length(self) -> int:
         """
-        Return the number of bytes of data in the file.
+        Returns the number of bytes of data in the file.
         """
 
     @abstractmethod
@@ -42,19 +42,17 @@ class OutboundTransferSource(metaclass=ABCMeta):
         This method is only used if a large file is constructed from only a single source.  If that source's hash is known,
         the result file's SHA1 checksum will be the same and can be copied.
 
-        If the source's sha1 is unknown and can't be calculated, `None` is returned. 
- 
-        :rtype str:
+        If the source's sha1 is unknown and can't be calculated, `None` is returned.
         """
 
     @abstractmethod
-    def is_upload(self):
-        """ Return if outbound source is an upload source.
-        :rtype bool:
+    def is_upload(self) -> bool:
+        """
+        Return if outbound source is an upload source.
         """
 
     @abstractmethod
-    def is_copy(self):
-        """ Return if outbound source is a copy source.
-        :rtype bool:
+    def is_copy(self) -> bool:
+        """
+        Returns if outbound source is a copy source.
         """
