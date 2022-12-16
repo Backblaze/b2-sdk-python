@@ -27,7 +27,7 @@ class AbstractUploadSource(OutboundTransferSource):
     """
 
     @abstractmethod
-    def get_content_sha1(self) -> str:
+    def get_content_sha1(self) -> Optional[Sha1HexDigest]:
         """
         Returns a 40-character string containing the hex SHA1 checksum of the data in the file.
         """
@@ -37,9 +37,6 @@ class AbstractUploadSource(OutboundTransferSource):
         """
         Returns a binary file-like object from which the data can be read.
         """
-
-    def get_large_file_sha1(self) -> Optional[Sha1HexDigest]:
-        return self.get_content_sha1()
 
     def is_upload(self) -> bool:
         return True
@@ -57,7 +54,11 @@ class AbstractUploadSource(OutboundTransferSource):
 
 
 class UploadSourceBytes(AbstractUploadSource):
-    def __init__(self, data_bytes: Union[bytes, bytearray], content_sha1: Optional[str] = None):
+    def __init__(
+        self,
+        data_bytes: Union[bytes, bytearray],
+        content_sha1: Optional[Sha1HexDigest] = None,
+    ):
         """
         Initialize upload source using given bytes.
 
@@ -91,7 +92,11 @@ class UploadSourceBytes(AbstractUploadSource):
 
 
 class UploadSourceLocalFile(AbstractUploadSource):
-    def __init__(self, local_path: Union[os.PathLike, str], content_sha1: Optional[str] = None):
+    def __init__(
+        self,
+        local_path: Union[os.PathLike, str],
+        content_sha1: Optional[Sha1HexDigest] = None,
+    ):
         """
         Initialize upload source using provided path.
 
@@ -144,7 +149,7 @@ class UploadSourceLocalFileRange(UploadSourceLocalFile):
     def __init__(
         self,
         local_path: Union[os.PathLike, str],
-        content_sha1: Optional[str] = None,
+        content_sha1: Optional[Sha1HexDigest] = None,
         offset: int = 0,
         length: Optional[int] = None,
     ):
@@ -190,7 +195,7 @@ class UploadSourceStream(AbstractUploadSource):
         self,
         stream_opener: Callable[[], io.IOBase],
         stream_length: Optional[int] = None,
-        stream_sha1: Optional[str] = None,
+        stream_sha1: Optional[Sha1HexDigest] = None,
     ):
         """
         Initialize upload source using arbitrary function.
@@ -245,7 +250,7 @@ class UploadSourceStreamRange(UploadSourceStream):
         stream_opener: Callable[[], io.IOBase],
         offset: int = 0,
         stream_length: Optional[int] = None,
-        stream_sha1: Optional[str] = None,
+        stream_sha1: Optional[Sha1HexDigest] = None,
     ):
         """
         Initialize upload source using arbitrary function.

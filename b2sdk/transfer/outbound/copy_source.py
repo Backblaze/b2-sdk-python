@@ -82,7 +82,7 @@ class CopySource(OutboundTransferSource):
             source_content_type=self.source_content_type
         )
 
-    def get_large_file_sha1(self):
+    def get_content_sha1(self):
         if self.offset or self.length:
             # this is a copy of only a range of the source, can't copy the SHA1
             return None

@@ -631,7 +631,7 @@ class Bucket(metaclass=B2TraceMeta):
         For more information and usage examples please see :ref:`Advanced usage patterns <AdvancedUsagePatterns>`.
 
         :param list[b2sdk.v2.WriteIntent] write_intents: list of write intents (remote or local sources)
-        :param str new_file_name: file name of the new file
+        :param str file_name: file name of the new file
         :param str,None content_type: content_type for the new file, if ``None`` content_type would be
                         automatically determined or it may be copied if it resolves
                         as single part remote source copy
@@ -649,7 +649,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param bool legal_hold: legal hold setting
         :param int min_part_size: lower limit of part size for the transfer planner, in bytes
         :param int max_part_size: upper limit of part size for the transfer planner, in bytes
-        :param str,None large_file_sha1: SHA-1 hash of the result file or ``None`` if unknown
+        :param Sha1HexDigest,None large_file_sha1: SHA-1 hash of the result file or ``None`` if unknown
         """
         return self._create_file(
             self.api.services.emerger.emerge,
@@ -692,7 +692,7 @@ class Bucket(metaclass=B2TraceMeta):
 
         :param iterator[b2sdk.v2.WriteIntent] write_intents_iterator: iterator of write intents which
                         are sorted ascending by ``destination_offset``
-        :param str new_file_name: file name of the new file
+        :param str file_name: file name of the new file
         :param str,None content_type: content_type for the new file, if ``None`` content_type would be
                         automatically determined or it may be copied if it resolves
                         as single part remote source copy
@@ -711,7 +711,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param bool legal_hold: legal hold setting
         :param int min_part_size: lower limit of part size for the transfer planner, in bytes
         :param int max_part_size: upper limit of part size for the transfer planner, in bytes
-        :param str,None large_file_sha1: SHA-1 hash of the result file or ``None`` if unknown
+        :param Sha1HexDigest,None large_file_sha1: SHA-1 hash of the result file or ``None`` if unknown
         """
         return self._create_file(
             self.api.services.emerger.emerge_stream,
@@ -787,7 +787,7 @@ class Bucket(metaclass=B2TraceMeta):
         Creates a new file in this bucket by concatenating multiple remote or local sources.
 
         :param list[b2sdk.v2.OutboundTransferSource] outbound_sources: list of outbound sources (remote or local)
-        :param str new_file_name: file name of the new file
+        :param str file_name: file name of the new file
         :param str,None content_type: content_type for the new file, if ``None`` content_type would be
                         automatically determined from file name or it may be copied if it resolves
                         as single part remote source copy
@@ -805,7 +805,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param bool legal_hold: legal hold setting
         :param int min_part_size: lower limit of part size for the transfer planner, in bytes
         :param int max_part_size: upper limit of part size for the transfer planner, in bytes
-        :param str,None large_file_sha1: SHA-1 hash of the result file or ``None`` if unknown
+        :param Sha1HexDigest,None large_file_sha1: SHA-1 hash of the result file or ``None`` if unknown
         """
         return self.create_file(
             list(WriteIntent.wrap_sources_iterator(outbound_sources)),
@@ -841,7 +841,7 @@ class Bucket(metaclass=B2TraceMeta):
         Creates a new file in this bucket by concatenating stream of multiple remote or local sources.
 
         :param iterator[b2sdk.v2.OutboundTransferSource] outbound_sources_iterator: iterator of outbound sources
-        :param str new_file_name: file name of the new file
+        :param str file_name: file name of the new file
         :param str,None content_type: content_type for the new file, if ``None`` content_type would be
                         automatically determined or it may be copied if it resolves
                         as single part remote source copy
@@ -858,7 +858,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param b2sdk.v2.EncryptionSetting encryption: encryption setting (``None`` if unknown)
         :param b2sdk.v2.FileRetentionSetting file_retention: file retention setting
         :param bool legal_hold: legal hold setting
-        :param str,None large_file_sha1: SHA-1 hash of the result file or ``None`` if unknown
+        :param Sha1HexDigest,None large_file_sha1: SHA-1 hash of the result file or ``None`` if unknown
         """
         return self.create_file_stream(
             WriteIntent.wrap_sources_iterator(outbound_sources_iterator),

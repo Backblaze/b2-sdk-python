@@ -9,8 +9,7 @@
 ######################################################################
 
 import logging
-from typing import Optional, List
-from collections.abc import Iterator
+from typing import Dict, Optional, List
 
 from b2sdk.encryption.setting import EncryptionSetting
 from b2sdk.file_lock import FileRetentionSetting, LegalHold
@@ -45,25 +44,26 @@ class Emerger(metaclass=B2TraceMetaAbstract):
 
     @staticmethod
     def _get_updated_file_info_with_large_file_sha1(
-        file_info: dict,
+        file_info: Optional[Dict[str, str]],
         write_intents: List[WriteIntent],
         emerge_plan: EmergePlan,
         large_file_sha1: Optional[Sha1HexDigest] = None,
-    ) -> dict:
+    ) -> Optional[Dict[str, str]]:
         if not emerge_plan.is_large_file():
             # Emerge plan doesn't construct a large file, no point setting the large_file_sha1
             return file_info
 
-        if not large_file_sha1 and len(write_intents) == 1:
+        file_sha1 = large_file_sha1
+        if not file_sha1 and len(write_intents) == 1:
             # large_file_sha1 was not given explicitly, but there's just one write intent, perhaps it has a hash
-            large_file_sha1 = write_intents[0].get_large_file_sha1()
+            file_sha1 = write_intents[0].get_content_sha1()
 
-        if large_file_sha1:
-            # don't modify the file_info passed in, use a copy
-            file_info = dict(file_info) if file_info else {}
-            file_info[LARGE_FILE_SHA1] = large_file_sha1
+        out_file_info = file_info
+        if file_sha1:
+            out_file_info = dict(file_info) if file_info else {}
+            out_file_info[LARGE_FILE_SHA1] = file_sha1
 
-        return file_info
+        return out_file_info
 
     def emerge(
         self,
@@ -107,7 +107,7 @@ class Emerger(metaclass=B2TraceMetaAbstract):
         )
         emerge_plan = planner.get_emerge_plan(write_intents)  # <--
 
-        file_info = self._get_updated_file_info_with_large_file_sha1(
+        updated_file_info = self._get_updated_file_info_with_large_file_sha1(
             file_info, write_intents, emerge_plan, large_file_sha1
         )
 
@@ -116,7 +116,7 @@ class Emerger(metaclass=B2TraceMetaAbstract):
             bucket_id,
             file_name,
             content_type,
-            file_info,
+            updated_file_info,
             progress_listener,
             continue_large_file_id=continue_large_file_id,
             encryption=encryption,
@@ -171,15 +171,14 @@ class Emerger(metaclass=B2TraceMetaAbstract):
             max_part_size=max_part_size,
         )
 
-        # ensure that write_intent_iterator is an iterator (and not just iterable, like a list)
-        if not isinstance(write_intent_iterator, Iterator):
-            write_intent_iterator = iter(write_intent_iterator)
+        # iter(iterable) –> iterator; iter(iterator) –> iterator.
+        intent_iterator = iter(write_intent_iterator)
 
-        first_write_intents, write_intent_iterator = iterator_peek(write_intent_iterator, 2)
+        first_write_intents, intent_iterator = iterator_peek(intent_iterator, 2)
 
-        emerge_plan = planner.get_streaming_emerge_plan(write_intent_iterator)  # <--
+        emerge_plan = planner.get_streaming_emerge_plan(intent_iterator)  # <--
 
-        file_info = self._get_updated_file_info_with_large_file_sha1(
+        updated_file_info = self._get_updated_file_info_with_large_file_sha1(
             file_info, first_write_intents, emerge_plan, large_file_sha1
         )
 
@@ -188,7 +187,7 @@ class Emerger(metaclass=B2TraceMetaAbstract):
             bucket_id,
             file_name,
             content_type,
-            file_info,
+            updated_file_info,
             progress_listener,
             continue_large_file_id=continue_large_file_id,
             max_queue_size=max_queue_size,  # <--

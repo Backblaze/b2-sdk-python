@@ -16,16 +16,15 @@ import re
 import shutil
 import tempfile
 import time
-import concurrent.futures as futures
-from collections.abc import Iterator
 from decimal import Decimal
 from itertools import chain
-from typing import Tuple
+from typing import Iterator, List, NewType, Optional, Tuple, TypeVar
 from urllib.parse import quote, unquote_plus
 
 from logfury.v1 import DefaultTraceAbstractMeta, DefaultTraceMeta, limit_trace_arguments, disable_trace, trace_call
 
-Sha1HexDigest = str
+Sha1HexDigest = NewType('Sha1HexDigest', str)
+T = TypeVar('T')
 
 
 def b2_url_encode(s):
@@ -90,7 +89,7 @@ def choose_part_ranges(content_length, minimum_part_size):
 
 
 # TODO: When dropping support for Python 3.7 use typing.Protocol to specify that
-# input_stream is an object with a read() method.
+#       input_stream is an object with a read() method.
 def hex_sha1_of_stream(input_stream, content_length: int) -> Sha1HexDigest:
     """
     Return the 40-character hex SHA1 checksum of the first content_length
@@ -113,25 +112,30 @@ def hex_sha1_of_stream(input_stream, content_length: int) -> Sha1HexDigest:
             )
         digest.update(data)
         remaining -= to_read
-    return digest.hexdigest()
+    return Sha1HexDigest(digest.hexdigest())
 
 
-def hex_sha1_of_unlimited_stream(input_stream, limit=None):
+# TODO: When dropping support for Python 3.7 use typing.Protocol to specify that
+#       input_stream is an object with a read() method.
+def hex_sha1_of_unlimited_stream(
+    input_stream,
+    limit: Optional[int] = None,
+) -> Tuple[Sha1HexDigest, int]:
     block_size = 1024 * 1024
-    content_length = 0
+    offset = 0
     digest = hashlib.sha1()
     while True:
         if limit is not None:
-            to_read = min(limit - content_length, block_size)
+            to_read = min(limit - offset, block_size)
         else:
             to_read = block_size
         data = input_stream.read(to_read)
         data_len = len(data)
         if data_len > 0:
             digest.update(data)
-            content_length += data_len
+            offset += data_len
         if data_len < to_read:
-            return digest.hexdigest(), content_length
+            return Sha1HexDigest(digest.hexdigest()), offset
 
 
 def hex_sha1_of_file(path_):
@@ -440,9 +444,9 @@ def current_time_millis():
     return int(round(time.time() * 1000))
 
 
-def iterator_peek(iterator: Iterator, count: int) -> Tuple[list, Iterator]:
+def iterator_peek(iterator: Iterator[T], count: int) -> Tuple[List[T], Iterator[T]]:
     """
-    Get the `count` first elements yielded by `iterator`.
+    Get up to the `count` first elements yielded by `iterator`.
 
     The function will read `count` elements from `iterator` or less if the end is reached first.  Returns a tuple
     consisting of a list of retrieved elements and an iterator equivalent to the input iterator.

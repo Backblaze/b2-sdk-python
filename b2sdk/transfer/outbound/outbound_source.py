@@ -35,7 +35,7 @@ class OutboundTransferSource(metaclass=ABCMeta):
         """
 
     @abstractmethod
-    def get_large_file_sha1(self) -> Optional[Sha1HexDigest]:
+    def get_content_sha1(self) -> Optional[Sha1HexDigest]:
         """
         Return a 40-character string containing the hex SHA1 checksum, which can be used as the `large_file_sha1` entry.
 
