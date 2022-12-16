@@ -64,21 +64,21 @@ class AbstractFileSyncPolicy(metaclass=ABCMeta):
         encryption_settings_provider:
         AbstractSyncEncryptionSettingsProvider = SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER,
         upload_mode: UploadMode = UploadMode.FULL,
-        absolute_minimum_part_size: int = None,
+        absolute_minimum_part_size: Optional[int] = None,
     ):
         """
-        :param b2sdk.v2.AbstractPath source_path: source file object
-        :param b2sdk.v2.AbstractFolder source_folder: source folder object
-        :param b2sdk.v2.AbstractPath dest_path: destination file object
-        :param b2sdk.v2.AbstractFolder dest_folder: destination folder object
-        :param int now_millis: current time in milliseconds
-        :param int keep_days: days to keep before delete
-        :param b2sdk.v2.NewerFileSyncMode newer_file_mode: setting which determines handling for destination files newer than on the source
-        :param int compare_threshold: when comparing with size or time for sync
-        :param b2sdk.v2.CompareVersionMode compare_version_mode: how to compare source and destination files
-        :param b2sdk.v2.AbstractSyncEncryptionSettingsProvider encryption_settings_provider: encryption setting provider
-        :param b2sdk.v2.UploadMode upload_mode: file upload mode
-        :param int absolute_minimum_part_size: minimum file part size that can be uploaded to the server
+        :param source_path: source file object
+        :param source_folder: source folder object
+        :param dest_path: destination file object
+        :param dest_folder: destination folder object
+        :param now_millis: current time in milliseconds
+        :param keep_days: days to keep before delete
+        :param newer_file_mode: setting which determines handling for destination files newer than on the source
+        :param compare_threshold: when comparing with size or time for sync
+        :param compare_version_mode: how to compare source and destination files
+        :param encryption_settings_provider: encryption setting provider
+        :param upload_mode: file upload mode
+        :param absolute_minimum_part_size: minimum file part size that can be uploaded to the server
         """
         self._source_path = source_path
         self._source_folder = source_folder
@@ -94,7 +94,7 @@ class AbstractFileSyncPolicy(metaclass=ABCMeta):
         self._upload_mode = upload_mode
         self._absolute_minimum_part_size = absolute_minimum_part_size
 
-    def _should_transfer(self):
+    def _should_transfer(self) -> bool:
         """
         Decide whether to transfer the file from the source to the destination.
         """
