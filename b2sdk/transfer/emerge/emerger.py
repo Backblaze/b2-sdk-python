@@ -42,8 +42,9 @@ class Emerger(metaclass=B2TraceMetaAbstract):
         self.services = services
         self.emerge_executor = EmergeExecutor(services)
 
-    @staticmethod
+    @classmethod
     def _get_updated_file_info_with_large_file_sha1(
+        cls,
         file_info: Optional[Dict[str, str]],
         write_intents: List[WriteIntent],
         emerge_plan: EmergePlan,
@@ -95,7 +96,7 @@ class Emerger(metaclass=B2TraceMetaAbstract):
 
         :param int min_part_size: lower limit of part size for the transfer planner, in bytes
         :param int max_part_size: upper limit of part size for the transfer planner, in bytes
-        :param str,None large_file_sha1: SHA-1 hash of the result file or ``None`` if unknown
+        :param Sha1HexDigest,None large_file_sha1: SHA-1 hash of the result file or ``None`` if unknown
         """
         # WARNING: time spent trying to extract common parts of emerge() and emerge_stream()
         # into a separate method: 20min. You can try it too, but please increment the timer honestly.
@@ -163,7 +164,7 @@ class Emerger(metaclass=B2TraceMetaAbstract):
 
         :param int min_part_size: lower limit of part size for the transfer planner, in bytes
         :param int max_part_size: upper limit of part size for the transfer planner, in bytes
-        :param str,None large_file_sha1: result file SHA1 hash or ``None`` if not known
+        :param Sha1HexDigest,None large_file_sha1: result file SHA1 hash or ``None`` if not known
         """
         planner = self.get_emerge_planner(
             min_part_size=min_part_size,

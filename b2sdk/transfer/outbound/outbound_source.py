@@ -48,11 +48,11 @@ class OutboundTransferSource(metaclass=ABCMeta):
     @abstractmethod
     def is_upload(self) -> bool:
         """
-        Return if outbound source is an upload source.
+        Returns True if outbound source is an upload source.
         """
 
     @abstractmethod
     def is_copy(self) -> bool:
         """
-        Returns if outbound source is a copy source.
+        Returns True if outbound source is a copy source.
         """
