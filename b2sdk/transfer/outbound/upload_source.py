@@ -15,9 +15,10 @@ import os
 
 from abc import abstractmethod
 from enum import Enum, unique
-from typing import Callable, Optional, Union
+from typing import Callable, List, Optional, Union
 
 from b2sdk.exception import InvalidUploadSource
+from b2sdk.file_version import FileVersion
 from b2sdk.http_constants import DEFAULT_MIN_PART_SIZE
 from b2sdk.stream.range import RangeOfInputStream, wrap_with_range
 from b2sdk.transfer.outbound.copy_source import CopySource
@@ -222,7 +223,11 @@ class UploadSourceLocalFileRange(UploadSourceLocalFileBase):
 
 
 class UploadSourceLocalFile(UploadSourceLocalFileBase):
-    def get_incremental_sources(self, file_version, min_part_size=None):
+    def get_incremental_sources(
+        self,
+        file_version: FileVersion,
+        min_part_size: Optional[int] = None,
+    ) -> List[OutboundTransferSource]:
         """
         Split the upload into a copy and upload source constructing an incremental upload
 

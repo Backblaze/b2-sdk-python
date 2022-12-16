@@ -12,6 +12,7 @@ import fnmatch
 import logging
 import pathlib
 
+from contextlib import suppress
 from typing import Optional, Tuple
 
 from .encryption.setting import EncryptionSetting, EncryptionSettingFactory
@@ -555,11 +556,9 @@ class Bucket(metaclass=B2TraceMeta):
         large_file_sha1 = sha1_sum
 
         if upload_mode == UploadMode.INCREMENTAL:
-            try:
+            with suppress(FileNotPresent):
                 existing_file_info = self.get_file_info_by_name(file_name)
-            except FileNotPresent:
-                pass
-            else:
+
                 sources = upload_source.get_incremental_sources(
                     existing_file_info,
                     self.api.session.account_info.get_absolute_minimum_part_size()

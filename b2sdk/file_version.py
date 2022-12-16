@@ -8,7 +8,7 @@
 #
 ######################################################################
 
-from typing import Dict, Optional, Union, Tuple, TYPE_CHECKING
+from typing import Any, Dict, Optional, Union, Tuple, TYPE_CHECKING
 import re
 from copy import deepcopy
 
@@ -102,7 +102,7 @@ class BaseFileVersion:
             return '%s%s' % (UNVERIFIED_CHECKSUM_PREFIX, content_sha1)
         return content_sha1
 
-    def _clone(self, **new_attributes: Dict[str, object]):
+    def _clone(self, **new_attributes: Any):
         """
         Create new instance based on the old one, overriding attributes with :code:`new_attributes`
         (only applies to arguments passed to __init__)
@@ -205,10 +205,9 @@ class BaseFileVersion:
         if self.content_sha1 and self.content_sha1 != "none":
             return self.content_sha1
         elif LARGE_FILE_SHA1 in self.file_info:
-            return self.file_info[LARGE_FILE_SHA1]
-        else:
-            # content SHA1 unknown
-            return None
+            return Sha1HexDigest(self.file_info[LARGE_FILE_SHA1])
+        # content SHA1 unknown
+        return None
 
 
 class FileVersion(BaseFileVersion):
