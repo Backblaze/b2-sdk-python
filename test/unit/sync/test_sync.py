@@ -12,7 +12,7 @@ from unittest import mock
 from enum import Enum
 from functools import partial
 
-from apiver_deps import UpPolicy, B2DownloadAction, AbstractSyncEncryptionSettingsProvider, UploadSourceLocalFileRange, UploadSourceLocalFile, SyncPolicyManager
+from apiver_deps import UpPolicy, B2DownloadAction, AbstractSyncEncryptionSettingsProvider, UploadSourceLocalFileRange, UploadSourceLocalFile, SyncPolicyManager, CopySource
 from apiver_deps_exception import DestFileNewer, InvalidArgument
 from apiver_deps import KeepOrDeleteMode, NewerFileSyncMode, CompareVersionMode, FileVersion
 import pytest
@@ -935,6 +935,8 @@ class TestSynchronizer:
             )
         ]
         assert len(bucket.mock_calls[0].args[0]) == 2 if should_be_incremental else 1
+        if should_be_incremental:
+            assert isinstance(bucket.mock_calls[0].args[0][0], CopySource)
 
 
 class TstEncryptionSettingsProvider(AbstractSyncEncryptionSettingsProvider):
@@ -963,7 +965,3 @@ class TstEncryptionSettingsProvider(AbstractSyncEncryptionSettingsProvider):
 
     def get_setting_for_download(self, *a, **kw):
         """overwritten in __init__"""
-
-
-class TestIncrementalUploadAction:
-    pass
