@@ -15,7 +15,7 @@ import socket
 from ..test_base import TestBase
 
 import apiver_deps
-from apiver_deps_exception import BadDateFormat, BadJson, BrokenPipe, B2ConnectionError, ClockSkew, ConnectionReset, ServiceError, UnknownError, UnknownHost, TooManyRequests, InvalidJsonResponse, PotentialS3EndpointAsRealmPassed
+from apiver_deps_exception import BadDateFormat, BadJson, BrokenPipe, B2ConnectionError, ClockSkew, ConnectionReset, ServiceError, UnknownError, UnknownHost, TooManyRequests, InvalidJsonResponse, PotentialS3EndpointPassedAsRealm
 from apiver_deps import USER_AGENT
 from apiver_deps import B2Http
 from apiver_deps import B2HttpApiConfig
@@ -116,7 +116,7 @@ class TestTranslateErrors(TestBase):
         response.content = b'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
         response.url = 'https://s3.us-west-000.backblazeb2.com'
 
-        with self.assertRaises(PotentialS3EndpointAsRealmPassed):
+        with self.assertRaises(PotentialS3EndpointPassedAsRealm):
             B2Http._translate_errors(lambda: response)
 
 
