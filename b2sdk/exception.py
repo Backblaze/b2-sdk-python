@@ -540,6 +540,12 @@ class EnablingFileLockOnRestrictedBucket(B2Error):
         return "Turning on file lock for a restricted bucket is not allowed"
 
 
+class InvalidJsonResponse(B2SimpleError):
+    def __init__(self, content: bytes):
+        self.content = content
+        super().__init__('%s...' % self.content)
+
+
 @trace_call(logger)
 def interpret_b2_error(
     status: int,

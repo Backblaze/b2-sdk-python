@@ -44,6 +44,7 @@ from b2sdk.exception import FileNameNotAllowed
 from b2sdk.exception import FileNotPresent
 from b2sdk.exception import FileSha1Mismatch
 from b2sdk.exception import InvalidAuthToken
+from b2sdk.exception import InvalidJsonResponse
 from b2sdk.exception import InvalidMetadataDirective
 from b2sdk.exception import InvalidRange
 from b2sdk.exception import InvalidUploadSource
@@ -123,6 +124,7 @@ __all__ = (
     'IncompleteSync',
     'InvalidArgument',
     'InvalidAuthToken',
+    'InvalidJsonResponse',
     'InvalidMetadataDirective',
     'InvalidRange',
     'InvalidUploadSource',
