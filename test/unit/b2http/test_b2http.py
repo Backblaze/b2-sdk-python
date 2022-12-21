@@ -15,7 +15,7 @@ import socket
 from ..test_base import TestBase
 
 import apiver_deps
-from apiver_deps_exception import BadDateFormat, BadJson, BrokenPipe, B2ConnectionError, ClockSkew, ConnectionReset, ServiceError, UnknownError, UnknownHost, TooManyRequests
+from apiver_deps_exception import BadDateFormat, BadJson, BrokenPipe, B2ConnectionError, ClockSkew, ConnectionReset, ServiceError, UnknownError, UnknownHost, TooManyRequests, InvalidJsonResponse, PotentialS3EndpointPassedAsRealm
 from apiver_deps import USER_AGENT
 from apiver_deps import B2Http
 from apiver_deps import B2HttpApiConfig
@@ -96,6 +96,27 @@ class TestTranslateErrors(TestBase):
         response.headers = {'retry-after': 1}
         response.content = b'{"status": 429, "code": "Too Many requests", "message": "retry after some time"}'
         with self.assertRaises(TooManyRequests):
+            B2Http._translate_errors(lambda: response)
+
+    def test_invalid_json(self):
+        response = MagicMock()
+        response.status_code = 400
+        response.content = b'{' * 500
+        response.url = 'https://example.com'
+
+        with self.assertRaises(InvalidJsonResponse) as error:
+            B2Http._translate_errors(lambda: response)
+
+            content_length = min(len(response.content), len(error.content))
+            self.assertEqual(response.content[:content_length], error.content[:content_length])
+
+    def test_potential_s3_endpoint_passed_as_realm(self):
+        response = MagicMock()
+        response.status_code = 400
+        response.content = b'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        response.url = 'https://s3.us-west-000.backblazeb2.com'
+
+        with self.assertRaises(PotentialS3EndpointPassedAsRealm):
             B2Http._translate_errors(lambda: response)
 
 
