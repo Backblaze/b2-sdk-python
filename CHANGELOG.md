@@ -10,7 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Authorizing a key for a single bucket ensures that this bucket is cached
 * `Bucket.ls` operation supports wildcard matching strings
 * Documentation for AbstractUploadSource and its children
-* `InvalidJsonResponse` when the received error is not a proper JSON document, or `PotentialS3EndpointPassedAsRealm` if the response `url` contained `//s3.`
+* `InvalidJsonResponse` when the received error is not a proper JSON document
+* Raising `PotentialS3EndpointPassedAsRealm` when a specific misconfiguration is suspected
 
 ### Fixed
 * Removed information about replication being in closed beta
