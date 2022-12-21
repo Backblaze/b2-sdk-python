@@ -54,6 +54,7 @@ from b2sdk.exception import MissingPart
 from b2sdk.exception import NonExistentBucket
 from b2sdk.exception import NotAllowedByAppKeyError
 from b2sdk.exception import PartSha1Mismatch
+from b2sdk.exception import PotentialS3EndpointPassedAsRealm
 from b2sdk.exception import RestrictedBucket
 from b2sdk.exception import RestrictedBucketMissing
 from b2sdk.exception import RetentionWriteError
@@ -136,6 +137,7 @@ __all__ = (
     'NotADirectory',
     'NotAllowedByAppKeyError',
     'PartSha1Mismatch',
+    'PotentialS3EndpointPassedAsRealm',
     'RestrictedBucket',
     'RestrictedBucketMissing',
     'RetentionWriteError',

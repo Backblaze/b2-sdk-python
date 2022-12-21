@@ -541,9 +541,19 @@ class EnablingFileLockOnRestrictedBucket(B2Error):
 
 
 class InvalidJsonResponse(B2SimpleError):
+    UP_TO_BYTES_COUNT = 200
+
     def __init__(self, content: bytes):
         self.content = content
-        super().__init__('%s...' % self.content)
+        message = '%s' % self.content[:self.UP_TO_BYTES_COUNT]
+        if len(content) > self.UP_TO_BYTES_COUNT:
+            message += '...'
+
+        super().__init__(message)
+
+
+class PotentialS3EndpointPassedAsRealm(InvalidJsonResponse):
+    pass
 
 
 @trace_call(logger)

@@ -24,7 +24,7 @@ from typing import Any, Dict, Optional
 from .exception import (
     B2Error, B2RequestTimeoutDuringUpload, BadDateFormat, BrokenPipe, B2ConnectionError,
     B2RequestTimeout, ClockSkew, ConnectionReset, interpret_b2_error, UnknownError, UnknownHost,
-    InvalidJsonResponse
+    InvalidJsonResponse, PotentialS3EndpointPassedAsRealm
 )
 from .api_config import B2HttpApiConfig, DEFAULT_HTTP_API_CONFIG
 from .requests import NotDecompressingResponse
@@ -166,7 +166,6 @@ class B2Http:
     TRY_COUNT_DOWNLOAD = 20
     TRY_COUNT_HEAD = 5
     TRY_COUNT_OTHER = 5
-    NON_JSON_BYTES_COUNT = 200
 
     def __init__(self, api_config: B2HttpApiConfig = DEFAULT_HTTP_API_CONFIG):
         """
@@ -432,13 +431,15 @@ class B2Http:
             raise B2RequestTimeout(str(e))
 
         except json.JSONDecodeError:
-            # When the user points to an S3 endpoint, he won't receive the JSON error
-            # he expects. In that case, we can provide at least a hint of "what happened".
-            # Original JSONDecodeError message, while useful, is not human-readable enough.
             if response is None:
                 raise RuntimeError('Got JSON error without a response.')
-            raw_content = response.content[:cls.NON_JSON_BYTES_COUNT]
-            raise InvalidJsonResponse(raw_content)
+
+            # When the user points to an S3 endpoint, he won't receive the JSON error
+            # he expects. In that case, we can provide at least a hint of "what happened".
+            # s3 url has the form of e.g. https://s3.us-west-000.backblazeb2.com
+            if '://s3.' in response.url:
+                raise PotentialS3EndpointPassedAsRealm(response.content)
+            raise InvalidJsonResponse(response.content)
 
         except Exception as e:
             text = repr(e)
