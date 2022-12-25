@@ -86,7 +86,13 @@ class BaseFileVersion:
         self.replication_status = replication_status
 
         if SRC_LAST_MODIFIED_MILLIS in self.file_info:
-            self.mod_time_millis = int(self.file_info[SRC_LAST_MODIFIED_MILLIS])
+            try:
+                if SRC_LAST_MODIFIED_MILLIS in self.file_info:
+                    self.mod_time_millis = int(self.file_info[SRC_LAST_MODIFIED_MILLIS])
+            except ValueError as e:
+                raise ValueError(
+                    'Could not convert %s to int. %s' % (self.file_info[SRC_LAST_MODIFIED_MILLIS], e)
+                )
         else:
             self.mod_time_millis = self.upload_timestamp
 
