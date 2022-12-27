@@ -23,7 +23,7 @@ from urllib.parse import quote, unquote_plus
 from logfury.v1 import DefaultTraceAbstractMeta, DefaultTraceMeta, limit_trace_arguments, disable_trace, trace_call
 
 
-def b2_url_encode(s: str) -> str:
+def b2_url_encode(s):
     """
     URL-encode a unicode string to be sent to B2 in an HTTP header.
 
@@ -32,12 +32,6 @@ def b2_url_encode(s: str) -> str:
     :return: URL-encoded string
     :rtype: str
     """
-    # Ensure string is unicode
-    if not isinstance(s, str):
-        try:
-            s = str(s)
-        except TypeError as e:
-            raise TypeError('Cannot convert %r to unicode: %s' % (s, e))
     return quote(s.encode('utf-8'))
 
 
