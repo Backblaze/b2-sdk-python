@@ -87,16 +87,7 @@ class BaseFileVersion:
         self.replication_status = replication_status
 
         if SRC_LAST_MODIFIED_MILLIS in self.file_info:
-            try:
-                self.mod_time_millis = int(self.file_info[SRC_LAST_MODIFIED_MILLIS].split('.')[0])
-                self.mod_time_millis = str(self.mod_time_millis)
-            except ValueError:
-                warnings.warn(
-                    'Invalid value for %s: %s' % (
-                        SRC_LAST_MODIFIED_MILLIS, self.file_info[SRC_LAST_MODIFIED_MILLIS]
-                    )
-                )
-                self.mod_time_millis = None
+            self.mod_time_millis = int(self.file_info[SRC_LAST_MODIFIED_MILLIS])
         else:
             self.mod_time_millis = self.upload_timestamp
 
