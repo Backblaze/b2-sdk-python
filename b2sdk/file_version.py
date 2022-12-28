@@ -10,6 +10,7 @@
 
 from typing import Dict, Optional, Union, Tuple, TYPE_CHECKING
 import re
+import warnings
 from copy import deepcopy
 
 from .encryption.setting import EncryptionSetting, EncryptionSettingFactory
@@ -87,12 +88,15 @@ class BaseFileVersion:
 
         if SRC_LAST_MODIFIED_MILLIS in self.file_info:
             try:
-                if SRC_LAST_MODIFIED_MILLIS in self.file_info:
-                    self.mod_time_millis = int(self.file_info[SRC_LAST_MODIFIED_MILLIS])
-            except ValueError as e:
-                raise ValueError(
-                    'Could not convert %s to int. %s' % (self.file_info[SRC_LAST_MODIFIED_MILLIS], e)
+                self.mod_time_millis = int(self.file_info[SRC_LAST_MODIFIED_MILLIS].split('.')[0])
+                self.mod_time_millis = str(self.mod_time_millis)
+            except ValueError:
+                warnings.warn(
+                    'Invalid value for %s: %s' % (
+                        SRC_LAST_MODIFIED_MILLIS, self.file_info[SRC_LAST_MODIFIED_MILLIS]
+                    )
                 )
+                self.mod_time_millis = None
         else:
             self.mod_time_millis = self.upload_timestamp
 

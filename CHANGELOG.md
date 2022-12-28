@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+* Test for handling non-int src_last_modified values
+
+### Changed
+* Handling non-int src_last_modified_millis better
+
+### Added
 * Authorizing a key for a single bucket ensures that this bucket is cached
 * `Bucket.ls` operation supports wildcard matching strings
 * Documentation for AbstractUploadSource and its children

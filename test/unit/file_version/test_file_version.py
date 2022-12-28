@@ -59,6 +59,17 @@ class TestFileVersion:
         )
         assert expected_entry == file_version_info.format_ls_entry()
 
+    def test_upload_with_time_attribute(self):
+        bucket = self.bucket
+
+        sut = bucket.upload_bytes(
+            b'test_file',
+            'test_file',
+            file_infos={'src_last_modified_millis': 1671500543.5804098}
+        )
+
+        assert isinstance(sut, VFileVersion)
+
     def test_get_fresh_state(self):
         self.api.update_file_legal_hold(
             self.file_version.id_, self.file_version.file_name, LegalHold.ON
