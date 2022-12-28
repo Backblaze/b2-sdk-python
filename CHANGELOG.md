@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-* Test for handling non-int src_last_modified values
+* Test for handling non-int src_last_modified values in http headers
 
 ### Changed
 * Handling b2 unicode http headers by recasting them to string
