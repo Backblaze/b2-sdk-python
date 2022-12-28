@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Test for handling non-int src_last_modified values
 
 ### Changed
-* Handling non-int src_last_modified_millis better
+* Handling b2 unicode http headers by recasting them to string
 
 ### Added
 * Authorizing a key for a single bucket ensures that this bucket is cached
