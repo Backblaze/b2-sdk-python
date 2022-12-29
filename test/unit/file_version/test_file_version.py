@@ -61,7 +61,6 @@ class TestFileVersion:
 
     def test_upload_with_time_attribute(self):
         bucket = self.bucket
-
         sut = bucket.upload_bytes(
             b'test_file',
             'test_file',
