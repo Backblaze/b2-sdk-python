@@ -59,7 +59,8 @@ class TestFileVersion:
         )
         assert expected_entry == file_version_info.format_ls_entry()
 
-    def test_upload_with_time_attribute(self):
+    @pytest.mark.apiver(from_ver=2, to_ver=3)
+    def test_upload_with_time_attribute_v2_v3(self):
         bucket = self.bucket
         sut = bucket.upload_bytes(
             b'test_file',
