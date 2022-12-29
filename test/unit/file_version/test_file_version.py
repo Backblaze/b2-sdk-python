@@ -68,7 +68,9 @@ class TestFileVersion:
             file_infos={'src_last_modified_millis': 1671500543.5804098}
         )
 
-        assert isinstance(sut, VFileVersion)
+        result = bucket.get_file_info_by_name('test_file')
+
+        assert sut.id_ == result.id_
 
     def test_get_fresh_state(self):
         self.api.update_file_legal_hold(
