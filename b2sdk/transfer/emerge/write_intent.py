@@ -8,6 +8,10 @@
 #
 ######################################################################
 
+from typing import Optional
+
+from b2sdk.utils import Sha1HexDigest
+
 
 class WriteIntent:
     """ Wrapper for outbound source that defines destination offset. """
@@ -62,6 +66,19 @@ class WriteIntent:
         :rtype: bool
         """
         return self.outbound_source.is_upload()
+
+    def get_content_sha1(self) -> Optional[Sha1HexDigest]:
+        """
+        Return a 40-character string containing the hex SHA1 checksum, which can be used as the `large_file_sha1` entry.
+
+        This method is only used if a large file is constructed from only a single source.  If that source's hash is known,
+        the result file's SHA1 checksum will be the same and can be copied.
+
+        If the source's sha1 is unknown and can't be calculated, `None` is returned.
+
+        :rtype str:
+        """
+        return self.outbound_source.get_content_sha1()
 
     @classmethod
     def wrap_sources_iterator(cls, outbound_sources_iterator):

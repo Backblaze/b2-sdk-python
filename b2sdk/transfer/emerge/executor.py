@@ -8,18 +8,22 @@
 #
 ######################################################################
 
+import logging
 import threading
 
 from abc import ABCMeta, abstractmethod
-from typing import Optional
+from typing import Dict, Optional
 
 from b2sdk.encryption.setting import EncryptionSetting
 from b2sdk.exception import MaxFileSizeExceeded
 from b2sdk.file_lock import FileRetentionSetting, LegalHold, NO_RETENTION_FILE_SETTING
+from b2sdk.http_constants import LARGE_FILE_SHA1
 from b2sdk.transfer.outbound.large_file_upload_state import LargeFileUploadState
 from b2sdk.transfer.outbound.upload_source import UploadSourceStream
 
 AUTO_CONTENT_TYPE = 'b2/x-auto'
+
+logger = logging.getLogger(__name__)
 
 
 class EmergeExecutor:
@@ -345,6 +349,17 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
                 best_match_parts_len = finished_parts_len
         return best_match_file, best_match_parts
 
+    @classmethod
+    def _get_file_info_without_large_file_sha1(
+        cls,
+        file_info: Optional[Dict[str, str]],
+    ) -> Optional[Dict[str, str]]:
+        if not file_info or LARGE_FILE_SHA1 not in file_info:
+            return file_info
+        out_file_info = dict(file_info)
+        del out_file_info[LARGE_FILE_SHA1]
+        return out_file_info
+
     def _match_unfinished_file_if_possible(
         self,
         bucket_id,
@@ -363,29 +378,53 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
         This is only possible if the application key being used allows ``listFiles`` access.
         """
         file_retention = file_retention or NO_RETENTION_FILE_SETTING
+        file_info_without_large_file_sha1 = self._get_file_info_without_large_file_sha1(file_info)
+
+        logger.debug('Checking for matching unfinished large files for %s...', file_name)
         for file_ in self.services.large_file.list_unfinished_large_files(
             bucket_id, prefix=file_name
         ):
             if file_.file_name != file_name:
+                logger.debug('Rejecting %s: file has a different file name', file_.file_id)
                 continue
             if file_.file_info != file_info:
-                continue
+                if (LARGE_FILE_SHA1 in file_.file_info) == (LARGE_FILE_SHA1 in file_info):
+                    logger.debug(
+                        'Rejecting %s: large_file_sha1 is present or missing in both file infos',
+                        file_.file_id
+                    )
+                    continue
+
+                if self._get_file_info_without_large_file_sha1(
+                    file_.file_info
+                ) != file_info_without_large_file_sha1:
+                    # ignoring the large_file_sha1 file infos are still different
+                    logger.debug(
+                        'Rejecting %s: file info mismatch after dropping `large_file_sha1`',
+                        file_.file_id
+                    )
+                    continue
+
             # FIXME: what if `encryption is None` - match ANY encryption? :)
             if encryption is not None and encryption != file_.encryption:
+                logger.debug('Rejecting %s: encryption mismatch', file_.file_id)
                 continue
 
             if legal_hold is None:
                 if LegalHold.UNSET != file_.legal_hold:
                     # Uploading and not providing legal_hold means that server's response about that file version
                     # will have legal_hold=LegalHold.UNSET
+                    logger.debug('Rejecting %s: legal hold mismatch (not unset)', file_.file_id)
                     continue
             elif legal_hold != file_.legal_hold:
+                logger.debug('Rejecting %s: legal hold mismatch', file_.file_id)
                 continue
 
             if file_retention != file_.file_retention:
                 # if `file_.file_retention` is UNKNOWN then we skip - lib user can still
                 # pass UNKNOWN file_retention here - but raw_api/server won't allow it
                 # and we don't check it here
+                logger.debug('Rejecting %s: retention mismatch', file_.file_id)
                 continue
             files_match = True
             finished_parts = {}
@@ -412,10 +451,17 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
 
             # Skip not matching files or unfinished files with no uploaded parts
             if not files_match or not finished_parts:
+                logger.debug('Rejecting %s: No finished parts or part mismatch', file_.file_id)
                 continue
 
             # Return first matched file
+            logger.debug(
+                'Unfinished file %s matches with %i finished parts', file_.file_id,
+                len(finished_parts)
+            )
             return file_, finished_parts
+
+        logger.debug('No matching unfinished files found.')
         return None, {}
 
 
