@@ -1459,7 +1459,9 @@ class TestUpload(TestCaseWithBucket):
                     mocked_concatenate.assert_called_once()
                     assert len(mocked_concatenate.call_args.args[0]) == expected_source_count
                     # Ensuring that the part sizes make sense.
-                    parts_sizes = [entry.get_content_length() for entry in mocked_concatenate.call_args.args[0]]
+                    parts_sizes = [
+                        entry.get_content_length() for entry in mocked_concatenate.call_args.args[0]
+                    ]
                     assert parts_sizes == expected_parts_sizes
                     if should_be_incremental:
                         # Ensuring that the first part is a copy.

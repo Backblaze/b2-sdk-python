@@ -18,7 +18,7 @@ from enum import auto, Enum, unique
 from typing import Callable, List, Optional, Union
 
 from b2sdk.exception import InvalidUploadSource
-from b2sdk.file_version import FileVersion
+from b2sdk.file_version import BaseFileVersion
 from b2sdk.http_constants import DEFAULT_MIN_PART_SIZE
 from b2sdk.stream.range import RangeOfInputStream, wrap_with_range
 from b2sdk.transfer.outbound.copy_source import CopySource
@@ -145,14 +145,12 @@ class UploadSourceLocalFileBase(AbstractUploadSource):
         return self.content_length
 
     def _get_hexdigest(self, length: int = 0) -> Sha1HexDigest:
+        # This is just optimisation for hash calculation in case we DON'T perform incremental upload.
         length = length or self.content_length
 
-        if self.digest is None:
+        if self.digest is None or length < self.digest_progress:
             self.digest = hashlib.sha1()
             self.digest_progress = 0
-
-        if length < self.digest_progress:
-            raise ValueError("Length value can not decrease between calls")
 
         if length > self.digest_progress:
             with self.open() as fp:
@@ -225,7 +223,7 @@ class UploadSourceLocalFileRange(UploadSourceLocalFileBase):
 class UploadSourceLocalFile(UploadSourceLocalFileBase):
     def get_incremental_sources(
         self,
-        file_version: FileVersion,
+        file_version: BaseFileVersion,
         min_part_size: Optional[int] = None,
     ) -> List[OutboundTransferSource]:
         """

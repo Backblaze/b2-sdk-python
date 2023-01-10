@@ -514,4 +514,4 @@ class LocalDeleteAction(AbstractAction):
         reporter.print_completion('delete ' + self.relative_name)
 
     def __str__(self) -> str:
-        return 'local_delete(%s)' % self.full_path
+        return 'local_delete(%s)' % (self.full_path,)

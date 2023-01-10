@@ -12,12 +12,12 @@ import logging
 
 from abc import ABCMeta, abstractmethod
 from enum import Enum, unique
-from typing import Optional
+from typing import Optional, Generic, TypeVar
 
 from ..exception import DestFileNewer
 from ..scan.exception import InvalidArgument
-from ..scan.folder import AbstractFolder
-from ..scan.path import AbstractPath
+from ..scan.folder import AbstractFolder, B2Folder, LocalFolder
+from ..scan.path import AbstractPath, B2Path, LocalPath
 from ..transfer.outbound.upload_source import UploadMode
 from .action import B2CopyAction, B2DeleteAction, B2DownloadAction, B2HideAction, B2IncrementalUploadAction, B2UploadAction, LocalDeleteAction
 from .encryption_provider import SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER, AbstractSyncEncryptionSettingsProvider
@@ -25,6 +25,11 @@ from .encryption_provider import SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDE
 ONE_DAY_IN_MS = 24 * 60 * 60 * 1000
 
 logger = logging.getLogger(__name__)
+
+SourcePathType = TypeVar('SourcePathType', bound=Optional[AbstractPath])
+DestPathType = TypeVar('DestPathType', bound=Optional[AbstractPath])
+SourceFolderType = TypeVar('SourceFolderType', bound=AbstractFolder)
+DestFolderType = TypeVar('DestFolderType', bound=AbstractFolder)
 
 
 @unique
@@ -43,7 +48,9 @@ class CompareVersionMode(Enum):
     NONE = 203  #: compare using file name only
 
 
-class AbstractFileSyncPolicy(metaclass=ABCMeta):
+class AbstractFileSyncPolicy(
+    Generic[SourcePathType, SourceFolderType, DestPathType, DestFolderType], metaclass=ABCMeta
+):
     """
     Abstract policy class.
     """
@@ -52,10 +59,10 @@ class AbstractFileSyncPolicy(metaclass=ABCMeta):
 
     def __init__(
         self,
-        source_path: AbstractPath,
-        source_folder: AbstractFolder,
-        dest_path: AbstractPath,
-        dest_folder: AbstractFolder,
+        source_path: SourcePathType,
+        source_folder: SourceFolderType,
+        dest_path: DestPathType,
+        dest_folder: DestFolderType,
         now_millis: int,
         keep_days: int,
         newer_file_mode: NewerFileSyncMode,
@@ -216,7 +223,9 @@ class AbstractFileSyncPolicy(metaclass=ABCMeta):
         """
         return []
 
-    def _get_source_mod_time(self):
+    def _get_source_mod_time(self) -> int:
+        if self._source_path is None:
+            return 0
         return self._source_path.mod_time
 
     @abstractmethod
@@ -226,7 +235,7 @@ class AbstractFileSyncPolicy(metaclass=ABCMeta):
         """
 
 
-class DownPolicy(AbstractFileSyncPolicy):
+class DownPolicy(AbstractFileSyncPolicy[B2Path, B2Folder, LocalPath, LocalFolder]):
     """
     File is synced down (from the cloud to disk).
     """
@@ -242,7 +251,7 @@ class DownPolicy(AbstractFileSyncPolicy):
         )
 
 
-class UpPolicy(AbstractFileSyncPolicy):
+class UpPolicy(AbstractFileSyncPolicy[LocalPath, LocalFolder, B2Path, B2Folder]):
     """
     File is synced up (from disk the cloud).
     """
@@ -333,7 +342,7 @@ class DownAndKeepDaysPolicy(DownPolicy):
     pass
 
 
-class CopyPolicy(AbstractFileSyncPolicy):
+class CopyPolicy(AbstractFileSyncPolicy[B2Path, B2Folder, B2Path, B2Folder]):
     """
     File is copied (server-side).
     """
@@ -405,18 +414,18 @@ def make_b2_delete_note(version, index, transferred):
 
 
 def make_b2_delete_actions(
-    source_path: AbstractPath,
-    dest_path: AbstractPath,
+    source_path: Optional[AbstractPath],
+    dest_path: Optional[B2Path],
     dest_folder: AbstractFolder,
     transferred: bool,
 ):
     """
     Create the actions to delete files stored on B2, which are not present locally.
 
-    :param b2sdk.v2.AbstractPath source_path: source file object
-    :param b2sdk.v2.AbstractPath dest_path: destination file object
-    :param b2sdk.v2.AbstractFolder dest_folder: destination folder
-    :param bool transferred: if True, file has been transferred, False otherwise
+    :param source_path: source file object
+    :param dest_path: destination file object
+    :param dest_folder: destination folder
+    :param transferred: if True, file has been transferred, False otherwise
     """
     if dest_path is None:
         # B2 does not really store folders, so there is no need to hide
@@ -434,8 +443,8 @@ def make_b2_delete_actions(
 
 
 def make_b2_keep_days_actions(
-    source_path: AbstractPath,
-    dest_path: AbstractPath,
+    source_path: Optional[AbstractPath],
+    dest_path: Optional[B2Path],
     dest_folder: AbstractFolder,
     transferred: bool,
     keep_days: int,
@@ -448,15 +457,15 @@ def make_b2_keep_days_actions(
     When keepDays is set, all files that were visible any time from
     keepDays ago until now must be kept.  If versions were uploaded 5
     days ago, 15 days ago, and 25 days ago, and the keepDays is 10,
-    only the 25-day old version can be deleted.  The 15 day-old version
+    only the 25-day-old version can be deleted.  The 15 day-old version
     was visible 10 days ago.
 
-    :param b2sdk.v2.AbstractPath source_path: source file object
-    :param b2sdk.v2.AbstractPath dest_path: destination file object
-    :param b2sdk.v2.AbstractFolder dest_folder: destination folder object
-    :param bool transferred: if True, file has been transferred, False otherwise
-    :param int keep_days: how many days to keep a file
-    :param int now_millis: current time in milliseconds
+    :param source_path: source file object
+    :param dest_path: destination file object
+    :param dest_folder: destination folder object
+    :param transferred: if True, file has been transferred, False otherwise
+    :param keep_days: how many days to keep a file
+    :param now_millis: current time in milliseconds
     """
     deleting = False
     if dest_path is None:
@@ -475,7 +484,7 @@ def make_b2_keep_days_actions(
         # assert that age_days is non-decreasing.
         #
         # Note that if there is an out-of-order date that is old enough
-        # to trigger deletions, all of the versions uploaded before that
+        # to trigger deletions, all the versions uploaded before that
         # (the ones after it in the list) will be deleted, even if they
         # aren't over the age threshold.
 
