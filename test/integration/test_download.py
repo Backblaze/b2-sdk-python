@@ -79,7 +79,7 @@ class TestDownload(IntegrationTestBase):
 
             source_sha1 = hex_sha1_of_file(source_small_file)
             assert source_sha1 == hex_sha1_of_file(target_small_file)
-        return f, source_sha1[0]
+        return f, source_sha1
 
     def test_small(self):
         bucket = self.create_bucket()

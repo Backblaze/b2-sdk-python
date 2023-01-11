@@ -16,6 +16,7 @@ import re
 import shutil
 import tempfile
 import time
+from dataclasses import dataclass, field
 from decimal import Decimal
 from itertools import chain
 from typing import Any, Iterator, List, NewType, Optional, Tuple, TypeVar
@@ -133,25 +134,44 @@ def hex_sha1_of_stream(input_stream: ReadOnlyStream, content_length: int) -> Sha
     )
 
 
+@dataclass
+class IncrementalHexDigester:
+    digest: hashlib.sha1 = field(default_factory=hashlib.sha1)
+    offset: int = 0
+    block_size: int = 1024 * 1024
+
+    @property
+    def hex_digest(self) -> Sha1HexDigest:
+        return Sha1HexDigest(self.digest.hexdigest())
+
+    def update_from_stream(
+        self,
+        stream: ReadOnlyStream,
+        limit: Optional[int] = None,
+    ) -> Sha1HexDigest:
+        while True:
+            if limit is not None:
+                to_read = min(limit - self.offset, self.block_size)
+            else:
+                to_read = self.block_size
+            data = stream.read(to_read)
+            data_len = len(data)
+            if data_len > 0:
+                self.digest.update(data)
+                self.offset += data_len
+            if data_len < to_read or to_read == 0:
+                break
+
+        return self.hex_digest
+
+
 def hex_sha1_of_unlimited_stream(
     input_stream: ReadOnlyStream,
     limit: Optional[int] = None,
 ) -> Tuple[Sha1HexDigest, int]:
-    block_size = 1024 * 1024
-    offset = 0
-    digest = hashlib.sha1()
-    while True:
-        if limit is not None:
-            to_read = min(limit - offset, block_size)
-        else:
-            to_read = block_size
-        data = input_stream.read(to_read)
-        data_len = len(data)
-        if data_len > 0:
-            digest.update(data)
-            offset += data_len
-        if data_len < to_read:
-            return Sha1HexDigest(digest.hexdigest()), offset
+    digester = IncrementalHexDigester()
+    digester.update_from_stream(input_stream, limit)
+    return digester.hex_digest, digester.offset
 
 
 def hex_sha1_of_file(path_) -> Sha1HexDigest:

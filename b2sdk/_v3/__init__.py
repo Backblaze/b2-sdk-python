@@ -61,6 +61,7 @@ from b2sdk.utils import (
     hex_sha1_of_bytes,
     hex_sha1_of_file,
     TempDir,
+    IncrementalHexDigester,
 )
 
 from b2sdk.utils import trace_call

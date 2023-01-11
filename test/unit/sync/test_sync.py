@@ -7,6 +7,7 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+import io
 from collections import defaultdict
 from unittest import mock
 from enum import Enum
@@ -14,7 +15,7 @@ from functools import partial
 
 from apiver_deps import UpPolicy, B2DownloadAction, AbstractSyncEncryptionSettingsProvider, UploadSourceLocalFileRange, UploadSourceLocalFile, SyncPolicyManager, CopySource
 from apiver_deps_exception import DestFileNewer, InvalidArgument
-from apiver_deps import KeepOrDeleteMode, NewerFileSyncMode, CompareVersionMode, FileVersion
+from apiver_deps import KeepOrDeleteMode, NewerFileSyncMode, CompareVersionMode, FileVersion, IncrementalHexDigester
 import pytest
 from ..fixtures.folder import *
 from .fixtures import *
@@ -902,10 +903,10 @@ class TestSynchronizer:
 
         bucket = mock.MagicMock()
 
-        def _get_hexdigest(self, size=local_size):
-            if size == local_size:
+        def update_from_stream(self, stream, limit=None):
+            if limit is None:
                 return local_sha1
-            elif size == remote_size:
+            elif limit == remote_size:
                 return local_partial_sha1
             else:
                 assert False
@@ -914,10 +915,12 @@ class TestSynchronizer:
             self.content_length = local_size
 
         with (
-            mock.patch.object(UploadSourceLocalFile, '_get_hexdigest', _get_hexdigest),
+            mock.patch.object(
+                UploadSourceLocalFile, 'open', side_effect=lambda: io.BytesIO(b'test-data')
+            ), mock.patch.object(IncrementalHexDigester, 'update_from_stream', update_from_stream),
             mock.patch.object(
                 UploadSourceLocalFile, 'check_path_and_get_size', check_path_and_get_size
-            ),
+            ), mock.patch.object(UploadSourceLocalFile, '_get_hexdigest', return_value=local_sha1),
             mock.patch.object(
                 UploadSourceLocalFileRange, 'check_path_and_get_size', check_path_and_get_size
             ), mock.patch.object(FileVersion, 'get_content_sha1', return_value=remote_sha1)

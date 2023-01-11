@@ -23,7 +23,7 @@ from b2sdk.http_constants import DEFAULT_MIN_PART_SIZE
 from b2sdk.stream.range import RangeOfInputStream, wrap_with_range
 from b2sdk.transfer.outbound.copy_source import CopySource
 from b2sdk.transfer.outbound.outbound_source import OutboundTransferSource
-from b2sdk.utils import hex_sha1_of_unlimited_stream, Sha1HexDigest, update_digest_from_stream
+from b2sdk.utils import hex_sha1_of_unlimited_stream, Sha1HexDigest, IncrementalHexDigester, hex_sha1_of_stream
 
 logger = logging.getLogger(__name__)
 
@@ -144,24 +144,9 @@ class UploadSourceLocalFileBase(AbstractUploadSource):
     def get_content_length(self) -> int:
         return self.content_length
 
-    def _get_hexdigest(self, length: int = 0) -> Sha1HexDigest:
-        # This is just optimisation for hash calculation in case we DON'T perform incremental upload.
-        length = length or self.content_length
-
-        if self.digest is None or length < self.digest_progress:
-            self.digest = hashlib.sha1()
-            self.digest_progress = 0
-
-        if length > self.digest_progress:
-            with self.open() as fp:
-                range_length = length - self.digest_progress
-                range_ = wrap_with_range(
-                    fp, self.content_length, self.digest_progress, range_length
-                )
-                update_digest_from_stream(self.digest, range_, range_length)
-            self.digest_progress = length
-
-        return Sha1HexDigest(self.digest.hexdigest())
+    def _get_hexdigest(self) -> Sha1HexDigest:
+        with self.open() as fp:
+            return hex_sha1_of_stream(fp, self.content_length)
 
     def get_content_sha1(self) -> Optional[Sha1HexDigest]:
         if self.content_sha1 is None:
@@ -263,11 +248,19 @@ class UploadSourceLocalFile(UploadSourceLocalFileBase):
             )
             return [self]
 
-        if self._get_hexdigest(file_version.size) != content_sha1:
-            logger.debug(
-                "Fallback to full upload for %s -- content in common range differs", self.local_path
-            )
-            return [self]
+        # We're calculating hexdigest of the first N bytes of the file. However, if the sha1 differs,
+        # we'll be needing the whole hash of the file anyway. So we can use this partial information.
+        digester = IncrementalHexDigester()
+        with self.open() as fp:
+            hex_digest = digester.update_from_stream(fp, file_version.size)
+            if hex_digest != content_sha1:
+                logger.debug(
+                    "Fallback to full upload for %s -- content in common range differs",
+                    self.local_path,
+                )
+                # Calculate SHA1 of the remainder of the file and set it.
+                self.content_sha1 = digester.update_from_stream(fp)
+                return [self]
 
         logger.debug("Incremental upload of %s is possible.", self.local_path)
 
