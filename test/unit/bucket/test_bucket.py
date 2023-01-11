@@ -1461,9 +1461,7 @@ class TestUpload(TestCaseWithBucket):
                     # TODO: use .args[0] instead of [1][0] when we drop Python 3.7
                     assert len(call[1][0]) == expected_source_count
                     # Ensuring that the part sizes make sense.
-                    parts_sizes = [
-                        entry.get_content_length() for entry in call[1][0]
-                    ]
+                    parts_sizes = [entry.get_content_length() for entry in call[1][0]]
                     assert parts_sizes == expected_parts_sizes
                     if should_be_incremental:
                         # Ensuring that the first part is a copy.
