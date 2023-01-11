@@ -12,12 +12,12 @@ import logging
 
 from abc import ABCMeta, abstractmethod
 from enum import Enum, unique
-from typing import Optional, Generic, TypeVar
+from typing import cast, Optional
 
 from ..exception import DestFileNewer
 from ..scan.exception import InvalidArgument
-from ..scan.folder import AbstractFolder, B2Folder, LocalFolder
-from ..scan.path import AbstractPath, B2Path, LocalPath
+from ..scan.folder import AbstractFolder, B2Folder
+from ..scan.path import AbstractPath, B2Path
 from ..transfer.outbound.upload_source import UploadMode
 from .action import B2CopyAction, B2DeleteAction, B2DownloadAction, B2HideAction, B2IncrementalUploadAction, B2UploadAction, LocalDeleteAction
 from .encryption_provider import SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER, AbstractSyncEncryptionSettingsProvider
@@ -25,11 +25,6 @@ from .encryption_provider import SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDE
 ONE_DAY_IN_MS = 24 * 60 * 60 * 1000
 
 logger = logging.getLogger(__name__)
-
-SourcePathType = TypeVar('SourcePathType', bound=Optional[AbstractPath])
-DestPathType = TypeVar('DestPathType', bound=Optional[AbstractPath])
-SourceFolderType = TypeVar('SourceFolderType', bound=AbstractFolder)
-DestFolderType = TypeVar('DestFolderType', bound=AbstractFolder)
 
 
 @unique
@@ -48,9 +43,7 @@ class CompareVersionMode(Enum):
     NONE = 203  #: compare using file name only
 
 
-class AbstractFileSyncPolicy(
-    Generic[SourcePathType, SourceFolderType, DestPathType, DestFolderType], metaclass=ABCMeta
-):
+class AbstractFileSyncPolicy(metaclass=ABCMeta):
     """
     Abstract policy class.
     """
@@ -59,10 +52,10 @@ class AbstractFileSyncPolicy(
 
     def __init__(
         self,
-        source_path: SourcePathType,
-        source_folder: SourceFolderType,
-        dest_path: DestPathType,
-        dest_folder: DestFolderType,
+        source_path: Optional[AbstractPath],
+        source_folder: AbstractFolder,
+        dest_path: Optional[AbstractPath],
+        dest_folder: AbstractFolder,
         now_millis: int,
         keep_days: int,
         newer_file_mode: NewerFileSyncMode,
@@ -235,7 +228,7 @@ class AbstractFileSyncPolicy(
         """
 
 
-class DownPolicy(AbstractFileSyncPolicy[B2Path, B2Folder, LocalPath, LocalFolder]):
+class DownPolicy(AbstractFileSyncPolicy):
     """
     File is synced down (from the cloud to disk).
     """
@@ -244,14 +237,14 @@ class DownPolicy(AbstractFileSyncPolicy[B2Path, B2Folder, LocalPath, LocalFolder
 
     def _make_transfer_action(self):
         return B2DownloadAction(
-            self._source_path,
+            cast(B2Path, self._source_path),
             self._source_folder.make_full_path(self._source_path.relative_path),
             self._dest_folder.make_full_path(self._source_path.relative_path),
             self._encryption_settings_provider,
         )
 
 
-class UpPolicy(AbstractFileSyncPolicy[LocalPath, LocalFolder, B2Path, B2Folder]):
+class UpPolicy(AbstractFileSyncPolicy):
     """
     File is synced up (from disk the cloud).
     """
@@ -268,7 +261,7 @@ class UpPolicy(AbstractFileSyncPolicy[LocalPath, LocalFolder, B2Path, B2Folder])
                 self._get_source_mod_time(),
                 self._source_path.size,
                 self._encryption_settings_provider,
-                self._dest_path.selected_version,
+                cast(B2Path, self._dest_path).selected_version,
                 self._absolute_minimum_part_size,
             )
         else:
@@ -342,7 +335,7 @@ class DownAndKeepDaysPolicy(DownPolicy):
     pass
 
 
-class CopyPolicy(AbstractFileSyncPolicy[B2Path, B2Folder, B2Path, B2Folder]):
+class CopyPolicy(AbstractFileSyncPolicy):
     """
     File is copied (server-side).
     """
@@ -353,10 +346,10 @@ class CopyPolicy(AbstractFileSyncPolicy[B2Path, B2Folder, B2Path, B2Folder]):
 
         return B2CopyAction(
             self._source_folder.make_full_path(self._source_path.relative_path),
-            self._source_path,
+            cast(B2Path, self._source_path),
             self._dest_folder.make_full_path(self._source_path.relative_path),
-            self._source_folder.bucket,
-            self._dest_folder.bucket,
+            cast(B2Folder, self._source_folder).bucket,
+            cast(B2Folder, self._dest_folder).bucket,
             self._encryption_settings_provider,
         )
 
@@ -457,7 +450,7 @@ def make_b2_keep_days_actions(
     When keepDays is set, all files that were visible any time from
     keepDays ago until now must be kept.  If versions were uploaded 5
     days ago, 15 days ago, and 25 days ago, and the keepDays is 10,
-    only the 25-day-old version can be deleted.  The 15 day-old version
+    only the 25 day-old version can be deleted.  The 15 day-old version
     was visible 10 days ago.
 
     :param source_path: source file object

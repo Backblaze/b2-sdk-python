@@ -8,10 +8,10 @@
 #
 ######################################################################
 
-from typing import Union
+from typing import Optional
 
-from ..scan.folder import AbstractFolder, B2Folder, LocalFolder
-from ..scan.path import AbstractPath, B2Path, LocalPath
+from ..scan.folder import AbstractFolder
+from ..scan.path import AbstractPath
 from ..transfer.outbound.upload_source import UploadMode
 from .policy import AbstractFileSyncPolicy, CompareVersionMode, CopyAndDeletePolicy, \
     CopyAndKeepDaysPolicy, CopyPolicy, DownAndDeletePolicy, DownAndKeepDaysPolicy, \
@@ -31,10 +31,10 @@ class SyncPolicyManager:
     def get_policy(
         self,
         sync_type: str,
-        source_path: Union[AbstractPath, B2Path, LocalPath, None],
-        source_folder: Union[AbstractFolder, B2Folder, LocalFolder],
-        dest_path: Union[AbstractPath, B2Path, LocalPath, None],
-        dest_folder: Union[AbstractFolder, B2Folder, LocalFolder],
+        source_path: Optional[AbstractPath],
+        source_folder: AbstractFolder,
+        dest_path: Optional[AbstractPath],
+        dest_folder: AbstractFolder,
         now_millis: int,
         delete: bool,
         keep_days: int,

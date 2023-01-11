@@ -15,7 +15,7 @@ import re
 import sys
 
 from abc import ABCMeta, abstractmethod
-from typing import Iterator
+from typing import Iterator, Optional
 
 from ..utils import fix_windows_path_limit, get_file_mtime, is_file_readable
 from .exception import EmptyDirectory, EnvironmentEncodingError, NotADirectory, UnableToCreateDirectory, UnsupportedFilename
@@ -52,7 +52,7 @@ class AbstractFolder(metaclass=ABCMeta):
     """
 
     @abstractmethod
-    def all_files(self, reporter: ProgressReport,
+    def all_files(self, reporter: Optional[ProgressReport],
                   policies_manager=DEFAULT_SCAN_MANAGER) -> Iterator[AbstractPath]:
         """
         Return an iterator over all of the files in the folder, in
@@ -124,7 +124,7 @@ class LocalFolder(AbstractFolder):
         """
         return 'local'
 
-    def all_files(self, reporter: ProgressReport,
+    def all_files(self, reporter: Optional[ProgressReport],
                   policies_manager=DEFAULT_SCAN_MANAGER) -> Iterator[LocalPath]:
         """
         Yield all files.
@@ -319,7 +319,7 @@ class B2Folder(AbstractFolder):
 
     def all_files(
         self,
-        reporter: ProgressReport,
+        reporter: Optional[ProgressReport],
         policies_manager: ScanPoliciesManager = DEFAULT_SCAN_MANAGER
     ) -> Iterator[B2Path]:
         """

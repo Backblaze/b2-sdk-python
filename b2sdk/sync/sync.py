@@ -12,7 +12,7 @@ import concurrent.futures as futures
 import logging
 
 from enum import Enum, unique
-from typing import Optional, Union
+from typing import cast, Optional
 
 from ..bounded_queue_executor import BoundedQueueExecutor
 from ..scan.exception import InvalidArgument
@@ -152,8 +152,8 @@ class Synchronizer:
 
     def sync_folders(
         self,
-        source_folder: Union[AbstractFolder, LocalFolder, B2Folder],
-        dest_folder: Union[AbstractFolder, LocalFolder, B2Folder],
+        source_folder: AbstractFolder,
+        dest_folder: AbstractFolder,
         now_millis: int,
         reporter: Optional[SyncReport],
         encryption_settings_provider:
@@ -178,10 +178,10 @@ class Synchronizer:
 
         # For downloads, make sure that the target directory is there.
         if dest_type == 'local' and not self.dry_run:
-            dest_folder.ensure_present()
+            cast(LocalFolder, dest_folder).ensure_present()
 
         if source_type == 'local' and not self.allow_empty_source:
-            source_folder.ensure_non_empty()
+            cast(LocalFolder, source_folder).ensure_non_empty()
 
         # Make an executor to count files and run all of the actions. This is
         # not the same as the executor in the API object which is used for
@@ -203,9 +203,9 @@ class Synchronizer:
         # For bucket-to-bucket sync, the bucket for the API calls should be the destination.
         action_bucket = None
         if dest_type == 'b2':
-            action_bucket = dest_folder.bucket
+            action_bucket = cast(B2Folder, dest_folder).bucket
         elif source_type == 'b2':
-            action_bucket = source_folder.bucket
+            action_bucket = cast(B2Folder, source_folder).bucket
 
         # Schedule each of the actions.
         for action in self._make_folder_sync_actions(
