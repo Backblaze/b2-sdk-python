@@ -86,7 +86,7 @@ class Emerger(metaclass=B2TraceMetaAbstract):
         """
         Create a new file (object in the cloud, really) from an iterable (list, tuple etc) of write intents.
 
-        :param str bucket_id: a buckeID
+        :param str bucket_id: a bucket ID
         :param write_intents: write intents to process to create a file
         :type write_intents: List[b2sdk.v2.WriteIntent]
         :param str file_name: the file name of the new B2 file
