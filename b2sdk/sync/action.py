@@ -8,7 +8,6 @@
 #
 ######################################################################
 
-import functools
 import logging
 import os
 from abc import ABCMeta, abstractmethod
@@ -112,6 +111,8 @@ class B2UploadAction(AbstractAction):
         self.size = size
         self.encryption_settings_provider = encryption_settings_provider
         self.large_file_sha1 = None
+        # TODO: Remove once we drop Python 3.7 support
+        self.cached_upload_source = None
 
     def get_bytes(self) -> int:
         """
@@ -119,11 +120,14 @@ class B2UploadAction(AbstractAction):
         """
         return self.size
 
-    @functools.cached_property
+    @property
+    # TODO: Use @functools.cached_property once we drop Python 3.7 support
     def _upload_source(self) -> UploadSourceLocalFile:
         """ Upload source if the file was to be uploaded in full """
         # NOTE: We're caching this to ensure that sha1 is not recalculated.
-        return UploadSourceLocalFile(self.local_full_path)
+        if self.cached_upload_source is None:
+            self.cached_upload_source = UploadSourceLocalFile(self.local_full_path)
+        return self.cached_upload_source
 
     def get_all_sources(self) -> List[OutboundTransferSource]:
         """ Get list of sources required to complete this upload """

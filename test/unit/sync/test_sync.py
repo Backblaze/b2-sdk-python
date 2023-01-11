@@ -9,6 +9,7 @@
 ######################################################################
 import io
 from collections import defaultdict
+from contextlib import ExitStack
 from unittest import mock
 from enum import Enum
 from functools import partial
@@ -914,17 +915,24 @@ class TestSynchronizer:
         def check_path_and_get_size(self):
             self.content_length = local_size
 
-        with (
-            mock.patch.object(
-                UploadSourceLocalFile, 'open', side_effect=lambda: io.BytesIO(b'test-data')
-            ), mock.patch.object(IncrementalHexDigester, 'update_from_stream', update_from_stream),
-            mock.patch.object(
-                UploadSourceLocalFile, 'check_path_and_get_size', check_path_and_get_size
-            ), mock.patch.object(UploadSourceLocalFile, '_get_hexdigest', return_value=local_sha1),
-            mock.patch.object(
-                UploadSourceLocalFileRange, 'check_path_and_get_size', check_path_and_get_size
-            ), mock.patch.object(FileVersion, 'get_content_sha1', return_value=remote_sha1)
-        ):
+        with ExitStack() as stack:
+            patches = [
+                mock.patch.object(
+                    UploadSourceLocalFile, 'open', mock.mock_open(read_data='test-data')
+                ),
+                mock.patch.object(IncrementalHexDigester, 'update_from_stream', update_from_stream),
+                mock.patch.object(
+                    UploadSourceLocalFile, 'check_path_and_get_size', check_path_and_get_size
+                ),
+                mock.patch.object(UploadSourceLocalFile, '_get_hexdigest', return_value=local_sha1),
+                mock.patch.object(
+                    UploadSourceLocalFileRange, 'check_path_and_get_size', check_path_and_get_size
+                ),
+                mock.patch.object(FileVersion, 'get_content_sha1', return_value=remote_sha1),
+            ]
+            for patch in patches:
+                stack.enter_context(patch)
+
             upload_action.do_action(bucket, self.reporter)
 
         assert bucket.mock_calls == [
@@ -937,9 +945,13 @@ class TestSynchronizer:
                 large_file_sha1=local_sha1 if should_be_incremental else None,
             )
         ]
-        assert len(bucket.mock_calls[0].args[0]) == 2 if should_be_incremental else 1
+        # In Python 3.7 unittest.mock.call doesn't have `args` properly defined. Instead we have to take 1st index.
+        # TODO: use .args[0] instead of [1] when we drop Python 3.7
+        num_calls = len(bucket.mock_calls[0][1])
+        assert num_calls == 2 if should_be_incremental else 1, bucket.mock_calls[0]
         if should_be_incremental:
-            assert isinstance(bucket.mock_calls[0].args[0][0], CopySource)
+            # Order of indices: call index, pick arguments, pick first argument, first element of the first argument.
+            assert isinstance(bucket.mock_calls[0][1][0][0], CopySource)
 
 
 class TstEncryptionSettingsProvider(AbstractSyncEncryptionSettingsProvider):

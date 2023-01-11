@@ -1457,15 +1457,18 @@ class TestUpload(TestCaseWithBucket):
                 ) as mocked_concatenate:
                     self.bucket.upload_local_file(path, 'file1', upload_mode=UploadMode.INCREMENTAL)
                     mocked_concatenate.assert_called_once()
-                    assert len(mocked_concatenate.call_args.args[0]) == expected_source_count
+                    call = mocked_concatenate.mock_calls[0]
+                    # TODO: use .args[0] instead of [1][0] when we drop Python 3.7
+                    assert len(call[1][0]) == expected_source_count
                     # Ensuring that the part sizes make sense.
                     parts_sizes = [
-                        entry.get_content_length() for entry in mocked_concatenate.call_args.args[0]
+                        entry.get_content_length() for entry in call[1][0]
                     ]
                     assert parts_sizes == expected_parts_sizes
                     if should_be_incremental:
                         # Ensuring that the first part is a copy.
-                        self.assertIsInstance(mocked_concatenate.call_args.args[0][0], CopySource)
+                        # Order of indices: pick arguments, pick first argument, first element of the first argument.
+                        self.assertIsInstance(call[1][0][0], CopySource)
 
                 self._check_file_contents('file1', data)
                 if expected_large_file:
