@@ -142,17 +142,17 @@ class UploadSourceLocalFileBase(AbstractUploadSource):
     def get_content_length(self) -> int:
         return self.content_length
 
-    def _get_hexdigest(self) -> Sha1HexDigest:
-        with self.open() as fp:
-            return hex_sha1_of_stream(fp, self.content_length)
-
     def get_content_sha1(self) -> Optional[Sha1HexDigest]:
         if self.content_sha1 is None:
-            self.content_sha1 = self._get_hexdigest()
+            self.content_sha1 = self._hex_sha1_of_file()
         return self.content_sha1
 
     def open(self):
         return io.open(self.local_path, 'rb')
+
+    def _hex_sha1_of_file(self) -> Sha1HexDigest:
+        with self.open() as f:
+            return hex_sha1_of_stream(f, self.content_length)
 
     def is_sha1_known(self) -> bool:
         return self.content_sha1 is not None

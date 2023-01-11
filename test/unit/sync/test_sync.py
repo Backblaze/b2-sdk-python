@@ -924,7 +924,9 @@ class TestSynchronizer:
                 mock.patch.object(
                     UploadSourceLocalFile, 'check_path_and_get_size', check_path_and_get_size
                 ),
-                mock.patch.object(UploadSourceLocalFile, '_get_hexdigest', return_value=local_sha1),
+                mock.patch.object(
+                    UploadSourceLocalFile, '_hex_sha1_of_file', return_value=local_sha1
+                ),
                 mock.patch.object(
                     UploadSourceLocalFileRange, 'check_path_and_get_size', check_path_and_get_size
                 ),
