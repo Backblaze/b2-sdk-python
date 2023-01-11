@@ -120,8 +120,6 @@ class UploadSourceLocalFileBase(AbstractUploadSource):
         self.local_path = local_path
         self.content_length = 0
         self.content_sha1 = content_sha1
-        self.digest = None
-        self.digest_progress = 0
         self.check_path_and_get_size()
 
     def check_path_and_get_size(self) -> None:
