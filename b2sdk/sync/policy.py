@@ -12,13 +12,14 @@ import logging
 
 from abc import ABCMeta, abstractmethod
 from enum import Enum, unique
-from typing import Optional
+from typing import cast, Optional
 
 from ..exception import DestFileNewer
 from ..scan.exception import InvalidArgument
-from ..scan.folder import AbstractFolder
-from ..scan.path import AbstractPath
-from .action import B2CopyAction, B2DeleteAction, B2DownloadAction, B2HideAction, B2UploadAction, LocalDeleteAction
+from ..scan.folder import AbstractFolder, B2Folder
+from ..scan.path import AbstractPath, B2Path
+from ..transfer.outbound.upload_source import UploadMode
+from .action import B2CopyAction, B2DeleteAction, B2DownloadAction, B2HideAction, B2IncrementalUploadAction, B2UploadAction, LocalDeleteAction
 from .encryption_provider import SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER, AbstractSyncEncryptionSettingsProvider
 
 ONE_DAY_IN_MS = 24 * 60 * 60 * 1000
@@ -51,9 +52,9 @@ class AbstractFileSyncPolicy(metaclass=ABCMeta):
 
     def __init__(
         self,
-        source_path: AbstractPath,
+        source_path: Optional[AbstractPath],
         source_folder: AbstractFolder,
-        dest_path: AbstractPath,
+        dest_path: Optional[AbstractPath],
         dest_folder: AbstractFolder,
         now_millis: int,
         keep_days: int,
@@ -62,18 +63,22 @@ class AbstractFileSyncPolicy(metaclass=ABCMeta):
         compare_version_mode: CompareVersionMode = CompareVersionMode.MODTIME,
         encryption_settings_provider:
         AbstractSyncEncryptionSettingsProvider = SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER,
+        upload_mode: UploadMode = UploadMode.FULL,
+        absolute_minimum_part_size: Optional[int] = None,
     ):
         """
-        :param b2sdk.v2.AbstractPath source_path: source file object
-        :param b2sdk.v2.AbstractFolder source_folder: source folder object
-        :param b2sdk.v2.AbstractPath dest_path: destination file object
-        :param b2sdk.v2.AbstractFolder dest_folder: destination folder object
-        :param int now_millis: current time in milliseconds
-        :param int keep_days: days to keep before delete
-        :param b2sdk.v2.NewerFileSyncMode newer_file_mode: setting which determines handling for destination files newer than on the source
-        :param int compare_threshold: when comparing with size or time for sync
-        :param b2sdk.v2.CompareVersionMode compare_version_mode: how to compare source and destination files
-        :param b2sdk.v2.AbstractSyncEncryptionSettingsProvider encryption_settings_provider: encryption setting provider
+        :param source_path: source file object
+        :param source_folder: source folder object
+        :param dest_path: destination file object
+        :param dest_folder: destination folder object
+        :param now_millis: current time in milliseconds
+        :param keep_days: days to keep before delete
+        :param newer_file_mode: setting which determines handling for destination files newer than on the source
+        :param compare_threshold: when comparing with size or time for sync
+        :param compare_version_mode: how to compare source and destination files
+        :param encryption_settings_provider: encryption setting provider
+        :param upload_mode: file upload mode
+        :param absolute_minimum_part_size: minimum file part size that can be uploaded to the server
         """
         self._source_path = source_path
         self._source_folder = source_folder
@@ -86,8 +91,10 @@ class AbstractFileSyncPolicy(metaclass=ABCMeta):
         self._now_millis = now_millis
         self._transferred = False
         self._encryption_settings_provider = encryption_settings_provider
+        self._upload_mode = upload_mode
+        self._absolute_minimum_part_size = absolute_minimum_part_size
 
-    def _should_transfer(self):
+    def _should_transfer(self) -> bool:
         """
         Decide whether to transfer the file from the source to the destination.
         """
@@ -209,7 +216,9 @@ class AbstractFileSyncPolicy(metaclass=ABCMeta):
         """
         return []
 
-    def _get_source_mod_time(self):
+    def _get_source_mod_time(self) -> int:
+        if self._source_path is None:
+            return 0
         return self._source_path.mod_time
 
     @abstractmethod
@@ -228,7 +237,7 @@ class DownPolicy(AbstractFileSyncPolicy):
 
     def _make_transfer_action(self):
         return B2DownloadAction(
-            self._source_path,
+            cast(B2Path, self._source_path),
             self._source_folder.make_full_path(self._source_path.relative_path),
             self._dest_folder.make_full_path(self._source_path.relative_path),
             self._encryption_settings_provider,
@@ -243,14 +252,27 @@ class UpPolicy(AbstractFileSyncPolicy):
     SOURCE_PREFIX = 'local://'
 
     def _make_transfer_action(self):
-        return B2UploadAction(
-            self._source_folder.make_full_path(self._source_path.relative_path),
-            self._source_path.relative_path,
-            self._dest_folder.make_full_path(self._source_path.relative_path),
-            self._get_source_mod_time(),
-            self._source_path.size,
-            self._encryption_settings_provider,
-        )
+        # Find out if we want to append with new bytes or replace completely
+        if self._upload_mode == UploadMode.INCREMENTAL and self._dest_path:
+            return B2IncrementalUploadAction(
+                self._source_folder.make_full_path(self._source_path.relative_path),
+                self._source_path.relative_path,
+                self._dest_folder.make_full_path(self._source_path.relative_path),
+                self._get_source_mod_time(),
+                self._source_path.size,
+                self._encryption_settings_provider,
+                cast(B2Path, self._dest_path).selected_version,
+                self._absolute_minimum_part_size,
+            )
+        else:
+            return B2UploadAction(
+                self._source_folder.make_full_path(self._source_path.relative_path),
+                self._source_path.relative_path,
+                self._dest_folder.make_full_path(self._source_path.relative_path),
+                self._get_source_mod_time(),
+                self._source_path.size,
+                self._encryption_settings_provider,
+            )
 
 
 class UpAndDeletePolicy(UpPolicy):
@@ -324,10 +346,10 @@ class CopyPolicy(AbstractFileSyncPolicy):
 
         return B2CopyAction(
             self._source_folder.make_full_path(self._source_path.relative_path),
-            self._source_path,
+            cast(B2Path, self._source_path),
             self._dest_folder.make_full_path(self._source_path.relative_path),
-            self._source_folder.bucket,
-            self._dest_folder.bucket,
+            cast(B2Folder, self._source_folder).bucket,
+            cast(B2Folder, self._dest_folder).bucket,
             self._encryption_settings_provider,
         )
 
@@ -385,18 +407,18 @@ def make_b2_delete_note(version, index, transferred):
 
 
 def make_b2_delete_actions(
-    source_path: AbstractPath,
-    dest_path: AbstractPath,
+    source_path: Optional[AbstractPath],
+    dest_path: Optional[B2Path],
     dest_folder: AbstractFolder,
     transferred: bool,
 ):
     """
     Create the actions to delete files stored on B2, which are not present locally.
 
-    :param b2sdk.v2.AbstractPath source_path: source file object
-    :param b2sdk.v2.AbstractPath dest_path: destination file object
-    :param b2sdk.v2.AbstractFolder dest_folder: destination folder
-    :param bool transferred: if True, file has been transferred, False otherwise
+    :param source_path: source file object
+    :param dest_path: destination file object
+    :param dest_folder: destination folder
+    :param transferred: if True, file has been transferred, False otherwise
     """
     if dest_path is None:
         # B2 does not really store folders, so there is no need to hide
@@ -414,8 +436,8 @@ def make_b2_delete_actions(
 
 
 def make_b2_keep_days_actions(
-    source_path: AbstractPath,
-    dest_path: AbstractPath,
+    source_path: Optional[AbstractPath],
+    dest_path: Optional[B2Path],
     dest_folder: AbstractFolder,
     transferred: bool,
     keep_days: int,
@@ -428,15 +450,15 @@ def make_b2_keep_days_actions(
     When keepDays is set, all files that were visible any time from
     keepDays ago until now must be kept.  If versions were uploaded 5
     days ago, 15 days ago, and 25 days ago, and the keepDays is 10,
-    only the 25-day old version can be deleted.  The 15 day-old version
+    only the 25 day-old version can be deleted.  The 15 day-old version
     was visible 10 days ago.
 
-    :param b2sdk.v2.AbstractPath source_path: source file object
-    :param b2sdk.v2.AbstractPath dest_path: destination file object
-    :param b2sdk.v2.AbstractFolder dest_folder: destination folder object
-    :param bool transferred: if True, file has been transferred, False otherwise
-    :param int keep_days: how many days to keep a file
-    :param int now_millis: current time in milliseconds
+    :param source_path: source file object
+    :param dest_path: destination file object
+    :param dest_folder: destination folder object
+    :param transferred: if True, file has been transferred, False otherwise
+    :param keep_days: how many days to keep a file
+    :param now_millis: current time in milliseconds
     """
     deleting = False
     if dest_path is None:
@@ -455,7 +477,7 @@ def make_b2_keep_days_actions(
         # assert that age_days is non-decreasing.
         #
         # Note that if there is an out-of-order date that is old enough
-        # to trigger deletions, all of the versions uploaded before that
+        # to trigger deletions, all the versions uploaded before that
         # (the ones after it in the list) will be deleted, even if they
         # aren't over the age threshold.
 

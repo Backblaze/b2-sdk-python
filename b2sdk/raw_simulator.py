@@ -671,7 +671,8 @@ class BucketSimulator:
         return self.file_id_to_file[file_id].as_upload_result(account_auth_token)
 
     def get_file_info_by_name(self, account_auth_token, file_name):
-        for ((name, id), file) in self.file_name_and_id_to_file.items():
+        # Sorting files by name and ID, so lower ID (newer upload) is returned first.
+        for ((name, id), file) in sorted(self.file_name_and_id_to_file.items()):
             if file_name == name:
                 return file.as_download_headers(account_auth_token_or_none=account_auth_token)
         raise FileNotPresent(file_id_or_name=file_name, bucket_name=self.bucket_name)

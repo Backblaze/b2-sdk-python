@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * `InvalidJsonResponse` when the received error is not a proper JSON document
 * Raising `PotentialS3EndpointPassedAsRealm` when a specific misconfiguration is suspected
 * Add `large_file_sha1` support
+* Add support for incremental upload and sync
 
 ### Fixed
 * Removed information about replication being in closed beta
