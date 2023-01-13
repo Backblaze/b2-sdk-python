@@ -14,7 +14,6 @@ import json
 
 from abc import ABCMeta, abstractmethod
 from collections import deque
-from itertools import chain
 
 from b2sdk.transfer.emerge.planner.part_definition import (
     CopyEmergePartDefinition,
@@ -25,9 +24,12 @@ from b2sdk.transfer.emerge.planner.upload_subpart import (
     LocalSourceUploadSubpart,
     RemoteSourceUploadSubpart,
 )
-
-MEGABYTE = 1000 * 1000
-GIGABYTE = 1000 * MEGABYTE
+from b2sdk.http_constants import (
+    DEFAULT_MIN_PART_SIZE,
+    DEFAULT_MAX_PART_SIZE,
+    DEFAULT_RECOMMENDED_UPLOAD_PART_SIZE,
+)
+from b2sdk.utils import iterator_peek
 
 
 class UploadBuffer:
@@ -82,9 +84,6 @@ class UploadBuffer:
 
 class EmergePlanner:
     """ Creates a list of actions required for advanced creation of an object in the cloud from an iterator of write intent objects """
-    DEFAULT_MIN_PART_SIZE = 5 * MEGABYTE
-    DEFAULT_RECOMMENDED_UPLOAD_PART_SIZE = 100 * MEGABYTE
-    DEFAULT_MAX_PART_SIZE = 5 * GIGABYTE
 
     def __init__(
         self,
@@ -92,9 +91,9 @@ class EmergePlanner:
         recommended_upload_part_size=None,
         max_part_size=None,
     ):
-        self.min_part_size = min_part_size or self.DEFAULT_MIN_PART_SIZE
-        self.recommended_upload_part_size = recommended_upload_part_size or self.DEFAULT_RECOMMENDED_UPLOAD_PART_SIZE
-        self.max_part_size = max_part_size or self.DEFAULT_MAX_PART_SIZE
+        self.min_part_size = min_part_size or DEFAULT_MIN_PART_SIZE
+        self.recommended_upload_part_size = recommended_upload_part_size or DEFAULT_RECOMMENDED_UPLOAD_PART_SIZE
+        self.max_part_size = max_part_size or DEFAULT_MAX_PART_SIZE
         assert self.min_part_size <= self.recommended_upload_part_size <= self.max_part_size
 
     @classmethod
@@ -107,9 +106,9 @@ class EmergePlanner:
     ):
         if recommended_upload_part_size is None:
             recommended_upload_part_size = account_info.get_recommended_part_size()
-        if min_part_size is None and recommended_upload_part_size < cls.DEFAULT_MIN_PART_SIZE:
+        if min_part_size is None and recommended_upload_part_size < DEFAULT_MIN_PART_SIZE:
             min_part_size = recommended_upload_part_size
-        if max_part_size is None and recommended_upload_part_size > cls.DEFAULT_MAX_PART_SIZE:
+        if max_part_size is None and recommended_upload_part_size > DEFAULT_MAX_PART_SIZE:
             max_part_size = recommended_upload_part_size
         kwargs = {
             'min_part_size': min_part_size,
@@ -340,10 +339,10 @@ class EmergePlanner:
         return left_buff, UploadBuffer(left_buff.end_offset)
 
     def _select_intent_fragments(self, write_intent_iterator):
-        """ Select overapping write intent fragments to use.
+        """ Select overlapping write intent fragments to use.
 
         To solve overlapping intents selection, intents can be split to smaller fragments.
-        Those fragments are yieled as soon as decision can be made to use them,
+        Those fragments are yielded as soon as decision can be made to use them,
         so there is possibility that one intent is yielded in multiple fragments. Those
         would be merged again by higher level iterator that produces emerge parts, but
         in principle this merging can happen here. Not merging it is a code design decision
@@ -627,8 +626,10 @@ class EmergePlan(BaseEmergePlan):
 
 class StreamingEmergePlan(BaseEmergePlan):
     def __init__(self, emerge_parts_iterator):
-        emerge_parts, self._is_large_file = self._peek_for_large_file(emerge_parts_iterator)
-        super(StreamingEmergePlan, self).__init__(emerge_parts)
+        emerge_parts_iterator, self._is_large_file = self._peek_for_large_file(
+            emerge_parts_iterator
+        )
+        super().__init__(emerge_parts_iterator)
 
     def is_large_file(self):
         return self._is_large_file
@@ -640,15 +641,12 @@ class StreamingEmergePlan(BaseEmergePlan):
         return None
 
     def _peek_for_large_file(self, emerge_parts_iterator):
-        first_part = next(emerge_parts_iterator, None)
-        if first_part is None:
+        peeked, emerge_parts_iterator = iterator_peek(emerge_parts_iterator, 2)
+
+        if not peeked:
             raise ValueError('Empty emerge parts iterator')
 
-        second_part = next(emerge_parts_iterator, None)
-        if second_part is None:
-            return iter([first_part]), False
-        else:
-            return chain([first_part, second_part], emerge_parts_iterator), True
+        return emerge_parts_iterator, len(peeked) > 1
 
 
 class EmergePart:

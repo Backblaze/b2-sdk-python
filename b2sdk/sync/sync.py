@@ -12,13 +12,15 @@ import concurrent.futures as futures
 import logging
 
 from enum import Enum, unique
+from typing import cast, Optional
 
 from ..bounded_queue_executor import BoundedQueueExecutor
 from ..scan.exception import InvalidArgument
-from ..scan.folder import AbstractFolder
+from ..scan.folder import AbstractFolder, LocalFolder, B2Folder
 from ..scan.path import AbstractPath
-from ..scan.policies import DEFAULT_SCAN_MANAGER
+from ..scan.policies import DEFAULT_SCAN_MANAGER, ScanPoliciesManager
 from ..scan.scan import zip_folders
+from ..transfer.outbound.upload_source import UploadMode
 from .encryption_provider import SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER, AbstractSyncEncryptionSettingsProvider
 from .exception import IncompleteSync
 from .policy import CompareVersionMode, NewerFileSyncMode
@@ -87,6 +89,8 @@ class Synchronizer:
         compare_threshold=None,
         keep_days=None,
         sync_policy_manager: SyncPolicyManager = POLICY_MANAGER,
+        upload_mode: UploadMode = UploadMode.FULL,
+        absolute_minimum_part_size: Optional[int] = None,
     ):
         """
         Initialize synchronizer class and validate arguments
@@ -101,6 +105,8 @@ class Synchronizer:
         :param int compare_threshold: should be greater than 0, default is 0
         :param int keep_days: if keep_days_or_delete is `b2sdk.v2.KeepOrDeleteMode.KEEP_BEFORE_DELETE`, then this should be greater than 0
         :param SyncPolicyManager sync_policy_manager: object which decides what to do with each file (upload, download, delete, copy, hide etc)
+        :param b2sdk.v2.UploadMode upload_mode: determines how file uploads are handled
+        :param int absolute_minimum_part_size: minimum file part size for large files
         """
         self.newer_file_mode = newer_file_mode
         self.keep_days_or_delete = keep_days_or_delete
@@ -112,6 +118,8 @@ class Synchronizer:
         self.policies_manager = policies_manager  # actually it should be called scan_policies_manager
         self.sync_policy_manager = sync_policy_manager
         self.max_workers = max_workers
+        self.upload_mode = upload_mode
+        self.absolute_minimum_part_size = absolute_minimum_part_size
         self._validate()
 
     def _validate(self):
@@ -144,10 +152,10 @@ class Synchronizer:
 
     def sync_folders(
         self,
-        source_folder,
-        dest_folder,
-        now_millis,
-        reporter,
+        source_folder: AbstractFolder,
+        dest_folder: AbstractFolder,
+        now_millis: int,
+        reporter: Optional[SyncReport],
         encryption_settings_provider:
         AbstractSyncEncryptionSettingsProvider = SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER,
     ):
@@ -156,11 +164,11 @@ class Synchronizer:
         source is also in the destination.  Deletes any file versions
         in the destination older than history_days.
 
-        :param b2sdk.scan.folder.AbstractFolder source_folder: source folder object
-        :param b2sdk.scan.folder.AbstractFolder dest_folder: destination folder object
-        :param int now_millis: current time in milliseconds
-        :param b2sdk.sync.report.SyncReport,None reporter: progress reporter
-        :param b2sdk.v2.AbstractSyncEncryptionSettingsProvider encryption_settings_provider: encryption setting provider
+        :param source_folder: source folder object
+        :param dest_folder: destination folder object
+        :param now_millis: current time in milliseconds
+        :param reporter: progress reporter
+        :param encryption_settings_provider: encryption setting provider
         """
         source_type = source_folder.folder_type()
         dest_type = dest_folder.folder_type()
@@ -170,10 +178,10 @@ class Synchronizer:
 
         # For downloads, make sure that the target directory is there.
         if dest_type == 'local' and not self.dry_run:
-            dest_folder.ensure_present()
+            cast(LocalFolder, dest_folder).ensure_present()
 
         if source_type == 'local' and not self.allow_empty_source:
-            source_folder.ensure_non_empty()
+            cast(LocalFolder, source_folder).ensure_non_empty()
 
         # Make an executor to count files and run all of the actions. This is
         # not the same as the executor in the API object which is used for
@@ -195,9 +203,9 @@ class Synchronizer:
         # For bucket-to-bucket sync, the bucket for the API calls should be the destination.
         action_bucket = None
         if dest_type == 'b2':
-            action_bucket = dest_folder.bucket
+            action_bucket = cast(B2Folder, dest_folder).bucket
         elif source_type == 'b2':
-            action_bucket = source_folder.bucket
+            action_bucket = cast(B2Folder, source_folder).bucket
 
         # Schedule each of the actions.
         for action in self._make_folder_sync_actions(
@@ -222,7 +230,7 @@ class Synchronizer:
         dest_folder: AbstractFolder,
         now_millis: int,
         reporter: SyncReport,
-        policies_manager: SyncPolicyManager = DEFAULT_SCAN_MANAGER,
+        policies_manager: ScanPoliciesManager = DEFAULT_SCAN_MANAGER,
         encryption_settings_provider:
         AbstractSyncEncryptionSettingsProvider = SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER,
     ):
@@ -230,12 +238,12 @@ class Synchronizer:
         Yield a sequence of actions that will sync the destination
         folder to the source folder.
 
-        :param b2sdk.v2.AbstractFolder source_folder: source folder object
-        :param b2sdk.v2.AbstractFolder dest_folder: destination folder object
-        :param int now_millis: current time in milliseconds
-        :param b2sdk.v2.SyncReport reporter: reporter object
-        :param b2sdk.v2.ScanPolicyManager policies_manager: object which decides which files to process
-        :param b2sdk.v2.AbstractSyncEncryptionSettingsProvider encryption_settings_provider: encryption setting provider
+        :param source_folder: source folder object
+        :param dest_folder: destination folder object
+        :param now_millis: current time in milliseconds
+        :param reporter: reporter object
+        :param policies_manager: object which decides which files to process
+        :param encryption_settings_provider: encryption setting provider
         """
         if self.keep_days_or_delete == KeepOrDeleteMode.KEEP_BEFORE_DELETE and dest_folder.folder_type(
         ) == 'local':
@@ -290,8 +298,8 @@ class Synchronizer:
     def _make_file_sync_actions(
         self,
         sync_type: str,
-        source_path: AbstractPath,
-        dest_path: AbstractPath,
+        source_path: Optional[AbstractPath],
+        dest_path: Optional[AbstractPath],
         source_folder: AbstractFolder,
         dest_folder: AbstractFolder,
         now_millis: int,
@@ -301,13 +309,13 @@ class Synchronizer:
         """
         Yields the sequence of actions needed to sync the two files
 
-        :param str sync_type: synchronization type
-        :param b2sdk.v2.AbstractPath source_path: source file object
-        :param b2sdk.v2.AbstractPath dest_path: destination file object
-        :param b2sdk.v2.AbstractFolder source_folder: a source folder object
-        :param b2sdk.v2.AbstractFolder dest_folder: a destination folder object
-        :param int now_millis: current time in milliseconds
-        :param b2sdk.v2.AbstractSyncEncryptionSettingsProvider encryption_settings_provider: encryption setting provider
+        :param sync_type: synchronization type
+        :param source_path: source file object
+        :param dest_path: destination file object
+        :param source_folder: a source folder object
+        :param dest_folder: a destination folder object
+        :param now_millis: current time in milliseconds
+        :param encryption_settings_provider: encryption setting provider
         """
         delete = self.keep_days_or_delete == KeepOrDeleteMode.DELETE
 
@@ -324,5 +332,7 @@ class Synchronizer:
             self.compare_threshold,
             self.compare_version_mode,
             encryption_settings_provider=encryption_settings_provider,
+            upload_mode=self.upload_mode,
+            absolute_minimum_part_size=self.absolute_minimum_part_size,
         )
         return policy.get_all_actions()

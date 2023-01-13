@@ -65,9 +65,6 @@ This should be used in 99% of use cases, it's enough to implement anything from 
 
 Those modules will generally not change in a backwards-incompatible way between non-major versions. Please see :ref:`interface version compatibility <interface_version_compatibility>` chapter for notes on what changes must be expected.
 
-.. note::
-  Replication is currently in a Closed Beta state, where not all B2 accounts have access to the feature. The interface of the beta server API might change and the interface of **b2sdk** around replication may change as well. For the avoidance of doubt, until this message is removed, replication-related functionality of **b2sdk** should be considered as internal interface.
-
 .. hint::
   If the current version of **b2sdk** is ``4.5.6`` and you only use the *public* interface,
   put this in your ``requirements.txt`` to be safe::

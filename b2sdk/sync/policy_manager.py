@@ -8,10 +8,15 @@
 #
 ######################################################################
 
+from typing import Optional
+
+from ..scan.folder import AbstractFolder
 from ..scan.path import AbstractPath
-from .policy import CopyAndDeletePolicy, CopyAndKeepDaysPolicy, CopyPolicy, \
-    DownAndDeletePolicy, DownAndKeepDaysPolicy, DownPolicy, UpAndDeletePolicy, \
-    UpAndKeepDaysPolicy, UpPolicy
+from ..transfer.outbound.upload_source import UploadMode
+from .policy import AbstractFileSyncPolicy, CompareVersionMode, CopyAndDeletePolicy, \
+    CopyAndKeepDaysPolicy, CopyPolicy, DownAndDeletePolicy, DownAndKeepDaysPolicy, \
+    DownPolicy, NewerFileSyncMode, UpAndDeletePolicy, UpAndKeepDaysPolicy, UpPolicy
+from .encryption_provider import AbstractSyncEncryptionSettingsProvider
 
 
 class SyncPolicyManager:
@@ -25,34 +30,38 @@ class SyncPolicyManager:
 
     def get_policy(
         self,
-        sync_type,
-        source_path: AbstractPath,
-        source_folder,
-        dest_path: AbstractPath,
-        dest_folder,
-        now_millis,
-        delete,
-        keep_days,
-        newer_file_mode,
-        compare_threshold,
-        compare_version_mode,
-        encryption_settings_provider,
-    ):
+        sync_type: str,
+        source_path: Optional[AbstractPath],
+        source_folder: AbstractFolder,
+        dest_path: Optional[AbstractPath],
+        dest_folder: AbstractFolder,
+        now_millis: int,
+        delete: bool,
+        keep_days: int,
+        newer_file_mode: NewerFileSyncMode,
+        compare_threshold: int,
+        compare_version_mode: CompareVersionMode,
+        encryption_settings_provider: AbstractSyncEncryptionSettingsProvider,
+        upload_mode: UploadMode,
+        absolute_minimum_part_size: int,
+    ) -> AbstractFileSyncPolicy:
         """
         Return a policy object.
 
-        :param str sync_type: synchronization type
-        :param b2sdk.v2.AbstractPath source_path: source file
-        :param str source_folder: a source folder path
-        :param b2sdk.v2.AbstractPath dest_path: destination file
-        :param str dest_folder: a destination folder path
-        :param int now_millis: current time in milliseconds
-        :param bool delete: delete policy
-        :param int keep_days: keep for days policy
-        :param b2sdk.v2.NewerFileSyncMode newer_file_mode: setting which determines handling for destination files newer than on the source
-        :param int compare_threshold: difference between file modification time or file size
-        :param b2sdk.v2.CompareVersionMode compare_version_mode: setting which determines how to compare source and destination files
-        :param b2sdk.v2.AbstractSyncEncryptionSettingsProvider encryption_settings_provider: an object which decides which encryption to use (if any)
+        :param sync_type: synchronization type
+        :param source_path: source file
+        :param source_folder: a source folder path
+        :param dest_path: destination file
+        :param dest_folder: a destination folder path
+        :param now_millis: current time in milliseconds
+        :param delete: delete policy
+        :param keep_days: keep for days policy
+        :param newer_file_mode: setting which determines handling for destination files newer than on the source
+        :param compare_threshold: difference between file modification time or file size
+        :param compare_version_mode: setting which determines how to compare source and destination files
+        :param encryption_settings_provider: an object which decides which encryption to use (if any)
+        :param upload_mode: determines how file uploads are handled
+        :param absolute_minimum_part_size: minimum file part size for large files
         :return: a policy object
         """
         policy_class = self.get_policy_class(sync_type, delete, keep_days)
@@ -67,6 +76,8 @@ class SyncPolicyManager:
             compare_threshold,
             compare_version_mode,
             encryption_settings_provider,
+            upload_mode,
+            absolute_minimum_part_size,
         )
 
     def get_policy_class(self, sync_type, delete, keep_days):

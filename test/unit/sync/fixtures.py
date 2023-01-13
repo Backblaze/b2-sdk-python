@@ -10,7 +10,8 @@
 
 import pytest
 
-from apiver_deps import DEFAULT_SCAN_MANAGER, POLICY_MANAGER, CompareVersionMode, KeepOrDeleteMode, NewerFileSyncMode, Synchronizer
+import apiver_deps
+from apiver_deps import DEFAULT_SCAN_MANAGER, POLICY_MANAGER, CompareVersionMode, KeepOrDeleteMode, NewerFileSyncMode, Synchronizer, UploadMode
 
 
 @pytest.fixture(scope='session')
@@ -25,7 +26,19 @@ def synchronizer_factory():
         compare_version_mode=CompareVersionMode.MODTIME,
         compare_threshold=None,
         sync_policy_manager=POLICY_MANAGER,
+        upload_mode=UploadMode.FULL,
+        absolute_minimum_part_size=None,
     ):
+        kwargs = {}
+        if apiver_deps.V < 2:
+            assert upload_mode == UploadMode.FULL, "upload_mode not supported in apiver < 2"
+            assert absolute_minimum_part_size is None, "absolute_minimum_part_size not supported in apiver < 2"
+        else:
+            kwargs = dict(
+                upload_mode=upload_mode,
+                absolute_minimum_part_size=absolute_minimum_part_size,
+            )
+
         return Synchronizer(
             1,
             policies_manager=policies_manager,
@@ -37,6 +50,7 @@ def synchronizer_factory():
             compare_version_mode=compare_version_mode,
             compare_threshold=compare_threshold,
             sync_policy_manager=sync_policy_manager,
+            **kwargs
         )
 
     return get_synchronizer

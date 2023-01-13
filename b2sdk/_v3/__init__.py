@@ -61,6 +61,7 @@ from b2sdk.utils import (
     hex_sha1_of_bytes,
     hex_sha1_of_file,
     TempDir,
+    IncrementalHexDigester,
 )
 
 from b2sdk.utils import trace_call
@@ -184,6 +185,7 @@ from b2sdk.sync.report import SyncFileReporter
 from b2sdk.sync.report import SyncReport
 from b2sdk.sync.sync import KeepOrDeleteMode
 from b2sdk.sync.sync import Synchronizer
+from b2sdk.sync.sync import UploadMode
 from b2sdk.sync.encryption_provider import AbstractSyncEncryptionSettingsProvider
 from b2sdk.sync.encryption_provider import BasicSyncEncryptionSettingsProvider
 from b2sdk.sync.encryption_provider import ServerDefaultSyncEncryptionSettingsProvider
@@ -235,5 +237,6 @@ from b2sdk.cache import AuthInfoCache
 from b2sdk.cache import DummyCache
 from b2sdk.cache import InMemoryCache
 from b2sdk.http_constants import SRC_LAST_MODIFIED_MILLIS
+from b2sdk.http_constants import LARGE_FILE_SHA1
 from b2sdk.session import B2Session
 from b2sdk.utils.thread_pool import ThreadPoolMixin
