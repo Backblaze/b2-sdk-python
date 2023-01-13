@@ -136,8 +136,14 @@ def hex_sha1_of_stream(input_stream: ReadOnlyStream, content_length: int) -> Sha
 
 @dataclass
 class IncrementalHexDigester:
-    digest: hashlib.sha1 = field(default_factory=hashlib.sha1)
-    offset: int = 0
+    """
+    Calculates digest of a stream or parts of it.
+    """
+    stream: ReadOnlyStream
+    digest: 'hashlib._Hash' = field(  # noqa (_Hash is a dynamic object)
+        default_factory=hashlib.sha1
+    )
+    read_bytes: int = 0
     block_size: int = 1024 * 1024
 
     @property
@@ -146,19 +152,24 @@ class IncrementalHexDigester:
 
     def update_from_stream(
         self,
-        stream: ReadOnlyStream,
         limit: Optional[int] = None,
     ) -> Sha1HexDigest:
+        """
+        :param limit: How many new bytes try to read from the stream. Default None – read until nothing left.
+        """
+        offset = 0
+
         while True:
             if limit is not None:
-                to_read = min(limit - self.offset, self.block_size)
+                to_read = min(limit - offset, self.block_size)
             else:
                 to_read = self.block_size
-            data = stream.read(to_read)
+            data = self.stream.read(to_read)
             data_len = len(data)
             if data_len > 0:
                 self.digest.update(data)
-                self.offset += data_len
+                self.read_bytes += data_len
+                offset += data_len
             if data_len < to_read or to_read == 0:
                 break
 
@@ -169,9 +180,9 @@ def hex_sha1_of_unlimited_stream(
     input_stream: ReadOnlyStream,
     limit: Optional[int] = None,
 ) -> Tuple[Sha1HexDigest, int]:
-    digester = IncrementalHexDigester()
-    digester.update_from_stream(input_stream, limit)
-    return digester.hex_digest, digester.offset
+    digester = IncrementalHexDigester(input_stream)
+    digester.update_from_stream(limit)
+    return digester.hex_digest, digester.read_bytes
 
 
 def hex_sha1_of_file(path_) -> Sha1HexDigest:

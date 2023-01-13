@@ -904,7 +904,7 @@ class TestSynchronizer:
 
         bucket = mock.MagicMock()
 
-        def update_from_stream(self, stream, limit=None):
+        def update_from_stream(self, limit=None):
             if limit is None:
                 return local_sha1
             elif limit == remote_size:

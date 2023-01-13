@@ -248,16 +248,16 @@ class UploadSourceLocalFile(UploadSourceLocalFileBase):
 
         # We're calculating hexdigest of the first N bytes of the file. However, if the sha1 differs,
         # we'll be needing the whole hash of the file anyway. So we can use this partial information.
-        digester = IncrementalHexDigester()
         with self.open() as fp:
-            hex_digest = digester.update_from_stream(fp, file_version.size)
+            digester = IncrementalHexDigester(fp)
+            hex_digest = digester.update_from_stream(file_version.size)
             if hex_digest != content_sha1:
                 logger.debug(
                     "Fallback to full upload for %s -- content in common range differs",
                     self.local_path,
                 )
                 # Calculate SHA1 of the remainder of the file and set it.
-                self.content_sha1 = digester.update_from_stream(fp)
+                self.content_sha1 = digester.update_from_stream()
                 return [self]
 
         logger.debug("Incremental upload of %s is possible.", self.local_path)

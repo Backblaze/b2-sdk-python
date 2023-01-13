@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Additional tests for listing files/versions
 * Ensured that changelog validation only happens on pull requests
 * Upgraded GitHub actions checkout to v3, python-setup to v4
+* Additional tests for `IncrementalHexDigester`
 
 ## [1.18.0] - 2022-09-20
 
