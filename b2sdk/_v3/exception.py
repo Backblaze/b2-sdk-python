@@ -44,6 +44,7 @@ from b2sdk.exception import FileNameNotAllowed
 from b2sdk.exception import FileNotPresent
 from b2sdk.exception import FileSha1Mismatch
 from b2sdk.exception import InvalidAuthToken
+from b2sdk.exception import InvalidJsonResponse
 from b2sdk.exception import InvalidMetadataDirective
 from b2sdk.exception import InvalidRange
 from b2sdk.exception import InvalidUploadSource
@@ -53,6 +54,7 @@ from b2sdk.exception import MissingPart
 from b2sdk.exception import NonExistentBucket
 from b2sdk.exception import NotAllowedByAppKeyError
 from b2sdk.exception import PartSha1Mismatch
+from b2sdk.exception import PotentialS3EndpointPassedAsRealm
 from b2sdk.exception import RestrictedBucket
 from b2sdk.exception import RestrictedBucketMissing
 from b2sdk.exception import RetentionWriteError
@@ -123,6 +125,7 @@ __all__ = (
     'IncompleteSync',
     'InvalidArgument',
     'InvalidAuthToken',
+    'InvalidJsonResponse',
     'InvalidMetadataDirective',
     'InvalidRange',
     'InvalidUploadSource',
@@ -134,6 +137,7 @@ __all__ = (
     'NotADirectory',
     'NotAllowedByAppKeyError',
     'PartSha1Mismatch',
+    'PotentialS3EndpointPassedAsRealm',
     'RestrictedBucket',
     'RestrictedBucketMissing',
     'RetentionWriteError',

@@ -2,7 +2,7 @@
 #
 # File: b2sdk/utils/__init__.py
 #
-# Copyright 2019 Backblaze Inc. All Rights Reserved.
+# Copyright 2022 Backblaze Inc. All Rights Reserved.
 #
 # License https://www.backblaze.com/using_b2_code.html
 #
@@ -16,11 +16,19 @@ import re
 import shutil
 import tempfile
 import time
-import concurrent.futures as futures
+from dataclasses import dataclass, field
 from decimal import Decimal
+from itertools import chain
+from typing import Any, Iterator, List, NewType, Optional, Tuple, TypeVar
 from urllib.parse import quote, unquote_plus
 
 from logfury.v1 import DefaultTraceAbstractMeta, DefaultTraceMeta, limit_trace_arguments, disable_trace, trace_call
+
+Sha1HexDigest = NewType('Sha1HexDigest', str)
+T = TypeVar('T')
+# TODO: When we drop Python 3.7 support, this should be replaced
+#   with typing.Protocol that exposes read method.
+ReadOnlyStream = Any
 
 
 def b2_url_encode(s):
@@ -84,19 +92,17 @@ def choose_part_ranges(content_length, minimum_part_size):
     return parts
 
 
-def hex_sha1_of_stream(input_stream, content_length):
+def update_digest_from_stream(digest: T, input_stream: ReadOnlyStream, content_length: int) -> T:
     """
-    Return the 40-character hex SHA1 checksum of the first content_length
-    bytes in the input stream.
+    Update and return `digest` with data read from `input_stream`
 
-    :param input_stream: stream object, which exposes read() method
+    :param digest: a digest object, which exposes an `update(bytes)` method
+    :param input_stream: stream object, which exposes a `read(int|None)` method
     :param content_length: expected length of the stream
     :type content_length: int
-    :rtype: str
     """
     remaining = content_length
     block_size = 1024 * 1024
-    digest = hashlib.sha1()
     while remaining != 0:
         to_read = min(remaining, block_size)
         data = input_stream.read(to_read)
@@ -106,37 +112,78 @@ def hex_sha1_of_stream(input_stream, content_length):
             )
         digest.update(data)
         remaining -= to_read
-    return digest.hexdigest()
+    return digest
 
 
-def hex_sha1_of_unlimited_stream(input_stream, limit=None):
-    block_size = 1024 * 1024
-    content_length = 0
-    digest = hashlib.sha1()
-    while True:
-        if limit is not None:
-            to_read = min(limit - content_length, block_size)
-        else:
-            to_read = block_size
-        data = input_stream.read(to_read)
-        data_len = len(data)
-        if data_len > 0:
-            digest.update(data)
-            content_length += data_len
-        if data_len < to_read:
-            return digest.hexdigest(), content_length
+def hex_sha1_of_stream(input_stream: ReadOnlyStream, content_length: int) -> Sha1HexDigest:
+    """
+    Return the 40-character hex SHA1 checksum of the first content_length
+    bytes in the input stream.
+
+    :param input_stream: stream object, which exposes read(int|None) method
+    :param content_length: expected length of the stream
+    :type content_length: int
+    :rtype: str
+    """
+    return Sha1HexDigest(
+        update_digest_from_stream(
+            hashlib.sha1(),
+            input_stream,
+            content_length,
+        ).hexdigest()
+    )
 
 
-def hex_sha1_of_file(path_):
+@dataclass
+class IncrementalHexDigester:
+    digest: hashlib.sha1 = field(default_factory=hashlib.sha1)
+    offset: int = 0
+    block_size: int = 1024 * 1024
+
+    @property
+    def hex_digest(self) -> Sha1HexDigest:
+        return Sha1HexDigest(self.digest.hexdigest())
+
+    def update_from_stream(
+        self,
+        stream: ReadOnlyStream,
+        limit: Optional[int] = None,
+    ) -> Sha1HexDigest:
+        while True:
+            if limit is not None:
+                to_read = min(limit - self.offset, self.block_size)
+            else:
+                to_read = self.block_size
+            data = stream.read(to_read)
+            data_len = len(data)
+            if data_len > 0:
+                self.digest.update(data)
+                self.offset += data_len
+            if data_len < to_read or to_read == 0:
+                break
+
+        return self.hex_digest
+
+
+def hex_sha1_of_unlimited_stream(
+    input_stream: ReadOnlyStream,
+    limit: Optional[int] = None,
+) -> Tuple[Sha1HexDigest, int]:
+    digester = IncrementalHexDigester()
+    digester.update_from_stream(input_stream, limit)
+    return digester.hex_digest, digester.offset
+
+
+def hex_sha1_of_file(path_) -> Sha1HexDigest:
     with open(path_, 'rb') as file:
-        return hex_sha1_of_unlimited_stream(file)
+        return hex_sha1_of_unlimited_stream(file)[0]
 
 
-def hex_sha1_of_bytes(data: bytes) -> str:
+def hex_sha1_of_bytes(data: bytes) -> Sha1HexDigest:
     """
     Return the 40-character hex SHA1 checksum of the data.
     """
-    return hashlib.sha1(data).hexdigest()
+    return Sha1HexDigest(hashlib.sha1(data).hexdigest())
 
 
 def hex_md5_of_bytes(data: bytes) -> str:
@@ -431,6 +478,24 @@ def current_time_millis():
     File times are in integer milliseconds, to avoid roundoff errors.
     """
     return int(round(time.time() * 1000))
+
+
+def iterator_peek(iterator: Iterator[T], count: int) -> Tuple[List[T], Iterator[T]]:
+    """
+    Get up to the `count` first elements yielded by `iterator`.
+
+    The function will read `count` elements from `iterator` or less if the end is reached first.  Returns a tuple
+    consisting of a list of retrieved elements and an iterator equivalent to the input iterator.
+    """
+
+    ret = []
+    for _ in range(count):
+        try:
+            ret.append(next(iterator))
+        except StopIteration:
+            break
+
+    return ret, chain(ret, iterator)
 
 
 assert disable_trace

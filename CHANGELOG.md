@@ -8,10 +8,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 * Authorizing a key for a single bucket ensures that this bucket is cached
+* `Bucket.ls` operation supports wildcard matching strings
+* Documentation for AbstractUploadSource and its children
+* `InvalidJsonResponse` when the received error is not a proper JSON document
+* Raising `PotentialS3EndpointPassedAsRealm` when a specific misconfiguration is suspected
+* Add `large_file_sha1` support
+* Add support for incremental upload and sync
 * Ability to stream data from any source into a B2 file
+
+### Fixed
+* Removed information about replication being in closed beta
 
 ### Infrastructure
 * Additional tests for listing files/versions
+* Ensured that changelog validation only happens on pull requests
+* Upgraded GitHub actions checkout to v3, python-setup to v4
 
 ## [1.18.0] - 2022-09-20
 

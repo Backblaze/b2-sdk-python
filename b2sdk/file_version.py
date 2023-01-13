@@ -8,17 +8,17 @@
 #
 ######################################################################
 
-from typing import Dict, Optional, Union, Tuple, TYPE_CHECKING
+from typing import Any, Dict, Optional, Union, Tuple, TYPE_CHECKING
 import re
 from copy import deepcopy
 
 from .encryption.setting import EncryptionSetting, EncryptionSettingFactory
-from .replication.types import ReplicationStatus
-from .http_constants import FILE_INFO_HEADER_PREFIX_LOWER, SRC_LAST_MODIFIED_MILLIS
 from .file_lock import FileRetentionSetting, LegalHold, NO_RETENTION_FILE_SETTING
+from .http_constants import FILE_INFO_HEADER_PREFIX_LOWER, LARGE_FILE_SHA1, SRC_LAST_MODIFIED_MILLIS
 from .progress import AbstractProgressListener
+from .replication.types import ReplicationStatus
+from .utils import b2_url_decode, Sha1HexDigest
 from .utils.range_ import Range
-from .utils import b2_url_decode
 
 if TYPE_CHECKING:
     from .api import B2Api
@@ -102,7 +102,7 @@ class BaseFileVersion:
             return '%s%s' % (UNVERIFIED_CHECKSUM_PREFIX, content_sha1)
         return content_sha1
 
-    def _clone(self, **new_attributes: Dict[str, object]):
+    def _clone(self, **new_attributes: Any):
         """
         Create new instance based on the old one, overriding attributes with :code:`new_attributes`
         (only applies to arguments passed to __init__)
@@ -196,6 +196,18 @@ class BaseFileVersion:
         m = self._TYPE_MATCHER.match(self.id_)
         assert m, self.id_
         return self._FILE_TYPE[int(m.group(1))]
+
+    def get_content_sha1(self) -> Optional[Sha1HexDigest]:
+        """
+        Get the file's content SHA1 hex digest from the header or, if its absent,
+        from the file info.  If both are missing, return None.
+        """
+        if self.content_sha1 and self.content_sha1 != "none":
+            return self.content_sha1
+        elif LARGE_FILE_SHA1 in self.file_info:
+            return Sha1HexDigest(self.file_info[LARGE_FILE_SHA1])
+        # content SHA1 unknown
+        return None
 
 
 class FileVersion(BaseFileVersion):

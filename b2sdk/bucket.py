@@ -8,8 +8,11 @@
 #
 ######################################################################
 
+import fnmatch
 import logging
+import pathlib
 
+from contextlib import suppress
 from typing import Optional, Tuple
 
 from .encryption.setting import EncryptionSetting, EncryptionSettingFactory
@@ -37,7 +40,7 @@ from .transfer.emerge.write_intent import WriteIntent
 from .transfer.emerge.unbound_write_intent import UnboundWriteIntentGenerator
 from .transfer.inbound.downloaded_file import DownloadedFile
 from .transfer.outbound.copy_source import CopySource
-from .transfer.outbound.upload_source import UploadSourceBytes, UploadSourceLocalFile
+from .transfer.outbound.upload_source import UploadSourceBytes, UploadSourceLocalFile, UploadMode
 from .utils import (
     B2TraceMeta,
     b2_url_encode,
@@ -324,7 +327,8 @@ class Bucket(metaclass=B2TraceMeta):
         folder_to_list: str = '',
         latest_only: bool = True,
         recursive: bool = False,
-        fetch_count: Optional[int] = 10000
+        fetch_count: Optional[int] = 10000,
+        with_wildcard: bool = False,
     ):
         """
         Pretend that folders exist and yields the information about the files in a folder.
@@ -340,20 +344,58 @@ class Bucket(metaclass=B2TraceMeta):
         :param folder_to_list: the name of the folder to list; must not start with "/".
                                Empty string means top-level folder
         :param latest_only: when ``False`` returns info about all versions of a file,
-                              when ``True``, just returns info about the most recent versions
+                            when ``True``, just returns info about the most recent versions
         :param recursive: if ``True``, list folders recursively
         :param fetch_count: how many entries to return or ``None`` to use the default. Acceptable values: 1 - 10000
+        :param with_wildcard: Accepts "*", "?", "[]" and "[!]" in folder_to_list, similarly to what shell does.
+                              As of 1.19.0 it can only be enabled when recursive is also enabled.
+                              Also, in this mode, folder_to_list is considered to be a filename or a pattern.
         :rtype: generator[tuple[b2sdk.v2.FileVersion, str]]
         :returns: generator of (file_version, folder_name) tuples
 
         .. note::
-            In case of `recursive=True`, folder_name is returned only for first file in the folder.
+            In case of `recursive=True`, folder_name is not returned.
         """
+        # Ensure that recursive is enabled when with_wildcard is enabled.
+        if with_wildcard and not recursive:
+            raise ValueError('with_wildcard requires recursive to be turned on as well')
+
         # Every file returned must have a name that starts with the
         # folder name and a "/".
         prefix = folder_to_list
-        if prefix != '' and not prefix.endswith('/'):
+        # In case of wildcards, we don't assume that this is folder that we're searching through.
+        # It could be an exact file, e.g. 'a/b.txt' that we're trying to locate.
+        if prefix != '' and not prefix.endswith('/') and not with_wildcard:
             prefix += '/'
+
+        # If we're running with wildcard-matching, we could get
+        # a different prefix from it.  We search for the first
+        # occurrence of the special characters and fetch
+        # parent path from that place.
+        # Examples:
+        #   'b/c/*.txt' –> 'b/c/'
+        #   '*.txt' –> ''
+        #   'a/*/result.[ct]sv' –> 'a/'
+        if with_wildcard:
+            for wildcard_character in '*?[':
+                try:
+                    starter_index = folder_to_list.index(wildcard_character)
+                except ValueError:
+                    continue
+
+                # +1 to include the starter character.  Using posix path to
+                # ensure consistent behaviour on Windows (e.g. case sensitivity).
+                path = pathlib.PurePosixPath(folder_to_list[:starter_index + 1])
+                parent_path = str(path.parent)
+                # Path considers dot to be the empty path.
+                # There's no shorter path than that.
+                if parent_path == '.':
+                    prefix = ''
+                    break
+                # We could receive paths in different stage, e.g. 'a/*/result.[ct]sv' has two
+                # possible parent paths: 'a/' and 'a/*/', with the first one being the correct one
+                if len(parent_path) < len(prefix):
+                    prefix = parent_path
 
         # Loop until all files in the named directory have been listed.
         # The starting point of the first list_file_names request is the
@@ -379,7 +421,13 @@ class Bucket(metaclass=B2TraceMeta):
                 if not file_version.file_name.startswith(prefix):
                     # We're past the files we care about
                     return
+                if with_wildcard and not fnmatch.fnmatchcase(
+                    file_version.file_name, folder_to_list
+                ):
+                    # File doesn't match our wildcard rules
+                    continue
                 after_prefix = file_version.file_name[len(prefix):]
+                # In case of wildcards, we don't care about folders at all, and it's recursive by default.
                 if '/' not in after_prefix or recursive:
                     # This is not a folder, so we'll print it out and
                     # continue on.
@@ -482,6 +530,7 @@ class Bucket(metaclass=B2TraceMeta):
         encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
+        upload_mode: UploadMode = UploadMode.FULL,
     ):
         """
         Upload a file on local disk to a B2 file.
@@ -500,11 +549,28 @@ class Bucket(metaclass=B2TraceMeta):
         :param b2sdk.v2.EncryptionSetting encryption: encryption settings (``None`` if unknown)
         :param b2sdk.v2.FileRetentionSetting file_retention: file retention setting
         :param bool legal_hold: legal hold setting
+        :param b2sdk.v2.UploadMode upload_mode: desired upload mode
         :rtype: b2sdk.v2.FileVersion
         """
         upload_source = UploadSourceLocalFile(local_path=local_file, content_sha1=sha1_sum)
-        return self.upload(
-            upload_source,
+        sources = [upload_source]
+        large_file_sha1 = sha1_sum
+
+        if upload_mode == UploadMode.INCREMENTAL:
+            with suppress(FileNotPresent):
+                existing_file_info = self.get_file_info_by_name(file_name)
+
+                sources = upload_source.get_incremental_sources(
+                    existing_file_info,
+                    self.api.session.account_info.get_absolute_minimum_part_size()
+                )
+
+                if len(sources) > 1 and not large_file_sha1:
+                    # the upload will be incremental, but the SHA1 sum is unknown, calculate it now
+                    large_file_sha1 = upload_source.get_content_sha1()
+
+        return self.concatenate(
+            sources,
             file_name,
             content_type=content_type,
             file_info=file_infos,
@@ -513,6 +579,7 @@ class Bucket(metaclass=B2TraceMeta):
             encryption=encryption,
             file_retention=file_retention,
             legal_hold=legal_hold,
+            large_file_sha1=large_file_sha1,
         )
 
     def upload_unbound_stream(
@@ -678,6 +745,7 @@ class Bucket(metaclass=B2TraceMeta):
         legal_hold: Optional[LegalHold] = None,
         min_part_size=None,
         max_part_size=None,
+        large_file_sha1=None,
     ):
         """
         Creates a new file in this bucket using an iterable (list, tuple etc) of remote or local sources.
@@ -686,7 +754,7 @@ class Bucket(metaclass=B2TraceMeta):
         For more information and usage examples please see :ref:`Advanced usage patterns <AdvancedUsagePatterns>`.
 
         :param list[b2sdk.v2.WriteIntent] write_intents: list of write intents (remote or local sources)
-        :param str new_file_name: file name of the new file
+        :param str file_name: file name of the new file
         :param str,None content_type: content_type for the new file, if ``None`` content_type would be
                         automatically determined or it may be copied if it resolves
                         as single part remote source copy
@@ -704,6 +772,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param bool legal_hold: legal hold setting
         :param int min_part_size: lower limit of part size for the transfer planner, in bytes
         :param int max_part_size: upper limit of part size for the transfer planner, in bytes
+        :param Sha1HexDigest,None large_file_sha1: SHA-1 hash of the result file or ``None`` if unknown
         """
         return self._create_file(
             self.api.services.emerger.emerge,
@@ -719,6 +788,7 @@ class Bucket(metaclass=B2TraceMeta):
             legal_hold=legal_hold,
             min_part_size=min_part_size,
             max_part_size=max_part_size,
+            large_file_sha1=large_file_sha1,
         )
 
     def create_file_stream(
@@ -735,6 +805,7 @@ class Bucket(metaclass=B2TraceMeta):
         legal_hold: Optional[LegalHold] = None,
         min_part_size=None,
         max_part_size=None,
+        large_file_sha1=None,
     ):
         """
         Creates a new file in this bucket using a stream of multiple remote or local sources.
@@ -744,7 +815,7 @@ class Bucket(metaclass=B2TraceMeta):
 
         :param iterator[b2sdk.v2.WriteIntent] write_intents_iterator: iterator of write intents which
                         are sorted ascending by ``destination_offset``
-        :param str new_file_name: file name of the new file
+        :param str file_name: file name of the new file
         :param str,None content_type: content_type for the new file, if ``None`` content_type would be
                         automatically determined or it may be copied if it resolves
                         as single part remote source copy
@@ -763,6 +834,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param bool legal_hold: legal hold setting
         :param int min_part_size: lower limit of part size for the transfer planner, in bytes
         :param int max_part_size: upper limit of part size for the transfer planner, in bytes
+        :param Sha1HexDigest,None large_file_sha1: SHA-1 hash of the result file or ``None`` if unknown
         """
         return self._create_file(
             self.api.services.emerger.emerge_stream,
@@ -778,6 +850,7 @@ class Bucket(metaclass=B2TraceMeta):
             legal_hold=legal_hold,
             min_part_size=min_part_size,
             max_part_size=max_part_size,
+            large_file_sha1=large_file_sha1,
         )
 
     def _create_file(
@@ -795,6 +868,7 @@ class Bucket(metaclass=B2TraceMeta):
         legal_hold: Optional[LegalHold] = None,
         min_part_size=None,
         max_part_size=None,
+        large_file_sha1=None,
         **kwargs
     ):
         validate_b2_file_name(file_name)
@@ -814,6 +888,7 @@ class Bucket(metaclass=B2TraceMeta):
             legal_hold=legal_hold,
             min_part_size=min_part_size,
             max_part_size=max_part_size,
+            large_file_sha1=large_file_sha1,
             **kwargs
         )
 
@@ -831,12 +906,13 @@ class Bucket(metaclass=B2TraceMeta):
         legal_hold: Optional[LegalHold] = None,
         min_part_size=None,
         max_part_size=None,
+        large_file_sha1=None,
     ):
         """
         Creates a new file in this bucket by concatenating multiple remote or local sources.
 
         :param list[b2sdk.v2.OutboundTransferSource] outbound_sources: list of outbound sources (remote or local)
-        :param str new_file_name: file name of the new file
+        :param str file_name: file name of the new file
         :param str,None content_type: content_type for the new file, if ``None`` content_type would be
                         automatically determined from file name or it may be copied if it resolves
                         as single part remote source copy
@@ -854,9 +930,10 @@ class Bucket(metaclass=B2TraceMeta):
         :param bool legal_hold: legal hold setting
         :param int min_part_size: lower limit of part size for the transfer planner, in bytes
         :param int max_part_size: upper limit of part size for the transfer planner, in bytes
+        :param Sha1HexDigest,None large_file_sha1: SHA-1 hash of the result file or ``None`` if unknown
         """
         return self.create_file(
-            WriteIntent.wrap_sources_iterator(outbound_sources),
+            list(WriteIntent.wrap_sources_iterator(outbound_sources)),
             file_name,
             content_type=content_type,
             file_info=file_info,
@@ -868,6 +945,7 @@ class Bucket(metaclass=B2TraceMeta):
             legal_hold=legal_hold,
             min_part_size=min_part_size,
             max_part_size=max_part_size,
+            large_file_sha1=large_file_sha1,
         )
 
     def concatenate_stream(
@@ -882,12 +960,13 @@ class Bucket(metaclass=B2TraceMeta):
         encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
+        large_file_sha1: Optional[str] = None,
     ):
         """
         Creates a new file in this bucket by concatenating stream of multiple remote or local sources.
 
         :param iterator[b2sdk.v2.OutboundTransferSource] outbound_sources_iterator: iterator of outbound sources
-        :param str new_file_name: file name of the new file
+        :param str file_name: file name of the new file
         :param str,None content_type: content_type for the new file, if ``None`` content_type would be
                         automatically determined or it may be copied if it resolves
                         as single part remote source copy
@@ -904,6 +983,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param b2sdk.v2.EncryptionSetting encryption: encryption setting (``None`` if unknown)
         :param b2sdk.v2.FileRetentionSetting file_retention: file retention setting
         :param bool legal_hold: legal hold setting
+        :param Sha1HexDigest,None large_file_sha1: SHA-1 hash of the result file or ``None`` if unknown
         """
         return self.create_file_stream(
             WriteIntent.wrap_sources_iterator(outbound_sources_iterator),
@@ -916,6 +996,7 @@ class Bucket(metaclass=B2TraceMeta):
             encryption=encryption,
             file_retention=file_retention,
             legal_hold=legal_hold,
+            large_file_sha1=large_file_sha1,
         )
 
     def get_download_url(self, filename):
