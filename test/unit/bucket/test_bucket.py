@@ -2515,10 +2515,20 @@ class TestDownloadLocalDirectoryIssues(TestCaseWithBucket):
         with TempDir() as temp_dir:
             target_file = pathlib.Path(temp_dir) / 'existing-directory'
             os.makedirs(target_file, exist_ok=True)
-            with self.assertRaises(DestinationIsADirectory):
+
+            expected_exception = DestinationIsADirectory
+            if platform.system() == 'Windows':
+                # Windows doesn't raise IsADirectoryError, raises PermissionError instead
+                expected_exception = DestinationDirectoryDoesntAllowOperation
+
+            with self.assertRaises(expected_exception):
                 self.bucket.download_file_by_name(self.file_version.file_name).save_to(target_file)
 
     @pytest.mark.apiver(from_ver=2)
+    @pytest.mark.skipif(
+        platform.system() == 'Windows',
+        reason='os.chmod on Windows only affects read-only flag for files',
+    )
     def test_download_file_no_access_to_directory(self):
         chain = contextlib.ExitStack()
         temp_dir = chain.enter_context(TempDir())
