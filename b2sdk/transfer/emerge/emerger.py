@@ -9,31 +9,16 @@
 ######################################################################
 
 import logging
-from typing import (
-    Dict,
-    Iterator,
-    Optional,
-    List,
-)
+from typing import Dict, Iterator, Optional, List
 
 from b2sdk.encryption.setting import EncryptionSetting
-from b2sdk.file_lock import (
-    FileRetentionSetting,
-    LegalHold,
-)
+from b2sdk.file_lock import FileRetentionSetting, LegalHold
 from b2sdk.http_constants import LARGE_FILE_SHA1
 from b2sdk.progress import AbstractProgressListener
 from b2sdk.transfer.emerge.executor import EmergeExecutor
-from b2sdk.transfer.emerge.planner.planner import (
-    EmergePlan,
-    EmergePlanner,
-)
+from b2sdk.transfer.emerge.planner.planner import EmergePlan, EmergePlanner
 from b2sdk.transfer.emerge.write_intent import WriteIntent
-from b2sdk.utils import (
-    B2TraceMetaAbstract,
-    iterator_peek,
-    Sha1HexDigest,
-)
+from b2sdk.utils import B2TraceMetaAbstract, iterator_peek, Sha1HexDigest
 
 logger = logging.getLogger(__name__)
 
@@ -113,7 +98,8 @@ class Emerger(metaclass=B2TraceMetaAbstract):
         all_write_intents = write_intents_iterable
         if check_first_intent_for_sha1:
             write_intents_iterator = iter(all_write_intents)
-            large_file_sha1_intents_for_check, all_write_intents = iterator_peek(write_intents_iterator, 2)
+            large_file_sha1_intents_for_check, all_write_intents = \
+                iterator_peek(write_intents_iterator, 2)
 
         emerge_plan = emerge_function(planner, all_write_intents)
 

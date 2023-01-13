@@ -43,6 +43,7 @@ from .transfer.outbound.copy_source import CopySource
 from .transfer.outbound.upload_source import UploadSourceBytes, UploadSourceLocalFile, UploadMode
 from .utils import (
     B2TraceMeta,
+    Sha1HexDigest,
     b2_url_encode,
     disable_trace,
     limit_trace_arguments,
@@ -492,6 +493,7 @@ class Bucket(metaclass=B2TraceMeta):
         encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
+        large_file_sha1: Optional[Sha1HexDigest] = None,
     ):
         """
         Upload bytes in memory to a B2 file.
@@ -504,6 +506,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param b2sdk.v2.EncryptionSetting encryption: encryption settings (``None`` if unknown)
         :param b2sdk.v2.FileRetentionSetting file_retention: file retention setting
         :param bool legal_hold: legal hold setting
+        :param Sha1HexDigest,None large_file_sha1: SHA-1 hash of the result file or ``None`` if unknown
         :rtype: generator[b2sdk.v2.FileVersion]
         """
         upload_source = UploadSourceBytes(data_bytes)
@@ -516,6 +519,7 @@ class Bucket(metaclass=B2TraceMeta):
             encryption=encryption,
             file_retention=file_retention,
             legal_hold=legal_hold,
+            large_file_sha1=large_file_sha1,
         )
 
     def upload_local_file(
@@ -595,6 +599,7 @@ class Bucket(metaclass=B2TraceMeta):
         legal_hold: Optional[LegalHold] = None,
         min_part_size: Optional[int] = None,
         max_part_size: Optional[int] = None,
+        large_file_sha1: Optional[Sha1HexDigest] = None,
         buffers_count: int = 2,
         read_size: int = 8192,
         unused_buffer_timeout_seconds: float = 3600.0,
@@ -642,6 +647,7 @@ class Bucket(metaclass=B2TraceMeta):
                         or ``None`` to determine automatically; also size of the read buffer and size of the chunks
                         being sent to the B2
         :param int max_part_size: a maximum size of a part
+        :param Sha1HexDigest,None large_file_sha1: SHA-1 hash of the result file or ``None`` if unknown
         :param int buffers_count: desired number of buffers allocated, cannot be smaller than 2
         :param int read_size: size of a single read operation performed on the ``read_only_object``
         :param float unused_buffer_timeout_seconds: amount of time that a buffer can be idle before returning error
@@ -682,6 +688,7 @@ class Bucket(metaclass=B2TraceMeta):
             # how many buffers in parallel he can handle at once. We ensure that one buffer
             # is always downloading data from the stream while other are being uploaded.
             max_queue_size=buffers_count - 1,
+            large_file_sha1=large_file_sha1,
         )
 
     def upload(
@@ -695,6 +702,7 @@ class Bucket(metaclass=B2TraceMeta):
         encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
+        large_file_sha1: Optional[Sha1HexDigest] = None,
     ):
         """
         Upload a file to B2, retrying as needed.
@@ -716,6 +724,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param b2sdk.v2.EncryptionSetting encryption: encryption settings (``None`` if unknown)
         :param b2sdk.v2.FileRetentionSetting file_retention: file retention setting
         :param bool legal_hold: legal hold setting
+        :param Sha1HexDigest,None large_file_sha1: SHA-1 hash of the result file or ``None`` if unknown
         :rtype: b2sdk.v2.FileVersion
         """
         return self.create_file(
@@ -729,6 +738,7 @@ class Bucket(metaclass=B2TraceMeta):
             encryption=encryption,
             file_retention=file_retention,
             legal_hold=legal_hold,
+            large_file_sha1=large_file_sha1,
         )
 
     def create_file(
@@ -960,7 +970,7 @@ class Bucket(metaclass=B2TraceMeta):
         encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
-        large_file_sha1: Optional[str] = None,
+        large_file_sha1: Optional[Sha1HexDigest] = None,
     ):
         """
         Creates a new file in this bucket by concatenating stream of multiple remote or local sources.
