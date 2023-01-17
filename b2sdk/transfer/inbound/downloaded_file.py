@@ -10,6 +10,7 @@
 
 import io
 import logging
+import pathlib
 from typing import Optional, Tuple, TYPE_CHECKING
 
 from requests.models import Response
@@ -73,6 +74,12 @@ class MtimeUpdatedFile(io.IOBase):
         return self.file.tell()
 
     def __enter__(self):
+        path = pathlib.Path(self.path_)
+        # This ensures consistency on *nix and Windows. Windows doesn't seem to raise ``IsADirectoryError`` at all,
+        # so with this we actually can differentiate between permissions errors and target being a directory.
+        if path.exists() and path.is_dir():
+            raise DestinationIsADirectory()
+
         try:
             self.file = open(self.path_, self.mode, buffering=self.buffering)
         except FileNotFoundError as ex:

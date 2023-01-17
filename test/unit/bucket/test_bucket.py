@@ -2516,12 +2516,7 @@ class TestDownloadLocalDirectoryIssues(TestCaseWithBucket):
             target_file = pathlib.Path(temp_dir) / 'existing-directory'
             os.makedirs(target_file, exist_ok=True)
 
-            expected_exception = DestinationIsADirectory
-            if platform.system() == 'Windows':
-                # Windows doesn't raise IsADirectoryError, raises PermissionError instead
-                expected_exception = DestinationDirectoryDoesntAllowOperation
-
-            with self.assertRaises(expected_exception):
+            with self.assertRaises(DestinationIsADirectory):
                 self.bucket.download_file_by_name(self.file_version.file_name).save_to(target_file)
 
     @pytest.mark.apiver(from_ver=2)
