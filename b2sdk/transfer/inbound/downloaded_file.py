@@ -25,6 +25,7 @@ from b2sdk.exception import (
     DestinationDirectoryDoesntAllowOperation,
     DestinationDirectoryDoesntExist,
     DestinationIsADirectory,
+    DestinationIsNotADirectory,
     TruncatedOutput,
 )
 from b2sdk.utils import set_file_mtime
@@ -74,18 +75,24 @@ class MtimeUpdatedFile(io.IOBase):
         return self.file.tell()
 
     def __enter__(self):
-        path = pathlib.Path(self.path_)
-        # This ensures consistency on *nix and Windows. Windows doesn't seem to raise ``IsADirectoryError`` at all,
-        # so with this we actually can differentiate between permissions errors and target being a directory.
-        if path.exists() and path.is_dir():
-            raise DestinationIsADirectory()
+        try:
+            path = pathlib.Path(self.path_)
+            if not path.parent.exists():
+                raise DestinationDirectoryDoesntExist()
 
+            if not path.parent.is_dir():
+                raise DestinationIsNotADirectory()
+
+            # This ensures consistency on *nix and Windows. Windows doesn't seem to raise ``IsADirectoryError`` at all,
+            # so with this we actually can differentiate between permissions errors and target being a directory.
+            if path.exists() and path.is_dir():
+                raise DestinationIsADirectory()
+        except PermissionError as ex:
+            raise DestinationDirectoryDoesntAllowOperation() from ex
+
+        # All remaining problems should be with permissions.
         try:
             self.file = open(self.path_, self.mode, buffering=self.buffering)
-        except FileNotFoundError as ex:
-            raise DestinationDirectoryDoesntExist() from ex
-        except IsADirectoryError as ex:
-            raise DestinationIsADirectory() from ex
         except PermissionError as ex:
             raise DestinationDirectoryDoesntAllowOperation() from ex
 

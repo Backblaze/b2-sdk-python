@@ -564,6 +564,10 @@ class DestinationDirectoryDoesntExist(DestinationDirectoryError):
     pass
 
 
+class DestinationIsNotADirectory(DestinationDirectoryError):
+    pass
+
+
 class DestinationIsADirectory(DestinationDirectoryError):
     pass
 

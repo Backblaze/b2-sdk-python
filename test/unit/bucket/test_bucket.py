@@ -30,6 +30,7 @@ from apiver_deps_exception import (
     DestinationDirectoryDoesntAllowOperation,
     DestinationDirectoryDoesntExist,
     DestinationIsADirectory,
+    DestinationIsNotADirectory,
     DisablingFileLockNotSupported,
     FileSha1Mismatch,
     InvalidAuthToken,
@@ -2517,6 +2518,16 @@ class TestDownloadLocalDirectoryIssues(TestCaseWithBucket):
             os.makedirs(target_file, exist_ok=True)
 
             with self.assertRaises(DestinationIsADirectory):
+                self.bucket.download_file_by_name(self.file_version.file_name).save_to(target_file)
+
+    @pytest.mark.apiver(from_ver=2)
+    def test_download_file_targeting_directory_is_a_file(self):
+        with TempDir() as temp_dir:
+            some_file = pathlib.Path(temp_dir) / 'existing-file'
+            some_file.write_bytes(b'i-am-a-file')
+            target_file = some_file / 'save-target'
+
+            with self.assertRaises(DestinationIsNotADirectory):
                 self.bucket.download_file_by_name(self.file_version.file_name).save_to(target_file)
 
     @pytest.mark.apiver(from_ver=2)
