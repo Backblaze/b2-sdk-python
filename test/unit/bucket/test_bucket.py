@@ -30,7 +30,7 @@ from apiver_deps_exception import (
     DestinationDirectoryDoesntAllowOperation,
     DestinationDirectoryDoesntExist,
     DestinationIsADirectory,
-    DestinationIsNotADirectory,
+    DestinationParentIsNotADirectory,
     DisablingFileLockNotSupported,
     FileSha1Mismatch,
     InvalidAuthToken,
@@ -2527,7 +2527,7 @@ class TestDownloadLocalDirectoryIssues(TestCaseWithBucket):
             some_file.write_bytes(b'i-am-a-file')
             target_file = some_file / 'save-target'
 
-            with self.assertRaises(DestinationIsNotADirectory):
+            with self.assertRaises(DestinationParentIsNotADirectory):
                 self.bucket.download_file_by_name(self.file_version.file_name).save_to(target_file)
 
     @pytest.mark.apiver(from_ver=2)

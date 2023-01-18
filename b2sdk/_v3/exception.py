@@ -40,7 +40,7 @@ from b2sdk.exception import DestFileNewer
 from b2sdk.exception import DestinationDirectoryDoesntAllowOperation
 from b2sdk.exception import DestinationDirectoryDoesntExist
 from b2sdk.exception import DestinationIsADirectory
-from b2sdk.exception import DestinationIsNotADirectory
+from b2sdk.exception import DestinationParentIsNotADirectory
 from b2sdk.exception import DisablingFileLockNotSupported
 from b2sdk.exception import DuplicateBucketName
 from b2sdk.exception import FileAlreadyHidden
@@ -121,7 +121,7 @@ __all__ = (
     'DestinationDirectoryDoesntAllowOperation',
     'DestinationDirectoryDoesntExist',
     'DestinationIsADirectory',
-    'DestinationIsNotADirectory',
+    'DestinationParentIsNotADirectory',
     'DisablingFileLockNotSupported',
     'DuplicateBucketName',
     'EmptyDirectory',

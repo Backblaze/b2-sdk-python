@@ -25,7 +25,7 @@ from b2sdk.exception import (
     DestinationDirectoryDoesntAllowOperation,
     DestinationDirectoryDoesntExist,
     DestinationIsADirectory,
-    DestinationIsNotADirectory,
+    DestinationParentIsNotADirectory,
     TruncatedOutput,
 )
 from b2sdk.utils import set_file_mtime
@@ -81,7 +81,7 @@ class MtimeUpdatedFile(io.IOBase):
                 raise DestinationDirectoryDoesntExist()
 
             if not path.parent.is_dir():
-                raise DestinationIsNotADirectory()
+                raise DestinationParentIsNotADirectory()
 
             # This ensures consistency on *nix and Windows. Windows doesn't seem to raise ``IsADirectoryError`` at all,
             # so with this we actually can differentiate between permissions errors and target being a directory.
