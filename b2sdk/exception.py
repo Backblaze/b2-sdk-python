@@ -556,6 +556,26 @@ class PotentialS3EndpointPassedAsRealm(InvalidJsonResponse):
     pass
 
 
+class DestinationDirectoryError(B2Error):
+    pass
+
+
+class DestinationDirectoryDoesntExist(DestinationDirectoryError):
+    pass
+
+
+class DestinationParentIsNotADirectory(DestinationDirectoryError):
+    pass
+
+
+class DestinationIsADirectory(DestinationDirectoryError):
+    pass
+
+
+class DestinationDirectoryDoesntAllowOperation(DestinationDirectoryError):
+    pass
+
+
 @trace_call(logger)
 def interpret_b2_error(
     status: int,

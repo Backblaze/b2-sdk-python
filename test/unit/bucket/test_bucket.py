@@ -7,10 +7,12 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+import contextlib
 import io
 from contextlib import suppress
 from io import BytesIO
 import os
+import pathlib
 import platform
 import unittest.mock as mock
 
@@ -25,6 +27,10 @@ from apiver_deps_exception import (
     B2RequestTimeoutDuringUpload,
     BadRequest,
     BucketIdNotFound,
+    DestinationDirectoryDoesntAllowOperation,
+    DestinationDirectoryDoesntExist,
+    DestinationIsADirectory,
+    DestinationParentIsNotADirectory,
     DisablingFileLockNotSupported,
     FileSha1Mismatch,
     InvalidAuthToken,
@@ -2489,6 +2495,64 @@ class TestAuthorizeForBucket(TestCaseWithBucket):
 
         with self.assertRaises(RestrictedBucketMissing):
             self.api.authorize_account('production', key.id_, key.application_key)
+
+
+class TestDownloadLocalDirectoryIssues(TestCaseWithBucket):
+    def setUp(self):
+        super().setUp()
+        self.file_version = self.bucket.upload_bytes(b'test-data', 'file1')
+        self.bytes_io = io.BytesIO()
+        self.progress_listener = StubProgressListener()
+
+    @pytest.mark.apiver(from_ver=2)
+    def test_download_file_to_unknown_directory(self):
+        with TempDir() as temp_dir:
+            target_file = pathlib.Path(temp_dir) / 'non-existing-directory' / 'some-file'
+            with self.assertRaises(DestinationDirectoryDoesntExist):
+                self.bucket.download_file_by_name(self.file_version.file_name).save_to(target_file)
+
+    @pytest.mark.apiver(from_ver=2)
+    def test_download_file_targeting_directory(self):
+        with TempDir() as temp_dir:
+            target_file = pathlib.Path(temp_dir) / 'existing-directory'
+            os.makedirs(target_file, exist_ok=True)
+
+            with self.assertRaises(DestinationIsADirectory):
+                self.bucket.download_file_by_name(self.file_version.file_name).save_to(target_file)
+
+    @pytest.mark.apiver(from_ver=2)
+    def test_download_file_targeting_directory_is_a_file(self):
+        with TempDir() as temp_dir:
+            some_file = pathlib.Path(temp_dir) / 'existing-file'
+            some_file.write_bytes(b'i-am-a-file')
+            target_file = some_file / 'save-target'
+
+            with self.assertRaises(DestinationParentIsNotADirectory):
+                self.bucket.download_file_by_name(self.file_version.file_name).save_to(target_file)
+
+    @pytest.mark.apiver(from_ver=2)
+    @pytest.mark.skipif(
+        platform.system() == 'Windows',
+        reason='os.chmod on Windows only affects read-only flag for files',
+    )
+    def test_download_file_no_access_to_directory(self):
+        chain = contextlib.ExitStack()
+        temp_dir = chain.enter_context(TempDir())
+
+        with chain:
+            target_directory = pathlib.Path(temp_dir) / 'impossible-directory'
+
+            os.makedirs(target_directory, exist_ok=True)
+            # Don't allow any operation on this directory. Used explicitly, as the documentation
+            # states that on some platforms passing mode to `makedirs` may be ignored.
+            os.chmod(target_directory, mode=0)
+
+            # Ensuring that whenever we exit this context, our directory will be removable.
+            chain.push(lambda *args, **kwargs: os.chmod(target_directory, mode=0o777))
+
+            target_file = target_directory / 'target_file'
+            with self.assertRaises(DestinationDirectoryDoesntAllowOperation):
+                self.bucket.download_file_by_name(self.file_version.file_name).save_to(target_file)
 
 
 # Listing where every other response returns no entries and pointer to the next file

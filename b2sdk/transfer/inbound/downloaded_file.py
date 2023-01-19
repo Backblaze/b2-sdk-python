@@ -10,6 +10,7 @@
 
 import io
 import logging
+import pathlib
 from typing import Optional, Tuple, TYPE_CHECKING
 
 from requests.models import Response
@@ -21,6 +22,10 @@ from ...stream.progress import WritingStreamWithProgress
 
 from b2sdk.exception import (
     ChecksumMismatch,
+    DestinationDirectoryDoesntAllowOperation,
+    DestinationDirectoryDoesntExist,
+    DestinationIsADirectory,
+    DestinationParentIsNotADirectory,
     TruncatedOutput,
 )
 from b2sdk.utils import set_file_mtime
@@ -70,7 +75,27 @@ class MtimeUpdatedFile(io.IOBase):
         return self.file.tell()
 
     def __enter__(self):
-        self.file = open(self.path_, self.mode, buffering=self.buffering)
+        try:
+            path = pathlib.Path(self.path_)
+            if not path.parent.exists():
+                raise DestinationDirectoryDoesntExist()
+
+            if not path.parent.is_dir():
+                raise DestinationParentIsNotADirectory()
+
+            # This ensures consistency on *nix and Windows. Windows doesn't seem to raise ``IsADirectoryError`` at all,
+            # so with this we actually can differentiate between permissions errors and target being a directory.
+            if path.exists() and path.is_dir():
+                raise DestinationIsADirectory()
+        except PermissionError as ex:
+            raise DestinationDirectoryDoesntAllowOperation() from ex
+
+        # All remaining problems should be with permissions.
+        try:
+            self.file = open(self.path_, self.mode, buffering=self.buffering)
+        except PermissionError as ex:
+            raise DestinationDirectoryDoesntAllowOperation() from ex
+
         self.write = self.file.write
         self.read = self.file.read
         return self

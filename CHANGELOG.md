@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 * Removed information about replication being in closed beta
+* Don't throw raw OSError exceptions when using `DownloadedFile.save_to` to a path that doesn't exist, is a directory or the user doesn't have permissions to write to
 
 ### Infrastructure
 * Additional tests for listing files/versions
