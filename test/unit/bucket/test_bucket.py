@@ -1673,7 +1673,7 @@ class TestUpload(TestCaseWithBucket):
         self.assertTrue(progress_listener.is_valid())
 
     def test_upload_stream(self):
-        data = self._make_data(self.simulator.MIN_PART_SIZE * 50)
+        data = self._make_data(self.simulator.MIN_PART_SIZE * 3)
         self.bucket.upload_unbound_stream(io.BytesIO(data), 'file1')
         self._check_file_contents('file1', data)
 

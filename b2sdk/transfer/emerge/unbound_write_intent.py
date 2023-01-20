@@ -11,35 +11,16 @@
 import hashlib
 import io
 import queue
-from typing import (
-    Callable,
-    Iterator,
-    Optional,
-    Union,
-)
+from typing import Callable, Iterator, Optional, Union
 
-from b2sdk.exception import B2SimpleError
+from b2sdk.transfer.emerge.exception import UnboundStreamBufferTimeout
 from b2sdk.transfer.emerge.write_intent import WriteIntent
 from b2sdk.transfer.outbound.upload_source import AbstractUploadSource
-
-
-class UnboundStreamBufferTimeout(B2SimpleError):
-    """
-    Raised when there is no space for a new buffer for a certain amount of time.
-    """
-    pass
 
 
 class IOWrapper(io.BytesIO):
     """
     Wrapper for BytesIO that knows when it has been read in full.
-
-    When created, it tries to put itself into a waiting queue,
-    when reading is finished from it (a final, empty read is returned),
-    it pops itself. Effectively, number of buffers in memory at any given
-    time should be equal to size of the queue + 1 (the one that is waiting
-    to be added). Note that it can vary slightly in rare cases, when
-    the buffer is read in full and retried.
 
     Note that this stream should go through ``emerge_unbound``, as it's the only
     one that skips ``_get_emerge_parts`` and pushes buffers to the cloud
@@ -106,7 +87,7 @@ class UnboundSourceBytes(AbstractUploadSource):
         :param release_function: function to be called when all the ``bytes_data`` is uploaded.
         """
         self.length = len(bytes_data)
-        # Prepare sha1 of the chunk to ensure that nothing have to iterate over our stream to calculate it.
+        # Prepare sha1 of the chunk upfront to ensure that nothing iterates over the stream but the upload.
         self.chunk_sha1 = hashlib.sha1(bytes_data).hexdigest()
         self.stream = IOWrapper(bytes_data, release_function)
 
@@ -137,7 +118,7 @@ class UnboundWriteIntentGenerator:
         queue_timeout_seconds: float,
     ):
         """
-        Prepares a new intent generator for given source.
+        Prepares a new intent generator for a given source.
 
         ``queue_size`` is handled on a best-effort basis. It's possible, in rare cases, that there will be more buffers
         available at once. With current implementation that would be the case when the whole buffer was read, but on
@@ -203,8 +184,10 @@ class UnboundWriteIntentGenerator:
         if len(self.buffer) <= self.buffer_size_bytes:
             return
         remainder = len(self.buffer) - self.buffer_size_bytes
-        self.leftovers_buffer += self.buffer[-remainder:]
-        self.buffer = self.buffer[:-remainder]
+        buffer_view = memoryview(self.buffer)
+        self.leftovers_buffer += buffer_view[-remainder:]
+        # This conversion has little to no implication on performance.
+        self.buffer = bytearray(buffer_view[:-remainder])
 
     def _rotate_leftovers(self) -> None:
         self.buffer = self.leftovers_buffer

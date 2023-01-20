@@ -589,11 +589,11 @@ class Bucket(metaclass=B2TraceMeta):
     def upload_unbound_stream(
         self,
         read_only_object,
-        file_name,
-        content_type=None,
-        file_info=None,
-        progress_listener=None,
-        recommended_upload_part_size=None,
+        file_name: str,
+        content_type: str = None,
+        file_info: Optional[dict[str, str]] = None,
+        progress_listener: Optional[AbstractProgressListener] = None,
+        recommended_upload_part_size: Optional[int] = None,
         encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
@@ -601,13 +601,14 @@ class Bucket(metaclass=B2TraceMeta):
         max_part_size: Optional[int] = None,
         large_file_sha1: Optional[Sha1HexDigest] = None,
         buffers_count: int = 2,
+        buffer_size: Optional[int] = None,
         read_size: int = 8192,
         unused_buffer_timeout_seconds: float = 3600.0,
     ):
         """
         Upload an unbound file-like read-only object to a B2 file.
 
-        It is assumed that this object is streamed like stdin or socket, and the size is not known apriori.
+        It is assumed that this object is streamed like stdin or socket, and the size is not known up front.
         It is up to caller to ensure that this object is open and available through the whole streaming process.
 
         If stdin is to be passed, consider opening it in binary mode, if possible on the platform:
@@ -623,34 +624,45 @@ class Bucket(metaclass=B2TraceMeta):
 
             bucket.upload_unbound_stream(sys.stdin.buffer, 'target-file')
 
-        but note that buffering in this case is depending on interpreter mode.
+        but note that buffering in this case depends on the interpreter mode.
 
-        ``min_part_size``, ``recommended_upload_part_size`` and ``max_part_size`` should all be greater than 5MB.
-        This is the minimal size of a chunk that is to be uploaded.
+        ``min_part_size``, ``recommended_upload_part_size`` and ``max_part_size`` should
+        all be greater than ``account_info.get_absolute_minimum_part_size()``.
 
         ``buffers_count`` describes a desired number of buffers that are to be used. Minimal amount is two, as we need
         to determine the method of uploading this stream (if there's only a single buffer we send it as a normal file,
         if there are at least two – as a large file).
+        Number of buffers determines the amount of memory used by the streaming process and, in turns, describe
+        the amount of data that can be pulled from ``read_only_object`` while also uploading it. Providing multiple
+        buffers also allows for higher parallelization. Default two buffers allow for the process to fill one buffer
+        with data while the other one is being sent to the B2. While only one buffer can be filled with data at once,
+        all others are used to send the data in parallel (limited only by the number of parallel threads).
+        Buffer size can be controlled by ``buffer_size`` parameter. If left unset, it will default to
+        a value of ``recommended_upload_part_size``, whatever it resolves to be.
+        Note that in the current implementation buffers are (almost) directly sent to B2, thus whatever is picked
+        as the ``buffer_size`` will also become the size of the part when uploading a large file in this manner.
         In rare cases, namely when the whole buffer was sent, but there was an error during sending of last bytes
         and a retry was issued, another buffer (above the aforementioned limit) will be allocated.
 
-        :param file-like-object read_only_object: any object containing read method accepting size of the read
-        :param str file_name: a file name of the new B2 file
-        :param str,None content_type: the MIME type, or ``None`` to accept the default based on file extension of the B2 file name
-        :param dict,None file_info: a file info to store with the file or ``None`` to not store anything
-        :param b2sdk.v2.AbstractProgressListener,None progress_listener: a progress listener object to use, or ``None`` to not report progress
-        :param b2sdk.v2.EncryptionSetting encryption: encryption settings (``None`` if unknown)
-        :param b2sdk.v2.FileRetentionSetting file_retention: file retention setting
-        :param bool legal_hold: legal hold setting
-        :param int min_part_size: a minimum size of a part
-        :param int,None recommended_upload_part_size: the recommended part size to use for uploading local sources
-                        or ``None`` to determine automatically; also size of the read buffer and size of the chunks
-                        being sent to the B2
-        :param int max_part_size: a maximum size of a part
-        :param Sha1HexDigest,None large_file_sha1: SHA-1 hash of the result file or ``None`` if unknown
-        :param int buffers_count: desired number of buffers allocated, cannot be smaller than 2
-        :param int read_size: size of a single read operation performed on the ``read_only_object``
-        :param float unused_buffer_timeout_seconds: amount of time that a buffer can be idle before returning error
+        :param read_only_object: any object containing a ``read`` method accepting size of the read
+        :param file_name: a file name of the new B2 file
+        :param content_type: the MIME type, or ``None`` to accept the default based on file extension of the B2 file name
+        :param file_info: a file info to store with the file or ``None`` to not store anything
+        :param progress_listener: a progress listener object to use, or ``None`` to not report progress
+        :param encryption: encryption settings (``None`` if unknown)
+        :param file_retention: file retention setting
+        :param legal_hold: legal hold setting
+        :param min_part_size: a minimum size of a part
+        :param recommended_upload_part_size: the recommended part size to use for uploading local sources
+                        or ``None`` to determine automatically
+        :param max_part_size: a maximum size of a part
+        :param large_file_sha1: SHA-1 hash of the result file or ``None`` if unknown
+        :param buffers_count: desired number of buffers allocated, cannot be smaller than 2
+        :param buffer_size: size of a single buffer that we pull data to or upload data to B2. If ``None``,
+                        value of ``recommended_upload_part_size`` is used. If that also is ``None``,
+                        it will be determined automatically as "recommended upload size".
+        :param read_size: size of a single read operation performed on the ``read_only_object``
+        :param unused_buffer_timeout_seconds: amount of time that a buffer can be idle before returning error
         :rtype: b2sdk.v2.FileVersion
         """
         if buffers_count <= 1:
@@ -660,7 +672,7 @@ class Bucket(metaclass=B2TraceMeta):
         if unused_buffer_timeout_seconds <= 0.0:
             raise ValueError('unused_buffer_timeout_seconds has to be a positive float')
 
-        buffer_size = recommended_upload_part_size
+        buffer_size = buffer_size or recommended_upload_part_size
         if buffer_size is None:
             planner = self.api.services.emerger.get_emerge_planner()
             buffer_size = planner.recommended_upload_part_size
@@ -684,9 +696,9 @@ class Bucket(metaclass=B2TraceMeta):
             min_part_size=min_part_size,
             recommended_upload_part_size=recommended_upload_part_size,
             max_part_size=max_part_size,
-            # This is a parameter for EmergeExecutor.execute_emerge_plan telling him
-            # how many buffers in parallel he can handle at once. We ensure that one buffer
-            # is always downloading data from the stream while other are being uploaded.
+            # This is a parameter for EmergeExecutor.execute_emerge_plan telling
+            # how many buffers in parallel can be handled at once. We ensure that one buffer
+            # is always downloading data from the stream while others are being uploaded.
             max_queue_size=buffers_count - 1,
             large_file_sha1=large_file_sha1,
         )

@@ -29,7 +29,7 @@ class TestIOWrapper(TestBase):
     def setUp(self) -> None:
         self.data = b'test-data'
         self.mock_fun = MagicMock()
-        self.wrapper = IOWrapper(self.data, self.mock_fun)
+        self.wrapper = IOWrapper(self.data, release_function=self.mock_fun)
 
     def test_function_called_only_after_empty_read(self):
         self.mock_fun.assert_not_called()
@@ -135,7 +135,7 @@ class TestUnboundWriteIntentGenerator(TestBase):
         # This also tests non-empty last buffer case.
         read_size = 4
         # Build a buffer of N reads of size read_size and one more byte.
-        data = b''.join([string.printable[:read_size].encode('ascii') for _ in range(2)]) + b'1'
+        data = b''.join(string.printable[:read_size].encode('ascii') for _ in range(2)) + b'1'
 
         for write_intent in self._get_iterator(read_size, data):
             read_data = self._read_write_intent(write_intent, full_read_size=read_size)
