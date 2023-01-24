@@ -1678,6 +1678,20 @@ class TestUpload(TestCaseWithBucket):
         self._check_file_contents('path/to/file1', data)
         self.assertTrue(progress_listener.is_valid())
 
+    def test_upload_stream(self):
+        data = self._make_data(self.simulator.MIN_PART_SIZE * 3)
+        self.bucket.upload_unbound_stream(io.BytesIO(data), 'file1')
+        self._check_file_contents('file1', data)
+
+    def test_upload_stream_from_file(self):
+        with TempDir() as d:
+            path = os.path.join(d, 'file1')
+            data = self._make_data(self.simulator.MIN_PART_SIZE * 3)
+            write_file(path, data)
+            with open(path, 'rb') as f:
+                self.bucket.upload_unbound_stream(f, 'file1')
+            self._check_file_contents('file1', data)
+
     def _start_large_file(self, file_name, file_info=None):
         if file_info is None:
             file_info = {}

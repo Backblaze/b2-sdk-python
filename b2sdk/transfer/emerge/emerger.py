@@ -9,11 +9,12 @@
 ######################################################################
 
 import logging
-from typing import Dict, Optional, List
+from typing import Dict, Iterator, Optional, List
 
 from b2sdk.encryption.setting import EncryptionSetting
 from b2sdk.file_lock import FileRetentionSetting, LegalHold
 from b2sdk.http_constants import LARGE_FILE_SHA1
+from b2sdk.progress import AbstractProgressListener
 from b2sdk.transfer.emerge.executor import EmergeExecutor
 from b2sdk.transfer.emerge.planner.planner import EmergePlan, EmergePlanner
 from b2sdk.transfer.emerge.write_intent import WriteIntent
@@ -46,7 +47,7 @@ class Emerger(metaclass=B2TraceMetaAbstract):
     def _get_updated_file_info_with_large_file_sha1(
         cls,
         file_info: Optional[Dict[str, str]],
-        write_intents: List[WriteIntent],
+        write_intents: Optional[List[WriteIntent]],
         emerge_plan: EmergePlan,
         large_file_sha1: Optional[Sha1HexDigest] = None,
     ) -> Optional[Dict[str, str]]:
@@ -55,7 +56,7 @@ class Emerger(metaclass=B2TraceMetaAbstract):
             return file_info
 
         file_sha1 = large_file_sha1
-        if not file_sha1 and len(write_intents) == 1:
+        if not file_sha1 and write_intents is not None and len(write_intents) == 1:
             # large_file_sha1 was not given explicitly, but there's just one write intent, perhaps it has a hash
             file_sha1 = write_intents[0].get_content_sha1()
 
@@ -66,142 +67,249 @@ class Emerger(metaclass=B2TraceMetaAbstract):
 
         return out_file_info
 
-    def emerge(
+    def _emerge(
         self,
+        emerge_function,
         bucket_id,
-        write_intents,
+        write_intents_iterable,
         file_name,
         content_type,
         file_info,
         progress_listener,
         recommended_upload_part_size=None,
         continue_large_file_id=None,
+        max_queue_size=None,
         encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
-        min_part_size=None,
-        max_part_size=None,
-        large_file_sha1=None,
+        min_part_size: Optional[int] = None,
+        max_part_size: Optional[int] = None,
+        large_file_sha1: Optional[Sha1HexDigest] = None,
+        check_first_intent_for_sha1: bool = True,
+    ):
+        planner = self.get_emerge_planner(
+            min_part_size=min_part_size,
+            recommended_upload_part_size=recommended_upload_part_size,
+            max_part_size=max_part_size,
+        )
+
+        # Large file SHA1 operation, possibly on intents.
+        large_file_sha1_intents_for_check = None
+        all_write_intents = write_intents_iterable
+        if check_first_intent_for_sha1:
+            write_intents_iterator = iter(all_write_intents)
+            large_file_sha1_intents_for_check, all_write_intents = \
+                iterator_peek(write_intents_iterator, 2)
+
+        emerge_plan = emerge_function(planner, all_write_intents)
+
+        out_file_info = self._get_updated_file_info_with_large_file_sha1(
+            file_info,
+            large_file_sha1_intents_for_check,
+            emerge_plan,
+            large_file_sha1,
+        )
+
+        return self.emerge_executor.execute_emerge_plan(
+            emerge_plan,
+            bucket_id,
+            file_name,
+            content_type,
+            out_file_info,
+            progress_listener,
+            continue_large_file_id=continue_large_file_id,
+            encryption=encryption,
+            file_retention=file_retention,
+            legal_hold=legal_hold,
+            # Max queue size is only used in case of large files.
+            # Passing anything for small files does nothing.
+            max_queue_size=max_queue_size,
+        )
+
+    def emerge(
+        self,
+        bucket_id: str,
+        write_intents: List[WriteIntent],
+        file_name: str,
+        content_type: Optional[str],
+        file_info: Optional[Dict[str, str]],
+        progress_listener: AbstractProgressListener,
+        recommended_upload_part_size: Optional[int] = None,
+        continue_large_file_id: Optional[str] = None,
+        encryption: Optional[EncryptionSetting] = None,
+        file_retention: Optional[FileRetentionSetting] = None,
+        legal_hold: Optional[LegalHold] = None,
+        min_part_size: Optional[int] = None,
+        max_part_size: Optional[int] = None,
+        large_file_sha1: Optional[Sha1HexDigest] = None,
     ):
         """
         Create a new file (object in the cloud, really) from an iterable (list, tuple etc) of write intents.
 
-        :param str bucket_id: a bucket ID
+        :param bucket_id: a bucket ID
         :param write_intents: write intents to process to create a file
-        :type write_intents: List[b2sdk.v2.WriteIntent]
-        :param str file_name: the file name of the new B2 file
-        :param str,None content_type: the MIME type or ``None`` to determine automatically
-        :param dict,None file_info: a file info to store with the file or ``None`` to not store anything
-        :param b2sdk.v2.AbstractProgressListener progress_listener: a progress listener object to use
-
-        :param int min_part_size: lower limit of part size for the transfer planner, in bytes
-        :param int max_part_size: upper limit of part size for the transfer planner, in bytes
-        :param Sha1HexDigest,None large_file_sha1: SHA-1 hash of the result file or ``None`` if unknown
+        :param file_name: the file name of the new B2 file
+        :param content_type: the MIME type or ``None`` to determine automatically
+        :param file_info: a file info to store with the file or ``None`` to not store anything
+        :param progress_listener: a progress listener object to use
+        :param recommended_upload_part_size: the recommended part size to use for uploading local sources
+                        or ``None`` to determine automatically, but remote sources would be copied with
+                        maximum possible part size
+        :param continue_large_file_id: large file id that should be selected to resume file creation
+                        for multipart upload/copy, if ``None`` in multipart case it would always start a new
+                        large file
+        :param encryption: encryption settings (``None`` if unknown)
+        :param file_retention: file retention setting
+        :param legal_hold: legal hold setting
+        :param min_part_size: lower limit of part size for the transfer planner, in bytes
+        :param max_part_size: upper limit of part size for the transfer planner, in bytes
+        :param large_file_sha1: SHA1 for this file, if ``None`` and there's exactly one intent, it'll be taken from it
         """
-        # WARNING: time spent trying to extract common parts of emerge() and emerge_stream()
-        # into a separate method: 20min. You can try it too, but please increment the timer honestly.
-        # Problematic lines are marked with a "<--".
-        planner = self.get_emerge_planner(
-            min_part_size=min_part_size,
-            recommended_upload_part_size=recommended_upload_part_size,
-            max_part_size=max_part_size,
-        )
-        emerge_plan = planner.get_emerge_plan(write_intents)  # <--
-
-        updated_file_info = self._get_updated_file_info_with_large_file_sha1(
-            file_info, write_intents, emerge_plan, large_file_sha1
-        )
-
-        return self.emerge_executor.execute_emerge_plan(
-            emerge_plan,
+        return self._emerge(
+            EmergePlanner.get_emerge_plan,
             bucket_id,
+            write_intents,
             file_name,
             content_type,
-            updated_file_info,
+            file_info,
             progress_listener,
             continue_large_file_id=continue_large_file_id,
             encryption=encryption,
             file_retention=file_retention,
             legal_hold=legal_hold,
+            recommended_upload_part_size=recommended_upload_part_size,
+            min_part_size=min_part_size,
+            max_part_size=max_part_size,
+            large_file_sha1=large_file_sha1,
         )
 
     def emerge_stream(
         self,
-        bucket_id,
-        write_intent_iterator,
-        file_name,
-        content_type,
-        file_info,
-        progress_listener,
-        recommended_upload_part_size=None,
-        continue_large_file_id=None,
-        max_queue_size=DEFAULT_STREAMING_MAX_QUEUE_SIZE,
+        bucket_id: str,
+        write_intent_iterator: Iterator[WriteIntent],
+        file_name: str,
+        content_type: Optional[str],
+        file_info: Optional[Dict[str, str]],
+        progress_listener: AbstractProgressListener,
+        recommended_upload_part_size: Optional[int] = None,
+        continue_large_file_id: Optional[str] = None,
+        max_queue_size: int = DEFAULT_STREAMING_MAX_QUEUE_SIZE,
         encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
-        min_part_size=None,
-        max_part_size=None,
-        large_file_sha1=None,
+        min_part_size: Optional[int] = None,
+        max_part_size: Optional[int] = None,
+        large_file_sha1: Optional[Sha1HexDigest] = None,
     ):
         """
         Create a new file (object in the cloud, really) from a stream of write intents.
 
-        :param str bucket_id: a bucket ID
+        :param bucket_id: a bucket ID
         :param write_intent_iterator: iterator of :class:`~b2sdk.v2.WriteIntent`
-        :param str file_name: the file name of the new B2 file
-        :param str,None content_type: the MIME type or ``None`` to determine automatically
-        :param dict,None file_info: a file info to store with the file or ``None`` to not store anything
-        :param b2sdk.v2.AbstractProgressListener progress_listener: a progress listener object to use
-        :param int,None recommended_upload_part_size: the recommended part size to use for uploading local sources
+        :param file_name: the file name of the new B2 file
+        :param content_type: the MIME type or ``None`` to determine automatically
+        :param file_info: a file info to store with the file or ``None`` to not store anything
+        :param progress_listener: a progress listener object to use
+        :param recommended_upload_part_size: the recommended part size to use for uploading local sources
                         or ``None`` to determine automatically, but remote sources would be copied with
                         maximum possible part size
-        :param str,None continue_large_file_id: large file id that should be selected to resume file creation
+        :param continue_large_file_id: large file id that should be selected to resume file creation
                         for multipart upload/copy, if ``None`` in multipart case it would always start a new
                         large file
-        :param b2sdk.v2.EncryptionSetting encryption: encryption settings (``None`` if unknown)
-        :param b2sdk.v2.FileRetentionSetting file_retention: file retention setting
-        :param bool legal_hold: legal hold setting
+        :param max_queue_size: parallelization level
+        :param encryption: encryption settings (``None`` if unknown)
+        :param file_retention: file retention setting
+        :param legal_hold: legal hold setting
 
-        :param int min_part_size: lower limit of part size for the transfer planner, in bytes
-        :param int max_part_size: upper limit of part size for the transfer planner, in bytes
-        :param Sha1HexDigest,None large_file_sha1: result file SHA1 hash or ``None`` if not known
+        :param min_part_size: lower limit of part size for the transfer planner, in bytes
+        :param max_part_size: upper limit of part size for the transfer planner, in bytes
+        :param large_file_sha1: SHA1 for this file, if ``None`` and there's exactly one intent, it'll be taken from it
         """
-        planner = self.get_emerge_planner(
-            min_part_size=min_part_size,
-            recommended_upload_part_size=recommended_upload_part_size,
-            max_part_size=max_part_size,
-        )
-
-        # iter(iterable) –> iterator; iter(iterator) –> iterator.
-        intent_iterator = iter(write_intent_iterator)
-
-        first_write_intents, intent_iterator = iterator_peek(intent_iterator, 2)
-
-        emerge_plan = planner.get_streaming_emerge_plan(intent_iterator)  # <--
-
-        updated_file_info = self._get_updated_file_info_with_large_file_sha1(
-            file_info, first_write_intents, emerge_plan, large_file_sha1
-        )
-
-        return self.emerge_executor.execute_emerge_plan(
-            emerge_plan,
+        return self._emerge(
+            EmergePlanner.get_streaming_emerge_plan,
             bucket_id,
+            write_intent_iterator,
             file_name,
             content_type,
-            updated_file_info,
+            file_info,
             progress_listener,
             continue_large_file_id=continue_large_file_id,
-            max_queue_size=max_queue_size,  # <--
+            max_queue_size=max_queue_size,
             encryption=encryption,
             file_retention=file_retention,
             legal_hold=legal_hold,
+            recommended_upload_part_size=recommended_upload_part_size,
+            min_part_size=min_part_size,
+            max_part_size=max_part_size,
+            large_file_sha1=large_file_sha1,
+        )
+
+    def emerge_unbound(
+        self,
+        bucket_id: str,
+        write_intent_iterator: Iterator[WriteIntent],
+        file_name: str,
+        content_type: Optional[str],
+        file_info: Optional[Dict[str, str]],
+        progress_listener: AbstractProgressListener,
+        recommended_upload_part_size: Optional[int] = None,
+        continue_large_file_id: Optional[str] = None,
+        max_queue_size: int = 1,
+        encryption: Optional[EncryptionSetting] = None,
+        file_retention: Optional[FileRetentionSetting] = None,
+        legal_hold: Optional[LegalHold] = None,
+        min_part_size: Optional[int] = None,
+        max_part_size: Optional[int] = None,
+        large_file_sha1: Optional[Sha1HexDigest] = None,
+    ):
+        """
+        Create a new file (object in the cloud, really) from an unbound stream of write intents.
+
+        :param bucket_id: a bucket ID
+        :param write_intent_iterator: iterator of :class:`~b2sdk.v2.WriteIntent`
+        :param file_name: the file name of the new B2 file
+        :param content_type: the MIME type or ``None`` to determine automatically
+        :param file_info: a file info to store with the file or ``None`` to not store anything
+        :param progress_listener: a progress listener object to use
+        :param recommended_upload_part_size: the recommended part size to use for uploading local sources
+                        or ``None`` to determine automatically, but remote sources would be copied with
+                        maximum possible part size
+        :param continue_large_file_id: large file id that should be selected to resume file creation
+                        for multipart upload/copy, if ``None`` in multipart case it would always start a new
+                        large file
+        :param max_queue_size: parallelization level, should be equal to the number of buffers available in parallel
+        :param encryption: encryption settings (``None`` if unknown)
+        :param file_retention: file retention setting
+        :param legal_hold: legal hold setting
+        :param min_part_size: lower limit of part size for the transfer planner, in bytes
+        :param max_part_size: upper limit of part size for the transfer planner, in bytes
+        :param large_file_sha1: SHA1 for this file, if ``None`` it's left unset
+        """
+        return self._emerge(
+            EmergePlanner.get_unbound_emerge_plan,
+            bucket_id,
+            write_intent_iterator,
+            file_name,
+            content_type,
+            file_info,
+            progress_listener,
+            continue_large_file_id=continue_large_file_id,
+            max_queue_size=max_queue_size,
+            encryption=encryption,
+            file_retention=file_retention,
+            legal_hold=legal_hold,
+            recommended_upload_part_size=recommended_upload_part_size,
+            min_part_size=min_part_size,
+            max_part_size=max_part_size,
+            large_file_sha1=large_file_sha1,
+            check_first_intent_for_sha1=False,
         )
 
     def get_emerge_planner(
         self,
-        recommended_upload_part_size=None,
-        min_part_size=None,
-        max_part_size=None,
+        recommended_upload_part_size: Optional[int] = None,
+        min_part_size: Optional[int] = None,
+        max_part_size: Optional[int] = None,
     ):
         return EmergePlanner.from_account_info(
             self.services.session.account_info,

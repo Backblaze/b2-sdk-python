@@ -140,6 +140,31 @@ class EmergePlanner:
     def get_streaming_emerge_plan(self, write_intent_iterator):
         return self._get_emerge_plan(write_intent_iterator, StreamingEmergePlan)
 
+    def get_unbound_emerge_plan(self, write_intent_iterator):
+        """
+        For unbound streams we skip the whole process of bunching different parts together,
+        validating them and splitting by operation type. We can do this, because:
+        1. there will be no copy operations at all;
+        2. we don't want to pull more data than actually needed;
+        3. all the data is ordered;
+        4. we don't want anything else to touch our buffers.
+        Furthermore, we're using StreamingEmergePlan, as it checks whether we have one or more
+        chunks to work with, and picks a proper upload method.
+        """
+        return StreamingEmergePlan(self._get_simple_emerge_parts(write_intent_iterator))
+
+    def _get_simple_emerge_parts(self, write_intent_iterator):
+        # Assumption here is that we need to do no magic. We are receiving
+        # a read-only stream that cannot be seeked and is only for uploading
+        # purposes. Moreover, we assume that each write intent we received is
+        # a nice, enclosed buffer with enough data to make the cloud happy.
+        for write_intent in write_intent_iterator:
+            yield UploadEmergePartDefinition(
+                write_intent.outbound_source,
+                relative_offset=0,
+                length=write_intent.length,
+            )
+
     def _get_emerge_plan(self, write_intent_iterator, plan_class):
         return plan_class(
             self._get_emerge_parts(
