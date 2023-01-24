@@ -6,19 +6,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.19.0] - 2023-01-24
+
 ### Added
 * Authorizing a key for a single bucket ensures that this bucket is cached
 * `Bucket.ls` operation supports wildcard matching strings
-* Documentation for AbstractUploadSource and its children
+* Documentation for `AbstractUploadSource` and its children
 * `InvalidJsonResponse` when the received error is not a proper JSON document
 * Raising `PotentialS3EndpointPassedAsRealm` when a specific misconfiguration is suspected
 * Add `large_file_sha1` support
 * Add support for incremental upload and sync
-* Ability to stream data from any source into a B2 file
+* Ability to stream data from an unbound source to B2 (for example stdin)
 
 ### Fixed
 * Removed information about replication being in closed beta
-* Don't throw raw OSError exceptions when using `DownloadedFile.save_to` to a path that doesn't exist, is a directory or the user doesn't have permissions to write to
+* Don't throw raw `OSError` exceptions when using `DownloadedFile.save_to` to a path that doesn't exist, is a directory or the user doesn't have permissions to write to
 
 ### Infrastructure
 * Additional tests for listing files/versions
@@ -414,7 +416,8 @@ has changed.
 ### Added
 Initial official release of SDK as a separate package (until now it was a part of B2 CLI)
 
-[Unreleased]: https://github.com/Backblaze/b2-sdk-python/compare/v1.18.0...HEAD
+[Unreleased]: https://github.com/Backblaze/b2-sdk-python/compare/v1.19.0...HEAD
+[1.19.0]: https://github.com/Backblaze/b2-sdk-python/compare/v1.18.0...v1.19.0
 [1.18.0]: https://github.com/Backblaze/b2-sdk-python/compare/v1.17.3...v1.18.0
 [1.17.3]: https://github.com/Backblaze/b2-sdk-python/compare/v1.17.2...v1.17.3
 [1.17.2]: https://github.com/Backblaze/b2-sdk-python/compare/v1.17.1...v1.17.2
