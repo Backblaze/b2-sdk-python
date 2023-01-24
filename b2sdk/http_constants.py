@@ -16,7 +16,6 @@ FILE_INFO_HEADER_PREFIX_LOWER = FILE_INFO_HEADER_PREFIX.lower()
 
 # Standard names for file info entries
 SRC_LAST_MODIFIED_MILLIS = 'src_last_modified_millis'
-LARGE_FILE_SHA1 = 'large_file_sha1'
 
 # SHA-1 hash key for large files
 LARGE_FILE_SHA1 = 'large_file_sha1'

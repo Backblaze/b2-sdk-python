@@ -163,7 +163,7 @@ class Emerger(metaclass=B2TraceMetaAbstract):
         :param legal_hold: legal hold setting
         :param min_part_size: lower limit of part size for the transfer planner, in bytes
         :param max_part_size: upper limit of part size for the transfer planner, in bytes
-        :param large_file_sha1: SHA1 for this file, if None will be calculated from available data
+        :param large_file_sha1: SHA1 for this file, if ``None`` and there's exactly one intent, it'll be taken from it
         """
         return self._emerge(
             EmergePlanner.get_emerge_plan,
@@ -223,7 +223,7 @@ class Emerger(metaclass=B2TraceMetaAbstract):
 
         :param min_part_size: lower limit of part size for the transfer planner, in bytes
         :param max_part_size: upper limit of part size for the transfer planner, in bytes
-        :param large_file_sha1: SHA1 for this file, if None will be calculated from available data
+        :param large_file_sha1: SHA1 for this file, if ``None`` and there's exactly one intent, it'll be taken from it
         """
         return self._emerge(
             EmergePlanner.get_streaming_emerge_plan,
@@ -281,10 +281,9 @@ class Emerger(metaclass=B2TraceMetaAbstract):
         :param encryption: encryption settings (``None`` if unknown)
         :param file_retention: file retention setting
         :param legal_hold: legal hold setting
-
         :param min_part_size: lower limit of part size for the transfer planner, in bytes
         :param max_part_size: upper limit of part size for the transfer planner, in bytes
-        :param large_file_sha1: SHA1 for this file, if None will be calculated from available data
+        :param large_file_sha1: SHA1 for this file, if ``None`` it's left unset
         """
         return self._emerge(
             EmergePlanner.get_unbound_emerge_plan,
