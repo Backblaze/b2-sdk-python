@@ -13,7 +13,7 @@ import logging
 import pathlib
 
 from contextlib import suppress
-from typing import Optional, Tuple
+from typing import Dict, Optional, Tuple
 
 from .encryption.setting import EncryptionSetting, EncryptionSettingFactory
 from .encryption.types import EncryptionMode
@@ -591,7 +591,7 @@ class Bucket(metaclass=B2TraceMeta):
         read_only_object,
         file_name: str,
         content_type: str = None,
-        file_info: Optional[dict[str, str]] = None,
+        file_info: Optional[Dict[str, str]] = None,
         progress_listener: Optional[AbstractProgressListener] = None,
         recommended_upload_part_size: Optional[int] = None,
         encryption: Optional[EncryptionSetting] = None,
