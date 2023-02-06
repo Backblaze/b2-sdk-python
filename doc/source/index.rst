@@ -26,7 +26,7 @@ Why use b2sdk?
 When building an application which uses B2 cloud, it is possible to implement an independent B2 API client, but using **b2sdk** allows for:
 
 - reuse of code that is already written, with hundreds of unit tests
-- use of **Syncronizer**, a high-performance, parallel rsync-like utility
+- use of **Synchronizer**, a high-performance, parallel rsync-like utility
 - developer-friendly library :ref:`api version policy <semantic_versioning>` which guards your program against incompatible changes
 - `B2 integration checklist <https://www.backblaze.com/b2/docs/integration_checklist.html>`_ is passed automatically
 - **raw_simulator** makes it easy to mock the B2 cloud for unit testing purposes
