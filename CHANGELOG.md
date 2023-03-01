@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+* Connection timeout is now being set explicitly
+
 ## [1.19.0] - 2023-01-24
 
 ### Added
