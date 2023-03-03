@@ -159,6 +159,7 @@ class B2Http:
     is not a part of the interface and is subject to change.
     """
 
+    CONNECTION_TIMEOUT = 3 + 6 + 12 + 24 + 1  # 4 standard tcp retransmissions + 1s latency
     TIMEOUT = 128
     TIMEOUT_FOR_COPY = 1200  # 20 minutes as server-side copy can take time
     TIMEOUT_FOR_UPLOAD = 128
@@ -227,7 +228,7 @@ class B2Http:
                 url,
                 headers=request_headers,
                 data=data,
-                timeout=_timeout or self.TIMEOUT_FOR_UPLOAD,
+                timeout=(self.CONNECTION_TIMEOUT, _timeout or self.TIMEOUT_FOR_UPLOAD),
             )
             self._run_post_request_hooks('POST', url, request_headers, response)
             return response
@@ -313,7 +314,10 @@ class B2Http:
         def do_get():
             self._run_pre_request_hooks('GET', url, request_headers)
             response = self.session.get(
-                url, headers=request_headers, stream=True, timeout=self.TIMEOUT
+                url,
+                headers=request_headers,
+                stream=True,
+                timeout=(self.CONNECTION_TIMEOUT, self.TIMEOUT),
             )
             self._run_post_request_hooks('GET', url, request_headers, response)
             return response
@@ -356,7 +360,10 @@ class B2Http:
         def do_head():
             self._run_pre_request_hooks('HEAD', url, request_headers)
             response = self.session.head(
-                url, headers=request_headers, stream=True, timeout=self.TIMEOUT
+                url,
+                headers=request_headers,
+                stream=True,
+                timeout=(self.CONNECTION_TIMEOUT, self.TIMEOUT),
             )
             self._run_post_request_hooks('HEAD', url, request_headers, response)
             return response
