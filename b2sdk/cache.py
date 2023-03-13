@@ -68,7 +68,7 @@ class InMemoryCache(AbstractCache):
 
     def __init__(self):
         self.name_id_map = {}
-        self.bucket_name = ''
+        self.bucket_name = None
 
     def get_bucket_id_or_none_from_bucket_name(self, name):
         return self.name_id_map.get(name)
