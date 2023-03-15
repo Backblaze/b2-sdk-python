@@ -157,11 +157,11 @@ class TestApi:
             buckets = self.api.list_buckets(*args, **kwargs)
             return [(b.name, b.id_) for b in buckets]
 
-        assert list_buckets(cache=True) == [('bucket', 'ID-0')]
-        assert list_buckets(bucket_name="bucket", cache=True) == [('bucket', 'ID-0')]
-        assert list_buckets(bucket_name="bucket2", cache=True) == []
-        assert list_buckets(bucket_id="ID-0", cache=True) == [('bucket', 'ID-0')]
-        assert list_buckets(bucket_id="ID-2", cache=True) == []
+        assert list_buckets(use_cache=True) == [('bucket', 'ID-0')]
+        assert list_buckets(bucket_name="bucket", use_cache=True) == [('bucket', 'ID-0')]
+        assert list_buckets(bucket_name="bucket2", use_cache=True) == []
+        assert list_buckets(bucket_id="ID-0", use_cache=True) == [('bucket', 'ID-0')]
+        assert list_buckets(bucket_id="ID-2", use_cache=True) == []
         assert self.api.list_buckets() == []
 
     def test_buckets_with_encryption(self):

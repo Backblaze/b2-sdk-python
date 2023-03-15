@@ -376,7 +376,7 @@ class B2Api(metaclass=B2TraceMeta):
         account_id = self.account_info.get_account_id()
         self.session.delete_bucket(account_id, bucket.id_)
 
-    def list_buckets(self, bucket_name=None, bucket_id=None, *, cache: bool = False):
+    def list_buckets(self, bucket_name=None, bucket_id=None, *, use_cache: bool = False):
         """
         Call ``b2_list_buckets`` and return a list of buckets.
 
@@ -388,7 +388,7 @@ class B2Api(metaclass=B2TraceMeta):
 
         :param str bucket_name: the name of the one bucket to return
         :param str bucket_id: the ID of the one bucket to return
-        :param bool cache: if ``True`` use cached bucket list if available
+        :param bool use_cache: if ``True`` use cached bucket list if available and not empty
         :rtype: list[b2sdk.v2.Bucket]
         """
         # Give a useful warning if the current application key does not
@@ -400,7 +400,7 @@ class B2Api(metaclass=B2TraceMeta):
         else:
             self.check_bucket_name_restrictions(bucket_name)
 
-        if cache:
+        if use_cache:
             cached_list = self.cache.list_bucket_names_ids()
             buckets = [
                 self.BUCKET_CLASS(self, cache_b_id, name=cached_b_name)
