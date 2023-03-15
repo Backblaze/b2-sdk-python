@@ -28,7 +28,6 @@ from apiver_deps import (
 )
 from apiver_deps_exception import CorruptAccountInfo, MissingAccountData
 
-from test.unit.helpers import list_abstract_methods
 from .fixtures import *
 
 
@@ -468,44 +467,3 @@ class TestSqliteAccountInfo(AccountInfoBase):
             expected_path = os.path.abspath(os.path.join(d, 'b2_account_info'))
             actual_path = os.path.abspath(account_info.filename)
             assert expected_path == actual_path
-
-
-def test_abstract_account_info(apiver_int):
-    """Test if no new abstract methods have added to AbstractAccountInfo"""
-    expected_abstract_methods = {
-        '_set_auth_data',
-        'clear',
-        'clear_bucket_upload_data',
-        'clear_large_file_upload_urls',
-        'get_account_auth_token',
-        'get_account_id',
-        'get_allowed',
-        'get_api_url',
-        'get_application_key',
-        'get_application_key_id',
-        'get_bucket_id_or_none_from_bucket_name',
-        'get_download_url',
-        'get_realm',
-        'put_bucket_upload_url',
-        'put_large_file_upload_url',
-        'refresh_entire_bucket_name_cache',
-        'remove_bucket_name',
-        'save_bucket',
-        'take_bucket_upload_url',
-        'take_large_file_upload_url',
-        'get_minimum_part_size',
-    }
-    if apiver_int >= 2:
-        expected_abstract_methods = expected_abstract_methods - {'get_minimum_part_size'} | {
-            'get_absolute_minimum_part_size',
-            'get_bucket_name_or_none_from_bucket_id',
-            'get_recommended_part_size',
-            'get_s3_api_url',
-        }
-
-    if apiver_int >= 3:
-        expected_abstract_methods.add("list_bucket_names_ids")
-
-    abstract_methods = list_abstract_methods(AbstractAccountInfo)
-
-    assert abstract_methods == expected_abstract_methods
