@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-* Added `from_cache` parameter for `B2Api.list_buckets`
+* Add `use_cache` parameter to `B2Api.list_buckets`
 
 ## [1.19.0] - 2023-01-24
 
