@@ -7,7 +7,6 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
-import inspect
 from abc import ABCMeta, abstractmethod
 import json
 import unittest.mock as mock
@@ -29,6 +28,7 @@ from apiver_deps import (
 )
 from apiver_deps_exception import CorruptAccountInfo, MissingAccountData
 
+from test.unit.helpers import list_abstract_methods
 from .fixtures import *
 
 
@@ -509,11 +509,3 @@ def test_abstract_account_info(apiver_int):
     abstract_methods = list_abstract_methods(AbstractAccountInfo)
 
     assert abstract_methods == expected_abstract_methods
-
-
-def list_abstract_methods(cls: type) -> set:
-    return {
-        name
-        for name, value in inspect.getmembers(cls)
-        if inspect.isfunction(value) and getattr(value, '__isabstractmethod__', False)
-    }
