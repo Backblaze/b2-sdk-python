@@ -144,3 +144,9 @@ def pytest_runtest_setup(item):
 def apiver(request):
     """Get apiver as a v-prefixed string, e.g. "v2"."""
     return request.config.getoption('--api')
+
+
+@pytest.fixture(scope='session')
+def apiver_int(apiver):
+    """Get apiver as an int, e.g. `2`."""
+    return int(apiver[1:])
