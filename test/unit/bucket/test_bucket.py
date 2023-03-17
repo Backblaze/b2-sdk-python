@@ -7,10 +7,12 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+import contextlib
 import io
 from contextlib import suppress
 from io import BytesIO
 import os
+import pathlib
 import platform
 import unittest.mock as mock
 
@@ -23,15 +25,23 @@ from apiver_deps_exception import (
     AlreadyFailed,
     B2Error,
     B2RequestTimeoutDuringUpload,
+    BadRequest,
     BucketIdNotFound,
+    DestinationDirectoryDoesntAllowOperation,
+    DestinationDirectoryDoesntExist,
+    DestinationIsADirectory,
+    DestinationParentIsNotADirectory,
+    DisablingFileLockNotSupported,
+    FileSha1Mismatch,
     InvalidAuthToken,
     InvalidMetadataDirective,
     InvalidRange,
     InvalidUploadSource,
     MaxRetriesExceeded,
-    UnsatisfiableRange,
-    FileSha1Mismatch,
+    RestrictedBucketMissing,
     SSECKeyError,
+    SourceReplicationConflict,
+    UnsatisfiableRange,
 )
 if apiver_deps.V <= 1:
     from apiver_deps import DownloadDestBytes, PreSeekedDownloadDest
@@ -54,12 +64,15 @@ from apiver_deps import ParallelDownloader
 from apiver_deps import Range
 from apiver_deps import SimpleDownloader
 from apiver_deps import UploadSourceBytes
+from apiver_deps import DummyCache, InMemoryCache
 from apiver_deps import hex_sha1_of_bytes, TempDir
 from apiver_deps import EncryptionAlgorithm, EncryptionSetting, EncryptionMode, EncryptionKey, SSE_NONE, SSE_B2_AES
 from apiver_deps import CopySource, UploadSourceLocalFile, WriteIntent
 from apiver_deps import BucketRetentionSetting, FileRetentionSetting, LegalHold, RetentionMode, RetentionPeriod, \
     NO_RETENTION_FILE_SETTING
 from apiver_deps import ReplicationConfiguration, ReplicationRule
+from apiver_deps import LARGE_FILE_SHA1
+from apiver_deps import UploadMode
 
 pytestmark = [pytest.mark.apiver(from_ver=1)]
 
@@ -197,10 +210,13 @@ def bucket_ls(bucket, *args, show_versions=False, **kwargs):
 
 class TestCaseWithBucket(TestBase):
     RAW_SIMULATOR_CLASS = RawSimulator
+    CACHE_CLASS = DummyCache
 
     def get_api(self):
         return B2Api(
-            self.account_info, api_config=B2HttpApiConfig(_raw_api_class=self.RAW_SIMULATOR_CLASS)
+            self.account_info,
+            cache=self.CACHE_CLASS(),
+            api_config=B2HttpApiConfig(_raw_api_class=self.RAW_SIMULATOR_CLASS),
         )
 
     def setUp(self):
@@ -212,7 +228,7 @@ class TestCaseWithBucket(TestBase):
         self.api.authorize_account('production', self.account_id, self.master_key)
         self.api_url = self.account_info.get_api_url()
         self.account_auth_token = self.account_info.get_account_auth_token()
-        self.bucket = self.api.create_bucket('my-bucket', 'allPublic')
+        self.bucket = self.api.create_bucket(self.bucket_name, 'allPublic')
         self.bucket_id = self.bucket.id_
 
     def bucket_ls(self, *args, show_versions=False, **kwargs):
@@ -247,6 +263,14 @@ class TestCaseWithBucket(TestBase):
     def _check_file_contents(self, file_name, expected_contents):
         contents = self._download_file(file_name)
         self.assertEqual(expected_contents, contents)
+
+    def _check_large_file_sha1(self, file_name, expected_sha1):
+        file_info = self.bucket.get_file_info_by_name(file_name).file_info
+        if expected_sha1:
+            assert LARGE_FILE_SHA1 in file_info
+            assert file_info[LARGE_FILE_SHA1] == expected_sha1
+        else:
+            assert LARGE_FILE_SHA1 not in file_info
 
     def _download_file(self, file_name):
         with FileSimulator.dont_check_encryption():
@@ -519,6 +543,202 @@ class TestLs(TestCaseWithBucket):
         expected = [('hello.txt', 15, 'upload', None)]
         self.assertBucketContents(expected, '', show_versions=True)
 
+    def test_non_recursive_returns_folder_names(self):
+        data = b'hello world'
+        self.bucket.upload_bytes(data, 'a')
+        self.bucket.upload_bytes(data, 'b/1/test-1.txt')
+        self.bucket.upload_bytes(data, 'b/2/test-2.txt')
+        self.bucket.upload_bytes(data, 'b/3/test-3.txt')
+        self.bucket.upload_bytes(data, 'b/3/test-4.txt')
+        # Since inside `b` there are 3 directories, we get three results,
+        # with a first file for each of them.
+        expected = [
+            ('b/1/test-1.txt', len(data), 'upload', 'b/1/'),
+            ('b/2/test-2.txt', len(data), 'upload', 'b/2/'),
+            ('b/3/test-3.txt', len(data), 'upload', 'b/3/'),
+        ]
+        actual = [
+            (info.file_name, info.size, info.action, folder)
+            for (info, folder) in self.bucket_ls('b/')
+        ]
+        self.assertEqual(expected, actual)
+
+    def test_recursive_returns_no_folder_names(self):
+        data = b'hello world'
+        self.bucket.upload_bytes(data, 'a')
+        self.bucket.upload_bytes(data, 'b/1/test-1.txt')
+        self.bucket.upload_bytes(data, 'b/2/test-2.txt')
+        self.bucket.upload_bytes(data, 'b/3/test-3.txt')
+        self.bucket.upload_bytes(data, 'b/3/test-4.txt')
+        expected = [
+            ('b/1/test-1.txt', len(data), 'upload', None),
+            ('b/2/test-2.txt', len(data), 'upload', None),
+            ('b/3/test-3.txt', len(data), 'upload', None),
+            ('b/3/test-4.txt', len(data), 'upload', None),
+        ]
+        actual = [
+            (info.file_name, info.size, info.action, folder)
+            for (info, folder) in self.bucket_ls('b/', recursive=True)
+        ]
+        self.assertEqual(expected, actual)
+
+    def test_wildcard_matching(self):
+        data = b'hello world'
+        self.bucket.upload_bytes(data, 'a')
+        self.bucket.upload_bytes(data, 'b/1/test-1.txt')
+        self.bucket.upload_bytes(data, 'b/2/test-2.csv')
+        self.bucket.upload_bytes(data, 'b/2/test-3.txt')
+        self.bucket.upload_bytes(data, 'b/3/test-4.jpg')
+        self.bucket.upload_bytes(data, 'b/3/test-4.txt')
+        self.bucket.upload_bytes(data, 'b/3/test-5.txt')
+        expected = [
+            ('b/1/test-1.txt', len(data), 'upload', None),
+            ('b/2/test-3.txt', len(data), 'upload', None),
+            ('b/3/test-4.txt', len(data), 'upload', None),
+            ('b/3/test-5.txt', len(data), 'upload', None),
+        ]
+        actual = [
+            (info.file_name, info.size, info.action, folder)
+            for (info, folder) in self.bucket_ls('b/*.txt', recursive=True, with_wildcard=True)
+        ]
+        self.assertEqual(expected, actual)
+
+    def test_wildcard_matching_including_root(self):
+        data = b'hello world'
+        self.bucket.upload_bytes(data, 'b/1/test.txt')
+        self.bucket.upload_bytes(data, 'b/2/test.txt')
+        self.bucket.upload_bytes(data, 'b/3/test.txt')
+        self.bucket.upload_bytes(data, 'test.txt')
+        expected = [
+            ('b/1/test.txt', len(data), 'upload', None),
+            ('b/2/test.txt', len(data), 'upload', None),
+            ('b/3/test.txt', len(data), 'upload', None),
+            ('test.txt', len(data), 'upload', None),
+        ]
+        actual = [
+            (info.file_name, info.size, info.action, folder)
+            for (info, folder) in self.bucket_ls('*.txt', recursive=True, with_wildcard=True)
+        ]
+        self.assertEqual(expected, actual)
+
+    def test_wildcard_matching_directory(self):
+        data = b'hello world'
+        self.bucket.upload_bytes(data, 'a')
+        self.bucket.upload_bytes(data, 'b/2/test.txt')
+        self.bucket.upload_bytes(data, 'b/3/test.jpg')
+        self.bucket.upload_bytes(data, 'b/3/test.txt')
+        self.bucket.upload_bytes(data, 'c/4/test.txt')
+        expected = [
+            ('b/2/test.txt', len(data), 'upload', None),
+            ('b/3/test.txt', len(data), 'upload', None),
+        ]
+        actual = [
+            (info.file_name, info.size, info.action, folder)
+            for (info,
+                 folder) in self.bucket_ls('b/*/test.txt', recursive=True, with_wildcard=True)
+        ]
+        self.assertEqual(expected, actual)
+
+    def test_single_character_matching(self):
+        data = b'hello world'
+        self.bucket.upload_bytes(data, 'a')
+        self.bucket.upload_bytes(data, 'b/2/test.csv')
+        self.bucket.upload_bytes(data, 'b/2/test.txt')
+        self.bucket.upload_bytes(data, 'b/2/test.tsv')
+        expected = [
+            ('b/2/test.csv', len(data), 'upload', None),
+            ('b/2/test.tsv', len(data), 'upload', None),
+        ]
+        actual = [
+            (info.file_name, info.size, info.action, folder)
+            for (info,
+                 folder) in self.bucket_ls('b/2/test.?sv', recursive=True, with_wildcard=True)
+        ]
+        self.assertEqual(expected, actual)
+
+    def test_sequence_matching(self):
+        data = b'hello world'
+        self.bucket.upload_bytes(data, 'a')
+        self.bucket.upload_bytes(data, 'b/2/test.csv')
+        self.bucket.upload_bytes(data, 'b/2/test.ksv')
+        self.bucket.upload_bytes(data, 'b/2/test.tsv')
+        expected = [
+            ('b/2/test.csv', len(data), 'upload', None),
+            ('b/2/test.tsv', len(data), 'upload', None),
+        ]
+        actual = [
+            (info.file_name, info.size, info.action, folder)
+            for (info,
+                 folder) in self.bucket_ls('b/2/test.[tc]sv', recursive=True, with_wildcard=True)
+        ]
+        self.assertEqual(expected, actual)
+
+    def test_negative_sequence_matching(self):
+        data = b'hello world'
+        self.bucket.upload_bytes(data, 'a')
+        self.bucket.upload_bytes(data, 'b/2/test.csv')
+        self.bucket.upload_bytes(data, 'b/2/test.ksv')
+        self.bucket.upload_bytes(data, 'b/2/test.tsv')
+        expected = [
+            ('b/2/test.tsv', len(data), 'upload', None),
+        ]
+        actual = [
+            (info.file_name, info.size, info.action, folder)
+            for (info,
+                 folder) in self.bucket_ls('b/2/test.[!ck]sv', recursive=True, with_wildcard=True)
+        ]
+        self.assertEqual(expected, actual)
+
+    def test_matching_wildcard_named_file(self):
+        data = b'hello world'
+        self.bucket.upload_bytes(data, 'a/*.txt')
+        self.bucket.upload_bytes(data, 'a/1.txt')
+        self.bucket.upload_bytes(data, 'a/2.txt')
+        expected = [
+            ('a/*.txt', len(data), 'upload', None),
+            ('a/1.txt', len(data), 'upload', None),
+            ('a/2.txt', len(data), 'upload', None),
+        ]
+        actual = [
+            (info.file_name, info.size, info.action, folder)
+            for (info, folder) in self.bucket_ls('a/*.txt', recursive=True, with_wildcard=True)
+        ]
+        self.assertEqual(expected, actual)
+
+    def test_matching_single_question_mark_named_file(self):
+        data = b'hello world'
+        self.bucket.upload_bytes(data, 'b/?.txt')
+        self.bucket.upload_bytes(data, 'b/a.txt')
+        self.bucket.upload_bytes(data, 'b/b.txt')
+        expected = [
+            ('b/?.txt', len(data), 'upload', None),
+            ('b/a.txt', len(data), 'upload', None),
+            ('b/b.txt', len(data), 'upload', None),
+        ]
+        actual = [
+            (info.file_name, info.size, info.action, folder)
+            for (info, folder) in self.bucket_ls('b/?.txt', recursive=True, with_wildcard=True)
+        ]
+        self.assertEqual(expected, actual)
+
+    def test_wildcard_requires_recursive(self):
+        with pytest.raises(ValueError):
+            # Since ls is a generator, we need to actually fetch something from it.
+            next(self.bucket_ls('*.txt', recursive=False, with_wildcard=True))
+
+    def test_matching_exact_filename(self):
+        data = b'hello world'
+        self.bucket.upload_bytes(data, 'b/a.txt')
+        self.bucket.upload_bytes(data, 'b/b.txt')
+        expected = [
+            ('b/a.txt', len(data), 'upload', None),
+        ]
+        actual = [
+            (info.file_name, info.size, info.action, folder)
+            for (info, folder) in self.bucket_ls('b/a.txt', recursive=True, with_wildcard=True)
+        ]
+        self.assertEqual(expected, actual)
+
 
 class TestGetFreshState(TestCaseWithBucket):
     def test_ok(self):
@@ -699,6 +919,7 @@ class TestCopyFile(TestCaseWithBucket):
         else:
             self.bucket.copy(file_id, 'hello_new.txt', offset=3, length=7)
         self._check_file_contents('hello_new.txt', b'lo worl')
+        self._check_large_file_sha1('hello_new.txt', None)
         expected = [('hello.txt', 11, 'upload', None), ('hello_new.txt', 7, 'upload', None)]
         self.assertBucketContents(expected, '', show_versions=True)
 
@@ -1063,6 +1284,54 @@ class TestUpdate(TestCaseWithBucket):
         not_updated_bucket = self.api.get_bucket_by_name(self.bucket.name)
         self.assertEqual([{'life': 'is life'}], not_updated_bucket.lifecycle_rules)
 
+    def test_is_file_lock_enabled(self):
+        assert not self.bucket.is_file_lock_enabled
+
+        # set is_file_lock_enabled to False when it's already false
+        self.bucket.update(is_file_lock_enabled=False)
+        updated_bucket = self.api.get_bucket_by_name(self.bucket.name)
+        assert not updated_bucket.is_file_lock_enabled
+
+        # sunny day scenario
+        self.bucket.update(is_file_lock_enabled=True)
+        updated_bucket = self.api.get_bucket_by_name(self.bucket.name)
+        assert updated_bucket.is_file_lock_enabled
+        assert self.simulator.bucket_name_to_bucket[self.bucket.name].is_file_lock_enabled
+
+        # attempt to clear is_file_lock_enabled
+        with pytest.raises(DisablingFileLockNotSupported):
+            self.bucket.update(is_file_lock_enabled=False)
+        updated_bucket = self.api.get_bucket_by_name(self.bucket.name)
+        assert updated_bucket.is_file_lock_enabled
+
+        # attempt to set is_file_lock_enabled when it's already set
+        self.bucket.update(is_file_lock_enabled=True)
+        updated_bucket = self.api.get_bucket_by_name(self.bucket.name)
+        assert updated_bucket.is_file_lock_enabled
+
+    @pytest.mark.apiver(from_ver=2)
+    def test_is_file_lock_enabled_source_replication(self):
+        assert not self.bucket.is_file_lock_enabled
+
+        # attempt to set is_file_lock_enabled with source replication enabled
+        self.bucket.update(replication=REPLICATION)
+        with pytest.raises(SourceReplicationConflict):
+            self.bucket.update(is_file_lock_enabled=True)
+        updated_bucket = self.bucket.update(replication=REPLICATION)
+        assert not updated_bucket.is_file_lock_enabled
+
+        # sunny day scenario
+        self.bucket.update(
+            replication=ReplicationConfiguration(
+                rules=[],
+                source_to_destination_key_mapping={},
+            )
+        )
+        self.bucket.update(is_file_lock_enabled=True)
+        updated_bucket = self.api.get_bucket_by_name(self.bucket.name)
+        assert updated_bucket.is_file_lock_enabled
+        assert self.simulator.bucket_name_to_bucket[self.bucket.name].is_file_lock_enabled
+
 
 class TestUpload(TestCaseWithBucket):
     def test_upload_bytes(self):
@@ -1070,6 +1339,7 @@ class TestUpload(TestCaseWithBucket):
         file_info = self.bucket.upload_bytes(data, 'file1')
         self.assertTrue(isinstance(file_info, VFileVersionInfo))
         self._check_file_contents('file1', data)
+        self._check_large_file_sha1('file1', None)
         self.assertEqual(file_info.server_side_encryption, SSE_NONE)
 
     def test_upload_bytes_file_retention(self):
@@ -1079,6 +1349,7 @@ class TestUpload(TestCaseWithBucket):
             data, 'file1', file_retention=retention, legal_hold=LegalHold.ON
         )
         self._check_file_contents('file1', data)
+        self._check_large_file_sha1('file1', None)
         self.assertEqual(retention, file_info.file_retention)
         self.assertEqual(LegalHold.ON, file_info.legal_hold)
 
@@ -1144,10 +1415,70 @@ class TestUpload(TestCaseWithBucket):
             write_file(path, data)
             file_info = self.bucket.upload_local_file(path, 'file1')
             self._check_file_contents('file1', data)
+            self._check_large_file_sha1('file1', None)
             self.assertTrue(isinstance(file_info, VFileVersionInfo))
             self.assertEqual(file_info.server_side_encryption, SSE_NONE)
             print(file_info.as_dict())
             self.assertEqual(file_info.as_dict()['serverSideEncryption'], {'mode': 'none'})
+
+    @pytest.mark.apiver(from_ver=2)
+    def test_upload_local_file_incremental(self):
+        with TempDir() as d:
+            path = os.path.join(d, 'file1')
+
+            small_data = b'Hello world!'
+            big_data = self._make_data(self.simulator.MIN_PART_SIZE * 3)
+            DATA = [
+                big_data,
+                big_data + small_data,
+                big_data + small_data + big_data,
+                small_data,
+                small_data + small_data,
+                small_data.upper() + small_data,
+            ]
+
+            last_data = None
+            for data in DATA:
+                # figure out if this particular upload should be incremental
+                should_be_incremental = (
+                    last_data and data.startswith(last_data) and
+                    len(last_data) >= self.simulator.MIN_PART_SIZE
+                )
+
+                # if it's incremental, then there should be two sources concatenated, otherwise one
+                expected_source_count = 2 if should_be_incremental else 1
+
+                # is the result file expected to be a large file
+                expected_large_file = \
+                    should_be_incremental or \
+                    len(data) > self.simulator.MIN_PART_SIZE
+
+                expected_parts_sizes = \
+                    [len(last_data), len(data) - len(last_data)] \
+                        if should_be_incremental else [len(data)]
+
+                write_file(path, data)
+                with mock.patch.object(
+                    self.bucket, 'concatenate', wraps=self.bucket.concatenate
+                ) as mocked_concatenate:
+                    self.bucket.upload_local_file(path, 'file1', upload_mode=UploadMode.INCREMENTAL)
+                    mocked_concatenate.assert_called_once()
+                    call = mocked_concatenate.mock_calls[0]
+                    # TODO: use .args[0] instead of [1][0] when we drop Python 3.7
+                    assert len(call[1][0]) == expected_source_count
+                    # Ensuring that the part sizes make sense.
+                    parts_sizes = [entry.get_content_length() for entry in call[1][0]]
+                    assert parts_sizes == expected_parts_sizes
+                    if should_be_incremental:
+                        # Ensuring that the first part is a copy.
+                        # Order of indices: pick arguments, pick first argument, first element of the first argument.
+                        self.assertIsInstance(call[1][0][0], CopySource)
+
+                self._check_file_contents('file1', data)
+                if expected_large_file:
+                    self._check_large_file_sha1('file1', hex_sha1_of_bytes(data))
+
+                last_data = data
 
     @pytest.mark.skipif(platform.system() == 'Windows', reason='no os.mkfifo() on Windows')
     def test_upload_fifo(self):
@@ -1204,6 +1535,7 @@ class TestUpload(TestCaseWithBucket):
         progress_listener = StubProgressListener()
         self.bucket.upload_bytes(data, 'file1', progress_listener=progress_listener)
         self._check_file_contents('file1', data)
+        self._check_large_file_sha1('file1', hex_sha1_of_bytes(data))
         self.assertTrue(progress_listener.is_valid())
 
     def test_upload_local_large_file(self):
@@ -1213,6 +1545,7 @@ class TestUpload(TestCaseWithBucket):
             write_file(path, data)
             self.bucket.upload_local_file(path, 'file1')
             self._check_file_contents('file1', data)
+            self._check_large_file_sha1('file1', hex_sha1_of_bytes(data))
 
     def test_upload_local_large_file_over_10k_parts(self):
         pytest.skip('this test is really slow and impedes development')  # TODO: fix it
@@ -1222,6 +1555,7 @@ class TestUpload(TestCaseWithBucket):
             write_file(path, data)
             self.bucket.upload_local_file(path, 'file1')
             self._check_file_contents('file1', data)
+            self._check_large_file_sha1('file1', hex_sha1_of_bytes(data))
 
     def test_create_file_over_10k_parts(self):
         data = b'hello world' * 20000
@@ -1343,6 +1677,20 @@ class TestUpload(TestCaseWithBucket):
         self.assertEqual(len(data), file_info.size)
         self._check_file_contents('path/to/file1', data)
         self.assertTrue(progress_listener.is_valid())
+
+    def test_upload_stream(self):
+        data = self._make_data(self.simulator.MIN_PART_SIZE * 3)
+        self.bucket.upload_unbound_stream(io.BytesIO(data), 'file1')
+        self._check_file_contents('file1', data)
+
+    def test_upload_stream_from_file(self):
+        with TempDir() as d:
+            path = os.path.join(d, 'file1')
+            data = self._make_data(self.simulator.MIN_PART_SIZE * 3)
+            write_file(path, data)
+            with open(path, 'rb') as f:
+                self.bucket.upload_unbound_stream(f, 'file1')
+            self._check_file_contents('file1', data)
 
     def _start_large_file(self, file_name, file_info=None):
         if file_info is None:
@@ -2122,3 +2470,167 @@ class DecodeTests(DecodeTestsBase, TestCaseWithBucket):
     def test_file_info_4(self):
         download_version = self.bucket.get_file_info_by_name('test.txt%253Ffoo%253Dbar')
         assert download_version.file_name == 'test.txt%253Ffoo%253Dbar'
+
+
+class TestAuthorizeForBucket(TestCaseWithBucket):
+    CACHE_CLASS = InMemoryCache
+
+    @pytest.mark.apiver(from_ver=2)
+    def test_authorize_for_bucket_ensures_cache(self):
+        key = create_key(
+            self.api,
+            key_name='singlebucket',
+            capabilities=[
+                'listBuckets',
+            ],
+            bucket_id=self.bucket_id,
+        )
+
+        self.api.authorize_account('production', key.id_, key.application_key)
+
+        # Check whether the bucket fetching performs an API call.
+        with mock.patch.object(self.api, 'list_buckets') as mock_list_buckets:
+            self.api.get_bucket_by_id(self.bucket_id)
+            mock_list_buckets.assert_not_called()
+
+            self.api.get_bucket_by_name(self.bucket_name)
+            mock_list_buckets.assert_not_called()
+
+    @pytest.mark.apiver(from_ver=2)
+    def test_authorize_for_non_existing_bucket(self):
+        key = create_key(
+            self.api,
+            key_name='singlebucket',
+            capabilities=[
+                'listBuckets',
+            ],
+            bucket_id=self.bucket_id + 'x',
+        )
+
+        with self.assertRaises(RestrictedBucketMissing):
+            self.api.authorize_account('production', key.id_, key.application_key)
+
+
+class TestDownloadLocalDirectoryIssues(TestCaseWithBucket):
+    def setUp(self):
+        super().setUp()
+        self.file_version = self.bucket.upload_bytes(b'test-data', 'file1')
+        self.bytes_io = io.BytesIO()
+        self.progress_listener = StubProgressListener()
+
+    @pytest.mark.apiver(from_ver=2)
+    def test_download_file_to_unknown_directory(self):
+        with TempDir() as temp_dir:
+            target_file = pathlib.Path(temp_dir) / 'non-existing-directory' / 'some-file'
+            with self.assertRaises(DestinationDirectoryDoesntExist):
+                self.bucket.download_file_by_name(self.file_version.file_name).save_to(target_file)
+
+    @pytest.mark.apiver(from_ver=2)
+    def test_download_file_targeting_directory(self):
+        with TempDir() as temp_dir:
+            target_file = pathlib.Path(temp_dir) / 'existing-directory'
+            os.makedirs(target_file, exist_ok=True)
+
+            with self.assertRaises(DestinationIsADirectory):
+                self.bucket.download_file_by_name(self.file_version.file_name).save_to(target_file)
+
+    @pytest.mark.apiver(from_ver=2)
+    def test_download_file_targeting_directory_is_a_file(self):
+        with TempDir() as temp_dir:
+            some_file = pathlib.Path(temp_dir) / 'existing-file'
+            some_file.write_bytes(b'i-am-a-file')
+            target_file = some_file / 'save-target'
+
+            with self.assertRaises(DestinationParentIsNotADirectory):
+                self.bucket.download_file_by_name(self.file_version.file_name).save_to(target_file)
+
+    @pytest.mark.apiver(from_ver=2)
+    @pytest.mark.skipif(
+        platform.system() == 'Windows',
+        reason='os.chmod on Windows only affects read-only flag for files',
+    )
+    def test_download_file_no_access_to_directory(self):
+        chain = contextlib.ExitStack()
+        temp_dir = chain.enter_context(TempDir())
+
+        with chain:
+            target_directory = pathlib.Path(temp_dir) / 'impossible-directory'
+
+            os.makedirs(target_directory, exist_ok=True)
+            # Don't allow any operation on this directory. Used explicitly, as the documentation
+            # states that on some platforms passing mode to `makedirs` may be ignored.
+            os.chmod(target_directory, mode=0)
+
+            # Ensuring that whenever we exit this context, our directory will be removable.
+            chain.push(lambda *args, **kwargs: os.chmod(target_directory, mode=0o777))
+
+            target_file = target_directory / 'target_file'
+            with self.assertRaises(DestinationDirectoryDoesntAllowOperation):
+                self.bucket.download_file_by_name(self.file_version.file_name).save_to(target_file)
+
+
+# Listing where every other response returns no entries and pointer to the next file
+class EmptyListBucketSimulator(BucketSimulator):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Whenever we receive a list request, if it's the first time
+        # for this particular ``start_file_name``, we'll return
+        # an empty response pointing to the same file.
+        self.last_queried_file = None
+
+    def _should_return_empty(self, file_name: str) -> bool:
+        # Note that every other request is empty – the logic is as follows:
+        #   1st request – unknown start name – empty response
+        #   2nd request – known start name – normal response with a proper next filename
+        #   3rd request – unknown start name (as it's the next filename from the previous request) – empty response
+        #   4th request – known start name
+        # etc. This works especially well when using limiter of number of files fetched set to 1.
+        should_return_empty = self.last_queried_file != file_name
+        self.last_queried_file = file_name
+        return should_return_empty
+
+    def list_file_versions(
+        self,
+        account_auth_token,
+        start_file_name=None,
+        start_file_id=None,
+        max_file_count=None,  # noqa
+        prefix=None,
+    ):
+        if self._should_return_empty(start_file_name):
+            return dict(files=[], nextFileName=start_file_name, nextFileId=start_file_id)
+        return super().list_file_versions(
+            account_auth_token,
+            start_file_name,
+            start_file_id,
+            1,  # Forcing only a single file per response.
+            prefix,
+        )
+
+    def list_file_names(
+        self,
+        account_auth_token,
+        start_file_name=None,
+        max_file_count=None,  # noqa
+        prefix=None,
+    ):
+        if self._should_return_empty(start_file_name):
+            return dict(files=[], nextFileName=start_file_name)
+        return super().list_file_names(
+            account_auth_token,
+            start_file_name,
+            1,  # Forcing only a single file per response.
+            prefix,
+        )
+
+
+class EmptyListSimulator(RawSimulator):
+    BUCKET_SIMULATOR_CLASS = EmptyListBucketSimulator
+
+
+class TestEmptyListVersions(TestListVersions):
+    RAW_SIMULATOR_CLASS = EmptyListSimulator
+
+
+class TestEmptyLs(TestLs):
+    RAW_SIMULATOR_CLASS = EmptyListSimulator

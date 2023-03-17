@@ -5,7 +5,7 @@ on:
     tags: 'v*'  # push events to matching v*, i.e. v1.0, v20.15.10
 
 env:
-  PYTHON_DEFAULT_VERSION: "3.10"
+  PYTHON_DEFAULT_VERSION: "3.11"
 
 jobs:
   deploy:
@@ -14,11 +14,11 @@ jobs:
       B2_PYPI_PASSWORD: ${{ secrets.B2_PYPI_PASSWORD }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Set up Python ${{ env.PYTHON_DEFAULT_VERSION }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ env.PYTHON_DEFAULT_VERSION }}
       - name: Display Python version

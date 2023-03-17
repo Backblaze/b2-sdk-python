@@ -9,6 +9,9 @@
 ######################################################################
 
 from abc import ABCMeta, abstractmethod
+from typing import Optional
+
+from b2sdk.utils import Sha1HexDigest
 
 
 class OutboundTransferSource(metaclass=ABCMeta):
@@ -26,19 +29,30 @@ class OutboundTransferSource(metaclass=ABCMeta):
     """
 
     @abstractmethod
-    def get_content_length(self):
+    def get_content_length(self) -> int:
         """
-        Return the number of bytes of data in the file.
-        """
-
-    @abstractmethod
-    def is_upload(self):
-        """ Return if outbound source is an upload source.
-        :rtype bool:
+        Returns the number of bytes of data in the file.
         """
 
     @abstractmethod
-    def is_copy(self):
-        """ Return if outbound source is a copy source.
-        :rtype bool:
+    def get_content_sha1(self) -> Optional[Sha1HexDigest]:
+        """
+        Return a 40-character string containing the hex SHA1 checksum, which can be used as the `large_file_sha1` entry.
+
+        This method is only used if a large file is constructed from only a single source.  If that source's hash is known,
+        the result file's SHA1 checksum will be the same and can be copied.
+
+        If the source's sha1 is unknown and can't be calculated, `None` is returned.
+        """
+
+    @abstractmethod
+    def is_upload(self) -> bool:
+        """
+        Returns True if outbound source is an upload source.
+        """
+
+    @abstractmethod
+    def is_copy(self) -> bool:
+        """
+        Returns True if outbound source is a copy source.
         """

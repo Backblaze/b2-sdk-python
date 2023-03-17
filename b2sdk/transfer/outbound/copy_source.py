@@ -12,6 +12,7 @@ from typing import Optional
 
 from b2sdk.encryption.setting import EncryptionSetting
 from b2sdk.transfer.outbound.outbound_source import OutboundTransferSource
+from b2sdk.http_constants import LARGE_FILE_SHA1
 
 
 class CopySource(OutboundTransferSource):
@@ -80,3 +81,9 @@ class CopySource(OutboundTransferSource):
             source_file_info=self.source_file_info,
             source_content_type=self.source_content_type
         )
+
+    def get_content_sha1(self):
+        if self.offset or self.length:
+            # this is a copy of only a range of the source, can't copy the SHA1
+            return None
+        return self.source_file_info.get(LARGE_FILE_SHA1)

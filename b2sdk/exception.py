@@ -12,6 +12,7 @@ from abc import ABCMeta
 
 import logging
 import re
+import warnings
 from typing import Any, Dict, Optional
 
 from .utils import camelcase_to_underscore, trace_call
@@ -38,7 +39,7 @@ class B2Error(Exception, metaclass=ABCMeta):
         # If the exception is caused by a b2 server response,
         # the server MAY have included instructions to pause the thread before issuing any more requests
         self.retry_after_seconds = None
-        super(B2Error, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     @property
     def prefix(self):
@@ -81,7 +82,7 @@ class B2SimpleError(B2Error, metaclass=ABCMeta):
     """
 
     def __str__(self):
-        return '%s: %s' % (self.prefix, super(B2SimpleError, self).__str__())
+        return '%s: %s' % (self.prefix, super().__str__())
 
 
 class NotAllowedByAppKeyError(B2SimpleError, metaclass=ABCMeta):
@@ -133,7 +134,7 @@ class CapabilityNotAllowed(NotAllowedByAppKeyError):
 
 class ChecksumMismatch(TransientErrorMixin, B2Error):
     def __init__(self, checksum_type, expected, actual):
-        super(ChecksumMismatch, self).__init__()
+        super().__init__()
         self.checksum_type = checksum_type
         self.expected = expected
         self.actual = actual
@@ -167,7 +168,7 @@ class ClockSkew(B2HttpCallbackPostRequestException):
         """
         :param int clock_skew_seconds: The difference: local_clock - server_clock
         """
-        super(ClockSkew, self).__init__()
+        super().__init__()
         self.clock_skew_seconds = clock_skew_seconds
 
     def __str__(self):
@@ -209,7 +210,7 @@ class B2RequestTimeoutDuringUpload(B2RequestTimeout):
 
 class DestFileNewer(B2Error):
     def __init__(self, dest_path, source_path, dest_prefix, source_prefix):
-        super(DestFileNewer, self).__init__()
+        super().__init__()
         self.dest_path = dest_path
         self.source_path = source_path
         self.dest_prefix = dest_prefix
@@ -239,7 +240,7 @@ class ResourceNotFound(B2SimpleError):
 
 class FileOrBucketNotFound(ResourceNotFound):
     def __init__(self, bucket_name=None, file_id_or_name=None):
-        super(FileOrBucketNotFound, self).__init__()
+        super().__init__()
         self.bucket_name = bucket_name
         self.file_id_or_name = file_id_or_name
 
@@ -290,7 +291,7 @@ class SSECKeyIdMismatchInCopy(InvalidMetadataDirective):
 
 class InvalidRange(B2Error):
     def __init__(self, content_length, range_):
-        super(InvalidRange, self).__init__()
+        super().__init__()
         self.content_length = content_length
         self.range_ = range_
 
@@ -309,7 +310,7 @@ class InvalidUploadSource(B2SimpleError):
 
 class BadRequest(B2Error):
     def __init__(self, message, code):
-        super(BadRequest, self).__init__()
+        super().__init__()
         self.message = message
         self.code = code
 
@@ -325,7 +326,7 @@ class CopySourceTooBig(BadRequest):
 
 class Unauthorized(B2Error):
     def __init__(self, message, code):
-        super(Unauthorized, self).__init__()
+        super().__init__()
         self.message = message
         self.code = code
 
@@ -349,22 +350,29 @@ class InvalidAuthToken(Unauthorized):
     """
 
     def __init__(self, message, code):
-        super(InvalidAuthToken,
-              self).__init__('Invalid authorization token. Server said: ' + message, code)
+        super().__init__('Invalid authorization token. Server said: ' + message, code)
 
 
 class RestrictedBucket(B2Error):
     def __init__(self, bucket_name):
-        super(RestrictedBucket, self).__init__()
+        super().__init__()
         self.bucket_name = bucket_name
 
     def __str__(self):
         return 'Application key is restricted to bucket: %s' % self.bucket_name
 
 
+class RestrictedBucketMissing(RestrictedBucket):
+    def __init__(self):
+        super().__init__('')
+
+    def __str__(self):
+        return 'Application key is restricted to a bucket that doesn\'t exist'
+
+
 class MaxFileSizeExceeded(B2Error):
     def __init__(self, size, max_allowed_size):
-        super(MaxFileSizeExceeded, self).__init__()
+        super().__init__()
         self.size = size
         self.max_allowed_size = max_allowed_size
 
@@ -377,7 +385,7 @@ class MaxFileSizeExceeded(B2Error):
 
 class MaxRetriesExceeded(B2Error):
     def __init__(self, limit, exception_info_list):
-        super(MaxRetriesExceeded, self).__init__()
+        super().__init__()
         self.limit = limit
         self.exception_info_list = exception_info_list
 
@@ -404,7 +412,7 @@ class FileSha1Mismatch(B2SimpleError):
 
 class PartSha1Mismatch(B2Error):
     def __init__(self, key):
-        super(PartSha1Mismatch, self).__init__()
+        super().__init__()
         self.key = key
 
     def __str__(self):
@@ -434,7 +442,7 @@ class TransactionCapExceeded(CapExceeded):
 
 class TooManyRequests(B2Error):
     def __init__(self, retry_after_seconds=None):
-        super(TooManyRequests, self).__init__()
+        super().__init__()
         self.retry_after_seconds = retry_after_seconds
 
     def __str__(self):
@@ -446,7 +454,7 @@ class TooManyRequests(B2Error):
 
 class TruncatedOutput(TransientErrorMixin, B2Error):
     def __init__(self, bytes_read, file_size):
-        super(TruncatedOutput, self).__init__()
+        super().__init__()
         self.bytes_read = bytes_read
         self.file_size = file_size
 
@@ -481,7 +489,7 @@ class UnsatisfiableRange(B2Error):
 
 class UploadTokenUsedConcurrently(B2Error):
     def __init__(self, token):
-        super(UploadTokenUsedConcurrently, self).__init__()
+        super().__init__()
         self.token = token
 
     def __str__(self):
@@ -514,6 +522,57 @@ class WrongEncryptionModeForBucketDefault(InvalidUserInput):
 
 
 class CopyArgumentsMismatch(InvalidUserInput):
+    pass
+
+
+class DisablingFileLockNotSupported(B2Error):
+    def __str__(self):
+        return "Disabling file lock is not supported"
+
+
+class SourceReplicationConflict(B2Error):
+    def __str__(self):
+        return "Operation not supported for buckets with source replication"
+
+
+class EnablingFileLockOnRestrictedBucket(B2Error):
+    def __str__(self):
+        return "Turning on file lock for a restricted bucket is not allowed"
+
+
+class InvalidJsonResponse(B2SimpleError):
+    UP_TO_BYTES_COUNT = 200
+
+    def __init__(self, content: bytes):
+        self.content = content
+        message = '%s' % self.content[:self.UP_TO_BYTES_COUNT]
+        if len(content) > self.UP_TO_BYTES_COUNT:
+            message += '...'
+
+        super().__init__(message)
+
+
+class PotentialS3EndpointPassedAsRealm(InvalidJsonResponse):
+    pass
+
+
+class DestinationDirectoryError(B2Error):
+    pass
+
+
+class DestinationDirectoryDoesntExist(DestinationDirectoryError):
+    pass
+
+
+class DestinationParentIsNotADirectory(DestinationDirectoryError):
+    pass
+
+
+class DestinationIsADirectory(DestinationDirectoryError):
+    pass
+
+
+class DestinationDirectoryDoesntAllowOperation(DestinationDirectoryError):
     pass
 
 
@@ -555,21 +614,41 @@ def interpret_b2_error(
         return PartSha1Mismatch(post_params.get('fileId'))
     elif status == 400 and code == "bad_bucket_id":
         return BucketIdNotFound(post_params.get('bucketId'))
-    elif status == 400 and code in ('bad_request', 'auth_token_limit', 'source_too_large'):
-        # it's "bad_request" on 2022-03-29, but will become 'auth_token_limit' in 2022-04  # TODO: cleanup after 2022-05-01
+    elif status == 400 and code == "auth_token_limit":
         matcher = UPLOAD_TOKEN_USED_CONCURRENTLY_ERROR_MESSAGE_RE.match(message)
-        if matcher is not None:
-            token = matcher.group('token')
-            return UploadTokenUsedConcurrently(token)
-
-        # it's "bad_request" on 2022-03-29, but will become 'source_too_large' in 2022-04  # TODO: cleanup after 2022-05-01
+        assert matcher is not None, f"unexpected error message: {message}"
+        token = matcher.group('token')
+        return UploadTokenUsedConcurrently(token)
+    elif status == 400 and code == "source_too_large":
         matcher = COPY_SOURCE_TOO_BIG_ERROR_MESSAGE_RE.match(message)
-        if matcher is not None:
-            size = int(matcher.group('size'))
-            return CopySourceTooBig(size)
+        assert matcher is not None, f"unexpected error message: {message}"
+        size = int(matcher.group('size'))
+        return CopySourceTooBig(message, code, size)
+    elif status == 400 and code == 'file_lock_conflict':
+        return DisablingFileLockNotSupported()
+    elif status == 400 and code == 'source_replication_conflict':
+        return SourceReplicationConflict()
+    elif status == 400 and code == 'restricted_bucket_conflict':
+        return EnablingFileLockOnRestrictedBucket()
+    elif status == 400 and code == 'bad_request':
+
+        # it's "bad_request" on 2022-09-14, but will become 'disabling_file_lock_not_allowed'  # TODO: cleanup after 2022-09-22
+        if message == 'fileLockEnabled value of false is not allowed when bucket is already file lock enabled.':
+            return DisablingFileLockNotSupported()
+
+        # it's "bad_request" on 2022-09-14, but will become 'source_replication_conflict'  # TODO: cleanup after 2022-09-22
+        if message == 'Turning on file lock for an existing bucket having source replication configuration is not allowed.':
+            return SourceReplicationConflict()
+
+        # it's "bad_request" on 2022-09-14, but will become 'restricted_bucket_conflict'  # TODO: cleanup after 2022-09-22
+        if message == 'Turning on file lock for a restricted bucket is not allowed.':
+            return EnablingFileLockOnRestrictedBucket()
 
         return BadRequest(message, code)
     elif status == 400:
+        warnings.warn(
+            f"bad request exception with an unknown `code`. message={message}, code={code}"
+        )
         return BadRequest(message, code)
     elif status == 401 and code in ("bad_auth_token", "expired_auth_token"):
         return InvalidAuthToken(message, code)

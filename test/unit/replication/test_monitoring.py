@@ -21,7 +21,7 @@ RETENTION_GOVERNANCE = FileRetentionSetting(RetentionMode.GOVERNANCE, retain_unt
 DEFAULT_REPLICATION_RESULT = dict(
     source_replication_status=None,
     source_has_hide_marker=False,
-    source_has_sse_c_enabled=False,
+    source_encryption_mode=EncryptionMode.NONE,
     source_has_large_metadata=False,
     source_has_file_retention=False,
     source_has_legal_hold=False,
@@ -60,7 +60,8 @@ def test_iter_pairs(source_bucket, destination_bucket, test_file, monitor):
 def test_scan_source(source_bucket, test_file, monitor):
     # upload various types of files to source and get a report
     files = [
-        source_bucket.upload_local_file(test_file, 'folder/test-1.txt'),
+        source_bucket.upload_local_file(test_file, 'folder/test-1-1.txt'),
+        source_bucket.upload_local_file(test_file, 'folder/test-1-2.txt'),
         source_bucket.upload_local_file(test_file, 'folder/test-2.txt', encryption=SSE_B2_AES),
         source_bucket.upload_local_file(test_file,
                                         'not-in-folder.txt'),  # monitor should ignore this
@@ -95,14 +96,21 @@ def test_scan_source(source_bucket, test_file, monitor):
     assert report.counter_by_status[ReplicationScanResult(
         **{
             **DEFAULT_REPLICATION_RESULT,
-            'source_has_sse_c_enabled': True,
+            'source_encryption_mode': EncryptionMode.SSE_B2,
+        }
+    )] == 1
+
+    assert report.counter_by_status[ReplicationScanResult(
+        **{
+            **DEFAULT_REPLICATION_RESULT,
+            'source_encryption_mode': EncryptionMode.SSE_C,
         }
     )] == 2
 
     assert report.counter_by_status[ReplicationScanResult(
         **{
             **DEFAULT_REPLICATION_RESULT,
-            'source_has_sse_c_enabled': True,
+            'source_encryption_mode': EncryptionMode.SSE_C,
             'source_has_file_retention': True,
         }
     )] == 1
@@ -117,7 +125,7 @@ def test_scan_source(source_bucket, test_file, monitor):
     assert report.counter_by_status[ReplicationScanResult(
         **{
             **DEFAULT_REPLICATION_RESULT,
-            'source_has_sse_c_enabled': True,
+            'source_encryption_mode': EncryptionMode.SSE_C,
             'source_has_large_metadata': True,
         }
     )] == 1
@@ -187,7 +195,7 @@ def test_scan_source_and_destination(
             **DEFAULT_REPLICATION_RESULT,
             'source_replication_status': None,
             'source_has_hide_marker': None,
-            'source_has_sse_c_enabled': None,
+            'source_encryption_mode': None,
             'source_has_large_metadata': None,
             'source_has_file_retention': None,
             'source_has_legal_hold': None,

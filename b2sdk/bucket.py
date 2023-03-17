@@ -8,9 +8,12 @@
 #
 ######################################################################
 
+import fnmatch
 import logging
+import pathlib
 
-from typing import Optional, Tuple
+from contextlib import suppress
+from typing import Dict, Optional, Tuple
 
 from .encryption.setting import EncryptionSetting, EncryptionSettingFactory
 from .encryption.types import EncryptionMode
@@ -34,11 +37,13 @@ from .progress import AbstractProgressListener, DoNothingProgressListener
 from .replication.setting import ReplicationConfiguration, ReplicationConfigurationFactory
 from .transfer.emerge.executor import AUTO_CONTENT_TYPE
 from .transfer.emerge.write_intent import WriteIntent
+from .transfer.emerge.unbound_write_intent import UnboundWriteIntentGenerator
 from .transfer.inbound.downloaded_file import DownloadedFile
 from .transfer.outbound.copy_source import CopySource
-from .transfer.outbound.upload_source import UploadSourceBytes, UploadSourceLocalFile
+from .transfer.outbound.upload_source import UploadSourceBytes, UploadSourceLocalFile, UploadMode
 from .utils import (
     B2TraceMeta,
+    Sha1HexDigest,
     b2_url_encode,
     disable_trace,
     limit_trace_arguments,
@@ -150,6 +155,7 @@ class Bucket(metaclass=B2TraceMeta):
         default_server_side_encryption: Optional[EncryptionSetting] = None,
         default_retention: Optional[BucketRetentionSetting] = None,
         replication: Optional[ReplicationConfiguration] = None,
+        is_file_lock_enabled: Optional[bool] = None,
     ) -> 'Bucket':
         """
         Update various bucket parameters.
@@ -161,7 +167,8 @@ class Bucket(metaclass=B2TraceMeta):
         :param if_revision_is: revision number, update the info **only if** *revision* equals to *if_revision_is*
         :param default_server_side_encryption: default server side encryption settings (``None`` if unknown)
         :param default_retention: bucket default retention setting
-        :param replication: replication rules for the bucket;
+        :param replication: replication rules for the bucket
+        :param bool is_file_lock_enabled: specifies whether bucket should get File Lock-enabled
         """
         account_id = self.api.account_info.get_account_id()
         return self.api.BUCKET_FACTORY_CLASS.from_api_bucket_dict(
@@ -177,6 +184,7 @@ class Bucket(metaclass=B2TraceMeta):
                 default_server_side_encryption=default_server_side_encryption,
                 default_retention=default_retention,
                 replication=replication,
+                is_file_lock_enabled=is_file_lock_enabled,
             )
         )
 
@@ -320,7 +328,8 @@ class Bucket(metaclass=B2TraceMeta):
         folder_to_list: str = '',
         latest_only: bool = True,
         recursive: bool = False,
-        fetch_count: Optional[int] = 10000
+        fetch_count: Optional[int] = 10000,
+        with_wildcard: bool = False,
     ):
         """
         Pretend that folders exist and yields the information about the files in a folder.
@@ -336,20 +345,58 @@ class Bucket(metaclass=B2TraceMeta):
         :param folder_to_list: the name of the folder to list; must not start with "/".
                                Empty string means top-level folder
         :param latest_only: when ``False`` returns info about all versions of a file,
-                              when ``True``, just returns info about the most recent versions
+                            when ``True``, just returns info about the most recent versions
         :param recursive: if ``True``, list folders recursively
         :param fetch_count: how many entries to return or ``None`` to use the default. Acceptable values: 1 - 10000
+        :param with_wildcard: Accepts "*", "?", "[]" and "[!]" in folder_to_list, similarly to what shell does.
+                              As of 1.19.0 it can only be enabled when recursive is also enabled.
+                              Also, in this mode, folder_to_list is considered to be a filename or a pattern.
         :rtype: generator[tuple[b2sdk.v2.FileVersion, str]]
         :returns: generator of (file_version, folder_name) tuples
 
         .. note::
-            In case of `recursive=True`, folder_name is returned only for first file in the folder.
+            In case of `recursive=True`, folder_name is not returned.
         """
+        # Ensure that recursive is enabled when with_wildcard is enabled.
+        if with_wildcard and not recursive:
+            raise ValueError('with_wildcard requires recursive to be turned on as well')
+
         # Every file returned must have a name that starts with the
         # folder name and a "/".
         prefix = folder_to_list
-        if prefix != '' and not prefix.endswith('/'):
+        # In case of wildcards, we don't assume that this is folder that we're searching through.
+        # It could be an exact file, e.g. 'a/b.txt' that we're trying to locate.
+        if prefix != '' and not prefix.endswith('/') and not with_wildcard:
             prefix += '/'
+
+        # If we're running with wildcard-matching, we could get
+        # a different prefix from it.  We search for the first
+        # occurrence of the special characters and fetch
+        # parent path from that place.
+        # Examples:
+        #   'b/c/*.txt' –> 'b/c/'
+        #   '*.txt' –> ''
+        #   'a/*/result.[ct]sv' –> 'a/'
+        if with_wildcard:
+            for wildcard_character in '*?[':
+                try:
+                    starter_index = folder_to_list.index(wildcard_character)
+                except ValueError:
+                    continue
+
+                # +1 to include the starter character.  Using posix path to
+                # ensure consistent behaviour on Windows (e.g. case sensitivity).
+                path = pathlib.PurePosixPath(folder_to_list[:starter_index + 1])
+                parent_path = str(path.parent)
+                # Path considers dot to be the empty path.
+                # There's no shorter path than that.
+                if parent_path == '.':
+                    prefix = ''
+                    break
+                # We could receive paths in different stage, e.g. 'a/*/result.[ct]sv' has two
+                # possible parent paths: 'a/' and 'a/*/', with the first one being the correct one
+                if len(parent_path) < len(prefix):
+                    prefix = parent_path
 
         # Loop until all files in the named directory have been listed.
         # The starting point of the first list_file_names request is the
@@ -375,7 +422,13 @@ class Bucket(metaclass=B2TraceMeta):
                 if not file_version.file_name.startswith(prefix):
                     # We're past the files we care about
                     return
+                if with_wildcard and not fnmatch.fnmatchcase(
+                    file_version.file_name, folder_to_list
+                ):
+                    # File doesn't match our wildcard rules
+                    continue
                 after_prefix = file_version.file_name[len(prefix):]
+                # In case of wildcards, we don't care about folders at all, and it's recursive by default.
                 if '/' not in after_prefix or recursive:
                     # This is not a folder, so we'll print it out and
                     # continue on.
@@ -440,6 +493,7 @@ class Bucket(metaclass=B2TraceMeta):
         encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
+        large_file_sha1: Optional[Sha1HexDigest] = None,
     ):
         """
         Upload bytes in memory to a B2 file.
@@ -452,6 +506,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param b2sdk.v2.EncryptionSetting encryption: encryption settings (``None`` if unknown)
         :param b2sdk.v2.FileRetentionSetting file_retention: file retention setting
         :param bool legal_hold: legal hold setting
+        :param Sha1HexDigest,None large_file_sha1: SHA-1 hash of the result file or ``None`` if unknown
         :rtype: generator[b2sdk.v2.FileVersion]
         """
         upload_source = UploadSourceBytes(data_bytes)
@@ -464,6 +519,7 @@ class Bucket(metaclass=B2TraceMeta):
             encryption=encryption,
             file_retention=file_retention,
             legal_hold=legal_hold,
+            large_file_sha1=large_file_sha1,
         )
 
     def upload_local_file(
@@ -478,6 +534,7 @@ class Bucket(metaclass=B2TraceMeta):
         encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
+        upload_mode: UploadMode = UploadMode.FULL,
     ):
         """
         Upload a file on local disk to a B2 file.
@@ -496,11 +553,28 @@ class Bucket(metaclass=B2TraceMeta):
         :param b2sdk.v2.EncryptionSetting encryption: encryption settings (``None`` if unknown)
         :param b2sdk.v2.FileRetentionSetting file_retention: file retention setting
         :param bool legal_hold: legal hold setting
+        :param b2sdk.v2.UploadMode upload_mode: desired upload mode
         :rtype: b2sdk.v2.FileVersion
         """
         upload_source = UploadSourceLocalFile(local_path=local_file, content_sha1=sha1_sum)
-        return self.upload(
-            upload_source,
+        sources = [upload_source]
+        large_file_sha1 = sha1_sum
+
+        if upload_mode == UploadMode.INCREMENTAL:
+            with suppress(FileNotPresent):
+                existing_file_info = self.get_file_info_by_name(file_name)
+
+                sources = upload_source.get_incremental_sources(
+                    existing_file_info,
+                    self.api.session.account_info.get_absolute_minimum_part_size()
+                )
+
+                if len(sources) > 1 and not large_file_sha1:
+                    # the upload will be incremental, but the SHA1 sum is unknown, calculate it now
+                    large_file_sha1 = upload_source.get_content_sha1()
+
+        return self.concatenate(
+            sources,
             file_name,
             content_type=content_type,
             file_info=file_infos,
@@ -509,6 +583,124 @@ class Bucket(metaclass=B2TraceMeta):
             encryption=encryption,
             file_retention=file_retention,
             legal_hold=legal_hold,
+            large_file_sha1=large_file_sha1,
+        )
+
+    def upload_unbound_stream(
+        self,
+        read_only_object,
+        file_name: str,
+        content_type: str = None,
+        file_info: Optional[Dict[str, str]] = None,
+        progress_listener: Optional[AbstractProgressListener] = None,
+        recommended_upload_part_size: Optional[int] = None,
+        encryption: Optional[EncryptionSetting] = None,
+        file_retention: Optional[FileRetentionSetting] = None,
+        legal_hold: Optional[LegalHold] = None,
+        min_part_size: Optional[int] = None,
+        max_part_size: Optional[int] = None,
+        large_file_sha1: Optional[Sha1HexDigest] = None,
+        buffers_count: int = 2,
+        buffer_size: Optional[int] = None,
+        read_size: int = 8192,
+        unused_buffer_timeout_seconds: float = 3600.0,
+    ):
+        """
+        Upload an unbound file-like read-only object to a B2 file.
+
+        It is assumed that this object is streamed like stdin or socket, and the size is not known up front.
+        It is up to caller to ensure that this object is open and available through the whole streaming process.
+
+        If stdin is to be passed, consider opening it in binary mode, if possible on the platform:
+
+        .. code-block:: python
+
+            with open(sys.stdin.fileno(), mode='rb', buffering=min_part_size, closefd=False) as source:
+                bucket.upload_unbound_stream(source, 'target-file')
+
+        For platforms without file descriptors, one can use the following:
+
+        .. code-block:: python
+
+            bucket.upload_unbound_stream(sys.stdin.buffer, 'target-file')
+
+        but note that buffering in this case depends on the interpreter mode.
+
+        ``min_part_size``, ``recommended_upload_part_size`` and ``max_part_size`` should
+        all be greater than ``account_info.get_absolute_minimum_part_size()``.
+
+        ``buffers_count`` describes a desired number of buffers that are to be used. Minimal amount is two, as we need
+        to determine the method of uploading this stream (if there's only a single buffer we send it as a normal file,
+        if there are at least two – as a large file).
+        Number of buffers determines the amount of memory used by the streaming process and, in turns, describe
+        the amount of data that can be pulled from ``read_only_object`` while also uploading it. Providing multiple
+        buffers also allows for higher parallelization. Default two buffers allow for the process to fill one buffer
+        with data while the other one is being sent to the B2. While only one buffer can be filled with data at once,
+        all others are used to send the data in parallel (limited only by the number of parallel threads).
+        Buffer size can be controlled by ``buffer_size`` parameter. If left unset, it will default to
+        a value of ``recommended_upload_part_size``, whatever it resolves to be.
+        Note that in the current implementation buffers are (almost) directly sent to B2, thus whatever is picked
+        as the ``buffer_size`` will also become the size of the part when uploading a large file in this manner.
+        In rare cases, namely when the whole buffer was sent, but there was an error during sending of last bytes
+        and a retry was issued, another buffer (above the aforementioned limit) will be allocated.
+
+        :param read_only_object: any object containing a ``read`` method accepting size of the read
+        :param file_name: a file name of the new B2 file
+        :param content_type: the MIME type, or ``None`` to accept the default based on file extension of the B2 file name
+        :param file_info: a file info to store with the file or ``None`` to not store anything
+        :param progress_listener: a progress listener object to use, or ``None`` to not report progress
+        :param encryption: encryption settings (``None`` if unknown)
+        :param file_retention: file retention setting
+        :param legal_hold: legal hold setting
+        :param min_part_size: a minimum size of a part
+        :param recommended_upload_part_size: the recommended part size to use for uploading local sources
+                        or ``None`` to determine automatically
+        :param max_part_size: a maximum size of a part
+        :param large_file_sha1: SHA-1 hash of the result file or ``None`` if unknown
+        :param buffers_count: desired number of buffers allocated, cannot be smaller than 2
+        :param buffer_size: size of a single buffer that we pull data to or upload data to B2. If ``None``,
+                        value of ``recommended_upload_part_size`` is used. If that also is ``None``,
+                        it will be determined automatically as "recommended upload size".
+        :param read_size: size of a single read operation performed on the ``read_only_object``
+        :param unused_buffer_timeout_seconds: amount of time that a buffer can be idle before returning error
+        :rtype: b2sdk.v2.FileVersion
+        """
+        if buffers_count <= 1:
+            raise ValueError('buffers_count has to be at least 2')
+        if read_size <= 0:
+            raise ValueError('read_size has to be a positive integer')
+        if unused_buffer_timeout_seconds <= 0.0:
+            raise ValueError('unused_buffer_timeout_seconds has to be a positive float')
+
+        buffer_size = buffer_size or recommended_upload_part_size
+        if buffer_size is None:
+            planner = self.api.services.emerger.get_emerge_planner()
+            buffer_size = planner.recommended_upload_part_size
+
+        return self._create_file(
+            self.api.services.emerger.emerge_unbound,
+            UnboundWriteIntentGenerator(
+                read_only_object,
+                buffer_size,
+                read_size=read_size,
+                queue_size=buffers_count,
+                queue_timeout_seconds=unused_buffer_timeout_seconds,
+            ).iterator(),
+            file_name,
+            content_type=content_type,
+            file_info=file_info,
+            progress_listener=progress_listener,
+            encryption=encryption,
+            file_retention=file_retention,
+            legal_hold=legal_hold,
+            min_part_size=min_part_size,
+            recommended_upload_part_size=recommended_upload_part_size,
+            max_part_size=max_part_size,
+            # This is a parameter for EmergeExecutor.execute_emerge_plan telling
+            # how many buffers in parallel can be handled at once. We ensure that one buffer
+            # is always downloading data from the stream while others are being uploaded.
+            max_queue_size=buffers_count - 1,
+            large_file_sha1=large_file_sha1,
         )
 
     def upload(
@@ -522,6 +714,7 @@ class Bucket(metaclass=B2TraceMeta):
         encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
+        large_file_sha1: Optional[Sha1HexDigest] = None,
     ):
         """
         Upload a file to B2, retrying as needed.
@@ -543,6 +736,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param b2sdk.v2.EncryptionSetting encryption: encryption settings (``None`` if unknown)
         :param b2sdk.v2.FileRetentionSetting file_retention: file retention setting
         :param bool legal_hold: legal hold setting
+        :param Sha1HexDigest,None large_file_sha1: SHA-1 hash of the result file or ``None`` if unknown
         :rtype: b2sdk.v2.FileVersion
         """
         return self.create_file(
@@ -556,6 +750,7 @@ class Bucket(metaclass=B2TraceMeta):
             encryption=encryption,
             file_retention=file_retention,
             legal_hold=legal_hold,
+            large_file_sha1=large_file_sha1,
         )
 
     def create_file(
@@ -572,6 +767,7 @@ class Bucket(metaclass=B2TraceMeta):
         legal_hold: Optional[LegalHold] = None,
         min_part_size=None,
         max_part_size=None,
+        large_file_sha1=None,
     ):
         """
         Creates a new file in this bucket using an iterable (list, tuple etc) of remote or local sources.
@@ -580,7 +776,7 @@ class Bucket(metaclass=B2TraceMeta):
         For more information and usage examples please see :ref:`Advanced usage patterns <AdvancedUsagePatterns>`.
 
         :param list[b2sdk.v2.WriteIntent] write_intents: list of write intents (remote or local sources)
-        :param str new_file_name: file name of the new file
+        :param str file_name: file name of the new file
         :param str,None content_type: content_type for the new file, if ``None`` content_type would be
                         automatically determined or it may be copied if it resolves
                         as single part remote source copy
@@ -598,6 +794,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param bool legal_hold: legal hold setting
         :param int min_part_size: lower limit of part size for the transfer planner, in bytes
         :param int max_part_size: upper limit of part size for the transfer planner, in bytes
+        :param Sha1HexDigest,None large_file_sha1: SHA-1 hash of the result file or ``None`` if unknown
         """
         return self._create_file(
             self.api.services.emerger.emerge,
@@ -613,6 +810,7 @@ class Bucket(metaclass=B2TraceMeta):
             legal_hold=legal_hold,
             min_part_size=min_part_size,
             max_part_size=max_part_size,
+            large_file_sha1=large_file_sha1,
         )
 
     def create_file_stream(
@@ -629,6 +827,7 @@ class Bucket(metaclass=B2TraceMeta):
         legal_hold: Optional[LegalHold] = None,
         min_part_size=None,
         max_part_size=None,
+        large_file_sha1=None,
     ):
         """
         Creates a new file in this bucket using a stream of multiple remote or local sources.
@@ -638,7 +837,7 @@ class Bucket(metaclass=B2TraceMeta):
 
         :param iterator[b2sdk.v2.WriteIntent] write_intents_iterator: iterator of write intents which
                         are sorted ascending by ``destination_offset``
-        :param str new_file_name: file name of the new file
+        :param str file_name: file name of the new file
         :param str,None content_type: content_type for the new file, if ``None`` content_type would be
                         automatically determined or it may be copied if it resolves
                         as single part remote source copy
@@ -657,6 +856,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param bool legal_hold: legal hold setting
         :param int min_part_size: lower limit of part size for the transfer planner, in bytes
         :param int max_part_size: upper limit of part size for the transfer planner, in bytes
+        :param Sha1HexDigest,None large_file_sha1: SHA-1 hash of the result file or ``None`` if unknown
         """
         return self._create_file(
             self.api.services.emerger.emerge_stream,
@@ -672,6 +872,7 @@ class Bucket(metaclass=B2TraceMeta):
             legal_hold=legal_hold,
             min_part_size=min_part_size,
             max_part_size=max_part_size,
+            large_file_sha1=large_file_sha1,
         )
 
     def _create_file(
@@ -689,6 +890,8 @@ class Bucket(metaclass=B2TraceMeta):
         legal_hold: Optional[LegalHold] = None,
         min_part_size=None,
         max_part_size=None,
+        large_file_sha1=None,
+        **kwargs
     ):
         validate_b2_file_name(file_name)
         progress_listener = progress_listener or DoNothingProgressListener()
@@ -707,6 +910,8 @@ class Bucket(metaclass=B2TraceMeta):
             legal_hold=legal_hold,
             min_part_size=min_part_size,
             max_part_size=max_part_size,
+            large_file_sha1=large_file_sha1,
+            **kwargs
         )
 
     def concatenate(
@@ -723,12 +928,13 @@ class Bucket(metaclass=B2TraceMeta):
         legal_hold: Optional[LegalHold] = None,
         min_part_size=None,
         max_part_size=None,
+        large_file_sha1=None,
     ):
         """
         Creates a new file in this bucket by concatenating multiple remote or local sources.
 
         :param list[b2sdk.v2.OutboundTransferSource] outbound_sources: list of outbound sources (remote or local)
-        :param str new_file_name: file name of the new file
+        :param str file_name: file name of the new file
         :param str,None content_type: content_type for the new file, if ``None`` content_type would be
                         automatically determined from file name or it may be copied if it resolves
                         as single part remote source copy
@@ -746,9 +952,10 @@ class Bucket(metaclass=B2TraceMeta):
         :param bool legal_hold: legal hold setting
         :param int min_part_size: lower limit of part size for the transfer planner, in bytes
         :param int max_part_size: upper limit of part size for the transfer planner, in bytes
+        :param Sha1HexDigest,None large_file_sha1: SHA-1 hash of the result file or ``None`` if unknown
         """
         return self.create_file(
-            WriteIntent.wrap_sources_iterator(outbound_sources),
+            list(WriteIntent.wrap_sources_iterator(outbound_sources)),
             file_name,
             content_type=content_type,
             file_info=file_info,
@@ -760,6 +967,7 @@ class Bucket(metaclass=B2TraceMeta):
             legal_hold=legal_hold,
             min_part_size=min_part_size,
             max_part_size=max_part_size,
+            large_file_sha1=large_file_sha1,
         )
 
     def concatenate_stream(
@@ -774,12 +982,13 @@ class Bucket(metaclass=B2TraceMeta):
         encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
+        large_file_sha1: Optional[Sha1HexDigest] = None,
     ):
         """
         Creates a new file in this bucket by concatenating stream of multiple remote or local sources.
 
         :param iterator[b2sdk.v2.OutboundTransferSource] outbound_sources_iterator: iterator of outbound sources
-        :param str new_file_name: file name of the new file
+        :param str file_name: file name of the new file
         :param str,None content_type: content_type for the new file, if ``None`` content_type would be
                         automatically determined or it may be copied if it resolves
                         as single part remote source copy
@@ -796,6 +1005,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param b2sdk.v2.EncryptionSetting encryption: encryption setting (``None`` if unknown)
         :param b2sdk.v2.FileRetentionSetting file_retention: file retention setting
         :param bool legal_hold: legal hold setting
+        :param Sha1HexDigest,None large_file_sha1: SHA-1 hash of the result file or ``None`` if unknown
         """
         return self.create_file_stream(
             WriteIntent.wrap_sources_iterator(outbound_sources_iterator),
@@ -808,6 +1018,7 @@ class Bucket(metaclass=B2TraceMeta):
             encryption=encryption,
             file_retention=file_retention,
             legal_hold=legal_hold,
+            large_file_sha1=large_file_sha1,
         )
 
     def get_download_url(self, filename):

@@ -209,6 +209,7 @@ class Bucket(v2.Bucket):
         if_revision_is: Optional[int] = None,
         default_server_side_encryption: Optional[v2.EncryptionSetting] = None,
         default_retention: Optional[v2.BucketRetentionSetting] = None,
+        is_file_lock_enabled: Optional[bool] = None,
         **kwargs
     ):
         """
@@ -221,6 +222,7 @@ class Bucket(v2.Bucket):
         :param if_revision_is: revision number, update the info **only if** *revision* equals to *if_revision_is*
         :param default_server_side_encryption: default server side encryption settings (``None`` if unknown)
         :param default_retention: bucket default retention setting
+        :param bool is_file_lock_enabled: specifies whether bucket should get File Lock-enabled
         """
         # allow common tests to execute without hitting attributeerror
 
@@ -240,6 +242,7 @@ class Bucket(v2.Bucket):
             if_revision_is=if_revision_is,
             default_server_side_encryption=default_server_side_encryption,
             default_retention=default_retention,
+            is_file_lock_enabled=is_file_lock_enabled,
         )
 
     def ls(
@@ -247,7 +250,8 @@ class Bucket(v2.Bucket):
         folder_to_list: str = '',
         show_versions: bool = False,
         recursive: bool = False,
-        fetch_count: Optional[int] = 10000
+        fetch_count: Optional[int] = 10000,
+        **kwargs
     ):
         """
         Pretend that folders exist and yields the information about the files in a folder.
@@ -270,9 +274,9 @@ class Bucket(v2.Bucket):
         :returns: generator of (file_version, folder_name) tuples
 
         .. note::
-            In case of `recursive=True`, folder_name is returned only for first file in the folder.
+            In case of `recursive=True`, folder_name is not returned.
         """
-        return super().ls(folder_to_list, not show_versions, recursive, fetch_count)
+        return super().ls(folder_to_list, not show_versions, recursive, fetch_count, **kwargs)
 
 
 def download_file_and_return_info_dict(

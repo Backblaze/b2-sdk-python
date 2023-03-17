@@ -218,6 +218,9 @@ class EncryptionSetting:
     def __repr__(self):
         return '<%s(%s, %s, %s)>' % (self.__class__.__name__, self.mode, self.algorithm, self.key)
 
+    def is_unknown(self):
+        return self.mode == EncryptionMode.NONE
+
 
 class EncryptionSettingFactory:
     # 2021-03-17: for the bucket the response of the server is:

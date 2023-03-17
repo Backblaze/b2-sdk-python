@@ -59,13 +59,13 @@ def install_myself(session, extras=None):
     if extras:
         arg += '[%s]' % ','.join(extras)
 
-    session.install('-e', arg)
+    session.run('pip', 'install', '-e', arg)
 
 
 @nox.session(name='format', python=PYTHON_DEFAULT_VERSION)
 def format_(session):
     """Format the code."""
-    session.install(*REQUIREMENTS_FORMAT)
+    session.run('pip', 'install', *REQUIREMENTS_FORMAT)
     # TODO: incremental mode for yapf
     session.run('yapf', '--in-place', '--parallel', '--recursive', *PY_PATHS)
     # TODO: uncomment if we want to use isort and docformatter
@@ -84,7 +84,7 @@ def format_(session):
 def lint(session):
     """Run linters."""
     install_myself(session)
-    session.install(*REQUIREMENTS_LINT)
+    session.run('pip', 'install', *REQUIREMENTS_LINT)
     session.run('yapf', '--diff', '--parallel', '--recursive', *PY_PATHS)
     # TODO: uncomment if we want to use isort and docformatter
     # session.run('isort', '--check', *PY_PATHS)
@@ -115,7 +115,7 @@ def lint(session):
 def unit(session):
     """Run unit tests."""
     install_myself(session)
-    session.install(*REQUIREMENTS_TEST)
+    session.run('pip', 'install', *REQUIREMENTS_TEST)
     args = ['--doctest-modules', '-p', 'pyfakefs', '-n', 'auto']
     if not SKIP_COVERAGE:
         args += ['--cov=b2sdk', '--cov-branch', '--cov-report=xml']
@@ -135,7 +135,7 @@ def unit(session):
 def integration(session):
     """Run integration tests."""
     install_myself(session)
-    session.install(*REQUIREMENTS_TEST)
+    session.run('pip', 'install', *REQUIREMENTS_TEST)
     session.run('pytest', '-s', *session.posargs, 'test/integration')
 
 
@@ -143,7 +143,7 @@ def integration(session):
 def cleanup_old_buckets(session):
     """Remove buckets from previous test runs."""
     install_myself(session)
-    session.install(*REQUIREMENTS_TEST)
+    session.run('pip', 'install', *REQUIREMENTS_TEST)
     session.run('python', '-m', 'test.integration.cleanup_buckets')
 
 
@@ -161,7 +161,7 @@ def test(session):
 @nox.session
 def cover(session):
     """Perform coverage analysis."""
-    session.install('coverage')
+    session.run('pip', 'install', 'coverage')
     session.run('coverage', 'report', '--fail-under=75', '--show-missing', '--skip-covered')
     session.run('coverage', 'erase')
 
@@ -170,7 +170,7 @@ def cover(session):
 def build(session):
     """Build the distribution."""
     # TODO: consider using wheel as well
-    session.install(*REQUIREMENTS_BUILD)
+    session.run('pip', 'install', *REQUIREMENTS_BUILD)
     session.run('python', 'setup.py', 'check', '--metadata', '--strict')
     session.run('rm', '-rf', 'build', 'dist', 'b2sdk.egg-info', external=True)
     session.run('python', 'setup.py', 'sdist', *session.posargs)

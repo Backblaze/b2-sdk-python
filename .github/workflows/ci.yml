@@ -7,7 +7,7 @@ on:
     branches: [master]
 
 env:
-  PYTHON_DEFAULT_VERSION: "3.10"
+  PYTHON_DEFAULT_VERSION: "3.11"
   SKIP_COVERAGE_PYTHON_VERSION_PREFIX: "pypy"
 
 jobs:
@@ -17,13 +17,13 @@ jobs:
       B2_TEST_APPLICATION_KEY_ID: ${{ secrets.B2_TEST_APPLICATION_KEY_ID }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         if: ${{ env.B2_TEST_APPLICATION_KEY != '' && env.B2_TEST_APPLICATION_KEY_ID != '' }}  # TODO: skip this whole job instead
         with:
           fetch-depth: 0
       - name: Set up Python ${{ env.PYTHON_DEFAULT_VERSION }}
         if: ${{ env.B2_TEST_APPLICATION_KEY != '' && env.B2_TEST_APPLICATION_KEY_ID != '' }}  # TODO: skip this whole job instead
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ env.PYTHON_DEFAULT_VERSION }}
           cache: "pip"
@@ -33,4 +33,3 @@ jobs:
       - name: Find and remove old buckets
         if: ${{ env.B2_TEST_APPLICATION_KEY != '' && env.B2_TEST_APPLICATION_KEY_ID != '' }}  # TODO: skip this whole job instead
         run: nox -vs cleanup_old_buckets
-

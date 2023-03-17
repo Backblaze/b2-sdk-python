@@ -16,7 +16,7 @@ import re
 import threading
 import time
 
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from typing import Optional
 
 from b2sdk.http_constants import FILE_INFO_HEADER_PREFIX, HEX_DIGITS_AT_END
@@ -33,6 +33,7 @@ from .exception import (
     ChecksumMismatch,
     Conflict,
     CopySourceTooBig,
+    DisablingFileLockNotSupported,
     DuplicateBucketName,
     FileNotPresent,
     FileSha1Mismatch,
@@ -42,6 +43,7 @@ from .exception import (
     NonExistentBucket,
     PartSha1Mismatch,
     SSECKeyError,
+    SourceReplicationConflict,
     Unauthorized,
     UnsatisfiableRange,
 )
@@ -89,6 +91,7 @@ class KeySimulator:
         self.capabilities = capabilities
         self.expiration_timestamp_or_none = expiration_timestamp_or_none
         self.bucket_id_or_none = bucket_id_or_none
+        self.bucket_name_or_none = bucket_name_or_none
         self.name_prefix_or_none = name_prefix_or_none
 
     def as_key(self):
@@ -119,6 +122,7 @@ class KeySimulator:
         """
         return dict(
             bucketId=self.bucket_id_or_none,
+            bucketName=self.bucket_name_or_none,
             capabilities=self.capabilities,
             namePrefix=self.name_prefix_or_none,
         )
@@ -667,7 +671,8 @@ class BucketSimulator:
         return self.file_id_to_file[file_id].as_upload_result(account_auth_token)
 
     def get_file_info_by_name(self, account_auth_token, file_name):
-        for ((name, id), file) in self.file_name_and_id_to_file.items():
+        # Sorting files by name and ID, so lower ID (newer upload) is returned first.
+        for ((name, id), file) in sorted(self.file_name_and_id_to_file.items()):
             if file_name == name:
                 return file.as_download_headers(account_auth_token_or_none=account_auth_token)
         raise FileNotPresent(file_id_or_name=file_name, bucket_name=self.bucket_name)
@@ -946,9 +951,22 @@ class BucketSimulator:
         default_server_side_encryption: Optional[EncryptionSetting] = None,
         default_retention: Optional[BucketRetentionSetting] = None,
         replication: Optional[ReplicationConfiguration] = None,
+        is_file_lock_enabled: Optional[bool] = None,
     ):
         if if_revision_is is not None and self.revision != if_revision_is:
             raise Conflict()
+
+        if is_file_lock_enabled is not None:
+            if self.is_file_lock_enabled and not is_file_lock_enabled:
+                raise DisablingFileLockNotSupported()
+
+            if (
+                not self.is_file_lock_enabled and is_file_lock_enabled and self.replication and
+                self.replication.is_source
+            ):
+                raise SourceReplicationConflict()
+
+            self.is_file_lock_enabled = is_file_lock_enabled
 
         if bucket_type is not None:
             self.bucket_type = bucket_type
@@ -962,8 +980,10 @@ class BucketSimulator:
             self.default_server_side_encryption = default_server_side_encryption
         if default_retention:
             self.default_retention = default_retention
+        if replication is not None:
+            self.replication = replication
+
         self.revision += 1
-        self.replication = replication
         return self.bucket_dict(self.api.current_token)
 
     def upload_file(
@@ -1288,10 +1308,13 @@ class RawSimulator(AbstractRawApi):
         self.app_key_counter += 1
         application_key_id = 'appKeyId%d' % (index,)
         app_key = 'appKey%d' % (index,)
-        if bucket_id is None:
-            bucket_name_or_none = None
-        else:
-            bucket_name_or_none = self._get_bucket_by_id(bucket_id).bucket_name
+        bucket_name_or_none = None
+        if bucket_id is not None:
+            # It is possible for bucketId to be filled and bucketName to be empty.
+            # It can happen when the bucket was deleted.
+            with suppress(NonExistentBucket):
+                bucket_name_or_none = self._get_bucket_by_id(bucket_id).bucket_name
+
         key_sim = KeySimulator(
             account_id=account_id,
             name=key_name,
@@ -1400,6 +1423,9 @@ class RawSimulator(AbstractRawApi):
                 'application key does not exist: %s' % (application_key_id,),
                 'bad_request',
             )
+        self.all_application_keys = [
+            key for key in self.all_application_keys if key.application_key_id != application_key_id
+        ]
         return key_sim.as_key()
 
     def finish_large_file(self, api_url, account_auth_token, file_id, part_sha1_array):
@@ -1713,8 +1739,9 @@ class RawSimulator(AbstractRawApi):
         default_server_side_encryption: Optional[EncryptionSetting] = None,
         default_retention: Optional[BucketRetentionSetting] = None,
         replication: Optional[ReplicationConfiguration] = None,
+        is_file_lock_enabled: Optional[bool] = None,
     ):
-        assert bucket_type or bucket_info or cors_rules or lifecycle_rules or default_server_side_encryption or replication
+        assert bucket_type or bucket_info or cors_rules or lifecycle_rules or default_server_side_encryption or replication or is_file_lock_enabled is not None
         bucket = self._get_bucket_by_id(bucket_id)
         self._assert_account_auth(api_url, account_auth_token, bucket.account_id, 'writeBuckets')
         return bucket._update_bucket(
@@ -1726,6 +1753,7 @@ class RawSimulator(AbstractRawApi):
             default_server_side_encryption=default_server_side_encryption,
             default_retention=default_retention,
             replication=replication,
+            is_file_lock_enabled=is_file_lock_enabled,
         )
 
     @classmethod

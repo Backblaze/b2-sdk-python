@@ -26,23 +26,29 @@ from b2sdk.exception import BadFileInfo
 from b2sdk.exception import BadJson
 from b2sdk.exception import BadRequest
 from b2sdk.exception import BadUploadUrl
-from b2sdk.exception import BucketIdNotFound
 from b2sdk.exception import BrokenPipe
+from b2sdk.exception import BucketIdNotFound
 from b2sdk.exception import BucketNotAllowed
-from b2sdk.exception import CapabilityNotAllowed
 from b2sdk.exception import CapExceeded
+from b2sdk.exception import CapabilityNotAllowed
 from b2sdk.exception import ChecksumMismatch
 from b2sdk.exception import ClockSkew
 from b2sdk.exception import Conflict
 from b2sdk.exception import ConnectionReset
 from b2sdk.exception import CopyArgumentsMismatch
 from b2sdk.exception import DestFileNewer
+from b2sdk.exception import DestinationDirectoryDoesntAllowOperation
+from b2sdk.exception import DestinationDirectoryDoesntExist
+from b2sdk.exception import DestinationIsADirectory
+from b2sdk.exception import DestinationParentIsNotADirectory
+from b2sdk.exception import DisablingFileLockNotSupported
 from b2sdk.exception import DuplicateBucketName
 from b2sdk.exception import FileAlreadyHidden
 from b2sdk.exception import FileNameNotAllowed
 from b2sdk.exception import FileNotPresent
 from b2sdk.exception import FileSha1Mismatch
 from b2sdk.exception import InvalidAuthToken
+from b2sdk.exception import InvalidJsonResponse
 from b2sdk.exception import InvalidMetadataDirective
 from b2sdk.exception import InvalidRange
 from b2sdk.exception import InvalidUploadSource
@@ -52,13 +58,18 @@ from b2sdk.exception import MissingPart
 from b2sdk.exception import NonExistentBucket
 from b2sdk.exception import NotAllowedByAppKeyError
 from b2sdk.exception import PartSha1Mismatch
+from b2sdk.exception import PotentialS3EndpointPassedAsRealm
 from b2sdk.exception import RestrictedBucket
+from b2sdk.exception import RestrictedBucketMissing
 from b2sdk.exception import RetentionWriteError
+from b2sdk.exception import SSECKeyError
+from b2sdk.exception import SSECKeyIdMismatchInCopy
 from b2sdk.exception import ServiceError
+from b2sdk.exception import SourceReplicationConflict
 from b2sdk.exception import StorageCapExceeded
 from b2sdk.exception import TooManyRequests
-from b2sdk.exception import TransientErrorMixin
 from b2sdk.exception import TransactionCapExceeded
+from b2sdk.exception import TransientErrorMixin
 from b2sdk.exception import TruncatedOutput
 from b2sdk.exception import Unauthorized
 from b2sdk.exception import UnexpectedCloudBehaviour
@@ -67,8 +78,6 @@ from b2sdk.exception import UnknownHost
 from b2sdk.exception import UnrecognizedBucketType
 from b2sdk.exception import UnsatisfiableRange
 from b2sdk.exception import UnusableFileName
-from b2sdk.exception import SSECKeyIdMismatchInCopy
-from b2sdk.exception import SSECKeyError
 from b2sdk.exception import WrongEncryptionModeForBucketDefault
 from b2sdk.exception import interpret_b2_error
 from b2sdk.sync.exception import IncompleteSync
@@ -100,8 +109,8 @@ __all__ = (
     'BrokenPipe',
     'BucketIdNotFound',
     'BucketNotAllowed',
-    'CapabilityNotAllowed',
     'CapExceeded',
+    'CapabilityNotAllowed',
     'ChecksumMismatch',
     'ClockSkew',
     'Conflict',
@@ -109,6 +118,11 @@ __all__ = (
     'CopyArgumentsMismatch',
     'CorruptAccountInfo',
     'DestFileNewer',
+    'DestinationDirectoryDoesntAllowOperation',
+    'DestinationDirectoryDoesntExist',
+    'DestinationIsADirectory',
+    'DestinationParentIsNotADirectory',
+    'DisablingFileLockNotSupported',
     'DuplicateBucketName',
     'EmptyDirectory',
     'EnvironmentEncodingError',
@@ -119,6 +133,7 @@ __all__ = (
     'IncompleteSync',
     'InvalidArgument',
     'InvalidAuthToken',
+    'InvalidJsonResponse',
     'InvalidMetadataDirective',
     'InvalidRange',
     'InvalidUploadSource',
@@ -130,22 +145,25 @@ __all__ = (
     'NotADirectory',
     'NotAllowedByAppKeyError',
     'PartSha1Mismatch',
+    'PotentialS3EndpointPassedAsRealm',
     'RestrictedBucket',
+    'RestrictedBucketMissing',
     'RetentionWriteError',
     'ServiceError',
+    'SourceReplicationConflict',
     'StorageCapExceeded',
     'TooManyRequests',
     'TransactionCapExceeded',
     'TransientErrorMixin',
     'TruncatedOutput',
+    'UnableToCreateDirectory',
     'Unauthorized',
     'UnexpectedCloudBehaviour',
     'UnknownError',
     'UnknownHost',
     'UnrecognizedBucketType',
-    'UnableToCreateDirectory',
-    'UnsupportedFilename',
     'UnsatisfiableRange',
+    'UnsupportedFilename',
     'UnusableFileName',
     'interpret_b2_error',
     'check_invalid_argument',

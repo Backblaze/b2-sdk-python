@@ -9,15 +9,17 @@
 ######################################################################
 
 from typing import Optional, Tuple, List, Generator
+from contextlib import suppress
 
 from .account_info.abstract import AbstractAccountInfo
+from .account_info.exception import MissingAccountData
 from .api_config import B2HttpApiConfig, DEFAULT_HTTP_API_CONFIG
 from .application_key import ApplicationKey, BaseApplicationKey, FullApplicationKey
 from .cache import AbstractCache
 from .bucket import Bucket, BucketFactory
 from .encryption.setting import EncryptionSetting
 from .replication.setting import ReplicationConfiguration
-from .exception import BucketIdNotFound, NonExistentBucket, RestrictedBucket
+from .exception import BucketIdNotFound, NonExistentBucket, RestrictedBucket, RestrictedBucketMissing
 from .file_lock import FileRetentionSetting, LegalHold
 from .file_version import DownloadVersionFactory, FileIdAndName, FileVersion, FileVersionFactory
 from .large_file.services import LargeFileServices
@@ -63,6 +65,7 @@ class Services:
         max_download_workers: Optional[int] = None,
         save_to_buffer_size: Optional[int] = None,
         check_download_hash: bool = True,
+        max_download_streams_per_file: Optional[int] = None,
     ):
         """
         Initialize Services object using given session.
@@ -73,6 +76,7 @@ class Services:
         :param max_download_workers: maximum number of download threads
         :param save_to_buffer_size: buffer size to use when writing files using DownloadedFile.save_to
         :param check_download_hash: whether to check hash of downloaded files. Can be disabled for files with internal checksums, for example, or to forcefully retrieve objects with corrupted payload or hash value
+        :param max_download_streams_per_file: how many streams to use for parallel downloader
         """
         self.api = api
         self.session = api.session
@@ -81,11 +85,13 @@ class Services:
             services=self, max_workers=max_upload_workers
         )
         self.copy_manager = self.COPY_MANAGER_CLASS(services=self, max_workers=max_copy_workers)
+        assert max_download_streams_per_file is None or max_download_streams_per_file >= 1
         self.download_manager = self.DOWNLOAD_MANAGER_CLASS(
             services=self,
             max_workers=max_download_workers,
             write_buffer_size=save_to_buffer_size,
             check_hash=check_download_hash,
+            max_download_streams_per_file=max_download_streams_per_file,
         )
         self.emerger = Emerger(self)
 
@@ -128,6 +134,7 @@ class B2Api(metaclass=B2TraceMeta):
         max_download_workers: Optional[int] = None,
         save_to_buffer_size: Optional[int] = None,
         check_download_hash: bool = True,
+        max_download_streams_per_file: Optional[int] = None,
     ):
         """
         Initialize the API using the given account info.
@@ -144,6 +151,7 @@ class B2Api(metaclass=B2TraceMeta):
         :param max_download_workers: maximum number of download threads
         :param save_to_buffer_size: buffer size to use when writing files using DownloadedFile.save_to
         :param check_download_hash: whether to check hash of downloaded files. Can be disabled for files with internal checksums, for example, or to forcefully retrieve objects with corrupted payload or hash value
+        :param max_download_streams_per_file: number of streams for parallel download manager
         """
         self.session = self.SESSION_CLASS(
             account_info=account_info, cache=cache, api_config=api_config
@@ -158,6 +166,7 @@ class B2Api(metaclass=B2TraceMeta):
             max_download_workers=max_download_workers,
             save_to_buffer_size=save_to_buffer_size,
             check_download_hash=check_download_hash,
+            max_download_streams_per_file=max_download_streams_per_file,
         )
 
     @property
@@ -193,6 +202,7 @@ class B2Api(metaclass=B2TraceMeta):
         :param str application_key: user's :term:`application key`
         """
         self.session.authorize_account(realm, application_key_id, application_key)
+        self._populate_bucket_cache_from_key()
 
     def get_account_id(self):
         """
@@ -539,10 +549,13 @@ class B2Api(metaclass=B2TraceMeta):
 
         Raises an exception if profile is not permitted to list keys.
         """
-        return next(
-            self.list_keys(start_application_key_id=key_id),
-            None,
-        )
+        with suppress(StopIteration):
+            key = next(self.list_keys(start_application_key_id=key_id))
+
+            # list_keys() may return some other key if `key_id` does not exist;
+            # thus manually check that we retrieved the right key
+            if key.id_ == key_id:
+                return key
 
     # other
     def get_file_info(self, file_id: str) -> FileVersion:
@@ -584,3 +597,23 @@ class B2Api(metaclass=B2TraceMeta):
         if allowed_bucket_identifier is not None:
             if allowed_bucket_identifier != value:
                 raise RestrictedBucket(allowed_bucket_identifier)
+
+    def _populate_bucket_cache_from_key(self):
+        # If the key is restricted to the bucket, pre-populate the cache with it
+        try:
+            allowed = self.account_info.get_allowed()
+        except MissingAccountData:
+            return
+
+        allowed_bucket_id = allowed.get('bucketId')
+        if allowed_bucket_id is None:
+            return
+
+        allowed_bucket_name = allowed.get('bucketName')
+
+        # If we have bucketId set we still need to check bucketName. If the bucketName is None,
+        # it means that the bucketId belongs to a bucket that was already removed.
+        if allowed_bucket_name is None:
+            raise RestrictedBucketMissing()
+
+        self.cache.save_bucket(self.BUCKET_CLASS(self, allowed_bucket_id, name=allowed_bucket_name))

@@ -6,15 +6,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-
 ### Added
 * Nothing
+
+### Changed
+* Connection timeout is now being set explicitly
+
+## [1.19.0] - 2023-01-24
+
+### Added
+* Authorizing a key for a single bucket ensures that this bucket is cached
+* `Bucket.ls` operation supports wildcard matching strings
+* Documentation for `AbstractUploadSource` and its children
+* `InvalidJsonResponse` when the received error is not a proper JSON document
+* Raising `PotentialS3EndpointPassedAsRealm` when a specific misconfiguration is suspected
+* Add `large_file_sha1` support
+* Add support for incremental upload and sync
+* Ability to stream data from an unbound source to B2 (for example stdin)
+
+### Fixed
+* Removed information about replication being in closed beta
+* Don't throw raw `OSError` exceptions when using `DownloadedFile.save_to` to a path that doesn't exist, is a directory or the user doesn't have permissions to write to
+
+### Infrastructure
+* Additional tests for listing files/versions
+* Ensured that changelog validation only happens on pull requests
+* Upgraded GitHub actions checkout to v3, python-setup to v4
+* Additional tests for `IncrementalHexDigester`
+
+## [1.18.0] - 2022-09-20
+
+### Added
+* Logging performance summary of parallel download threads
+* Add `max_download_streams_per_file` parameter to B2Api class and underlying structures
+* Add `is_file_lock_enabled` parameter to `Bucket.update()` and related methods
+
+### Fixed
+* Replace `ReplicationScanResult.source_has_sse_c_enabled` with `source_encryption_mode`
+* Fix `B2Api.get_key()` and `RawSimulator.delete_key()`
+* Fix calling `CopySizeTooBig` exception
+
+### Infrastructure
+* Fix nox's deprecated `session.install()` calls
+* Re-enable changelog validation in CI
+* StatsCollector contains context managers for gathering performance statistics
+
+## [1.17.3] - 2022-07-15
+
+### Fixed
+* Fix `FileVersion._get_upload_headers` when encryption key is `None`
 
 ### Infrastructure
 * Fix download integration tests on non-production environments
 * Add `B2_DEBUG_HTTP` env variable to enable network-level test debugging
 * Disable changelog validation temporarily
-* Fix `FileVersion._get_upload_headers` when encryption key is `None`
 
 ## [1.17.2] - 2022-06-24
 
@@ -377,7 +422,10 @@ has changed.
 ### Added
 Initial official release of SDK as a separate package (until now it was a part of B2 CLI)
 
-[Unreleased]: https://github.com/Backblaze/b2-sdk-python/compare/v1.17.2...HEAD
+[Unreleased]: https://github.com/Backblaze/b2-sdk-python/compare/v1.19.0...HEAD
+[1.19.0]: https://github.com/Backblaze/b2-sdk-python/compare/v1.18.0...v1.19.0
+[1.18.0]: https://github.com/Backblaze/b2-sdk-python/compare/v1.17.3...v1.18.0
+[1.17.3]: https://github.com/Backblaze/b2-sdk-python/compare/v1.17.2...v1.17.3
 [1.17.2]: https://github.com/Backblaze/b2-sdk-python/compare/v1.17.1...v1.17.2
 [1.17.1]: https://github.com/Backblaze/b2-sdk-python/compare/v1.17.0...v1.17.1
 [1.17.0]: https://github.com/Backblaze/b2-sdk-python/compare/v1.16.0...v1.17.0

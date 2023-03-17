@@ -23,7 +23,8 @@ from typing import Any, Dict, Optional
 
 from .exception import (
     B2Error, B2RequestTimeoutDuringUpload, BadDateFormat, BrokenPipe, B2ConnectionError,
-    B2RequestTimeout, ClockSkew, ConnectionReset, interpret_b2_error, UnknownError, UnknownHost
+    B2RequestTimeout, ClockSkew, ConnectionReset, interpret_b2_error, UnknownError, UnknownHost,
+    InvalidJsonResponse, PotentialS3EndpointPassedAsRealm
 )
 from .api_config import B2HttpApiConfig, DEFAULT_HTTP_API_CONFIG
 from .requests import NotDecompressingResponse
@@ -158,6 +159,7 @@ class B2Http:
     is not a part of the interface and is subject to change.
     """
 
+    CONNECTION_TIMEOUT = 3 + 6 + 12 + 24 + 1  # 4 standard tcp retransmissions + 1s latency
     TIMEOUT = 128
     TIMEOUT_FOR_COPY = 1200  # 20 minutes as server-side copy can take time
     TIMEOUT_FOR_UPLOAD = 128
@@ -226,7 +228,7 @@ class B2Http:
                 url,
                 headers=request_headers,
                 data=data,
-                timeout=_timeout or self.TIMEOUT_FOR_UPLOAD,
+                timeout=(self.CONNECTION_TIMEOUT, _timeout or self.TIMEOUT_FOR_UPLOAD),
             )
             self._run_post_request_hooks('POST', url, request_headers, response)
             return response
@@ -312,7 +314,10 @@ class B2Http:
         def do_get():
             self._run_pre_request_hooks('GET', url, request_headers)
             response = self.session.get(
-                url, headers=request_headers, stream=True, timeout=self.TIMEOUT
+                url,
+                headers=request_headers,
+                stream=True,
+                timeout=(self.CONNECTION_TIMEOUT, self.TIMEOUT),
             )
             self._run_post_request_hooks('GET', url, request_headers, response)
             return response
@@ -355,7 +360,10 @@ class B2Http:
         def do_head():
             self._run_pre_request_hooks('HEAD', url, request_headers)
             response = self.session.head(
-                url, headers=request_headers, stream=True, timeout=self.TIMEOUT
+                url,
+                headers=request_headers,
+                stream=True,
+                timeout=(self.CONNECTION_TIMEOUT, self.TIMEOUT),
             )
             self._run_post_request_hooks('HEAD', url, request_headers, response)
             return response
@@ -384,6 +392,7 @@ class B2Http:
 
         :param dict post_params: request parameters
         """
+        response = None
         try:
             response = fcn()
             if response.status_code not in [200, 206]:
@@ -427,6 +436,17 @@ class B2Http:
 
         except requests.Timeout as e:
             raise B2RequestTimeout(str(e))
+
+        except json.JSONDecodeError:
+            if response is None:
+                raise RuntimeError('Got JSON error without a response.')
+
+            # When the user points to an S3 endpoint, he won't receive the JSON error
+            # he expects. In that case, we can provide at least a hint of "what happened".
+            # s3 url has the form of e.g. https://s3.us-west-000.backblazeb2.com
+            if '://s3.' in response.url:
+                raise PotentialS3EndpointPassedAsRealm(response.content)
+            raise InvalidJsonResponse(response.content)
 
         except Exception as e:
             text = repr(e)
