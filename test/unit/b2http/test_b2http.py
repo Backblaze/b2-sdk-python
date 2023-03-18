@@ -266,7 +266,10 @@ class TestB2Http(TestBase):
         with self.b2_http.get_content(self.URL, self.HEADERS) as r:
             self.assertIs(self.response, r)
         self.session.get.assert_called_with(
-            self.URL, headers=self.EXPECTED_HEADERS, stream=True, timeout=B2Http.TIMEOUT
+            self.URL,
+            headers=self.EXPECTED_HEADERS,
+            stream=True,
+            timeout=(B2Http.CONNECTION_TIMEOUT, B2Http.TIMEOUT),
         )
         self.response.close.assert_called_with()
 

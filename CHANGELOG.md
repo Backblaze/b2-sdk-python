@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 * Add `use_cache` parameter to `B2Api.list_buckets`
 
+### Changed
+* Connection timeout is now being set explicitly
+
+### Infrastructure
+* Disable changelog verification for dependabot PRs
+
 ## [1.19.0] - 2023-01-24
 
 ### Added
