@@ -16,7 +16,7 @@ import sqlite3
 import stat
 import threading
 
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 from .exception import CorruptAccountInfo, MissingAccountData
 from .upload_url_pool import UrlPoolAccountInfo
@@ -592,6 +592,11 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
 
     def get_bucket_name_or_none_from_bucket_id(self, bucket_id: str) -> Optional[str]:
         return self._safe_query('SELECT bucket_name FROM bucket WHERE bucket_id = ?;', (bucket_id,))
+
+    def list_bucket_names_ids(self) -> List[Tuple[str, str]]:
+        with self._get_connection() as conn:
+            cursor = conn.execute('SELECT bucket_name, bucket_id FROM bucket;')
+            return cursor.fetchall()
 
     def _safe_query(self, query, params):
         try:

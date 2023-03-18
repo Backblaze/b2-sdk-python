@@ -8,7 +8,7 @@
 #
 ######################################################################
 from abc import abstractmethod
-from typing import Optional
+from typing import Optional, List, Tuple
 
 from b2sdk.account_info import exception
 from b2sdk.raw_api import ALL_CAPABILITIES
@@ -50,6 +50,15 @@ class AbstractAccountInfo(metaclass=B2TraceMetaAbstract):
         """
         Remove all stored information.
         """
+
+    @abstractmethod
+    def list_bucket_names_ids(self) -> List[Tuple[str, str]]:
+        """
+        List buckets in the cache.
+
+        :return: list of tuples (bucket_name, bucket_id)
+        """
+        pass
 
     @abstractmethod
     @limit_trace_arguments(only=['self'])

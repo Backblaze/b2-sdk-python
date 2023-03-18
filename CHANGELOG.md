@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+* Add `use_cache` parameter to `B2Api.list_buckets`
+
 ### Changed
 * Connection timeout is now being set explicitly
 

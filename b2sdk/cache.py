@@ -9,7 +9,10 @@
 ######################################################################
 
 from abc import ABCMeta, abstractmethod
-from typing import Optional
+from typing import Optional, List, Tuple, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from b2sdk.account_info.abstract import AbstractAccountInfo
 
 
 class AbstractCache(metaclass=ABCMeta):
@@ -27,6 +30,14 @@ class AbstractCache(metaclass=ABCMeta):
     @abstractmethod
     def get_bucket_name_or_none_from_bucket_id(self, bucket_id: str) -> Optional[str]:
         pass
+
+    @abstractmethod
+    def list_bucket_names_ids(self) -> List[Tuple[str, str]]:
+        """
+        List buckets in the cache.
+
+        :return: list of tuples (bucket_name, bucket_id)
+        """
 
     @abstractmethod
     def save_bucket(self, bucket):
@@ -54,6 +65,9 @@ class DummyCache(AbstractCache):
     def get_bucket_name_or_none_from_allowed(self):
         return None
 
+    def list_bucket_names_ids(self) -> List[Tuple[str, str]]:
+        return []
+
     def save_bucket(self, bucket):
         pass
 
@@ -68,7 +82,7 @@ class InMemoryCache(AbstractCache):
 
     def __init__(self):
         self.name_id_map = {}
-        self.bucket_name = ''
+        self.bucket_name = None
 
     def get_bucket_id_or_none_from_bucket_name(self, name):
         return self.name_id_map.get(name)
@@ -82,6 +96,9 @@ class InMemoryCache(AbstractCache):
     def get_bucket_name_or_none_from_allowed(self):
         return self.bucket_name
 
+    def list_bucket_names_ids(self) -> List[Tuple[str, str]]:
+        return sorted(tuple(item) for item in self.name_id_map.items())
+
     def save_bucket(self, bucket):
         self.name_id_map[bucket.name] = bucket.id_
 
@@ -94,7 +111,7 @@ class AuthInfoCache(AbstractCache):
     A cache that stores data persistently in StoredAccountInfo.
     """
 
-    def __init__(self, info):
+    def __init__(self, info: 'AbstractAccountInfo'):
         self.info = info
 
     def get_bucket_id_or_none_from_bucket_name(self, name):
@@ -105,6 +122,9 @@ class AuthInfoCache(AbstractCache):
 
     def get_bucket_name_or_none_from_allowed(self):
         return self.info.get_bucket_name_or_none_from_allowed()
+
+    def list_bucket_names_ids(self) -> List[Tuple[str, str]]:
+        return self.info.list_bucket_names_ids()
 
     def save_bucket(self, bucket):
         self.info.save_bucket(bucket)

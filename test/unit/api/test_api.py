@@ -19,7 +19,7 @@ import apiver_deps
 from apiver_deps import B2Api
 from apiver_deps import B2HttpApiConfig
 from apiver_deps import B2Http
-from apiver_deps import DummyCache
+from apiver_deps import DummyCache, InMemoryCache
 from apiver_deps import EncryptionAlgorithm
 from apiver_deps import EncryptionMode
 from apiver_deps import EncryptionSetting
@@ -43,7 +43,7 @@ class TestApi:
     @pytest.fixture(autouse=True)
     def setUp(self):
         self.account_info = InMemoryAccountInfo()
-        self.cache = DummyCache()
+        self.cache = InMemoryCache()
         self.api = B2Api(
             self.account_info, self.cache, api_config=B2HttpApiConfig(_raw_api_class=RawSimulator)
         )
@@ -146,6 +146,23 @@ class TestApi:
         self.api.create_bucket('bucket1', 'allPrivate')
         self.api.create_bucket('bucket2', 'allPrivate')
         assert [b.name for b in self.api.list_buckets(bucket_name='bucket1')] == ['bucket1']
+
+    @pytest.mark.apiver(from_ver=3)
+    def test_list_buckets_from_cache(self):
+        bucket = type("bucket", (), {"name": "bucket", "id_": "ID-0"})
+        self._authorize_account()
+        self.cache.set_bucket_name_cache([bucket])
+
+        def list_buckets(*args, **kwargs):
+            buckets = self.api.list_buckets(*args, **kwargs)
+            return [(b.name, b.id_) for b in buckets]
+
+        assert list_buckets(use_cache=True) == [('bucket', 'ID-0')]
+        assert list_buckets(bucket_name="bucket", use_cache=True) == [('bucket', 'ID-0')]
+        assert list_buckets(bucket_name="bucket2", use_cache=True) == []
+        assert list_buckets(bucket_id="ID-0", use_cache=True) == [('bucket', 'ID-0')]
+        assert list_buckets(bucket_id="ID-2", use_cache=True) == []
+        assert self.api.list_buckets() == []
 
     def test_buckets_with_encryption(self):
         self._authorize_account()

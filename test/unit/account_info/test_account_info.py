@@ -7,7 +7,6 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
-
 from abc import ABCMeta, abstractmethod
 import json
 import unittest.mock as mock
@@ -16,8 +15,6 @@ import platform
 import shutil
 import stat
 import tempfile
-
-import pytest
 
 from apiver_deps import (
     ALL_CAPABILITIES,
@@ -238,9 +235,11 @@ class AccountInfoBase(metaclass=ABCMeta):
             ).get_bucket_id_or_none_from_bucket_name('my-bucket')
             assert 'my-bucket' == self._make_info(
             ).get_bucket_name_or_none_from_bucket_id('bucket-0')
+        assert ('my-bucket', 'bucket-0') in account_info.list_bucket_names_ids()
         account_info.remove_bucket_name('my-bucket')
         assert account_info.get_bucket_id_or_none_from_bucket_name('my-bucket') is None
         assert account_info.get_bucket_name_or_none_from_bucket_id('bucket-0') is None
+        assert ('my-bucket', 'bucket-0') not in account_info.list_bucket_names_ids()
         if self.PERSISTENCE:
             assert self._make_info().get_bucket_id_or_none_from_bucket_name('my-bucket') is None
             assert self._make_info().get_bucket_name_or_none_from_bucket_id('bucket-0') is None

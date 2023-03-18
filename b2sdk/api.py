@@ -7,7 +7,7 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
-
+import logging
 from typing import Optional, Tuple, List, Generator
 from contextlib import suppress
 
@@ -34,6 +34,8 @@ from .transfer import (
 )
 from .transfer.inbound.downloaded_file import DownloadedFile
 from .utils import B2TraceMeta, b2_url_encode, limit_trace_arguments
+
+logger = logging.getLogger(__name__)
 
 
 def url_for_api(info, api_name):
@@ -374,7 +376,7 @@ class B2Api(metaclass=B2TraceMeta):
         account_id = self.account_info.get_account_id()
         self.session.delete_bucket(account_id, bucket.id_)
 
-    def list_buckets(self, bucket_name=None, bucket_id=None):
+    def list_buckets(self, bucket_name=None, bucket_id=None, *, use_cache: bool = False):
         """
         Call ``b2_list_buckets`` and return a list of buckets.
 
@@ -386,6 +388,7 @@ class B2Api(metaclass=B2TraceMeta):
 
         :param str bucket_name: the name of the one bucket to return
         :param str bucket_id: the ID of the one bucket to return
+        :param bool use_cache: if ``True`` use cached bucket list if available and not empty
         :rtype: list[b2sdk.v2.Bucket]
         """
         # Give a useful warning if the current application key does not
@@ -396,6 +399,19 @@ class B2Api(metaclass=B2TraceMeta):
             self.check_bucket_id_restrictions(bucket_id)
         else:
             self.check_bucket_name_restrictions(bucket_name)
+
+        if use_cache:
+            cached_list = self.cache.list_bucket_names_ids()
+            buckets = [
+                self.BUCKET_CLASS(self, cache_b_id, name=cached_b_name)
+                for cached_b_name, cache_b_id in cached_list if (
+                    (bucket_name is None or bucket_name == cached_b_name) and
+                    (bucket_id is None or bucket_id == cache_b_id)
+                )
+            ]
+            if buckets:
+                logger.debug("Using cached bucket list as it is not empty")
+                return buckets
 
         account_id = self.account_info.get_account_id()
 
