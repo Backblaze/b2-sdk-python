@@ -59,7 +59,7 @@ class ResponseContextManager:
         return self.response
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.response.close()
+        return None
 
 
 class HttpCallback:
