@@ -271,7 +271,7 @@ class TestB2Http(TestBase):
             stream=True,
             timeout=(B2Http.CONNECTION_TIMEOUT, B2Http.TIMEOUT),
         )
-        self.response.close.assert_called_with()
+        self.response.close.assert_not_called()  # prevent premature close() on requests.Response
 
     def test_head_content(self):
         self.session.head.return_value = self.response
