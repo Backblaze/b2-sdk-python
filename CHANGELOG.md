@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 * Connection timeout is now being set explicitly
 
+### Fixed
+* Small files downloaded twice
+
 ### Infrastructure
 * Disable changelog verification for dependabot PRs
 
