@@ -785,6 +785,23 @@ class TestUpload(TestCaseWithBucket):
         self.bucket.upload_bytes(data, 'file1', progress_listener=progress_listener)
         self.assertTrue(progress_listener.is_valid())
 
+    def test_upload_local_file_cache_control(self):
+        with TempDir() as d:
+            path = os.path.join(d, 'file1')
+            data = b'hello world'
+            write_file(path, data)
+            cache_control = 'max-age=3600'
+            file_info = self.bucket.upload_local_file(
+                path, 'file1', cache_control=cache_control
+            )
+            self.assertEqual(cache_control, file_info.cache_control)
+
+    def test_upload_bytes_cache_control(self):
+        data = b'hello world'
+        cache_control = 'max-age=3600'
+        file_info = self.bucket.upload_bytes(data, 'file1', cache_control=cache_control)
+        self.assertEqual(cache_control, file_info.cache_control)
+
     def test_upload_local_file(self):
         with TempDir() as d:
             path = os.path.join(d, 'file1')
