@@ -927,14 +927,20 @@ class BucketSimulator:
         server_side_encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
+        custom_upload_timestamp: Optional[int] = None,
     ):
         file_id = self._next_file_id()
         sse = server_side_encryption or self.default_server_side_encryption
         if sse:  # FIXME: remove this part when RawApi<->Encryption adapters are implemented properly
             file_info = sse.add_key_id_to_file_info(file_info)
+
+        upload_timestamp = next(self.upload_timestamp_counter)
+        if custom_upload_timestamp is not None:
+            upload_timestamp = custom_upload_timestamp
+
         file_sim = self.FILE_SIMULATOR_CLASS(
             self.account_id, self, file_id, 'start', file_name, content_type, 'none',
-            file_info, None, next(self.upload_timestamp_counter), server_side_encryption=sse,
+            file_info, None, upload_timestamp, server_side_encryption=sse,
             file_retention=file_retention, legal_hold=legal_hold,
         )  # yapf: disable
         self.file_id_to_file[file_id] = file_sim
@@ -999,6 +1005,7 @@ class BucketSimulator:
         server_side_encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
+        custom_upload_timestamp: Optional[int] = None,
     ):
         data_bytes = self._simulate_chunked_post(data_stream, content_length)
         assert len(data_bytes) == content_length
@@ -1019,6 +1026,10 @@ class BucketSimulator:
         if encryption:  # FIXME: remove this part when RawApi<->Encryption adapters are implemented properly
             file_infos = encryption.add_key_id_to_file_info(file_infos)
 
+        upload_timestamp = next(self.upload_timestamp_counter)
+        if custom_upload_timestamp is not None:
+            upload_timestamp = custom_upload_timestamp
+
         file_sim = self.FILE_SIMULATOR_CLASS(
             self.account_id,
             self,
@@ -1029,7 +1040,7 @@ class BucketSimulator:
             content_sha1,
             file_infos,
             data_bytes,
-            next(self.upload_timestamp_counter),
+            upload_timestamp,
             server_side_encryption=encryption,
             file_retention=file_retention,
             legal_hold=legal_hold,
@@ -1709,6 +1720,7 @@ class RawSimulator(AbstractRawApi):
         server_side_encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
+        custom_upload_timestamp: Optional[int] = None,
     ):
         bucket = self._get_bucket_by_id(bucket_id)
         self._assert_account_auth(api_url, account_auth_token, bucket.account_id, 'writeFiles')
@@ -1720,6 +1732,7 @@ class RawSimulator(AbstractRawApi):
             server_side_encryption,
             file_retention,
             legal_hold,
+            custom_upload_timestamp=custom_upload_timestamp,
         )
         self.file_id_to_bucket_id[result['fileId']] = bucket_id
 
@@ -1768,6 +1781,7 @@ class RawSimulator(AbstractRawApi):
         server_side_encryption: Optional[EncryptionSetting],
         file_retention: Optional[FileRetentionSetting],
         legal_hold: Optional[LegalHold],
+        custom_upload_timestamp: Optional[int] = None,
     ) -> dict:
 
         # fix to allow calculating headers on unknown key - only for simulation
@@ -1786,6 +1800,7 @@ class RawSimulator(AbstractRawApi):
             server_side_encryption=server_side_encryption,
             file_retention=file_retention,
             legal_hold=legal_hold,
+            custom_upload_timestamp=custom_upload_timestamp,
         )
 
     def upload_file(
@@ -1801,6 +1816,7 @@ class RawSimulator(AbstractRawApi):
         server_side_encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
+        custom_upload_timestamp: Optional[int] = None,
     ):
         with ConcurrentUsedAuthTokenGuard(
             self.currently_used_auth_tokens[upload_auth_token], upload_auth_token
@@ -1831,6 +1847,7 @@ class RawSimulator(AbstractRawApi):
                 server_side_encryption=server_side_encryption,
                 file_retention=file_retention,
                 legal_hold=legal_hold,
+                custom_upload_timestamp=custom_upload_timestamp,
             )
 
             response = bucket.upload_file(
@@ -1845,6 +1862,7 @@ class RawSimulator(AbstractRawApi):
                 server_side_encryption,
                 file_retention,
                 legal_hold,
+                custom_upload_timestamp,
             )
             file_id = response['fileId']
             self.file_id_to_bucket_id[file_id] = bucket_id

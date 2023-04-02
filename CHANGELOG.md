@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+* Add support for custom upload timestamp
+
 ## [1.20.0] - 2023-03-23
 
 ### Added

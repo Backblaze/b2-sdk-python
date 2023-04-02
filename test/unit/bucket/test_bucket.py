@@ -1480,6 +1480,16 @@ class TestUpload(TestCaseWithBucket):
 
                 last_data = data
 
+    def assertBucketContents(self, expected, *args, **kwargs):
+        """
+        *args and **kwargs are passed to self.bucket_ls()
+        """
+        actual = [
+            (info.file_name, info.size, info.action, folder)
+            for (info, folder) in self.bucket_ls(*args, **kwargs)
+        ]
+        self.assertEqual(expected, actual)
+
     @pytest.mark.skipif(platform.system() == 'Windows', reason='no os.mkfifo() on Windows')
     def test_upload_fifo(self):
         with TempDir() as d:
@@ -1791,6 +1801,50 @@ class TestCreateFileStream(TestConcatenate):
             file_name=file_name,
             encryption=encryption
         )
+
+
+class TestCustomTimestamp(TestCaseWithBucket):
+    def test_custom_timestamp(self):
+        data = b'hello world'
+
+        # upload
+        self.bucket.upload_bytes(data, 'file0', custom_upload_timestamp=0)
+
+        with TempDir() as d:
+            path = os.path.join(d, 'file1')
+            write_file(path, data)
+            self.bucket.upload_local_file(path, 'file1', custom_upload_timestamp=1)
+
+        upload_source = UploadSourceBytes(data)
+        self.bucket.upload(upload_source, 'file2', custom_upload_timestamp=2)
+        self.bucket.upload_unbound_stream(io.BytesIO(data), 'file3', custom_upload_timestamp=3)
+
+        # concatenate
+        self.bucket.concatenate([upload_source], 'file4', custom_upload_timestamp=4)
+        self.bucket.concatenate_stream([upload_source], 'file5', custom_upload_timestamp=5)
+
+        # create_file
+        self.bucket.create_file(
+            [WriteIntent(upload_source, destination_offset=0)], 'file6', custom_upload_timestamp=6
+        )
+        self.bucket.create_file_stream(
+            [WriteIntent(upload_source, destination_offset=0)], 'file7', custom_upload_timestamp=7
+        )
+
+        def ls(bucket):
+            return [(info.file_name, info.upload_timestamp) for (info, folder) in bucket_ls(bucket)]
+
+        expected = [
+            ('file0', 0),
+            ('file1', 1),
+            ('file2', 2),
+            ('file3', 3),
+            ('file4', 4),
+            ('file5', 5),
+            ('file6', 6),
+            ('file7', 7),
+        ]
+        self.assertEqual(ls(self.bucket), expected)
 
 
 class DownloadTestsBase:
