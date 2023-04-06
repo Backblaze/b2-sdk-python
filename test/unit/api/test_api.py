@@ -53,7 +53,7 @@ class TestApi:
     def test_get_file_info(self):
         self._authorize_account()
         bucket = self.api.create_bucket('bucket1', 'allPrivate')
-        created_file = bucket.upload_bytes(b'hello world', 'file', cache_control="no-cache")
+        created_file = bucket.upload_bytes(b'hello world', 'file', cache_control="private, max-age=3600")
 
         result = self.api.get_file_info(created_file.id_)
 
@@ -85,7 +85,7 @@ class TestApi:
                     'mode': 'none'
                 },
                 'uploadTimestamp': 5000,
-                'cacheControl': 'no-cache',
+                'cacheControl': 'private, max-age=3600',
             }
         else:
             assert isinstance(result, VFileVersion)
