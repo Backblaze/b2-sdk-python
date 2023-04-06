@@ -564,12 +564,18 @@ class DownloadVersionFactory:
 
     def from_response_headers(self, headers):
         file_info = self.file_info_from_headers(headers)
+        
         if 'Content-Range' in headers:
             range_, size = self.range_and_size_from_header(headers['Content-Range'])
             content_length = int(headers['Content-Length'])
         else:
             size = content_length = int(headers['Content-Length'])
             range_ = Range(0, max(size - 1, 0))
+
+        if 'Cache-Control' in headers:
+            cache_control = b2_url_decode(headers['Cache-Control'])
+        else:
+            cache_control = None
 
         return DownloadVersion(
             api=self.api,
@@ -586,7 +592,7 @@ class DownloadVersionFactory:
             content_length=content_length,
             content_language=headers.get('Content-Language'),
             expires=headers.get('Expires'),
-            cache_control=headers.get('Cache-Control'),
+            cache_control= cache_control,
             content_encoding=headers.get('Content-Encoding'),
             file_retention=FileRetentionSetting.from_response_headers(headers),
             legal_hold=LegalHold.from_response_headers(headers),
