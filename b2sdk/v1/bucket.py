@@ -40,6 +40,7 @@ class Bucket(v2.Bucket):
         source_encryption: Optional[v2.EncryptionSetting] = None,
         file_retention: Optional[v2.FileRetentionSetting] = None,
         legal_hold: Optional[v2.LegalHold] = None,
+        cache_control: Optional[str] = None,
     ):
         """
         Creates a new file in this bucket by (server-side) copying from an existing file.
@@ -69,6 +70,7 @@ class Bucket(v2.Bucket):
             source_server_side_encryption=source_encryption,
             file_retention=file_retention,
             legal_hold=legal_hold,
+            cache_control=cache_control,
         )
 
     def start_large_file(
@@ -78,6 +80,7 @@ class Bucket(v2.Bucket):
         file_info=None,
         file_retention: Optional[v2.FileRetentionSetting] = None,
         legal_hold: Optional[v2.LegalHold] = None,
+        cache_control: Optional[str] = None,
     ):
         """
         Start a large file transfer.
@@ -96,6 +99,7 @@ class Bucket(v2.Bucket):
             file_info=file_info,
             file_retention=file_retention,
             legal_hold=legal_hold,
+            cache_control=cache_control,
         )
 
     def download_file_by_name(

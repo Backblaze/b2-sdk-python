@@ -43,6 +43,7 @@ class BucketCleaner:
         return False
 
     def cleanup_buckets(self):
+        #FIXME add cache_control ?
         b2_api, _ = authorize((self.b2_application_key_id, self.b2_application_key))
         buckets = b2_api.list_buckets()
         for bucket in buckets:

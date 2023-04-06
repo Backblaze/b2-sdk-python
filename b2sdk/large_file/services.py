@@ -87,6 +87,7 @@ class LargeFileServices:
         encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
+        cache_control: Optional[str] = None,
     ):
         """
         Start a large file transfer.
@@ -107,6 +108,7 @@ class LargeFileServices:
                 server_side_encryption=encryption,
                 file_retention=file_retention,
                 legal_hold=legal_hold,
+                cache_control=cache_control,
             )
         )
 

@@ -283,7 +283,7 @@ class TestGetFileInfo(TestCaseWithBucket):
 
         self.assertIsInstance(info, FileVersionInfo)
         expected = (
-            a_id, 'a', 11, 'upload', 'b2/x-auto', 'none', NO_RETENTION_FILE_SETTING, LegalHold.UNSET
+            a_id, 'a', 11, 'upload', 'b2/x-auto', 'none', NO_RETENTION_FILE_SETTING, LegalHold.UNSET, None
         )
         actual = (
             info.id_,
@@ -294,6 +294,7 @@ class TestGetFileInfo(TestCaseWithBucket):
             info.server_side_encryption.mode.value,
             info.file_retention,
             info.legal_hold,
+            info.cache_control,
         )
         self.assertEqual(expected, actual)
 

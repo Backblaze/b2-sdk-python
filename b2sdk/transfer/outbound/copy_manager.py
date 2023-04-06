@@ -44,6 +44,7 @@ class CopyManager(TransferManager, ThreadPoolMixin):
         destination_encryption: Optional[EncryptionSetting] = None,
         source_encryption: Optional[EncryptionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
+        cache_control: Optional[str] = None,
         file_retention: Optional[FileRetentionSetting] = None,
     ):
         # Run small copies in the same thread pool as large file copies,
@@ -59,6 +60,7 @@ class CopyManager(TransferManager, ThreadPoolMixin):
             destination_encryption=destination_encryption,
             source_encryption=source_encryption,
             legal_hold=legal_hold,
+            cache_control=cache_control,
             file_retention=file_retention,
         )
 
@@ -148,6 +150,7 @@ class CopyManager(TransferManager, ThreadPoolMixin):
         destination_encryption: Optional[EncryptionSetting],
         source_encryption: Optional[EncryptionSetting],
         legal_hold: Optional[LegalHold] = None,
+        cache_control: Optional[str] = None,
         file_retention: Optional[FileRetentionSetting] = None,
     ):
         with progress_listener:
@@ -187,6 +190,7 @@ class CopyManager(TransferManager, ThreadPoolMixin):
                 destination_server_side_encryption=destination_encryption,
                 source_server_side_encryption=source_encryption,
                 legal_hold=legal_hold,
+                cache_control=cache_control,
                 file_retention=file_retention,
             )
             file_version = self.services.api.file_version_factory.from_api_response(response)

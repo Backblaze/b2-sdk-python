@@ -42,6 +42,7 @@ class FileVersionInfo(v2.FileVersion):
         server_side_encryption: Optional[v2.EncryptionSetting] = None,
         file_retention: Optional[v2.FileRetentionSetting] = None,
         legal_hold: Optional[v2.LegalHold] = None,
+        cache_control: Optional[str] = None,
         api: Optional['v1api.B2Api'] = None,
         **kwargs
     ):
@@ -58,6 +59,7 @@ class FileVersionInfo(v2.FileVersion):
         self.action = action
         self.server_side_encryption = server_side_encryption
         self.legal_hold = legal_hold
+        self.cache_control = cache_control
         self.file_retention = file_retention
         self._api = api
 
@@ -126,6 +128,7 @@ def file_version_info_from_new_file_version(file_version: v2.FileVersion) -> Fil
                 'content_md5',
                 'server_side_encryption',
                 'legal_hold',
+                'cache_control',
                 'file_retention',
                 'api',
             ]
@@ -163,6 +166,7 @@ class FileVersionInfoFactory(v2.FileVersionFactory):
             server_side_encryption=v2.EncryptionSettingFactory.from_response_headers(headers),
             file_retention=v2.FileRetentionSetting.from_response_headers(headers),
             legal_hold=v2.LegalHold.from_response_headers(headers),
+            cache_control=headers['cache-control'],
         )
 
 
@@ -194,5 +198,6 @@ def file_version_info_from_download_version(download_version: v2.DownloadVersion
         server_side_encryption=download_version.server_side_encryption,
         file_retention=download_version.file_retention,
         legal_hold=download_version.legal_hold,
+        cache_control=download_version.cache_control,
         api=download_version.api,
     )

@@ -45,6 +45,7 @@ class BaseFileVersion:
         'upload_timestamp',
         'server_side_encryption',
         'legal_hold',
+        'cache_control',
         'file_retention',
         'mod_time_millis',
         'replication_status',
@@ -70,6 +71,7 @@ class BaseFileVersion:
         server_side_encryption: EncryptionSetting,
         file_retention: FileRetentionSetting = NO_RETENTION_FILE_SETTING,
         legal_hold: LegalHold = LegalHold.UNSET,
+        cache_control: Optional[str] = "no-cache",
         replication_status: Optional[ReplicationStatus] = None,
     ):
         self.api = api
@@ -83,6 +85,7 @@ class BaseFileVersion:
         self.server_side_encryption = server_side_encryption
         self.file_retention = file_retention
         self.legal_hold = legal_hold
+        self.cache_control = cache_control
         self.replication_status = replication_status
 
         if SRC_LAST_MODIFIED_MILLIS in self.file_info:
@@ -123,6 +126,7 @@ class BaseFileVersion:
             'server_side_encryption': self.server_side_encryption,
             'file_retention': self.file_retention,
             'legal_hold': self.legal_hold,
+            'cache_control': self.cache_control,
             'replication_status': self.replication_status,
         }  # yapf: disable
 
@@ -134,6 +138,7 @@ class BaseFileVersion:
             'fileInfo': self.file_info,
             'serverSideEncryption': self.server_side_encryption.as_dict(),
             'legalHold': self.legal_hold.value,
+            'cacheControl': self.cache_control,
             'fileRetention': self.file_retention.as_dict(),
         }
 
@@ -250,6 +255,7 @@ class FileVersion(BaseFileVersion):
         server_side_encryption: EncryptionSetting,
         file_retention: FileRetentionSetting = NO_RETENTION_FILE_SETTING,
         legal_hold: LegalHold = LegalHold.UNSET,
+        cache_control: Optional[str] = "no-cache",      
         replication_status: Optional[ReplicationStatus] = None,
     ):
         self.account_id = account_id
@@ -269,6 +275,7 @@ class FileVersion(BaseFileVersion):
             server_side_encryption=server_side_encryption,
             file_retention=file_retention,
             legal_hold=legal_hold,
+            cache_control = cache_control,
             replication_status=replication_status,
         )
 
@@ -342,6 +349,7 @@ class FileVersion(BaseFileVersion):
             server_side_encryption=sse,
             file_retention=self.file_retention,
             legal_hold=self.legal_hold,
+            cache_control=self.cache_control,
         )
 
         headers_str = ''.join(
@@ -417,6 +425,7 @@ class DownloadVersion(BaseFileVersion):
             server_side_encryption=server_side_encryption,
             file_retention=file_retention,
             legal_hold=legal_hold,
+            cache_control=cache_control,
             replication_status=replication_status,
         )
 
@@ -501,7 +510,7 @@ class FileVersionFactory:
         file_retention = FileRetentionSetting.from_file_version_dict(file_version_dict)
 
         legal_hold = LegalHold.from_file_version_dict(file_version_dict)
-
+        cache_control = file_version_dict.get('cacheControl')
         replication_status_value = file_version_dict.get('replicationStatus')
         replication_status = replication_status_value and ReplicationStatus[
             replication_status_value.upper()]
@@ -522,6 +531,7 @@ class FileVersionFactory:
             server_side_encryption,
             file_retention,
             legal_hold,
+            cache_control,
             replication_status,
         )
 

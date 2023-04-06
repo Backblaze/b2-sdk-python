@@ -493,6 +493,7 @@ class Bucket(metaclass=B2TraceMeta):
         encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
+        cache_control: Optional[str] = None,
         large_file_sha1: Optional[Sha1HexDigest] = None,
         custom_upload_timestamp: Optional[int] = None,
     ):
@@ -524,6 +525,7 @@ class Bucket(metaclass=B2TraceMeta):
             encryption=encryption,
             file_retention=file_retention,
             legal_hold=legal_hold,
+            cache_control=cache_control,
             large_file_sha1=large_file_sha1,
             custom_upload_timestamp=custom_upload_timestamp,
         )
@@ -540,6 +542,7 @@ class Bucket(metaclass=B2TraceMeta):
         encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
+        cache_control: Optional[str] = None,
         upload_mode: UploadMode = UploadMode.FULL,
         custom_upload_timestamp: Optional[int] = None,
     ):
@@ -594,6 +597,7 @@ class Bucket(metaclass=B2TraceMeta):
             encryption=encryption,
             file_retention=file_retention,
             legal_hold=legal_hold,
+            cache_control=cache_control,
             large_file_sha1=large_file_sha1,
             custom_upload_timestamp=custom_upload_timestamp,
         )
@@ -609,6 +613,7 @@ class Bucket(metaclass=B2TraceMeta):
         encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
+        cache_control: Optional[str] = None,
         min_part_size: Optional[int] = None,
         max_part_size: Optional[int] = None,
         large_file_sha1: Optional[Sha1HexDigest] = None,
@@ -710,6 +715,7 @@ class Bucket(metaclass=B2TraceMeta):
             encryption=encryption,
             file_retention=file_retention,
             legal_hold=legal_hold,
+            cache_control=cache_control,
             min_part_size=min_part_size,
             recommended_upload_part_size=recommended_upload_part_size,
             max_part_size=max_part_size,
@@ -732,6 +738,7 @@ class Bucket(metaclass=B2TraceMeta):
         encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
+        cache_control: Optional[str] = None,
         large_file_sha1: Optional[Sha1HexDigest] = None,
         custom_upload_timestamp: Optional[int] = None,
     ):
@@ -773,6 +780,7 @@ class Bucket(metaclass=B2TraceMeta):
             encryption=encryption,
             file_retention=file_retention,
             legal_hold=legal_hold,
+            cache_control=cache_control,
             large_file_sha1=large_file_sha1,
             custom_upload_timestamp=custom_upload_timestamp,
         )
@@ -789,6 +797,7 @@ class Bucket(metaclass=B2TraceMeta):
         encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
+        cache_control: Optional[str] = None,
         min_part_size=None,
         max_part_size=None,
         large_file_sha1=None,
@@ -820,6 +829,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param b2sdk.v2.EncryptionSetting encryption: encryption settings (``None`` if unknown)
         :param b2sdk.v2.FileRetentionSetting file_retention: file retention setting
         :param bool legal_hold: legal hold setting
+        :param str,None cache_control: cache control for the new file, if ``None`` it will be set to 'no-cache'
         :param int min_part_size: lower limit of part size for the transfer planner, in bytes
         :param int max_part_size: upper limit of part size for the transfer planner, in bytes
         :param Sha1HexDigest,None large_file_sha1: SHA-1 hash of the result file or ``None`` if unknown
@@ -837,6 +847,7 @@ class Bucket(metaclass=B2TraceMeta):
             encryption=encryption,
             file_retention=file_retention,
             legal_hold=legal_hold,
+            cache_control=cache_control,
             min_part_size=min_part_size,
             max_part_size=max_part_size,
             large_file_sha1=large_file_sha1,
@@ -855,6 +866,7 @@ class Bucket(metaclass=B2TraceMeta):
         encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
+        cache_control: Optional[str] = None,
         min_part_size=None,
         max_part_size=None,
         large_file_sha1=None,
@@ -905,6 +917,7 @@ class Bucket(metaclass=B2TraceMeta):
             encryption=encryption,
             file_retention=file_retention,
             legal_hold=legal_hold,
+            cache_control=cache_control,
             min_part_size=min_part_size,
             max_part_size=max_part_size,
             large_file_sha1=large_file_sha1,
@@ -924,6 +937,7 @@ class Bucket(metaclass=B2TraceMeta):
         encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
+        cache_control: Optional[str] = None,
         min_part_size=None,
         max_part_size=None,
         large_file_sha1=None,
@@ -944,6 +958,7 @@ class Bucket(metaclass=B2TraceMeta):
             encryption=encryption,
             file_retention=file_retention,
             legal_hold=legal_hold,
+            cache_control=cache_control,
             min_part_size=min_part_size,
             max_part_size=max_part_size,
             large_file_sha1=large_file_sha1,
@@ -962,6 +977,7 @@ class Bucket(metaclass=B2TraceMeta):
         encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
+        cache_control: Optional[str] = None,
         min_part_size=None,
         max_part_size=None,
         large_file_sha1=None,
@@ -1006,6 +1022,7 @@ class Bucket(metaclass=B2TraceMeta):
             encryption=encryption,
             file_retention=file_retention,
             legal_hold=legal_hold,
+            cache_control=cache_control,
             min_part_size=min_part_size,
             max_part_size=max_part_size,
             large_file_sha1=large_file_sha1,
@@ -1024,6 +1041,7 @@ class Bucket(metaclass=B2TraceMeta):
         encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
+        cache_control: Optional[str] = None,
         large_file_sha1: Optional[Sha1HexDigest] = None,
         custom_upload_timestamp: Optional[int] = None,
     ):
@@ -1062,6 +1080,7 @@ class Bucket(metaclass=B2TraceMeta):
             encryption=encryption,
             file_retention=file_retention,
             legal_hold=legal_hold,
+            cache_control=cache_control,
             large_file_sha1=large_file_sha1,
             custom_upload_timestamp=custom_upload_timestamp,
         )
@@ -1104,6 +1123,7 @@ class Bucket(metaclass=B2TraceMeta):
         source_content_type: Optional[str] = None,
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
+        cache_control: Optional[str] = None,
         min_part_size=None,
         max_part_size=None,
     ):
@@ -1159,6 +1179,7 @@ class Bucket(metaclass=B2TraceMeta):
                     source_encryption=source_encryption,
                     file_retention=file_retention,
                     legal_hold=legal_hold,
+                    cache_control=cache_control,
                 ).result()
             except CopySourceTooBig as e:
                 copy_source.length = e.size
@@ -1175,6 +1196,7 @@ class Bucket(metaclass=B2TraceMeta):
             encryption=destination_encryption,
             file_retention=file_retention,
             legal_hold=legal_hold,
+            cache_control=cache_control,
             min_part_size=min_part_size,
             max_part_size=max_part_size,
         )
