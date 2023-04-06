@@ -176,7 +176,7 @@ class FileSimulator:
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: LegalHold = LegalHold.UNSET,
         replication_status: Optional[ReplicationStatus] = None,
-        cache_control: Optional[str] = "no-cache",
+        cache_control: Optional[str] = None,
     ):
         if action == 'hide':
             assert server_side_encryption is None

@@ -829,7 +829,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param b2sdk.v2.EncryptionSetting encryption: encryption settings (``None`` if unknown)
         :param b2sdk.v2.FileRetentionSetting file_retention: file retention setting
         :param bool legal_hold: legal hold setting
-        :param str,None cache_control: cache control for the new file, if ``None`` it will be set to 'no-cache'
+        :param str,None cache_control: cache control for the new file, optional
         :param int min_part_size: lower limit of part size for the transfer planner, in bytes
         :param int max_part_size: upper limit of part size for the transfer planner, in bytes
         :param Sha1HexDigest,None large_file_sha1: SHA-1 hash of the result file or ``None`` if unknown
