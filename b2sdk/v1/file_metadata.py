@@ -41,7 +41,7 @@ class FileMetadata:
             'contentLength': self.content_length,
             'contentSha1': self._encode_content_sha1(self.content_sha1, self.content_sha1_verified),
             'fileInfo': self.file_info,
-        } #FIXME Michał - add cache control?
+        }
 
     @classmethod
     def _decode_content_sha1(cls, content_sha1):

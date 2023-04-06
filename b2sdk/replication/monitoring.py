@@ -45,7 +45,7 @@ class ReplicationScanResult(AbstractScanResult):
     source_has_large_metadata: Optional[bool] = None
     source_has_file_retention: Optional[bool] = None
     source_has_legal_hold: Optional[bool] = None
-    #FIXME add cache_control
+    #FIXME add cache_control?
 
     # destination attrs
     destination_replication_status: Optional[ReplicationStatus] = None
@@ -78,7 +78,7 @@ class ReplicationScanResult(AbstractScanResult):
                         source_file_version.file_retention is not NO_RETENTION_FILE_SETTING,
                     'source_has_legal_hold':
                         source_file_version.legal_hold is LegalHold.ON,
-                    #FIXME add cache_control
+                    # FIXME add cache_control?
                 }
             )
 

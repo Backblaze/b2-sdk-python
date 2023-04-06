@@ -331,7 +331,6 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
         assert 'plan_id' in file_info
         best_match_file = None
         best_match_parts = {}
-        #FIXME do something with cache_control
         best_match_parts_len = 0
         for file_ in self.services.large_file.list_unfinished_large_files(
             bucket_id, prefix=file_name
@@ -358,6 +357,11 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
 
             if custom_upload_timestamp is not None and file_.upload_timestamp != custom_upload_timestamp:
                 continue
+
+
+            if cache_control is None or file_.cache_control != encryption:
+                continue
+
 
             finished_parts = {}
             for part in self.services.large_file.list_parts(file_.file_id):
@@ -411,7 +415,6 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
         """
         file_retention = file_retention or NO_RETENTION_FILE_SETTING
         file_info_without_large_file_sha1 = self._get_file_info_without_large_file_sha1(file_info)
-        #FIXME do something with cache_control
         logger.debug('Checking for matching unfinished large files for %s...', file_name)
         for file_ in self.services.large_file.list_unfinished_large_files(
             bucket_id, prefix=file_name
@@ -440,6 +443,11 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
             # FIXME: what if `encryption is None` - match ANY encryption? :)
             if encryption is not None and encryption != file_.encryption:
                 logger.debug('Rejecting %s: encryption mismatch', file_.file_id)
+                continue
+            
+            # FIXME as above - shoule this be handled in the same way as encryption?
+            if cache_control is not None and cache_control != file_.encryption:
+                logger.debug('Rejecting %s: cacheControl mismatch', file_.file_id)
                 continue
 
             if legal_hold is None:
