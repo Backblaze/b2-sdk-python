@@ -27,7 +27,7 @@ source and for destination). Sync, however, accepts an `EncryptionSettingsProvid
 ******************************
 High security: use unique keys
 ******************************
-B2 cloud does not promote or discourage either reusing encryption keys or using unique keys for `SEE-C`.
+B2 cloud does not promote or discourage either reusing encryption keys or using unique keys for `SSE-C`.
 In applications requiring enhanced security, using unique key per file is a good strategy. **b2sdk** follows a convention,
 that makes managing such keys easier: `EncryptionSetting` holds a key identifier, aside from the key itself. This key
 identifier is saved in the metadata of all files uploaded, created or copied via **b2sdk** methods using `SSE-C`,
