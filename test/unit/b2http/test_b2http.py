@@ -11,6 +11,7 @@
 import datetime
 import requests
 import socket
+import locale
 
 from ..test_base import TestBase
 
@@ -329,3 +330,13 @@ class TestClockSkewHook(TestBase):
         response.headers = {'Date': now_str}
         with self.assertRaises(ClockSkew):
             ClockSkewHook().post_request('POST', 'http://example.com', {}, response)
+
+    def test_non_english_locale(self):
+        now = datetime.datetime.utcnow()
+        now_str = now.strftime('%a, %d %b %Y %H:%M:%S GMT')
+        response = MagicMock()
+        response.headers = {'Date': now_str}
+        saved = locale.setlocale(locale.LC_ALL)
+        locale.setlocale(locale.LC_ALL, 'de_DE.UTF-8')
+        ClockSkewHook().post_request('POST', 'http://example.com', {}, response)
+        locale.setlocale(locale.LC_ALL, saved)

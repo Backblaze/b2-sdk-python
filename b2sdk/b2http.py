@@ -9,12 +9,15 @@
 ######################################################################
 
 from random import random
+from contextlib import contextmanager
+import datetime
 import io
 import json
+import locale
 import logging
 import socket
+import threading
 
-import arrow
 import requests
 from requests.adapters import HTTPAdapter
 import time
@@ -30,6 +33,7 @@ from .api_config import B2HttpApiConfig, DEFAULT_HTTP_API_CONFIG
 from .requests import NotDecompressingResponse
 from .version import USER_AGENT
 
+LOCALE_LOCK = threading.Lock()
 logger = logging.getLogger(__name__)
 
 
@@ -45,6 +49,16 @@ def _print_exception(e, indent=''):
         print(indent + 'ARG %d: %s' % (i, repr(a)))
         if isinstance(a, Exception):
             _print_exception(a, indent + '        ')
+
+
+@contextmanager
+def setlocale(name):
+    with LOCALE_LOCK:
+        saved = locale.setlocale(locale.LC_ALL)
+        try:
+            yield locale.setlocale(locale.LC_ALL, name)
+        finally:
+            locale.setlocale(locale.LC_ALL, saved)
 
 
 class ResponseContextManager:
@@ -114,15 +128,16 @@ class ClockSkewHook(HttpCallback):
 
         # Convert the server time to a datetime object
         try:
-            server_time = arrow.get(
-                server_date_str, 'ddd, DD MMM YYYY HH:mm:ss ZZZ'
-            )  # this, unlike datetime.datetime.strptime, always uses English locale
-        except arrow.parser.ParserError:
+            with setlocale("C"):
+                server_time = datetime.datetime.strptime(
+                    server_date_str, '%a, %d %b %Y %H:%M:%S %Z'
+                )
+        except ValueError:
             logger.exception('server returned date in an inappropriate format')
             raise BadDateFormat(server_date_str)
 
         # Get the local time
-        local_time = arrow.utcnow()
+        local_time = datetime.datetime.utcnow()
 
         # Check the difference.
         max_allowed = 10 * 60  # ten minutes, in seconds
