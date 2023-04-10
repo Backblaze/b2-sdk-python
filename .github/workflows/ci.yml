@@ -95,11 +95,6 @@ jobs:
           - os: "windows-latest"
             python-version: "pypy-3.8"
     steps:
-      - name: Install unit-test apt dependencies
-        uses: awalsh128/cache-apt-pkgs-action@v1.3.0
-        with:
-          packages: language-pack-de
-          version: 1.0  # This should be update each time the packages above are modified
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0

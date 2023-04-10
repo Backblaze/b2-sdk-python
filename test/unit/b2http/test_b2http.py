@@ -21,6 +21,7 @@ from apiver_deps import USER_AGENT
 from apiver_deps import B2Http
 from apiver_deps import B2HttpApiConfig
 from apiver_deps import ClockSkewHook
+from b2sdk.b2http import setlocale
 
 from unittest.mock import call, MagicMock, patch
 
@@ -295,6 +296,15 @@ class TestB2HttpUserAgentAppend(TestB2Http):
     }
 
 
+class TestSetLocaleContextManager(TestBase):
+    def test_set_locale_context_manager(self):
+        saved = locale.setlocale(locale.LC_ALL)
+        locale.setlocale(locale.LC_ALL, 'C')
+        with setlocale('POSIX'):
+            assert locale.setlocale(category=locale.LC_ALL) == "POSIX"
+        locale.setlocale(locale.LC_ALL, saved)
+
+
 class TestClockSkewHook(TestBase):
     def test_bad_format(self):
         response = MagicMock()
@@ -330,13 +340,3 @@ class TestClockSkewHook(TestBase):
         response.headers = {'Date': now_str}
         with self.assertRaises(ClockSkew):
             ClockSkewHook().post_request('POST', 'http://example.com', {}, response)
-
-    def test_non_english_locale(self):
-        now = datetime.datetime.utcnow()
-        now_str = now.strftime('%a, %d %b %Y %H:%M:%S GMT')
-        response = MagicMock()
-        response.headers = {'Date': now_str}
-        saved = locale.setlocale(locale.LC_ALL)
-        locale.setlocale(locale.LC_ALL, 'de_DE.UTF-8')
-        ClockSkewHook().post_request('POST', 'http://example.com', {}, response)
-        locale.setlocale(locale.LC_ALL, saved)
