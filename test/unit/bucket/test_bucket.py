@@ -1480,16 +1480,6 @@ class TestUpload(TestCaseWithBucket):
 
                 last_data = data
 
-    def assertBucketContents(self, expected, *args, **kwargs):
-        """
-        *args and **kwargs are passed to self.bucket_ls()
-        """
-        actual = [
-            (info.file_name, info.size, info.action, folder)
-            for (info, folder) in self.bucket_ls(*args, **kwargs)
-        ]
-        self.assertEqual(expected, actual)
-
     @pytest.mark.skipif(platform.system() == 'Windows', reason='no os.mkfifo() on Windows')
     def test_upload_fifo(self):
         with TempDir() as d:
