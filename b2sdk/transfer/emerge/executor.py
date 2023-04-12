@@ -43,6 +43,7 @@ class EmergeExecutor:
         encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
+        custom_upload_timestamp: Optional[int] = None,
     ):
         if emerge_plan.is_large_file():
             execution = LargeFileEmergeExecution(
@@ -57,6 +58,7 @@ class EmergeExecutor:
                 legal_hold=legal_hold,
                 continue_large_file_id=continue_large_file_id,
                 max_queue_size=max_queue_size,
+                custom_upload_timestamp=custom_upload_timestamp,
             )
         else:
             if continue_large_file_id is not None:
@@ -71,6 +73,7 @@ class EmergeExecutor:
                 encryption=encryption,
                 file_retention=file_retention,
                 legal_hold=legal_hold,
+                custom_upload_timestamp=custom_upload_timestamp,
             )
         return execution.execute_plan(emerge_plan)
 
@@ -89,6 +92,7 @@ class BaseEmergeExecution(metaclass=ABCMeta):
         encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
+        custom_upload_timestamp: Optional[int] = None,
     ):
         self.services = services
         self.bucket_id = bucket_id
@@ -99,6 +103,7 @@ class BaseEmergeExecution(metaclass=ABCMeta):
         self.encryption = encryption
         self.file_retention = file_retention
         self.legal_hold = legal_hold
+        self.custom_upload_timestamp = custom_upload_timestamp
 
     @abstractmethod
     def execute_plan(self, emerge_plan):
@@ -132,6 +137,7 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
         legal_hold: Optional[LegalHold] = None,
         continue_large_file_id=None,
         max_queue_size=None,
+        custom_upload_timestamp: Optional[int] = None,
     ):
         super(LargeFileEmergeExecution, self).__init__(
             services,
@@ -143,6 +149,7 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
             encryption=encryption,
             file_retention=file_retention,
             legal_hold=legal_hold,
+            custom_upload_timestamp=custom_upload_timestamp,
         )
         self.continue_large_file_id = continue_large_file_id
         self.max_queue_size = max_queue_size
@@ -178,6 +185,7 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
             file_retention=self.file_retention,
             legal_hold=self.legal_hold,
             emerge_parts_dict=emerge_parts_dict,
+            custom_upload_timestamp=self.custom_upload_timestamp,
         )
 
         if unfinished_file is None:
@@ -248,6 +256,7 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
         emerge_parts_dict=None,
+        custom_upload_timestamp: Optional[int] = None,
     ):
         if 'listFiles' not in self.services.session.account_info.get_allowed()['capabilities']:
             return None, {}
@@ -279,6 +288,7 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
                 encryption,
                 file_retention,
                 legal_hold,
+                custom_upload_timestamp=custom_upload_timestamp,
             )
         elif emerge_parts_dict is not None:
             unfinished_file, finished_parts = self._match_unfinished_file_if_possible(
@@ -289,6 +299,7 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
                 encryption,
                 file_retention,
                 legal_hold,
+                custom_upload_timestamp=custom_upload_timestamp,
             )
         return unfinished_file, finished_parts
 
@@ -301,6 +312,7 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
         encryption: EncryptionSetting,
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
+        custom_upload_timestamp: Optional[int] = None,
     ):
         file_retention = file_retention or NO_RETENTION_FILE_SETTING
         assert 'plan_id' in file_info
@@ -329,6 +341,10 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
                 # pass UNKNOWN file_retention here - but raw_api/server won't allow it
                 # and we don't check it here
                 continue
+
+            if custom_upload_timestamp is not None and file_.upload_timestamp != custom_upload_timestamp:
+                continue
+
             finished_parts = {}
             for part in self.services.large_file.list_parts(file_.file_id):
                 emerge_part = emerge_parts_dict.get(part.part_number)
@@ -369,6 +385,7 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
         encryption: EncryptionSetting,
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
+        custom_upload_timestamp: Optional[int] = None,
     ):
         """
         Find an unfinished file that may be used to resume a large file upload.  The
@@ -426,6 +443,11 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
                 # and we don't check it here
                 logger.debug('Rejecting %s: retention mismatch', file_.file_id)
                 continue
+
+            if custom_upload_timestamp is not None and file_.upload_timestamp != custom_upload_timestamp:
+                logger.debug('Rejecting %s: custom_upload_timestamp mismatch', file_.file_id)
+                continue
+
             files_match = True
             finished_parts = {}
             for part in self.services.large_file.list_parts(file_.file_id):
@@ -623,6 +645,7 @@ class UploadFileExecutionStep(BaseExecutionStep):
             encryption=execution.encryption,
             file_retention=execution.file_retention,
             legal_hold=execution.legal_hold,
+            custom_upload_timestamp=execution.custom_upload_timestamp,
         )
 
 

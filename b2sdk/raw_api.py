@@ -316,6 +316,7 @@ class AbstractRawApi(metaclass=ABCMeta):
         server_side_encryption: Optional[EncryptionSetting],
         file_retention: Optional[FileRetentionSetting],
         legal_hold: Optional[LegalHold],
+        custom_upload_timestamp: Optional[int] = None,
     ) -> dict:
         headers = {
             'Authorization': upload_auth_token,
@@ -338,6 +339,9 @@ class AbstractRawApi(metaclass=ABCMeta):
         if file_retention is not None:
             file_retention.add_to_to_upload_headers(headers)
 
+        if custom_upload_timestamp is not None:
+            headers['X-Bz-Custom-Upload-Timestamp'] = str(custom_upload_timestamp)
+
         return headers
 
     @abstractmethod
@@ -354,6 +358,7 @@ class AbstractRawApi(metaclass=ABCMeta):
         server_side_encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
+        custom_upload_timestamp: Optional[int] = None,
     ):
         pass
 
@@ -702,6 +707,7 @@ class B2RawHTTPApi(AbstractRawApi):
         server_side_encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
+        custom_upload_timestamp: Optional[int] = None,
     ):
         kwargs = {}
         if server_side_encryption is not None:
@@ -715,6 +721,9 @@ class B2RawHTTPApi(AbstractRawApi):
 
         if file_retention is not None:
             kwargs['fileRetention'] = file_retention.serialize_to_json_for_request()
+
+        if custom_upload_timestamp is not None:
+            kwargs['custom_upload_timestamp'] = custom_upload_timestamp
 
         return self._post_json(
             api_url,
@@ -881,6 +890,7 @@ class B2RawHTTPApi(AbstractRawApi):
         server_side_encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
+        custom_upload_timestamp: Optional[int] = None,
     ):
         """
         Upload one, small file to b2.
@@ -907,6 +917,7 @@ class B2RawHTTPApi(AbstractRawApi):
             server_side_encryption=server_side_encryption,
             file_retention=file_retention,
             legal_hold=legal_hold,
+            custom_upload_timestamp=custom_upload_timestamp,
         )
         return self.b2_http.post_content_return_json(upload_url, headers, data_stream)
 

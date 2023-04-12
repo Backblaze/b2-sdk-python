@@ -360,6 +360,7 @@ def raw_api_test_helper(raw_api, should_cleanup_old_buckets):
         {'color': 'blue'},
         io.BytesIO(file_contents),
         server_side_encryption=sse_b2_aes,
+        custom_upload_timestamp=12345,
     )
 
     file_id = file_dict['fileId']
