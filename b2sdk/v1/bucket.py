@@ -57,7 +57,7 @@ class Bucket(v2.Bucket):
                 (``None`` if unknown)
         :param b2sdk.v1.FileRetentionSetting file_retention: retention setting for the new file
         :param bool legal_hold: legalHold setting for the new file
-        :param str cache_control: cache control setting for the new file #FIXME Michał add more info
+        :param str cache_control: cache control setting for the new file. Syntax based on the section 14.9 of RC 2616. Example string value: 'public, max-age=86400, s-maxage=3600, no-transform'.
         """
         return self.api.session.copy_file(
             file_id,

@@ -45,7 +45,9 @@ class TestFileVersion:
         (self.application_key_id, self.master_key) = self.raw_api.create_account()
         self.api.authorize_account('production', self.application_key_id, self.master_key)
         self.bucket = self.api.create_bucket('testbucket', 'allPrivate', is_file_lock_enabled=True)
-        self.file_version = self.bucket.upload_bytes(b'nothing', 'test_file', cache_control='private, max-age=3600')
+        self.file_version = self.bucket.upload_bytes(
+            b'nothing', 'test_file', cache_control='private, max-age=3600'
+        )
 
     @pytest.mark.apiver(to_ver=1)
     def test_format_ls_entry(self):

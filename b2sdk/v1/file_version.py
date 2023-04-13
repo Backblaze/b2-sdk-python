@@ -166,7 +166,7 @@ class FileVersionInfoFactory(v2.FileVersionFactory):
             server_side_encryption=v2.EncryptionSettingFactory.from_response_headers(headers),
             file_retention=v2.FileRetentionSetting.from_response_headers(headers),
             legal_hold=v2.LegalHold.from_response_headers(headers),
-            cache_control=headers['cache-control'],
+            cache_control=headers['Cache-control'],
         )
 
 

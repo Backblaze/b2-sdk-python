@@ -568,7 +568,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param bool legal_hold: legal hold setting
         :param b2sdk.v2.UploadMode upload_mode: desired upload mode
         :param int,None custom_upload_timestamp: override object creation date, expressed as a number of milliseconds since epoch
-        :param str,None cache_control: cache control setting #FIXME Michał
+        :param str,None cache_control: cache control setting
         :rtype: b2sdk.v2.FileVersion
         """
         upload_source = UploadSourceLocalFile(local_path=local_file, content_sha1=sha1_sum)
@@ -835,7 +835,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param int max_part_size: upper limit of part size for the transfer planner, in bytes
         :param Sha1HexDigest,None large_file_sha1: SHA-1 hash of the result file or ``None`` if unknown
         :param int,None custom_upload_timestamp: override object creation date, expressed as a number of milliseconds since epoch
-        :param str,None cache_control: cache control setting, optional #FIXME Michał - add more info
+        :param str,None cache_control: cache control setting, optional. Syntax based on the section 14.9 of RC 2616. Example string value: 'public, max-age=86400, s-maxage=3600, no-transform'.
         """
         return self._create_file(
             self.api.services.emerger.emerge,

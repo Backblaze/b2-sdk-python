@@ -344,7 +344,7 @@ class AbstractRawApi(metaclass=ABCMeta):
 
         if cache_control is not None:
             headers['X-Bz-Info-b2-cache-control'] = b2_url_encode(cache_control)
-            
+
         if custom_upload_timestamp is not None:
             headers['X-Bz-Custom-Upload-Timestamp'] = str(custom_upload_timestamp)
 
@@ -1022,7 +1022,7 @@ class B2RawHTTPApi(AbstractRawApi):
 
         if file_retention is not None:
             kwargs['fileRetention'] = file_retention.serialize_to_json_for_request()
-        
+
         if cache_control is not None:
             kwargs['cacheControl'] = cache_control
 

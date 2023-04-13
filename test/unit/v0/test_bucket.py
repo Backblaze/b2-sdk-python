@@ -283,7 +283,8 @@ class TestGetFileInfo(TestCaseWithBucket):
 
         self.assertIsInstance(info, FileVersionInfo)
         expected = (
-            a_id, 'a', 11, 'upload', 'b2/x-auto', 'none', NO_RETENTION_FILE_SETTING, LegalHold.UNSET, None
+            a_id, 'a', 11, 'upload', 'b2/x-auto', 'none', NO_RETENTION_FILE_SETTING,
+            LegalHold.UNSET, None
         )
         actual = (
             info.id_,
@@ -791,9 +792,7 @@ class TestUpload(TestCaseWithBucket):
             data = b'hello world'
             write_file(path, data)
             cache_control = 'max-age=3600'
-            file_info = self.bucket.upload_local_file(
-                path, 'file1', cache_control=cache_control
-            )
+            file_info = self.bucket.upload_local_file(path, 'file1', cache_control=cache_control)
             self.assertEqual(cache_control, file_info.cache_control)
 
     def test_upload_bytes_cache_control(self):

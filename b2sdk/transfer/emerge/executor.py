@@ -442,9 +442,8 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
             if encryption is not None and encryption != file_.encryption:
                 logger.debug('Rejecting %s: encryption mismatch', file_.file_id)
                 continue
-            
-            # FIXME Michał as above - shoule this be handled in the same way as encryption?
-            if cache_control is not None and cache_control != file_.encryption:
+
+            if cache_control is not None and cache_control != file_.cache_control:
                 logger.debug('Rejecting %s: cacheControl mismatch', file_.file_id)
                 continue
 

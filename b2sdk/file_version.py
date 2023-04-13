@@ -254,7 +254,7 @@ class FileVersion(BaseFileVersion):
         content_md5: Optional[str],
         server_side_encryption: EncryptionSetting,
         file_retention: FileRetentionSetting = NO_RETENTION_FILE_SETTING,
-        legal_hold: LegalHold = LegalHold.UNSET,      
+        legal_hold: LegalHold = LegalHold.UNSET,
         replication_status: Optional[ReplicationStatus] = None,
         cache_control: Optional[str] = "no-cache",
     ):
@@ -276,7 +276,7 @@ class FileVersion(BaseFileVersion):
             file_retention=file_retention,
             legal_hold=legal_hold,
             replication_status=replication_status,
-            cache_control = cache_control,
+            cache_control=cache_control,
         )
 
     def _get_args_for_clone(self):
@@ -592,7 +592,7 @@ class DownloadVersionFactory:
             content_length=content_length,
             content_language=headers.get('Content-Language'),
             expires=headers.get('Expires'),
-            cache_control= cache_control,
+            cache_control=cache_control,
             content_encoding=headers.get('Content-Encoding'),
             file_retention=FileRetentionSetting.from_response_headers(headers),
             legal_hold=LegalHold.from_response_headers(headers),

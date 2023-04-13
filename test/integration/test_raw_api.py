@@ -361,22 +361,6 @@ def raw_api_test_helper(raw_api, should_cleanup_old_buckets):
         io.BytesIO(file_contents),
         server_side_encryption=sse_b2_aes,
         custom_upload_timestamp=12345,
-    )
-
-    # b2_upload_file_with_cache_control
-    print('b2_upload_file_with_cache_control')
-    file_name = 'test.txt'
-    file_contents = b'hello world'
-    file_sha1 = hex_sha1_of_stream(io.BytesIO(file_contents), len(file_contents))
-    file_dict = raw_api.upload_file(
-        upload_url,
-        upload_auth_token,
-        file_name,
-        len(file_contents),
-        'text/plain',
-        file_sha1,
-        {'color': 'blue'},
-        io.BytesIO(file_contents),
         cache_control='private, max-age=2222',
     )
 
@@ -386,6 +370,9 @@ def raw_api_test_helper(raw_api, should_cleanup_old_buckets):
     print('b2_list_file_versions')
     list_versions_dict = raw_api.list_file_versions(api_url, account_auth_token, bucket_id)
     assert [file_name] == [f_dict['fileName'] for f_dict in list_versions_dict['files']]
+    assert ['private, max-age=2222'] == [
+        f_dict['fileInfo']['b2-cache-control'] for f_dict in list_versions_dict['files']
+    ]
 
     # b2_download_file_by_id with auth
     print('b2_download_file_by_id (auth)')

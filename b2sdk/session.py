@@ -567,14 +567,6 @@ class B2Session:
             bypass_governance,
         )
 
-    def update_file_cache_control(
-        self,
-        file_id,
-        file_name,
-        cache_control: str,
-    ):
-        pass #FIXME Michał
-
     def update_file_legal_hold(
         self,
         file_id,
