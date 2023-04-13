@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 * Add support for custom upload timestamp
+* Add support for cache control header while uploading
 
 ## [1.20.0] - 2023-03-23
 
