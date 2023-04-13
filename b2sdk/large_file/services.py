@@ -96,8 +96,9 @@ class LargeFileServices:
         :param str,None content_type: the MIME type, or ``None`` to accept the default based on file extension of the B2 file name
         :param dict,None file_info: a file info to store with the file or ``None`` to not store anything
         :param b2sdk.v2.EncryptionSetting encryption: encryption settings (``None`` if unknown)
-        :param b2sdk.v2.LegalHold legal_hold: legal hold setting
         :param b2sdk.v2.FileRetentionSetting file_retention: file retention setting
+        :param b2sdk.v2.LegalHold legal_hold: legal hold setting
+        :param str,None cache_control: cache control setting
         """
         return UnfinishedLargeFile(
             self.services.session.start_large_file(

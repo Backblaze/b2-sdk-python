@@ -59,9 +59,9 @@ class FileVersionInfo(v2.FileVersion):
         self.action = action
         self.server_side_encryption = server_side_encryption
         self.legal_hold = legal_hold
-        self.cache_control = cache_control
         self.file_retention = file_retention
         self._api = api
+        self.cache_control = cache_control
 
         # allow common tests to execute without hitting attributeerror
 
@@ -128,8 +128,8 @@ def file_version_info_from_new_file_version(file_version: v2.FileVersion) -> Fil
                 'content_md5',
                 'server_side_encryption',
                 'legal_hold',
-                'cache_control',
                 'file_retention',
+                'cache_control',
                 'api',
             ]
         }

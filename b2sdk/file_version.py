@@ -45,10 +45,10 @@ class BaseFileVersion:
         'upload_timestamp',
         'server_side_encryption',
         'legal_hold',
-        'cache_control',
         'file_retention',
         'mod_time_millis',
         'replication_status',
+        'cache_control',
     ]
     _TYPE_MATCHER = re.compile('[a-z0-9]+_[a-z0-9]+_f([0-9]).*')
     _FILE_TYPE = {
@@ -71,8 +71,8 @@ class BaseFileVersion:
         server_side_encryption: EncryptionSetting,
         file_retention: FileRetentionSetting = NO_RETENTION_FILE_SETTING,
         legal_hold: LegalHold = LegalHold.UNSET,
-        cache_control: Optional[str] = None,
         replication_status: Optional[ReplicationStatus] = None,
+        cache_control: Optional[str] = None,
     ):
         self.api = api
         self.id_ = id_
@@ -85,8 +85,8 @@ class BaseFileVersion:
         self.server_side_encryption = server_side_encryption
         self.file_retention = file_retention
         self.legal_hold = legal_hold
-        self.cache_control = cache_control
         self.replication_status = replication_status
+        self.cache_control = cache_control
 
         if SRC_LAST_MODIFIED_MILLIS in self.file_info:
             self.mod_time_millis = int(self.file_info[SRC_LAST_MODIFIED_MILLIS])
@@ -126,8 +126,8 @@ class BaseFileVersion:
             'server_side_encryption': self.server_side_encryption,
             'file_retention': self.file_retention,
             'legal_hold': self.legal_hold,
-            'cache_control': self.cache_control,
             'replication_status': self.replication_status,
+            'cache_control': self.cache_control,
         }  # yapf: disable
 
     def as_dict(self):
@@ -138,8 +138,8 @@ class BaseFileVersion:
             'fileInfo': self.file_info,
             'serverSideEncryption': self.server_side_encryption.as_dict(),
             'legalHold': self.legal_hold.value,
-            'cacheControl': self.cache_control,
             'fileRetention': self.file_retention.as_dict(),
+            'cacheControl': self.cache_control,
         }
 
         if self.size is not None:
@@ -254,9 +254,9 @@ class FileVersion(BaseFileVersion):
         content_md5: Optional[str],
         server_side_encryption: EncryptionSetting,
         file_retention: FileRetentionSetting = NO_RETENTION_FILE_SETTING,
-        legal_hold: LegalHold = LegalHold.UNSET,
-        cache_control: Optional[str] = "no-cache",      
+        legal_hold: LegalHold = LegalHold.UNSET,      
         replication_status: Optional[ReplicationStatus] = None,
+        cache_control: Optional[str] = "no-cache",
     ):
         self.account_id = account_id
         self.bucket_id = bucket_id
@@ -275,8 +275,8 @@ class FileVersion(BaseFileVersion):
             server_side_encryption=server_side_encryption,
             file_retention=file_retention,
             legal_hold=legal_hold,
-            cache_control = cache_control,
             replication_status=replication_status,
+            cache_control = cache_control,
         )
 
     def _get_args_for_clone(self):
@@ -425,8 +425,8 @@ class DownloadVersion(BaseFileVersion):
             server_side_encryption=server_side_encryption,
             file_retention=file_retention,
             legal_hold=legal_hold,
-            cache_control=cache_control,
             replication_status=replication_status,
+            cache_control=cache_control,
         )
 
     def _get_args_for_clone(self):
@@ -510,10 +510,10 @@ class FileVersionFactory:
         file_retention = FileRetentionSetting.from_file_version_dict(file_version_dict)
 
         legal_hold = LegalHold.from_file_version_dict(file_version_dict)
-        cache_control = file_version_dict.get('cacheControl')
         replication_status_value = file_version_dict.get('replicationStatus')
         replication_status = replication_status_value and ReplicationStatus[
             replication_status_value.upper()]
+        cache_control = file_version_dict.get('cacheControl')
 
         return self.FILE_VERSION_CLASS(
             self.api,
@@ -531,8 +531,8 @@ class FileVersionFactory:
             server_side_encryption,
             file_retention,
             legal_hold,
-            cache_control,
             replication_status,
+            cache_control,
         )
 
 

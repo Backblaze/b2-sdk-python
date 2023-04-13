@@ -57,10 +57,10 @@ class EmergeExecutor:
                 encryption=encryption,
                 file_retention=file_retention,
                 legal_hold=legal_hold,
-                cache_control=cache_control,
                 continue_large_file_id=continue_large_file_id,
                 max_queue_size=max_queue_size,
                 custom_upload_timestamp=custom_upload_timestamp,
+                cache_control=cache_control,
             )
         else:
             if continue_large_file_id is not None:
@@ -140,10 +140,10 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
         encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
-        cache_control: Optional[str] = None,
         continue_large_file_id=None,
         max_queue_size=None,
         custom_upload_timestamp: Optional[int] = None,
+        cache_control: Optional[str] = None,
     ):
         super(LargeFileEmergeExecution, self).__init__(
             services,
@@ -191,9 +191,9 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
             encryption=encryption,
             file_retention=self.file_retention,
             legal_hold=self.legal_hold,
-            cache_control=self.cache_control,
             emerge_parts_dict=emerge_parts_dict,
             custom_upload_timestamp=self.custom_upload_timestamp,
+            cache_control=self.cache_control,
         )
 
         if unfinished_file is None:
@@ -264,9 +264,9 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
         encryption: EncryptionSetting,
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
-        cache_control: Optional[str] = None,
         emerge_parts_dict=None,
         custom_upload_timestamp: Optional[int] = None,
+        cache_control: Optional[str] = None,
     ):
         if 'listFiles' not in self.services.session.account_info.get_allowed()['capabilities']:
             return None, {}
@@ -299,7 +299,7 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
                 file_retention,
                 legal_hold,
                 custom_upload_timestamp=custom_upload_timestamp,
-                cache_control,
+                cache_control=cache_control,
             )
         elif emerge_parts_dict is not None:
             unfinished_file, finished_parts = self._match_unfinished_file_if_possible(
@@ -311,7 +311,7 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
                 file_retention,
                 legal_hold,
                 custom_upload_timestamp=custom_upload_timestamp,
-                cache_control,
+                cache_control=cache_control,
             )
         return unfinished_file, finished_parts
 
@@ -358,10 +358,8 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
             if custom_upload_timestamp is not None and file_.upload_timestamp != custom_upload_timestamp:
                 continue
 
-
-            if cache_control is None or file_.cache_control != encryption:
+            if cache_control is None or file_.cache_control != cache_control:
                 continue
-
 
             finished_parts = {}
             for part in self.services.large_file.list_parts(file_.file_id):
@@ -445,7 +443,7 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
                 logger.debug('Rejecting %s: encryption mismatch', file_.file_id)
                 continue
             
-            # FIXME as above - shoule this be handled in the same way as encryption?
+            # FIXME Michał as above - shoule this be handled in the same way as encryption?
             if cache_control is not None and cache_control != file_.encryption:
                 logger.debug('Rejecting %s: cacheControl mismatch', file_.file_id)
                 continue

@@ -319,7 +319,7 @@ class AbstractRawApi(metaclass=ABCMeta):
         file_retention: Optional[FileRetentionSetting],
         legal_hold: Optional[LegalHold],
         custom_upload_timestamp: Optional[int] = None,
-        cache_control: Optional[str],
+        cache_control: Optional[str] = None,
     ) -> dict:
         headers = {
             'Authorization': upload_auth_token,
@@ -915,6 +915,11 @@ class B2RawHTTPApi(AbstractRawApi):
         :param content_sha1: hex SHA1 of the contents of the file
         :param file_infos: extra file info to upload
         :param data_stream: a file like object from which the contents of the file can be read
+        :param server_side_encryption: encryption setting for the file
+        :param file_retention: retention setting for the file
+        :param legal_hold: legal hold setting for the file
+        :param custom_upload_timestamp: custom upload timestamp for the file
+        :param cache_control: cache control setting for the file
         :return:
         """
         # Raise UnusableFileName if the file_name doesn't meet the rules.

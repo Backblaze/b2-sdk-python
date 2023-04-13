@@ -57,6 +57,7 @@ class Bucket(v2.Bucket):
                 (``None`` if unknown)
         :param b2sdk.v1.FileRetentionSetting file_retention: retention setting for the new file
         :param bool legal_hold: legalHold setting for the new file
+        :param str cache_control: cache control setting for the new file #FIXME Michał add more info
         """
         return self.api.session.copy_file(
             file_id,

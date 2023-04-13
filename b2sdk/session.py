@@ -573,7 +573,7 @@ class B2Session:
         file_name,
         cache_control: str,
     ):
-        pass
+        pass #FIXME Michał
 
     def update_file_legal_hold(
         self,

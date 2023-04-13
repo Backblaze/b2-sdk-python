@@ -200,8 +200,8 @@ class FileSimulator:
         self.server_side_encryption = server_side_encryption
         self.file_retention = file_retention
         self.legal_hold = legal_hold if legal_hold is not None else LegalHold.UNSET
-        self.cache_control = cache_control
         self.replication_status = replication_status
+        self.cache_control = cache_control
 
         if action == 'start':
             self.parts = []
@@ -1747,7 +1747,7 @@ class RawSimulator(AbstractRawApi):
             file_retention,
             legal_hold,
             custom_upload_timestamp=custom_upload_timestamp,
-            cache_control,
+            cache_control=cache_control,
         )
         self.file_id_to_bucket_id[result['fileId']] = bucket_id
 
@@ -1797,7 +1797,7 @@ class RawSimulator(AbstractRawApi):
         file_retention: Optional[FileRetentionSetting],
         legal_hold: Optional[LegalHold],
         custom_upload_timestamp: Optional[int] = None,
-        cache_control: Optional[str],
+        cache_control: Optional[str] = None,
     ) -> dict:
 
         # fix to allow calculating headers on unknown key - only for simulation

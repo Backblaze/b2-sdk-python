@@ -67,7 +67,7 @@ class UploadManager(TransferManager, ThreadPoolMixin):
             file_retention,
             legal_hold,
             custom_upload_timestamp=custom_upload_timestamp,
-            cache_control,
+            cache_control=cache_control,
         )
         return f
 
