@@ -950,7 +950,7 @@ class BucketSimulator:
         file_sim = self.FILE_SIMULATOR_CLASS(
             self.account_id, self, file_id, 'start', file_name, content_type, 'none',
             file_info, None, upload_timestamp, server_side_encryption=sse,
-            file_retention=file_retention, legal_hold=legal_hold, cache_control=cache_control
+            file_retention=file_retention, legal_hold=legal_hold, cache_control=cache_control,
         )  # yapf: disable
         self.file_id_to_file[file_id] = file_sim
         self.file_name_and_id_to_file[file_sim.sort_key()] = file_sim

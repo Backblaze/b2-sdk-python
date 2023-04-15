@@ -256,7 +256,7 @@ class FileVersion(BaseFileVersion):
         file_retention: FileRetentionSetting = NO_RETENTION_FILE_SETTING,
         legal_hold: LegalHold = LegalHold.UNSET,
         replication_status: Optional[ReplicationStatus] = None,
-        cache_control: Optional[str] = "no-cache",
+        cache_control: Optional[str] = None,
     ):
         self.account_id = account_id
         self.bucket_id = bucket_id

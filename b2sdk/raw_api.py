@@ -919,7 +919,7 @@ class B2RawHTTPApi(AbstractRawApi):
         :param file_retention: retention setting for the file
         :param legal_hold: legal hold setting for the file
         :param custom_upload_timestamp: custom upload timestamp for the file
-        :param cache_control: cache control setting for the file
+        :param cache_control: an optional cache control setting. Syntax based on the section 14.9 of RFC 2616. Example string value: 'public, max-age=86400, s-maxage=3600, no-transform'.
         :return:
         """
         # Raise UnusableFileName if the file_name doesn't meet the rules.

@@ -98,7 +98,7 @@ class LargeFileServices:
         :param b2sdk.v2.EncryptionSetting encryption: encryption settings (``None`` if unknown)
         :param b2sdk.v2.FileRetentionSetting file_retention: file retention setting
         :param b2sdk.v2.LegalHold legal_hold: legal hold setting
-        :param str,None cache_control: cache control setting
+        :param str,None cache_control: an optional cache control setting. Syntax based on the section 14.9 of RFC 2616. Example string value: 'public, max-age=86400, s-maxage=3600, no-transform'.
         """
         return UnfinishedLargeFile(
             self.services.session.start_large_file(
