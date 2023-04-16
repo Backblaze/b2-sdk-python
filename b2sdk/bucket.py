@@ -494,9 +494,13 @@ class Bucket(metaclass=B2TraceMeta):
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
         large_file_sha1: Optional[Sha1HexDigest] = None,
+        custom_upload_timestamp: Optional[int] = None,
     ):
         """
         Upload bytes in memory to a B2 file.
+
+        .. note:
+            ``custom_upload_timestamp`` is disabled by default - please talk to customer support to enable it on your account (if you really need it)
 
         :param bytes data_bytes: a byte array to upload
         :param str file_name: a file name to upload bytes to
@@ -507,7 +511,8 @@ class Bucket(metaclass=B2TraceMeta):
         :param b2sdk.v2.FileRetentionSetting file_retention: file retention setting
         :param bool legal_hold: legal hold setting
         :param Sha1HexDigest,None large_file_sha1: SHA-1 hash of the result file or ``None`` if unknown
-        :rtype: generator[b2sdk.v2.FileVersion]
+        :param int,None custom_upload_timestamp: override object creation date, expressed as a number of milliseconds since epoch
+        :rtype: b2sdk.v2.FileVersion
         """
         upload_source = UploadSourceBytes(data_bytes)
         return self.upload(
@@ -520,6 +525,7 @@ class Bucket(metaclass=B2TraceMeta):
             file_retention=file_retention,
             legal_hold=legal_hold,
             large_file_sha1=large_file_sha1,
+            custom_upload_timestamp=custom_upload_timestamp,
         )
 
     def upload_local_file(
@@ -535,9 +541,13 @@ class Bucket(metaclass=B2TraceMeta):
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
         upload_mode: UploadMode = UploadMode.FULL,
+        custom_upload_timestamp: Optional[int] = None,
     ):
         """
         Upload a file on local disk to a B2 file.
+
+        .. note:
+            ``custom_upload_timestamp`` is disabled by default - please talk to customer support to enable it on your account (if you really need it)
 
         .. seealso::
 
@@ -554,6 +564,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param b2sdk.v2.FileRetentionSetting file_retention: file retention setting
         :param bool legal_hold: legal hold setting
         :param b2sdk.v2.UploadMode upload_mode: desired upload mode
+        :param int,None custom_upload_timestamp: override object creation date, expressed as a number of milliseconds since epoch
         :rtype: b2sdk.v2.FileVersion
         """
         upload_source = UploadSourceLocalFile(local_path=local_file, content_sha1=sha1_sum)
@@ -584,6 +595,7 @@ class Bucket(metaclass=B2TraceMeta):
             file_retention=file_retention,
             legal_hold=legal_hold,
             large_file_sha1=large_file_sha1,
+            custom_upload_timestamp=custom_upload_timestamp,
         )
 
     def upload_unbound_stream(
@@ -604,6 +616,7 @@ class Bucket(metaclass=B2TraceMeta):
         buffer_size: Optional[int] = None,
         read_size: int = 8192,
         unused_buffer_timeout_seconds: float = 3600.0,
+        custom_upload_timestamp: Optional[int] = None,
     ):
         """
         Upload an unbound file-like read-only object to a B2 file.
@@ -644,6 +657,9 @@ class Bucket(metaclass=B2TraceMeta):
         In rare cases, namely when the whole buffer was sent, but there was an error during sending of last bytes
         and a retry was issued, another buffer (above the aforementioned limit) will be allocated.
 
+        .. note:
+            ``custom_upload_timestamp`` is disabled by default - please talk to customer support to enable it on your account (if you really need it)
+
         :param read_only_object: any object containing a ``read`` method accepting size of the read
         :param file_name: a file name of the new B2 file
         :param content_type: the MIME type, or ``None`` to accept the default based on file extension of the B2 file name
@@ -663,6 +679,7 @@ class Bucket(metaclass=B2TraceMeta):
                         it will be determined automatically as "recommended upload size".
         :param read_size: size of a single read operation performed on the ``read_only_object``
         :param unused_buffer_timeout_seconds: amount of time that a buffer can be idle before returning error
+        :param int,None custom_upload_timestamp: override object creation date, expressed as a number of milliseconds since epoch
         :rtype: b2sdk.v2.FileVersion
         """
         if buffers_count <= 1:
@@ -701,6 +718,7 @@ class Bucket(metaclass=B2TraceMeta):
             # is always downloading data from the stream while others are being uploaded.
             max_queue_size=buffers_count - 1,
             large_file_sha1=large_file_sha1,
+            custom_upload_timestamp=custom_upload_timestamp,
         )
 
     def upload(
@@ -715,6 +733,7 @@ class Bucket(metaclass=B2TraceMeta):
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
         large_file_sha1: Optional[Sha1HexDigest] = None,
+        custom_upload_timestamp: Optional[int] = None,
     ):
         """
         Upload a file to B2, retrying as needed.
@@ -727,6 +746,9 @@ class Bucket(metaclass=B2TraceMeta):
         must be possible to call it more than once in case the upload
         is retried.
 
+        .. note:
+            ``custom_upload_timestamp`` is disabled by default - please talk to customer support to enable it on your account (if you really need it)
+
         :param b2sdk.v2.AbstractUploadSource upload_source: an object that opens the source of the upload
         :param str file_name: the file name of the new B2 file
         :param str,None content_type: the MIME type, or ``None`` to accept the default based on file extension of the B2 file name
@@ -737,6 +759,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param b2sdk.v2.FileRetentionSetting file_retention: file retention setting
         :param bool legal_hold: legal hold setting
         :param Sha1HexDigest,None large_file_sha1: SHA-1 hash of the result file or ``None`` if unknown
+        :param int,None custom_upload_timestamp: override object creation date, expressed as a number of milliseconds since epoch
         :rtype: b2sdk.v2.FileVersion
         """
         return self.create_file(
@@ -751,6 +774,7 @@ class Bucket(metaclass=B2TraceMeta):
             file_retention=file_retention,
             legal_hold=legal_hold,
             large_file_sha1=large_file_sha1,
+            custom_upload_timestamp=custom_upload_timestamp,
         )
 
     def create_file(
@@ -768,12 +792,16 @@ class Bucket(metaclass=B2TraceMeta):
         min_part_size=None,
         max_part_size=None,
         large_file_sha1=None,
+        custom_upload_timestamp: Optional[int] = None,
     ):
         """
         Creates a new file in this bucket using an iterable (list, tuple etc) of remote or local sources.
 
         Source ranges can overlap and remote sources will be prioritized over local sources (when possible).
         For more information and usage examples please see :ref:`Advanced usage patterns <AdvancedUsagePatterns>`.
+
+        .. note:
+            ``custom_upload_timestamp`` is disabled by default - please talk to customer support to enable it on your account (if you really need it)
 
         :param list[b2sdk.v2.WriteIntent] write_intents: list of write intents (remote or local sources)
         :param str file_name: file name of the new file
@@ -795,6 +823,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param int min_part_size: lower limit of part size for the transfer planner, in bytes
         :param int max_part_size: upper limit of part size for the transfer planner, in bytes
         :param Sha1HexDigest,None large_file_sha1: SHA-1 hash of the result file or ``None`` if unknown
+        :param int,None custom_upload_timestamp: override object creation date, expressed as a number of milliseconds since epoch
         """
         return self._create_file(
             self.api.services.emerger.emerge,
@@ -811,6 +840,7 @@ class Bucket(metaclass=B2TraceMeta):
             min_part_size=min_part_size,
             max_part_size=max_part_size,
             large_file_sha1=large_file_sha1,
+            custom_upload_timestamp=custom_upload_timestamp,
         )
 
     def create_file_stream(
@@ -828,12 +858,16 @@ class Bucket(metaclass=B2TraceMeta):
         min_part_size=None,
         max_part_size=None,
         large_file_sha1=None,
+        custom_upload_timestamp: Optional[int] = None,
     ):
         """
         Creates a new file in this bucket using a stream of multiple remote or local sources.
 
         Source ranges can overlap and remote sources will be prioritized over local sources (when possible).
         For more information and usage examples please see :ref:`Advanced usage patterns <AdvancedUsagePatterns>`.
+
+        .. note:
+            ``custom_upload_timestamp`` is disabled by default - please talk to customer support to enable it on your account (if you really need it)
 
         :param iterator[b2sdk.v2.WriteIntent] write_intents_iterator: iterator of write intents which
                         are sorted ascending by ``destination_offset``
@@ -857,6 +891,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param int min_part_size: lower limit of part size for the transfer planner, in bytes
         :param int max_part_size: upper limit of part size for the transfer planner, in bytes
         :param Sha1HexDigest,None large_file_sha1: SHA-1 hash of the result file or ``None`` if unknown
+        :param int,None custom_upload_timestamp: override object creation date, expressed as a number of milliseconds since epoch
         """
         return self._create_file(
             self.api.services.emerger.emerge_stream,
@@ -873,6 +908,7 @@ class Bucket(metaclass=B2TraceMeta):
             min_part_size=min_part_size,
             max_part_size=max_part_size,
             large_file_sha1=large_file_sha1,
+            custom_upload_timestamp=custom_upload_timestamp,
         )
 
     def _create_file(
@@ -929,9 +965,13 @@ class Bucket(metaclass=B2TraceMeta):
         min_part_size=None,
         max_part_size=None,
         large_file_sha1=None,
+        custom_upload_timestamp: Optional[int] = None,
     ):
         """
         Creates a new file in this bucket by concatenating multiple remote or local sources.
+
+        .. note:
+            ``custom_upload_timestamp`` is disabled by default - please talk to customer support to enable it on your account (if you really need it)
 
         :param list[b2sdk.v2.OutboundTransferSource] outbound_sources: list of outbound sources (remote or local)
         :param str file_name: file name of the new file
@@ -953,6 +993,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param int min_part_size: lower limit of part size for the transfer planner, in bytes
         :param int max_part_size: upper limit of part size for the transfer planner, in bytes
         :param Sha1HexDigest,None large_file_sha1: SHA-1 hash of the result file or ``None`` if unknown
+        :param int,None custom_upload_timestamp: override object creation date, expressed as a number of milliseconds since epoch
         """
         return self.create_file(
             list(WriteIntent.wrap_sources_iterator(outbound_sources)),
@@ -968,6 +1009,7 @@ class Bucket(metaclass=B2TraceMeta):
             min_part_size=min_part_size,
             max_part_size=max_part_size,
             large_file_sha1=large_file_sha1,
+            custom_upload_timestamp=custom_upload_timestamp,
         )
 
     def concatenate_stream(
@@ -983,6 +1025,7 @@ class Bucket(metaclass=B2TraceMeta):
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
         large_file_sha1: Optional[Sha1HexDigest] = None,
+        custom_upload_timestamp: Optional[int] = None,
     ):
         """
         Creates a new file in this bucket by concatenating stream of multiple remote or local sources.
@@ -1006,6 +1049,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param b2sdk.v2.FileRetentionSetting file_retention: file retention setting
         :param bool legal_hold: legal hold setting
         :param Sha1HexDigest,None large_file_sha1: SHA-1 hash of the result file or ``None`` if unknown
+        :param int,None custom_upload_timestamp: override object creation date, expressed as a number of milliseconds since epoch
         """
         return self.create_file_stream(
             WriteIntent.wrap_sources_iterator(outbound_sources_iterator),
@@ -1019,6 +1063,7 @@ class Bucket(metaclass=B2TraceMeta):
             file_retention=file_retention,
             legal_hold=legal_hold,
             large_file_sha1=large_file_sha1,
+            custom_upload_timestamp=custom_upload_timestamp,
         )
 
     def get_download_url(self, filename):

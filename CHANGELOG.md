@@ -6,8 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+* Add support for custom upload timestamp
+
 ### Infrastructure
-* Remove arrow dependency
+* Remove dependency from `arrow`
 
 ## [1.20.0] - 2023-03-23
 
