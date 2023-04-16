@@ -298,7 +298,9 @@ class TestB2HttpUserAgentAppend(TestB2Http):
 
 class TestSetLocaleContextManager(TestBase):
     def test_set_locale_context_manager(self):
-        test_locale = locale.normalize('C.utf8')  # C.UTF-8 on Ubuntu 18.04 Bionic, C.utf8 on Ubuntu 22.04 Jammy
+        test_locale = locale.normalize(
+            'C.utf8'
+        )  # C.UTF-8 on Ubuntu 18.04 Bionic, C.utf8 on Ubuntu 22.04 Jammy
         other_locale = 'C'
 
         saved = locale.setlocale(locale.LC_ALL)
