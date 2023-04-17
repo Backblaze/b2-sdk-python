@@ -11,6 +11,7 @@
 import datetime
 import requests
 import socket
+import locale
 
 from ..test_base import TestBase
 
@@ -20,6 +21,7 @@ from apiver_deps import USER_AGENT
 from apiver_deps import B2Http
 from apiver_deps import B2HttpApiConfig
 from apiver_deps import ClockSkewHook
+from b2sdk.b2http import setlocale
 
 from unittest.mock import call, MagicMock, patch
 
@@ -292,6 +294,23 @@ class TestB2HttpUserAgentAppend(TestB2Http):
     EXPECTED_HEADERS = {
         **TestB2Http.EXPECTED_HEADERS, 'User-Agent': '%s %s' % (USER_AGENT, UA_APPEND)
     }
+
+
+class TestSetLocaleContextManager(TestBase):
+    def test_set_locale_context_manager(self):
+        test_locale = locale.normalize(
+            'C.utf8'
+        )  # C.UTF-8 on Ubuntu 18.04 Bionic, C.utf8 on Ubuntu 22.04 Jammy
+        other_locale = 'C'
+
+        saved = locale.setlocale(locale.LC_ALL)
+        if saved == test_locale:
+            test_locale, other_locale = other_locale, test_locale
+
+        locale.setlocale(locale.LC_ALL, other_locale)
+        with setlocale(test_locale):
+            assert locale.setlocale(category=locale.LC_ALL) == test_locale
+        locale.setlocale(locale.LC_ALL, saved)
 
 
 class TestClockSkewHook(TestBase):

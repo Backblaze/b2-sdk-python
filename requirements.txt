@@ -1,4 +1,3 @@
-arrow>=1.0.2,<2.0.0
 importlib-metadata>=3.3.0; python_version < '3.8'
 logfury>=1.0.1,<2.0.0
 requests>=2.9.1,<3.0.0
