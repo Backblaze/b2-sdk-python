@@ -513,6 +513,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param bool legal_hold: legal hold setting
         :param Sha1HexDigest,None large_file_sha1: SHA-1 hash of the result file or ``None`` if unknown
         :param int,None custom_upload_timestamp: override object creation date, expressed as a number of milliseconds since epoch
+        :param str,None cache_control: an optional cache control setting. Syntax based on the section 14.9 of RFC 2616. Example string value: 'public, max-age=86400, s-maxage=3600, no-transform'.
         :rtype: b2sdk.v2.FileVersion
         """
         upload_source = UploadSourceBytes(data_bytes)
@@ -686,6 +687,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param read_size: size of a single read operation performed on the ``read_only_object``
         :param unused_buffer_timeout_seconds: amount of time that a buffer can be idle before returning error
         :param int,None custom_upload_timestamp: override object creation date, expressed as a number of milliseconds since epoch
+        :param str,None cache_control: an optional cache control setting. Syntax based on the section 14.9 of RFC 2616. Example string value: 'public, max-age=86400, s-maxage=3600, no-transform'.
         :rtype: b2sdk.v2.FileVersion
         """
         if buffers_count <= 1:

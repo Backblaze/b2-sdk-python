@@ -302,7 +302,7 @@ class Emerger(metaclass=B2TraceMetaAbstract):
         :param max_part_size: upper limit of part size for the transfer planner, in bytes
         :param large_file_sha1: SHA1 for this file, if ``None`` it's left unset
         :param custom_upload_timestamp: override object creation date, expressed as a number of milliseconds since epoch
-        :para cache_control: cache control header value
+        :param cache_control: cache control header value
         """
         return self._emerge(
             EmergePlanner.get_unbound_emerge_plan,

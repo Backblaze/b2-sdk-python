@@ -42,8 +42,8 @@ class FileVersionInfo(v2.FileVersion):
         server_side_encryption: Optional[v2.EncryptionSetting] = None,
         file_retention: Optional[v2.FileRetentionSetting] = None,
         legal_hold: Optional[v2.LegalHold] = None,
-        cache_control: Optional[str] = None,
         api: Optional['v1api.B2Api'] = None,
+        cache_control: Optional[str] = None,
         **kwargs
     ):
         self.id_ = id_

@@ -91,6 +91,7 @@ class Bucket(v2.Bucket):
         :param dict,None file_info: a file info to store with the file or ``None`` to not store anything
         :param b2sdk.v1.FileRetentionSetting file_retention: retention setting for the new file
         :param bool legal_hold: legalHold setting for the new file
+        :param str,None cache_control: an optional cache control setting. Syntax based on the section 14.9 of RFC 2616. Example string value: 'public, max-age=86400, s-maxage=3600, no-transform'.
         """
         validate_b2_file_name(file_name)
         return self.api.services.large_file.start_large_file(
