@@ -43,6 +43,7 @@ class FileVersionInfo(v2.FileVersion):
         file_retention: Optional[v2.FileRetentionSetting] = None,
         legal_hold: Optional[v2.LegalHold] = None,
         api: Optional['v1api.B2Api'] = None,
+        cache_control: Optional[str] = None,
         **kwargs
     ):
         self.id_ = id_
@@ -60,6 +61,7 @@ class FileVersionInfo(v2.FileVersion):
         self.legal_hold = legal_hold
         self.file_retention = file_retention
         self._api = api
+        self.cache_control = cache_control
 
         # allow common tests to execute without hitting attributeerror
 
@@ -127,6 +129,7 @@ def file_version_info_from_new_file_version(file_version: v2.FileVersion) -> Fil
                 'server_side_encryption',
                 'legal_hold',
                 'file_retention',
+                'cache_control',
                 'api',
             ]
         }
@@ -163,6 +166,7 @@ class FileVersionInfoFactory(v2.FileVersionFactory):
             server_side_encryption=v2.EncryptionSettingFactory.from_response_headers(headers),
             file_retention=v2.FileRetentionSetting.from_response_headers(headers),
             legal_hold=v2.LegalHold.from_response_headers(headers),
+            cache_control=headers['Cache-control'],
         )
 
 
@@ -194,5 +198,6 @@ def file_version_info_from_download_version(download_version: v2.DownloadVersion
         server_side_encryption=download_version.server_side_encryption,
         file_retention=download_version.file_retention,
         legal_hold=download_version.legal_hold,
+        cache_control=download_version.cache_control,
         api=download_version.api,
     )

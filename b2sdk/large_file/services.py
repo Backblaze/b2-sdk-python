@@ -87,6 +87,7 @@ class LargeFileServices:
         encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
+        cache_control: Optional[str] = None,
     ):
         """
         Start a large file transfer.
@@ -95,8 +96,9 @@ class LargeFileServices:
         :param str,None content_type: the MIME type, or ``None`` to accept the default based on file extension of the B2 file name
         :param dict,None file_info: a file info to store with the file or ``None`` to not store anything
         :param b2sdk.v2.EncryptionSetting encryption: encryption settings (``None`` if unknown)
-        :param b2sdk.v2.LegalHold legal_hold: legal hold setting
         :param b2sdk.v2.FileRetentionSetting file_retention: file retention setting
+        :param b2sdk.v2.LegalHold legal_hold: legal hold setting
+        :param str,None cache_control: an optional cache control setting. Syntax based on the section 14.9 of RFC 2616. Example string value: 'public, max-age=86400, s-maxage=3600, no-transform'.
         """
         return UnfinishedLargeFile(
             self.services.session.start_large_file(
@@ -107,6 +109,7 @@ class LargeFileServices:
                 server_side_encryption=encryption,
                 file_retention=file_retention,
                 legal_hold=legal_hold,
+                cache_control=cache_control,
             )
         )
 

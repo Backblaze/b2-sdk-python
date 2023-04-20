@@ -45,7 +45,9 @@ class TestFileVersion:
         (self.application_key_id, self.master_key) = self.raw_api.create_account()
         self.api.authorize_account('production', self.application_key_id, self.master_key)
         self.bucket = self.api.create_bucket('testbucket', 'allPrivate', is_file_lock_enabled=True)
-        self.file_version = self.bucket.upload_bytes(b'nothing', 'test_file')
+        self.file_version = self.bucket.upload_bytes(
+            b'nothing', 'test_file', cache_control='private, max-age=3600'
+        )
 
     @pytest.mark.apiver(to_ver=1)
     def test_format_ls_entry(self):
@@ -84,12 +86,12 @@ class TestFileVersion:
                 'b2-content-language': 'en_US',
                 'b2-content-disposition': 'attachment',
                 'b2-expires': '2100-01-01',
-                'b2-cache-control': 'unknown',
                 'b2-content-encoding': 'text',
             },
             encryption=encryption,
             file_retention=FileRetentionSetting(RetentionMode.GOVERNANCE, 100),
             legal_hold=LegalHold.ON,
+            cache_control='public, max-age=86400',
         )
         assert initial_file_version._clone() == initial_file_version
         cloned = initial_file_version._clone(legal_hold=LegalHold.OFF)
@@ -162,6 +164,7 @@ class TestFileVersion:
             X-Bz-File-Legal-Hold: off
             X-Bz-File-Retention-Mode: None
             X-Bz-File-Retention-Retain-Until-Timestamp: None
+            X-Bz-Info-b2-cache-control: private%2C%20max-age%3D3600
         """.strip().replace(': ', '').replace(' ', '').replace('\n', '').encode('utf8')
 
         assert not file_version.has_large_header

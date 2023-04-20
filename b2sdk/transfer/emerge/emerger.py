@@ -87,6 +87,7 @@ class Emerger(metaclass=B2TraceMetaAbstract):
         large_file_sha1: Optional[Sha1HexDigest] = None,
         check_first_intent_for_sha1: bool = True,
         custom_upload_timestamp: Optional[int] = None,
+        cache_control: Optional[str] = None,
     ):
         planner = self.get_emerge_planner(
             min_part_size=min_part_size,
@@ -126,6 +127,7 @@ class Emerger(metaclass=B2TraceMetaAbstract):
             # Passing anything for small files does nothing.
             max_queue_size=max_queue_size,
             custom_upload_timestamp=custom_upload_timestamp,
+            cache_control=cache_control,
         )
 
     def emerge(
@@ -145,6 +147,7 @@ class Emerger(metaclass=B2TraceMetaAbstract):
         max_part_size: Optional[int] = None,
         large_file_sha1: Optional[Sha1HexDigest] = None,
         custom_upload_timestamp: Optional[int] = None,
+        cache_control: Optional[str] = None,
     ):
         """
         Create a new file (object in the cloud, really) from an iterable (list, tuple etc) of write intents.
@@ -168,6 +171,7 @@ class Emerger(metaclass=B2TraceMetaAbstract):
         :param max_part_size: upper limit of part size for the transfer planner, in bytes
         :param large_file_sha1: SHA1 for this file, if ``None`` and there's exactly one intent, it'll be taken from it
         :param custom_upload_timestamp: override object creation date, expressed as a number of milliseconds since epoch
+        :param cache_control: cache control header value
         """
         return self._emerge(
             EmergePlanner.get_emerge_plan,
@@ -186,6 +190,7 @@ class Emerger(metaclass=B2TraceMetaAbstract):
             max_part_size=max_part_size,
             large_file_sha1=large_file_sha1,
             custom_upload_timestamp=custom_upload_timestamp,
+            cache_control=cache_control,
         )
 
     def emerge_stream(
@@ -206,6 +211,7 @@ class Emerger(metaclass=B2TraceMetaAbstract):
         max_part_size: Optional[int] = None,
         large_file_sha1: Optional[Sha1HexDigest] = None,
         custom_upload_timestamp: Optional[int] = None,
+        cache_control: Optional[str] = None,
     ):
         """
         Create a new file (object in the cloud, really) from a stream of write intents.
@@ -226,11 +232,11 @@ class Emerger(metaclass=B2TraceMetaAbstract):
         :param encryption: encryption settings (``None`` if unknown)
         :param file_retention: file retention setting
         :param legal_hold: legal hold setting
-
         :param min_part_size: lower limit of part size for the transfer planner, in bytes
         :param max_part_size: upper limit of part size for the transfer planner, in bytes
         :param large_file_sha1: SHA1 for this file, if ``None`` and there's exactly one intent, it'll be taken from it
         :param custom_upload_timestamp: override object creation date, expressed as a number of milliseconds since epoch
+        :param cache_control: cache control header value
         """
         return self._emerge(
             EmergePlanner.get_streaming_emerge_plan,
@@ -250,6 +256,7 @@ class Emerger(metaclass=B2TraceMetaAbstract):
             max_part_size=max_part_size,
             large_file_sha1=large_file_sha1,
             custom_upload_timestamp=custom_upload_timestamp,
+            cache_control=cache_control,
         )
 
     def emerge_unbound(
@@ -270,6 +277,7 @@ class Emerger(metaclass=B2TraceMetaAbstract):
         max_part_size: Optional[int] = None,
         large_file_sha1: Optional[Sha1HexDigest] = None,
         custom_upload_timestamp: Optional[int] = None,
+        cache_control: Optional[str] = None,
     ):
         """
         Create a new file (object in the cloud, really) from an unbound stream of write intents.
@@ -294,6 +302,7 @@ class Emerger(metaclass=B2TraceMetaAbstract):
         :param max_part_size: upper limit of part size for the transfer planner, in bytes
         :param large_file_sha1: SHA1 for this file, if ``None`` it's left unset
         :param custom_upload_timestamp: override object creation date, expressed as a number of milliseconds since epoch
+        :param cache_control: cache control header value
         """
         return self._emerge(
             EmergePlanner.get_unbound_emerge_plan,
@@ -314,6 +323,7 @@ class Emerger(metaclass=B2TraceMetaAbstract):
             large_file_sha1=large_file_sha1,
             check_first_intent_for_sha1=False,
             custom_upload_timestamp=custom_upload_timestamp,
+            cache_control=cache_control,
         )
 
     def get_emerge_planner(

@@ -176,6 +176,7 @@ class FileSimulator:
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: LegalHold = LegalHold.UNSET,
         replication_status: Optional[ReplicationStatus] = None,
+        cache_control: Optional[str] = None,
     ):
         if action == 'hide':
             assert server_side_encryption is None
@@ -200,6 +201,7 @@ class FileSimulator:
         self.file_retention = file_retention
         self.legal_hold = legal_hold if legal_hold is not None else LegalHold.UNSET
         self.replication_status = replication_status
+        self.cache_control = cache_control
 
         if action == 'start':
             self.parts = []
@@ -297,6 +299,7 @@ class FileSimulator:
             action=self.action,
             uploadTimestamp=self.upload_timestamp,
             replicationStatus=self.replication_status and self.replication_status.value,
+            cacheControl=self.cache_control,
         )  # yapf: disable
         if self.server_side_encryption is not None:
             result['serverSideEncryption'
@@ -318,6 +321,7 @@ class FileSimulator:
             action=self.action,
             uploadTimestamp=self.upload_timestamp,
             replicationStatus=self.replication_status and self.replication_status.value,
+            cacheControl=self.cache_control,
         )  # yapf: disable
         if self.server_side_encryption is not None:
             result['serverSideEncryption'
@@ -342,6 +346,7 @@ class FileSimulator:
             fileInfo=self.file_info,
             uploadTimestamp=self.upload_timestamp,
             replicationStatus=self.replication_status and self.replication_status.value,
+            cacheControl=self.cache_control,
         )  # yapf: disable
         if self.server_side_encryption is not None:
             result['serverSideEncryption'
@@ -750,6 +755,7 @@ class BucketSimulator:
         source_server_side_encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
+        cache_control: Optional[str] = None,
     ):
         if metadata_directive is not None:
             assert metadata_directive in tuple(MetadataDirectiveMode), metadata_directive
@@ -792,6 +798,7 @@ class BucketSimulator:
             server_side_encryption=sse,
             file_retention=file_retention,
             legal_hold=legal_hold,
+            cache_control=cache_control,
         )  # yapf: disable
         destination_bucket.file_id_to_file[copy_file_sim.file_id] = copy_file_sim
         destination_bucket.file_name_and_id_to_file[copy_file_sim.sort_key()] = copy_file_sim
@@ -826,6 +833,7 @@ class BucketSimulator:
             server_side_encryption=sse,
             file_retention=file_retention,
             legal_hold=legal_hold,
+            cache_control=cache_control,
         )
 
     def list_file_names(
@@ -928,6 +936,7 @@ class BucketSimulator:
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
         custom_upload_timestamp: Optional[int] = None,
+        cache_control: Optional[str] = None,
     ):
         file_id = self._next_file_id()
         sse = server_side_encryption or self.default_server_side_encryption
@@ -941,7 +950,7 @@ class BucketSimulator:
         file_sim = self.FILE_SIMULATOR_CLASS(
             self.account_id, self, file_id, 'start', file_name, content_type, 'none',
             file_info, None, upload_timestamp, server_side_encryption=sse,
-            file_retention=file_retention, legal_hold=legal_hold,
+            file_retention=file_retention, legal_hold=legal_hold, cache_control=cache_control,
         )  # yapf: disable
         self.file_id_to_file[file_id] = file_sim
         self.file_name_and_id_to_file[file_sim.sort_key()] = file_sim
@@ -1006,6 +1015,7 @@ class BucketSimulator:
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
         custom_upload_timestamp: Optional[int] = None,
+        cache_control: Optional[str] = None,
     ):
         data_bytes = self._simulate_chunked_post(data_stream, content_length)
         assert len(data_bytes) == content_length
@@ -1044,6 +1054,7 @@ class BucketSimulator:
             server_side_encryption=encryption,
             file_retention=file_retention,
             legal_hold=legal_hold,
+            cache_control=cache_control,
         )
         self.file_id_to_file[file_id] = file_sim
         self.file_name_and_id_to_file[file_sim.sort_key()] = file_sim
@@ -1506,6 +1517,7 @@ class RawSimulator(AbstractRawApi):
         source_server_side_encryption=None,
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
+        cache_control: Optional[str] = None,
     ):
         bucket_id = self.file_id_to_bucket_id[source_file_id]
         bucket = self._get_bucket_by_id(bucket_id)
@@ -1531,6 +1543,7 @@ class RawSimulator(AbstractRawApi):
             source_server_side_encryption=source_server_side_encryption,
             file_retention=file_retention,
             legal_hold=legal_hold,
+            cache_control=cache_control,
         )
 
         return copy_file_sim.as_upload_result(account_auth_token)
@@ -1721,6 +1734,7 @@ class RawSimulator(AbstractRawApi):
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
         custom_upload_timestamp: Optional[int] = None,
+        cache_control: Optional[str] = None,
     ):
         bucket = self._get_bucket_by_id(bucket_id)
         self._assert_account_auth(api_url, account_auth_token, bucket.account_id, 'writeFiles')
@@ -1733,6 +1747,7 @@ class RawSimulator(AbstractRawApi):
             file_retention,
             legal_hold,
             custom_upload_timestamp=custom_upload_timestamp,
+            cache_control=cache_control,
         )
         self.file_id_to_bucket_id[result['fileId']] = bucket_id
 
@@ -1782,6 +1797,7 @@ class RawSimulator(AbstractRawApi):
         file_retention: Optional[FileRetentionSetting],
         legal_hold: Optional[LegalHold],
         custom_upload_timestamp: Optional[int] = None,
+        cache_control: Optional[str] = None,
     ) -> dict:
 
         # fix to allow calculating headers on unknown key - only for simulation
@@ -1801,6 +1817,7 @@ class RawSimulator(AbstractRawApi):
             file_retention=file_retention,
             legal_hold=legal_hold,
             custom_upload_timestamp=custom_upload_timestamp,
+            cache_control=cache_control,
         )
 
     def upload_file(
@@ -1817,6 +1834,7 @@ class RawSimulator(AbstractRawApi):
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
         custom_upload_timestamp: Optional[int] = None,
+        cache_control: Optional[str] = None,
     ):
         with ConcurrentUsedAuthTokenGuard(
             self.currently_used_auth_tokens[upload_auth_token], upload_auth_token
@@ -1848,6 +1866,7 @@ class RawSimulator(AbstractRawApi):
                 file_retention=file_retention,
                 legal_hold=legal_hold,
                 custom_upload_timestamp=custom_upload_timestamp,
+                cache_control=cache_control,
             )
 
             response = bucket.upload_file(
@@ -1863,6 +1882,7 @@ class RawSimulator(AbstractRawApi):
                 file_retention,
                 legal_hold,
                 custom_upload_timestamp,
+                cache_control,
             )
             file_id = response['fileId']
             self.file_id_to_bucket_id[file_id] = bucket_id

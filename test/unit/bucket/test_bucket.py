@@ -1402,6 +1402,25 @@ class TestUpload(TestCaseWithBucket):
             self.assertEqual(retention, file_info.file_retention)
             self.assertEqual(LegalHold.ON, file_info.legal_hold)
 
+    def test_upload_local_file_cache_control(self):
+        with TempDir() as d:
+            path = os.path.join(d, 'file1')
+            data = b'hello world'
+            write_file(path, data)
+            file_info = self.bucket.upload_local_file(
+                path, 'file1', encryption=SSE_C_AES, cache_control='max-age=3600'
+            )
+            self._check_file_contents('file1', data)
+            self.assertEqual(file_info.cache_control, 'max-age=3600')
+
+    def test_upload_bytes_cache_control(self):
+        data = b'hello world'
+        file_info = self.bucket.upload_bytes(
+            data, 'file1', encryption=SSE_C_AES, cache_control='max-age=3600'
+        )
+        self.assertTrue(isinstance(file_info, VFileVersionInfo))
+        self.assertEqual(file_info.cache_control, 'max-age=3600')
+
     def test_upload_bytes_progress(self):
         data = b'hello world'
         progress_listener = StubProgressListener()

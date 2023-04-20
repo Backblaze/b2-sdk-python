@@ -44,6 +44,7 @@ class EmergeExecutor:
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
         custom_upload_timestamp: Optional[int] = None,
+        cache_control: Optional[str] = None,
     ):
         if emerge_plan.is_large_file():
             execution = LargeFileEmergeExecution(
@@ -59,6 +60,7 @@ class EmergeExecutor:
                 continue_large_file_id=continue_large_file_id,
                 max_queue_size=max_queue_size,
                 custom_upload_timestamp=custom_upload_timestamp,
+                cache_control=cache_control,
             )
         else:
             if continue_large_file_id is not None:
@@ -74,6 +76,7 @@ class EmergeExecutor:
                 file_retention=file_retention,
                 legal_hold=legal_hold,
                 custom_upload_timestamp=custom_upload_timestamp,
+                cache_control=cache_control,
             )
         return execution.execute_plan(emerge_plan)
 
@@ -93,6 +96,7 @@ class BaseEmergeExecution(metaclass=ABCMeta):
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
         custom_upload_timestamp: Optional[int] = None,
+        cache_control: Optional[str] = None,
     ):
         self.services = services
         self.bucket_id = bucket_id
@@ -104,6 +108,7 @@ class BaseEmergeExecution(metaclass=ABCMeta):
         self.file_retention = file_retention
         self.legal_hold = legal_hold
         self.custom_upload_timestamp = custom_upload_timestamp
+        self.cache_control = cache_control
 
     @abstractmethod
     def execute_plan(self, emerge_plan):
@@ -138,6 +143,7 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
         continue_large_file_id=None,
         max_queue_size=None,
         custom_upload_timestamp: Optional[int] = None,
+        cache_control: Optional[str] = None,
     ):
         super(LargeFileEmergeExecution, self).__init__(
             services,
@@ -150,6 +156,7 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
             file_retention=file_retention,
             legal_hold=legal_hold,
             custom_upload_timestamp=custom_upload_timestamp,
+            cache_control=cache_control,
         )
         self.continue_large_file_id = continue_large_file_id
         self.max_queue_size = max_queue_size
@@ -186,6 +193,7 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
             legal_hold=self.legal_hold,
             emerge_parts_dict=emerge_parts_dict,
             custom_upload_timestamp=self.custom_upload_timestamp,
+            cache_control=self.cache_control,
         )
 
         if unfinished_file is None:
@@ -201,6 +209,7 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
                 encryption=encryption,
                 file_retention=self.file_retention,
                 legal_hold=self.legal_hold,
+                cache_control=self.cache_control,
             )
         file_id = unfinished_file.file_id
 
@@ -257,6 +266,7 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
         legal_hold: Optional[LegalHold] = None,
         emerge_parts_dict=None,
         custom_upload_timestamp: Optional[int] = None,
+        cache_control: Optional[str] = None,
     ):
         if 'listFiles' not in self.services.session.account_info.get_allowed()['capabilities']:
             return None, {}
@@ -289,6 +299,7 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
                 file_retention,
                 legal_hold,
                 custom_upload_timestamp=custom_upload_timestamp,
+                cache_control=cache_control,
             )
         elif emerge_parts_dict is not None:
             unfinished_file, finished_parts = self._match_unfinished_file_if_possible(
@@ -300,6 +311,7 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
                 file_retention,
                 legal_hold,
                 custom_upload_timestamp=custom_upload_timestamp,
+                cache_control=cache_control,
             )
         return unfinished_file, finished_parts
 
@@ -313,6 +325,7 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
         custom_upload_timestamp: Optional[int] = None,
+        cache_control: Optional[str] = None,
     ):
         file_retention = file_retention or NO_RETENTION_FILE_SETTING
         assert 'plan_id' in file_info
@@ -343,6 +356,9 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
                 continue
 
             if custom_upload_timestamp is not None and file_.upload_timestamp != custom_upload_timestamp:
+                continue
+
+            if cache_control is None or file_.cache_control != cache_control:
                 continue
 
             finished_parts = {}
@@ -386,6 +402,7 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
         custom_upload_timestamp: Optional[int] = None,
+        cache_control: Optional[str] = None,
     ):
         """
         Find an unfinished file that may be used to resume a large file upload.  The
@@ -396,7 +413,6 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
         """
         file_retention = file_retention or NO_RETENTION_FILE_SETTING
         file_info_without_large_file_sha1 = self._get_file_info_without_large_file_sha1(file_info)
-
         logger.debug('Checking for matching unfinished large files for %s...', file_name)
         for file_ in self.services.large_file.list_unfinished_large_files(
             bucket_id, prefix=file_name
@@ -425,6 +441,10 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
             # FIXME: what if `encryption is None` - match ANY encryption? :)
             if encryption is not None and encryption != file_.encryption:
                 logger.debug('Rejecting %s: encryption mismatch', file_.file_id)
+                continue
+
+            if cache_control is not None and cache_control != file_.cache_control:
+                logger.debug('Rejecting %s: cacheControl mismatch', file_.file_id)
                 continue
 
             if legal_hold is None:
@@ -589,6 +609,7 @@ class CopyFileExecutionStep(BaseExecutionStep):
             source_encryption=self.copy_source_range.encryption,
             file_retention=execution.file_retention,
             legal_hold=execution.legal_hold,
+            cache_control=execution.cache_control,
         )
 
 
@@ -646,6 +667,7 @@ class UploadFileExecutionStep(BaseExecutionStep):
             file_retention=execution.file_retention,
             legal_hold=execution.legal_hold,
             custom_upload_timestamp=execution.custom_upload_timestamp,
+            cache_control=execution.cache_control,
         )
 
 

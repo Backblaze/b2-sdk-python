@@ -40,6 +40,7 @@ class Bucket(v2.Bucket):
         source_encryption: Optional[v2.EncryptionSetting] = None,
         file_retention: Optional[v2.FileRetentionSetting] = None,
         legal_hold: Optional[v2.LegalHold] = None,
+        cache_control: Optional[str] = None,
     ):
         """
         Creates a new file in this bucket by (server-side) copying from an existing file.
@@ -56,6 +57,7 @@ class Bucket(v2.Bucket):
                 (``None`` if unknown)
         :param b2sdk.v1.FileRetentionSetting file_retention: retention setting for the new file
         :param bool legal_hold: legalHold setting for the new file
+        :param str cache_control: cache control setting for the new file. Syntax based on the section 14.9 of RC 2616. Example string value: 'public, max-age=86400, s-maxage=3600, no-transform'.
         """
         return self.api.session.copy_file(
             file_id,
@@ -69,6 +71,7 @@ class Bucket(v2.Bucket):
             source_server_side_encryption=source_encryption,
             file_retention=file_retention,
             legal_hold=legal_hold,
+            cache_control=cache_control,
         )
 
     def start_large_file(
@@ -78,6 +81,7 @@ class Bucket(v2.Bucket):
         file_info=None,
         file_retention: Optional[v2.FileRetentionSetting] = None,
         legal_hold: Optional[v2.LegalHold] = None,
+        cache_control: Optional[str] = None,
     ):
         """
         Start a large file transfer.
@@ -87,6 +91,7 @@ class Bucket(v2.Bucket):
         :param dict,None file_info: a file info to store with the file or ``None`` to not store anything
         :param b2sdk.v1.FileRetentionSetting file_retention: retention setting for the new file
         :param bool legal_hold: legalHold setting for the new file
+        :param str,None cache_control: an optional cache control setting. Syntax based on the section 14.9 of RFC 2616. Example string value: 'public, max-age=86400, s-maxage=3600, no-transform'.
         """
         validate_b2_file_name(file_name)
         return self.api.services.large_file.start_large_file(
@@ -96,6 +101,7 @@ class Bucket(v2.Bucket):
             file_info=file_info,
             file_retention=file_retention,
             legal_hold=legal_hold,
+            cache_control=cache_control,
         )
 
     def download_file_by_name(

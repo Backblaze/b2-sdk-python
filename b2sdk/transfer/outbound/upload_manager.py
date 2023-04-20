@@ -53,6 +53,7 @@ class UploadManager(TransferManager, ThreadPoolMixin):
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
         custom_upload_timestamp: Optional[int] = None,
+        cache_control: Optional[str] = None,
     ):
         f = self._thread_pool.submit(
             self._upload_small_file,
@@ -66,6 +67,7 @@ class UploadManager(TransferManager, ThreadPoolMixin):
             file_retention,
             legal_hold,
             custom_upload_timestamp=custom_upload_timestamp,
+            cache_control=cache_control,
         )
         return f
 
@@ -184,6 +186,7 @@ class UploadManager(TransferManager, ThreadPoolMixin):
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
         custom_upload_timestamp: Optional[int] = None,
+        cache_control: Optional[str] = None,
     ):
         content_length = upload_source.get_content_length()
         exception_info_list = []
@@ -215,6 +218,7 @@ class UploadManager(TransferManager, ThreadPoolMixin):
                             file_retention=file_retention,
                             legal_hold=legal_hold,
                             custom_upload_timestamp=custom_upload_timestamp,
+                            cache_control=cache_control,
                         )
                         if content_sha1 == HEX_DIGITS_AT_END:
                             content_sha1 = input_stream.hash

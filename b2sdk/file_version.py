@@ -48,6 +48,7 @@ class BaseFileVersion:
         'file_retention',
         'mod_time_millis',
         'replication_status',
+        'cache_control',
     ]
     _TYPE_MATCHER = re.compile('[a-z0-9]+_[a-z0-9]+_f([0-9]).*')
     _FILE_TYPE = {
@@ -71,6 +72,7 @@ class BaseFileVersion:
         file_retention: FileRetentionSetting = NO_RETENTION_FILE_SETTING,
         legal_hold: LegalHold = LegalHold.UNSET,
         replication_status: Optional[ReplicationStatus] = None,
+        cache_control: Optional[str] = None,
     ):
         self.api = api
         self.id_ = id_
@@ -84,6 +86,7 @@ class BaseFileVersion:
         self.file_retention = file_retention
         self.legal_hold = legal_hold
         self.replication_status = replication_status
+        self.cache_control = cache_control
 
         if SRC_LAST_MODIFIED_MILLIS in self.file_info:
             self.mod_time_millis = int(self.file_info[SRC_LAST_MODIFIED_MILLIS])
@@ -124,6 +127,7 @@ class BaseFileVersion:
             'file_retention': self.file_retention,
             'legal_hold': self.legal_hold,
             'replication_status': self.replication_status,
+            'cache_control': self.cache_control,
         }  # yapf: disable
 
     def as_dict(self):
@@ -135,6 +139,7 @@ class BaseFileVersion:
             'serverSideEncryption': self.server_side_encryption.as_dict(),
             'legalHold': self.legal_hold.value,
             'fileRetention': self.file_retention.as_dict(),
+            'cacheControl': self.cache_control,
         }
 
         if self.size is not None:
@@ -251,6 +256,7 @@ class FileVersion(BaseFileVersion):
         file_retention: FileRetentionSetting = NO_RETENTION_FILE_SETTING,
         legal_hold: LegalHold = LegalHold.UNSET,
         replication_status: Optional[ReplicationStatus] = None,
+        cache_control: Optional[str] = None,
     ):
         self.account_id = account_id
         self.bucket_id = bucket_id
@@ -270,6 +276,7 @@ class FileVersion(BaseFileVersion):
             file_retention=file_retention,
             legal_hold=legal_hold,
             replication_status=replication_status,
+            cache_control=cache_control,
         )
 
     def _get_args_for_clone(self):
@@ -342,6 +349,7 @@ class FileVersion(BaseFileVersion):
             server_side_encryption=sse,
             file_retention=self.file_retention,
             legal_hold=self.legal_hold,
+            cache_control=self.cache_control,
         )
 
         headers_str = ''.join(
@@ -418,6 +426,7 @@ class DownloadVersion(BaseFileVersion):
             file_retention=file_retention,
             legal_hold=legal_hold,
             replication_status=replication_status,
+            cache_control=cache_control,
         )
 
     def _get_args_for_clone(self):
@@ -501,10 +510,10 @@ class FileVersionFactory:
         file_retention = FileRetentionSetting.from_file_version_dict(file_version_dict)
 
         legal_hold = LegalHold.from_file_version_dict(file_version_dict)
-
         replication_status_value = file_version_dict.get('replicationStatus')
         replication_status = replication_status_value and ReplicationStatus[
             replication_status_value.upper()]
+        cache_control = file_version_dict.get('cacheControl')
 
         return self.FILE_VERSION_CLASS(
             self.api,
@@ -523,6 +532,7 @@ class FileVersionFactory:
             file_retention,
             legal_hold,
             replication_status,
+            cache_control,
         )
 
 
@@ -554,12 +564,18 @@ class DownloadVersionFactory:
 
     def from_response_headers(self, headers):
         file_info = self.file_info_from_headers(headers)
+
         if 'Content-Range' in headers:
             range_, size = self.range_and_size_from_header(headers['Content-Range'])
             content_length = int(headers['Content-Length'])
         else:
             size = content_length = int(headers['Content-Length'])
             range_ = Range(0, max(size - 1, 0))
+
+        if 'Cache-Control' in headers:
+            cache_control = b2_url_decode(headers['Cache-Control'])
+        else:
+            cache_control = None
 
         return DownloadVersion(
             api=self.api,
@@ -576,7 +592,7 @@ class DownloadVersionFactory:
             content_length=content_length,
             content_language=headers.get('Content-Language'),
             expires=headers.get('Expires'),
-            cache_control=headers.get('Cache-Control'),
+            cache_control=cache_control,
             content_encoding=headers.get('Content-Encoding'),
             file_retention=FileRetentionSetting.from_response_headers(headers),
             legal_hold=LegalHold.from_response_headers(headers),

@@ -297,6 +297,7 @@ class B2Session:
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
         custom_upload_timestamp: Optional[int] = None,
+        cache_control: Optional[str] = None,
     ):
         return self._wrap_default_token(
             self.raw_api.start_large_file,
@@ -308,6 +309,7 @@ class B2Session:
             file_retention=file_retention,
             legal_hold=legal_hold,
             custom_upload_timestamp=custom_upload_timestamp,
+            cache_control=cache_control,
         )
 
     def update_bucket(
@@ -352,6 +354,7 @@ class B2Session:
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
         custom_upload_timestamp: Optional[int] = None,
+        cache_control: Optional[str] = None,
     ):
         return self._wrap_token(
             self.raw_api.upload_file,
@@ -367,6 +370,7 @@ class B2Session:
             file_retention=file_retention,
             legal_hold=legal_hold,
             custom_upload_timestamp=custom_upload_timestamp,
+            cache_control=cache_control,
         )
 
     def upload_part(
@@ -410,6 +414,7 @@ class B2Session:
         source_server_side_encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
         legal_hold: Optional[LegalHold] = None,
+        cache_control: Optional[str] = None,
     ):
         return self._wrap_default_token(
             self.raw_api.copy_file,
@@ -424,6 +429,7 @@ class B2Session:
             source_server_side_encryption=source_server_side_encryption,
             file_retention=file_retention,
             legal_hold=legal_hold,
+            cache_control=cache_control,
         )
 
     def copy_part(
