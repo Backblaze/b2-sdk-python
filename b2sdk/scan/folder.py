@@ -178,8 +178,13 @@ class LocalFolder(AbstractFolder):
             raise EmptyDirectory(self.root)
 
     def _walk_relative_paths(
-        self, local_dir: str, relative_dir_path: str, reporter,
-        policies_manager: ScanPoliciesManager
+        self,
+        local_dir: str,
+        relative_dir_path: str,
+        reporter,
+        policies_manager: ScanPoliciesManager,
+        visited_symlinks=None,
+        starting_dir: str = None,
     ):
         """
         Yield a File object for each of the files anywhere under this folder, in the
@@ -187,6 +192,27 @@ class LocalFolder(AbstractFolder):
 
         :param relative_dir_path: the path of this dir relative to the scan point, or '' if at scan point
         """
+
+        def is_ancestor_directory(potential_ancestor, dir):
+            """
+            Helper function to check if the ancestor directory is an ancestor
+            of the descendant directory.
+
+            :param potential_ancestor: The ancestor directory path to check.
+            :param dir: The directory to check ancestor against.
+            :return: True if the ancestor directory is an ancestor of the descendant directory, False otherwise.
+            """
+
+            # should return true if ancestor is located anywhere in the path of descendant
+            # e.g. /home/user/ancestor is an ancestor of /home/user/ancestor/descendant
+
+            potential_ancestor = os.path.abspath(os.path.realpath(potential_ancestor))
+            dir = os.path.abspath(os.path.realpath(dir))
+
+            return os.path.commonpath([potential_ancestor]) == os.path.commonpath(
+                [potential_ancestor, dir]
+            )
+
         if not isinstance(local_dir, str):
             raise ValueError('folder path should be unicode: %s' % repr(local_dir))
 
@@ -204,6 +230,31 @@ class LocalFolder(AbstractFolder):
         #
         # This is because in Unicode '.' comes before '/', which comes before '0'.
         names = []  # list of (name, local_path, relative_file_path)
+
+        if starting_dir is None:
+            starting_dir = local_dir
+
+        # Set max_symlink_visits based on the policies_manager object
+        # Fall back to 10 if max_symlink_visits is not set
+        # FIXME should we use a default value from somewhere else?
+        max_symlink_visits = getattr(policies_manager, 'max_symlink_visits', 10)
+
+        if visited_symlinks is None:
+            visited_symlinks = {}
+
+        if os.path.islink(local_dir):
+            real_path = os.path.realpath(local_dir)
+
+            if is_ancestor_directory(local_dir, starting_dir):
+                # Skip symlink if it points to an ancestor directory of the initial scan directory
+                return
+
+            symlink_count = visited_symlinks.get(real_path, 0)
+            if symlink_count >= max_symlink_visits:
+                # Maximum symlink visits reached, stop the recursion
+                return
+            visited_symlinks[real_path] = symlink_count + 1
+
         for name in os.listdir(local_dir):
             # We expect listdir() to return unicode if dir_path is unicode.
             # If the file name is not valid, based on the file system
@@ -245,7 +296,12 @@ class LocalFolder(AbstractFolder):
         for (name, local_path, relative_file_path) in sorted(names):
             if name.endswith('/'):
                 for subdir_file in self._walk_relative_paths(
-                    local_path, relative_file_path, reporter, policies_manager
+                    local_path,
+                    relative_file_path,
+                    reporter,
+                    policies_manager,
+                    visited_symlinks,
+                    starting_dir,
                 ):
                     yield subdir_file
             else:

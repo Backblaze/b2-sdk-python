@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 * Add support for custom upload timestamp
 * Add support for cache control header while uploading
+* Circular symlinks no longer cause infinite loops when syncing a folder
 
 ### Infrastructure
 * Remove dependency from `arrow`

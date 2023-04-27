@@ -8,11 +8,173 @@
 #
 ######################################################################
 import re
+from unittest.mock import MagicMock
+from b2sdk.scan.folder import LocalFolder
 
 import pytest
 
 from apiver_deps import ScanPoliciesManager
 from apiver_deps_exception import InvalidArgument
+
+
+class TestFolderTraversal:
+    def test_simple_folder(self, tmp_path):
+        d = tmp_path / "dir"
+        d.mkdir()
+        (d / "file1.txt").write_text("content1")
+        (d / "file2.txt").write_text("content2")
+        (d / "file3.txt").write_text("content3")
+
+        folder = LocalFolder(str(d))
+        local_paths = folder.all_files(reporter=MagicMock())
+        absolute_paths = [path.absolute_path for path in list(local_paths)]
+
+        assert len(absolute_paths) == 3
+        assert absolute_paths == [str(d / "file1.txt"), str(d / "file2.txt"), str(d / "file3.txt")]
+
+    def test_folder_with_subfolders(self, tmp_path):
+        d1 = tmp_path / "dir1"
+        d1.mkdir()
+        (d1 / "file1.txt").write_text("content1")
+        (d1 / "file2.txt").write_text("content2")
+
+        d2 = tmp_path / "dir2"
+        d2.mkdir()
+        (d2 / "file3.txt").write_text("content3")
+        (d2 / "file4.txt").write_text("content4")
+
+        folder = LocalFolder(str(tmp_path))
+        local_paths = folder.all_files(reporter=MagicMock())
+        absolute_paths = [path.absolute_path for path in list(local_paths)]
+
+        assert len(absolute_paths) == 4
+        assert absolute_paths == [
+            str(d1 / "file1.txt"),
+            str(d1 / "file2.txt"),
+            str(d2 / "file3.txt"),
+            str(d2 / "file4.txt")
+        ]
+
+    def test_folder_with_symlink_to_file(self, tmp_path):
+        d = tmp_path / "dir"
+        d.mkdir()
+
+        file = d / "file.txt"
+        file.write_text("content")
+
+        symlink_file = tmp_path / "symlink_file.txt"
+        symlink_file.symlink_to(file)
+
+        folder = LocalFolder(str(tmp_path))
+        local_paths = folder.all_files(reporter=MagicMock())
+
+        absolute_paths = [path.absolute_path for path in list(local_paths)]
+
+        assert len(absolute_paths) == 2
+        assert absolute_paths == [str(file), str(symlink_file)]
+
+    #FIXME the following two tests could be combined to avoid code duplication
+    # but I decide to keep them separate for now to make it easier to debug
+
+    @pytest.mark.timeout(5)  # Set a 5-second timeout for this test
+    def test_folder_with_circular_symlink(self, tmp_path):
+        d = tmp_path / "dir"
+        d.mkdir()
+
+        (d / "file1.txt").write_text("content1")
+
+        symlink_dir = d / "symlink_dir"
+        symlink_dir.symlink_to(d)
+
+        folder = LocalFolder(str(tmp_path))
+
+        policies_manager = ScanPoliciesManager()
+        policies_manager.max_symlink_visits = 3
+
+        local_paths = folder.all_files(reporter=MagicMock(), policies_manager=policies_manager)
+        absolute_paths = [path.absolute_path for path in list(local_paths)]
+
+        assert len(absolute_paths) == 4
+        assert absolute_paths == [
+            str(d / "file1.txt"),
+            str(d / "symlink_dir" / "file1.txt"),
+            str(d / "symlink_dir" / "symlink_dir" / "file1.txt"),
+            str(d / "symlink_dir" / "symlink_dir" / "symlink_dir" / "file1.txt"),
+        ]
+
+    @pytest.mark.timeout(5)  # Set a 5-second timeout for this test
+    def test_circular_symlink_with_limit_1(self, tmp_path):
+        d = tmp_path / "dir"
+        d.mkdir()
+
+        (d / "file1.txt").write_text("content1")
+
+        symlink_dir = d / "symlink_dir"
+        symlink_dir.symlink_to(d)
+
+        policies_manager = ScanPoliciesManager()
+        policies_manager.max_symlink_visits = 1
+
+        folder = LocalFolder(str(tmp_path))
+        local_paths = folder.all_files(reporter=MagicMock(), policies_manager=policies_manager)
+        absolute_paths = [path.absolute_path for path in list(local_paths)]
+
+        assert len(absolute_paths) == 2
+        assert absolute_paths == [
+            str(d / "file1.txt"),
+            str(d / "symlink_dir" / "file1.txt"),
+        ]
+
+    # Just for fun, another test, based on a comment by @zackse available here:
+    # https://github.com/Backblaze/B2_Command_Line_Tool/issues/513#issuecomment-426751216
+
+    @pytest.mark.timeout(5)  # Set a 5-second timeout for this test
+    def test_circular_interesting_case(self, tmp_path):
+
+        # Create directories
+        o = tmp_path / "outsidedir/four/five/six"
+        o.mkdir(parents=True)
+
+        s = tmp_path / "startdir/one/two/three"
+        s.mkdir(parents=True)
+
+        # Create symbolic links
+        symlink_dir = tmp_path / "outsidedir/four/five/one"
+        symlink_dir.symlink_to(tmp_path / "startdir/one")
+
+        symlink_dir = tmp_path / "startdir/badlink"
+        symlink_dir.symlink_to("/")
+
+        symlink_dir = tmp_path / "startdir/outsidedir"
+        symlink_dir.symlink_to(tmp_path / "outsidedir")
+
+        # Create text files
+        file = tmp_path / "outsidedir/hello.txt"
+        file.write_text("hello")
+
+        file = tmp_path / "startdir/hello.txt"
+        file.write_text("hello")
+
+        file = tmp_path / "startdir/one/goodbye.txt"
+        file.write_text("goodbye")
+
+        folder = LocalFolder(str(tmp_path))
+
+        policies_manager = ScanPoliciesManager()
+        policies_manager.max_symlink_visits = 3
+
+        local_paths = folder.all_files(reporter=MagicMock(), policies_manager=policies_manager)
+        absolute_paths = [path.absolute_path for path in list(local_paths)]
+
+        assert len(absolute_paths) == 6
+        assert absolute_paths == [
+            str(tmp_path / "outsidedir" / "four" / "five" / "one" / "goodbye.txt"),
+            str(tmp_path / "outsidedir" / "hello.txt"),
+            str(tmp_path / "startdir" / "hello.txt"),
+            str(tmp_path / "startdir" / "one" / "goodbye.txt"),
+            str(tmp_path / "startdir" / "outsidedir" / "four" / "five" / "one" / "goodbye.txt"),
+            str(tmp_path / "startdir" / "outsidedir" / "hello.txt"),
+        ]
 
 
 class TestScanPoliciesManager:
