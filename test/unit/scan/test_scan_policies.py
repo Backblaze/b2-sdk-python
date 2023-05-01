@@ -7,10 +7,12 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from pathlib import Path
+import platform
 import re
 from unittest.mock import MagicMock
 from b2sdk.scan.folder import LocalFolder
-
+from b2sdk.utils import fix_windows_path_limit
 import pytest
 
 from apiver_deps import ScanPoliciesManager
@@ -30,7 +32,11 @@ class TestFolderTraversal:
         absolute_paths = [path.absolute_path for path in list(local_paths)]
 
         assert len(absolute_paths) == 3
-        assert absolute_paths == [str(d / "file1.txt"), str(d / "file2.txt"), str(d / "file3.txt")]
+        assert absolute_paths == [
+            fix_windows_path_limit(str(d / "file1.txt")),
+            fix_windows_path_limit(str(d / "file2.txt")),
+            fix_windows_path_limit(str(d / "file3.txt"))
+        ]
 
     def test_folder_with_subfolders(self, tmp_path):
         d1 = tmp_path / "dir1"
@@ -49,12 +55,16 @@ class TestFolderTraversal:
 
         assert len(absolute_paths) == 4
         assert absolute_paths == [
-            str(d1 / "file1.txt"),
-            str(d1 / "file2.txt"),
-            str(d2 / "file3.txt"),
-            str(d2 / "file4.txt")
+            fix_windows_path_limit(str(d1 / "file1.txt")),
+            fix_windows_path_limit(str(d1 / "file2.txt")),
+            fix_windows_path_limit(str(d2 / "file3.txt")),
+            fix_windows_path_limit(str(d2 / "file4.txt"))
         ]
 
+    @pytest.mark.skipif(
+        platform.system() == 'Windows' and platform.python_implementation() == 'PyPy',
+        reason="Symlinks not supported on PyPy/Windows"
+    )
     def test_folder_with_symlink_to_file(self, tmp_path):
         d = tmp_path / "dir"
         d.mkdir()
@@ -71,11 +81,18 @@ class TestFolderTraversal:
         absolute_paths = [path.absolute_path for path in list(local_paths)]
 
         assert len(absolute_paths) == 2
-        assert absolute_paths == [str(file), str(symlink_file)]
+        assert absolute_paths == [
+            fix_windows_path_limit(str(file)),
+            fix_windows_path_limit(str(symlink_file))
+        ]
 
     #FIXME the following two tests could be combined to avoid code duplication
     # but I decide to keep them separate for now to make it easier to debug
 
+    @pytest.mark.skipif(
+        platform.system() == 'Windows' and platform.python_implementation() == 'PyPy',
+        reason="Symlinks not supported on PyPy/Windows"
+    )
     @pytest.mark.timeout(5)  # Set a 5-second timeout for this test
     def test_folder_with_circular_symlink(self, tmp_path):
         d = tmp_path / "dir"
@@ -96,12 +113,18 @@ class TestFolderTraversal:
 
         assert len(absolute_paths) == 4
         assert absolute_paths == [
-            str(d / "file1.txt"),
-            str(d / "symlink_dir" / "file1.txt"),
-            str(d / "symlink_dir" / "symlink_dir" / "file1.txt"),
-            str(d / "symlink_dir" / "symlink_dir" / "symlink_dir" / "file1.txt"),
+            fix_windows_path_limit(str(d / "file1.txt")),
+            fix_windows_path_limit(str(d / "symlink_dir" / "file1.txt")),
+            fix_windows_path_limit(str(d / "symlink_dir" / "symlink_dir" / "file1.txt")),
+            fix_windows_path_limit(
+                str(d / "symlink_dir" / "symlink_dir" / "symlink_dir" / "file1.txt")
+            ),
         ]
 
+    @pytest.mark.skipif(
+        platform.system() == 'Windows' and platform.python_implementation() == 'PyPy',
+        reason="Symlinks not supported on PyPy/Windows"
+    )
     @pytest.mark.timeout(5)  # Set a 5-second timeout for this test
     def test_circular_symlink_with_limit_1(self, tmp_path):
         d = tmp_path / "dir"
@@ -121,13 +144,17 @@ class TestFolderTraversal:
 
         assert len(absolute_paths) == 2
         assert absolute_paths == [
-            str(d / "file1.txt"),
-            str(d / "symlink_dir" / "file1.txt"),
+            fix_windows_path_limit(str(d / "file1.txt")),
+            fix_windows_path_limit(str(d / "symlink_dir" / "file1.txt")),
         ]
 
     # Just for fun, another test, based on a comment by @zackse available here:
     # https://github.com/Backblaze/B2_Command_Line_Tool/issues/513#issuecomment-426751216
 
+    @pytest.mark.skipif(
+        platform.system() == 'Windows' and platform.python_implementation() == 'PyPy',
+        reason="Symlinks not supported on PyPy/Windows"
+    )
     @pytest.mark.timeout(5)  # Set a 5-second timeout for this test
     def test_circular_interesting_case(self, tmp_path):
 
@@ -168,12 +195,16 @@ class TestFolderTraversal:
 
         assert len(absolute_paths) == 6
         assert absolute_paths == [
-            str(tmp_path / "outsidedir" / "four" / "five" / "one" / "goodbye.txt"),
-            str(tmp_path / "outsidedir" / "hello.txt"),
-            str(tmp_path / "startdir" / "hello.txt"),
-            str(tmp_path / "startdir" / "one" / "goodbye.txt"),
-            str(tmp_path / "startdir" / "outsidedir" / "four" / "five" / "one" / "goodbye.txt"),
-            str(tmp_path / "startdir" / "outsidedir" / "hello.txt"),
+            fix_windows_path_limit(
+                str(tmp_path / "outsidedir" / "four" / "five" / "one" / "goodbye.txt")
+            ),
+            fix_windows_path_limit(str(tmp_path / "outsidedir" / "hello.txt")),
+            fix_windows_path_limit(str(tmp_path / "startdir" / "hello.txt")),
+            fix_windows_path_limit(str(tmp_path / "startdir" / "one" / "goodbye.txt")),
+            fix_windows_path_limit(
+                str(tmp_path / "startdir" / "outsidedir" / "four" / "five" / "one" / "goodbye.txt")
+            ),
+            fix_windows_path_limit(str(tmp_path / "startdir" / "outsidedir" / "hello.txt")),
         ]
 
 

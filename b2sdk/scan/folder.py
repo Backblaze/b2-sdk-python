@@ -213,6 +213,8 @@ class LocalFolder(AbstractFolder):
                 [potential_ancestor, dir]
             )
 
+        #FIXME should I construct starting_dir dynamically based on relative_dir_path and local_dir?
+
         if not isinstance(local_dir, str):
             raise ValueError('folder path should be unicode: %s' % repr(local_dir))
 
@@ -243,7 +245,8 @@ class LocalFolder(AbstractFolder):
             visited_symlinks = {}
 
         if os.path.islink(local_dir):
-            real_path = os.path.realpath(local_dir)
+            absolute_path = os.path.abspath(local_dir)
+            real_path = os.readlink(absolute_path)
 
             if is_ancestor_directory(local_dir, starting_dir):
                 # Skip symlink if it points to an ancestor directory of the initial scan directory
