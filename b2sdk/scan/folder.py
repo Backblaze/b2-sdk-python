@@ -10,6 +10,7 @@
 
 import logging
 import os
+from pathlib import Path
 import platform
 import re
 import sys
@@ -132,7 +133,8 @@ class LocalFolder(AbstractFolder):
         :param reporter: a place to report errors
         :param policies_manager: a policy manager object, default is DEFAULT_SCAN_MANAGER
         """
-        yield from self._walk_relative_paths(self.root, '', reporter, policies_manager)
+        root_path = Path(self.root)
+        yield from self._walk_relative_paths(root_path, Path(''), reporter, policies_manager)
 
     def make_full_path(self, file_name):
         """
@@ -179,12 +181,12 @@ class LocalFolder(AbstractFolder):
 
     def _walk_relative_paths(
         self,
-        local_dir: str,
-        relative_dir_path: str,
+        local_dir: Path,
+        relative_dir_path: Path,
         reporter,
         policies_manager: ScanPoliciesManager,
         visited_symlinks=None,
-        starting_dir: str = None,
+        starting_dir: Path = None,
     ):
         """
         Yield a File object for each of the files anywhere under this folder, in the
@@ -192,31 +194,6 @@ class LocalFolder(AbstractFolder):
 
         :param relative_dir_path: the path of this dir relative to the scan point, or '' if at scan point
         """
-
-        def is_ancestor_directory(potential_ancestor, dir):
-            """
-            Helper function to check if the ancestor directory is an ancestor
-            of the descendant directory.
-
-            :param potential_ancestor: The ancestor directory path to check.
-            :param dir: The directory to check ancestor against.
-            :return: True if the ancestor directory is an ancestor of the descendant directory, False otherwise.
-            """
-
-            # should return true if ancestor is located anywhere in the path of descendant
-            # e.g. /home/user/ancestor is an ancestor of /home/user/ancestor/descendant
-
-            potential_ancestor = os.path.abspath(os.path.realpath(potential_ancestor))
-            dir = os.path.abspath(os.path.realpath(dir))
-
-            return os.path.commonpath([potential_ancestor]) == os.path.commonpath(
-                [potential_ancestor, dir]
-            )
-
-        #FIXME should I construct starting_dir dynamically based on relative_dir_path and local_dir?
-
-        if not isinstance(local_dir, str):
-            raise ValueError('folder path should be unicode: %s' % repr(local_dir))
 
         # Collect the names.  We do this before returning any results, because
         # directories need to sort as if their names end in '/'.
@@ -233,6 +210,7 @@ class LocalFolder(AbstractFolder):
         # This is because in Unicode '.' comes before '/', which comes before '0'.
         names = []  # list of (name, local_path, relative_file_path)
 
+        #FIXME should I construct starting_dir dynamically based on relative_dir_path and local_dir?
         if starting_dir is None:
             starting_dir = local_dir
 
@@ -244,11 +222,10 @@ class LocalFolder(AbstractFolder):
         if visited_symlinks is None:
             visited_symlinks = {}
 
-        if os.path.islink(local_dir):
-            absolute_path = os.path.abspath(local_dir)
-            real_path = os.readlink(absolute_path)
+        if local_dir.is_symlink():
+            real_path = local_dir.resolve()
 
-            if is_ancestor_directory(local_dir, starting_dir):
+            if real_path in starting_dir.parents:
                 # Skip symlink if it points to an ancestor directory of the initial scan directory
                 return
 
@@ -258,12 +235,7 @@ class LocalFolder(AbstractFolder):
                 return
             visited_symlinks[real_path] = symlink_count + 1
 
-        for name in os.listdir(local_dir):
-            # We expect listdir() to return unicode if dir_path is unicode.
-            # If the file name is not valid, based on the file system
-            # encoding, then listdir() will return un-decoded str/bytes.
-            if not isinstance(name, str):
-                name = self._handle_non_unicode_file_name(name)
+        for name in [x.name for x in local_dir.iterdir()]:
 
             if '/' in name:
                 raise UnsupportedFilename(
@@ -271,26 +243,30 @@ class LocalFolder(AbstractFolder):
                     "%s in dir %s" % (name, local_dir)
                 )
 
-            local_path = os.path.join(local_dir, name)
+            local_path = local_dir / name
             relative_file_path = join_b2_path(
-                relative_dir_path, name
+                str(relative_dir_path), name
             )  # file path relative to the scan point
 
             # Skip broken symlinks or other inaccessible files
-            if not is_file_readable(local_path, reporter):
+            if not is_file_readable(str(local_path), reporter):
                 continue
 
-            if policies_manager.exclude_all_symlinks and os.path.islink(local_path):
+            if policies_manager.exclude_all_symlinks and local_path.is_symlink():
                 if reporter is not None:
-                    reporter.symlink_skipped(local_path)
+                    reporter.symlink_skipped(str(local_path))
                 continue
 
-            if os.path.isdir(local_path):
+            if local_path.is_dir():
                 name += '/'
-                if policies_manager.should_exclude_local_directory(relative_file_path):
+                if policies_manager.should_exclude_local_directory(str(relative_file_path)):
                     continue
 
-            names.append((name, local_path, relative_file_path))
+            # remove the leading './' from the relative path to ensure backward compatibility
+            relative_file_path_str = str(relative_file_path)
+            if relative_file_path_str.startswith("./"):
+                relative_file_path_str = relative_file_path_str[2:]
+            names.append((name, local_path, relative_file_path_str))
 
         # Yield all of the answers.
         #
@@ -310,13 +286,13 @@ class LocalFolder(AbstractFolder):
             else:
                 # Check that the file still exists and is accessible, since it can take a long time
                 # to iterate through large folders
-                if is_file_readable(local_path, reporter):
-                    file_mod_time = get_file_mtime(local_path)
-                    file_size = os.path.getsize(local_path)
+                if is_file_readable(str(local_path), reporter):
+                    file_mod_time = get_file_mtime(str(local_path))
+                    file_size = local_path.stat().st_size
 
                     local_scan_path = LocalPath(
-                        absolute_path=self.make_full_path(relative_file_path),
-                        relative_path=relative_file_path,
+                        absolute_path=self.make_full_path(str(relative_file_path)),
+                        relative_path=str(relative_file_path),
                         mod_time=file_mod_time,
                         size=file_size,
                     )
