@@ -31,7 +31,6 @@ class TestFolderTraversal:
         local_paths = folder.all_files(reporter=MagicMock())
         absolute_paths = [path.absolute_path for path in list(local_paths)]
 
-        assert len(absolute_paths) == 3
         assert absolute_paths == [
             fix_windows_path_limit(str(d / "file1.txt")),
             fix_windows_path_limit(str(d / "file2.txt")),
@@ -53,7 +52,6 @@ class TestFolderTraversal:
         local_paths = folder.all_files(reporter=MagicMock())
         absolute_paths = [path.absolute_path for path in list(local_paths)]
 
-        assert len(absolute_paths) == 4
         assert absolute_paths == [
             fix_windows_path_limit(str(d1 / "file1.txt")),
             fix_windows_path_limit(str(d1 / "file2.txt")),
@@ -80,7 +78,6 @@ class TestFolderTraversal:
 
         absolute_paths = [path.absolute_path for path in list(local_paths)]
 
-        assert len(absolute_paths) == 2
         assert absolute_paths == [
             fix_windows_path_limit(str(file)),
             fix_windows_path_limit(str(symlink_file))
@@ -111,7 +108,6 @@ class TestFolderTraversal:
         local_paths = folder.all_files(reporter=MagicMock(), policies_manager=policies_manager)
         absolute_paths = [path.absolute_path for path in list(local_paths)]
 
-        assert len(absolute_paths) == 4
         assert absolute_paths == [
             fix_windows_path_limit(str(d / "file1.txt")),
             fix_windows_path_limit(str(d / "symlink_dir" / "file1.txt")),
@@ -142,7 +138,6 @@ class TestFolderTraversal:
         local_paths = folder.all_files(reporter=MagicMock(), policies_manager=policies_manager)
         absolute_paths = [path.absolute_path for path in list(local_paths)]
 
-        assert len(absolute_paths) == 2
         assert absolute_paths == [
             fix_windows_path_limit(str(d / "file1.txt")),
             fix_windows_path_limit(str(d / "symlink_dir" / "file1.txt")),
@@ -193,7 +188,6 @@ class TestFolderTraversal:
         local_paths = folder.all_files(reporter=MagicMock(), policies_manager=policies_manager)
         absolute_paths = [path.absolute_path for path in list(local_paths)]
 
-        assert len(absolute_paths) == 6
         assert absolute_paths == [
             fix_windows_path_limit(
                 str(tmp_path / "outsidedir" / "four" / "five" / "one" / "goodbye.txt")
