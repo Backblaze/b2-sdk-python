@@ -183,10 +183,10 @@ class LocalFolder(AbstractFolder):
         self,
         local_dir: Path,
         relative_dir_path: Path,
-        reporter,
+        reporter: ProgressReport,
         policies_manager: ScanPoliciesManager,
         visited_symlinks=None,
-        starting_dir: Path = None,
+        starting_dir: Optional[str] = None,
     ):
         """
         Yield a File object for each of the files anywhere under this folder, in the
