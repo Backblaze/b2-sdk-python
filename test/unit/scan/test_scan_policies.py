@@ -20,7 +20,7 @@ from apiver_deps_exception import InvalidArgument
 
 
 class TestFolderTraversal:
-    def test_simple_folder(self, tmp_path):
+    def test_flat_folder(self, tmp_path):
         d = tmp_path / "dir"
         d.mkdir()
         (d / "file1.txt").write_text("content1")
@@ -34,7 +34,7 @@ class TestFolderTraversal:
         assert absolute_paths == [
             fix_windows_path_limit(str(d / "file1.txt")),
             fix_windows_path_limit(str(d / "file2.txt")),
-            fix_windows_path_limit(str(d / "file3.txt"))
+            fix_windows_path_limit(str(d / "file3.txt")),
         ]
 
     def test_folder_with_subfolders(self, tmp_path):
@@ -56,7 +56,7 @@ class TestFolderTraversal:
             fix_windows_path_limit(str(d1 / "file1.txt")),
             fix_windows_path_limit(str(d1 / "file2.txt")),
             fix_windows_path_limit(str(d2 / "file3.txt")),
-            fix_windows_path_limit(str(d2 / "file4.txt"))
+            fix_windows_path_limit(str(d2 / "file4.txt")),
         ]
 
     @pytest.mark.skipif(
