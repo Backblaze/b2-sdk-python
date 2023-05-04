@@ -192,7 +192,12 @@ class LocalFolder(AbstractFolder):
         Yield a File object for each of the files anywhere under this folder, in the
         order they would appear in B2, unless the path is excluded by policies manager.
 
-        :param relative_dir_path: the path of this dir relative to the scan point, or '' if at scan point
+        :param local_dir: the path to the local directory that we are currently inspecting
+        :param relative_dir_path: the path of this dir relative to the scan point, or Path('') if at scan point
+        :param reporter: a reporter object to report errors
+        :param policies_manager: a policies manager object
+        :param visited_symlinks: a set of paths to symlinks that have already been visited
+        :param starting_dir: the path to the directory where the scan started
         """
 
         # Collect the names.  We do this before returning any results, because
@@ -214,26 +219,22 @@ class LocalFolder(AbstractFolder):
         if starting_dir is None:
             starting_dir = local_dir
 
-        # Set max_symlink_visits based on the policies_manager object
-        # Fall back to 10 if max_symlink_visits is not set
-        # FIXME should we use a default value from somewhere else?
-        max_symlink_visits = getattr(policies_manager, 'max_symlink_visits', 10)
-
         if visited_symlinks is None:
-            visited_symlinks = {}
+            visited_symlinks = set()
 
         if local_dir.is_symlink():
             real_path = local_dir.resolve()
 
             if real_path in starting_dir.parents:
                 # Skip symlink if it points to an ancestor directory of the initial scan directory
+                #FIXME I think I should raise an error here instead of skipping the symlink
                 return
 
-            symlink_count = visited_symlinks.get(real_path, 0)
-            if symlink_count >= max_symlink_visits:
-                # Maximum symlink visits reached, stop the recursion
+            if real_path in visited_symlinks:
+                # Infinite symlink loop detected, skip symlink
                 return
-            visited_symlinks[real_path] = symlink_count + 1
+
+            visited_symlinks.add(real_path)
 
         for name in [x.name for x in local_dir.iterdir()]:
 

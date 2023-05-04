@@ -102,40 +102,7 @@ class TestFolderTraversal:
 
         folder = LocalFolder(str(tmp_path))
 
-        policies_manager = ScanPoliciesManager()
-        policies_manager.max_symlink_visits = 3
-
-        local_paths = folder.all_files(reporter=MagicMock(), policies_manager=policies_manager)
-        absolute_paths = [path.absolute_path for path in list(local_paths)]
-
-        assert absolute_paths == [
-            fix_windows_path_limit(str(d / "file1.txt")),
-            fix_windows_path_limit(str(d / "symlink_dir" / "file1.txt")),
-            fix_windows_path_limit(str(d / "symlink_dir" / "symlink_dir" / "file1.txt")),
-            fix_windows_path_limit(
-                str(d / "symlink_dir" / "symlink_dir" / "symlink_dir" / "file1.txt")
-            ),
-        ]
-
-    @pytest.mark.skipif(
-        platform.system() == 'Windows' and platform.python_implementation() == 'PyPy',
-        reason="Symlinks not supported on PyPy/Windows"
-    )
-    @pytest.mark.timeout(5)  # Set a 5-second timeout for this test
-    def test_circular_symlink_with_limit_1(self, tmp_path):
-        d = tmp_path / "dir"
-        d.mkdir()
-
-        (d / "file1.txt").write_text("content1")
-
-        symlink_dir = d / "symlink_dir"
-        symlink_dir.symlink_to(d)
-
-        policies_manager = ScanPoliciesManager()
-        policies_manager.max_symlink_visits = 1
-
-        folder = LocalFolder(str(tmp_path))
-        local_paths = folder.all_files(reporter=MagicMock(), policies_manager=policies_manager)
+        local_paths = folder.all_files(reporter=MagicMock())
         absolute_paths = [path.absolute_path for path in list(local_paths)]
 
         assert absolute_paths == [
@@ -195,9 +162,6 @@ class TestFolderTraversal:
             fix_windows_path_limit(str(tmp_path / "outsidedir" / "hello.txt")),
             fix_windows_path_limit(str(tmp_path / "startdir" / "hello.txt")),
             fix_windows_path_limit(str(tmp_path / "startdir" / "one" / "goodbye.txt")),
-            fix_windows_path_limit(
-                str(tmp_path / "startdir" / "outsidedir" / "four" / "five" / "one" / "goodbye.txt")
-            ),
             fix_windows_path_limit(str(tmp_path / "startdir" / "outsidedir" / "hello.txt")),
         ]
 

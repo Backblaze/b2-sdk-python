@@ -44,7 +44,6 @@ class ScanPoliciesManager(v2.ScanPoliciesManager):
         exclude_modified_after: Optional[int] = None,
         exclude_uploaded_before: Optional[int] = None,
         exclude_uploaded_after: Optional[int] = None,
-        symlink_max_visits: int = 10,
     ):
         """
         :param exclude_dir_regexes: regexes to exclude directories
@@ -55,7 +54,6 @@ class ScanPoliciesManager(v2.ScanPoliciesManager):
         :param exclude_modified_after: optionally exclude file versions (both local and b2) modified after (in millis)
         :param exclude_uploaded_before: optionally exclude b2 file versions uploaded before (in millis)
         :param exclude_uploaded_after: optionally exclude b2 file versions uploaded after (in millis)
-        :param symlink_max_visits: maximum number of times to follow a symlink, to avoid infinite loops, default is 10
 
         The regex matching priority for a given path is:
         1) the path is always excluded if it's dir matches `exclude_dir_regexes`, if not then
@@ -85,7 +83,6 @@ class ScanPoliciesManager(v2.ScanPoliciesManager):
             self._include_upload_time_range = v2.IntegerRange(
                 exclude_uploaded_before, exclude_uploaded_after
             )
-        self.symlink_max_visits = symlink_max_visits
 
     def should_exclude_file(self, file_path):
         """
@@ -132,7 +129,6 @@ class ScanPoliciesManagerWrapper(v2.ScanPoliciesManager):
     def __init__(self, scan_policies_manager: ScanPoliciesManager):
         self.scan_policies_manager = scan_policies_manager
         self.exclude_all_symlinks = scan_policies_manager.exclude_all_symlinks
-        self.symlink_max_visits = scan_policies_manager.symlink_max_visits
 
     def __repr__(self):
         return "%s(%s)" % (
