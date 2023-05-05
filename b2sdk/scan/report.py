@@ -200,7 +200,7 @@ class ProgressReport:
         :type path: str
         """
         self.warnings.append(
-            'WARNING: %s is a circular symlink, which was alread visited.Skipping.' % (path,)
+            'WARNING: %s is a circular symlink, which was already visited.Skipping.' % (path,)
         )
 
 
