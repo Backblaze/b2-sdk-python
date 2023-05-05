@@ -186,7 +186,6 @@ class LocalFolder(AbstractFolder):
         reporter: ProgressReport,
         policies_manager: ScanPoliciesManager,
         visited_symlinks=None,
-        starting_dir: Optional[str] = None,
     ):
         """
         Yield a File object for each of the files anywhere under this folder, in the
@@ -194,10 +193,9 @@ class LocalFolder(AbstractFolder):
 
         :param local_dir: the path to the local directory that we are currently inspecting
         :param relative_dir_path: the path of this dir relative to the scan point, or Path('') if at scan point
-        :param reporter: a reporter object to report errors
+        :param reporter: a reporter object to report errors and warnings
         :param policies_manager: a policies manager object
-        :param visited_symlinks: a set of paths to symlinks that have already been visited
-        :param starting_dir: the path to the directory where the scan started
+        :param visited_symlinks: a set of paths to symlinks that have already been visited. Using inode numbers to reduce memory usage
         """
 
         # Collect the names.  We do this before returning any results, because
@@ -215,26 +213,19 @@ class LocalFolder(AbstractFolder):
         # This is because in Unicode '.' comes before '/', which comes before '0'.
         names = []  # list of (name, local_path, relative_file_path)
 
-        #FIXME should I construct starting_dir dynamically based on relative_dir_path and local_dir?
-        if starting_dir is None:
-            starting_dir = local_dir
-
         if visited_symlinks is None:
             visited_symlinks = set()
 
         if local_dir.is_symlink():
             real_path = local_dir.resolve()
-
-            if real_path in starting_dir.parents:
-                # Skip symlink if it points to an ancestor directory of the initial scan directory
-                #FIXME I think I should raise an error here instead of skipping the symlink
+            inode_number = real_path.stat().st_ino
+            if inode_number in visited_symlinks:
+                # Infinite symlink loop detected, report warning and skip symlink
+                if reporter is not None:
+                    reporter.circular_symlink_skipped(str(local_dir))
                 return
 
-            if real_path in visited_symlinks:
-                # Infinite symlink loop detected, skip symlink
-                return
-
-            visited_symlinks.add(real_path)
+            visited_symlinks.add(inode_number)
 
         for name in [x.name for x in local_dir.iterdir()]:
 
@@ -281,7 +272,6 @@ class LocalFolder(AbstractFolder):
                     reporter,
                     policies_manager,
                     visited_symlinks,
-                    starting_dir,
                 ):
                     yield subdir_file
             else:

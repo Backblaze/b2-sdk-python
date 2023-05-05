@@ -192,6 +192,17 @@ class ProgressReport:
     def symlink_skipped(self, path):
         pass
 
+    def circular_symlink_skipped(self, path):
+        """
+        Add a circular symlink error message to the list of warnings.
+
+        :param path: file path
+        :type path: str
+        """
+        self.warnings.append(
+            'WARNING: %s is a circular symlink, which was alread visited.Skipping.' % (path,)
+        )
+
 
 def sample_report_run():
     """
