@@ -21,23 +21,41 @@ from apiver_deps_exception import InvalidArgument
 
 class TestFolderTraversal:
     def test_flat_folder(self, tmp_path):
-        d = tmp_path / "dir"
-        d.mkdir()
-        (d / "file1.txt").write_text("content1")
-        (d / "file2.txt").write_text("content2")
-        (d / "file3.txt").write_text("content3")
 
-        folder = LocalFolder(str(d))
+        # Create a directory structure below with initial scannig point at tmp_path/dir:
+        # tmp_path
+        # └── dir
+        #     ├── file1.txt
+        #     ├── file2.txt
+        #     └── file3.txt
+
+        (tmp_path / "dir").mkdir(parents=True)
+
+        (tmp_path / "dir" / "file1.txt").write_text("content1")
+        (tmp_path / "dir" / "file2.txt").write_text("content2")
+        (tmp_path / "dir" / "file3.txt").write_text("content3")
+
+        folder = LocalFolder(str(tmp_path / "dir"))
         local_paths = folder.all_files(reporter=MagicMock())
         absolute_paths = [path.absolute_path for path in list(local_paths)]
 
         assert absolute_paths == [
-            fix_windows_path_limit(str(d / "file1.txt")),
-            fix_windows_path_limit(str(d / "file2.txt")),
-            fix_windows_path_limit(str(d / "file3.txt")),
+            fix_windows_path_limit(str(tmp_path / "dir" / "file1.txt")),
+            fix_windows_path_limit(str(tmp_path / "dir" / "file2.txt")),
+            fix_windows_path_limit(str(tmp_path / "dir" / "file3.txt")),
         ]
 
     def test_folder_with_subfolders(self, tmp_path):
+
+        # Create a directory structure below with initial scannig point at tmp_path:
+        # tmp_path
+        # ├── dir1
+        # │   ├── file1.txt
+        # │   └── file2.txt
+        # └── dir2
+        #     ├── file3.txt
+        #     └── file4.txt
+
         d1 = tmp_path / "dir1"
         d1.mkdir()
         (d1 / "file1.txt").write_text("content1")
@@ -64,10 +82,16 @@ class TestFolderTraversal:
         reason="Symlinks not supported on PyPy/Windows"
     )
     def test_folder_with_symlink_to_file(self, tmp_path):
-        d = tmp_path / "dir"
-        d.mkdir()
 
-        file = d / "file.txt"
+        # Create a directory structure below with initial scannig point at tmp_path:
+        # tmp_path
+        # ├── dir
+        # │   └── file.txt
+        # └── symlink_file.txt -> dir/file.txt
+
+        (tmp_path / "dir").mkdir()
+
+        file = tmp_path / "dir" / "file.txt"
         file.write_text("content")
 
         symlink_file = tmp_path / "symlink_file.txt"
@@ -83,22 +107,25 @@ class TestFolderTraversal:
             fix_windows_path_limit(str(symlink_file))
         ]
 
-    #FIXME the following two tests could be combined to avoid code duplication
-    # but I decide to keep them separate for now to make it easier to debug
-
     @pytest.mark.skipif(
         platform.system() == 'Windows' and platform.python_implementation() == 'PyPy',
         reason="Symlinks not supported on PyPy/Windows"
     )
     @pytest.mark.timeout(5)  # Set a 5-second timeout for this test
     def test_folder_with_circular_symlink(self, tmp_path):
-        d = tmp_path / "dir"
-        d.mkdir()
 
-        (d / "file1.txt").write_text("content1")
+        # Create a directory structure below with initial scannig point at tmp_path:
+        # tmp_path
+        # ├── dir
+        # │   └── file.txt
+        # └── symlink_dir -> dir
 
-        symlink_dir = d / "symlink_dir"
-        symlink_dir.symlink_to(d)
+        (tmp_path / "dir").mkdir()
+
+        (tmp_path / "dir" / "file1.txt").write_text("content1")
+
+        symlink_dir = tmp_path / "dir" / "symlink_dir"
+        symlink_dir.symlink_to(tmp_path / "dir")
 
         folder = LocalFolder(str(tmp_path))
 
@@ -106,63 +133,64 @@ class TestFolderTraversal:
         absolute_paths = [path.absolute_path for path in list(local_paths)]
 
         assert absolute_paths == [
-            fix_windows_path_limit(str(d / "file1.txt")),
-            fix_windows_path_limit(str(d / "symlink_dir" / "file1.txt")),
+            fix_windows_path_limit(str(tmp_path / "dir" / "file1.txt")),
+            fix_windows_path_limit(str(tmp_path / "dir" / "symlink_dir" / "file1.txt")),
         ]
-
-    # Just for fun, another test, based on a comment by @zackse available here:
-    # https://github.com/Backblaze/B2_Command_Line_Tool/issues/513#issuecomment-426751216
 
     @pytest.mark.skipif(
         platform.system() == 'Windows' and platform.python_implementation() == 'PyPy',
         reason="Symlinks not supported on PyPy/Windows"
     )
     @pytest.mark.timeout(5)  # Set a 5-second timeout for this test
-    def test_circular_interesting_case(self, tmp_path):
+    def test_folder_with_symlink_to_parent(self, tmp_path):
+        # Create a directory structure below with the scannig point at tmp_path/parent/child/:
+        #   tmp_path
+        #   ├── parent
+        #   │   ├── child
+        #   │   │   ├── file4.txt
+        #   │   │   └── grandchild
+        #   │   │       ├── file5.txt
+        #   │   │       └── symlink_dir -> ../../.. (symlink to tmp_path/parent)
+        #   │   └── file3.txt
+        #   ├── file1.txt
+        #   └── file2.txt
 
-        # Create directories
-        o = tmp_path / "outsidedir/four/five/six"
-        o.mkdir(parents=True)
+        (tmp_path / "parent" / "child" / "grandchild").mkdir(parents=True)
 
-        s = tmp_path / "startdir/one/two/three"
-        s.mkdir(parents=True)
+        (tmp_path / "file1.txt").write_text("content1")
+        (tmp_path / "file2.txt").write_text("content2")
 
-        # Create symbolic links
-        symlink_dir = tmp_path / "outsidedir/four/five/one"
-        symlink_dir.symlink_to(tmp_path / "startdir/one")
+        (tmp_path / "parent" / "file3.txt").write_text("content3")
 
-        symlink_dir = tmp_path / "startdir/badlink"
-        symlink_dir.symlink_to("/")
+        (tmp_path / "parent" / "child" / "file4.txt").write_text("content4")
 
-        symlink_dir = tmp_path / "startdir/outsidedir"
-        symlink_dir.symlink_to(tmp_path / "outsidedir")
+        (tmp_path / "parent" / "child" / "grandchild" / "file5.txt").write_text("content5")
+        symlink_dir = tmp_path / "parent" / "child" / "grandchild" / "symlink_dir"
+        symlink_dir.symlink_to(tmp_path / "parent")
 
-        # Create text files
-        file = tmp_path / "outsidedir/hello.txt"
-        file.write_text("hello")
+        folder = LocalFolder(str(tmp_path / "parent" / "child"))
 
-        file = tmp_path / "startdir/hello.txt"
-        file.write_text("hello")
-
-        file = tmp_path / "startdir/one/goodbye.txt"
-        file.write_text("goodbye")
-
-        folder = LocalFolder(str(tmp_path))
-
-        policies_manager = ScanPoliciesManager()
-        policies_manager.max_symlink_visits = 3
-
-        local_paths = folder.all_files(reporter=MagicMock(), policies_manager=policies_manager)
+        local_paths = folder.all_files(reporter=MagicMock())
         absolute_paths = [path.absolute_path for path in list(local_paths)]
 
         assert absolute_paths == [
+            fix_windows_path_limit(str(tmp_path / "parent" / "child" / "file4.txt")),
+            fix_windows_path_limit(str(tmp_path / "parent" / "child" / "grandchild" / "file5.txt")),
             fix_windows_path_limit(
-                str(tmp_path / "outsidedir" / "four" / "five" / "one" / "goodbye.txt")
+                str(
+                    tmp_path / "parent" / "child" / "grandchild" / "symlink_dir" / "child" /
+                    "file4.txt"
+                )
             ),
-            fix_windows_path_limit(str(tmp_path / "outsidedir" / "hello.txt")),
-            fix_windows_path_limit(str(tmp_path / "startdir" / "hello.txt")),
-            fix_windows_path_limit(str(tmp_path / "startdir" / "one" / "goodbye.txt")),
-            fix_windows_path_limit(str(tmp_path / "startdir" / "outsidedir" / "hello.txt")),
+            fix_windows_path_limit(
+                str(
+                    tmp_path / "parent" / "child" / "grandchild" / "symlink_dir" / "child" /
+                    "grandchild" / "file5.txt"
+                )
+            ),
+            fix_windows_path_limit(
+                str(tmp_path / "parent" / "child" / "grandchild" / "symlink_dir" / "file3.txt")
+            ),
         ]
 
 
