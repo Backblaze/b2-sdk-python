@@ -7,7 +7,6 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
-import io
 from collections import defaultdict
 from contextlib import ExitStack
 from unittest import mock

@@ -19,7 +19,7 @@ import apiver_deps
 from apiver_deps import B2Api
 from apiver_deps import B2HttpApiConfig
 from apiver_deps import B2Http
-from apiver_deps import DummyCache, InMemoryCache
+from apiver_deps import InMemoryCache
 from apiver_deps import EncryptionAlgorithm
 from apiver_deps import EncryptionMode
 from apiver_deps import EncryptionSetting

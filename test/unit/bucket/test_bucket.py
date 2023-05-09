@@ -25,7 +25,6 @@ from apiver_deps_exception import (
     AlreadyFailed,
     B2Error,
     B2RequestTimeoutDuringUpload,
-    BadRequest,
     BucketIdNotFound,
     DestinationDirectoryDoesntAllowOperation,
     DestinationDirectoryDoesntExist,
@@ -1580,7 +1579,7 @@ class TestUpload(TestCaseWithBucket):
         data = b'hello world' * 20000
 
         f1_id = self.bucket.upload_bytes(data, 'f1').id_
-        with TempDir() as d:
+        with TempDir():
             write_intents = [
                 WriteIntent(
                     CopySource(f1_id, length=len(data), offset=0),
