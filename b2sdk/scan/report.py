@@ -66,29 +66,27 @@ class ProgressReport:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
 
-    def error(self, message):
+    def error(self, message: str) -> None:
         """
         Print an error, gracefully interleaving it with a progress bar.
 
         :param message: an error message
-        :type message: str
         """
         self.print_completion(message)
 
-    def print_completion(self, message):
+    def print_completion(self, message: str) -> None:
         """
         Remove the progress bar, prints a message, and puts the progress
         bar back.
 
         :param message: an error message
-        :type message: str
         """
         with self.lock:
             self._print_line(message, True)
             self._last_update_time = 0
             self._update_progress()
 
-    def update_count(self, delta: int):
+    def update_count(self, delta: int) -> None:
         """
         Report that items have been processed.
         """
@@ -117,14 +115,12 @@ class ProgressReport:
 
         self._print_line(message, False)
 
-    def _print_line(self, line, newline):
+    def _print_line(self, line: str, newline: bool) -> None:
         """
         Print a line to stdout.
 
         :param line: a string without a \r or \n in it.
-        :type line: str
         :param newline: True if the output should move to a new line after this one.
-        :type newline: bool
         """
         if len(line) < len(self.current_line):
             line += ' ' * (len(self.current_line) - len(line))
@@ -150,18 +146,17 @@ class ProgressReport:
             self.current_line = line
         self.stdout.flush()
 
-    def update_total(self, delta):
+    def update_total(self, delta: int) -> None:
         """
         Report that more files have been found for comparison.
 
         :param delta: number of files found since the last check
-        :type delta: int
         """
         with self.lock:
             self.total_count += delta
             self._update_progress()
 
-    def end_total(self):
+    def end_total(self) -> None:
         """
         Total files count is done. Can proceed to step 2.
         """
@@ -169,38 +164,35 @@ class ProgressReport:
             self.total_done = True
             self._update_progress()
 
-    def local_access_error(self, path):
+    def local_access_error(self, path: str) -> None:
         """
         Add a file access error message to the list of warnings.
 
         :param path: file path
-        :type path: str
         """
         self.warnings.append('WARNING: %s could not be accessed (broken symlink?)' % (path,))
 
-    def local_permission_error(self, path):
+    def local_permission_error(self, path: str) -> None:
         """
         Add a permission error message to the list of warnings.
 
         :param path: file path
-        :type path: str
         """
         self.warnings.append(
             'WARNING: %s could not be accessed (no permissions to read?)' % (path,)
         )
 
-    def symlink_skipped(self, path):
+    def symlink_skipped(self, path: str) -> None:
         pass
 
-    def circular_symlink_skipped(self, path):
+    def circular_symlink_skipped(self, path: str) -> None:
         """
         Add a circular symlink error message to the list of warnings.
 
         :param path: file path
-        :type path: str
         """
         self.warnings.append(
-            'WARNING: %s is a circular symlink, which was already visited.Skipping.' % (path,)
+            'WARNING: %s is a circular symlink, which was already visited. Skipping.' % (path,)
         )
 
 

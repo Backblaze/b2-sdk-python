@@ -16,7 +16,7 @@ import re
 import sys
 
 from abc import ABCMeta, abstractmethod
-from typing import Iterator, Optional
+from typing import Iterator, Optional, Set
 
 from ..utils import fix_windows_path_limit, get_file_mtime, is_file_readable
 from .exception import EmptyDirectory, EnvironmentEncodingError, NotADirectory, UnableToCreateDirectory, UnsupportedFilename
@@ -185,7 +185,7 @@ class LocalFolder(AbstractFolder):
         relative_dir_path: Path,
         reporter: ProgressReport,
         policies_manager: ScanPoliciesManager,
-        visited_symlinks=None,
+        visited_symlinks: Optional[Set[int]] = None,
     ):
         """
         Yield a File object for each of the files anywhere under this folder, in the
@@ -213,8 +213,7 @@ class LocalFolder(AbstractFolder):
         # This is because in Unicode '.' comes before '/', which comes before '0'.
         names = []  # list of (name, local_path, relative_file_path)
 
-        if visited_symlinks is None:
-            visited_symlinks = set()
+        visited_symlinks = visited_symlinks or set()
 
         if local_dir.is_symlink():
             real_path = local_dir.resolve()
