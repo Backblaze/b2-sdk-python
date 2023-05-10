@@ -179,14 +179,12 @@ class TestFolderTraversal:
             fix_windows_path_limit(str(tmp_path / "parent" / "child" / "grandchild" / "file5.txt")),
             fix_windows_path_limit(
                 str(
-                    tmp_path / "parent" / "child" / "grandchild" / "symlink_dir" / "child" /
-                    "file4.txt"
+                    tmp_path / "parent" / "child" / "grandchild" / "symlink_dir" / "child" / "file4.txt"
                 )
             ),
             fix_windows_path_limit(
                 str(
-                    tmp_path / "parent" / "child" / "grandchild" / "symlink_dir" / "child" /
-                    "grandchild" / "file5.txt"
+                    tmp_path / "parent" / "child" / "grandchild" / "symlink_dir" / "child" / "grandchild" / "file5.txt"
                 )
             ),
             fix_windows_path_limit(
