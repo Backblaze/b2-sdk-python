@@ -192,4 +192,4 @@ class TestFolderTraversal:
             fix_windows_path_limit(
                 str(tmp_path / "parent" / "child" / "grandchild" / "symlink_dir" / "file3.txt")
             ),
-        ]
+        ]  # yapf: disable
