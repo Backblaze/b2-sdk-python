@@ -218,7 +218,14 @@ class LocalFolder(AbstractFolder):
         if local_dir.is_symlink():
             real_path = local_dir.resolve()
             inode_number = real_path.stat().st_ino
-            if inode_number in visited_symlinks:
+
+            visited_symlinks_count = len(visited_symlinks)
+
+            # Add symlink to visited_symlinks to prevent infinite symlink loops
+            visited_symlinks.add(inode_number)
+
+            # Check if set size has changed, if not, symlink has already been visited
+            if len(visited_symlinks) == visited_symlinks_count:
                 # Infinite symlink loop detected, report warning and skip symlink
                 if reporter is not None:
                     reporter.circular_symlink_skipped(str(local_dir))
