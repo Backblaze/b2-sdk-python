@@ -9,7 +9,6 @@
 ######################################################################
 from pathlib import Path
 import platform
-import re
 from unittest.mock import MagicMock
 from b2sdk.scan.folder import LocalFolder
 from b2sdk.utils import fix_windows_path_limit
