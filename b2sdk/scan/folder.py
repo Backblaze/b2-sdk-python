@@ -233,7 +233,7 @@ class LocalFolder(AbstractFolder):
 
             visited_symlinks.add(inode_number)
 
-        for name in [x.name for x in local_dir.iterdir()]:
+        for name in (x.name for x in local_dir.iterdir()):
 
             if '/' in name:
                 raise UnsupportedFilename(
