@@ -111,7 +111,7 @@ class TestFolderTraversal:
         platform.system() == 'Windows' and platform.python_implementation() == 'PyPy',
         reason="Symlinks not supported on PyPy/Windows"
     )
-    @pytest.mark.timeout(5)  # Set a 5-second timeout for this test
+    @pytest.mark.timeout(5)
     def test_folder_with_circular_symlink(self, tmp_path):
 
         # Create a directory structure below with initial scannig point at tmp_path:
