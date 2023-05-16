@@ -14,9 +14,6 @@ from b2sdk.scan.folder import LocalFolder
 from b2sdk.utils import fix_windows_path_limit
 import pytest
 
-from apiver_deps import ScanPoliciesManager
-from apiver_deps_exception import InvalidArgument
-
 
 class TestFolderTraversal:
     def test_flat_folder(self, tmp_path):
@@ -140,7 +137,7 @@ class TestFolderTraversal:
         platform.system() == 'Windows' and platform.python_implementation() == 'PyPy',
         reason="Symlinks not supported on PyPy/Windows"
     )
-    @pytest.mark.timeout(5)  # Set a 5-second timeout for this test
+    @pytest.mark.timeout(5)
     def test_folder_with_symlink_to_parent(self, tmp_path):
 
         # Create a directory structure below with the scannig point at tmp_path/parent/child/:
@@ -180,3 +177,310 @@ class TestFolderTraversal:
             fix_windows_path_limit(str(tmp_path / "parent" / "child" / "grandchild" / "symlink_dir" / "child" / "grandchild" / "file5.txt")),
             fix_windows_path_limit(str(tmp_path / "parent" / "child" / "grandchild" / "symlink_dir" / "file3.txt")),
         ]  # yapf: disable
+
+    @pytest.mark.skipif(
+        platform.system() == 'Windows' and platform.python_implementation() == 'PyPy',
+        reason="Symlinks not supported on PyPy/Windows"
+    )
+    @pytest.mark.timeout(5)
+    def test_root_short_loop(self, tmp_path):
+
+        # Create a symlink to the tmp_path directory itself
+        # tmp_path
+        # └── tmp_path_symlink -> tmp_path
+
+        tmp_path_symlink = tmp_path / "tmp_path_symlink"
+        tmp_path_symlink.symlink_to(tmp_path)
+
+        folder = LocalFolder(str(tmp_path_symlink))
+
+        local_paths = folder.all_files(reporter=MagicMock())
+        absolute_paths = [path.absolute_path for path in list(local_paths)]
+
+        assert absolute_paths == []
+
+    @pytest.mark.skipif(
+        platform.system() == 'Windows' and platform.python_implementation() == 'PyPy',
+        reason="Symlinks not supported on PyPy/Windows"
+    )
+    def test_symlink_that_points_deeper(self, tmp_path):
+
+        # Create a directory structure with a symlink that points to a deeper directory
+        # tmp_path
+        # ├── a
+        # │   └── a.txt
+        # └── b
+        #     ├── c
+        #     │   └── c.txt
+        #     └── d
+        #         ├── d.txt
+        #         └── e
+        #             └── e.txt
+        # ├── f
+        # │   └── f.txt
+        # └── symlink -> b/d/e
+
+        (tmp_path / "a").mkdir()
+        (tmp_path / "a" / "a.txt").write_text("a")
+        (tmp_path / "b" / "c").mkdir(parents=True)
+        (tmp_path / "b" / "c" / "c.txt").write_text("c")
+        (tmp_path / "b" / "d" / "e").mkdir(parents=True)
+        (tmp_path / "b" / "d" / "d.txt").write_text("d")
+        (tmp_path / "b" / "d" / "e" / "e.txt").write_text("e")
+        (tmp_path / "f").mkdir()
+        (tmp_path / "f" / "f.txt").write_text("f")
+        (tmp_path / "symlink").symlink_to(tmp_path / "b" / "d" / "e")
+
+        folder = LocalFolder(str(tmp_path))
+
+        local_paths = folder.all_files(reporter=MagicMock())
+        absolute_paths = [path.absolute_path for path in list(local_paths)]
+
+        assert absolute_paths == [
+            fix_windows_path_limit(str(tmp_path / "a" / "a.txt")),
+            fix_windows_path_limit(str(tmp_path / "b" / "c" / "c.txt")),
+            fix_windows_path_limit(str(tmp_path / "b" / "d" / "d.txt")),
+            fix_windows_path_limit(str(tmp_path / "b" / "d" / "e" / "e.txt")),
+            fix_windows_path_limit(str(tmp_path / "f" / "f.txt")),
+            fix_windows_path_limit(str(tmp_path / "symlink/e.txt"))
+        ]   # yapf: disable
+
+    @pytest.mark.skipif(
+        platform.system() == 'Windows' and platform.python_implementation() == 'PyPy',
+        reason="Symlinks not supported on PyPy/Windows"
+    )
+    def test_symlink_that_points_up(self, tmp_path):
+
+        # Create a directory structure with a symlink that points to a upper directory
+        # tmp_path
+        # ├── a
+        # │   └── a.txt
+        # └── b
+        #     ├── c
+        #     │   └── c.txt
+        #     └── d
+        #         ├── d.txt
+        #         └── e
+        #             ├── symlink -> ../../a
+        #             └── e.txt
+
+        (tmp_path / "a").mkdir()
+        (tmp_path / "a" / "a.txt").write_text("a")
+        (tmp_path / "b" / "c").mkdir(parents=True)
+        (tmp_path / "b" / "c" / "c.txt").write_text("c")
+        (tmp_path / "b" / "d" / "e").mkdir(parents=True)
+        (tmp_path / "b" / "d" / "d.txt").write_text("d")
+        (tmp_path / "b" / "d" / "e" / "e.txt").write_text("e")
+        (tmp_path / "b" / "d" / "e" / "symlink").symlink_to(tmp_path / "a")
+
+        folder = LocalFolder(str(tmp_path))
+
+        local_paths = folder.all_files(reporter=MagicMock())
+        absolute_paths = [path.absolute_path for path in list(local_paths)]
+
+        assert absolute_paths == [
+            fix_windows_path_limit(str(tmp_path / "a" / "a.txt")),
+            fix_windows_path_limit(str(tmp_path / "b" / "c" / "c.txt")),
+            fix_windows_path_limit(str(tmp_path / "b" / "d" / "d.txt")),
+            fix_windows_path_limit(str(tmp_path / "b" / "d" / "e" / "e.txt")),
+            fix_windows_path_limit(str(tmp_path / "b" / "d" / "e" / "symlink/a.txt"))
+        ]   # yapf: disable
+
+    @pytest.mark.skipif(
+        platform.system() == 'Windows' and platform.python_implementation() == 'PyPy',
+        reason="Symlinks not supported on PyPy/Windows"
+    )
+    @pytest.mark.timeout(5)
+    def test_elaborate_infinite_loop(self, tmp_path):
+
+        # Create a directory structure with an elaborate infinite loop of symlinks
+        # tmp_path
+        # ├── a
+        # │   └── a.txt
+        # ├── b -> c
+        # ├── c -> d
+        # ├── d -> e
+        # ├── e -> b
+        # └── f
+        #     └── f.txt
+
+        (tmp_path / "a").mkdir()
+        (tmp_path / "a" / "a.txt").write_text("a")
+        (tmp_path / "b").symlink_to("c")
+        (tmp_path / "c").symlink_to("d")
+        (tmp_path / "d").symlink_to("e")
+        (tmp_path / "e").symlink_to("b")
+        (tmp_path / "f").mkdir()
+        (tmp_path / "f" / "f.txt").write_text("f")
+
+        folder = LocalFolder(str(tmp_path))
+
+        local_paths = folder.all_files(reporter=MagicMock())
+        absolute_paths = [path.absolute_path for path in list(local_paths)]
+
+        assert absolute_paths == [
+            fix_windows_path_limit(str(tmp_path / "a" / "a.txt")),
+            fix_windows_path_limit(str(tmp_path / "f" / "f.txt"))
+        ]   # yapf: disable
+
+    @pytest.mark.skipif(
+        platform.system() == 'Windows' and platform.python_implementation() == 'PyPy',
+        reason="Symlinks not supported on PyPy/Windows"
+    )
+    def test_valid_symlink_pattern_where_the_link_goes_down_and_up(self, tmp_path):
+
+        # Create a directory structure with a valid symlink pattern where the link goes down and up
+        # tmp_path
+        # ├── a
+        # │   └── a.txt
+        # ├── b -> c/d
+        # ├── c
+        # │   └── d
+        # │       └── b.txt
+        # ├── d -> e
+        # ├── e
+        # │   └── e.txt
+        # └── f
+        #     └── f.txt
+
+        (tmp_path / "a").mkdir()
+        (tmp_path / "a" / "a.txt").write_text("a")
+        (tmp_path / "b").symlink_to("c/d")
+        (tmp_path / "c").mkdir()
+        (tmp_path / "c" / "d").mkdir()
+        (tmp_path / "c" / "d" / "b.txt").write_text("b")
+        (tmp_path / "d").symlink_to("e")
+        (tmp_path / "e").mkdir()
+        (tmp_path / "e" / "e.txt").write_text("e")
+        (tmp_path / "f").mkdir()
+        (tmp_path / "f" / "f.txt").write_text("f")
+
+        folder = LocalFolder(str(tmp_path))
+
+        local_paths = folder.all_files(reporter=MagicMock())
+        absolute_paths = [path.absolute_path for path in list(local_paths)]
+
+        assert absolute_paths == [
+            fix_windows_path_limit(str(tmp_path / "a" / "a.txt")),
+            fix_windows_path_limit(str(tmp_path / "b" / "b.txt")),
+            fix_windows_path_limit(str(tmp_path / "c" / "d" / "b.txt")),
+            fix_windows_path_limit(str(tmp_path / "d" / "e.txt")),
+            fix_windows_path_limit(str(tmp_path / "e" / "e.txt")),
+            fix_windows_path_limit(str(tmp_path / "f" / "f.txt")),
+        ]   # yapf: disable
+
+    @pytest.mark.skipif(
+        platform.system() == 'Windows' and platform.python_implementation() == 'PyPy',
+        reason="Symlinks not supported on PyPy/Windows"
+    )
+    def test_valid_symlink_pattern_where_the_link_goes_up_and_down(self, tmp_path):
+
+        # Create a directory structure with a valid symlink pattern where the link goes up and down
+        # tmp_path
+        # ├── a
+        # │   └── a.txt
+        # ├── b
+        # │   └── c -> ../d
+        # ├── d
+        # │   └── e
+        # │       └── f
+        # │           └── f.txt
+        # └── t.txt
+
+        (tmp_path / "a").mkdir()
+        (tmp_path / "a" / "a.txt").write_text("a")
+        (tmp_path / "b").mkdir()
+        (tmp_path / "b" / "c").symlink_to("../d")
+        (tmp_path / "d").mkdir()
+        (tmp_path / "d" / "e").mkdir()
+        (tmp_path / "d" / "e" / "f").mkdir()
+        (tmp_path / "d" / "e" / "f" / "f.txt").write_text("f")
+        (tmp_path / "t.txt").write_text("t")
+
+        folder = LocalFolder(str(tmp_path))
+
+        local_paths = folder.all_files(reporter=MagicMock())
+        absolute_paths = [path.absolute_path for path in list(local_paths)]
+
+        assert absolute_paths == [
+            fix_windows_path_limit(str(tmp_path / "a" / "a.txt")),
+            fix_windows_path_limit(str(tmp_path / "b" / "c" / "e" / "f" / "f.txt")),
+            fix_windows_path_limit(str(tmp_path / "d" / "e" / "f" / "f.txt")),
+            fix_windows_path_limit(str(tmp_path / "t.txt")),
+        ]   # yapf: disable
+
+    @pytest.mark.skipif(
+        platform.system() == 'Windows' and platform.python_implementation() == 'PyPy',
+        reason="Symlinks not supported on PyPy/Windows"
+    )
+    @pytest.mark.timeout(5)
+    def test_loop_that_goes_down_and_up(self, tmp_path):
+
+        # Create a directory structure with a loop that goes down and up
+        # tmp_path
+        # ├── a
+        # │   └── a.txt
+        # ├── b -> c/d
+        # ├── c
+        # │   └── d -> ../e
+        # ├── e -> b
+        # └── f
+        #     └── f.txt
+
+        (tmp_path / "a").mkdir()
+        (tmp_path / "a" / "a.txt").write_text("a")
+        (tmp_path / "b").symlink_to("c/d")
+        (tmp_path / "c").mkdir()
+        (tmp_path / "c" / "d").symlink_to("../e")
+        (tmp_path / "e").symlink_to("b")
+        (tmp_path / "f").mkdir()
+        (tmp_path / "f" / "f.txt").write_text("f")
+
+        folder = LocalFolder(str(tmp_path))
+
+        local_paths = folder.all_files(reporter=MagicMock())
+        absolute_paths = [path.absolute_path for path in list(local_paths)]
+
+        assert absolute_paths == [
+            fix_windows_path_limit(str(tmp_path / "a" / "a.txt")),
+            fix_windows_path_limit(str(tmp_path / "f" / "f.txt")),
+        ]   # yapf: disable
+
+    @pytest.mark.skipif(
+        platform.system() == 'Windows' and platform.python_implementation() == 'PyPy',
+        reason="Symlinks not supported on PyPy/Windows"
+    )
+    @pytest.mark.timeout(5)
+    def test_loop_that_goes_up_and_down(self, tmp_path):
+
+        # Create a directory structure with a loop that goes up and down
+        # tmp_path
+        # ├── a
+        # │   └── a.txt
+        # ├── b
+        # │   └── c -> ../d
+        # ├── d
+        # │   └── e
+        # │       └── f -> ../../b/c
+        # └── g
+        #     └── g.txt
+
+        (tmp_path / "a").mkdir()
+        (tmp_path / "a" / "a.txt").write_text("a")
+        (tmp_path / "b").mkdir()
+        (tmp_path / "b" / "c").symlink_to("../d")
+        (tmp_path / "d").mkdir()
+        (tmp_path / "d" / "e").mkdir()
+        (tmp_path / "d" / "e" / "f").symlink_to("../../b/c")
+        (tmp_path / "g").mkdir()
+        (tmp_path / "g" / "g.txt").write_text("g")
+
+        folder = LocalFolder(str(tmp_path))
+
+        local_paths = folder.all_files(reporter=MagicMock())
+        absolute_paths = [path.absolute_path for path in list(local_paths)]
+
+        assert absolute_paths == [
+            fix_windows_path_limit(str(tmp_path / "a" / "a.txt")),
+            fix_windows_path_limit(str(tmp_path / "g" / "g.txt")),
+        ]   # yapf: disable
