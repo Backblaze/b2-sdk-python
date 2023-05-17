@@ -169,11 +169,11 @@ def cover(session):
 @nox.session(python=PYTHON_DEFAULT_VERSION)
 def build(session):
     """Build the distribution."""
-    # TODO: consider using wheel as well
     session.run('pip', 'install', *REQUIREMENTS_BUILD)
     session.run('python', 'setup.py', 'check', '--metadata', '--strict')
     session.run('rm', '-rf', 'build', 'dist', 'b2sdk.egg-info', external=True)
     session.run('python', 'setup.py', 'sdist', *session.posargs)
+    session.run('python', 'setup.py', 'bdist_wheel', *session.posargs)
 
     # Set outputs for GitHub Actions
     if CI:
