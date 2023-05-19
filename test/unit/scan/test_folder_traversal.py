@@ -117,11 +117,9 @@ class TestFolderTraversal:
         # └── symlink_dir -> dir
 
         (tmp_path / "dir").mkdir()
-
         (tmp_path / "dir" / "file1.txt").write_text("content1")
-
         symlink_dir = tmp_path / "dir" / "symlink_dir"
-        symlink_dir.symlink_to(tmp_path / "dir")
+        symlink_dir.symlink_to(tmp_path / "dir", target_is_directory=True)
 
         folder = LocalFolder(str(tmp_path))
 
@@ -153,17 +151,13 @@ class TestFolderTraversal:
         #   └── file2.txt
 
         (tmp_path / "parent" / "child" / "grandchild").mkdir(parents=True)
-
         (tmp_path / "file1.txt").write_text("content1")
         (tmp_path / "file2.txt").write_text("content2")
-
         (tmp_path / "parent" / "file3.txt").write_text("content3")
-
         (tmp_path / "parent" / "child" / "file4.txt").write_text("content4")
-
         (tmp_path / "parent" / "child" / "grandchild" / "file5.txt").write_text("content5")
         symlink_dir = tmp_path / "parent" / "child" / "grandchild" / "symlink_dir"
-        symlink_dir.symlink_to(tmp_path / "parent")
+        symlink_dir.symlink_to(tmp_path / "parent", target_is_directory=True)
 
         folder = LocalFolder(str(tmp_path / "parent" / "child"))
 
@@ -190,7 +184,7 @@ class TestFolderTraversal:
         # └── tmp_path_symlink -> tmp_path
 
         tmp_path_symlink = tmp_path / "tmp_path_symlink"
-        tmp_path_symlink.symlink_to(tmp_path)
+        tmp_path_symlink.symlink_to(tmp_path, target_is_directory=True)
 
         folder = LocalFolder(str(tmp_path_symlink))
 
@@ -229,7 +223,7 @@ class TestFolderTraversal:
         (tmp_path / "b" / "d" / "e" / "e.txt").write_text("e")
         (tmp_path / "f").mkdir()
         (tmp_path / "f" / "f.txt").write_text("f")
-        (tmp_path / "symlink").symlink_to(tmp_path / "b" / "d" / "e")
+        (tmp_path / "symlink").symlink_to(tmp_path / "b" / "d" / "e", target_is_directory=True)
 
         folder = LocalFolder(str(tmp_path))
 
@@ -271,7 +265,7 @@ class TestFolderTraversal:
         (tmp_path / "b" / "d" / "e").mkdir(parents=True)
         (tmp_path / "b" / "d" / "d.txt").write_text("d")
         (tmp_path / "b" / "d" / "e" / "e.txt").write_text("e")
-        (tmp_path / "b" / "d" / "e" / "symlink").symlink_to(tmp_path / "a")
+        (tmp_path / "b" / "d" / "e" / "symlink").symlink_to(tmp_path / "a", target_is_directory=True) # yapf: disable
 
         folder = LocalFolder(str(tmp_path))
 
@@ -345,11 +339,11 @@ class TestFolderTraversal:
 
         (tmp_path / "a").mkdir()
         (tmp_path / "a" / "a.txt").write_text("a")
-        (tmp_path / "b").symlink_to("c/d")
+        (tmp_path / "b").symlink_to(tmp_path / "c" / "d", target_is_directory=True) # yapf: disable
         (tmp_path / "c").mkdir()
         (tmp_path / "c" / "d").mkdir()
         (tmp_path / "c" / "d" / "b.txt").write_text("b")
-        (tmp_path / "d").symlink_to("e")
+        (tmp_path / "d").symlink_to(tmp_path / "e", target_is_directory=True)
         (tmp_path / "e").mkdir()
         (tmp_path / "e" / "e.txt").write_text("e")
         (tmp_path / "f").mkdir()
@@ -390,7 +384,7 @@ class TestFolderTraversal:
         (tmp_path / "a").mkdir()
         (tmp_path / "a" / "a.txt").write_text("a")
         (tmp_path / "b").mkdir()
-        (tmp_path / "b" / "c").symlink_to("../d")
+        (tmp_path / "b" / "c").symlink_to(tmp_path / "d", target_is_directory=True)
         (tmp_path / "d").mkdir()
         (tmp_path / "d" / "e").mkdir()
         (tmp_path / "d" / "e" / "f").mkdir()
@@ -429,9 +423,9 @@ class TestFolderTraversal:
 
         (tmp_path / "a").mkdir()
         (tmp_path / "a" / "a.txt").write_text("a")
-        (tmp_path / "b").symlink_to("c/d")
+        (tmp_path / "b").symlink_to(tmp_path / "c" / "d", target_is_directory=True)
         (tmp_path / "c").mkdir()
-        (tmp_path / "c" / "d").symlink_to("../e")
+        (tmp_path / "c" / "d").symlink_to(tmp_path / "e", target_is_directory=True)
         (tmp_path / "e").symlink_to("b")
         (tmp_path / "f").mkdir()
         (tmp_path / "f" / "f.txt").write_text("f")
@@ -468,10 +462,10 @@ class TestFolderTraversal:
         (tmp_path / "a").mkdir()
         (tmp_path / "a" / "a.txt").write_text("a")
         (tmp_path / "b").mkdir()
-        (tmp_path / "b" / "c").symlink_to("../d")
+        (tmp_path / "b" / "c").symlink_to(tmp_path / "d", target_is_directory=True)
         (tmp_path / "d").mkdir()
         (tmp_path / "d" / "e").mkdir()
-        (tmp_path / "d" / "e" / "f").symlink_to("../../b/c")
+        (tmp_path / "d" / "e" / "f").symlink_to(tmp_path / "b" / "c", target_is_directory=True)
         (tmp_path / "g").mkdir()
         (tmp_path / "g" / "g.txt").write_text("g")
 
