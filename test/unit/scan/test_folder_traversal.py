@@ -197,6 +197,33 @@ class TestFolderTraversal:
         platform.system() == 'Windows' and platform.python_implementation() == 'PyPy',
         reason="Symlinks not supported on PyPy/Windows"
     )
+    @pytest.mark.timeout(5)
+    def test_root_parent_loop(self, tmp_path):
+
+        # Create a symlink that points to the parent of the initial scanning point
+        # tmp_path
+        # ├── start
+        # │   ├── file.txt
+        # └   └── symlink -> tmp_path
+
+        (tmp_path / "start").mkdir()
+        (tmp_path / "start" / "file.txt").write_text("content")
+        (tmp_path / "start" / "symlink").symlink_to(tmp_path, target_is_directory=True)
+
+        folder = LocalFolder(str(tmp_path / "start"))
+
+        local_paths = folder.all_files(reporter=MagicMock())
+        absolute_paths = [path.absolute_path for path in list(local_paths)]
+
+        assert absolute_paths == [
+            fix_windows_path_limit(str(tmp_path / "start" / "file.txt")),
+            fix_windows_path_limit(str(tmp_path / "start" / "symlink" / "start" / "file.txt")),
+        ]   # yapf: disable
+
+    @pytest.mark.skipif(
+        platform.system() == 'Windows' and platform.python_implementation() == 'PyPy',
+        reason="Symlinks not supported on PyPy/Windows"
+    )
     def test_symlink_that_points_deeper(self, tmp_path):
 
         # Create a directory structure with a symlink that points to a deeper directory
