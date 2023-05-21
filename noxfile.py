@@ -40,7 +40,7 @@ REQUIREMENTS_TEST = [
     'pyfakefs==4.5.6',
     'pytest-xdist==2.5.0',
 ]
-REQUIREMENTS_BUILD = ['setuptools>=20.2']
+REQUIREMENTS_BUILD = ['setuptools>=20.2', 'wheel>=0.40']
 
 nox.options.reuse_existing_virtualenvs = True
 nox.options.sessions = [
