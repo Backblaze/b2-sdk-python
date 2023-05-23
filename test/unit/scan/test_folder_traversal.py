@@ -78,7 +78,7 @@ class TestFolderTraversal:
 
     @pytest.mark.skipif(
         platform.system() == 'Windows' and platform.python_implementation() == 'PyPy',
-        reason="Symlinks not supported on PyPy/Windows"
+        reason="Symlinks not supported on PyPy/Windows",
     )
     def test_folder_with_symlink_to_file(self, tmp_path):
 
@@ -108,7 +108,7 @@ class TestFolderTraversal:
 
     @pytest.mark.skipif(
         platform.system() == 'Windows' and platform.python_implementation() == 'PyPy',
-        reason="Symlinks not supported on PyPy/Windows"
+        reason="Symlinks not supported on PyPy/Windows",
     )
     @pytest.mark.timeout(5)
     def test_folder_with_circular_symlink(self, tmp_path):
@@ -136,7 +136,7 @@ class TestFolderTraversal:
 
     @pytest.mark.skipif(
         platform.system() == 'Windows' and platform.python_implementation() == 'PyPy',
-        reason="Symlinks not supported on PyPy/Windows"
+        reason="Symlinks not supported on PyPy/Windows",
     )
     @pytest.mark.timeout(5)
     def test_folder_with_symlink_to_parent(self, tmp_path):
@@ -177,7 +177,7 @@ class TestFolderTraversal:
 
     @pytest.mark.skipif(
         platform.system() == 'Windows' and platform.python_implementation() == 'PyPy',
-        reason="Symlinks not supported on PyPy/Windows"
+        reason="Symlinks not supported on PyPy/Windows",
     )
     @pytest.mark.timeout(5)
     def test_root_short_loop(self, tmp_path):
@@ -198,16 +198,16 @@ class TestFolderTraversal:
 
     @pytest.mark.skipif(
         platform.system() == 'Windows' and platform.python_implementation() == 'PyPy',
-        reason="Symlinks not supported on PyPy/Windows"
+        reason="Symlinks not supported on PyPy/Windows",
     )
     @pytest.mark.timeout(5)
     def test_root_parent_loop(self, tmp_path):
 
         # Create a symlink that points to the parent of the initial scanning point
         # tmp_path
-        # ├── start
-        # │   ├── file.txt
-        # └   └── symlink -> tmp_path
+        # └── start
+        #     ├── file.txt
+        #     └── symlink -> tmp_path
 
         (tmp_path / "start").mkdir()
         (tmp_path / "start" / "file.txt").write_text("content")
@@ -225,7 +225,7 @@ class TestFolderTraversal:
 
     @pytest.mark.skipif(
         platform.system() == 'Windows' and platform.python_implementation() == 'PyPy',
-        reason="Symlinks not supported on PyPy/Windows"
+        reason="Symlinks not supported on PyPy/Windows",
     )
     def test_symlink_that_points_deeper(self, tmp_path):
 
@@ -266,7 +266,7 @@ class TestFolderTraversal:
             fix_windows_path_limit(str(tmp_path / "b" / "d" / "d.txt")),
             fix_windows_path_limit(str(tmp_path / "b" / "d" / "e" / "e.txt")),
             fix_windows_path_limit(str(tmp_path / "f" / "f.txt")),
-            fix_windows_path_limit(str(tmp_path / "symlink/e.txt")),
+            fix_windows_path_limit(str(tmp_path / "symlink" / "e.txt")),
         ]
 
     @pytest.mark.skipif(
@@ -307,7 +307,7 @@ class TestFolderTraversal:
             fix_windows_path_limit(str(tmp_path / "b" / "c" / "c.txt")),
             fix_windows_path_limit(str(tmp_path / "b" / "d" / "d.txt")),
             fix_windows_path_limit(str(tmp_path / "b" / "d" / "e" / "e.txt")),
-            fix_windows_path_limit(str(tmp_path / "b" / "d" / "e" / "symlink/a.txt")),
+            fix_windows_path_limit(str(tmp_path / "b" / "d" / "e" / "symlink" / "a.txt")),
         ]
 
     @pytest.mark.skipif(
@@ -349,11 +349,10 @@ class TestFolderTraversal:
 
     @pytest.mark.skipif(
         platform.system() == 'Windows' and platform.python_implementation() == 'PyPy',
-        reason="Symlinks not supported on PyPy/Windows"
+        reason="Symlinks not supported on PyPy/Windows",
     )
     def test_valid_symlink_pattern_where_the_link_goes_down_and_up(self, tmp_path):
 
-        # Create a directory structure with a valid symlink pattern where the link goes down and up
         # tmp_path
         # ├── a
         # │   └── a.txt
@@ -395,7 +394,7 @@ class TestFolderTraversal:
 
     @pytest.mark.skipif(
         platform.system() == 'Windows' and platform.python_implementation() == 'PyPy',
-        reason="Symlinks not supported on PyPy/Windows"
+        reason="Symlinks not supported on PyPy/Windows",
     )
     def test_valid_symlink_pattern_where_the_link_goes_up_and_down(self, tmp_path):
 
@@ -435,7 +434,7 @@ class TestFolderTraversal:
 
     @pytest.mark.skipif(
         platform.system() == 'Windows' and platform.python_implementation() == 'PyPy',
-        reason="Symlinks not supported on PyPy/Windows"
+        reason="Symlinks not supported on PyPy/Windows",
     )
     @pytest.mark.timeout(5)
     def test_loop_that_goes_down_and_up(self, tmp_path):
