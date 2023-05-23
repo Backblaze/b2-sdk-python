@@ -39,6 +39,7 @@ REQUIREMENTS_TEST = [
     'pytest-lazy-fixture==0.6.3',
     'pyfakefs==4.5.6',
     'pytest-xdist==2.5.0',
+    'pytest-timeout==2.1.0',
 ]
 REQUIREMENTS_BUILD = ['setuptools>=20.2']
 
