@@ -221,7 +221,7 @@ class TestFolderTraversal:
         assert absolute_paths == [
             fix_windows_path_limit(str(tmp_path / "start" / "file.txt")),
             fix_windows_path_limit(str(tmp_path / "start" / "symlink" / "start" / "file.txt")),
-        ]   # yapf: disable
+        ]
 
     @pytest.mark.skipif(
         platform.system() == 'Windows' and platform.python_implementation() == 'PyPy',
@@ -266,8 +266,8 @@ class TestFolderTraversal:
             fix_windows_path_limit(str(tmp_path / "b" / "d" / "d.txt")),
             fix_windows_path_limit(str(tmp_path / "b" / "d" / "e" / "e.txt")),
             fix_windows_path_limit(str(tmp_path / "f" / "f.txt")),
-            fix_windows_path_limit(str(tmp_path / "symlink/e.txt"))
-        ]   # yapf: disable
+            fix_windows_path_limit(str(tmp_path / "symlink/e.txt")),
+        ]
 
     @pytest.mark.skipif(
         platform.system() == 'Windows' and platform.python_implementation() == 'PyPy',
@@ -307,8 +307,8 @@ class TestFolderTraversal:
             fix_windows_path_limit(str(tmp_path / "b" / "c" / "c.txt")),
             fix_windows_path_limit(str(tmp_path / "b" / "d" / "d.txt")),
             fix_windows_path_limit(str(tmp_path / "b" / "d" / "e" / "e.txt")),
-            fix_windows_path_limit(str(tmp_path / "b" / "d" / "e" / "symlink/a.txt"))
-        ]   # yapf: disable
+            fix_windows_path_limit(str(tmp_path / "b" / "d" / "e" / "symlink/a.txt")),
+        ]
 
     @pytest.mark.skipif(
         platform.system() == 'Windows' and platform.python_implementation() == 'PyPy',
@@ -344,8 +344,8 @@ class TestFolderTraversal:
 
         assert absolute_paths == [
             fix_windows_path_limit(str(tmp_path / "a" / "a.txt")),
-            fix_windows_path_limit(str(tmp_path / "f" / "f.txt"))
-        ]   # yapf: disable
+            fix_windows_path_limit(str(tmp_path / "f" / "f.txt")),
+        ]
 
     @pytest.mark.skipif(
         platform.system() == 'Windows' and platform.python_implementation() == 'PyPy',
@@ -391,7 +391,7 @@ class TestFolderTraversal:
             fix_windows_path_limit(str(tmp_path / "d" / "e.txt")),
             fix_windows_path_limit(str(tmp_path / "e" / "e.txt")),
             fix_windows_path_limit(str(tmp_path / "f" / "f.txt")),
-        ]   # yapf: disable
+        ]
 
     @pytest.mark.skipif(
         platform.system() == 'Windows' and platform.python_implementation() == 'PyPy',
@@ -431,7 +431,7 @@ class TestFolderTraversal:
             fix_windows_path_limit(str(tmp_path / "b" / "c" / "e" / "f" / "f.txt")),
             fix_windows_path_limit(str(tmp_path / "d" / "e" / "f" / "f.txt")),
             fix_windows_path_limit(str(tmp_path / "t.txt")),
-        ]   # yapf: disable
+        ]
 
     @pytest.mark.skipif(
         platform.system() == 'Windows' and platform.python_implementation() == 'PyPy',
@@ -468,7 +468,7 @@ class TestFolderTraversal:
         assert absolute_paths == [
             fix_windows_path_limit(str(tmp_path / "a" / "a.txt")),
             fix_windows_path_limit(str(tmp_path / "f" / "f.txt")),
-        ]   # yapf: disable
+        ]
 
     @pytest.mark.skipif(
         platform.system() == 'Windows' and platform.python_implementation() == 'PyPy',
@@ -507,4 +507,4 @@ class TestFolderTraversal:
         assert absolute_paths == [
             fix_windows_path_limit(str(tmp_path / "a" / "a.txt")),
             fix_windows_path_limit(str(tmp_path / "g" / "g.txt")),
-        ]   # yapf: disable
+        ]
