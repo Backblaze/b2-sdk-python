@@ -41,7 +41,7 @@ REQUIREMENTS_TEST = [
     'pytest-xdist==2.5.0',
     'pytest-timeout==2.1.0',
 ]
-REQUIREMENTS_BUILD = ['setuptools>=20.2']
+REQUIREMENTS_BUILD = ['setuptools>=20.2', 'wheel>=0.40']
 
 nox.options.reuse_existing_virtualenvs = True
 nox.options.sessions = [
@@ -170,22 +170,21 @@ def cover(session):
 @nox.session(python=PYTHON_DEFAULT_VERSION)
 def build(session):
     """Build the distribution."""
-    # TODO: consider using wheel as well
     session.run('pip', 'install', *REQUIREMENTS_BUILD)
     session.run('python', 'setup.py', 'check', '--metadata', '--strict')
     session.run('rm', '-rf', 'build', 'dist', 'b2sdk.egg-info', external=True)
     session.run('python', 'setup.py', 'sdist', *session.posargs)
+    session.run('python', 'setup.py', 'bdist_wheel', *session.posargs)
 
     # Set outputs for GitHub Actions
     if CI:
-        asset_path = glob('dist/*')[0]
-        print('::set-output name=asset_path::', asset_path, sep='')
+        with open(os.environ['GITHUB_OUTPUT'], 'a') as github_output:
+            # Path have to be specified with unix style slashes even for windows,
+            # otherwise glob won't find files on windows in action-gh-release.
+            print('asset_path=dist/*', file=github_output)
 
-        asset_name = os.path.basename(asset_path)
-        print('::set-output name=asset_name::', asset_name, sep='')
-
-        version = os.environ['GITHUB_REF'].replace('refs/tags/v', '')
-        print('::set-output name=version::', version, sep='')
+            version = os.environ['GITHUB_REF'].replace('refs/tags/v', '')
+            print(f'version={version}', file=github_output)
 
 
 @nox.session(python=PYTHON_DEFAULT_VERSION)

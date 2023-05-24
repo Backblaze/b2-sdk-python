@@ -30,28 +30,21 @@ jobs:
         run: nox -vs build
       - name: Read the Changelog
         id: read-changelog
-        uses: mindsers/changelog-reader-action@v1
+        uses: mindsers/changelog-reader-action@v2
         with:
           version: ${{ steps.build.outputs.version }}
-      - name: Create GitHub release
+      - name: Create GitHub release and upload the distribution
         id: create-release
-        uses: actions/create-release@v1
+        uses: softprops/action-gh-release@v1
         with:
-          tag_name: ${{ github.ref }}
-          release_name: ${{ steps.build.outputs.version }}
-          body: ${{ steps.read-changelog.outputs.log_entry }}
-          draft: false
+          name: ${{ steps.build.outputs.version }}
+          body: ${{ steps.read-changelog.outputs.changes }}
+          draft: ${{ env.ACTIONS_STEP_DEBUG == 'true' }}
           prerelease: false
-      - name: Upload the distribution to GitHub
-        uses: actions/upload-release-asset@v1
-        with:
-          upload_url: ${{ steps.create-release.outputs.upload_url }}
-          asset_path: ${{ steps.build.outputs.asset_path }}
-          asset_name: ${{ steps.build.outputs.asset_name }}
-          asset_content_type: application/gzip
+          files: ${{ steps.build.outputs.asset_path }}
       - name: Upload the distribution to PyPI
         if: ${{ env.B2_PYPI_PASSWORD != '' }}
-        uses: pypa/gh-action-pypi-publish@v1.3.1
+        uses: pypa/gh-action-pypi-publish@release/v1
         with:
           user: __token__
           password: ${{ env.B2_PYPI_PASSWORD }}
