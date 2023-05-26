@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 * Circular symlinks no longer cause infinite loops when syncing a folder
 
+### Infrastructure
+* Automatically set copyright date when generating the docs
+
 ## [1.21.0] - 2023-04-17
 
 ### Added
