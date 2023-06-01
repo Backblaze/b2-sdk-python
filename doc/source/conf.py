@@ -31,7 +31,7 @@ import os
 import sys
 sys.path.append(os.path.abspath('../..'))
 
-from b2sdk.version import VERSION
+from b2sdk.version import VERSION  # noqa: E402
 
 # -- General configuration ------------------------------------------------
 
