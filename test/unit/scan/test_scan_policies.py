@@ -8,7 +8,6 @@
 #
 ######################################################################
 import re
-
 import pytest
 
 from apiver_deps import ScanPoliciesManager
