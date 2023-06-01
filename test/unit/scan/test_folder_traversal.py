@@ -7,15 +7,11 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
-from pathlib import Path
 import platform
 from unittest.mock import MagicMock
 from b2sdk.scan.folder import LocalFolder
 from b2sdk.utils import fix_windows_path_limit
 import pytest
-import os
-import re
-import sys
 
 
 class TestFolderTraversal:
