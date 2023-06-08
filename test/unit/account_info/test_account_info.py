@@ -359,7 +359,7 @@ class TestSqliteAccountInfo(AccountInfoBase):
         """
         Test that a new database won't be readable by just any user
         """
-        s = SqliteAccountInfo(file_name=self.db_path,)
+        SqliteAccountInfo(file_name=self.db_path,)
         mode = os.stat(self.db_path).st_mode
         assert stat.filemode(mode) == '-rw-------'
 

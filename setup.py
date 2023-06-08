@@ -7,7 +7,8 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
-"""A setuptools based setup module.
+"""
+A setuptools based setup module.
 
 See:
 https://packaging.python.org/en/latest/distributing.html
@@ -18,7 +19,6 @@ import sys
 
 # To use a consistent encoding
 from codecs import open
-from importlib import import_module
 
 # Always prefer setuptools over distutils
 from setuptools import __version__ as setuptoolsversion

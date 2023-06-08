@@ -8,12 +8,9 @@
 #
 ######################################################################
 
-from typing import Optional
 import os
 import random
 import string
-
-import pytest
 
 from b2sdk.v2 import *
 

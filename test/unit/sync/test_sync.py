@@ -7,7 +7,6 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
-import io
 from collections import defaultdict
 from contextlib import ExitStack
 from unittest import mock
@@ -724,7 +723,7 @@ class TestSynchronizer:
         with mock.patch.object(B2DownloadAction, '_ensure_directory_existence'):
             try:
                 download_action.do_action(bucket, self.reporter)
-            except:
+            except:  # noqa: E722
                 pass
 
         assert bucket.mock_calls[0] == mock.call.download_file_by_id(
@@ -769,7 +768,7 @@ class TestSynchronizer:
         with mock.patch.object(UploadSourceLocalFile, 'check_path_and_get_size'):
             try:
                 upload_action.do_action(bucket, self.reporter)
-            except:
+            except:  # noqa: E722
                 pass
 
         assert bucket.mock_calls == [

@@ -9,8 +9,6 @@
 ######################################################################
 import pathlib
 
-import pytest
-
 from b2sdk import requests
 from b2sdk.requests.included_source_meta import included_source_meta
 

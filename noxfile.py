@@ -9,8 +9,6 @@
 ######################################################################
 
 import os
-import subprocess
-from glob import glob
 
 import nox
 
@@ -30,8 +28,8 @@ PYTHON_DEFAULT_VERSION = PYTHON_VERSIONS[-1]
 
 PY_PATHS = ['b2sdk', 'test', 'noxfile.py', 'setup.py']
 
-REQUIREMENTS_FORMAT = ['yapf==0.27']
-REQUIREMENTS_LINT = ['yapf==0.27', 'pyflakes==2.4.0', 'pytest==6.2.5', 'liccheck==0.6.2']
+REQUIREMENTS_FORMAT = ['yapf==0.27', 'ruff==0.0.270']
+REQUIREMENTS_LINT = REQUIREMENTS_FORMAT + ['pytest==6.2.5', 'liccheck==0.6.2']
 REQUIREMENTS_TEST = [
     "pytest==6.2.5",
     "pytest-cov==3.0.0",
@@ -65,12 +63,11 @@ def install_myself(session, extras=None):
 
 @nox.session(name='format', python=PYTHON_DEFAULT_VERSION)
 def format_(session):
-    """Format the code."""
+    """Lint the code and apply fixes in-place whenever possible."""
     session.run('pip', 'install', *REQUIREMENTS_FORMAT)
     # TODO: incremental mode for yapf
     session.run('yapf', '--in-place', '--parallel', '--recursive', *PY_PATHS)
-    # TODO: uncomment if we want to use isort and docformatter
-    # session.run('isort', *PY_PATHS)
+    session.run('ruff', 'check', '--fix', *PY_PATHS)
     # session.run(
     #     'docformatter',
     #     '--in-place',
@@ -83,12 +80,11 @@ def format_(session):
 
 @nox.session(python=PYTHON_DEFAULT_VERSION)
 def lint(session):
-    """Run linters."""
+    """Run linters in readonly mode."""
     install_myself(session)
     session.run('pip', 'install', *REQUIREMENTS_LINT)
     session.run('yapf', '--diff', '--parallel', '--recursive', *PY_PATHS)
-    # TODO: uncomment if we want to use isort and docformatter
-    # session.run('isort', '--check', *PY_PATHS)
+    session.run('ruff', 'check', *PY_PATHS)
     # session.run(
     #     'docformatter',
     #     '--check',
@@ -98,16 +94,6 @@ def lint(session):
     #     *PY_PATHS,
     # )
 
-    # TODO: use flake8 instead of pyflakes
-    session.log('pyflakes b2sdk')
-    output = subprocess.run('pyflakes b2sdk', shell=True, check=False,
-                            stdout=subprocess.PIPE).stdout.decode().strip()
-    excludes = ['__init__.py', 'exception.py']
-    output = [l for l in output.splitlines() if all(x not in l for x in excludes)]
-    if output:
-        print('\n'.join(output))
-        session.error('pyflakes has failed')
-    # session.run('flake8', *PY_PATHS)
     session.run('pytest', 'test/static')
     session.run('liccheck', '-s', 'setup.cfg')
 
