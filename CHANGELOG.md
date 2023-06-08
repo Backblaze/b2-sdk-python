@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Infrastructure
 * Remove dependency from `arrow`
+* Build Python wheels for distribution
 
 ## [1.20.0] - 2023-03-23
 
