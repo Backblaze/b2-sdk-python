@@ -67,7 +67,7 @@ def format_(session):
     session.run('pip', 'install', *REQUIREMENTS_FORMAT)
     # TODO: incremental mode for yapf
     session.run('yapf', '--in-place', '--parallel', '--recursive', *PY_PATHS)
-    session.run('ruff', 'check', '--fix', '.')
+    session.run('ruff', 'check', '--fix', *PY_PATHS)
     # session.run(
     #     'docformatter',
     #     '--in-place',
@@ -84,7 +84,7 @@ def lint(session):
     install_myself(session)
     session.run('pip', 'install', *REQUIREMENTS_LINT)
     session.run('yapf', '--diff', '--parallel', '--recursive', *PY_PATHS)
-    session.run('ruff', 'check', '.')
+    session.run('ruff', 'check', *PY_PATHS)
     # session.run(
     #     'docformatter',
     #     '--check',
