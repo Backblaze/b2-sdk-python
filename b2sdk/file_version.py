@@ -7,6 +7,7 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
 from typing import Any, Dict, Optional, Union, Tuple, TYPE_CHECKING
 import re
@@ -64,15 +65,15 @@ class BaseFileVersion:
         id_: str,
         file_name: str,
         size: int,
-        content_type: Optional[str],
-        content_sha1: Optional[str],
-        file_info: Optional[Dict[str, str]],
+        content_type: str | None,
+        content_sha1: str | None,
+        file_info: dict[str, str] | None,
         upload_timestamp: int,
         server_side_encryption: EncryptionSetting,
         file_retention: FileRetentionSetting = NO_RETENTION_FILE_SETTING,
         legal_hold: LegalHold = LegalHold.UNSET,
-        replication_status: Optional[ReplicationStatus] = None,
-        cache_control: Optional[str] = None,
+        replication_status: ReplicationStatus | None = None,
+        cache_control: str | None = None,
     ):
         self.api = api
         self.id_ = id_
