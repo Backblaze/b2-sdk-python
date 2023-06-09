@@ -16,8 +16,8 @@ from b2sdk.v2._compat import _file_infos_rename
 class _OldRawAPI:
     """RawAPI compatibility layer"""
 
-    @_file_infos_rename
     @classmethod
+    @_file_infos_rename
     def get_upload_file_headers(
         cls,
         upload_auth_token: str,

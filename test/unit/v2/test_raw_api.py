@@ -20,9 +20,31 @@ def dummy_b2_raw_http_api():
     return B2RawHTTPApi(Mock(spec=B2Http))
 
 
-def test_b2_raw_http_api__upload_file__supports_file_infos(dummy_b2_raw_http_api):
+def test_b2_raw_http_api__get_upload_file_headers__supports_file_infos(
+    dummy_b2_raw_http_api, file_info
+):
+    """Test v2.B2RawHTTPApi.get_upload_file_headers support of deprecated file_infos param"""
+    with patch.object(v3.B2RawHTTPApi, 'get_upload_file_headers') as mock_method,\
+        pytest.warns(DeprecationWarning, match=r'deprecated argument'):
+        dummy_b2_raw_http_api.get_upload_file_headers(
+            'upload_auth_token',
+            'file_name',
+            123,  # content_length
+            'content_type',
+            'content_sha1',
+            file_infos=file_info,
+            server_side_encryption=None,
+            file_retention=None,
+            legal_hold=None,
+            custom_upload_timestamp=None,
+            cache_control=None,
+        )
+    assert mock_method.call_args[1]['file_info'] == file_info
+    assert 'file_infos' not in mock_method.call_args[1]
+
+
+def test_b2_raw_http_api__upload_file__supports_file_infos(dummy_b2_raw_http_api, file_info):
     """Test v2.B2RawHTTPApi.upload_file support of deprecated file_infos param"""
-    file_info = {'key': 'value'}
     with patch.object(v3.B2RawHTTPApi, 'upload_file') as mock_method,\
         pytest.warns(DeprecationWarning, match=r'deprecated argument'):
         dummy_b2_raw_http_api.upload_file(
@@ -36,3 +58,4 @@ def test_b2_raw_http_api__upload_file__supports_file_infos(dummy_b2_raw_http_api
             data_stream='data_stream',
         )
     assert mock_method.call_args[1]['file_info'] == file_info
+    assert 'file_infos' not in mock_method.call_args[1]

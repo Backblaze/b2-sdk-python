@@ -20,27 +20,27 @@ def dummy_bucket():
     return Bucket(Mock(spec=B2Api), 'bucket_id', 'bucket_name')
 
 
-def test_bucket__upload_file__supports_file_infos(dummy_bucket):
+def test_bucket__upload_file__supports_file_infos(dummy_bucket, file_info):
     """Test v2.Bucket.upload_file support of deprecated file_infos param"""
-    file_info = {'key': 'value'}
     with patch.object(v3.Bucket, 'upload_local_file') as mock_method,\
         pytest.warns(DeprecationWarning, match=r'deprecated argument'):
         dummy_bucket.upload_local_file(
             'filename',
             'filename',
-            file_infos={'key': 'value'},
+            file_infos=file_info,
         )
     assert mock_method.call_args[1]['file_info'] == file_info
+    assert 'file_infos' not in mock_method.call_args[1]
 
 
-def test_bucket__upload_bytes__supports_file_infos(dummy_bucket):
+def test_bucket__upload_bytes__supports_file_infos(dummy_bucket, file_info):
     """Test v2.Bucket.upload_bytes support of deprecated file_infos param"""
-    file_info = {'key': 'value'}
     with patch.object(dummy_bucket, 'upload') as mock_method,\
         pytest.warns(DeprecationWarning, match=r'deprecated argument'):
         dummy_bucket.upload_bytes(
             b'data',
             'filename',
-            file_infos={'key': 'value'},
+            file_infos=file_info,
         )
     assert mock_method.call_args[1]['file_info'] == file_info
+    assert 'file_infos' not in mock_method.call_args[1]

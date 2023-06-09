@@ -25,9 +25,8 @@ def dummy_raw_simulator():
     return RawSimulator()
 
 
-def test_bucket_simulator__upload_file__supports_file_infos(dummy_bucket_simulator):
+def test_bucket_simulator__upload_file__supports_file_infos(dummy_bucket_simulator, file_info):
     """Test v2.BucketSimulator.upload_file support of deprecated file_infos param"""
-    file_info = {'key': 'value'}
     with patch.object(v3.BucketSimulator, 'upload_file') as mock_method,\
         pytest.warns(DeprecationWarning, match=r'deprecated argument'):
         dummy_bucket_simulator.upload_file(
@@ -41,11 +40,11 @@ def test_bucket_simulator__upload_file__supports_file_infos(dummy_bucket_simulat
             data_stream='data_stream',
         )
     assert mock_method.call_args[1]['file_info'] == file_info
+    assert 'file_infos' not in mock_method.call_args[1]
 
 
-def test_raw_simulator__get_upload_file_headers__supports_file_infos():
+def test_raw_simulator__get_upload_file_headers__supports_file_infos(file_info):
     """Test v2.RawSimulator.get_upload_file_headers support of deprecated file_infos param"""
-    file_info = {'key': 'value'}
     with patch.object(v3.RawSimulator, 'get_upload_file_headers') as mock_method,\
         pytest.warns(DeprecationWarning, match=r'deprecated argument'):
         RawSimulator.get_upload_file_headers(
@@ -60,11 +59,11 @@ def test_raw_simulator__get_upload_file_headers__supports_file_infos():
             file_infos=file_info,
         )
     assert mock_method.call_args[1]['file_info'] == file_info
+    assert 'file_infos' not in mock_method.call_args[1]
 
 
-def test_raw_simulator__upload_file__supports_file_infos(dummy_raw_simulator):
+def test_raw_simulator__upload_file__supports_file_infos(dummy_raw_simulator, file_info):
     """Test v2.RawSimulator.upload_file support of deprecated file_infos param"""
-    file_info = {'key': 'value'}
     with patch.object(v3.RawSimulator, 'upload_file') as mock_method,\
         pytest.warns(DeprecationWarning, match=r'deprecated argument'):
         dummy_raw_simulator.upload_file(
@@ -78,3 +77,4 @@ def test_raw_simulator__upload_file__supports_file_infos(dummy_raw_simulator):
             data_stream='data_stream',
         )
     assert mock_method.call_args[1]['file_info'] == file_info
+    assert 'file_infos' not in mock_method.call_args[1]

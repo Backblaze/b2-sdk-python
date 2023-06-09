@@ -20,9 +20,8 @@ def dummy_session():
     return B2Session()
 
 
-def test_session__upload_file__supports_file_infos(dummy_session):
+def test_session__upload_file__supports_file_infos(dummy_session, file_info):
     """Test v2.B2Session.upload_file support of deprecated file_infos param"""
-    file_info = {'key': 'value'}
     with patch.object(v3.B2Session, 'upload_file') as mock_method,\
         pytest.warns(DeprecationWarning, match=r'deprecated argument'):
         dummy_session.upload_file(
@@ -32,6 +31,7 @@ def test_session__upload_file__supports_file_infos(dummy_session):
             content_length=0,
             content_sha1='dummy',
             data_stream=Mock(),
-            file_infos={'key': 'value'},
+            file_infos=file_info,
         )
     assert mock_method.call_args[1]['file_info'] == file_info
+    assert 'file_infos' not in mock_method.call_args[1]
