@@ -7,6 +7,7 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
 import collections
 import io
@@ -1009,13 +1010,13 @@ class BucketSimulator:
         content_length: int,
         content_type: str,
         content_sha1: str,
-        file_infos: dict,
+        file_info: dict,
         data_stream,
-        server_side_encryption: Optional[EncryptionSetting] = None,
-        file_retention: Optional[FileRetentionSetting] = None,
-        legal_hold: Optional[LegalHold] = None,
-        custom_upload_timestamp: Optional[int] = None,
-        cache_control: Optional[str] = None,
+        server_side_encryption: EncryptionSetting | None = None,
+        file_retention: FileRetentionSetting | None = None,
+        legal_hold: LegalHold | None = None,
+        custom_upload_timestamp: int | None = None,
+        cache_control: str | None = None,
     ):
         data_bytes = self._simulate_chunked_post(data_stream, content_length)
         assert len(data_bytes) == content_length
@@ -1034,7 +1035,7 @@ class BucketSimulator:
 
         encryption = server_side_encryption or self.default_server_side_encryption
         if encryption:  # FIXME: remove this part when RawApi<->Encryption adapters are implemented properly
-            file_infos = encryption.add_key_id_to_file_info(file_infos)
+            file_info = encryption.add_key_id_to_file_info(file_info)
 
         upload_timestamp = next(self.upload_timestamp_counter)
         if custom_upload_timestamp is not None:
@@ -1048,7 +1049,7 @@ class BucketSimulator:
             file_name,
             content_type,
             content_sha1,
-            file_infos,
+            file_info,
             data_bytes,
             upload_timestamp,
             server_side_encryption=encryption,
@@ -1792,12 +1793,12 @@ class RawSimulator(AbstractRawApi):
         content_length: int,
         content_type: str,
         content_sha1: str,
-        file_infos: dict,
-        server_side_encryption: Optional[EncryptionSetting],
-        file_retention: Optional[FileRetentionSetting],
-        legal_hold: Optional[LegalHold],
-        custom_upload_timestamp: Optional[int] = None,
-        cache_control: Optional[str] = None,
+        file_info: dict,
+        server_side_encryption: EncryptionSetting | None,
+        file_retention: FileRetentionSetting | None,
+        legal_hold: LegalHold | None,
+        custom_upload_timestamp: int | None = None,
+        cache_control: str | None = None,
     ) -> dict:
 
         # fix to allow calculating headers on unknown key - only for simulation
@@ -1812,7 +1813,7 @@ class RawSimulator(AbstractRawApi):
             content_length=content_length,
             content_type=content_type,
             content_sha1=content_sha1,
-            file_infos=file_infos,
+            file_info=file_info,
             server_side_encryption=server_side_encryption,
             file_retention=file_retention,
             legal_hold=legal_hold,
@@ -1828,13 +1829,13 @@ class RawSimulator(AbstractRawApi):
         content_length: int,
         content_type: str,
         content_sha1: str,
-        file_infos: dict,
+        file_info: dict,
         data_stream,
-        server_side_encryption: Optional[EncryptionSetting] = None,
-        file_retention: Optional[FileRetentionSetting] = None,
-        legal_hold: Optional[LegalHold] = None,
-        custom_upload_timestamp: Optional[int] = None,
-        cache_control: Optional[str] = None,
+        server_side_encryption: EncryptionSetting | None = None,
+        file_retention: FileRetentionSetting | None = None,
+        legal_hold: LegalHold | None = None,
+        custom_upload_timestamp: int | None = None,
+        cache_control: str | None = None,
     ):
         with ConcurrentUsedAuthTokenGuard(
             self.currently_used_auth_tokens[upload_auth_token], upload_auth_token
@@ -1851,7 +1852,7 @@ class RawSimulator(AbstractRawApi):
                 assert server_side_encryption.mode in (
                     EncryptionMode.NONE, EncryptionMode.SSE_B2, EncryptionMode.SSE_C
                 )
-                file_infos = server_side_encryption.add_key_id_to_file_info(file_infos)
+                file_info = server_side_encryption.add_key_id_to_file_info(file_info)
 
             # we don't really need headers further on
             # but we still simulate their calculation
@@ -1861,7 +1862,7 @@ class RawSimulator(AbstractRawApi):
                 content_length=content_length,
                 content_type=content_type,
                 content_sha1=content_sha1,
-                file_infos=file_infos,
+                file_info=file_info,
                 server_side_encryption=server_side_encryption,
                 file_retention=file_retention,
                 legal_hold=legal_hold,
@@ -1876,7 +1877,7 @@ class RawSimulator(AbstractRawApi):
                 content_length,
                 content_type,
                 content_sha1,
-                file_infos,
+                file_info,
                 data_stream,
                 server_side_encryption,
                 file_retention,

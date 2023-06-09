@@ -24,3 +24,13 @@ from .transfer import DownloadManager, UploadManager
 # version & version utils
 
 from .version_utils import rename_argument, rename_function
+
+# raw_simulator
+
+from .raw_simulator import BucketSimulator
+from .raw_simulator import RawSimulator
+
+# raw_api
+
+from .raw_api import AbstractRawApi
+from .raw_api import B2RawHTTPApi

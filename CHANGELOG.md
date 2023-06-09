@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Deprecated
+* Deprecate `file_infos` argument. Use `file_info` instead. Old argument name won't be supported in v3.
+
+### Changed
+* `version_utils` decorators now ignore `current_version` parameter to better fit `apiver` needs
+
 ### Fixed
 * Circular symlinks no longer cause infinite loops when syncing a folder
 

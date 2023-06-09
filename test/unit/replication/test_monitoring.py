@@ -76,14 +76,14 @@ def test_scan_source(source_bucket, test_file, monitor):
         source_bucket.upload_local_file(
             test_file,
             'folder/test-large-meta.txt',
-            file_infos={
+            file_info={
                 'dummy-key': 'a' * 7000,
             },
         ),
         source_bucket.upload_local_file(
             test_file,
             'folder/test-large-meta-encrypted.txt',
-            file_infos={
+            file_info={
                 'dummy-key': 'a' * 2048,
             },
             encryption=SSE_C_AES,
@@ -155,12 +155,12 @@ def test_scan_source_and_destination(
 
         # metadata differs
         source_bucket.upload_local_file(
-            test_file, 'folder/test-4.txt', file_infos={
+            test_file, 'folder/test-4.txt', file_info={
                 'haha': 'hoho',
             }
         ),
         destination_bucket.upload_local_file(
-            test_file, 'folder/test-4.txt', file_infos={
+            test_file, 'folder/test-4.txt', file_info={
                 'hehe': 'hihi',
             }
         ),

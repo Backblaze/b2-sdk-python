@@ -7,10 +7,17 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
+
+import typing
 
 from b2sdk import _v3 as v3
 from b2sdk._v3.exception import BucketIdNotFound as v3BucketIdNotFound
+from b2sdk.v2._compat import _file_infos_rename
 from .exception import BucketIdNotFound
+
+if typing.TYPE_CHECKING:
+    from b2sdk.utils import Sha1HexDigest
 
 
 # Overridden to raise old style BucketIdNotFound exception
@@ -20,6 +27,68 @@ class Bucket(v3.Bucket):
             return super().get_fresh_state()
         except v3BucketIdNotFound as e:
             raise BucketIdNotFound(e.bucket_id)
+
+    @_file_infos_rename
+    def upload_bytes(
+        self,
+        data_bytes,
+        file_name,
+        content_type=None,
+        file_info: dict | None = None,
+        progress_listener=None,
+        encryption: v3.EncryptionSetting | None = None,
+        file_retention: v3.FileRetentionSetting | None = None,
+        legal_hold: v3.LegalHold | None = None,
+        large_file_sha1: Sha1HexDigest | None = None,
+        custom_upload_timestamp: int | None = None,
+        cache_control: str | None = None,
+    ):
+        return super().upload_bytes(
+            data_bytes=data_bytes,
+            file_name=file_name,
+            content_type=content_type,
+            file_info=file_info,
+            progress_listener=progress_listener,
+            encryption=encryption,
+            file_retention=file_retention,
+            legal_hold=legal_hold,
+            large_file_sha1=large_file_sha1,
+            custom_upload_timestamp=custom_upload_timestamp,
+            cache_control=cache_control,
+        )
+
+    @_file_infos_rename
+    def upload_local_file(
+        self,
+        local_file,
+        file_name,
+        content_type=None,
+        file_info: dict | None = None,
+        sha1_sum=None,
+        min_part_size=None,
+        progress_listener=None,
+        encryption: v3.EncryptionSetting | None = None,
+        file_retention: v3.FileRetentionSetting | None = None,
+        legal_hold: v3.LegalHold | None = None,
+        upload_mode: v3.UploadMode = v3.UploadMode.FULL,
+        custom_upload_timestamp: int | None = None,
+        cache_control: str | None = None,
+    ):
+        return super().upload_local_file(
+            local_file=local_file,
+            file_name=file_name,
+            content_type=content_type,
+            file_info=file_info,
+            sha1_sum=sha1_sum,
+            min_part_size=min_part_size,
+            progress_listener=progress_listener,
+            encryption=encryption,
+            file_retention=file_retention,
+            legal_hold=legal_hold,
+            upload_mode=upload_mode,
+            custom_upload_timestamp=custom_upload_timestamp,
+            cache_control=cache_control,
+        )
 
 
 # Overridden to use old style Bucket

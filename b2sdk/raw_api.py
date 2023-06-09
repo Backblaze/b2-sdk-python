@@ -7,6 +7,7 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
 import base64
 import re
@@ -314,12 +315,12 @@ class AbstractRawApi(metaclass=ABCMeta):
         content_length: int,
         content_type: str,
         content_sha1: str,
-        file_infos: dict,
-        server_side_encryption: Optional[EncryptionSetting],
-        file_retention: Optional[FileRetentionSetting],
-        legal_hold: Optional[LegalHold],
-        custom_upload_timestamp: Optional[int] = None,
-        cache_control: Optional[str] = None,
+        file_info: dict,
+        server_side_encryption: EncryptionSetting | None,
+        file_retention: FileRetentionSetting | None,
+        legal_hold: LegalHold | None,
+        custom_upload_timestamp: int | None = None,
+        cache_control: str | None = None,
     ) -> dict:
         headers = {
             'Authorization': upload_auth_token,
@@ -328,7 +329,7 @@ class AbstractRawApi(metaclass=ABCMeta):
             'Content-Type': content_type,
             'X-Bz-Content-Sha1': content_sha1,
         }
-        for k, v in file_infos.items():
+        for k, v in file_info.items():
             headers[FILE_INFO_HEADER_PREFIX + k] = b2_url_encode(v)
         if server_side_encryption is not None:
             assert server_side_encryption.mode in (
@@ -359,7 +360,7 @@ class AbstractRawApi(metaclass=ABCMeta):
         content_length,
         content_type,
         content_sha1,
-        file_infos,
+        file_info,
         data_stream,
         server_side_encryption: Optional[EncryptionSetting] = None,
         file_retention: Optional[FileRetentionSetting] = None,
@@ -896,13 +897,13 @@ class B2RawHTTPApi(AbstractRawApi):
         content_length,
         content_type,
         content_sha1,
-        file_infos,
+        file_info: dict,
         data_stream,
-        server_side_encryption: Optional[EncryptionSetting] = None,
-        file_retention: Optional[FileRetentionSetting] = None,
-        legal_hold: Optional[LegalHold] = None,
-        custom_upload_timestamp: Optional[int] = None,
-        cache_control: Optional[str] = None,
+        server_side_encryption: EncryptionSetting | None = None,
+        file_retention: FileRetentionSetting | None = None,
+        legal_hold: LegalHold | None = None,
+        custom_upload_timestamp: int | None = None,
+        cache_control: str | None = None,
     ):
         """
         Upload one, small file to b2.
@@ -913,7 +914,7 @@ class B2RawHTTPApi(AbstractRawApi):
         :param content_length: number of bytes in the file
         :param content_type: MIME type
         :param content_sha1: hex SHA1 of the contents of the file
-        :param file_infos: extra file info to upload
+        :param file_info: extra file info to upload
         :param data_stream: a file like object from which the contents of the file can be read
         :param server_side_encryption: encryption setting for the file
         :param file_retention: retention setting for the file
@@ -930,7 +931,7 @@ class B2RawHTTPApi(AbstractRawApi):
             content_length=content_length,
             content_type=content_type,
             content_sha1=content_sha1,
-            file_infos=file_infos,
+            file_info=file_info,
             server_side_encryption=server_side_encryption,
             file_retention=file_retention,
             legal_hold=legal_hold,

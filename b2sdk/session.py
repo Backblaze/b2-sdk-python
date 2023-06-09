@@ -7,6 +7,7 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
 from functools import partial
 from enum import Enum, unique
@@ -348,13 +349,13 @@ class B2Session:
         content_length,
         content_type,
         content_sha1,
-        file_infos,
+        file_info,
         data_stream,
-        server_side_encryption: Optional[EncryptionSetting] = None,
-        file_retention: Optional[FileRetentionSetting] = None,
-        legal_hold: Optional[LegalHold] = None,
-        custom_upload_timestamp: Optional[int] = None,
-        cache_control: Optional[str] = None,
+        server_side_encryption: EncryptionSetting | None = None,
+        file_retention: FileRetentionSetting | None = None,
+        legal_hold: LegalHold | None = None,
+        custom_upload_timestamp: int | None = None,
+        cache_control: str | None = None,
     ):
         return self._wrap_token(
             self.raw_api.upload_file,
@@ -364,7 +365,7 @@ class B2Session:
             content_length,
             content_type,
             content_sha1,
-            file_infos,
+            file_info,
             data_stream,
             server_side_encryption,
             file_retention=file_retention,

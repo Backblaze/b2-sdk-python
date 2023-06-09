@@ -7,6 +7,7 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
 import fnmatch
 import logging
@@ -488,14 +489,14 @@ class Bucket(metaclass=B2TraceMeta):
         data_bytes,
         file_name,
         content_type=None,
-        file_infos=None,
+        file_info: dict | None = None,
         progress_listener=None,
-        encryption: Optional[EncryptionSetting] = None,
-        file_retention: Optional[FileRetentionSetting] = None,
-        legal_hold: Optional[LegalHold] = None,
-        large_file_sha1: Optional[Sha1HexDigest] = None,
-        custom_upload_timestamp: Optional[int] = None,
-        cache_control: Optional[str] = None,
+        encryption: EncryptionSetting | None = None,
+        file_retention: FileRetentionSetting | None = None,
+        legal_hold: LegalHold | None = None,
+        large_file_sha1: Sha1HexDigest | None = None,
+        custom_upload_timestamp: int | None = None,
+        cache_control: str | None = None,
     ):
         """
         Upload bytes in memory to a B2 file.
@@ -506,7 +507,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param bytes data_bytes: a byte array to upload
         :param str file_name: a file name to upload bytes to
         :param str,None content_type: the MIME type, or ``None`` to accept the default based on file extension of the B2 file name
-        :param dict,None file_infos: a file info to store with the file or ``None`` to not store anything
+        :param dict,None file_info: a file info to store with the file or ``None`` to not store anything
         :param b2sdk.v2.AbstractProgressListener,None progress_listener: a progress listener object to use, or ``None`` to not track progress
         :param b2sdk.v2.EncryptionSetting encryption: encryption settings (``None`` if unknown)
         :param b2sdk.v2.FileRetentionSetting file_retention: file retention setting
@@ -521,7 +522,7 @@ class Bucket(metaclass=B2TraceMeta):
             upload_source,
             file_name,
             content_type=content_type,
-            file_info=file_infos,
+            file_info=file_info,
             progress_listener=progress_listener,
             encryption=encryption,
             file_retention=file_retention,
@@ -536,16 +537,16 @@ class Bucket(metaclass=B2TraceMeta):
         local_file,
         file_name,
         content_type=None,
-        file_infos=None,
+        file_info: dict | None = None,
         sha1_sum=None,
         min_part_size=None,
         progress_listener=None,
-        encryption: Optional[EncryptionSetting] = None,
-        file_retention: Optional[FileRetentionSetting] = None,
-        legal_hold: Optional[LegalHold] = None,
+        encryption: EncryptionSetting | None = None,
+        file_retention: FileRetentionSetting | None = None,
+        legal_hold: LegalHold | None = None,
         upload_mode: UploadMode = UploadMode.FULL,
-        custom_upload_timestamp: Optional[int] = None,
-        cache_control: Optional[str] = None,
+        custom_upload_timestamp: int | None = None,
+        cache_control: str | None = None,
     ):
         """
         Upload a file on local disk to a B2 file.
@@ -560,7 +561,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param str local_file: a path to a file on local disk
         :param str file_name: a file name of the new B2 file
         :param str,None content_type: the MIME type, or ``None`` to accept the default based on file extension of the B2 file name
-        :param dict,None file_infos: a file info to store with the file or ``None`` to not store anything
+        :param dict,None file_info: a file info to store with the file or ``None`` to not store anything
         :param str,None sha1_sum: file SHA1 hash or ``None`` to compute it automatically
         :param int min_part_size: a minimum size of a part
         :param b2sdk.v2.AbstractProgressListener,None progress_listener: a progress listener object to use, or ``None`` to not report progress
@@ -593,7 +594,7 @@ class Bucket(metaclass=B2TraceMeta):
             sources,
             file_name,
             content_type=content_type,
-            file_info=file_infos,
+            file_info=file_info,
             min_part_size=min_part_size,
             progress_listener=progress_listener,
             encryption=encryption,
