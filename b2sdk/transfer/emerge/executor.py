@@ -12,7 +12,7 @@ import logging
 import threading
 
 from abc import ABCMeta, abstractmethod
-from typing import Dict, Optional
+from typing import Dict, Optional, TYPE_CHECKING
 
 from b2sdk.encryption.setting import EncryptionSetting
 from b2sdk.exception import MaxFileSizeExceeded
@@ -24,6 +24,10 @@ from b2sdk.transfer.outbound.upload_source import UploadSourceStream
 AUTO_CONTENT_TYPE = 'b2/x-auto'
 
 logger = logging.getLogger(__name__)
+
+if TYPE_CHECKING:
+    from b2sdk.transfer.emerge.planner.part_definition import UploadEmergePartDefinition
+    from b2sdk.transfer.emerge.planner.planner import StreamingEmergePlan
 
 
 class EmergeExecutor:
@@ -164,7 +168,7 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
         if self.max_queue_size is not None:
             self._semaphore = threading.Semaphore(self.max_queue_size)
 
-    def execute_plan(self, emerge_plan):
+    def execute_plan(self, emerge_plan: "StreamingEmergePlan"):
         total_length = emerge_plan.get_total_length()
         encryption = self.encryption
 
@@ -240,7 +244,7 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
         response = self.services.session.finish_large_file(file_id, part_sha1_array)
         return self.services.api.file_version_factory.from_api_response(response)
 
-    def _execute_step(self, execution_step):
+    def _execute_step(self, execution_step: "UploadPartExecutionStep"):
         semaphore = self._semaphore
         if semaphore is None:
             return execution_step.execute()
@@ -541,7 +545,7 @@ class LargeFileEmergeExecutionStepFactory(BaseExecutionStepFactory):
     def __init__(
         self,
         emerge_execution,
-        emerge_part,
+        emerge_part: "UploadEmergePartDefinition",
         part_number,
         large_file_id,
         large_file_upload_state,

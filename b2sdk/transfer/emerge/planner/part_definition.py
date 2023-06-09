@@ -13,8 +13,12 @@ from functools import partial
 
 from b2sdk.stream.chained import ChainedStream
 from b2sdk.stream.range import wrap_with_range
+from typing import TYPE_CHECKING
 
 from b2sdk.utils import hex_sha1_of_unlimited_stream
+
+if TYPE_CHECKING:
+    from b2sdk.transfer.emerge.unbound_write_intent import UnboundSourceBytes
 
 
 class BaseEmergePartDefinition(metaclass=ABCMeta):
@@ -38,7 +42,7 @@ class BaseEmergePartDefinition(metaclass=ABCMeta):
 
 
 class UploadEmergePartDefinition(BaseEmergePartDefinition):
-    def __init__(self, upload_source, relative_offset, length):
+    def __init__(self, upload_source: "UnboundSourceBytes", relative_offset, length):
         self.upload_source = upload_source
         self.relative_offset = relative_offset
         self.length = length

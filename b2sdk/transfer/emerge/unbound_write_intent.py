@@ -11,7 +11,7 @@
 import hashlib
 import io
 import queue
-from typing import Callable, Iterator, Optional, Union
+from typing import Callable, Iterator, Union
 
 from b2sdk.transfer.emerge.exception import UnboundStreamBufferTimeout
 from b2sdk.transfer.emerge.write_intent import WriteIntent
@@ -41,26 +41,19 @@ class IOWrapper(io.BytesIO):
         a ``release_function`` when buffer is read in full.
 
         ``release_function`` can be called from another thread.
-        It is called exactly once, when the read returns
-        an empty buffer for the first time.
+        It is called exactly once, when the read is concluded
+        and the resource is about to be released
 
         :param data: data to be provided as a stream
-        :param release_function: function to be called when all the data was read
+        :param release_function: function to be called when resource will be released
         """
         super().__init__(data)
-
-        self.already_done = False
         self.release_function = release_function
 
-    def read(self, size: Optional[int] = None) -> bytes:
-        result = super().read(size)
-
-        is_done = len(result) == 0
-        if is_done and not self.already_done:
-            self.already_done = True
+    def close(self):
+        if not self.closed:
             self.release_function()
-
-        return result
+        return super().close()
 
 
 class UnboundSourceBytes(AbstractUploadSource):

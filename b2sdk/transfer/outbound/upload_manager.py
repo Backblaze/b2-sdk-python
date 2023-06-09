@@ -9,8 +9,9 @@
 ######################################################################
 
 import logging
+from contextlib import ExitStack
 
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 from b2sdk.encryption.setting import EncryptionMode, EncryptionSetting
 from b2sdk.exception import (
@@ -28,6 +29,9 @@ from ..transfer_manager import TransferManager
 from ...utils.thread_pool import ThreadPoolMixin
 
 logger = logging.getLogger(__name__)
+
+if TYPE_CHECKING:
+    from ...utils.typing import TypeUploadSource
 
 
 class UploadManager(TransferManager, ThreadPoolMixin):
@@ -75,7 +79,7 @@ class UploadManager(TransferManager, ThreadPoolMixin):
         self,
         bucket_id,
         file_id,
-        part_upload_source,
+        part_upload_source: "TypeUploadSource",
         part_number,
         large_file_upload_state,
         finished_parts=None,
@@ -97,7 +101,7 @@ class UploadManager(TransferManager, ThreadPoolMixin):
         self,
         bucket_id,
         file_id,
-        part_upload_source,
+        part_upload_source: "TypeUploadSource",
         part_number,
         large_file_upload_state,
         finished_parts,
@@ -134,14 +138,25 @@ class UploadManager(TransferManager, ThreadPoolMixin):
 
         # Retry the upload as needed
         exception_list = []
-        for _ in range(self.MAX_UPLOAD_ATTEMPTS):
-            # if another part has already had an error there's no point in
-            # uploading this part
-            if large_file_upload_state.has_error():
-                raise AlreadyFailed(large_file_upload_state.get_error_message())
+        with ExitStack() as stream_guard:
+            part_stream = None
 
-            try:
-                with part_upload_source.open() as part_stream:
+            def close_stream_callback(stream):
+                if not stream.closed:
+                    stream.close()
+
+            for _ in range(self.MAX_UPLOAD_ATTEMPTS):
+                # if another part has already had an error there's no point in
+                # uploading this part
+                if large_file_upload_state.has_error():
+                    raise AlreadyFailed(large_file_upload_state.get_error_message())
+
+                try:
+                    # reuse the stream in case of retry
+                    part_stream = part_stream or part_upload_source.open()
+                    # register stream closing callback only when reading is finally concluded
+                    stream_guard.callback(close_stream_callback, part_stream)
+
                     content_length = part_upload_source.get_content_length()
                     input_stream = ReadingStreamWithProgress(
                         part_stream, part_progress_listener, length=content_length
@@ -164,12 +179,11 @@ class UploadManager(TransferManager, ThreadPoolMixin):
                         content_sha1 = input_stream.hash
                     assert content_sha1 == response['contentSha1']
                     return response
-
-            except B2Error as e:
-                if not e.should_retry_upload():
-                    raise
-                exception_list.append(e)
-                self.account_info.clear_bucket_upload_data(bucket_id)
+                except B2Error as e:
+                    if not e.should_retry_upload():
+                        raise
+                    exception_list.append(e)
+                    self.account_info.clear_bucket_upload_data(bucket_id)
 
         large_file_upload_state.set_error(str(exception_list[-1]))
         raise MaxRetriesExceeded(self.MAX_UPLOAD_ATTEMPTS, exception_list)
