@@ -10,7 +10,6 @@
 from __future__ import annotations
 
 from b2sdk import _v3 as v3
-from b2sdk.raw_api import *  # noqa
 from b2sdk.v2._compat import _file_infos_rename
 
 
@@ -27,9 +26,9 @@ class _OldRawAPI:
         content_type: str,
         content_sha1: str,
         file_info: dict,
-        server_side_encryption: EncryptionSetting | None,
-        file_retention: FileRetentionSetting | None,
-        legal_hold: LegalHold | None,
+        server_side_encryption: v3.EncryptionSetting | None,
+        file_retention: v3.FileRetentionSetting | None,
+        legal_hold: v3.LegalHold | None,
         custom_upload_timestamp: int | None = None,
         cache_control: str | None = None,
     ) -> dict:
@@ -58,9 +57,9 @@ class _OldRawAPI:
         content_sha1,
         file_info: dict,
         data_stream,
-        server_side_encryption: EncryptionSetting | None = None,
-        file_retention: FileRetentionSetting | None = None,
-        legal_hold: LegalHold | None = None,
+        server_side_encryption: v3.EncryptionSetting | None = None,
+        file_retention: v3.FileRetentionSetting | None = None,
+        legal_hold: v3.LegalHold | None = None,
         custom_upload_timestamp: int | None = None,
         cache_control: str | None = None,
     ):
