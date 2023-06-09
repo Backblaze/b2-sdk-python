@@ -29,7 +29,7 @@ class AbstractVersionDecorator(metaclass=ABCMeta):
         self.current_version = parse_version(current_version)  #: current version
         self.reason = reason
 
-        self.changed_version = parse_version(
+        self.changed_version = self._parse_if_not_none(
             changed_version
         )  #: version in which the decorator was added
         self.cutoff_version = self._parse_if_not_none(
@@ -47,19 +47,12 @@ class AbstractVersionDecorator(metaclass=ABCMeta):
         """
         The actual implementation of decorator. Needs self.source to be set before it's called.
         """
-        if self.cutoff_version is not None:
+        if self.cutoff_version and self.changed_version:
             assert self.changed_version < self.cutoff_version, '%s decorator is set to start renaming %s %r starting at version %s and finishing in %s. It needs to start at a lower version and finish at a higher version.' % (
                 self.__class__.__name__,
                 self.WHAT,
                 self.source,
                 self.changed_version,
-                self.cutoff_version,
-            )
-            assert self.current_version < self.cutoff_version, '%s decorator is still used in version %s when old %s name %r was scheduled to be dropped in %s. It is time to remove the mapping.' % (
-                self.__class__.__name__,
-                self.current_version,
-                self.WHAT,
-                self.source,
                 self.cutoff_version,
             )
 
@@ -69,19 +62,7 @@ class AbstractDeprecator(AbstractVersionDecorator):
 
     def __init__(self, target, *args, **kwargs):
         self.target = target
-        super(AbstractDeprecator, self).__init__(*args, **kwargs)
-
-    @abstractmethod
-    def __call__(self, func):
-        super(AbstractDeprecator, self).__call__(func)
-        assert self.changed_version <= self.current_version, '%s decorator indicates that the replacement of %s %r should take place in the future version %s, while the current version is %s. It looks like should be _discouraged_ at this point and not _deprecated_ yet. Consider using %r decorator instead.' % (
-            self.__class__.__name__,
-            self.WHAT,
-            self.source,
-            self.changed_version,
-            self.cutoff_version,
-            self.ALTERNATIVE_DECORATOR,
-        )
+        super().__init__(*args, **kwargs)
 
 
 class rename_argument(AbstractDeprecator):
@@ -121,15 +102,14 @@ class rename_argument(AbstractDeprecator):
                 )
                 kwargs[self.target] = kwargs[self.source]
                 del kwargs[self.source]
+                info = f'{self.source!r} is a deprecated argument for {func.__name__!r} function/method - it was renamed to {self.target!r}'
+                if self.changed_version:
+                    info += f' in version {self.changed_version}'
+                if self.cutoff_version:
+                    info += f'. Support for the old name is going to be dropped in {self.cutoff_version}'
+
                 warnings.warn(
-                    '%r is a deprecated argument for %r function/method - it was renamed to %r in version %s. Support for the old name is going to be dropped in %s.'
-                    % (
-                        self.source,
-                        func.__name__,
-                        self.target,
-                        self.changed_version,
-                        self.cutoff_version,
-                    ),
+                    f"{info}.",
                     DeprecationWarning,
                 )
             return func(*args, **kwargs)

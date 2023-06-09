@@ -20,3 +20,7 @@ from .bucket import Bucket, BucketFactory
 from .session import B2Session
 from .sync import B2SyncPath
 from .transfer import DownloadManager, UploadManager
+
+# version & version utils
+
+from .version_utils import rename_argument, rename_function
