@@ -93,8 +93,8 @@ class rename_argument(AbstractDeprecator):
             message = '%r is not an argument of the decorated function so it cannot be remapped to from a deprecated parameter name' % (
                 self.target,
             )
-            signature = inspect.getfullargspec(func)
-            assert self.target in signature.args or self.target in signature.kwonlyargs, message
+            signature = inspect.signature(func)
+            assert self.target in signature.parameters, message
 
             if self.source in kwargs:
                 assert self.target not in kwargs, 'both argument names were provided: %r (deprecated) and %r (new)' % (

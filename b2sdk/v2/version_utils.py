@@ -11,7 +11,7 @@
 from b2sdk import _v3 as v3
 
 
-class _OldAbstractVersionDecoratorMixin:
+class _OldAbstractDeprecatorMixin:
     def __call__(self, *args, **kwargs):
         if self.cutoff_version:
             assert self.current_version < self.cutoff_version, '%s decorator is still used in version %s when old %s name %r was scheduled to be dropped in %s. It is time to remove the mapping.' % (
@@ -21,12 +21,7 @@ class _OldAbstractVersionDecoratorMixin:
                 self.source,
                 self.cutoff_version,
             )
-        return super().__call__(*args, **kwargs)
-
-
-class _OldAbstractDeprecatorMixin(_OldAbstractVersionDecoratorMixin):
-    def __call__(self, *args, **kwargs):
-        super(_OldAbstractVersionDecoratorMixin, self).__call__(*args, **kwargs)
+        ret = super().__call__(*args, **kwargs)
         assert self.changed_version <= self.current_version, '%s decorator indicates that the replacement of %s %r should take place in the future version %s, while the current version is %s. It looks like should be _discouraged_ at this point and not _deprecated_ yet. Consider using %r decorator instead.' % (
             self.__class__.__name__,
             self.WHAT,
@@ -35,7 +30,7 @@ class _OldAbstractDeprecatorMixin(_OldAbstractVersionDecoratorMixin):
             self.cutoff_version,
             self.ALTERNATIVE_DECORATOR,
         )
-        return super().__call__(*args, **kwargs)
+        return ret
 
 
 class rename_argument(_OldAbstractDeprecatorMixin, v3.rename_argument):
