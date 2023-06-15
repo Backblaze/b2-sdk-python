@@ -87,15 +87,14 @@ class rename_argument(AbstractDeprecator):
 
     def __call__(self, func):
         super(rename_argument, self).__call__(func)
+        signature = inspect.signature(func)
+        has_target_arg = self.target in signature.parameters or any(
+            True for p in signature.parameters.values() if p.kind == p.VAR_KEYWORD
+        )
+        assert has_target_arg, f'{self.target!r} is not an argument of the decorated function so it cannot be remapped to from a deprecated parameter name'
 
         @wraps(func)
         def wrapper(*args, **kwargs):
-            message = '%r is not an argument of the decorated function so it cannot be remapped to from a deprecated parameter name' % (
-                self.target,
-            )
-            signature = inspect.signature(func)
-            assert self.target in signature.parameters, message
-
             if self.source in kwargs:
                 assert self.target not in kwargs, 'both argument names were provided: %r (deprecated) and %r (new)' % (
                     self.source, self.target
