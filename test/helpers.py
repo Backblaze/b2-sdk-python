@@ -14,6 +14,17 @@ from unittest.mock import patch
 
 @contextlib.contextmanager
 def patch_bind_params(instance, method_name):
+    """
+    Patch a method of instance.
+
+    In addition to `patch.object(instance, method_name)` would provide, it also adds get_bound_call_args method
+    on the returned mock.
+    This allows to get the arguments that were passed to the method, after binding.
+
+    :param instance: instance to patch
+    :param method_name: name of the method of instance to patch
+    :return: patched method mock
+    """
     signature = inspect.signature(getattr(instance, method_name))
     with patch.object(instance, method_name, autospec=True) as mock_method:
         mock_method.get_bound_call_args = lambda: signature.bind(
