@@ -12,7 +12,7 @@ import warnings
 
 from ..test_base import TestBase
 
-from .deps import rename_argument, rename_function
+from b2sdk.v1 import rename_argument, rename_function
 
 
 class TestRenameArgument(TestBase):

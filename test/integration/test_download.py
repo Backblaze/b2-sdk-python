@@ -105,7 +105,7 @@ class TestDownload(IntegrationTestBase):
             with gzip.open(source_file, 'wb') as gzip_file:
                 gzip_file.write(data_to_write)
             file_version = bucket.upload_local_file(
-                str(source_file), 'gzipped_file', file_infos={'b2-content-encoding': 'gzip'}
+                str(source_file), 'gzipped_file', file_info={'b2-content-encoding': 'gzip'}
             )
             self.b2_api.download_file_by_id(file_id=file_version.id_).save_to(
                 str(downloaded_compressed_file)

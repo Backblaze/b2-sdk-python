@@ -81,7 +81,7 @@ class TestFileVersion:
             b'nothing',
             'test_file',
             content_type='video/mp4',
-            file_infos={
+            file_info={
                 'file': 'info',
                 'b2-content-language': 'en_US',
                 'b2-content-disposition': 'attachment',

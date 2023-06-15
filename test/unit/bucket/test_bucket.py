@@ -1665,7 +1665,7 @@ class TestUpload(TestCaseWithBucket):
         self._upload_part(large_file_id, 1, data[:part_size])
         progress_listener = StubProgressListener()
         file_info = self.bucket.upload_bytes(
-            data, 'file1', progress_listener=progress_listener, file_infos={'property': 'value1'}
+            data, 'file1', progress_listener=progress_listener, file_info={'property': 'value1'}
         )
         self.assertEqual(large_file_id, file_info.id_)
         self._check_file_contents('file1', data)
@@ -1678,7 +1678,7 @@ class TestUpload(TestCaseWithBucket):
         self._upload_part(large_file_id, 1, data[:part_size])
         progress_listener = StubProgressListener()
         file_info = self.bucket.upload_bytes(
-            data, 'file1', progress_listener=progress_listener, file_infos={'property': 'value2'}
+            data, 'file1', progress_listener=progress_listener, file_info={'property': 'value2'}
         )
         self.assertNotEqual(large_file_id, file_info.id_)
         self._check_file_contents('file1', data)
@@ -2088,7 +2088,7 @@ class DownloadTests(DownloadTestsBase):
     def test_download_update_mtime_v2(self):
         with TempDir() as d:
             file_version = self.bucket.upload_bytes(
-                self.DATA.encode(), 'file1', file_infos={'src_last_modified_millis': '1000'}
+                self.DATA.encode(), 'file1', file_info={'src_last_modified_millis': '1000'}
             )
             path = os.path.join(d, 'file2')
             self.bucket.download_file_by_id(file_version.id_).save_to(path)
@@ -2457,10 +2457,10 @@ class DecodeTestsBase(object):
     def setUp(self):
         super(DecodeTestsBase, self).setUp()
         self.bucket.upload_bytes(
-            'Test File 1'.encode(), 'test.txt?foo=bar', file_infos={'custom_info': 'aaa?bbb'}
+            'Test File 1'.encode(), 'test.txt?foo=bar', file_info={'custom_info': 'aaa?bbb'}
         )
         self.bucket.upload_bytes(
-            'Test File 2'.encode(), 'test.txt%3Ffoo=bar', file_infos={'custom_info': 'aaa%3Fbbb'}
+            'Test File 2'.encode(), 'test.txt%3Ffoo=bar', file_info={'custom_info': 'aaa%3Fbbb'}
         )
         self.bucket.upload_bytes('Test File 3'.encode(), 'test.txt%3Ffoo%3Dbar')
         self.bucket.upload_bytes('Test File 4'.encode(), 'test.txt%253Ffoo%253Dbar')
