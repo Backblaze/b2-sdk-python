@@ -89,7 +89,7 @@ class rename_argument(AbstractDeprecator):
         super(rename_argument, self).__call__(func)
         signature = inspect.signature(func)
         has_target_arg = self.target in signature.parameters or any(
-            True for p in signature.parameters.values() if p.kind == p.VAR_KEYWORD
+            p.kind == p.VAR_KEYWORD for p in signature.parameters.values()
         )
         assert has_target_arg, f'{self.target!r} is not an argument of the decorated function so it cannot be remapped to from a deprecated parameter name'
 
