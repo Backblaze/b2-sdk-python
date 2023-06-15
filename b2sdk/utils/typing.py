@@ -12,4 +12,4 @@ from typing import TypeVar
 
 from b2sdk.transfer.outbound.upload_source import AbstractUploadSource
 
-TypeUploadSource = TypeVar("TypeUploadSource", bound=AbstractUploadSource)
+_TypeUploadSource = TypeVar("_TypeUploadSource", bound=AbstractUploadSource)

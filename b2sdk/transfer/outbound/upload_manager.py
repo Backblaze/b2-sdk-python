@@ -31,7 +31,7 @@ from ...utils.thread_pool import ThreadPoolMixin
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    from ...utils.typing import TypeUploadSource
+    from ...utils.typing import _TypeUploadSource
 
 
 class UploadManager(TransferManager, ThreadPoolMixin):
@@ -79,7 +79,7 @@ class UploadManager(TransferManager, ThreadPoolMixin):
         self,
         bucket_id,
         file_id,
-        part_upload_source: "TypeUploadSource",
+        part_upload_source: "_TypeUploadSource",
         part_number,
         large_file_upload_state,
         finished_parts=None,
@@ -101,7 +101,7 @@ class UploadManager(TransferManager, ThreadPoolMixin):
         self,
         bucket_id,
         file_id,
-        part_upload_source: "TypeUploadSource",
+        part_upload_source: "_TypeUploadSource",
         part_number,
         large_file_upload_state,
         finished_parts,
