@@ -327,6 +327,23 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
         custom_upload_timestamp: Optional[int] = None,
         cache_control: Optional[str] = None,
     ):
+        """
+        Find an unfinished file upload matching a given plan ID and other parameters.
+
+        This function identifies unfinished file uploads that can be resumed. The target file is found by
+        matching the specified plan ID, along with other parameters such as encryption setting, file retention
+        setting, legal hold, custom upload timestamp, and cache control.
+
+        The function iterates through all the unfinished large file uploads. For each file, it validates if 
+        the file matches the provided parameters. If the file fails to match any parameter, it's excluded
+        from consideration.
+
+        If an unfinished file passes these checks, the function collects all the parts of the file that have
+        been uploaded so far. It then compares the number of finished parts of the current file with the
+        "best match" found so far. The best match is the file that has the most parts uploaded. 
+
+        The function finally returns the best match file and its finished parts. If no match is found, it returns None.
+        """
         file_retention = file_retention or NO_RETENTION_FILE_SETTING
         assert 'plan_id' in file_info
         best_match_file = None
@@ -405,11 +422,20 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
         cache_control: Optional[str] = None,
     ):
         """
-        Find an unfinished file that may be used to resume a large file upload.  The
-        file is found using the filename and comparing the uploaded parts against
-        the local file.
+        Attempt to find an unfinished large file upload that can be resumed.
 
-        This is only possible if the application key being used allows ``listFiles`` access.
+        This function iterates through all unfinished large file uploads. For each file, 
+        it first checks if the file's name, file info, and other parameters match those given.
+        The parameters include the encryption setting, file retention setting, legal hold, 
+        custom upload timestamp, and cache control.
+
+        The function further validates if the parts of the unfinished file match the parts 
+        in the local file (emerge_parts_dict) based on the part size and SHA1 hash. 
+
+        If a file matches all these conditions, the function immediately returns that file 
+        and its finished parts. If no matching file is found, the function returns None. 
+
+        Note: This operation requires that the application key in use allows 'listFiles' access.
         """
         file_retention = file_retention or NO_RETENTION_FILE_SETTING
         file_info_without_large_file_sha1 = self._get_file_info_without_large_file_sha1(file_info)
