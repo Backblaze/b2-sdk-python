@@ -315,6 +315,124 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
             )
         return unfinished_file, finished_parts
 
+    def _find_matching_unfinished_file(
+        self,
+        bucket_id,
+        file_name,
+        file_info,
+        emerge_parts_dict,
+        encryption: EncryptionSetting,
+        file_retention: Optional[FileRetentionSetting] = None,
+        legal_hold: Optional[LegalHold] = None,
+        custom_upload_timestamp: Optional[int] = None,
+        cache_control: Optional[str] = None,
+        log_rejections: Optional[bool] = False,
+        check_file_info_without_large_file_sha1: Optional[bool] = False,
+    ):
+        """
+        Search for a matching unfinished large file in the specified bucket.
+
+        This function is responsible for identifying a suitable unfinished file for resumption of upload,
+        based on the supplied parameters. It centralizes the shared logic between `_find_unfinished_file_by_plan_id`
+        and `_match_unfinished_file_if_possible`.
+
+        Regardless of the local file system folder separator, "/" is used in the file names.
+
+        In case a matching file is found but has inconsistencies (for example, mismatching file info or encryption settings),
+        the 'log_rejections' parameter dictates if these mismatches should be logged.
+
+        :param bucket_id: The identifier of the bucket where the unfinished file resides.
+        :param file_name: The name of the file to be matched.
+        :param file_info: Information about the file to be uploaded.
+        :param emerge_parts_dict: A dictionary containing the parts of the file to be emerged.
+        :param encryption: The encryption settings for the file.
+        :param file_retention: The retention settings for the file, if any.
+        :param legal_hold: The legal hold status of the file, if any.
+        :param custom_upload_timestamp: The custom timestamp for the upload, if any.
+        :param cache_control: The cache control settings for the file, if any.
+        :param log_rejections: A flag indicating whether rejections should be logged.
+        :param check_file_info_without_large_file_sha1: A flag indicating whether the file information should be checked without the `large_file_sha1`.
+        
+        :return: A tuple of the best matching unfinished file and its finished parts. If no match is found, returns `None`.
+        """
+
+        file_retention = file_retention or NO_RETENTION_FILE_SETTING
+        best_match_file = None
+        best_match_parts = {}
+        best_match_parts_len = 0
+
+        for file_ in self.services.large_file.list_unfinished_large_files(
+            bucket_id, prefix=file_name
+        ):
+            if file_.file_info != file_info:
+                if check_file_info_without_large_file_sha1:
+                    file_info_without_large_file_sha1 = self._get_file_info_without_large_file_sha1(
+                        file_info
+                    )
+                    if file_info_without_large_file_sha1 != self._get_file_info_without_large_file_sha1(
+                        file_.file_info
+                    ):
+                        if log_rejections:
+                            logger.debug(
+                                'Rejecting %s: file info mismatch after dropping `large_file_sha1`',
+                                file_.file_id
+                            )
+                        continue
+                else:
+                    if log_rejections:
+                        logger.debug('Rejecting %s: file info mismatch', file_.file_id)
+                    continue
+
+            if encryption is not None and encryption != file_.encryption:
+                if log_rejections:
+                    logger.debug('Rejecting %s: encryption mismatch', file_.file_id)
+                continue
+
+            if cache_control is not None and cache_control != file_.cache_control:
+                if log_rejections:
+                    logger.debug('Rejecting %s: cacheControl mismatch', file_.file_id)
+                continue
+
+            if legal_hold is None:
+                if LegalHold.UNSET != file_.legal_hold:
+                    if log_rejections:
+                        logger.debug('Rejecting %s: legal hold mismatch (not unset)', file_.file_id)
+                    continue
+            elif legal_hold != file_.legal_hold:
+                if log_rejections:
+                    logger.debug('Rejecting %s: legal hold mismatch', file_.file_id)
+                continue
+
+            if file_retention != file_.file_retention:
+                if log_rejections:
+                    logger.debug('Rejecting %s: retention mismatch', file_.file_id)
+                continue
+
+            if custom_upload_timestamp is not None and file_.upload_timestamp != custom_upload_timestamp:
+                if log_rejections:
+                    logger.debug('Rejecting %s: custom_upload_timestamp mismatch', file_.file_id)
+                continue
+
+            finished_parts = {}
+            for part in self.services.large_file.list_parts(file_.file_id):
+                emerge_part = emerge_parts_dict.get(part.part_number)
+                if emerge_part is None:
+                    finished_parts = None
+                    break
+                if emerge_part.is_hashable() and emerge_part.get_sha1() != part.content_sha1:
+                    continue  # part.sha1 doesn't match - so we reupload
+                finished_parts[part.part_number] = part
+            if finished_parts is None:
+                continue
+            finished_parts_len = len(finished_parts)
+            if finished_parts and (
+                best_match_file is None or finished_parts_len > best_match_parts_len
+            ):
+                best_match_file = file_
+                best_match_parts = finished_parts
+                best_match_parts_len = finished_parts_len
+        return best_match_file, best_match_parts
+
     def _find_unfinished_file_by_plan_id(
         self,
         bucket_id,
@@ -328,75 +446,44 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
         cache_control: Optional[str] = None,
     ):
         """
-        Find an unfinished file upload matching a given plan ID and other parameters.
+        Search for a matching unfinished large file by plan_id in the specified bucket.
 
-        This function identifies unfinished file uploads that can be resumed. The target file is found by
-        matching the specified plan ID, along with other parameters such as encryption setting, file retention
-        setting, legal hold, custom upload timestamp, and cache control.
+        This function aims to locate a matching unfinished large file using the plan_id and the supplied parameters. 
+        It's used to resume an interrupted upload, centralizing the shared logic between `_find_unfinished_file_by_plan_id` 
+        and `_match_unfinished_file_if_possible`.
 
-        The function iterates through all the unfinished large file uploads. For each file, it validates if 
-        the file matches the provided parameters. If the file fails to match any parameter, it's excluded
-        from consideration.
+        In case a matching file is found but has inconsistencies (for example, mismatching file info or encryption settings), 
+        the function checks if 'plan_id' is in file_info, as this is a prerequisite.
 
-        If an unfinished file passes these checks, the function collects all the parts of the file that have
-        been uploaded so far. It then compares the number of finished parts of the current file with the
-        "best match" found so far. The best match is the file that has the most parts uploaded. 
+        :param bucket_id: The identifier of the bucket where the unfinished file resides.
+        :param file_name: The name of the file to be matched.
+        :param file_info: Information about the file to be uploaded.
+        :param emerge_parts_dict: A dictionary containing the parts of the file to be emerged.
+        :param encryption: The encryption settings for the file.
+        :param file_retention: The retention settings for the file, if any.
+        :param legal_hold: The legal hold status of the file, if any.
+        :param custom_upload_timestamp: The custom timestamp for the upload, if any.
+        :param cache_control: The cache control settings for the file, if any.
+        
+        :return: A tuple of the best matching unfinished file and its finished parts. If no match is found, it returns `None`.
 
-        The function finally returns the best match file and its finished parts. If no match is found, it returns None.
+        Note: This operation requires the application key to have 'listFiles' access.
         """
-        file_retention = file_retention or NO_RETENTION_FILE_SETTING
         assert 'plan_id' in file_info
-        best_match_file = None
-        best_match_parts = {}
-        best_match_parts_len = 0
-        for file_ in self.services.large_file.list_unfinished_large_files(
-            bucket_id, prefix=file_name
-        ):
-            if file_.file_info != file_info:
-                continue
-            # FIXME: encryption is None ???
-            if encryption is None or file_.encryption != encryption:
-                continue
 
-            if legal_hold is None:
-                if LegalHold.UNSET != file_.legal_hold:
-                    # Uploading and not providing legal_hold means that server's response about that file version
-                    # will have legal_hold=LegalHold.UNSET
-                    continue
-            elif legal_hold != file_.legal_hold:
-                continue
-
-            if file_retention != file_.file_retention:
-                # if `file_.file_retention` is UNKNOWN then we skip - lib user can still
-                # pass UNKNOWN file_retention here - but raw_api/server won't allow it
-                # and we don't check it here
-                continue
-
-            if custom_upload_timestamp is not None and file_.upload_timestamp != custom_upload_timestamp:
-                continue
-
-            if cache_control is None or file_.cache_control != cache_control:
-                continue
-
-            finished_parts = {}
-            for part in self.services.large_file.list_parts(file_.file_id):
-                emerge_part = emerge_parts_dict.get(part.part_number)
-                if emerge_part is None:
-                    # large file with same `plan_id` has more parts than current plan
-                    # so we want to skip this large file because it is broken
-                    finished_parts = None
-                    break
-                if emerge_part.is_hashable() and emerge_part.get_sha1() != part.content_sha1:
-                    continue  # auto-healing - `plan_id` matches but part.sha1 doesn't - so we reupload
-                finished_parts[part.part_number] = part
-            if finished_parts is None:
-                continue
-            finished_parts_len = len(finished_parts)
-            if best_match_file is None or finished_parts_len > best_match_parts_len:
-                best_match_file = file_
-                best_match_parts = finished_parts
-                best_match_parts_len = finished_parts_len
-        return best_match_file, best_match_parts
+        return self._find_matching_unfinished_file(
+            bucket_id=bucket_id,
+            file_name=file_name,
+            file_info=file_info,
+            emerge_parts_dict=emerge_parts_dict,
+            encryption=encryption,
+            file_retention=file_retention or NO_RETENTION_FILE_SETTING,
+            legal_hold=legal_hold,
+            custom_upload_timestamp=custom_upload_timestamp,
+            cache_control=cache_control,
+            log_rejections=False,
+            check_file_info_without_large_file_sha1=False,
+        )
 
     @classmethod
     def _get_file_info_without_large_file_sha1(
@@ -422,115 +509,54 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
         cache_control: Optional[str] = None,
     ):
         """
-        Attempt to find an unfinished large file upload that can be resumed.
+        Scan for a suitable unfinished large file in the specified bucket to resume upload.
 
-        This function iterates through all unfinished large file uploads. For each file, 
-        it first checks if the file's name, file info, and other parameters match those given.
-        The parameters include the encryption setting, file retention setting, legal hold, 
-        custom upload timestamp, and cache control.
+        This function examines each unfinished large file for a possible match with the provided
+        parameters. This enables resumption of an interrupted upload by reusing the unfinished file,
+        provided that file's info and additional parameters match.
 
-        The function further validates if the parts of the unfinished file match the parts 
-        in the local file (emerge_parts_dict) based on the part size and SHA1 hash. 
+        Along with the filename and file info, additional parameters like encryption, file retention,
+        legal hold, custom upload timestamp, and cache control are compared for a match. The
+        'emerge_parts_dict' is also cross-checked for matching file parts.
 
-        If a file matches all these conditions, the function immediately returns that file 
-        and its finished parts. If no matching file is found, the function returns None. 
+        :param bucket_id: The identifier of the bucket containing the unfinished file.
+        :param file_name: The name of the file to find.
+        :param file_info: Information about the file to be uploaded.
+        :param emerge_parts_dict: A dictionary of the parts of the file to be emerged.
+        :param encryption: The encryption settings for the file.
+        :param file_retention: The retention settings for the file, if applicable.
+        :param legal_hold: The legal hold status of the file, if applicable.
+        :param custom_upload_timestamp: The custom timestamp for the upload, if set.
+        :param cache_control: The cache control settings for the file, if set.
+        
+        :return: A tuple of the best matching unfinished file and its finished parts. If no match is found, returns `None`.
 
-        Note: This operation requires that the application key in use allows 'listFiles' access.
+        Note: This operation requires the application key to have 'listFiles' access.
         """
-        file_retention = file_retention or NO_RETENTION_FILE_SETTING
-        file_info_without_large_file_sha1 = self._get_file_info_without_large_file_sha1(file_info)
         logger.debug('Checking for matching unfinished large files for %s...', file_name)
-        for file_ in self.services.large_file.list_unfinished_large_files(
-            bucket_id, prefix=file_name
-        ):
-            if file_.file_name != file_name:
-                logger.debug('Rejecting %s: file has a different file name', file_.file_id)
-                continue
-            if file_.file_info != file_info:
-                if (LARGE_FILE_SHA1 in file_.file_info) == (LARGE_FILE_SHA1 in file_info):
-                    logger.debug(
-                        'Rejecting %s: large_file_sha1 is present or missing in both file infos',
-                        file_.file_id
-                    )
-                    continue
 
-                if self._get_file_info_without_large_file_sha1(
-                    file_.file_info
-                ) != file_info_without_large_file_sha1:
-                    # ignoring the large_file_sha1 file infos are still different
-                    logger.debug(
-                        'Rejecting %s: file info mismatch after dropping `large_file_sha1`',
-                        file_.file_id
-                    )
-                    continue
+        file_, finished_parts = self._find_matching_unfinished_file(
+            bucket_id,
+            file_name,
+            file_info,
+            emerge_parts_dict,
+            encryption,
+            file_retention,
+            legal_hold,
+            custom_upload_timestamp,
+            cache_control,
+            log_rejections=True,
+            check_file_info_without_large_file_sha1=True
+        )
 
-            # FIXME: what if `encryption is None` - match ANY encryption? :)
-            if encryption is not None and encryption != file_.encryption:
-                logger.debug('Rejecting %s: encryption mismatch', file_.file_id)
-                continue
+        if file_ is None:
+            logger.debug('No matching unfinished files found.')
+            return None, {}
 
-            if cache_control is not None and cache_control != file_.cache_control:
-                logger.debug('Rejecting %s: cacheControl mismatch', file_.file_id)
-                continue
-
-            if legal_hold is None:
-                if LegalHold.UNSET != file_.legal_hold:
-                    # Uploading and not providing legal_hold means that server's response about that file version
-                    # will have legal_hold=LegalHold.UNSET
-                    logger.debug('Rejecting %s: legal hold mismatch (not unset)', file_.file_id)
-                    continue
-            elif legal_hold != file_.legal_hold:
-                logger.debug('Rejecting %s: legal hold mismatch', file_.file_id)
-                continue
-
-            if file_retention != file_.file_retention:
-                # if `file_.file_retention` is UNKNOWN then we skip - lib user can still
-                # pass UNKNOWN file_retention here - but raw_api/server won't allow it
-                # and we don't check it here
-                logger.debug('Rejecting %s: retention mismatch', file_.file_id)
-                continue
-
-            if custom_upload_timestamp is not None and file_.upload_timestamp != custom_upload_timestamp:
-                logger.debug('Rejecting %s: custom_upload_timestamp mismatch', file_.file_id)
-                continue
-
-            files_match = True
-            finished_parts = {}
-            for part in self.services.large_file.list_parts(file_.file_id):
-                emerge_part = emerge_parts_dict.get(part.part_number)
-                if emerge_part is None:
-                    files_match = False
-                    break
-
-                # Compare part sizes
-                if emerge_part.get_length() != part.content_length:
-                    files_match = False
-                    break
-
-                # Compare hash
-                assert emerge_part.is_hashable()
-                sha1_sum = emerge_part.get_sha1()
-                if sha1_sum != part.content_sha1:
-                    files_match = False
-                    break
-
-                # Save part
-                finished_parts[part.part_number] = part
-
-            # Skip not matching files or unfinished files with no uploaded parts
-            if not files_match or not finished_parts:
-                logger.debug('Rejecting %s: No finished parts or part mismatch', file_.file_id)
-                continue
-
-            # Return first matched file
-            logger.debug(
-                'Unfinished file %s matches with %i finished parts', file_.file_id,
-                len(finished_parts)
-            )
-            return file_, finished_parts
-
-        logger.debug('No matching unfinished files found.')
-        return None, {}
+        logger.debug(
+            'Unfinished file %s matches with %i finished parts', file_.file_id, len(finished_parts)
+        )
+        return file_, finished_parts
 
 
 class BaseExecutionStepFactory(metaclass=ABCMeta):
