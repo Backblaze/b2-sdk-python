@@ -333,10 +333,6 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
         """
         Search for a matching unfinished large file in the specified bucket.
 
-        This function is responsible for identifying a suitable unfinished file for resumption of upload,
-        based on the supplied parameters. It centralizes the shared logic between `_find_unfinished_file_by_plan_id`
-        and `_match_unfinished_file_if_possible`.
-
         In case a matching file is found but has inconsistencies (for example, mismatching file info or encryption settings),
         the 'log_rejections' parameter dictates if these mismatches should be logged.
 
@@ -364,6 +360,11 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
         for file_ in self.services.large_file.list_unfinished_large_files(
             bucket_id, prefix=file_name
         ):
+            if file_.file_name != file_name:
+                if log_rejections:
+                    logger.debug('Rejecting %s: file name mismatch', file_.file_id)
+                continue
+
             if file_.file_info != file_info:
                 if check_file_info_without_large_file_sha1:
                     file_info_without_large_file_sha1 = self._get_file_info_without_large_file_sha1(
