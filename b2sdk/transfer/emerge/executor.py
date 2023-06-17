@@ -416,34 +416,41 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
             finished_parts = {}
 
             for part in self.services.large_file.list_parts(file_.file_id):
-                
+
                 emerge_part = emerge_parts_dict.get(part.part_number)
-                
+
                 if emerge_part is None:
                     # something is wrong - we have a part that we don't know about
                     # so we can't resume this upload
                     if log_rejections:
-                        logger.debug('Rejecting %s: part %s not found in emerge parts, giving up.', file_.file_id, part.part_number)
+                        logger.debug(
+                            'Rejecting %s: part %s not found in emerge parts, giving up.',
+                            file_.file_id, part.part_number
+                        )
                     finished_parts = None
                     break
-                
+
                 # Compare part sizes
                 if emerge_part.get_length() != part.content_length:
                     if log_rejections:
-                        logger.debug('Rejecting %s: part %s size mismatch', file_.file_id, part.part_number)
-                    continue # part size doesn't match - so we reupload
+                        logger.debug(
+                            'Rejecting %s: part %s size mismatch', file_.file_id, part.part_number
+                        )
+                    continue  # part size doesn't match - so we reupload
 
                 # Compare part hashes
                 if emerge_part.is_hashable() and emerge_part.get_sha1() != part.content_sha1:
                     if log_rejections:
-                        logger.debug('Rejecting %s: part %s sha1 mismatch', file_.file_id, part.part_number)
+                        logger.debug(
+                            'Rejecting %s: part %s sha1 mismatch', file_.file_id, part.part_number
+                        )
                     continue  # part.sha1 doesn't match - so we reupload
 
                 finished_parts[part.part_number] = part
 
             if finished_parts is None:
                 continue
-            
+
             finished_parts_len = len(finished_parts)
 
             if finished_parts and (
