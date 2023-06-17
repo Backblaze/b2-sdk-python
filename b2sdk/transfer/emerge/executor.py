@@ -420,7 +420,7 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
                 emerge_part = emerge_parts_dict.get(part.part_number)
                 
                 if emerge_part is None:
-                    # somethign is wrong - we have a part that we don't know about
+                    # something is wrong - we have a part that we don't know about
                     # so we can't resume this upload
                     if log_rejections:
                         logger.debug('Rejecting %s: part %s not found in emerge parts, giving up.', file_.file_id, part.part_number)
