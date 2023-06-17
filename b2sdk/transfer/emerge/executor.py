@@ -328,6 +328,7 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
         cache_control: Optional[str] = None,
         log_rejections: Optional[bool] = False,
         check_file_info_without_large_file_sha1: Optional[bool] = False,
+        eager_mode: Optional[bool] = False,
     ):
         """
         Search for a matching unfinished large file in the specified bucket.
@@ -335,8 +336,6 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
         This function is responsible for identifying a suitable unfinished file for resumption of upload,
         based on the supplied parameters. It centralizes the shared logic between `_find_unfinished_file_by_plan_id`
         and `_match_unfinished_file_if_possible`.
-
-        Regardless of the local file system folder separator, "/" is used in the file names.
 
         In case a matching file is found but has inconsistencies (for example, mismatching file info or encryption settings),
         the 'log_rejections' parameter dictates if these mismatches should be logged.
@@ -352,6 +351,7 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
         :param cache_control: The cache control settings for the file, if any.
         :param log_rejections: A flag indicating whether rejections should be logged.
         :param check_file_info_without_large_file_sha1: A flag indicating whether the file information should be checked without the `large_file_sha1`.
+        :param eager_mode: A flag indicating whether the first matching file should be returned.
         
         :return: A tuple of the best matching unfinished file and its finished parts. If no match is found, returns `None`.
         """
@@ -414,23 +414,48 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
                 continue
 
             finished_parts = {}
+
             for part in self.services.large_file.list_parts(file_.file_id):
+                
                 emerge_part = emerge_parts_dict.get(part.part_number)
+                
                 if emerge_part is None:
+                    # somethign is wrong - we have a part that we don't know about
+                    # so we can't resume this upload
+                    if log_rejections:
+                        logger.debug('Rejecting %s: part %s not found in emerge parts, giving up.', file_.file_id, part.part_number)
                     finished_parts = None
                     break
+                
+                # Compare part sizes
+                if emerge_part.get_length() != part.content_length:
+                    if log_rejections:
+                        logger.debug('Rejecting %s: part %s size mismatch', file_.file_id, part.part_number)
+                    continue # part size doesn't match - so we reupload
+
+                # Compare part hashes
                 if emerge_part.is_hashable() and emerge_part.get_sha1() != part.content_sha1:
+                    if log_rejections:
+                        logger.debug('Rejecting %s: part %s sha1 mismatch', file_.file_id, part.part_number)
                     continue  # part.sha1 doesn't match - so we reupload
+
                 finished_parts[part.part_number] = part
+
             if finished_parts is None:
                 continue
+            
             finished_parts_len = len(finished_parts)
+
             if finished_parts and (
                 best_match_file is None or finished_parts_len > best_match_parts_len
             ):
                 best_match_file = file_
                 best_match_parts = finished_parts
                 best_match_parts_len = finished_parts_len
+
+            if eager_mode and best_match_file is not None:
+                break
+
         return best_match_file, best_match_parts
 
     def _find_unfinished_file_by_plan_id(
@@ -519,6 +544,9 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
         legal hold, custom upload timestamp, and cache control are compared for a match. The
         'emerge_parts_dict' is also cross-checked for matching file parts.
 
+        Function is eager to find a match, and will return the first match it finds. If no match is
+        found, it returns `None`.
+
         :param bucket_id: The identifier of the bucket containing the unfinished file.
         :param file_name: The name of the file to find.
         :param file_info: Information about the file to be uploaded.
@@ -546,7 +574,8 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
             custom_upload_timestamp,
             cache_control,
             log_rejections=True,
-            check_file_info_without_large_file_sha1=True
+            check_file_info_without_large_file_sha1=True,
+            eager_mode=True,
         )
 
         if file_ is None:
