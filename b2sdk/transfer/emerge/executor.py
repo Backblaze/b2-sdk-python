@@ -485,10 +485,9 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
         :param cache_control: The cache control settings for the file, if any.
         
         :return: A tuple of the best matching unfinished file and its finished parts. If no match is found, it returns `None`.
-
-        Note: This operation requires the application key to have 'listFiles' access.
         """
-        assert 'plan_id' in file_info
+        if 'plan_id' not in file_info:
+            raise ValueError("The 'plan_id' key must be in file_info dictionary.")
 
         return self._find_matching_unfinished_file(
             bucket_id=bucket_id,
@@ -551,8 +550,6 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
         :param cache_control: The cache control settings for the file, if set.
         
         :return: A tuple of the best matching unfinished file and its finished parts. If no match is found, returns `None`.
-
-        Note: This operation requires the application key to have 'listFiles' access.
         """
         logger.debug('Checking for matching unfinished large files for %s...', file_name)
 
