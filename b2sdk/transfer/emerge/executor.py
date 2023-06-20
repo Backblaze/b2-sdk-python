@@ -326,7 +326,6 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
         legal_hold: Optional[LegalHold] = None,
         custom_upload_timestamp: Optional[int] = None,
         cache_control: Optional[str] = None,
-        log_rejections: Optional[bool] = False,
         check_file_info_without_large_file_sha1: Optional[bool] = False,
         eager_mode: Optional[bool] = False,
     ):
@@ -334,7 +333,7 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
         Search for a matching unfinished large file in the specified bucket.
 
         In case a matching file is found but has inconsistencies (for example, mismatching file info or encryption settings),
-        the 'log_rejections' parameter dictates if these mismatches should be logged.
+        mismatches are logged.
 
         :param bucket_id: The identifier of the bucket where the unfinished file resides.
         :param file_name: The name of the file to be matched.
@@ -345,7 +344,6 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
         :param legal_hold: The legal hold status of the file, if any.
         :param custom_upload_timestamp: The custom timestamp for the upload, if any.
         :param cache_control: The cache control settings for the file, if any.
-        :param log_rejections: A flag indicating whether rejections should be logged.
         :param check_file_info_without_large_file_sha1: A flag indicating whether the file information should be checked without the `large_file_sha1`.
         :param eager_mode: A flag indicating whether the first matching file should be returned.
         
@@ -361,8 +359,7 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
             bucket_id, prefix=file_name
         ):
             if file_.file_name != file_name:
-                if log_rejections:
-                    logger.debug('Rejecting %s: file name mismatch', file_.file_id)
+                logger.debug('Rejecting %s: file name mismatch', file_.file_id)
                 continue
 
             if file_.file_info != file_info:
@@ -373,45 +370,37 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
                     if file_info_without_large_file_sha1 != self._get_file_info_without_large_file_sha1(
                         file_.file_info
                     ):
-                        if log_rejections:
-                            logger.debug(
-                                'Rejecting %s: file info mismatch after dropping `large_file_sha1`',
-                                file_.file_id
-                            )
+                        logger.debug(
+                            'Rejecting %s: file info mismatch after dropping `large_file_sha1`',
+                            file_.file_id
+                        )
                         continue
                 else:
-                    if log_rejections:
-                        logger.debug('Rejecting %s: file info mismatch', file_.file_id)
+                    logger.debug('Rejecting %s: file info mismatch', file_.file_id)
                     continue
 
             if encryption is not None and encryption != file_.encryption:
-                if log_rejections:
-                    logger.debug('Rejecting %s: encryption mismatch', file_.file_id)
+                logger.debug('Rejecting %s: encryption mismatch', file_.file_id)
                 continue
 
             if cache_control is not None and cache_control != file_.cache_control:
-                if log_rejections:
-                    logger.debug('Rejecting %s: cacheControl mismatch', file_.file_id)
+                logger.debug('Rejecting %s: cacheControl mismatch', file_.file_id)
                 continue
 
             if legal_hold is None:
                 if LegalHold.UNSET != file_.legal_hold:
-                    if log_rejections:
-                        logger.debug('Rejecting %s: legal hold mismatch (not unset)', file_.file_id)
+                    logger.debug('Rejecting %s: legal hold mismatch (not unset)', file_.file_id)
                     continue
             elif legal_hold != file_.legal_hold:
-                if log_rejections:
-                    logger.debug('Rejecting %s: legal hold mismatch', file_.file_id)
+                logger.debug('Rejecting %s: legal hold mismatch', file_.file_id)
                 continue
 
             if file_retention != file_.file_retention:
-                if log_rejections:
-                    logger.debug('Rejecting %s: retention mismatch', file_.file_id)
+                logger.debug('Rejecting %s: retention mismatch', file_.file_id)
                 continue
 
             if custom_upload_timestamp is not None and file_.upload_timestamp != custom_upload_timestamp:
-                if log_rejections:
-                    logger.debug('Rejecting %s: custom_upload_timestamp mismatch', file_.file_id)
+                logger.debug('Rejecting %s: custom_upload_timestamp mismatch', file_.file_id)
                 continue
 
             finished_parts = {}
@@ -423,28 +412,25 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
                 if emerge_part is None:
                     # something is wrong - we have a part that we don't know about
                     # so we can't resume this upload
-                    if log_rejections:
-                        logger.debug(
-                            'Rejecting %s: part %s not found in emerge parts, giving up.',
-                            file_.file_id, part.part_number
-                        )
+                    logger.debug(
+                        'Rejecting %s: part %s not found in emerge parts, giving up.',
+                        file_.file_id, part.part_number
+                    )
                     finished_parts = None
                     break
 
                 # Compare part sizes
                 if emerge_part.get_length() != part.content_length:
-                    if log_rejections:
-                        logger.debug(
-                            'Rejecting %s: part %s size mismatch', file_.file_id, part.part_number
-                        )
+                    logger.debug(
+                        'Rejecting %s: part %s size mismatch', file_.file_id, part.part_number
+                    )
                     continue  # part size doesn't match - so we reupload
 
                 # Compare part hashes
                 if emerge_part.is_hashable() and emerge_part.get_sha1() != part.content_sha1:
-                    if log_rejections:
-                        logger.debug(
-                            'Rejecting %s: part %s sha1 mismatch', file_.file_id, part.part_number
-                        )
+                    logger.debug(
+                        'Rejecting %s: part %s sha1 mismatch', file_.file_id, part.part_number
+                    )
                     continue  # part.sha1 doesn't match - so we reupload
 
                 finished_parts[part.part_number] = part
@@ -514,7 +500,6 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
             legal_hold=legal_hold,
             custom_upload_timestamp=custom_upload_timestamp,
             cache_control=cache_control,
-            log_rejections=False,
             check_file_info_without_large_file_sha1=False,
         )
 
@@ -581,7 +566,6 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
             legal_hold,
             custom_upload_timestamp,
             cache_control,
-            log_rejections=True,
             check_file_info_without_large_file_sha1=True,
             eager_mode=True,
         )
