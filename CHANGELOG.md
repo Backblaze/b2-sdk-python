@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 * Circular symlinks no longer cause infinite loops when syncing a folder
+* Fix crash on upload retry with unbound data source
 
 ### Infrastructure
 * Replaced `pyflakes` with `ruff` for linting
