@@ -31,39 +31,22 @@ class TestIOWrapper(TestBase):
         self.mock_fun = MagicMock()
         self.wrapper = IOWrapper(self.data, release_function=self.mock_fun)
 
-    def test_function_called_only_after_empty_read(self):
-        self.mock_fun.assert_not_called()
-
-        self.wrapper.read(1)
-        self.mock_fun.assert_not_called()
-
-        self.wrapper.read(len(self.data) - 1)
-        self.mock_fun.assert_not_called()
-
-        self.wrapper.seek(0)
+    def test_function_called_on_close_manual(self):
         self.mock_fun.assert_not_called()
 
         self.wrapper.read(len(self.data))
         self.mock_fun.assert_not_called()
 
-        self.wrapper.seek(0)
+        self.wrapper.read(len(self.data))
         self.mock_fun.assert_not_called()
 
-        for _ in range(len(self.data)):
-            self.wrapper.read(1)
-            self.mock_fun.assert_not_called()
-
-        self.assertEqual(0, len(self.wrapper.read(1)))
+        self.wrapper.close()
         self.mock_fun.assert_called_once()
 
-    def test_function_called_exactly_once(self):
-        self.wrapper.read(len(self.data))
-        self.wrapper.read(1)
-        self.mock_fun.assert_called_once()
-
-        self.wrapper.seek(0)
-        self.wrapper.read(len(self.data))
-        self.wrapper.read(1)
+    def test_function_called_on_close_context(self):
+        self.mock_fun.assert_not_called()
+        with self.wrapper as w:
+            w.read(len(self.data))
         self.mock_fun.assert_called_once()
 
 
@@ -104,6 +87,7 @@ class TestUnboundWriteIntentGenerator(TestBase):
         read_data = buffer_stream.read(full_read_size)
         empty_data = buffer_stream.read(full_read_size)
         self.assertEqual(0, len(empty_data))
+        buffer_stream.close()
         return read_data
 
     def test_timeout_called_when_waiting_too_long_for_empty_buffer_slot(self):

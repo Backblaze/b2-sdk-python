@@ -23,6 +23,7 @@ from ..test_base import TestBase, create_key
 import apiver_deps
 from apiver_deps_exception import (
     AlreadyFailed,
+    B2ConnectionError,
     B2Error,
     B2RequestTimeoutDuringUpload,
     BucketIdNotFound,
@@ -50,6 +51,7 @@ else:
     from apiver_deps import FileVersion as VFileVersionInfo
 from apiver_deps import B2Api
 from apiver_deps import B2HttpApiConfig
+from apiver_deps import B2Session
 from apiver_deps import Bucket, BucketFactory
 from apiver_deps import DownloadedFile
 from apiver_deps import DownloadVersion
@@ -1727,6 +1729,80 @@ class TestUpload(TestCaseWithBucket):
             upload_info['uploadUrl'], upload_info['authorizationToken'], part_number,
             len(part_data), hex_sha1_of_bytes(part_data), part_stream
         )
+
+
+class TestBucketRaisingSession(TestUpload):
+    def get_api(self):
+        class B2SessionRaising(B2Session):
+            def __init__(self, *args, **kwargs):
+                self._raise_count = 0
+                self._raise_until = 1
+                super().__init__(*args, **kwargs)
+
+            def upload_part(
+                self,
+                file_id,
+                part_number,
+                content_length,
+                sha1_sum,
+                input_stream,
+                server_side_encryption=None
+            ):
+                if self._raise_count < self._raise_until:
+                    self._raise_count += 1
+                    raise B2ConnectionError()
+                return super().upload_part(
+                    file_id, part_number, content_length, sha1_sum, input_stream,
+                    server_side_encryption
+                )
+
+        class B2ApiPatched(B2Api):
+            SESSION_CLASS = staticmethod(B2SessionRaising)
+
+        self.api = B2ApiPatched(
+            self.account_info,
+            cache=self.CACHE_CLASS(),
+            api_config=B2HttpApiConfig(_raw_api_class=self.RAW_SIMULATOR_CLASS),
+        )
+        return self.api
+
+    def test_upload_chunk_retry_stream_open(self):
+        assert self.api.session._raise_count == 0
+        data = self._make_data(self.simulator.MIN_PART_SIZE * 3)
+        self.bucket.upload_unbound_stream(io.BytesIO(data), 'file1')
+        self._check_file_contents('file1', data)
+        assert self.api.session._raise_count == 1
+
+    def test_upload_chunk_stream_guard_closes(self):
+        data = self._make_data(self.simulator.MIN_PART_SIZE * 3)
+        large_file_upload_state = mock.MagicMock()
+        large_file_upload_state.has_error.return_value = False
+
+        class TrackedUploadSourceBytes(UploadSourceBytes):
+            def __init__(self, *args, **kwargs):
+                self._close_called = 0
+                super().__init__(*args, **kwargs)
+
+            def open(self):
+                class TrackedBytesIO(io.BytesIO):
+                    def __init__(self, parent, *args, **kwargs):
+                        self._parent = parent
+                        super().__init__(*args, **kwargs)
+
+                    def close(self):
+                        self._parent._close_called += 1
+                        return super().close()
+
+                return TrackedBytesIO(self, self.data_bytes)
+
+        data_source = TrackedUploadSourceBytes(data)
+        assert data_source._close_called == 0
+        file_id = self._start_large_file('file1')
+        self.api.services.upload_manager.upload_part(
+            self.bucket_id, file_id, data_source, 1, large_file_upload_state
+        ).result()
+        # one retry means two potential callback calls, but we want one only
+        assert data_source._close_called == 1
 
 
 class TestConcatenate(TestCaseWithBucket):

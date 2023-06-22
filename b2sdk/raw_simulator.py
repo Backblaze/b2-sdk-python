@@ -1070,7 +1070,6 @@ class BucketSimulator:
         input_stream,
         server_side_encryption: Optional[EncryptionSetting] = None,
     ):
-        file_sim = self.file_id_to_file[file_id]
         part_data = self._simulate_chunked_post(input_stream, content_length)
         assert len(part_data) == content_length
         if sha1_sum == HEX_DIGITS_AT_END:
@@ -1080,8 +1079,11 @@ class BucketSimulator:
         computed_sha1 = hex_sha1_of_bytes(part_data)
         if sha1_sum != computed_sha1:
             raise PartSha1Mismatch(file_id)
+
+        file_sim = self.file_id_to_file[file_id]
         part = PartSimulator(file_sim.file_id, part_number, content_length, sha1_sum, part_data)
         file_sim.add_part(part_number, part)
+
         result = dict(
             fileId=file_id,
             partNumber=part_number,
