@@ -1,6 +1,6 @@
 [tool.ruff]
-# TODO add D, I
-select = ["E", "F", "UP"]
+# TODO add D
+select = ["E", "F", "I", "UP"]
 # TODO: remove E501 once docstrings are formatted
 ignore = [
     "D100", "D105", "D107", "D200", "D202", "D203", "D205", "D212", "D400", "D401", "D415",
@@ -11,6 +11,7 @@ line-length = 100
 target-version = "py37"
 
 [tool.ruff.per-file-ignores]
-"__init__.py" = ["F401"]
-"b2sdk/v*/**" = ["F403", "F405"]
+"__init__.py" = ["I", "F401"]
+"b2sdk/v*/**" = ["I", "F403", "F405"]
+"b2sdk/_v*/**" = ["I", "F403", "F405"]
 "test/**" = ["D", "F403", "F405"]
