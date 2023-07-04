@@ -86,7 +86,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param str type_: a bucket type
         :param dict bucket_info: an info to store with a bucket
         :param dict cors_rules: CORS rules to store with a bucket
-        :param list lifecycle_rules: lifecycle rules of the bucket
+        :param lifecycle_rules: lifecycle rules of the bucket
         :param int revision: a bucket revision number
         :param dict bucket_dict: a dictionary which contains bucket parameters
         :param set options_set: set of bucket options strings
