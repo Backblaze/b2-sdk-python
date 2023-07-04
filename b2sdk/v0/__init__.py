@@ -7,6 +7,7 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
 from b2sdk.v1 import *  # noqa
 from b2sdk.v0.account_info import AbstractAccountInfo, InMemoryAccountInfo, UrlPoolAccountInfo, SqliteAccountInfo

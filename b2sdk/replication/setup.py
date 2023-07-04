@@ -7,6 +7,7 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
 # b2 replication-setup [--profile profileName] --destination-profile destinationProfileName sourceBucketPath destinationBucketName [ruleName]
 # b2 replication-debug [--profile profileName] [--destination-profile destinationProfileName] bucketPath

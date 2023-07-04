@@ -7,6 +7,7 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
 from . import get_b2_auth_data
 from .bucket_cleaner import BucketCleaner

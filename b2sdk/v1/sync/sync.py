@@ -7,6 +7,7 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
 from b2sdk import v2
 from b2sdk.v2 import exception as v2_exception

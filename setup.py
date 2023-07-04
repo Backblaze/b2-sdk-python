@@ -14,6 +14,7 @@ See:
 https://packaging.python.org/en/latest/distributing.html
 https://github.com/pypa/sampleproject
 """
+from __future__ import annotations
 
 import sys
 

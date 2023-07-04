@@ -7,6 +7,7 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
 # TODO: This module is used in old-style unit tests, written separately for v0 and v1.
 #  It will be removed when all test are rewritten for the new style, like e.g. test/unit/sync/.

@@ -8,6 +8,7 @@
 #
 ######################################################################
 """ generates a dot file with SqliteAccountInfo database structure """
+from __future__ import annotations
 
 import tempfile
 import operator

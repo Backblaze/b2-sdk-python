@@ -7,6 +7,7 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
 from apiver_deps import EncryptionAlgorithm, EncryptionKey, EncryptionMode, EncryptionSetting, FileRetentionSetting, ReplicationScanResult, RetentionMode, SSE_B2_AES
 

@@ -7,6 +7,7 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
 # this file maps the external interface into internal interface
 # it will come handy if we ever need to move something

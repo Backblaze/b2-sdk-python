@@ -7,6 +7,7 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 from collections import defaultdict
 from contextlib import ExitStack
 from unittest import mock
