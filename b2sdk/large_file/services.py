@@ -9,8 +9,6 @@
 ######################################################################
 from __future__ import annotations
 
-from typing import Optional
-
 from b2sdk.encryption.setting import EncryptionSetting
 from b2sdk.file_lock import FileRetentionSetting, LegalHold
 from b2sdk.file_version import FileIdAndName
@@ -85,10 +83,10 @@ class LargeFileServices:
         file_name,
         content_type=None,
         file_info=None,
-        encryption: Optional[EncryptionSetting] = None,
-        file_retention: Optional[FileRetentionSetting] = None,
-        legal_hold: Optional[LegalHold] = None,
-        cache_control: Optional[str] = None,
+        encryption: EncryptionSetting | None = None,
+        file_retention: FileRetentionSetting | None = None,
+        legal_hold: LegalHold | None = None,
+        cache_control: str | None = None,
     ):
         """
         Start a large file transfer.

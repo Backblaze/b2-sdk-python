@@ -32,12 +32,12 @@ from .test_base import TestBase
 
 class UploadSource(UploadSourceStream):
     def __init__(self, length):
-        super(UploadSource, self).__init__(lambda: None, length)
+        super().__init__(lambda: None, length)
 
 
 class CopySource(OrigCopySource):
     def __init__(self, length):
-        super(CopySource, self).__init__(id(self), length=length)
+        super().__init__(id(self), length=length)
 
 
 def part(source_or_def_list, *offset_len):

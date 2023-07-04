@@ -39,7 +39,7 @@ class ChainedStream(ReadOnlyStreamMixin, io.IOBase):
         self._stream_openers_iterator = iter(self.stream_openers)
         self._current_stream = None
         self._pos = 0
-        super(ChainedStream, self).__init__()
+        super().__init__()
 
     @property
     def stream(self):
@@ -125,7 +125,7 @@ class ChainedStream(ReadOnlyStreamMixin, io.IOBase):
         if not byte_arrays:
             data = byte_arrays[0]
         else:
-            data = bytes().join(byte_arrays)
+            data = b''.join(byte_arrays)
         self._pos += len(data)
         return data
 
@@ -135,7 +135,7 @@ class ChainedStream(ReadOnlyStreamMixin, io.IOBase):
         for stream_opener in self.stream_openers:
             if hasattr(stream_opener, 'cleanup'):
                 stream_opener.cleanup()
-        super(ChainedStream, self).close()
+        super().close()
 
 
 class StreamOpener(metaclass=ABCMeta):

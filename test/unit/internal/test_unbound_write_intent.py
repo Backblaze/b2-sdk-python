@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import io
 import string
-from typing import Optional
 from unittest.mock import MagicMock
 
 from b2sdk.transfer.emerge.unbound_write_intent import (
@@ -73,7 +72,7 @@ class TestUnboundWriteIntentGenerator(TestBase):
             queue_timeout_seconds=0.1,
         )
 
-    def _get_iterator(self, buffer_and_read_size: int = 1, data: Optional[bytes] = None):
+    def _get_iterator(self, buffer_and_read_size: int = 1, data: bytes | None = None):
         data = data or self.data
         generator = UnboundWriteIntentGenerator(
             io.BytesIO(data),

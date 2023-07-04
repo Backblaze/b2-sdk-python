@@ -12,7 +12,7 @@ from __future__ import annotations
 import logging
 from contextlib import ExitStack
 
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from b2sdk.encryption.setting import EncryptionMode, EncryptionSetting
 from b2sdk.exception import (
@@ -54,11 +54,11 @@ class UploadManager(TransferManager, ThreadPoolMixin):
         content_type,
         file_info,
         progress_listener,
-        encryption: Optional[EncryptionSetting] = None,
-        file_retention: Optional[FileRetentionSetting] = None,
-        legal_hold: Optional[LegalHold] = None,
-        custom_upload_timestamp: Optional[int] = None,
-        cache_control: Optional[str] = None,
+        encryption: EncryptionSetting | None = None,
+        file_retention: FileRetentionSetting | None = None,
+        legal_hold: LegalHold | None = None,
+        custom_upload_timestamp: int | None = None,
+        cache_control: str | None = None,
     ):
         f = self._thread_pool.submit(
             self._upload_small_file,
@@ -80,7 +80,7 @@ class UploadManager(TransferManager, ThreadPoolMixin):
         self,
         bucket_id,
         file_id,
-        part_upload_source: "_TypeUploadSource",
+        part_upload_source: _TypeUploadSource,
         part_number,
         large_file_upload_state,
         finished_parts=None,
@@ -102,7 +102,7 @@ class UploadManager(TransferManager, ThreadPoolMixin):
         self,
         bucket_id,
         file_id,
-        part_upload_source: "_TypeUploadSource",
+        part_upload_source: _TypeUploadSource,
         part_number,
         large_file_upload_state,
         finished_parts,
@@ -197,11 +197,11 @@ class UploadManager(TransferManager, ThreadPoolMixin):
         content_type,
         file_info,
         progress_listener,
-        encryption: Optional[EncryptionSetting] = None,
-        file_retention: Optional[FileRetentionSetting] = None,
-        legal_hold: Optional[LegalHold] = None,
-        custom_upload_timestamp: Optional[int] = None,
-        cache_control: Optional[str] = None,
+        encryption: EncryptionSetting | None = None,
+        file_retention: FileRetentionSetting | None = None,
+        legal_hold: LegalHold | None = None,
+        custom_upload_timestamp: int | None = None,
+        cache_control: str | None = None,
     ):
         content_length = upload_source.get_content_length()
         exception_info_list = []
@@ -238,7 +238,9 @@ class UploadManager(TransferManager, ThreadPoolMixin):
                         if content_sha1 == HEX_DIGITS_AT_END:
                             content_sha1 = input_stream.hash
                         assert content_sha1 == 'do_not_verify' or content_sha1 == response[
-                            'contentSha1'], '%s != %s' % (content_sha1, response['contentSha1'])
+                            'contentSha1'], '{} != {}'.format(
+                                content_sha1, response['contentSha1']
+                            )
                         return self.services.api.file_version_factory.from_api_response(response)
 
                 except B2Error as e:

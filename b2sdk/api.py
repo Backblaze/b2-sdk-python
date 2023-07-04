@@ -10,7 +10,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional, Tuple, List, Generator
+from typing import Generator
 from contextlib import suppress
 
 from .account_info.abstract import AbstractAccountInfo
@@ -52,7 +52,7 @@ def url_for_api(info, api_name):
         base = info.get_download_url()
     else:
         base = info.get_api_url()
-    return '%s/b2api/%s/%s' % (base, API_VERSION, api_name)
+    return f'{base}/b2api/{API_VERSION}/{api_name}'
 
 
 class Services:
@@ -64,12 +64,12 @@ class Services:
     def __init__(
         self,
         api,
-        max_upload_workers: Optional[int] = None,
-        max_copy_workers: Optional[int] = None,
-        max_download_workers: Optional[int] = None,
-        save_to_buffer_size: Optional[int] = None,
+        max_upload_workers: int | None = None,
+        max_copy_workers: int | None = None,
+        max_download_workers: int | None = None,
+        save_to_buffer_size: int | None = None,
         check_download_hash: bool = True,
-        max_download_streams_per_file: Optional[int] = None,
+        max_download_streams_per_file: int | None = None,
     ):
         """
         Initialize Services object using given session.
@@ -130,15 +130,15 @@ class B2Api(metaclass=B2TraceMeta):
 
     def __init__(
         self,
-        account_info: Optional[AbstractAccountInfo] = None,
-        cache: Optional[AbstractCache] = None,
-        max_upload_workers: Optional[int] = None,
-        max_copy_workers: Optional[int] = None,
+        account_info: AbstractAccountInfo | None = None,
+        cache: AbstractCache | None = None,
+        max_upload_workers: int | None = None,
+        max_copy_workers: int | None = None,
         api_config: B2HttpApiConfig = DEFAULT_HTTP_API_CONFIG,
-        max_download_workers: Optional[int] = None,
-        save_to_buffer_size: Optional[int] = None,
+        max_download_workers: int | None = None,
+        save_to_buffer_size: int | None = None,
         check_download_hash: bool = True,
-        max_download_streams_per_file: Optional[int] = None,
+        max_download_streams_per_file: int | None = None,
     ):
         """
         Initialize the API using the given account info.
@@ -225,9 +225,9 @@ class B2Api(metaclass=B2TraceMeta):
         bucket_info=None,
         cors_rules=None,
         lifecycle_rules=None,
-        default_server_side_encryption: Optional[EncryptionSetting] = None,
-        is_file_lock_enabled: Optional[bool] = None,
-        replication: Optional[ReplicationConfiguration] = None,
+        default_server_side_encryption: EncryptionSetting | None = None,
+        is_file_lock_enabled: bool | None = None,
+        replication: ReplicationConfiguration | None = None,
     ):
         """
         Create a bucket.
@@ -258,9 +258,9 @@ class B2Api(metaclass=B2TraceMeta):
         )
         bucket = self.BUCKET_FACTORY_CLASS.from_api_bucket_dict(self, response)
         assert name == bucket.name, 'API created a bucket with different name\
-                                     than requested: %s != %s' % (name, bucket.name)
+                                     than requested: {} != {}'.format(name, bucket.name)
         assert bucket_type == bucket.type_, 'API created a bucket with different type\
-                                             than requested: %s != %s' % (
+                                             than requested: {} != {}'.format(
             bucket_type, bucket.type_
         )
         self.cache.save_bucket(bucket)
@@ -269,9 +269,9 @@ class B2Api(metaclass=B2TraceMeta):
     def download_file_by_id(
         self,
         file_id: str,
-        progress_listener: Optional[AbstractProgressListener] = None,
-        range_: Optional[Tuple[int, int]] = None,
-        encryption: Optional[EncryptionSetting] = None,
+        progress_listener: AbstractProgressListener | None = None,
+        range_: tuple[int, int] | None = None,
+        encryption: EncryptionSetting | None = None,
     ) -> DownloadedFile:
         """
         Download a file with the given ID.
@@ -469,7 +469,7 @@ class B2Api(metaclass=B2TraceMeta):
         :param str file_id: a file ID
         """
         url = url_for_api(self.account_info, 'b2_download_file_by_id')
-        return '%s?fileId=%s' % (url, file_id)
+        return f'{url}?fileId={file_id}'
 
     def get_download_url_for_file_name(self, bucket_name, file_name):
         """
@@ -479,18 +479,18 @@ class B2Api(metaclass=B2TraceMeta):
         :param str file_name: a file name
         """
         self.check_bucket_name_restrictions(bucket_name)
-        return '%s/file/%s/%s' % (
+        return '{}/file/{}/{}'.format(
             self.account_info.get_download_url(), bucket_name, b2_url_encode(file_name)
         )
 
     # keys
     def create_key(
         self,
-        capabilities: List[str],
+        capabilities: list[str],
         key_name: str,
-        valid_duration_seconds: Optional[int] = None,
-        bucket_id: Optional[str] = None,
-        name_prefix: Optional[str] = None,
+        valid_duration_seconds: int | None = None,
+        bucket_id: str | None = None,
+        name_prefix: str | None = None,
     ):
         """
         Create a new :term:`application key`.
@@ -536,7 +536,7 @@ class B2Api(metaclass=B2TraceMeta):
         response = self.session.delete_key(application_key_id=application_key_id)
         return ApplicationKey.from_api_response(response)
 
-    def list_keys(self, start_application_key_id: Optional[str] = None
+    def list_keys(self, start_application_key_id: str | None = None
                  ) -> Generator[ApplicationKey, None, None]:
         """
         List application keys. Lazily perform requests to B2 cloud and return all keys.
@@ -559,7 +559,7 @@ class B2Api(metaclass=B2TraceMeta):
                 return
             start_application_key_id = next_application_key_id
 
-    def get_key(self, key_id: str) -> Optional[ApplicationKey]:
+    def get_key(self, key_id: str) -> ApplicationKey | None:
         """
         Gets information about a single key: it's capabilities, prefix, name etc
 

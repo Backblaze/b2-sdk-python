@@ -85,7 +85,7 @@ class TqdmProgressListener(AbstractProgressListener):
         self.description = description
         self.tqdm = None  # set in set_total_bytes()
         self.prev_value = 0
-        super(TqdmProgressListener, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def set_total_bytes(self, total_byte_count):
         if self.tqdm is None:
@@ -111,7 +111,7 @@ class TqdmProgressListener(AbstractProgressListener):
     def close(self):
         if self.tqdm is not None:
             self.tqdm.close()
-        super(TqdmProgressListener, self).close()
+        super().close()
 
 
 class SimpleProgressListener(AbstractProgressListener):
@@ -124,7 +124,7 @@ class SimpleProgressListener(AbstractProgressListener):
         self.complete = 0
         self.last_time = time.time()
         self.any_printed = False
-        super(SimpleProgressListener, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def set_total_bytes(self, total_byte_count):
         self.total = total_byte_count
@@ -142,7 +142,7 @@ class SimpleProgressListener(AbstractProgressListener):
     def close(self):
         if self.any_printed:
             print('    DONE.')
-        super(SimpleProgressListener, self).close()
+        super().close()
 
 
 class DoNothingProgressListener(AbstractProgressListener):
@@ -164,7 +164,7 @@ class ProgressListenerForTest(AbstractProgressListener):
 
     def __init__(self, *args, **kwargs):
         self.calls = []
-        super(ProgressListenerForTest, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def set_total_bytes(self, total_byte_count):
         self.calls.append('set_total_bytes(%d)' % (total_byte_count,))
@@ -174,7 +174,7 @@ class ProgressListenerForTest(AbstractProgressListener):
 
     def close(self):
         self.calls.append('close()')
-        super(ProgressListenerForTest, self).close()
+        super().close()
 
     def get_calls(self):
         return self.calls

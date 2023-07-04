@@ -30,7 +30,7 @@ class StreamWithHash(ReadOnlyStreamMixin, StreamWithLengthWrapper):
         total_length = None
         if stream_length is not None:
             total_length = stream_length + self.digest.digest_size * 2
-        super(StreamWithHash, self).__init__(stream, length=total_length)
+        super().__init__(stream, length=total_length)
         self.hash = None
         self.hash_read = 0
 
@@ -45,7 +45,7 @@ class StreamWithHash(ReadOnlyStreamMixin, StreamWithLengthWrapper):
         self.digest = self.get_digest()
         self.hash = None
         self.hash_read = 0
-        return super(StreamWithHash, self).seek(0)
+        return super().seek(0)
 
     def read(self, size=None):
         """
@@ -57,7 +57,7 @@ class StreamWithHash(ReadOnlyStreamMixin, StreamWithLengthWrapper):
         """
         data = b''
         if self.hash is None:
-            data = super(StreamWithHash, self).read(size)
+            data = super().read(size)
             # Update hash
             self.digest.update(data)
 

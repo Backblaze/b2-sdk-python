@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import datetime
 import requests
-import socket
 import locale
 
 from ..test_base import TestBase
@@ -51,7 +50,7 @@ class TestTranslateErrors(TestBase):
         def fcn():
             raise requests.ConnectionError(
                 requests.packages.urllib3.exceptions.ProtocolError(
-                    "dummy", socket.error(20, 'Broken pipe')
+                    "dummy", OSError(20, 'Broken pipe')
                 )
             )
 
@@ -292,9 +291,7 @@ class TestB2Http(TestBase):
 class TestB2HttpUserAgentAppend(TestB2Http):
 
     UA_APPEND = 'ua_extra_string'
-    EXPECTED_HEADERS = {
-        **TestB2Http.EXPECTED_HEADERS, 'User-Agent': '%s %s' % (USER_AGENT, UA_APPEND)
-    }
+    EXPECTED_HEADERS = {**TestB2Http.EXPECTED_HEADERS, 'User-Agent': f'{USER_AGENT} {UA_APPEND}'}
 
 
 class TestSetLocaleContextManager(TestBase):

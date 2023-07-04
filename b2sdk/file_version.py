@@ -9,7 +9,7 @@
 ######################################################################
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, Union, Tuple, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 import re
 from copy import deepcopy
 
@@ -61,7 +61,7 @@ class BaseFileVersion:
 
     def __init__(
         self,
-        api: 'B2Api',
+        api: B2Api,
         id_: str,
         file_name: str,
         size: int,
@@ -103,7 +103,7 @@ class BaseFileVersion:
     @classmethod
     def _encode_content_sha1(cls, content_sha1, content_sha1_verified):
         if not content_sha1_verified:
-            return '%s%s' % (UNVERIFIED_CHECKSUM_PREFIX, content_sha1)
+            return f'{UNVERIFIED_CHECKSUM_PREFIX}{content_sha1}'
         return content_sha1
 
     def _clone(self, **new_attributes: Any):
@@ -165,7 +165,7 @@ class BaseFileVersion:
         return True
 
     def __repr__(self):
-        return '%s(%s)' % (
+        return '{}({})'.format(
             self.__class__.__name__,
             ', '.join(repr(getattr(self, attr)) for attr in self._all_slots())
         )
@@ -177,10 +177,10 @@ class BaseFileVersion:
             all_slots.extend(getattr(klass, '__slots__', []))
         return all_slots
 
-    def delete(self) -> 'FileIdAndName':
+    def delete(self) -> FileIdAndName:
         return self.api.delete_file_version(self.id_, self.file_name)
 
-    def update_legal_hold(self, legal_hold: LegalHold) -> 'BaseFileVersion':
+    def update_legal_hold(self, legal_hold: LegalHold) -> BaseFileVersion:
         legal_hold = self.api.update_file_legal_hold(self.id_, self.file_name, legal_hold)
         return self._clone(legal_hold=legal_hold)
 
@@ -188,7 +188,7 @@ class BaseFileVersion:
         self,
         file_retention: FileRetentionSetting,
         bypass_governance: bool = False,
-    ) -> 'BaseFileVersion':
+    ) -> BaseFileVersion:
         file_retention = self.api.update_file_retention(
             self.id_, self.file_name, file_retention, bypass_governance
         )
@@ -203,7 +203,7 @@ class BaseFileVersion:
         assert m, self.id_
         return self._FILE_TYPE[int(m.group(1))]
 
-    def get_content_sha1(self) -> Optional[Sha1HexDigest]:
+    def get_content_sha1(self) -> Sha1HexDigest | None:
         """
         Get the file's content SHA1 hex digest from the header or, if its absent,
         from the file info.  If both are missing, return None.
@@ -241,23 +241,23 @@ class FileVersion(BaseFileVersion):
 
     def __init__(
         self,
-        api: 'B2Api',
+        api: B2Api,
         id_: str,
         file_name: str,
-        size: Union[int, None, str],
-        content_type: Optional[str],
-        content_sha1: Optional[str],
-        file_info: Dict[str, str],
+        size: int | None | str,
+        content_type: str | None,
+        content_sha1: str | None,
+        file_info: dict[str, str],
         upload_timestamp: int,
         account_id: str,
         bucket_id: str,
         action: str,
-        content_md5: Optional[str],
+        content_md5: str | None,
         server_side_encryption: EncryptionSetting,
         file_retention: FileRetentionSetting = NO_RETENTION_FILE_SETTING,
         legal_hold: LegalHold = LegalHold.UNSET,
-        replication_status: Optional[ReplicationStatus] = None,
-        cache_control: Optional[str] = None,
+        replication_status: ReplicationStatus | None = None,
+        cache_control: str | None = None,
     ):
         self.account_id = account_id
         self.bucket_id = bucket_id
@@ -304,7 +304,7 @@ class FileVersion(BaseFileVersion):
 
         return result
 
-    def get_fresh_state(self) -> 'FileVersion':
+    def get_fresh_state(self) -> FileVersion:
         """
         Fetch all the information about this file version and return a new FileVersion object.
         This method does NOT change the object it is called on.
@@ -313,10 +313,10 @@ class FileVersion(BaseFileVersion):
 
     def download(
         self,
-        progress_listener: Optional[AbstractProgressListener] = None,
-        range_: Optional[Tuple[int, int]] = None,
-        encryption: Optional[EncryptionSetting] = None,
-    ) -> 'DownloadedFile':
+        progress_listener: AbstractProgressListener | None = None,
+        range_: tuple[int, int] | None = None,
+        encryption: EncryptionSetting | None = None,
+    ) -> DownloadedFile:
         return self.api.download_file_by_id(
             self.id_,
             progress_listener=progress_listener,
@@ -386,25 +386,25 @@ class DownloadVersion(BaseFileVersion):
 
     def __init__(
         self,
-        api: 'B2Api',
+        api: B2Api,
         id_: str,
         file_name: str,
         size: int,
-        content_type: Optional[str],
-        content_sha1: Optional[str],
-        file_info: Dict[str, str],
+        content_type: str | None,
+        content_sha1: str | None,
+        file_info: dict[str, str],
         upload_timestamp: int,
         server_side_encryption: EncryptionSetting,
         range_: Range,
-        content_disposition: Optional[str],
+        content_disposition: str | None,
         content_length: int,
-        content_language: Optional[str],
+        content_language: str | None,
         expires,
         cache_control,
-        content_encoding: Optional[str],
+        content_encoding: str | None,
         file_retention: FileRetentionSetting = NO_RETENTION_FILE_SETTING,
         legal_hold: LegalHold = LegalHold.UNSET,
-        replication_status: Optional[ReplicationStatus] = None,
+        replication_status: ReplicationStatus | None = None,
     ):
         self.range_ = range_
         self.content_disposition = content_disposition
@@ -453,7 +453,7 @@ class FileVersionFactory:
 
     FILE_VERSION_CLASS = FileVersion
 
-    def __init__(self, api: 'B2Api'):
+    def __init__(self, api: B2Api):
         self.api = api
 
     def from_api_response(self, file_version_dict, force_action=None):
@@ -542,7 +542,7 @@ class DownloadVersionFactory:
     Construct :py:class:`b2sdk.v2.DownloadVersion` objects from download headers.
     """
 
-    def __init__(self, api: 'B2Api'):
+    def __init__(self, api: B2Api):
         self.api = api
 
     @classmethod
@@ -624,4 +624,4 @@ class FileIdAndName:
         return (self.file_id == other.file_id and self.file_name == other.file_name)
 
     def __repr__(self):
-        return '%s(%s, %s)' % (self.__class__.__name__, repr(self.file_id), repr(self.file_name))
+        return f'{self.__class__.__name__}({repr(self.file_id)}, {repr(self.file_name)})'

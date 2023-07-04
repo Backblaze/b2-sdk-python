@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import enum
 import logging
-from typing import Optional, Union
 import urllib
 import urllib.parse
 
@@ -43,7 +42,7 @@ class EncryptionKey:
     """
     SECRET_REPR = '******'
 
-    def __init__(self, secret: Optional[bytes], key_id: Union[str, None, _UnknownKeyId]):
+    def __init__(self, secret: bytes | None, key_id: str | None | _UnknownKeyId):
         self.secret = secret
         self.key_id = key_id
 
@@ -59,7 +58,7 @@ class EncryptionKey:
             key_id_repr = 'unknown'
         else:
             key_id_repr = repr(self.key_id)
-        return '<%s(%s, %s)>' % (self.__class__.__name__, key_repr, key_id_repr)
+        return f'<{self.__class__.__name__}({key_repr}, {key_id_repr})>'
 
     def as_dict(self):
         """
@@ -105,11 +104,10 @@ class EncryptionSetting:
         if self.mode == EncryptionMode.NONE and (self.algorithm or self.key):
             raise ValueError("cannot specify algorithm or key for 'plaintext' encryption mode")
         if self.mode in ENCRYPTION_MODES_WITH_MANDATORY_ALGORITHM and not self.algorithm:
-            raise ValueError('must specify algorithm for encryption mode %s' % (self.mode,))
+            raise ValueError(f'must specify algorithm for encryption mode {self.mode}')
         if self.mode in ENCRYPTION_MODES_WITH_MANDATORY_KEY and not self.key:
             raise ValueError(
-                'must specify key for encryption mode %s and algorithm %s' %
-                (self.mode, self.algorithm)
+                f'must specify key for encryption mode {self.mode} and algorithm {self.algorithm}'
             )
 
     def __eq__(self, other):
@@ -171,12 +169,11 @@ class EncryptionSetting:
                 header = SSE_C_KEY_ID_HEADER
                 if headers.get(header) is not None and headers[header] != self.key.key_id:
                     raise ValueError(
-                        'Ambiguous key id set: "%s" in headers and "%s" in %s' %
-                        (headers[header], self.key.key_id, self.__class__.__name__)
+                        f'Ambiguous key id set: "{headers[header]}" in headers and "{self.key.key_id}" in {self.__class__.__name__}'
                     )
                 headers[header] = urllib.parse.quote(str(self.key.key_id))
         else:
-            raise NotImplementedError('unsupported encryption setting: %s' % (self,))
+            raise NotImplementedError(f'unsupported encryption setting: {self}')
 
     def add_to_download_headers(self, headers):
         if self.mode == EncryptionMode.NONE:
@@ -186,7 +183,7 @@ class EncryptionSetting:
         elif self.mode == EncryptionMode.SSE_C:
             self._add_sse_c_headers(headers)
         else:
-            raise NotImplementedError('unsupported encryption setting: %s' % (self,))
+            raise NotImplementedError(f'unsupported encryption setting: {self}')
 
     def _add_sse_b2_headers(self, headers):
         headers['X-Bz-Server-Side-Encryption'] = self.algorithm.name
@@ -198,7 +195,7 @@ class EncryptionSetting:
         headers['X-Bz-Server-Side-Encryption-Customer-Key'] = self.key.key_b64()
         headers['X-Bz-Server-Side-Encryption-Customer-Key-Md5'] = self.key.key_md5()
 
-    def add_key_id_to_file_info(self, file_info: Optional[dict]):
+    def add_key_id_to_file_info(self, file_info: dict | None):
         if self.key is None or self.key.key_id is None:
             return file_info
         if self.key.key_id is UNKNOWN_KEY_ID:
@@ -208,7 +205,7 @@ class EncryptionSetting:
         if file_info.get(SSE_C_KEY_ID_FILE_INFO_KEY_NAME) is not None and file_info[
             SSE_C_KEY_ID_FILE_INFO_KEY_NAME] != self.key.key_id:
             raise ValueError(
-                'Ambiguous key id set: "%s" in file_info and "%s" in %s' % (
+                'Ambiguous key id set: "{}" in file_info and "{}" in {}'.format(
                     file_info[SSE_C_KEY_ID_FILE_INFO_KEY_NAME], self.key.key_id,
                     self.__class__.__name__
                 )
@@ -217,7 +214,7 @@ class EncryptionSetting:
         return file_info
 
     def __repr__(self):
-        return '<%s(%s, %s, %s)>' % (self.__class__.__name__, self.mode, self.algorithm, self.key)
+        return f'<{self.__class__.__name__}({self.mode}, {self.algorithm}, {self.key})>'
 
     def is_unknown(self):
         return self.mode == EncryptionMode.NONE
@@ -262,7 +259,7 @@ class EncryptionSettingFactory:
         return cls._from_value_dict(sse, key_id=key_id)
 
     @classmethod
-    def from_bucket_dict(cls, bucket_dict: dict) -> Optional[EncryptionSetting]:
+    def from_bucket_dict(cls, bucket_dict: dict) -> EncryptionSetting | None:
         """
         Returns EncryptionSetting for the given bucket dict retrieved from the api, or None if unauthorized
 

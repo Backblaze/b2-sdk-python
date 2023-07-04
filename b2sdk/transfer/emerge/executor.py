@@ -13,7 +13,7 @@ import logging
 import threading
 
 from abc import ABCMeta, abstractmethod
-from typing import Dict, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from b2sdk.encryption.setting import EncryptionSetting
 from b2sdk.exception import MaxFileSizeExceeded
@@ -45,11 +45,11 @@ class EmergeExecutor:
         progress_listener,
         continue_large_file_id=None,
         max_queue_size=None,
-        encryption: Optional[EncryptionSetting] = None,
-        file_retention: Optional[FileRetentionSetting] = None,
-        legal_hold: Optional[LegalHold] = None,
-        custom_upload_timestamp: Optional[int] = None,
-        cache_control: Optional[str] = None,
+        encryption: EncryptionSetting | None = None,
+        file_retention: FileRetentionSetting | None = None,
+        legal_hold: LegalHold | None = None,
+        custom_upload_timestamp: int | None = None,
+        cache_control: str | None = None,
     ):
         if emerge_plan.is_large_file():
             execution = LargeFileEmergeExecution(
@@ -97,11 +97,11 @@ class BaseEmergeExecution(metaclass=ABCMeta):
         content_type,
         file_info,
         progress_listener,
-        encryption: Optional[EncryptionSetting] = None,
-        file_retention: Optional[FileRetentionSetting] = None,
-        legal_hold: Optional[LegalHold] = None,
-        custom_upload_timestamp: Optional[int] = None,
-        cache_control: Optional[str] = None,
+        encryption: EncryptionSetting | None = None,
+        file_retention: FileRetentionSetting | None = None,
+        legal_hold: LegalHold | None = None,
+        custom_upload_timestamp: int | None = None,
+        cache_control: str | None = None,
     ):
         self.services = services
         self.bucket_id = bucket_id
@@ -142,15 +142,15 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
         content_type,
         file_info,
         progress_listener,
-        encryption: Optional[EncryptionSetting] = None,
-        file_retention: Optional[FileRetentionSetting] = None,
-        legal_hold: Optional[LegalHold] = None,
+        encryption: EncryptionSetting | None = None,
+        file_retention: FileRetentionSetting | None = None,
+        legal_hold: LegalHold | None = None,
         continue_large_file_id=None,
         max_queue_size=None,
-        custom_upload_timestamp: Optional[int] = None,
-        cache_control: Optional[str] = None,
+        custom_upload_timestamp: int | None = None,
+        cache_control: str | None = None,
     ):
-        super(LargeFileEmergeExecution, self).__init__(
+        super().__init__(
             services,
             bucket_id,
             file_name,
@@ -169,7 +169,7 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
         if self.max_queue_size is not None:
             self._semaphore = threading.Semaphore(self.max_queue_size)
 
-    def execute_plan(self, emerge_plan: "StreamingEmergePlan"):
+    def execute_plan(self, emerge_plan: StreamingEmergePlan):
         total_length = emerge_plan.get_total_length()
         encryption = self.encryption
 
@@ -245,7 +245,7 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
         response = self.services.session.finish_large_file(file_id, part_sha1_array)
         return self.services.api.file_version_factory.from_api_response(response)
 
-    def _execute_step(self, execution_step: "UploadPartExecutionStep"):
+    def _execute_step(self, execution_step: UploadPartExecutionStep):
         semaphore = self._semaphore
         if semaphore is None:
             return execution_step.execute()
@@ -267,11 +267,11 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
         file_info,
         continue_large_file_id,
         encryption: EncryptionSetting,
-        file_retention: Optional[FileRetentionSetting] = None,
-        legal_hold: Optional[LegalHold] = None,
+        file_retention: FileRetentionSetting | None = None,
+        legal_hold: LegalHold | None = None,
         emerge_parts_dict=None,
-        custom_upload_timestamp: Optional[int] = None,
-        cache_control: Optional[str] = None,
+        custom_upload_timestamp: int | None = None,
+        cache_control: str | None = None,
     ):
         if 'listFiles' not in self.services.session.account_info.get_allowed()['capabilities']:
             return None, {}
@@ -327,12 +327,12 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
         file_info,
         emerge_parts_dict,
         encryption: EncryptionSetting,
-        file_retention: Optional[FileRetentionSetting] = None,
-        legal_hold: Optional[LegalHold] = None,
-        custom_upload_timestamp: Optional[int] = None,
-        cache_control: Optional[str] = None,
-        check_file_info_without_large_file_sha1: Optional[bool] = False,
-        eager_mode: Optional[bool] = False,
+        file_retention: FileRetentionSetting | None = None,
+        legal_hold: LegalHold | None = None,
+        custom_upload_timestamp: int | None = None,
+        cache_control: str | None = None,
+        check_file_info_without_large_file_sha1: bool | None = False,
+        eager_mode: bool | None = False,
     ):
         """
         Search for a matching unfinished large file in the specified bucket.
@@ -464,10 +464,10 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
         file_info,
         emerge_parts_dict,
         encryption: EncryptionSetting,
-        file_retention: Optional[FileRetentionSetting] = None,
-        legal_hold: Optional[LegalHold] = None,
-        custom_upload_timestamp: Optional[int] = None,
-        cache_control: Optional[str] = None,
+        file_retention: FileRetentionSetting | None = None,
+        legal_hold: LegalHold | None = None,
+        custom_upload_timestamp: int | None = None,
+        cache_control: str | None = None,
     ):
         """
         Search for a matching unfinished large file by plan_id in the specified bucket.
@@ -510,8 +510,8 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
     @classmethod
     def _get_file_info_without_large_file_sha1(
         cls,
-        file_info: Optional[Dict[str, str]],
-    ) -> Optional[Dict[str, str]]:
+        file_info: dict[str, str] | None,
+    ) -> dict[str, str] | None:
         if not file_info or LARGE_FILE_SHA1 not in file_info:
             return file_info
         out_file_info = dict(file_info)
@@ -525,10 +525,10 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
         file_info,
         emerge_parts_dict,
         encryption: EncryptionSetting,
-        file_retention: Optional[FileRetentionSetting] = None,
-        legal_hold: Optional[LegalHold] = None,
-        custom_upload_timestamp: Optional[int] = None,
-        cache_control: Optional[str] = None,
+        file_retention: FileRetentionSetting | None = None,
+        legal_hold: LegalHold | None = None,
+        custom_upload_timestamp: int | None = None,
+        cache_control: str | None = None,
     ):
         """
         Scan for a suitable unfinished large file in the specified bucket to resume upload.
@@ -616,13 +616,13 @@ class LargeFileEmergeExecutionStepFactory(BaseExecutionStepFactory):
     def __init__(
         self,
         emerge_execution,
-        emerge_part: "UploadEmergePartDefinition",
+        emerge_part: UploadEmergePartDefinition,
         part_number,
         large_file_id,
         large_file_upload_state,
         finished_parts=None,
     ):
-        super(LargeFileEmergeExecutionStepFactory, self).__init__(emerge_execution, emerge_part)
+        super().__init__(emerge_execution, emerge_part)
         self.part_number = part_number
         self.large_file_id = large_file_id
         self.large_file_upload_state = large_file_upload_state

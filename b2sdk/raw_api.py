@@ -14,7 +14,7 @@ import re
 from abc import ABCMeta, abstractmethod
 from enum import Enum, unique
 from logging import getLogger
-from typing import Any, Dict, Optional
+from typing import Any
 
 from .exception import FileOrBucketNotFound, ResourceNotFound, UnusableFileName, InvalidMetadataDirective, WrongEncryptionModeForBucketDefault, AccessDenied, SSECKeyError, RetentionWriteError
 from .encryption.setting import EncryptionMode, EncryptionSetting
@@ -96,11 +96,11 @@ class AbstractRawApi(metaclass=ABCMeta):
         content_type=None,
         file_info=None,
         destination_bucket_id=None,
-        destination_server_side_encryption: Optional[EncryptionSetting] = None,
-        source_server_side_encryption: Optional[EncryptionSetting] = None,
-        file_retention: Optional[FileRetentionSetting] = None,
-        legal_hold: Optional[LegalHold] = None,
-        cache_control: Optional[str] = None,
+        destination_server_side_encryption: EncryptionSetting | None = None,
+        source_server_side_encryption: EncryptionSetting | None = None,
+        file_retention: FileRetentionSetting | None = None,
+        legal_hold: LegalHold | None = None,
+        cache_control: str | None = None,
     ):
         pass
 
@@ -113,8 +113,8 @@ class AbstractRawApi(metaclass=ABCMeta):
         large_file_id,
         part_number,
         bytes_range=None,
-        destination_server_side_encryption: Optional[EncryptionSetting] = None,
-        source_server_side_encryption: Optional[EncryptionSetting] = None,
+        destination_server_side_encryption: EncryptionSetting | None = None,
+        source_server_side_encryption: EncryptionSetting | None = None,
     ):
         pass
 
@@ -129,9 +129,9 @@ class AbstractRawApi(metaclass=ABCMeta):
         bucket_info=None,
         cors_rules=None,
         lifecycle_rules=None,
-        default_server_side_encryption: Optional[EncryptionSetting] = None,
-        is_file_lock_enabled: Optional[bool] = None,
-        replication: Optional[ReplicationConfiguration] = None,
+        default_server_side_encryption: EncryptionSetting | None = None,
+        is_file_lock_enabled: bool | None = None,
+        replication: ReplicationConfiguration | None = None,
     ):
         pass
 
@@ -148,7 +148,7 @@ class AbstractRawApi(metaclass=ABCMeta):
         account_auth_token_or_none,
         url,
         range_=None,
-        encryption: Optional[EncryptionSetting] = None,
+        encryption: EncryptionSetting | None = None,
     ):
         pass
 
@@ -176,13 +176,13 @@ class AbstractRawApi(metaclass=ABCMeta):
 
     @abstractmethod
     def get_file_info_by_id(self, api_url: str, account_auth_token: str,
-                            file_id: str) -> Dict[str, Any]:
+                            file_id: str) -> dict[str, Any]:
         pass
 
     @abstractmethod
     def get_file_info_by_name(
         self, download_url: str, account_auth_token: str, bucket_name: str, file_name: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         pass
 
     @abstractmethod
@@ -269,10 +269,10 @@ class AbstractRawApi(metaclass=ABCMeta):
         file_name,
         content_type,
         file_info,
-        server_side_encryption: Optional[EncryptionSetting] = None,
-        file_retention: Optional[FileRetentionSetting] = None,
-        legal_hold: Optional[LegalHold] = None,
-        cache_control: Optional[str] = None,
+        server_side_encryption: EncryptionSetting | None = None,
+        file_retention: FileRetentionSetting | None = None,
+        legal_hold: LegalHold | None = None,
+        cache_control: str | None = None,
     ):
         pass
 
@@ -288,10 +288,10 @@ class AbstractRawApi(metaclass=ABCMeta):
         cors_rules=None,
         lifecycle_rules=None,
         if_revision_is=None,
-        default_server_side_encryption: Optional[EncryptionSetting] = None,
-        default_retention: Optional[BucketRetentionSetting] = None,
-        replication: Optional[ReplicationConfiguration] = None,
-        is_file_lock_enabled: Optional[bool] = None,
+        default_server_side_encryption: EncryptionSetting | None = None,
+        default_retention: BucketRetentionSetting | None = None,
+        replication: ReplicationConfiguration | None = None,
+        is_file_lock_enabled: bool | None = None,
     ):
         pass
 
@@ -362,11 +362,11 @@ class AbstractRawApi(metaclass=ABCMeta):
         content_sha1,
         file_info,
         data_stream,
-        server_side_encryption: Optional[EncryptionSetting] = None,
-        file_retention: Optional[FileRetentionSetting] = None,
-        legal_hold: Optional[LegalHold] = None,
-        custom_upload_timestamp: Optional[int] = None,
-        cache_control: Optional[str] = None,
+        server_side_encryption: EncryptionSetting | None = None,
+        file_retention: FileRetentionSetting | None = None,
+        legal_hold: LegalHold | None = None,
+        custom_upload_timestamp: int | None = None,
+        cache_control: str | None = None,
     ):
         pass
 
@@ -379,12 +379,12 @@ class AbstractRawApi(metaclass=ABCMeta):
         content_length,
         sha1_sum,
         input_stream,
-        server_side_encryption: Optional[EncryptionSetting] = None,
+        server_side_encryption: EncryptionSetting | None = None,
     ):
         pass
 
     def get_download_url_by_id(self, download_url, file_id):
-        return '%s/b2api/%s/b2_download_file_by_id?fileId=%s' % (download_url, API_VERSION, file_id)
+        return f'{download_url}/b2api/{API_VERSION}/b2_download_file_by_id?fileId={file_id}'
 
     def get_download_url_by_name(self, download_url, bucket_name, file_name):
         return download_url + '/file/' + bucket_name + '/' + b2_url_encode(file_name)
@@ -410,7 +410,7 @@ class B2RawHTTPApi(AbstractRawApi):
     def __init__(self, b2_http):
         self.b2_http = b2_http
 
-    def _post_json(self, base_url, api_name, auth, **params) -> Dict[str, Any]:
+    def _post_json(self, base_url, api_name, auth, **params) -> dict[str, Any]:
         """
         A helper method for calling an API with the given auth and params.
 
@@ -421,14 +421,12 @@ class B2RawHTTPApi(AbstractRawApi):
         :return: the decoded JSON response
         :rtype: dict
         """
-        url = '%s/b2api/%s/%s' % (base_url, API_VERSION, api_name)
+        url = f'{base_url}/b2api/{API_VERSION}/{api_name}'
         headers = {'Authorization': auth}
         return self.b2_http.post_json_return_json(url, headers, params)
 
     def authorize_account(self, realm_url, application_key_id, application_key):
-        auth = b'Basic ' + base64.b64encode(
-            ('%s:%s' % (application_key_id, application_key)).encode()
-        )
+        auth = b'Basic ' + base64.b64encode((f'{application_key_id}:{application_key}').encode())
         return self._post_json(realm_url, 'b2_authorize_account', auth)
 
     def cancel_large_file(self, api_url, account_auth_token, file_id):
@@ -444,9 +442,9 @@ class B2RawHTTPApi(AbstractRawApi):
         bucket_info=None,
         cors_rules=None,
         lifecycle_rules=None,
-        default_server_side_encryption: Optional[EncryptionSetting] = None,
-        is_file_lock_enabled: Optional[bool] = None,
-        replication: Optional[ReplicationConfiguration] = None,
+        default_server_side_encryption: EncryptionSetting | None = None,
+        is_file_lock_enabled: bool | None = None,
+        replication: ReplicationConfiguration | None = None,
     ):
         kwargs = dict(
             accountId=account_id,
@@ -522,7 +520,7 @@ class B2RawHTTPApi(AbstractRawApi):
         account_auth_token_or_none,
         url,
         range_=None,
-        encryption: Optional[EncryptionSetting] = None,
+        encryption: EncryptionSetting | None = None,
     ):
         """
         Issue a streaming request for download of a file, potentially authorized.
@@ -571,12 +569,12 @@ class B2RawHTTPApi(AbstractRawApi):
         )
 
     def get_file_info_by_id(self, api_url: str, account_auth_token: str,
-                            file_id: str) -> Dict[str, Any]:
+                            file_id: str) -> dict[str, Any]:
         return self._post_json(api_url, 'b2_get_file_info', account_auth_token, fileId=file_id)
 
     def get_file_info_by_name(
         self, download_url: str, account_auth_token: str, bucket_name: str, file_name: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         download_url = self.get_download_url_by_name(download_url, bucket_name, file_name)
         try:
             response = self.b2_http.head_content(
@@ -712,11 +710,11 @@ class B2RawHTTPApi(AbstractRawApi):
         file_name,
         content_type,
         file_info,
-        server_side_encryption: Optional[EncryptionSetting] = None,
-        file_retention: Optional[FileRetentionSetting] = None,
-        legal_hold: Optional[LegalHold] = None,
-        custom_upload_timestamp: Optional[int] = None,
-        cache_control: Optional[str] = None,
+        server_side_encryption: EncryptionSetting | None = None,
+        file_retention: FileRetentionSetting | None = None,
+        legal_hold: LegalHold | None = None,
+        custom_upload_timestamp: int | None = None,
+        cache_control: str | None = None,
     ):
         kwargs = {}
         if server_side_encryption is not None:
@@ -759,10 +757,10 @@ class B2RawHTTPApi(AbstractRawApi):
         cors_rules=None,
         lifecycle_rules=None,
         if_revision_is=None,
-        default_server_side_encryption: Optional[EncryptionSetting] = None,
-        default_retention: Optional[BucketRetentionSetting] = None,
-        replication: Optional[ReplicationConfiguration] = None,
-        is_file_lock_enabled: Optional[bool] = None,
+        default_server_side_encryption: EncryptionSetting | None = None,
+        default_retention: BucketRetentionSetting | None = None,
+        replication: ReplicationConfiguration | None = None,
+        is_file_lock_enabled: bool | None = None,
     ):
         kwargs = {}
         if if_revision_is is not None:
@@ -853,7 +851,7 @@ class B2RawHTTPApi(AbstractRawApi):
         unprintables_pattern = re.compile(r'[\x00-\x1f]')
 
         def hexify(match):
-            return r'\x{0:02x}'.format(ord(match.group()))
+            return fr'\x{ord(match.group()):02x}'
 
         return unprintables_pattern.sub(hexify, string)
 
@@ -874,7 +872,7 @@ class B2RawHTTPApi(AbstractRawApi):
             raise UnusableFileName("Filename is too long (can be at most 1024 bytes).")
         lowest_unicode_value = ord(min(filename))
         if lowest_unicode_value < 32:
-            message = u"Filename \"{0}\" contains code {1} (hex {2:02x}), less than 32.".format(
+            message = "Filename \"{}\" contains code {} (hex {:02x}), less than 32.".format(
                 self.unprintable_to_hex(filename), lowest_unicode_value, lowest_unicode_value
             )
             raise UnusableFileName(message)
@@ -948,7 +946,7 @@ class B2RawHTTPApi(AbstractRawApi):
         content_length,
         content_sha1,
         data_stream,
-        server_side_encryption: Optional[EncryptionSetting] = None,
+        server_side_encryption: EncryptionSetting | None = None,
     ):
         headers = {
             'Authorization': upload_auth_token,
@@ -975,11 +973,11 @@ class B2RawHTTPApi(AbstractRawApi):
         content_type=None,
         file_info=None,
         destination_bucket_id=None,
-        destination_server_side_encryption: Optional[EncryptionSetting] = None,
-        source_server_side_encryption: Optional[EncryptionSetting] = None,
-        file_retention: Optional[FileRetentionSetting] = None,
-        legal_hold: Optional[LegalHold] = None,
-        cache_control: Optional[str] = None,
+        destination_server_side_encryption: EncryptionSetting | None = None,
+        source_server_side_encryption: EncryptionSetting | None = None,
+        file_retention: FileRetentionSetting | None = None,
+        legal_hold: LegalHold | None = None,
+        cache_control: str | None = None,
     ):
         kwargs = {}
         if bytes_range is not None:
@@ -1047,8 +1045,8 @@ class B2RawHTTPApi(AbstractRawApi):
         large_file_id,
         part_number,
         bytes_range=None,
-        destination_server_side_encryption: Optional[EncryptionSetting] = None,
-        source_server_side_encryption: Optional[EncryptionSetting] = None,
+        destination_server_side_encryption: EncryptionSetting | None = None,
+        source_server_side_encryption: EncryptionSetting | None = None,
     ):
         kwargs = {}
         if bytes_range is not None:

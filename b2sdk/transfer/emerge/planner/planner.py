@@ -633,7 +633,7 @@ class BaseEmergePlan(metaclass=ABCMeta):
 
 class EmergePlan(BaseEmergePlan):
     def __init__(self, emerge_parts):
-        super(EmergePlan, self).__init__(list(emerge_parts))
+        super().__init__(list(emerge_parts))
         self._is_large_file = len(self.emerge_parts) > 1
 
     def is_large_file(self):

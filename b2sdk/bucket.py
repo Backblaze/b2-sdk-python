@@ -14,7 +14,6 @@ import logging
 import pathlib
 
 from contextlib import suppress
-from typing import Dict, Optional, Tuple
 
 from .encryption.setting import EncryptionSetting, EncryptionSettingFactory
 from .encryption.types import EncryptionMode
@@ -77,8 +76,8 @@ class Bucket(metaclass=B2TraceMeta):
             EncryptionMode.UNKNOWN
         ),
         default_retention: BucketRetentionSetting = UNKNOWN_BUCKET_RETENTION,
-        is_file_lock_enabled: Optional[bool] = None,
-        replication: Optional[ReplicationConfiguration] = None,
+        is_file_lock_enabled: bool | None = None,
+        replication: ReplicationConfiguration | None = None,
     ):
         """
         :param b2sdk.v2.B2Api api: an API object
@@ -111,7 +110,7 @@ class Bucket(metaclass=B2TraceMeta):
         self.is_file_lock_enabled = is_file_lock_enabled
         self.replication = replication
 
-    def get_fresh_state(self) -> 'Bucket':
+    def get_fresh_state(self) -> Bucket:
         """
         Fetch all the information about this bucket and return a new bucket object.
         This method does NOT change the object it is called on.
@@ -129,7 +128,7 @@ class Bucket(metaclass=B2TraceMeta):
         """
         return self.id_
 
-    def set_info(self, new_bucket_info, if_revision_is=None) -> 'Bucket':
+    def set_info(self, new_bucket_info, if_revision_is=None) -> Bucket:
         """
         Update bucket info.
 
@@ -138,7 +137,7 @@ class Bucket(metaclass=B2TraceMeta):
         """
         return self.update(bucket_info=new_bucket_info, if_revision_is=if_revision_is)
 
-    def set_type(self, bucket_type) -> 'Bucket':
+    def set_type(self, bucket_type) -> Bucket:
         """
         Update bucket type.
 
@@ -148,16 +147,16 @@ class Bucket(metaclass=B2TraceMeta):
 
     def update(
         self,
-        bucket_type: Optional[str] = None,
-        bucket_info: Optional[dict] = None,
-        cors_rules: Optional[dict] = None,
-        lifecycle_rules: Optional[list] = None,
-        if_revision_is: Optional[int] = None,
-        default_server_side_encryption: Optional[EncryptionSetting] = None,
-        default_retention: Optional[BucketRetentionSetting] = None,
-        replication: Optional[ReplicationConfiguration] = None,
-        is_file_lock_enabled: Optional[bool] = None,
-    ) -> 'Bucket':
+        bucket_type: str | None = None,
+        bucket_info: dict | None = None,
+        cors_rules: dict | None = None,
+        lifecycle_rules: list | None = None,
+        if_revision_is: int | None = None,
+        default_server_side_encryption: EncryptionSetting | None = None,
+        default_retention: BucketRetentionSetting | None = None,
+        replication: ReplicationConfiguration | None = None,
+        is_file_lock_enabled: bool | None = None,
+    ) -> Bucket:
         """
         Update various bucket parameters.
 
@@ -200,9 +199,9 @@ class Bucket(metaclass=B2TraceMeta):
     def download_file_by_id(
         self,
         file_id: str,
-        progress_listener: Optional[AbstractProgressListener] = None,
-        range_: Optional[Tuple[int, int]] = None,
-        encryption: Optional[EncryptionSetting] = None,
+        progress_listener: AbstractProgressListener | None = None,
+        range_: tuple[int, int] | None = None,
+        encryption: EncryptionSetting | None = None,
     ) -> DownloadedFile:
         """
         Download a file by ID.
@@ -225,9 +224,9 @@ class Bucket(metaclass=B2TraceMeta):
     def download_file_by_name(
         self,
         file_name: str,
-        progress_listener: Optional[AbstractProgressListener] = None,
-        range_: Optional[Tuple[int, int]] = None,
-        encryption: Optional[EncryptionSetting] = None,
+        progress_listener: AbstractProgressListener | None = None,
+        range_: tuple[int, int] | None = None,
+        encryption: EncryptionSetting | None = None,
     ) -> DownloadedFile:
         """
         Download a file by name.
@@ -329,7 +328,7 @@ class Bucket(metaclass=B2TraceMeta):
         folder_to_list: str = '',
         latest_only: bool = True,
         recursive: bool = False,
-        fetch_count: Optional[int] = 10000,
+        fetch_count: int | None = 10000,
         with_wildcard: bool = False,
     ):
         """
@@ -610,21 +609,21 @@ class Bucket(metaclass=B2TraceMeta):
         read_only_object,
         file_name: str,
         content_type: str = None,
-        file_info: Optional[Dict[str, str]] = None,
-        progress_listener: Optional[AbstractProgressListener] = None,
-        recommended_upload_part_size: Optional[int] = None,
-        encryption: Optional[EncryptionSetting] = None,
-        file_retention: Optional[FileRetentionSetting] = None,
-        legal_hold: Optional[LegalHold] = None,
-        min_part_size: Optional[int] = None,
-        max_part_size: Optional[int] = None,
-        large_file_sha1: Optional[Sha1HexDigest] = None,
+        file_info: dict[str, str] | None = None,
+        progress_listener: AbstractProgressListener | None = None,
+        recommended_upload_part_size: int | None = None,
+        encryption: EncryptionSetting | None = None,
+        file_retention: FileRetentionSetting | None = None,
+        legal_hold: LegalHold | None = None,
+        min_part_size: int | None = None,
+        max_part_size: int | None = None,
+        large_file_sha1: Sha1HexDigest | None = None,
         buffers_count: int = 2,
-        buffer_size: Optional[int] = None,
+        buffer_size: int | None = None,
         read_size: int = 8192,
         unused_buffer_timeout_seconds: float = 3600.0,
-        custom_upload_timestamp: Optional[int] = None,
-        cache_control: Optional[str] = None,
+        custom_upload_timestamp: int | None = None,
+        cache_control: str | None = None,
     ):
         """
         Upload an unbound file-like read-only object to a B2 file.
@@ -739,12 +738,12 @@ class Bucket(metaclass=B2TraceMeta):
         file_info=None,
         min_part_size=None,
         progress_listener=None,
-        encryption: Optional[EncryptionSetting] = None,
-        file_retention: Optional[FileRetentionSetting] = None,
-        legal_hold: Optional[LegalHold] = None,
-        large_file_sha1: Optional[Sha1HexDigest] = None,
-        custom_upload_timestamp: Optional[int] = None,
-        cache_control: Optional[str] = None,
+        encryption: EncryptionSetting | None = None,
+        file_retention: FileRetentionSetting | None = None,
+        legal_hold: LegalHold | None = None,
+        large_file_sha1: Sha1HexDigest | None = None,
+        custom_upload_timestamp: int | None = None,
+        cache_control: str | None = None,
     ):
         """
         Upload a file to B2, retrying as needed.
@@ -799,14 +798,14 @@ class Bucket(metaclass=B2TraceMeta):
         progress_listener=None,
         recommended_upload_part_size=None,
         continue_large_file_id=None,
-        encryption: Optional[EncryptionSetting] = None,
-        file_retention: Optional[FileRetentionSetting] = None,
-        legal_hold: Optional[LegalHold] = None,
+        encryption: EncryptionSetting | None = None,
+        file_retention: FileRetentionSetting | None = None,
+        legal_hold: LegalHold | None = None,
         min_part_size=None,
         max_part_size=None,
         large_file_sha1=None,
-        custom_upload_timestamp: Optional[int] = None,
-        cache_control: Optional[str] = None,
+        custom_upload_timestamp: int | None = None,
+        cache_control: str | None = None,
     ):
         """
         Creates a new file in this bucket using an iterable (list, tuple etc) of remote or local sources.
@@ -868,14 +867,14 @@ class Bucket(metaclass=B2TraceMeta):
         progress_listener=None,
         recommended_upload_part_size=None,
         continue_large_file_id=None,
-        encryption: Optional[EncryptionSetting] = None,
-        file_retention: Optional[FileRetentionSetting] = None,
-        legal_hold: Optional[LegalHold] = None,
+        encryption: EncryptionSetting | None = None,
+        file_retention: FileRetentionSetting | None = None,
+        legal_hold: LegalHold | None = None,
         min_part_size=None,
         max_part_size=None,
         large_file_sha1=None,
-        custom_upload_timestamp: Optional[int] = None,
-        cache_control: Optional[str] = None,
+        custom_upload_timestamp: int | None = None,
+        cache_control: str | None = None,
     ):
         """
         Creates a new file in this bucket using a stream of multiple remote or local sources.
@@ -940,9 +939,9 @@ class Bucket(metaclass=B2TraceMeta):
         progress_listener=None,
         recommended_upload_part_size=None,
         continue_large_file_id=None,
-        encryption: Optional[EncryptionSetting] = None,
-        file_retention: Optional[FileRetentionSetting] = None,
-        legal_hold: Optional[LegalHold] = None,
+        encryption: EncryptionSetting | None = None,
+        file_retention: FileRetentionSetting | None = None,
+        legal_hold: LegalHold | None = None,
         min_part_size=None,
         max_part_size=None,
         large_file_sha1=None,
@@ -978,14 +977,14 @@ class Bucket(metaclass=B2TraceMeta):
         progress_listener=None,
         recommended_upload_part_size=None,
         continue_large_file_id=None,
-        encryption: Optional[EncryptionSetting] = None,
-        file_retention: Optional[FileRetentionSetting] = None,
-        legal_hold: Optional[LegalHold] = None,
+        encryption: EncryptionSetting | None = None,
+        file_retention: FileRetentionSetting | None = None,
+        legal_hold: LegalHold | None = None,
         min_part_size=None,
         max_part_size=None,
         large_file_sha1=None,
-        custom_upload_timestamp: Optional[int] = None,
-        cache_control: Optional[str] = None,
+        custom_upload_timestamp: int | None = None,
+        cache_control: str | None = None,
     ):
         """
         Creates a new file in this bucket by concatenating multiple remote or local sources.
@@ -1043,12 +1042,12 @@ class Bucket(metaclass=B2TraceMeta):
         progress_listener=None,
         recommended_upload_part_size=None,
         continue_large_file_id=None,
-        encryption: Optional[EncryptionSetting] = None,
-        file_retention: Optional[FileRetentionSetting] = None,
-        legal_hold: Optional[LegalHold] = None,
-        large_file_sha1: Optional[Sha1HexDigest] = None,
-        custom_upload_timestamp: Optional[int] = None,
-        cache_control: Optional[str] = None,
+        encryption: EncryptionSetting | None = None,
+        file_retention: FileRetentionSetting | None = None,
+        legal_hold: LegalHold | None = None,
+        large_file_sha1: Sha1HexDigest | None = None,
+        custom_upload_timestamp: int | None = None,
+        cache_control: str | None = None,
     ):
         """
         Creates a new file in this bucket by concatenating stream of multiple remote or local sources.
@@ -1098,7 +1097,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param str filename: a file name
         :rtype: str
         """
-        return "%s/file/%s/%s" % (
+        return "{}/file/{}/{}".format(
             self.api.account_info.get_download_url(),
             b2_url_encode(self.name),
             b2_url_encode(filename),
@@ -1123,13 +1122,13 @@ class Bucket(metaclass=B2TraceMeta):
         offset=0,
         length=None,
         progress_listener=None,
-        destination_encryption: Optional[EncryptionSetting] = None,
-        source_encryption: Optional[EncryptionSetting] = None,
-        source_file_info: Optional[dict] = None,
-        source_content_type: Optional[str] = None,
-        file_retention: Optional[FileRetentionSetting] = None,
-        legal_hold: Optional[LegalHold] = None,
-        cache_control: Optional[str] = None,
+        destination_encryption: EncryptionSetting | None = None,
+        source_encryption: EncryptionSetting | None = None,
+        source_file_info: dict | None = None,
+        source_content_type: str | None = None,
+        file_retention: FileRetentionSetting | None = None,
+        legal_hold: LegalHold | None = None,
+        cache_control: str | None = None,
         min_part_size=None,
         max_part_size=None,
     ):
@@ -1246,7 +1245,7 @@ class Bucket(metaclass=B2TraceMeta):
         return result
 
     def __repr__(self):
-        return 'Bucket<%s,%s,%s>' % (self.id_, self.name, self.type_)
+        return f'Bucket<{self.id_},{self.name},{self.type_}>'
 
 
 class BucketFactory:

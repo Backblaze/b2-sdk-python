@@ -31,11 +31,11 @@ class CorruptAccountInfo(AccountInfoError):
         :param file_name: an account info file name
         :type file_name: str
         """
-        super(CorruptAccountInfo, self).__init__()
+        super().__init__()
         self.file_name = file_name
 
     def __str__(self):
-        return 'Account info file (%s) appears corrupted.  Try removing and then re-authorizing the account.' % (
+        return 'Account info file ({}) appears corrupted.  Try removing and then re-authorizing the account.'.format(
             self.file_name,
         )
 
@@ -50,8 +50,8 @@ class MissingAccountData(AccountInfoError):
         :param key: a key for getting account data
         :type key: str
         """
-        super(MissingAccountData, self).__init__()
+        super().__init__()
         self.key = key
 
     def __str__(self):
-        return 'Missing account data: %s' % (self.key,)
+        return f'Missing account data: {self.key}'

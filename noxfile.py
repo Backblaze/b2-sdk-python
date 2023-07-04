@@ -139,8 +139,8 @@ def cleanup_old_buckets(session):
 def test(session):
     """Run all tests."""
     if session.python:
-        session.notify('unit-{}'.format(session.python))
-        session.notify('integration-{}'.format(session.python))
+        session.notify(f'unit-{session.python}')
+        session.notify(f'integration-{session.python}')
     else:
         session.notify('unit')
         session.notify('integration')

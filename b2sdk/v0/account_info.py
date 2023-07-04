@@ -48,7 +48,7 @@ class OldAccountInfoMethods:
     ):
         # we need to enumerate all the parameters and cannot just "*args, **kwargs" because
         # the deprecation decorator doesn't feel safe with the kwargs approach
-        return super(OldAccountInfoMethods, self).set_auth_data(
+        return super().set_auth_data(
             account_id,
             auth_token,
             api_url,

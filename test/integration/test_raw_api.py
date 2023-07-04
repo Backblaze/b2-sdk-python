@@ -94,7 +94,7 @@ def raw_api_test_helper(raw_api, should_cleanup_old_buckets):
     auth_dict = authorize_raw_api(raw_api)
     missing_capabilities = set(ALL_CAPABILITIES) - {'readBuckets', 'listAllBucketNames'
                                                    } - set(auth_dict['allowed']['capabilities'])
-    assert not missing_capabilities, 'it appears that the raw_api integration test is being run with a non-full key. Missing capabilities: %s' % (
+    assert not missing_capabilities, 'it appears that the raw_api integration test is being run with a non-full key. Missing capabilities: {}'.format(
         missing_capabilities,
     )
 

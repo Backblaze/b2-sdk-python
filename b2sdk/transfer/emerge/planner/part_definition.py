@@ -43,7 +43,7 @@ class BaseEmergePartDefinition(metaclass=ABCMeta):
 
 
 class UploadEmergePartDefinition(BaseEmergePartDefinition):
-    def __init__(self, upload_source: "UnboundSourceBytes", relative_offset, length):
+    def __init__(self, upload_source: UnboundSourceBytes, relative_offset, length):
         self.upload_source = upload_source
         self.relative_offset = relative_offset
         self.length = length

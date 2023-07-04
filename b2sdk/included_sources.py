@@ -13,21 +13,20 @@ from __future__ import annotations
 # B2 Command Line Tool for printing, for legal compliance reasons
 
 import dataclasses
-from typing import Dict, List
 
-_included_sources: List['IncludedSourceMeta'] = []
+_included_sources: list[IncludedSourceMeta] = []
 
 
 @dataclasses.dataclass
 class IncludedSourceMeta:
     name: str
     comment: str
-    files: Dict[str, str]
+    files: dict[str, str]
 
 
 def add_included_source(src: IncludedSourceMeta):
     _included_sources.append(src)
 
 
-def get_included_sources() -> List['IncludedSourceMeta']:
+def get_included_sources() -> list[IncludedSourceMeta]:
     return _included_sources

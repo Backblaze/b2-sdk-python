@@ -23,7 +23,7 @@ import requests
 from requests.adapters import HTTPAdapter
 import time
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 from .exception import (
     B2Error, B2RequestTimeoutDuringUpload, BadDateFormat, BrokenPipe, B2ConnectionError,
@@ -214,7 +214,7 @@ class B2Http:
         data,
         try_count: int = TRY_COUNT_DATA,
         post_params=None,
-        _timeout: Optional[int] = None,
+        _timeout: int | None = None,
     ):
         """
         Use like this:
@@ -344,9 +344,9 @@ class B2Http:
     def head_content(
         self,
         url: str,
-        headers: Dict[str, Any],
+        headers: dict[str, Any],
         try_count: int = TRY_COUNT_HEAD,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Does a HEAD instead of a GET for the URL.
         The response's content is limited to the headers.
@@ -389,7 +389,7 @@ class B2Http:
     @classmethod
     def _get_user_agent(cls, user_agent_append):
         if user_agent_append:
-            return '%s %s' % (USER_AGENT, user_agent_append)
+            return f'{USER_AGENT} {user_agent_append}'
         return USER_AGENT
 
     def _run_pre_request_hooks(self, method, url, headers):

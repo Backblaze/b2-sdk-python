@@ -49,8 +49,7 @@ class TestRenameArgument(TestBase):
         with self.assertRaises(
             AssertionError,
             msg=
-            "rename_argument decorator is still used in version %s when old argument name 'aaa' was scheduled to be dropped in 0.1.2. It is time to remove the mapping."
-            % (self.VERSION,),
+            f"rename_argument decorator is still used in version {self.VERSION} when old argument name 'aaa' was scheduled to be dropped in 0.1.2. It is time to remove the mapping.",
         ):
 
             @rename_argument('aaa', 'bbb', '0.1.0', '0.1.2', current_version=self.VERSION)

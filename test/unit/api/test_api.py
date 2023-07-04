@@ -294,7 +294,7 @@ class TestApi:
         self.api.authorize_account('production', key.id_, key.application_key)
         with pytest.raises(RestrictedBucket) as excinfo:
             self.api.list_buckets(bucket_id='not the one bound to the key')
-        assert str(excinfo.value) == 'Application key is restricted to bucket: %s' % (bucket1.id_,)
+        assert str(excinfo.value) == f'Application key is restricted to bucket: {bucket1.id_}'
 
     def _authorize_account(self):
         self.api.authorize_account('production', self.application_key_id, self.master_key)
@@ -444,18 +444,18 @@ class TestApi:
     def test_list_keys_v1(self):
         self._authorize_account()
         for i in range(20):
-            self.api.create_key(['readFiles'], 'testkey%s' % (i,))
+            self.api.create_key(['readFiles'], f'testkey{i}')
         with mock.patch.object(self.api, 'DEFAULT_LIST_KEY_COUNT', 10):
             response = self.api.list_keys()
         assert response['nextApplicationKeyId'] == 'appKeyId18'
         assert response['keys'] == [
             {
                 'accountId': 'account-0',
-                'applicationKeyId': 'appKeyId%s' % (ind,),
+                'applicationKeyId': f'appKeyId{ind}',
                 'bucketId': None,
                 'capabilities': ['readFiles'],
                 'expirationTimestamp': None,
-                'keyName': 'testkey%s' % (ind,),
+                'keyName': f'testkey{ind}',
                 'namePrefix': None,
             } for ind in [
                 0,
@@ -475,7 +475,7 @@ class TestApi:
     def test_list_keys_v2(self):
         self._authorize_account()
         for i in range(20):
-            self.api.create_key(['readFiles'], 'testkey%s' % (i,))
+            self.api.create_key(['readFiles'], f'testkey{i}')
         with mock.patch.object(self.api, 'DEFAULT_LIST_KEY_COUNT', 10):
             keys = list(self.api.list_keys())
         assert [key.id_ for key in keys] == [

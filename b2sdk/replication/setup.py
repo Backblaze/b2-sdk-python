@@ -19,7 +19,7 @@ from __future__ import annotations
 # b2 replication-deny destinationBucketName sourceKeyId
 
 from collections.abc import Iterable
-from typing import ClassVar, List, Optional, Tuple
+from typing import ClassVar, List
 import itertools
 import logging
 
@@ -45,12 +45,12 @@ class ReplicationSetupHelper(metaclass=B2TraceMeta):
     ] = ReplicationRule.DEFAULT_PRIORITY  #: what priority to set if there are no preexisting rules
     MAX_PRIORITY: ClassVar[
         int] = ReplicationRule.MAX_PRIORITY  #: maximum allowed priority of a replication rule
-    DEFAULT_SOURCE_CAPABILITIES: ClassVar[Tuple[str, ...]] = (
+    DEFAULT_SOURCE_CAPABILITIES: ClassVar[tuple[str, ...]] = (
         'readFiles',
         'readFileLegalHolds',
         'readFileRetentions',
     )
-    DEFAULT_DESTINATION_CAPABILITIES: ClassVar[Tuple[str, ...]] = (
+    DEFAULT_DESTINATION_CAPABILITIES: ClassVar[tuple[str, ...]] = (
         'writeFiles',
         'writeFileLegalHolds',
         'writeFileRetentions',
@@ -61,11 +61,11 @@ class ReplicationSetupHelper(metaclass=B2TraceMeta):
         self,
         source_bucket: Bucket,
         destination_bucket: Bucket,
-        name: Optional[str] = None,  #: name for the new replication rule
+        name: str | None = None,  #: name for the new replication rule
         priority: int = None,  #: priority for the new replication rule
-        prefix: Optional[str] = None,
+        prefix: str | None = None,
         include_existing_files: bool = False,
-    ) -> Tuple[Bucket, Bucket]:
+    ) -> tuple[Bucket, Bucket]:
 
         # setup source key
         source_key = self._get_source_key(
@@ -170,8 +170,8 @@ class ReplicationSetupHelper(metaclass=B2TraceMeta):
         source_bucket: Bucket,
         source_key: ApplicationKey,
         destination_bucket: Bucket,
-        prefix: Optional[str] = None,
-        name: Optional[str] = None,  #: name for the new replication rule
+        prefix: str | None = None,
+        name: str | None = None,  #: name for the new replication rule
         priority: int = None,  #: priority for the new replication rule
         include_existing_files: bool = False,
     ) -> Bucket:
@@ -241,7 +241,7 @@ class ReplicationSetupHelper(metaclass=B2TraceMeta):
     def _should_make_new_source_key(
         cls,
         current_replication_configuration: ReplicationConfiguration,
-        current_source_key: Optional[ApplicationKey],
+        current_source_key: ApplicationKey | None,
     ) -> bool:
         if current_replication_configuration.source_key_id is None:
             logger.debug('will create a new source key because no key is set')
@@ -275,7 +275,7 @@ class ReplicationSetupHelper(metaclass=B2TraceMeta):
         cls,
         name: str,
         bucket: Bucket,
-        prefix: Optional[str] = None,
+        prefix: str | None = None,
     ) -> ApplicationKey:
         # in this implementation we ignore the prefix and create a full key, because
         # if someone would need a different (wider) key later, all replication
@@ -291,7 +291,7 @@ class ReplicationSetupHelper(metaclass=B2TraceMeta):
         cls,
         name: str,
         bucket: Bucket,
-        prefix: Optional[str] = None,
+        prefix: str | None = None,
     ) -> ApplicationKey:
         capabilities = cls.DEFAULT_DESTINATION_CAPABILITIES
         return cls._create_key(name, bucket, prefix, capabilities)
@@ -301,7 +301,7 @@ class ReplicationSetupHelper(metaclass=B2TraceMeta):
         cls,
         name: str,
         bucket: Bucket,
-        prefix: Optional[str] = None,
+        prefix: str | None = None,
         capabilities=tuple(),
     ) -> ApplicationKey:
         api: B2Api = bucket.api
@@ -316,7 +316,7 @@ class ReplicationSetupHelper(metaclass=B2TraceMeta):
     def _get_priority_for_new_rule(
         cls,
         current_rules: Iterable[ReplicationRule],
-        priority: Optional[int] = None,
+        priority: int | None = None,
     ):
         if priority is not None:
             return priority
@@ -331,14 +331,14 @@ class ReplicationSetupHelper(metaclass=B2TraceMeta):
         cls,
         current_rules: Iterable[ReplicationRule],
         destination_bucket: Bucket,
-        name: Optional[str] = None,
+        name: str | None = None,
     ):
         if name is not None:
             return name
         existing_names = set(rr.name for rr in current_rules)
         suffixes = cls._get_rule_name_candidate_suffixes()
         while True:
-            candidate = '%s%s' % (
+            candidate = '{}{}'.format(
                 destination_bucket.name,
                 next(suffixes),
             )  # use := after dropping 3.7
@@ -355,6 +355,6 @@ class ReplicationSetupHelper(metaclass=B2TraceMeta):
         return map(str, itertools.chain([''], itertools.count(2)))
 
     @classmethod
-    def _partion_bucket_path(cls, bucket_path: str) -> Tuple[str, str]:
+    def _partion_bucket_path(cls, bucket_path: str) -> tuple[str, str]:
         bucket_name, _, path = bucket_path.partition('/')
         return bucket_name, path

@@ -13,7 +13,7 @@ import logging
 import os
 from abc import ABCMeta, abstractmethod
 from contextlib import suppress
-from typing import List, Optional
+from typing import Optional
 
 from ..bucket import Bucket
 from ..file_version import FileVersion
@@ -130,7 +130,7 @@ class B2UploadAction(AbstractAction):
             self.cached_upload_source = UploadSourceLocalFile(self.local_full_path)
         return self.cached_upload_source
 
-    def get_all_sources(self) -> List[OutboundTransferSource]:
+    def get_all_sources(self) -> list[OutboundTransferSource]:
         """ Get list of sources required to complete this upload """
         return [self._upload_source]
 
@@ -179,7 +179,7 @@ class B2UploadAction(AbstractAction):
         reporter.print_completion('upload ' + self.relative_name)
 
     def __str__(self) -> str:
-        return 'b2_upload(%s, %s, %s)' % (
+        return 'b2_upload({}, {}, {})'.format(
             self.local_full_path, self.b2_file_name, self.mod_time_millis
         )
 
@@ -193,7 +193,7 @@ class B2IncrementalUploadAction(B2UploadAction):
         mod_time_millis: int,
         size: int,
         encryption_settings_provider: AbstractSyncEncryptionSettingsProvider,
-        file_version: Optional[FileVersion] = None,
+        file_version: FileVersion | None = None,
         absolute_minimum_part_size: int = Optional[None],
     ):
         """
@@ -213,7 +213,7 @@ class B2IncrementalUploadAction(B2UploadAction):
         self.file_version = file_version
         self.absolute_minimum_part_size = absolute_minimum_part_size
 
-    def get_all_sources(self) -> List[OutboundTransferSource]:
+    def get_all_sources(self) -> list[OutboundTransferSource]:
         return self._upload_source.get_incremental_sources(
             self.file_version, self.absolute_minimum_part_size
         )
@@ -258,7 +258,7 @@ class B2HideAction(AbstractAction):
         reporter.print_completion('hide   ' + self.relative_name)
 
     def __str__(self) -> str:
-        return 'b2_hide(%s)' % (self.b2_file_name,)
+        return f'b2_hide({self.b2_file_name})'
 
 
 class B2DownloadAction(AbstractAction):
@@ -294,7 +294,7 @@ class B2DownloadAction(AbstractAction):
             with suppress(OSError):
                 os.makedirs(parent_dir)
         if not os.path.isdir(parent_dir):
-            raise Exception('could not create directory %s' % (parent_dir,))
+            raise Exception(f'could not create directory {parent_dir}')
 
     def do_action(self, bucket: Bucket, reporter: ProgressReport) -> None:
         """
@@ -477,7 +477,7 @@ class B2DeleteAction(AbstractAction):
         reporter.print_completion('delete ' + self.relative_name + ' ' + self.note)
 
     def __str__(self) -> str:
-        return 'b2_delete(%s, %s, %s)' % (self.b2_file_name, self.file_id, self.note)
+        return f'b2_delete({self.b2_file_name}, {self.file_id}, {self.note})'
 
 
 class LocalDeleteAction(AbstractAction):
@@ -519,4 +519,4 @@ class LocalDeleteAction(AbstractAction):
         reporter.print_completion('delete ' + self.relative_name)
 
     def __str__(self) -> str:
-        return 'local_delete(%s)' % (self.full_path,)
+        return f'local_delete({self.full_path})'

@@ -10,7 +10,7 @@
 from __future__ import annotations
 
 import re
-from typing import Optional, Union, Iterable
+from typing import Iterable
 
 from .file import B2FileVersion
 from ..file_version import FileVersionInfo
@@ -37,14 +37,14 @@ class ScanPoliciesManager(v2.ScanPoliciesManager):
 
     def __init__(
         self,
-        exclude_dir_regexes: Iterable[Union[str, re.Pattern]] = tuple(),
-        exclude_file_regexes: Iterable[Union[str, re.Pattern]] = tuple(),
-        include_file_regexes: Iterable[Union[str, re.Pattern]] = tuple(),
+        exclude_dir_regexes: Iterable[str | re.Pattern] = tuple(),
+        exclude_file_regexes: Iterable[str | re.Pattern] = tuple(),
+        include_file_regexes: Iterable[str | re.Pattern] = tuple(),
         exclude_all_symlinks: bool = False,
-        exclude_modified_before: Optional[int] = None,
-        exclude_modified_after: Optional[int] = None,
-        exclude_uploaded_before: Optional[int] = None,
-        exclude_uploaded_after: Optional[int] = None,
+        exclude_modified_before: int | None = None,
+        exclude_modified_after: int | None = None,
+        exclude_uploaded_before: int | None = None,
+        exclude_uploaded_after: int | None = None,
     ):
         """
         :param exclude_dir_regexes: regexes to exclude directories
@@ -132,7 +132,7 @@ class ScanPoliciesManagerWrapper(v2.ScanPoliciesManager):
         self.exclude_all_symlinks = scan_policies_manager.exclude_all_symlinks
 
     def __repr__(self):
-        return "%s(%s)" % (
+        return "{}({})".format(
             self.__class__.__name__,
             self.scan_policies_manager,
         )

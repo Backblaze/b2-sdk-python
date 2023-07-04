@@ -41,7 +41,7 @@ class UnfinishedLargeFile:
         self.cache_control = file_dict.get('cacheControl')
 
     def __repr__(self):
-        return '<%s %s %s>' % (self.__class__.__name__, self.bucket_id, self.file_name)
+        return f'<{self.__class__.__name__} {self.bucket_id} {self.file_name}>'
 
     def __eq__(self, other):
         return isinstance(other, self.__class__) and self.__dict__ == other.__dict__

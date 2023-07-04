@@ -15,7 +15,6 @@ import threading
 from concurrent import futures
 from io import IOBase
 from time import perf_counter_ns
-from typing import Optional
 
 from requests.models import Response
 
@@ -51,7 +50,7 @@ class ParallelDownloader(AbstractDownloader):
     #
     FINISH_HASHING_BUFFER_SIZE = 1024**2
 
-    def __init__(self, min_part_size: int, max_streams: Optional[int] = None, **kwargs):
+    def __init__(self, min_part_size: int, max_streams: int | None = None, **kwargs):
         """
         :param max_streams: maximum number of simultaneous streams
         :param min_part_size: minimum amount of data a single stream will retrieve, in bytes
@@ -83,7 +82,7 @@ class ParallelDownloader(AbstractDownloader):
         response: Response,
         download_version: DownloadVersion,
         session: B2Session,
-        encryption: Optional[EncryptionSetting] = None,
+        encryption: EncryptionSetting | None = None,
     ):
         """
         Download a file from given url using parallel download sessions and stores it in the given download_destination.
@@ -215,7 +214,7 @@ class WriterThread(threading.Thread):
         self.queue = queue.Queue(max_queue_depth)
         self.total = 0
         self.stats_collector = StatsCollector(str(self.file), 'writer', 'seek')
-        super(WriterThread, self).__init__()
+        super().__init__()
 
     def run(self):
         file = self.file
@@ -255,9 +254,9 @@ def download_first_part(
     hasher,
     session: B2Session,
     writer: WriterThread,
-    first_part: 'PartToDownload',
+    first_part: PartToDownload,
     chunk_size: int,
-    encryption: Optional[EncryptionSetting] = None,
+    encryption: EncryptionSetting | None = None,
 ) -> None:
     """
     :param response: response of the original GET call
@@ -367,9 +366,9 @@ def download_non_first_part(
     url: str,
     session: B2Session,
     writer: WriterThread,
-    part_to_download: 'PartToDownload',
+    part_to_download: PartToDownload,
     chunk_size: int,
-    encryption: Optional[EncryptionSetting] = None,
+    encryption: EncryptionSetting | None = None,
 ) -> None:
     """
     :param url: download URL
@@ -432,7 +431,7 @@ class PartToDownload:
         self.local_range = local_range
 
     def __repr__(self):
-        return 'PartToDownload(%s, %s)' % (self.cloud_range, self.local_range)
+        return f'PartToDownload({self.cloud_range}, {self.local_range})'
 
 
 def gen_parts(cloud_range, local_range, part_count):

@@ -9,8 +9,6 @@
 ######################################################################
 from __future__ import annotations
 
-from typing import Optional
-
 from ..scan.folder import AbstractFolder
 from ..scan.path import AbstractPath
 from ..transfer.outbound.upload_source import UploadMode
@@ -32,9 +30,9 @@ class SyncPolicyManager:
     def get_policy(
         self,
         sync_type: str,
-        source_path: Optional[AbstractPath],
+        source_path: AbstractPath | None,
         source_folder: AbstractFolder,
-        dest_path: Optional[AbstractPath],
+        dest_path: AbstractPath | None,
         dest_folder: AbstractFolder,
         now_millis: int,
         delete: bool,
@@ -112,7 +110,7 @@ class SyncPolicyManager:
             else:
                 return CopyPolicy
         raise NotImplementedError(
-            'invalid sync type: %s, keep_days: %s, delete: %s' % (
+            'invalid sync type: {}, keep_days: {}, delete: {}'.format(
                 sync_type,
                 keep_days,
                 delete,

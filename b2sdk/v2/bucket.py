@@ -22,7 +22,7 @@ if typing.TYPE_CHECKING:
 
 # Overridden to raise old style BucketIdNotFound exception
 class Bucket(v3.Bucket):
-    def get_fresh_state(self) -> 'Bucket':
+    def get_fresh_state(self) -> Bucket:
         try:
             return super().get_fresh_state()
         except v3BucketIdNotFound as e:

@@ -80,13 +80,13 @@ class IntegrationTestBase:
         print('Bucket metadata:')
         bucket_dict = bucket.as_dict()
         for info_key, info in bucket_dict.items():
-            print('\t%s: "%s"' % (info_key, info))
+            print(f'\t{info_key}: "{info}"')
 
         print('All files (and their versions) inside the bucket:')
         ls_generator = bucket.ls(recursive=True, latest_only=False)
         for file_version, _directory in ls_generator:
             # as_dict() is bound to have more info than we can use,
             # but maybe some of it will cast some light on the issue.
-            print('\t%s (%s)' % (file_version.file_name, file_version.as_dict()))
+            print(f'\t{file_version.file_name} ({file_version.as_dict()})')
 
         print(' DUPLICATED BUCKET DEBUG END '.center(60, '='))

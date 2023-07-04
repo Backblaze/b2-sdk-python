@@ -10,7 +10,6 @@
 from __future__ import annotations
 
 from contextlib import suppress
-from typing import Optional
 import datetime
 import functools
 
@@ -37,14 +36,14 @@ class FileVersionInfo(v2.FileVersion):
         file_info,
         upload_timestamp,
         action,
-        account_id: Optional[str] = None,
-        bucket_id: Optional[str] = None,
+        account_id: str | None = None,
+        bucket_id: str | None = None,
         content_md5=None,
-        server_side_encryption: Optional[v2.EncryptionSetting] = None,
-        file_retention: Optional[v2.FileRetentionSetting] = None,
-        legal_hold: Optional[v2.LegalHold] = None,
-        api: Optional['v1api.B2Api'] = None,
-        cache_control: Optional[str] = None,
+        server_side_encryption: v2.EncryptionSetting | None = None,
+        file_retention: v2.FileRetentionSetting | None = None,
+        legal_hold: v2.LegalHold | None = None,
+        api: v1api.B2Api | None = None,
+        cache_control: str | None = None,
         **kwargs
     ):
         self.id_ = id_
@@ -105,7 +104,7 @@ class FileVersionInfo(v2.FileVersion):
     def format_folder_ls_entry(cls, name):
         return cls.LS_ENTRY_TEMPLATE % ('-', '-', '-', '-', 0, name)
 
-    def get_fresh_state(self) -> 'FileVersionInfo':
+    def get_fresh_state(self) -> FileVersionInfo:
         """
         Fetch all the information about this file version and return a new FileVersion object.
         This method does NOT change the object it is called on.
@@ -171,7 +170,7 @@ class FileVersionInfoFactory(v2.FileVersionFactory):
         )
 
 
-def file_version_info_from_id_and_name(file_id_and_name: v2.FileIdAndName, api: 'v1api.B2Api'):
+def file_version_info_from_id_and_name(file_id_and_name: v2.FileIdAndName, api: v1api.B2Api):
     return FileVersionInfo(
         id_=file_id_and_name.file_id,
         file_name=file_id_and_name.file_name,

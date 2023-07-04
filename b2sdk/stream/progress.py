@@ -27,7 +27,7 @@ class AbstractStreamWithProgress(StreamWrapper):
         :param b2sdk.v2.AbstractProgressListener progress_listener: the listener that we tell about progress
         :param int offset: the starting byte offset in the file
         """
-        super(AbstractStreamWithProgress, self).__init__(stream)
+        super().__init__(stream)
         assert progress_listener is not None
         self.progress_listener = progress_listener
         self.bytes_completed = 0
@@ -48,7 +48,7 @@ class ReadingStreamWithProgress(AbstractStreamWithProgress):
 
     def __init__(self, *args, **kwargs):
         length = kwargs.pop('length', None)
-        super(ReadingStreamWithProgress, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.length = length
 
     def read(self, size=None):
@@ -58,12 +58,12 @@ class ReadingStreamWithProgress(AbstractStreamWithProgress):
         :param int size: number of bytes to read
         :return: data read from the stream
         """
-        data = super(ReadingStreamWithProgress, self).read(size)
+        data = super().read(size)
         self._progress_update(len(data))
         return data
 
     def seek(self, pos, whence=0):
-        pos = super(ReadingStreamWithProgress, self).seek(pos, whence=whence)
+        pos = super().seek(pos, whence=whence)
         # reset progress to current stream position - assumption is that ReadingStreamWithProgress would not be used
         # for random access streams, and seek is only used to reset stream to beginning to retry file upload
         # and multipart file upload would open and use different file descriptor for each part;
@@ -89,4 +89,4 @@ class WritingStreamWithProgress(AbstractStreamWithProgress):
         :param bytes data: data to write to the stream
         """
         self._progress_update(len(data))
-        return super(WritingStreamWithProgress, self).write(data)
+        return super().write(data)

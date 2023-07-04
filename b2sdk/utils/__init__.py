@@ -153,7 +153,7 @@ class IncrementalHexDigester:
 
     def update_from_stream(
         self,
-        limit: Optional[int] = None,
+        limit: int | None = None,
     ) -> Sha1HexDigest:
         """
         :param limit: How many new bytes try to read from the stream. Default None – read until nothing left.
@@ -179,8 +179,8 @@ class IncrementalHexDigester:
 
 def hex_sha1_of_unlimited_stream(
     input_stream: ReadOnlyStream,
-    limit: Optional[int] = None,
-) -> Tuple[Sha1HexDigest, int]:
+    limit: int | None = None,
+) -> tuple[Sha1HexDigest, int]:
     digester = IncrementalHexDigester(input_stream)
     digester.update_from_stream(limit)
     return digester.hex_digest, digester.read_bytes
@@ -492,7 +492,7 @@ def current_time_millis():
     return int(round(time.time() * 1000))
 
 
-def iterator_peek(iterator: Iterator[T], count: int) -> Tuple[List[T], Iterator[T]]:
+def iterator_peek(iterator: Iterator[T], count: int) -> tuple[list[T], Iterator[T]]:
     """
     Get up to the `count` first elements yielded by `iterator`.
 

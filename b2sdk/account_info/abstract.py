@@ -9,7 +9,6 @@
 ######################################################################
 from __future__ import annotations
 from abc import abstractmethod
-from typing import Optional, List, Tuple
 
 from b2sdk.account_info import exception
 from b2sdk.raw_api import ALL_CAPABILITIES
@@ -53,7 +52,7 @@ class AbstractAccountInfo(metaclass=B2TraceMetaAbstract):
         """
 
     @abstractmethod
-    def list_bucket_names_ids(self) -> List[Tuple[str, str]]:
+    def list_bucket_names_ids(self) -> list[tuple[str, str]]:
         """
         List buckets in the cache.
 
@@ -97,7 +96,7 @@ class AbstractAccountInfo(metaclass=B2TraceMetaAbstract):
         """
 
     @abstractmethod
-    def get_bucket_name_or_none_from_bucket_id(self, bucket_id: str) -> Optional[str]:
+    def get_bucket_name_or_none_from_bucket_id(self, bucket_id: str) -> str | None:
         """
         Look up the bucket name for the given bucket id.
         """

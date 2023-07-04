@@ -17,8 +17,6 @@ from dataclasses import (
 from time import perf_counter_ns
 from typing import (
     Any,
-    Optional,
-    Type,
 )
 
 logger = logging.getLogger(__name__)
@@ -28,14 +26,14 @@ class SingleStatsCollector:
     TO_MS = 1_000_000
 
     def __init__(self):
-        self.latest_entry: Optional[int] = None
+        self.latest_entry: int | None = None
         self.sum_of_all_entries: int = 0
-        self.started_perf_timer: Optional[int] = None
+        self.started_perf_timer: int | None = None
 
     def __enter__(self) -> None:
         self.started_perf_timer = perf_counter_ns()
 
-    def __exit__(self, exc_type: Type, exc_val: Exception, exc_tb: Any) -> None:
+    def __exit__(self, exc_type: type, exc_val: Exception, exc_tb: Any) -> None:
         time_diff = perf_counter_ns() - self.started_perf_timer
         self.latest_entry = time_diff
         self.sum_of_all_entries += time_diff

@@ -335,7 +335,7 @@ class TestSqliteAccountInfo(AccountInfoBase):
     @pytest.fixture(autouse=True)
     def setUp(self, request):
         self.db_path = tempfile.NamedTemporaryFile(
-            prefix='tmp_b2_tests_%s__' % (request.node.name,), delete=True
+            prefix=f'tmp_b2_tests_{request.node.name}__', delete=True
         ).name
         try:
             os.unlink(self.db_path)

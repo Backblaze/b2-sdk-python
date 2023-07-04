@@ -90,7 +90,7 @@ class DownloadDestLocalFile(AbstractDownloadDestination):
         completed = False
         try:
             # Open the file and let the caller write it.
-            with io.open(self.local_file_path, self.MODE) as f:
+            with open(self.local_file_path, self.MODE) as f:
                 yield f
 
             # After it's closed, set the mod time.
@@ -120,11 +120,11 @@ class PreSeekedDownloadDest(DownloadDestLocalFile):
 
     def __init__(self, local_file_path, seek_target):
         self._seek_target = seek_target
-        super(PreSeekedDownloadDest, self).__init__(local_file_path)
+        super().__init__(local_file_path)
 
     @contextmanager
     def write_to_local_file_context(self, *args, **kwargs):
-        with super(PreSeekedDownloadDest, self).write_to_local_file_context(*args, **kwargs) as f:
+        with super().write_to_local_file_context(*args, **kwargs) as f:
             f.seek(self._seek_target)
             yield f
 

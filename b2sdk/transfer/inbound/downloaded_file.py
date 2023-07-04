@@ -12,7 +12,7 @@ from __future__ import annotations
 import io
 import logging
 import pathlib
-from typing import Optional, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from requests.models import Response
 
@@ -118,10 +118,10 @@ class DownloadedFile:
     def __init__(
         self,
         download_version: DownloadVersion,
-        download_manager: 'DownloadManager',
-        range_: Optional[Tuple[int, int]],
+        download_manager: DownloadManager,
+        range_: tuple[int, int] | None,
         response: Response,
-        encryption: Optional[EncryptionSetting],
+        encryption: EncryptionSetting | None,
         progress_listener: AbstractProgressListener,
         write_buffer_size=None,
         check_hash=True,

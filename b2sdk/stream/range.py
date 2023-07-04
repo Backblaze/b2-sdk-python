@@ -27,7 +27,7 @@ class RangeOfInputStream(ReadOnlyStreamMixin, StreamWithLengthWrapper):
         :param int offset: offset in the stream
         :param int length: max number of bytes to read
         """
-        super(RangeOfInputStream, self).__init__(stream, length)
+        super().__init__(stream, length)
         self.offset = offset
         self.relative_pos = 0
         self.stream.seek(self.offset)
@@ -42,7 +42,7 @@ class RangeOfInputStream(ReadOnlyStreamMixin, StreamWithLengthWrapper):
         """
         if whence != 0:
             raise io.UnsupportedOperation('only SEEK_SET is supported')
-        abs_pos = super(RangeOfInputStream, self).seek(self.offset + pos)
+        abs_pos = super().seek(self.offset + pos)
         self.relative_pos = abs_pos - self.offset
         return self.tell()
 

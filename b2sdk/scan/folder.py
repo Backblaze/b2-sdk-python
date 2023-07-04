@@ -17,7 +17,7 @@ import re
 import sys
 
 from abc import ABCMeta, abstractmethod
-from typing import Iterator, Optional, Set
+from typing import Iterator
 
 from ..utils import fix_windows_path_limit, get_file_mtime, is_file_readable
 from .exception import EmptyDirectory, EnvironmentEncodingError, NotADirectory, UnableToCreateDirectory, UnsupportedFilename
@@ -54,7 +54,7 @@ class AbstractFolder(metaclass=ABCMeta):
     """
 
     @abstractmethod
-    def all_files(self, reporter: Optional[ProgressReport],
+    def all_files(self, reporter: ProgressReport | None,
                   policies_manager=DEFAULT_SCAN_MANAGER) -> Iterator[AbstractPath]:
         """
         Return an iterator over all of the files in the folder, in
@@ -126,7 +126,7 @@ class LocalFolder(AbstractFolder):
         """
         return 'local'
 
-    def all_files(self, reporter: Optional[ProgressReport],
+    def all_files(self, reporter: ProgressReport | None,
                   policies_manager=DEFAULT_SCAN_MANAGER) -> Iterator[LocalPath]:
         """
         Yield all files.
@@ -186,7 +186,7 @@ class LocalFolder(AbstractFolder):
         relative_dir_path: Path,
         reporter: ProgressReport,
         policies_manager: ScanPoliciesManager,
-        visited_symlinks: Optional[Set[int]] = None,
+        visited_symlinks: set[int] | None = None,
     ):
         """
         Yield a File object for each of the files anywhere under this folder, in the
@@ -239,7 +239,7 @@ class LocalFolder(AbstractFolder):
             if '/' in name:
                 raise UnsupportedFilename(
                     "scan does not support file names that include '/'",
-                    "%s in dir %s" % (name, local_dir)
+                    f"{name} in dir {local_dir}"
                 )
 
             local_path = local_dir / name
@@ -315,7 +315,7 @@ class LocalFolder(AbstractFolder):
         raise EnvironmentEncodingError(repr(name), sys.getfilesystemencoding())
 
     def __repr__(self):
-        return 'LocalFolder(%s)' % (self.root,)
+        return f'LocalFolder({self.root})'
 
 
 def b2_parent_dir(file_name):
@@ -352,7 +352,7 @@ class B2Folder(AbstractFolder):
 
     def all_files(
         self,
-        reporter: Optional[ProgressReport],
+        reporter: ProgressReport | None,
         policies_manager: ScanPoliciesManager = DEFAULT_SCAN_MANAGER
     ) -> Iterator[B2Path]:
         """
@@ -450,4 +450,4 @@ class B2Folder(AbstractFolder):
             return self.folder_name + '/' + file_name
 
     def __str__(self):
-        return 'B2Folder(%s, %s)' % (self.bucket_name, self.folder_name)
+        return f'B2Folder({self.bucket_name}, {self.folder_name})'

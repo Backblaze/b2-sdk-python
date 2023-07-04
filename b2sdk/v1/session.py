@@ -9,8 +9,6 @@
 ######################################################################
 from __future__ import annotations
 
-from typing import Optional
-
 from b2sdk import v2
 from b2sdk.v2.exception import InvalidArgument
 from .account_info import SqliteAccountInfo
@@ -26,7 +24,7 @@ class B2Session(v2.B2Session):
         account_info=None,
         cache=None,
         raw_api: v2.B2RawHTTPApi = None,
-        api_config: Optional[v2.B2HttpApiConfig] = None
+        api_config: v2.B2HttpApiConfig | None = None
     ):
         if raw_api is not None and api_config is not None:
             raise InvalidArgument(

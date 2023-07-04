@@ -13,7 +13,7 @@ import concurrent.futures as futures
 import logging
 
 from enum import Enum, unique
-from typing import cast, Optional
+from typing import cast
 
 from ..bounded_queue_executor import BoundedQueueExecutor
 from ..scan.exception import InvalidArgument
@@ -91,7 +91,7 @@ class Synchronizer:
         keep_days=None,
         sync_policy_manager: SyncPolicyManager = POLICY_MANAGER,
         upload_mode: UploadMode = UploadMode.FULL,
-        absolute_minimum_part_size: Optional[int] = None,
+        absolute_minimum_part_size: int | None = None,
     ):
         """
         Initialize synchronizer class and validate arguments
@@ -156,7 +156,7 @@ class Synchronizer:
         source_folder: AbstractFolder,
         dest_folder: AbstractFolder,
         now_millis: int,
-        reporter: Optional[SyncReport],
+        reporter: SyncReport | None,
         encryption_settings_provider:
         AbstractSyncEncryptionSettingsProvider = SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER,
     ):
@@ -252,7 +252,7 @@ class Synchronizer:
 
         source_type = source_folder.folder_type()
         dest_type = dest_folder.folder_type()
-        sync_type = '%s-to-%s' % (source_type, dest_type)
+        sync_type = f'{source_type}-to-{dest_type}'
         if source_type != 'b2' and dest_type != 'b2':
             raise ValueError('Sync between two local folders is not supported!')
 
@@ -299,8 +299,8 @@ class Synchronizer:
     def _make_file_sync_actions(
         self,
         sync_type: str,
-        source_path: Optional[AbstractPath],
-        dest_path: Optional[AbstractPath],
+        source_path: AbstractPath | None,
+        dest_path: AbstractPath | None,
         source_folder: AbstractFolder,
         dest_folder: AbstractFolder,
         now_millis: int,

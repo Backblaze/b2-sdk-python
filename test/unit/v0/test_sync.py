@@ -70,7 +70,7 @@ class TestFolder(TestSync):
     MOD_TIMES = {'.dot_file': TODAY - DAY, 'hello.': TODAY - DAY}
 
     def setUp(self):
-        super(TestFolder, self).setUp()
+        super().setUp()
 
         self.root_dir = ''
 
@@ -260,7 +260,7 @@ class TestLocalFolder(TestFolder):
     __test__ = True
 
     def setUp(self):
-        super(TestLocalFolder, self).setUp()
+        super().setUp()
 
         self.temp_dir = TempDir()
         self.root_dir = self.temp_dir.__enter__()
@@ -394,7 +394,7 @@ class TestB2Folder(TestFolder):
     }
 
     def setUp(self):
-        super(TestB2Folder, self).setUp()
+        super().setUp()
         self.bucket = MagicMock()
         self.bucket.ls.return_value = []
         self.api = MagicMock()
@@ -662,7 +662,7 @@ class TestParseSyncFolder(TestBase):
     def test_local(self):
         if platform.system() == 'Windows':
             drive, _ = os.path.splitdrive(os.getcwd())
-            expected = 'LocalFolder(\\\\?\\%s\\foo)' % (drive,)
+            expected = f'LocalFolder(\\\\?\\{drive}\\foo)'
         else:
             expected = 'LocalFolder(/foo)'
         self._check_one(expected, '/foo')
@@ -670,7 +670,7 @@ class TestParseSyncFolder(TestBase):
     def test_local_trailing_slash(self):
         if platform.system() == 'Windows':
             drive, _ = os.path.splitdrive(os.getcwd())
-            expected = 'LocalFolder(\\\\?\\%s\\foo)' % (drive,)
+            expected = f'LocalFolder(\\\\?\\{drive}\\foo)'
         else:
             expected = 'LocalFolder(/foo)'
         self._check_one(expected, '/foo/')

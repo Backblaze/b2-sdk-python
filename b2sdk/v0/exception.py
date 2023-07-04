@@ -19,7 +19,7 @@ v1DestFileNewer = DestFileNewer
 # override to retain old style __str__
 class DestFileNewer(v1DestFileNewer):
     def __str__(self):
-        return 'source file is older than destination: %s%s with a time of %s cannot be synced to %s%s with a time of %s, unless --skipNewer or --replaceNewer is provided' % (
+        return 'source file is older than destination: {}{} with a time of {} cannot be synced to {}{} with a time of {}, unless --skipNewer or --replaceNewer is provided'.format(
             self.source_prefix,
             self.source_file.name,
             self.source_file.latest_version().mod_time,

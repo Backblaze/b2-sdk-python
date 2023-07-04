@@ -13,7 +13,7 @@ import logging
 
 from abc import ABCMeta, abstractmethod
 from enum import Enum, unique
-from typing import cast, Optional
+from typing import cast
 
 from ..exception import DestFileNewer
 from ..scan.exception import InvalidArgument
@@ -53,9 +53,9 @@ class AbstractFileSyncPolicy(metaclass=ABCMeta):
 
     def __init__(
         self,
-        source_path: Optional[AbstractPath],
+        source_path: AbstractPath | None,
         source_folder: AbstractFolder,
-        dest_path: Optional[AbstractPath],
+        dest_path: AbstractPath | None,
         dest_folder: AbstractFolder,
         now_millis: int,
         keep_days: int,
@@ -65,7 +65,7 @@ class AbstractFileSyncPolicy(metaclass=ABCMeta):
         encryption_settings_provider:
         AbstractSyncEncryptionSettingsProvider = SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER,
         upload_mode: UploadMode = UploadMode.FULL,
-        absolute_minimum_part_size: Optional[int] = None,
+        absolute_minimum_part_size: int | None = None,
     ):
         """
         :param source_path: source file object
@@ -120,7 +120,7 @@ class AbstractFileSyncPolicy(metaclass=ABCMeta):
         cls,
         source_path: AbstractPath,
         dest_path: AbstractPath,
-        compare_threshold: Optional[int] = None,
+        compare_threshold: int | None = None,
         compare_version_mode: CompareVersionMode = CompareVersionMode.MODTIME,
         newer_file_mode: NewerFileSyncMode = NewerFileSyncMode.RAISE_ERROR,
     ):
@@ -208,8 +208,7 @@ class AbstractFileSyncPolicy(metaclass=ABCMeta):
 
         assert self._dest_path is not None or self._source_path is not None
 
-        for action in self._get_hide_delete_actions():
-            yield action
+        yield from self._get_hide_delete_actions()
 
     def _get_hide_delete_actions(self):
         """
@@ -282,7 +281,7 @@ class UpAndDeletePolicy(UpPolicy):
     """
 
     def _get_hide_delete_actions(self):
-        for action in super(UpAndDeletePolicy, self)._get_hide_delete_actions():
+        for action in super()._get_hide_delete_actions():
             yield action
         for action in make_b2_delete_actions(
             self._source_path,
@@ -299,7 +298,7 @@ class UpAndKeepDaysPolicy(UpPolicy):
     """
 
     def _get_hide_delete_actions(self):
-        for action in super(UpAndKeepDaysPolicy, self)._get_hide_delete_actions():
+        for action in super()._get_hide_delete_actions():
             yield action
         for action in make_b2_keep_days_actions(
             self._source_path,
@@ -318,8 +317,7 @@ class DownAndDeletePolicy(DownPolicy):
     """
 
     def _get_hide_delete_actions(self):
-        for action in super(DownAndDeletePolicy, self)._get_hide_delete_actions():
-            yield action
+        yield from super()._get_hide_delete_actions()
         if self._dest_path is not None and (
             self._source_path is None or not self._source_path.is_visible()
         ):
@@ -408,8 +406,8 @@ def make_b2_delete_note(version, index, transferred):
 
 
 def make_b2_delete_actions(
-    source_path: Optional[AbstractPath],
-    dest_path: Optional[B2Path],
+    source_path: AbstractPath | None,
+    dest_path: B2Path | None,
     dest_folder: AbstractFolder,
     transferred: bool,
 ):
@@ -437,8 +435,8 @@ def make_b2_delete_actions(
 
 
 def make_b2_keep_days_actions(
-    source_path: Optional[AbstractPath],
-    dest_path: Optional[B2Path],
+    source_path: AbstractPath | None,
+    dest_path: B2Path | None,
     dest_folder: AbstractFolder,
     transferred: bool,
     keep_days: int,

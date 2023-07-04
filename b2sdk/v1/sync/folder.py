@@ -23,12 +23,12 @@ def translate_errors(func):
         try:
             return func(*a, **kw)
         except exception.NotADirectory as ex:
-            raise Exception('%s is not a directory' % (ex.path,))
+            raise Exception(f'{ex.path} is not a directory')
         except exception.UnableToCreateDirectory as ex:
-            raise Exception('unable to create directory %s' % (ex.path,))
+            raise Exception(f'unable to create directory {ex.path}')
         except exception.EmptyDirectory as ex:
             raise exception.CommandError(
-                'Directory %s is empty.  Use --allowEmptySource to sync anyway.' % (ex.path,)
+                f'Directory {ex.path} is empty.  Use --allowEmptySource to sync anyway.'
             )
 
     return wrapper

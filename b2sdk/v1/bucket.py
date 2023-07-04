@@ -10,7 +10,7 @@
 from __future__ import annotations
 
 from contextlib import suppress
-from typing import Optional, overload, Tuple
+from typing import overload
 
 from .download_dest import AbstractDownloadDestination
 from .file_metadata import FileMetadata
@@ -37,11 +37,11 @@ class Bucket(v2.Bucket):
         metadata_directive=None,
         content_type=None,
         file_info=None,
-        destination_encryption: Optional[v2.EncryptionSetting] = None,
-        source_encryption: Optional[v2.EncryptionSetting] = None,
-        file_retention: Optional[v2.FileRetentionSetting] = None,
-        legal_hold: Optional[v2.LegalHold] = None,
-        cache_control: Optional[str] = None,
+        destination_encryption: v2.EncryptionSetting | None = None,
+        source_encryption: v2.EncryptionSetting | None = None,
+        file_retention: v2.FileRetentionSetting | None = None,
+        legal_hold: v2.LegalHold | None = None,
+        cache_control: str | None = None,
     ):
         """
         Creates a new file in this bucket by (server-side) copying from an existing file.
@@ -80,9 +80,9 @@ class Bucket(v2.Bucket):
         file_name,
         content_type=None,
         file_info=None,
-        file_retention: Optional[v2.FileRetentionSetting] = None,
-        legal_hold: Optional[v2.LegalHold] = None,
-        cache_control: Optional[str] = None,
+        file_retention: v2.FileRetentionSetting | None = None,
+        legal_hold: v2.LegalHold | None = None,
+        cache_control: str | None = None,
     ):
         """
         Start a large file transfer.
@@ -109,9 +109,9 @@ class Bucket(v2.Bucket):
         self,
         file_name: str,
         download_dest: AbstractDownloadDestination,
-        progress_listener: Optional[v2.AbstractProgressListener] = None,
-        range_: Optional[Tuple[int, int]] = None,
-        encryption: Optional[v2.EncryptionSetting] = None,
+        progress_listener: v2.AbstractProgressListener | None = None,
+        range_: tuple[int, int] | None = None,
+        encryption: v2.EncryptionSetting | None = None,
     ):
         """
         Download a file by name.
@@ -148,9 +148,9 @@ class Bucket(v2.Bucket):
         self,
         file_id: str,
         download_dest: AbstractDownloadDestination = None,
-        progress_listener: Optional[v2.AbstractProgressListener] = None,
-        range_: Optional[Tuple[int, int]] = None,
-        encryption: Optional[v2.EncryptionSetting] = None,
+        progress_listener: v2.AbstractProgressListener | None = None,
+        range_: tuple[int, int] | None = None,
+        encryption: v2.EncryptionSetting | None = None,
     ) -> dict:
         ...
 
@@ -158,19 +158,19 @@ class Bucket(v2.Bucket):
     def download_file_by_id(
         self,
         file_id: str,
-        progress_listener: Optional[v2.AbstractProgressListener] = None,
-        range_: Optional[Tuple[int, int]] = None,
-        encryption: Optional[v2.EncryptionSetting] = None,
+        progress_listener: v2.AbstractProgressListener | None = None,
+        range_: tuple[int, int] | None = None,
+        encryption: v2.EncryptionSetting | None = None,
     ) -> v2.DownloadedFile:
         ...
 
     def download_file_by_id(
         self,
         file_id: str,
-        download_dest: Optional[AbstractDownloadDestination] = None,
-        progress_listener: Optional[v2.AbstractProgressListener] = None,
-        range_: Optional[Tuple[int, int]] = None,
-        encryption: Optional[v2.EncryptionSetting] = None,
+        download_dest: AbstractDownloadDestination | None = None,
+        progress_listener: v2.AbstractProgressListener | None = None,
+        range_: tuple[int, int] | None = None,
+        encryption: v2.EncryptionSetting | None = None,
     ):
         """
         Download a file by ID.
@@ -209,14 +209,14 @@ class Bucket(v2.Bucket):
 
     def update(
         self,
-        bucket_type: Optional[str] = None,
-        bucket_info: Optional[dict] = None,
-        cors_rules: Optional[dict] = None,
-        lifecycle_rules: Optional[list] = None,
-        if_revision_is: Optional[int] = None,
-        default_server_side_encryption: Optional[v2.EncryptionSetting] = None,
-        default_retention: Optional[v2.BucketRetentionSetting] = None,
-        is_file_lock_enabled: Optional[bool] = None,
+        bucket_type: str | None = None,
+        bucket_info: dict | None = None,
+        cors_rules: dict | None = None,
+        lifecycle_rules: list | None = None,
+        if_revision_is: int | None = None,
+        default_server_side_encryption: v2.EncryptionSetting | None = None,
+        default_retention: v2.BucketRetentionSetting | None = None,
+        is_file_lock_enabled: bool | None = None,
         **kwargs
     ):
         """
@@ -257,7 +257,7 @@ class Bucket(v2.Bucket):
         folder_to_list: str = '',
         show_versions: bool = False,
         recursive: bool = False,
-        fetch_count: Optional[int] = 10000,
+        fetch_count: int | None = 10000,
         **kwargs
     ):
         """
@@ -288,7 +288,7 @@ class Bucket(v2.Bucket):
 
 def download_file_and_return_info_dict(
     downloaded_file: v2.DownloadedFile, download_dest: AbstractDownloadDestination,
-    range_: Optional[Tuple[int, int]]
+    range_: tuple[int, int] | None
 ):
     with download_dest.make_file_context(
         file_id=downloaded_file.download_version.id_,

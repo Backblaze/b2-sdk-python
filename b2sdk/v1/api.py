@@ -9,7 +9,7 @@
 ######################################################################
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, overload, Tuple, List
+from typing import Any, overload
 
 from .download_dest import AbstractDownloadDestination
 from b2sdk import v2
@@ -37,12 +37,12 @@ class B2Api(v2.B2Api):
 
     def __init__(
         self,
-        account_info: Optional[AbstractAccountInfo] = None,
-        cache: Optional[AbstractCache] = None,
+        account_info: AbstractAccountInfo | None = None,
+        cache: AbstractCache | None = None,
         raw_api: v2.B2RawHTTPApi = None,
         max_upload_workers: int = 10,
         max_copy_workers: int = 10,
-        api_config: Optional[v2.B2HttpApiConfig] = None,
+        api_config: v2.B2HttpApiConfig | None = None,
     ):
         """
         Initialize the API using the given account info.
@@ -72,7 +72,7 @@ class B2Api(v2.B2Api):
             max_copy_workers=max_copy_workers,
         )
 
-    def get_file_info(self, file_id: str) -> Dict[str, Any]:
+    def get_file_info(self, file_id: str) -> dict[str, Any]:
         """
         Gets info about file version.
 
@@ -111,9 +111,9 @@ class B2Api(v2.B2Api):
         self,
         file_id: str,
         download_dest: AbstractDownloadDestination,
-        progress_listener: Optional[v2.AbstractProgressListener] = None,
-        range_: Optional[Tuple[int, int]] = None,
-        encryption: Optional[v2.EncryptionSetting] = None,
+        progress_listener: v2.AbstractProgressListener | None = None,
+        range_: tuple[int, int] | None = None,
+        encryption: v2.EncryptionSetting | None = None,
     ) -> dict:
         ...
 
@@ -121,19 +121,19 @@ class B2Api(v2.B2Api):
     def download_file_by_id(
         self,
         file_id: str,
-        progress_listener: Optional[v2.AbstractProgressListener] = None,
-        range_: Optional[Tuple[int, int]] = None,
-        encryption: Optional[v2.EncryptionSetting] = None,
+        progress_listener: v2.AbstractProgressListener | None = None,
+        range_: tuple[int, int] | None = None,
+        encryption: v2.EncryptionSetting | None = None,
     ) -> v2.DownloadedFile:
         ...
 
     def download_file_by_id(
         self,
         file_id: str,
-        download_dest: Optional[AbstractDownloadDestination] = None,
-        progress_listener: Optional[v2.AbstractProgressListener] = None,
-        range_: Optional[Tuple[int, int]] = None,
-        encryption: Optional[v2.EncryptionSetting] = None,
+        download_dest: AbstractDownloadDestination | None = None,
+        progress_listener: v2.AbstractProgressListener | None = None,
+        range_: tuple[int, int] | None = None,
+        encryption: v2.EncryptionSetting | None = None,
     ):
         """
         Download a file with the given ID.
@@ -189,11 +189,11 @@ class B2Api(v2.B2Api):
 
     def create_key(
         self,
-        capabilities: List[str],
+        capabilities: list[str],
         key_name: str,
-        valid_duration_seconds: Optional[int] = None,
-        bucket_id: Optional[str] = None,
-        name_prefix: Optional[str] = None,
+        valid_duration_seconds: int | None = None,
+        bucket_id: str | None = None,
+        name_prefix: str | None = None,
     ):
         return super().create_key(
             capabilities=capabilities,
@@ -206,6 +206,6 @@ class B2Api(v2.B2Api):
     def delete_key(self, application_key_id):
         return super().delete_key_by_id(application_key_id).as_dict()
 
-    def get_key(self, key_id: str) -> Optional[dict]:
+    def get_key(self, key_id: str) -> dict | None:
         keys = self.list_keys(start_application_key_id=key_id)['keys']
         return next((key for key in keys if key['applicationKeyId'] == key_id), None)

@@ -143,7 +143,7 @@ class CanRetry(B2Error):
     """
 
     def __init__(self, can_retry):
-        super(CanRetry, self).__init__(None, None, None, None, None)
+        super().__init__(None, None, None, None, None)
         self.can_retry = can_retry
 
     def should_retry_upload(self):
@@ -998,7 +998,7 @@ class TestConcatenate(TestCaseWithBucket):
                         UploadSourceLocalFile(path),
                         CopySource(f2_id, length=len(data), offset=0, encryption=SSE_C_AES_2),
                     ],
-                    file_name='created_file_%s' % (len(data),),
+                    file_name=f'created_file_{len(data)}',
                     encryption=SSE_C_AES
                 )
             self.assertIsInstance(created_file, FileVersionInfo)
@@ -1008,7 +1008,7 @@ class TestConcatenate(TestCaseWithBucket):
             )
             expected = (
                 mock.ANY,
-                'created_file_%s' % (len(data),),
+                f'created_file_{len(data)}',
                 mock.ANY,  # FIXME: this should be equal to len(data) * 3,
                 # but there is a problem in the simulator/test code somewhere
                 SSE_C_AES_NO_SECRET
@@ -1046,7 +1046,7 @@ class DownloadTests:
     DATA = 'abcdefghijklmnopqrs'
 
     def setUp(self):
-        super(DownloadTests, self).setUp()
+        super().setUp()
         self.file_info = self.bucket.upload_bytes(self.DATA.encode(), 'file1')
         self.encrypted_file_info = self.bucket.upload_bytes(
             self.DATA.encode(), 'enc_file1', encryption=SSE_C_AES
@@ -1202,14 +1202,14 @@ class TestDownloadDefault(DownloadTests, EmptyFileDownloadScenarioMixin, TestCas
 
 class TestDownloadSimple(DownloadTests, EmptyFileDownloadScenarioMixin, TestCaseWithBucket):
     def setUp(self):
-        super(TestDownloadSimple, self).setUp()
+        super().setUp()
         download_manager = self.bucket.api.services.download_manager
         download_manager.strategies = [SimpleDownloader(force_chunk_size=20)]
 
 
 class TestDownloadParallel(DownloadTests, TestCaseWithBucket):
     def setUp(self):
-        super(TestDownloadParallel, self).setUp()
+        super().setUp()
         download_manager = self.bucket.api.services.download_manager
         download_manager.strategies = [
             ParallelDownloader(
@@ -1230,7 +1230,7 @@ class TruncatedFakeResponse(FakeResponse):
     """
 
     def __init__(self, *args, **kwargs):
-        super(TruncatedFakeResponse, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.data_bytes = self.data_bytes[:4]
 
 
@@ -1251,14 +1251,14 @@ class TestCaseWithTruncatedDownloadBucket(TestCaseWithBucket):
 
 class TestTruncatedDownloadSimple(DownloadTests, TestCaseWithTruncatedDownloadBucket):
     def setUp(self):
-        super(TestTruncatedDownloadSimple, self).setUp()
+        super().setUp()
         download_manager = self.bucket.api.services.download_manager
         download_manager.strategies = [SimpleDownloader(force_chunk_size=20)]
 
 
 class TestTruncatedDownloadParallel(DownloadTests, TestCaseWithTruncatedDownloadBucket):
     def setUp(self):
-        super(TestTruncatedDownloadParallel, self).setUp()
+        super().setUp()
         download_manager = self.bucket.api.services.download_manager
         download_manager.strategies = [
             ParallelDownloader(

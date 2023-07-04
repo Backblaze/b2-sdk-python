@@ -10,7 +10,6 @@
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
-from typing import Optional
 
 from b2sdk.utils import B2TraceMetaAbstract
 
@@ -23,8 +22,8 @@ class ThreadPoolMixin(metaclass=B2TraceMetaAbstract):
 
     def __init__(
         self,
-        thread_pool: Optional[ThreadPoolExecutor] = None,
-        max_workers: Optional[int] = None,
+        thread_pool: ThreadPoolExecutor | None = None,
+        max_workers: int | None = None,
         **kwargs
     ):
         """

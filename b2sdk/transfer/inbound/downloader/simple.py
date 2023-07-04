@@ -10,7 +10,6 @@
 from __future__ import annotations
 
 from io import IOBase
-from typing import Optional
 import logging
 
 from requests.models import Response
@@ -33,7 +32,7 @@ class SimpleDownloader(AbstractDownloader):
         response: Response,
         download_version: DownloadVersion,
         session: B2Session,
-        encryption: Optional[EncryptionSetting] = None,
+        encryption: EncryptionSetting | None = None,
     ):
         actual_size = self._get_remote_range(response, download_version).size()
         chunk_size = self._get_chunk_size(actual_size)
@@ -85,7 +84,7 @@ class SimpleDownloader(AbstractDownloader):
         response: Response,
         download_version: DownloadVersion,
         session: B2Session,
-        encryption: Optional[EncryptionSetting] = None,
+        encryption: EncryptionSetting | None = None,
     ):
         future = self._thread_pool.submit(
             self._download, file, response, download_version, session, encryption

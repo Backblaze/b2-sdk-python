@@ -50,7 +50,7 @@ class BaseUploadSubpart(metaclass=ABCMeta):
 
 class RemoteSourceUploadSubpart(BaseUploadSubpart):
     def __init__(self, *args, **kwargs):
-        super(RemoteSourceUploadSubpart, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._download_buffer_cache = None
 
     def get_subpart_id(self):

@@ -21,7 +21,7 @@ class TestSyncReport:
         stdout = MagicMock()
         stdout.write = MagicMock(
             side_effect=[
-                UnicodeEncodeError('codec', u'foo', 100, 105, 'artificial UnicodeEncodeError')
+                UnicodeEncodeError('codec', 'foo', 100, 105, 'artificial UnicodeEncodeError')
             ] + list(range(25))
         )
         sync_report = SyncReport(stdout, False)

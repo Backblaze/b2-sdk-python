@@ -53,7 +53,7 @@ class FileMetadata:
     @classmethod
     def _encode_content_sha1(cls, content_sha1, content_sha1_verified):
         if not content_sha1_verified:
-            return '%s%s' % (cls.UNVERIFIED_CHECKSUM_PREFIX, content_sha1)
+            return f'{cls.UNVERIFIED_CHECKSUM_PREFIX}{content_sha1}'
         return content_sha1
 
     @classmethod

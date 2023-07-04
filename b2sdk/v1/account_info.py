@@ -13,7 +13,6 @@ from abc import abstractmethod
 import inspect
 import logging
 import os
-from typing import Optional
 
 from b2sdk import v2
 from b2sdk.account_info.sqlite_account_info import DEFAULT_ABSOLUTE_MINIMUM_PART_SIZE
@@ -118,7 +117,7 @@ class AbstractAccountInfo(OldAccountInfoMethods, v2.AbstractAccountInfo):
         """
         # Removed @abstractmethod decorators
 
-    def get_bucket_name_or_none_from_bucket_id(self, bucket_id: str) -> Optional[str]:
+    def get_bucket_name_or_none_from_bucket_id(self, bucket_id: str) -> str | None:
         """
         Look up the bucket name for the given bucket id.
         """
