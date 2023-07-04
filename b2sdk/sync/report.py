@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import logging
 import time
+import typing
 
 from dataclasses import dataclass
 
@@ -19,6 +20,9 @@ from ..scan.report import ProgressReport
 from ..utils import format_and_scale_fraction, format_and_scale_number
 
 logger = logging.getLogger(__name__)
+
+if typing.TYPE_CHECKING:
+    from io import TextIOWrapper  # noqa: F401  # sphinx_autodoc_typehints breaks doc build without this import
 
 
 @dataclass
