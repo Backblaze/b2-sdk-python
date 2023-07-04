@@ -13,7 +13,6 @@ import logging
 import os
 from abc import ABCMeta, abstractmethod
 from contextlib import suppress
-from typing import Optional
 
 from ..bucket import Bucket
 from ..file_version import FileVersion
@@ -194,7 +193,7 @@ class B2IncrementalUploadAction(B2UploadAction):
         size: int,
         encryption_settings_provider: AbstractSyncEncryptionSettingsProvider,
         file_version: FileVersion | None = None,
-        absolute_minimum_part_size: int = Optional[None],
+        absolute_minimum_part_size: int | None = None,
     ):
         """
         :param local_full_path: a local file path

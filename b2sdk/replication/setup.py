@@ -20,7 +20,7 @@ import logging
 # b2 replication-accept destinationBucketName sourceKeyId [destinationKeyId]
 # b2 replication-deny destinationBucketName sourceKeyId
 from collections.abc import Iterable
-from typing import ClassVar, List
+from typing import ClassVar
 
 from b2sdk.api import B2Api
 from b2sdk.application_key import ApplicationKey
@@ -29,11 +29,6 @@ from b2sdk.replication.setting import ReplicationConfiguration, ReplicationRule
 from b2sdk.utils import B2TraceMeta
 
 logger = logging.getLogger(__name__)
-
-try:
-    Iterable[str]
-except TypeError:
-    Iterable = List  # Remove after dropping Python 3.8
 
 
 class ReplicationSetupHelper(metaclass=B2TraceMeta):
