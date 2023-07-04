@@ -8,6 +8,7 @@
 #
 ######################################################################
 from __future__ import annotations
+
 from abc import abstractmethod
 
 from b2sdk.account_info import exception

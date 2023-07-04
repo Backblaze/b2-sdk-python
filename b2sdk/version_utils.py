@@ -9,12 +9,13 @@
 ######################################################################
 from __future__ import annotations
 
-from abc import ABCMeta, abstractmethod
-from functools import wraps
 import inspect
 import warnings
+from abc import ABCMeta, abstractmethod
+from functools import wraps
 
 from pkg_resources import parse_version
+
 from b2sdk.version import VERSION
 
 

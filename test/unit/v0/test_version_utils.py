@@ -12,7 +12,6 @@ from __future__ import annotations
 import warnings
 
 from ..test_base import TestBase
-
 from .deps import rename_argument, rename_function
 
 

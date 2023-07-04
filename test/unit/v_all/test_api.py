@@ -10,16 +10,18 @@
 from __future__ import annotations
 
 import pytest
-
-from apiver_deps import B2Api
-from apiver_deps import B2HttpApiConfig
-from apiver_deps import Bucket
-from apiver_deps import InMemoryCache
-from apiver_deps import EncryptionMode
-from apiver_deps import EncryptionSetting
-from apiver_deps import InMemoryAccountInfo
-from apiver_deps import RawSimulator
+from apiver_deps import (
+    B2Api,
+    B2HttpApiConfig,
+    Bucket,
+    EncryptionMode,
+    EncryptionSetting,
+    InMemoryAccountInfo,
+    InMemoryCache,
+    RawSimulator,
+)
 from apiver_deps_exception import BucketIdNotFound
+
 from ..test_base import TestBase
 
 

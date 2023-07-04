@@ -8,6 +8,7 @@
 #
 ######################################################################
 from __future__ import annotations
+
 import pathlib
 
 from b2sdk import requests

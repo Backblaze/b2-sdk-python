@@ -22,6 +22,7 @@ from b2sdk.encryption.setting import EncryptionSetting
 from b2sdk.file_version import DownloadVersion
 from b2sdk.session import B2Session
 from b2sdk.utils.range_ import Range
+
 from .abstract import AbstractDownloader
 from .stats_collector import StatsCollector
 

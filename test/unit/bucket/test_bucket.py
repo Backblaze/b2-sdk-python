@@ -8,20 +8,18 @@
 #
 ######################################################################
 from __future__ import annotations
+
 import contextlib
 import io
-from contextlib import suppress
-from io import BytesIO
 import os
 import pathlib
 import platform
 import unittest.mock as mock
-
-import pytest
-
-from ..test_base import TestBase, create_key
+from contextlib import suppress
+from io import BytesIO
 
 import apiver_deps
+import pytest
 from apiver_deps_exception import (
     AlreadyFailed,
     B2ConnectionError,
@@ -40,41 +38,65 @@ from apiver_deps_exception import (
     InvalidUploadSource,
     MaxRetriesExceeded,
     RestrictedBucketMissing,
-    SSECKeyError,
     SourceReplicationConflict,
+    SSECKeyError,
     UnsatisfiableRange,
 )
+
+from ..test_base import TestBase, create_key
+
 if apiver_deps.V <= 1:
     from apiver_deps import DownloadDestBytes, PreSeekedDownloadDest
     from apiver_deps import FileVersionInfo as VFileVersionInfo
 else:
     DownloadDestBytes, PreSeekedDownloadDest = None, None  # these classes are not present, thus not needed, in v2
     from apiver_deps import FileVersion as VFileVersionInfo
-from apiver_deps import B2Api
-from apiver_deps import B2HttpApiConfig
-from apiver_deps import B2Session
-from apiver_deps import Bucket, BucketFactory
-from apiver_deps import DownloadedFile
-from apiver_deps import DownloadVersion
-from apiver_deps import LargeFileUploadState
-from apiver_deps import MetadataDirectiveMode
-from apiver_deps import Part
-from apiver_deps import AbstractProgressListener
-from apiver_deps import StubAccountInfo, RawSimulator, BucketSimulator, FakeResponse, FileSimulator
-from apiver_deps import AbstractDownloader
-from apiver_deps import ParallelDownloader
-from apiver_deps import Range
-from apiver_deps import SimpleDownloader
-from apiver_deps import UploadSourceBytes
-from apiver_deps import DummyCache, InMemoryCache
-from apiver_deps import hex_sha1_of_bytes, TempDir
-from apiver_deps import EncryptionAlgorithm, EncryptionSetting, EncryptionMode, EncryptionKey, SSE_NONE, SSE_B2_AES
-from apiver_deps import CopySource, UploadSourceLocalFile, WriteIntent
-from apiver_deps import BucketRetentionSetting, FileRetentionSetting, LegalHold, RetentionMode, RetentionPeriod, \
-    NO_RETENTION_FILE_SETTING
-from apiver_deps import ReplicationConfiguration, ReplicationRule
-from apiver_deps import LARGE_FILE_SHA1
-from apiver_deps import UploadMode
+from apiver_deps import (
+    LARGE_FILE_SHA1,
+    NO_RETENTION_FILE_SETTING,
+    SSE_B2_AES,
+    SSE_NONE,
+    AbstractDownloader,
+    AbstractProgressListener,
+    B2Api,
+    B2HttpApiConfig,
+    B2Session,
+    Bucket,
+    BucketFactory,
+    BucketRetentionSetting,
+    BucketSimulator,
+    CopySource,
+    DownloadedFile,
+    DownloadVersion,
+    DummyCache,
+    EncryptionAlgorithm,
+    EncryptionKey,
+    EncryptionMode,
+    EncryptionSetting,
+    FakeResponse,
+    FileRetentionSetting,
+    FileSimulator,
+    InMemoryCache,
+    LargeFileUploadState,
+    LegalHold,
+    MetadataDirectiveMode,
+    ParallelDownloader,
+    Part,
+    Range,
+    RawSimulator,
+    ReplicationConfiguration,
+    ReplicationRule,
+    RetentionMode,
+    RetentionPeriod,
+    SimpleDownloader,
+    StubAccountInfo,
+    TempDir,
+    UploadMode,
+    UploadSourceBytes,
+    UploadSourceLocalFile,
+    WriteIntent,
+    hex_sha1_of_bytes,
+)
 
 pytestmark = [pytest.mark.apiver(from_ver=1)]
 

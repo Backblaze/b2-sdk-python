@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 from typing import Callable
+
 import requests
 
 from .raw_api import AbstractRawApi, B2RawHTTPApi

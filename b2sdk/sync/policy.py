@@ -10,7 +10,6 @@
 from __future__ import annotations
 
 import logging
-
 from abc import ABCMeta, abstractmethod
 from enum import Enum, unique
 from typing import cast
@@ -20,8 +19,19 @@ from ..scan.exception import InvalidArgument
 from ..scan.folder import AbstractFolder, B2Folder
 from ..scan.path import AbstractPath, B2Path
 from ..transfer.outbound.upload_source import UploadMode
-from .action import B2CopyAction, B2DeleteAction, B2DownloadAction, B2HideAction, B2IncrementalUploadAction, B2UploadAction, LocalDeleteAction
-from .encryption_provider import SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER, AbstractSyncEncryptionSettingsProvider
+from .action import (
+    B2CopyAction,
+    B2DeleteAction,
+    B2DownloadAction,
+    B2HideAction,
+    B2IncrementalUploadAction,
+    B2UploadAction,
+    LocalDeleteAction,
+)
+from .encryption_provider import (
+    SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER,
+    AbstractSyncEncryptionSettingsProvider,
+)
 
 ONE_DAY_IN_MS = 24 * 60 * 60 * 1000
 

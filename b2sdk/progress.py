@@ -9,8 +9,8 @@
 ######################################################################
 from __future__ import annotations
 
-from abc import ABCMeta, abstractmethod
 import time
+from abc import ABCMeta, abstractmethod
 
 try:
     from tqdm import tqdm  # displays a nice progress bar

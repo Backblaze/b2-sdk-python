@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import logging
 from contextlib import ExitStack
-
 from typing import TYPE_CHECKING
 
 from b2sdk.encryption.setting import EncryptionMode, EncryptionSetting
@@ -21,13 +20,13 @@ from b2sdk.exception import (
     MaxRetriesExceeded,
 )
 from b2sdk.file_lock import FileRetentionSetting, LegalHold
-from b2sdk.stream.progress import ReadingStreamWithProgress
-from b2sdk.stream.hashing import StreamWithHash
 from b2sdk.http_constants import HEX_DIGITS_AT_END
+from b2sdk.stream.hashing import StreamWithHash
+from b2sdk.stream.progress import ReadingStreamWithProgress
 
-from .progress_reporter import PartProgressReporter
-from ..transfer_manager import TransferManager
 from ...utils.thread_pool import ThreadPoolMixin
+from ..transfer_manager import TransferManager
+from .progress_reporter import PartProgressReporter
 
 logger = logging.getLogger(__name__)
 

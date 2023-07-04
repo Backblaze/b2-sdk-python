@@ -9,10 +9,10 @@
 ######################################################################
 from __future__ import annotations
 
+from functools import wraps
+
 from .exception import MissingAccountData
 from .upload_url_pool import UrlPoolAccountInfo
-
-from functools import wraps
 
 
 def _raise_missing_if_result_is_none(function):

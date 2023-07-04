@@ -12,10 +12,21 @@ from __future__ import annotations
 from ..scan.folder import AbstractFolder
 from ..scan.path import AbstractPath
 from ..transfer.outbound.upload_source import UploadMode
-from .policy import AbstractFileSyncPolicy, CompareVersionMode, CopyAndDeletePolicy, \
-    CopyAndKeepDaysPolicy, CopyPolicy, DownAndDeletePolicy, DownAndKeepDaysPolicy, \
-    DownPolicy, NewerFileSyncMode, UpAndDeletePolicy, UpAndKeepDaysPolicy, UpPolicy
 from .encryption_provider import AbstractSyncEncryptionSettingsProvider
+from .policy import (
+    AbstractFileSyncPolicy,
+    CompareVersionMode,
+    CopyAndDeletePolicy,
+    CopyAndKeepDaysPolicy,
+    CopyPolicy,
+    DownAndDeletePolicy,
+    DownAndKeepDaysPolicy,
+    DownPolicy,
+    NewerFileSyncMode,
+    UpAndDeletePolicy,
+    UpAndKeepDaysPolicy,
+    UpPolicy,
+)
 
 
 class SyncPolicyManager:

@@ -9,11 +9,10 @@
 ######################################################################
 from __future__ import annotations
 
-from abc import ABCMeta
-
 import logging
 import re
 import warnings
+from abc import ABCMeta
 from typing import Any
 
 from .utils import camelcase_to_underscore, trace_call

@@ -8,13 +8,14 @@
 #
 ######################################################################
 from __future__ import annotations
+
+from test.helpers import patch_bind_params
 from unittest.mock import Mock
 
 import pytest
 
-from b2sdk.v2 import Bucket, B2Api
 from b2sdk import _v3 as v3
-from test.helpers import patch_bind_params
+from b2sdk.v2 import B2Api, Bucket
 
 
 @pytest.fixture

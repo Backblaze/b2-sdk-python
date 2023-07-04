@@ -11,18 +11,20 @@ from __future__ import annotations
 
 import concurrent.futures as futures
 import logging
-
 from enum import Enum, unique
 from typing import cast
 
 from ..bounded_queue_executor import BoundedQueueExecutor
 from ..scan.exception import InvalidArgument
-from ..scan.folder import AbstractFolder, LocalFolder, B2Folder
+from ..scan.folder import AbstractFolder, B2Folder, LocalFolder
 from ..scan.path import AbstractPath
 from ..scan.policies import DEFAULT_SCAN_MANAGER, ScanPoliciesManager
 from ..scan.scan import zip_folders
 from ..transfer.outbound.upload_source import UploadMode
-from .encryption_provider import SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER, AbstractSyncEncryptionSettingsProvider
+from .encryption_provider import (
+    SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER,
+    AbstractSyncEncryptionSettingsProvider,
+)
 from .exception import IncompleteSync
 from .policy import CompareVersionMode, NewerFileSyncMode
 from .policy_manager import POLICY_MANAGER, SyncPolicyManager

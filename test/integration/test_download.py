@@ -15,12 +15,12 @@ import pathlib
 from pprint import pprint
 from unittest import mock
 
-from b2sdk.v2 import *
 from b2sdk.utils import Sha1HexDigest
+from b2sdk.v2 import *
 
+from .base import IntegrationTestBase
 from .fixtures import *  # pyflakes: disable
 from .helpers import authorize
-from .base import IntegrationTestBase
 
 
 class TestDownload(IntegrationTestBase):

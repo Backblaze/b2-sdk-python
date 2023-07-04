@@ -12,11 +12,7 @@ from __future__ import annotations
 from unittest.mock import MagicMock
 
 from ..test_base import TestBase
-
-from .deps import FileVersionInfo
-from .deps import LocalSyncPath, B2SyncPath
-from .deps import B2Folder
-from .deps import make_b2_keep_days_actions
+from .deps import B2Folder, B2SyncPath, FileVersionInfo, LocalSyncPath, make_b2_keep_days_actions
 
 
 class TestMakeB2KeepDaysActions(TestBase):

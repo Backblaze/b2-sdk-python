@@ -16,8 +16,15 @@ import pytest
 
 from b2sdk.v2 import current_time_millis
 from b2sdk.v2.exception import DuplicateBucketName
+
 from .bucket_cleaner import BucketCleaner
-from .helpers import GENERAL_BUCKET_NAME_PREFIX, BUCKET_NAME_LENGTH, BUCKET_CREATED_AT_MILLIS, bucket_name_part, authorize
+from .helpers import (
+    BUCKET_CREATED_AT_MILLIS,
+    BUCKET_NAME_LENGTH,
+    GENERAL_BUCKET_NAME_PREFIX,
+    authorize,
+    bucket_name_part,
+)
 
 
 class IntegrationTestBase:

@@ -11,16 +11,21 @@ from __future__ import annotations
 
 import logging
 import os
-from pathlib import Path
 import platform
 import re
 import sys
-
 from abc import ABCMeta, abstractmethod
+from pathlib import Path
 from typing import Iterator
 
 from ..utils import fix_windows_path_limit, get_file_mtime, is_file_readable
-from .exception import EmptyDirectory, EnvironmentEncodingError, NotADirectory, UnableToCreateDirectory, UnsupportedFilename
+from .exception import (
+    EmptyDirectory,
+    EnvironmentEncodingError,
+    NotADirectory,
+    UnableToCreateDirectory,
+    UnsupportedFilename,
+)
 from .path import AbstractPath, B2Path, LocalPath
 from .policies import DEFAULT_SCAN_MANAGER, ScanPoliciesManager
 from .report import ProgressReport

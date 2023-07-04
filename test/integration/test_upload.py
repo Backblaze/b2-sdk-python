@@ -11,8 +11,8 @@ from __future__ import annotations
 
 import io
 
-from .fixtures import b2_auth_data  # noqa
 from .base import IntegrationTestBase
+from .fixtures import b2_auth_data  # noqa
 
 
 class TestUnboundStreamUpload(IntegrationTestBase):

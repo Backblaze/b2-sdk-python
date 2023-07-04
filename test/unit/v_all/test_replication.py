@@ -10,14 +10,19 @@
 from __future__ import annotations
 
 import logging
-import pytest
 
-from apiver_deps import B2Api
-from apiver_deps import B2HttpApiConfig
-from apiver_deps import InMemoryCache
-from apiver_deps import InMemoryAccountInfo
-from apiver_deps import RawSimulator
-from apiver_deps import ReplicationConfiguration, ReplicationRule, ReplicationSetupHelper
+import pytest
+from apiver_deps import (
+    B2Api,
+    B2HttpApiConfig,
+    InMemoryAccountInfo,
+    InMemoryCache,
+    RawSimulator,
+    ReplicationConfiguration,
+    ReplicationRule,
+    ReplicationSetupHelper,
+)
+
 from ..test_base import TestBase
 
 logger = logging.getLogger(__name__)

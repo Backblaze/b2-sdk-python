@@ -9,9 +9,9 @@
 ######################################################################
 from __future__ import annotations
 
-from contextlib import contextmanager
 import re
 import unittest
+from contextlib import contextmanager
 
 
 class TestBase(unittest.TestCase):

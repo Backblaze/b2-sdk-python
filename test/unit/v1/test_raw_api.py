@@ -8,17 +8,21 @@
 #
 ######################################################################
 from __future__ import annotations
+
 import pytest
 
 from ..test_base import TestBase
-
-from .deps import EncryptionAlgorithm
-from .deps import EncryptionKey
-from .deps import EncryptionMode
-from .deps import EncryptionSetting
-from .deps import B2RawHTTPApi
-from .deps import B2Http
-from .deps import BucketRetentionSetting, RetentionPeriod, RetentionMode
+from .deps import (
+    B2Http,
+    B2RawHTTPApi,
+    BucketRetentionSetting,
+    EncryptionAlgorithm,
+    EncryptionKey,
+    EncryptionMode,
+    EncryptionSetting,
+    RetentionMode,
+    RetentionPeriod,
+)
 from .deps_exception import UnusableFileName, WrongEncryptionModeForBucketDefault
 
 # Unicode characters for testing filenames.  (0x0394 is a letter Delta.)

@@ -9,9 +9,9 @@
 ######################################################################
 from __future__ import annotations
 
-from abc import abstractmethod
 import collections
 import threading
+from abc import abstractmethod
 
 from .abstract import AbstractAccountInfo
 

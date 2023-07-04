@@ -12,10 +12,13 @@ from __future__ import annotations
 import os
 
 from ..test_base import TestBase
-
-from .deps import DownloadDestLocalFile, DownloadDestProgressWrapper, PreSeekedDownloadDest
-from .deps import ProgressListenerForTest
-from .deps import TempDir
+from .deps import (
+    DownloadDestLocalFile,
+    DownloadDestProgressWrapper,
+    PreSeekedDownloadDest,
+    ProgressListenerForTest,
+    TempDir,
+)
 
 
 class TestDownloadDestLocalFile(TestBase):

@@ -8,9 +8,10 @@
 #
 ######################################################################
 from __future__ import annotations
-import re
-import pytest
 
+import re
+
+import pytest
 from apiver_deps import ScanPoliciesManager
 from apiver_deps_exception import InvalidArgument
 

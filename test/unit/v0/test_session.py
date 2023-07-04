@@ -12,10 +12,8 @@ from __future__ import annotations
 import unittest.mock as mock
 
 from ..test_base import TestBase
-
+from .deps import ALL_CAPABILITIES, B2Session
 from .deps_exception import InvalidAuthToken, Unauthorized
-from .deps import ALL_CAPABILITIES
-from .deps import B2Session
 
 
 class TestB2Session(TestBase):

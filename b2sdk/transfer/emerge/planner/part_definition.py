@@ -11,11 +11,10 @@ from __future__ import annotations
 
 from abc import ABCMeta, abstractmethod
 from functools import partial
+from typing import TYPE_CHECKING
 
 from b2sdk.stream.chained import ChainedStream
 from b2sdk.stream.range import wrap_with_range
-from typing import TYPE_CHECKING
-
 from b2sdk.utils import hex_sha1_of_unlimited_stream
 
 if TYPE_CHECKING:

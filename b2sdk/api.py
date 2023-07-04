@@ -10,23 +10,28 @@
 from __future__ import annotations
 
 import logging
-from typing import Generator
 from contextlib import suppress
+from typing import Generator
 
 from .account_info.abstract import AbstractAccountInfo
 from .account_info.exception import MissingAccountData
-from .api_config import B2HttpApiConfig, DEFAULT_HTTP_API_CONFIG
+from .api_config import DEFAULT_HTTP_API_CONFIG, B2HttpApiConfig
 from .application_key import ApplicationKey, BaseApplicationKey, FullApplicationKey
-from .cache import AbstractCache
 from .bucket import Bucket, BucketFactory
+from .cache import AbstractCache
 from .encryption.setting import EncryptionSetting
-from .replication.setting import ReplicationConfiguration
-from .exception import BucketIdNotFound, NonExistentBucket, RestrictedBucket, RestrictedBucketMissing
+from .exception import (
+    BucketIdNotFound,
+    NonExistentBucket,
+    RestrictedBucket,
+    RestrictedBucketMissing,
+)
 from .file_lock import FileRetentionSetting, LegalHold
 from .file_version import DownloadVersionFactory, FileIdAndName, FileVersion, FileVersionFactory
 from .large_file.services import LargeFileServices
-from .raw_api import API_VERSION
 from .progress import AbstractProgressListener
+from .raw_api import API_VERSION
+from .replication.setting import ReplicationConfiguration
 from .session import B2Session
 from .transfer import (
     CopyManager,

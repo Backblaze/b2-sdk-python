@@ -9,13 +9,17 @@
 ######################################################################
 from __future__ import annotations
 
-from math import ceil
 import hashlib
 import json
-
 from abc import ABCMeta, abstractmethod
 from collections import deque
+from math import ceil
 
+from b2sdk.http_constants import (
+    DEFAULT_MAX_PART_SIZE,
+    DEFAULT_MIN_PART_SIZE,
+    DEFAULT_RECOMMENDED_UPLOAD_PART_SIZE,
+)
 from b2sdk.transfer.emerge.planner.part_definition import (
     CopyEmergePartDefinition,
     UploadEmergePartDefinition,
@@ -24,11 +28,6 @@ from b2sdk.transfer.emerge.planner.part_definition import (
 from b2sdk.transfer.emerge.planner.upload_subpart import (
     LocalSourceUploadSubpart,
     RemoteSourceUploadSubpart,
-)
-from b2sdk.http_constants import (
-    DEFAULT_MIN_PART_SIZE,
-    DEFAULT_MAX_PART_SIZE,
-    DEFAULT_RECOMMENDED_UPLOAD_PART_SIZE,
 )
 from b2sdk.utils import iterator_peek
 

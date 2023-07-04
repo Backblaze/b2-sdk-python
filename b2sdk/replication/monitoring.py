@@ -10,7 +10,6 @@
 from __future__ import annotations
 
 import sys
-
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from queue import Queue
@@ -24,7 +23,12 @@ from ..scan.folder import B2Folder
 from ..scan.path import B2Path
 from ..scan.policies import DEFAULT_SCAN_MANAGER, ScanPoliciesManager
 from ..scan.report import ProgressReport
-from ..scan.scan import AbstractScanReport, AbstractScanResult, CountAndSampleScanReport, zip_folders
+from ..scan.scan import (
+    AbstractScanReport,
+    AbstractScanResult,
+    CountAndSampleScanReport,
+    zip_folders,
+)
 from .setting import ReplicationRule
 from .types import ReplicationStatus
 

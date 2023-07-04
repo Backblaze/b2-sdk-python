@@ -16,16 +16,15 @@ import random
 import re
 import threading
 import time
-
 from contextlib import contextmanager, suppress
+
+from requests.structures import CaseInsensitiveDict
 
 from b2sdk.http_constants import FILE_INFO_HEADER_PREFIX, HEX_DIGITS_AT_END
 from b2sdk.replication.setting import ReplicationConfiguration
-from requests.structures import CaseInsensitiveDict
 
 from .b2http import ResponseContextManager
 from .encryption.setting import EncryptionMode, EncryptionSetting
-from .replication.types import ReplicationStatus
 from .exception import (
     BadJson,
     BadRequest,
@@ -42,8 +41,8 @@ from .exception import (
     MissingPart,
     NonExistentBucket,
     PartSha1Mismatch,
-    SSECKeyError,
     SourceReplicationConflict,
+    SSECKeyError,
     Unauthorized,
     UnsatisfiableRange,
 )
@@ -55,6 +54,7 @@ from .file_lock import (
 )
 from .file_version import UNVERIFIED_CHECKSUM_PREFIX
 from .raw_api import ALL_CAPABILITIES, AbstractRawApi, MetadataDirectiveMode
+from .replication.types import ReplicationStatus
 from .stream.hashing import StreamWithHash
 from .utils import ConcurrentUsedAuthTokenGuard, b2_url_decode, b2_url_encode, hex_sha1_of_bytes
 

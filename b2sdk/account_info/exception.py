@@ -9,7 +9,7 @@
 ######################################################################
 from __future__ import annotations
 
-from abc import (ABCMeta)
+from abc import ABCMeta
 
 from ..exception import B2Error
 

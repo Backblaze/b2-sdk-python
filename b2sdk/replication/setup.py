@@ -9,25 +9,24 @@
 ######################################################################
 from __future__ import annotations
 
+import itertools
+import logging
+
 # b2 replication-setup [--profile profileName] --destination-profile destinationProfileName sourceBucketPath destinationBucketName [ruleName]
 # b2 replication-debug [--profile profileName] [--destination-profile destinationProfileName] bucketPath
 # b2 replication-status [--profile profileName] [--destination-profile destinationProfileName] [sourceBucketPath] [destinationBucketPath]
-
 # b2 replication-pause [--profile profileName] (sourceBucketName|sourceBucketPath) [replicationRuleName]
 # b2 replication-unpause [--profile profileName] (sourceBucketName|sourceBucketPath) [replicationRuleName]
 # b2 replication-accept destinationBucketName sourceKeyId [destinationKeyId]
 # b2 replication-deny destinationBucketName sourceKeyId
-
 from collections.abc import Iterable
 from typing import ClassVar, List
-import itertools
-import logging
 
 from b2sdk.api import B2Api
 from b2sdk.application_key import ApplicationKey
 from b2sdk.bucket import Bucket
-from b2sdk.utils import B2TraceMeta
 from b2sdk.replication.setting import ReplicationConfiguration, ReplicationRule
+from b2sdk.utils import B2TraceMeta
 
 logger = logging.getLogger(__name__)
 

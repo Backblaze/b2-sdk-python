@@ -9,22 +9,22 @@
 ######################################################################
 from __future__ import annotations
 
-from functools import partial
-from enum import Enum, unique
-from typing import Any
 import logging
+from enum import Enum, unique
+from functools import partial
+from typing import Any
 
 from b2sdk.account_info.abstract import AbstractAccountInfo
-from b2sdk.account_info.sqlite_account_info import SqliteAccountInfo
 from b2sdk.account_info.exception import MissingAccountData
+from b2sdk.account_info.sqlite_account_info import SqliteAccountInfo
+from b2sdk.api_config import DEFAULT_HTTP_API_CONFIG, B2HttpApiConfig
 from b2sdk.b2http import B2Http
 from b2sdk.cache import AbstractCache, AuthInfoCache, DummyCache
 from b2sdk.encryption.setting import EncryptionSetting
-from b2sdk.replication.setting import ReplicationConfiguration
-from b2sdk.exception import (InvalidAuthToken, Unauthorized)
+from b2sdk.exception import InvalidAuthToken, Unauthorized
 from b2sdk.file_lock import BucketRetentionSetting, FileRetentionSetting, LegalHold
 from b2sdk.raw_api import ALL_CAPABILITIES, REALM_URLS
-from b2sdk.api_config import B2HttpApiConfig, DEFAULT_HTTP_API_CONFIG
+from b2sdk.replication.setting import ReplicationConfiguration
 
 logger = logging.getLogger(__name__)
 

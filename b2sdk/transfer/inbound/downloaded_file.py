@@ -16,11 +16,6 @@ from typing import TYPE_CHECKING
 
 from requests.models import Response
 
-from ...encryption.setting import EncryptionSetting
-from ...file_version import DownloadVersion
-from ...progress import AbstractProgressListener
-from ...stream.progress import WritingStreamWithProgress
-
 from b2sdk.exception import (
     ChecksumMismatch,
     DestinationDirectoryDoesntAllowOperation,
@@ -30,6 +25,11 @@ from b2sdk.exception import (
     TruncatedOutput,
 )
 from b2sdk.utils import set_file_mtime
+
+from ...encryption.setting import EncryptionSetting
+from ...file_version import DownloadVersion
+from ...progress import AbstractProgressListener
+from ...stream.progress import WritingStreamWithProgress
 
 if TYPE_CHECKING:
     from .download_manager import DownloadManager

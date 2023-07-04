@@ -9,10 +9,17 @@
 ######################################################################
 from __future__ import annotations
 
-import pytest
-
 import apiver_deps
-from apiver_deps import DEFAULT_SCAN_MANAGER, POLICY_MANAGER, CompareVersionMode, KeepOrDeleteMode, NewerFileSyncMode, Synchronizer, UploadMode
+import pytest
+from apiver_deps import (
+    DEFAULT_SCAN_MANAGER,
+    POLICY_MANAGER,
+    CompareVersionMode,
+    KeepOrDeleteMode,
+    NewerFileSyncMode,
+    Synchronizer,
+    UploadMode,
+)
 
 
 @pytest.fixture(scope='session')

@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from b2sdk.v2 import *
 
-from .helpers import GENERAL_BUCKET_NAME_PREFIX, BUCKET_CREATED_AT_MILLIS, authorize
+from .helpers import BUCKET_CREATED_AT_MILLIS, GENERAL_BUCKET_NAME_PREFIX, authorize
 
 ONE_HOUR_MILLIS = 60 * 60 * 1000
 

@@ -10,29 +10,32 @@
 from __future__ import annotations
 
 import time
-
-import pytest
 from contextlib import suppress
 from unittest import mock
-from ..test_base import create_key
 
 import apiver_deps
-from apiver_deps import B2Api
-from apiver_deps import B2HttpApiConfig
-from apiver_deps import B2Http
-from apiver_deps import InMemoryCache
-from apiver_deps import EncryptionAlgorithm
-from apiver_deps import EncryptionMode
-from apiver_deps import EncryptionSetting
-from apiver_deps import FileIdAndName
-from apiver_deps import FileRetentionSetting
-from apiver_deps import InMemoryAccountInfo
-from apiver_deps import LegalHold
-from apiver_deps import RawSimulator
-from apiver_deps import RetentionMode
-from apiver_deps import NO_RETENTION_FILE_SETTING
-from apiver_deps import ApplicationKey, FullApplicationKey
-from apiver_deps_exception import RestrictedBucket, InvalidArgument
+import pytest
+from apiver_deps import (
+    NO_RETENTION_FILE_SETTING,
+    ApplicationKey,
+    B2Api,
+    B2Http,
+    B2HttpApiConfig,
+    EncryptionAlgorithm,
+    EncryptionMode,
+    EncryptionSetting,
+    FileIdAndName,
+    FileRetentionSetting,
+    FullApplicationKey,
+    InMemoryAccountInfo,
+    InMemoryCache,
+    LegalHold,
+    RawSimulator,
+    RetentionMode,
+)
+from apiver_deps_exception import InvalidArgument, RestrictedBucket
+
+from ..test_base import create_key
 
 if apiver_deps.V <= 1:
     from apiver_deps import FileVersionInfo as VFileVersion

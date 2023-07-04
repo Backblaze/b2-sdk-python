@@ -8,12 +8,11 @@
 #
 ######################################################################
 from __future__ import annotations
+
 from io import BytesIO
 
 from ..test_base import TestBase
-
-from .deps import StreamWithHash
-from .deps import hex_sha1_of_bytes
+from .deps import StreamWithHash, hex_sha1_of_bytes
 
 
 class TestHashingStream(TestBase):

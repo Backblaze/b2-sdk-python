@@ -10,11 +10,10 @@
 from __future__ import annotations
 
 import pytest
-
 from apiver_deps_exception import (
     EnvironmentEncodingError,
-    InvalidArgument,
     IncompleteSync,
+    InvalidArgument,
     UnsupportedFilename,
     check_invalid_argument,
 )

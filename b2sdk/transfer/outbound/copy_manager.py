@@ -12,9 +12,9 @@ from __future__ import annotations
 import logging
 
 from b2sdk.encryption.setting import EncryptionMode, EncryptionSetting
-from b2sdk.http_constants import SSE_C_KEY_ID_FILE_INFO_KEY_NAME
 from b2sdk.exception import AlreadyFailed, CopyArgumentsMismatch, SSECKeyIdMismatchInCopy
 from b2sdk.file_lock import FileRetentionSetting, LegalHold
+from b2sdk.http_constants import SSE_C_KEY_ID_FILE_INFO_KEY_NAME
 from b2sdk.raw_api import MetadataDirectiveMode
 from b2sdk.transfer.transfer_manager import TransferManager
 from b2sdk.utils.thread_pool import ThreadPoolMixin

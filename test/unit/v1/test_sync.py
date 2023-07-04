@@ -16,22 +16,36 @@ import sys
 import threading
 import time
 import unittest
-from unittest.mock import MagicMock, ANY
+from unittest.mock import ANY, MagicMock
 
 import pytest
 
 from ..test_base import TestBase
-
-from .deps import B2Folder, LocalFolder
-from .deps import BoundedQueueExecutor, zip_folders
-from .deps import LocalSyncPath, B2SyncPath
-from .deps import FileVersionInfo
-from .deps import KeepOrDeleteMode, NewerFileSyncMode, CompareVersionMode
-from .deps import ScanPoliciesManager, DEFAULT_SCAN_MANAGER
-from .deps import Synchronizer
-from .deps import TempDir
-from .deps import parse_sync_folder
-from .deps_exception import UnSyncableFilename, NotADirectory, UnableToCreateDirectory, EmptyDirectory, InvalidArgument, CommandError
+from .deps import (
+    DEFAULT_SCAN_MANAGER,
+    B2Folder,
+    B2SyncPath,
+    BoundedQueueExecutor,
+    CompareVersionMode,
+    FileVersionInfo,
+    KeepOrDeleteMode,
+    LocalFolder,
+    LocalSyncPath,
+    NewerFileSyncMode,
+    ScanPoliciesManager,
+    Synchronizer,
+    TempDir,
+    parse_sync_folder,
+    zip_folders,
+)
+from .deps_exception import (
+    CommandError,
+    EmptyDirectory,
+    InvalidArgument,
+    NotADirectory,
+    UnableToCreateDirectory,
+    UnSyncableFilename,
+)
 
 DAY = 86400000  # milliseconds
 TODAY = DAY * 100  # an arbitrary reference time for testing

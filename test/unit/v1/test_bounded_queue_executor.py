@@ -12,8 +12,8 @@ from __future__ import annotations
 import concurrent.futures as futures
 import time
 
-from .deps import BoundedQueueExecutor
 from ..test_base import TestBase
+from .deps import BoundedQueueExecutor
 
 
 class TestBoundedQueueExecutor(TestBase):

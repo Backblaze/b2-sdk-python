@@ -9,8 +9,6 @@
 ######################################################################
 from __future__ import annotations
 
-from random import random
-from contextlib import contextmanager
 import datetime
 import io
 import json
@@ -18,19 +16,30 @@ import locale
 import logging
 import socket
 import threading
+import time
+from contextlib import contextmanager
+from random import random
+from typing import Any
 
 import requests
 from requests.adapters import HTTPAdapter
-import time
 
-from typing import Any
-
+from .api_config import DEFAULT_HTTP_API_CONFIG, B2HttpApiConfig
 from .exception import (
-    B2Error, B2RequestTimeoutDuringUpload, BadDateFormat, BrokenPipe, B2ConnectionError,
-    B2RequestTimeout, ClockSkew, ConnectionReset, interpret_b2_error, UnknownError, UnknownHost,
-    InvalidJsonResponse, PotentialS3EndpointPassedAsRealm
+    B2ConnectionError,
+    B2Error,
+    B2RequestTimeout,
+    B2RequestTimeoutDuringUpload,
+    BadDateFormat,
+    BrokenPipe,
+    ClockSkew,
+    ConnectionReset,
+    InvalidJsonResponse,
+    PotentialS3EndpointPassedAsRealm,
+    UnknownError,
+    UnknownHost,
+    interpret_b2_error,
 )
-from .api_config import B2HttpApiConfig, DEFAULT_HTTP_API_CONFIG
 from .requests import NotDecompressingResponse
 from .version import USER_AGENT
 

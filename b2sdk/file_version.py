@@ -9,16 +9,16 @@
 ######################################################################
 from __future__ import annotations
 
-from typing import Any, TYPE_CHECKING
 import re
 from copy import deepcopy
+from typing import TYPE_CHECKING, Any
 
 from .encryption.setting import EncryptionSetting, EncryptionSettingFactory
-from .file_lock import FileRetentionSetting, LegalHold, NO_RETENTION_FILE_SETTING
+from .file_lock import NO_RETENTION_FILE_SETTING, FileRetentionSetting, LegalHold
 from .http_constants import FILE_INFO_HEADER_PREFIX_LOWER, LARGE_FILE_SHA1, SRC_LAST_MODIFIED_MILLIS
 from .progress import AbstractProgressListener
 from .replication.types import ReplicationStatus
-from .utils import b2_url_decode, Sha1HexDigest
+from .utils import Sha1HexDigest, b2_url_decode
 from .utils.range_ import Range
 
 if TYPE_CHECKING:

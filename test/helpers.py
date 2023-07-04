@@ -8,6 +8,7 @@
 #
 ######################################################################
 from __future__ import annotations
+
 import contextlib
 import inspect
 from unittest.mock import patch

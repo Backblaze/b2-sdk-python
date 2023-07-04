@@ -13,9 +13,8 @@ import hashlib
 import io
 import logging
 import os
-
 from abc import abstractmethod
-from enum import auto, Enum, unique
+from enum import Enum, auto, unique
 from typing import Callable
 
 from b2sdk.exception import InvalidUploadSource
@@ -24,7 +23,12 @@ from b2sdk.http_constants import DEFAULT_MIN_PART_SIZE
 from b2sdk.stream.range import RangeOfInputStream, wrap_with_range
 from b2sdk.transfer.outbound.copy_source import CopySource
 from b2sdk.transfer.outbound.outbound_source import OutboundTransferSource
-from b2sdk.utils import hex_sha1_of_unlimited_stream, Sha1HexDigest, IncrementalHexDigester, hex_sha1_of_stream
+from b2sdk.utils import (
+    IncrementalHexDigester,
+    Sha1HexDigest,
+    hex_sha1_of_stream,
+    hex_sha1_of_unlimited_stream,
+)
 
 logger = logging.getLogger(__name__)
 

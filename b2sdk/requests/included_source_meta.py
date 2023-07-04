@@ -7,7 +7,7 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
-from b2sdk.included_sources import add_included_source, IncludedSourceMeta
+from b2sdk.included_sources import IncludedSourceMeta, add_included_source
 
 included_source_meta = IncludedSourceMeta(
     'requests', 'Included in a revised form', {

@@ -16,12 +16,22 @@ from enum import Enum, unique
 from logging import getLogger
 from typing import Any
 
-from .exception import FileOrBucketNotFound, ResourceNotFound, UnusableFileName, InvalidMetadataDirective, WrongEncryptionModeForBucketDefault, AccessDenied, SSECKeyError, RetentionWriteError
-from .encryption.setting import EncryptionMode, EncryptionSetting
-from .replication.setting import ReplicationConfiguration
-from .file_lock import BucketRetentionSetting, FileRetentionSetting, LegalHold
-from .utils import b2_url_encode
 from b2sdk.http_constants import FILE_INFO_HEADER_PREFIX
+
+from .encryption.setting import EncryptionMode, EncryptionSetting
+from .exception import (
+    AccessDenied,
+    FileOrBucketNotFound,
+    InvalidMetadataDirective,
+    ResourceNotFound,
+    RetentionWriteError,
+    SSECKeyError,
+    UnusableFileName,
+    WrongEncryptionModeForBucketDefault,
+)
+from .file_lock import BucketRetentionSetting, FileRetentionSetting, LegalHold
+from .replication.setting import ReplicationConfiguration
+from .utils import b2_url_encode
 
 # All supported realms
 REALM_URLS = {

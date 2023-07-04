@@ -10,20 +10,30 @@
 from __future__ import annotations
 
 import datetime
-import requests
 import locale
-
-from ..test_base import TestBase
+from unittest.mock import MagicMock, call, patch
 
 import apiver_deps
-from apiver_deps_exception import BadDateFormat, BadJson, BrokenPipe, B2ConnectionError, ClockSkew, ConnectionReset, ServiceError, UnknownError, UnknownHost, TooManyRequests, InvalidJsonResponse, PotentialS3EndpointPassedAsRealm
-from apiver_deps import USER_AGENT
-from apiver_deps import B2Http
-from apiver_deps import B2HttpApiConfig
-from apiver_deps import ClockSkewHook
+import requests
+from apiver_deps import USER_AGENT, B2Http, B2HttpApiConfig, ClockSkewHook
+from apiver_deps_exception import (
+    B2ConnectionError,
+    BadDateFormat,
+    BadJson,
+    BrokenPipe,
+    ClockSkew,
+    ConnectionReset,
+    InvalidJsonResponse,
+    PotentialS3EndpointPassedAsRealm,
+    ServiceError,
+    TooManyRequests,
+    UnknownError,
+    UnknownHost,
+)
+
 from b2sdk.b2http import setlocale
 
-from unittest.mock import call, MagicMock, patch
+from ..test_base import TestBase
 
 
 class TestTranslateErrors(TestBase):

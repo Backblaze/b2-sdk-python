@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import logging
 import re
-
 from typing import Iterable
 
 from ..file_version import FileVersion

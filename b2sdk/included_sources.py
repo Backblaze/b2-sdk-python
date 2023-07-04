@@ -11,7 +11,6 @@ from __future__ import annotations
 
 # This module provides a list of third party sources included and modified in b2sdk, so it can be exposed to
 # B2 Command Line Tool for printing, for legal compliance reasons
-
 import dataclasses
 
 _included_sources: list[IncludedSourceMeta] = []

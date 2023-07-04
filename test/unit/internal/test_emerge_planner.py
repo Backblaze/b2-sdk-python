@@ -13,12 +13,12 @@ from b2sdk.http_constants import (
     GIGABYTE,
     MEGABYTE,
 )
-from b2sdk.transfer.emerge.planner.planner import EmergePlanner
 from b2sdk.transfer.emerge.planner.part_definition import (
     CopyEmergePartDefinition,
     UploadEmergePartDefinition,
     UploadSubpartsEmergePartDefinition,
 )
+from b2sdk.transfer.emerge.planner.planner import EmergePlanner
 from b2sdk.transfer.emerge.planner.upload_subpart import (
     LocalSourceUploadSubpart,
     RemoteSourceUploadSubpart,

@@ -11,9 +11,9 @@ from __future__ import annotations
 
 import warnings
 
-from ..test_base import TestBase
-
 from b2sdk.v1 import rename_argument, rename_function
+
+from ..test_base import TestBase
 
 
 class TestRenameArgument(TestBase):

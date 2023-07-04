@@ -12,7 +12,6 @@ from __future__ import annotations
 import fnmatch
 import logging
 import pathlib
-
 from contextlib import suppress
 
 from .encryption.setting import EncryptionSetting, EncryptionSettingFactory
@@ -36,11 +35,11 @@ from .file_version import DownloadVersion, FileVersion
 from .progress import AbstractProgressListener, DoNothingProgressListener
 from .replication.setting import ReplicationConfiguration, ReplicationConfigurationFactory
 from .transfer.emerge.executor import AUTO_CONTENT_TYPE
-from .transfer.emerge.write_intent import WriteIntent
 from .transfer.emerge.unbound_write_intent import UnboundWriteIntentGenerator
+from .transfer.emerge.write_intent import WriteIntent
 from .transfer.inbound.downloaded_file import DownloadedFile
 from .transfer.outbound.copy_source import CopySource
-from .transfer.outbound.upload_source import UploadSourceBytes, UploadSourceLocalFile, UploadMode
+from .transfer.outbound.upload_source import UploadMode, UploadSourceBytes, UploadSourceLocalFile
 from .utils import (
     B2TraceMeta,
     Sha1HexDigest,

@@ -10,8 +10,13 @@
 from __future__ import annotations
 
 from ..test_base import TestBase
-
-from .deps import b2_url_encode, b2_url_decode, choose_part_ranges, format_and_scale_number, format_and_scale_fraction
+from .deps import (
+    b2_url_decode,
+    b2_url_encode,
+    choose_part_ranges,
+    format_and_scale_fraction,
+    format_and_scale_number,
+)
 
 # These are from the B2 Docs (https://www.backblaze.com/b2/docs/string_encoding.html)
 ENCODING_TEST_CASES = [

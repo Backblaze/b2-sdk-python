@@ -9,15 +9,48 @@
 ######################################################################
 from __future__ import annotations
 
-from io import BytesIO
 import os
 import platform
 import unittest.mock as mock
+from io import BytesIO
 
 import pytest
 
 from ..test_base import TestBase
-
+from .deps import (
+    NO_RETENTION_FILE_SETTING,
+    SSE_B2_AES,
+    SSE_NONE,
+    AbstractProgressListener,
+    B2Api,
+    BucketSimulator,
+    CopySource,
+    DownloadDestBytes,
+    EncryptionAlgorithm,
+    EncryptionKey,
+    EncryptionMode,
+    EncryptionSetting,
+    EncryptionSettingFactory,
+    FakeResponse,
+    FileRetentionSetting,
+    FileSimulator,
+    FileVersionInfo,
+    LargeFileUploadState,
+    LegalHold,
+    MetadataDirectiveMode,
+    ParallelDownloader,
+    Part,
+    PreSeekedDownloadDest,
+    RawSimulator,
+    RetentionMode,
+    SimpleDownloader,
+    StubAccountInfo,
+    TempDir,
+    UploadSourceBytes,
+    UploadSourceLocalFile,
+    WriteIntent,
+    hex_sha1_of_bytes,
+)
 from .deps_exception import (
     AlreadyFailed,
     B2Error,
@@ -26,25 +59,9 @@ from .deps_exception import (
     InvalidRange,
     InvalidUploadSource,
     MaxRetriesExceeded,
-    UnsatisfiableRange,
     SSECKeyError,
+    UnsatisfiableRange,
 )
-from .deps import B2Api
-from .deps import LargeFileUploadState
-from .deps import DownloadDestBytes, PreSeekedDownloadDest
-from .deps import FileVersionInfo
-from .deps import LegalHold, FileRetentionSetting, RetentionMode, NO_RETENTION_FILE_SETTING
-from .deps import MetadataDirectiveMode
-from .deps import Part
-from .deps import AbstractProgressListener
-from .deps import StubAccountInfo, RawSimulator, BucketSimulator, FakeResponse, FileSimulator
-from .deps import ParallelDownloader
-from .deps import SimpleDownloader
-from .deps import UploadSourceBytes
-from .deps import hex_sha1_of_bytes, TempDir
-from .deps import EncryptionAlgorithm, EncryptionSetting, EncryptionSettingFactory, EncryptionMode, \
-    EncryptionKey, SSE_NONE, SSE_B2_AES
-from .deps import CopySource, UploadSourceLocalFile, WriteIntent
 
 SSE_C_AES = EncryptionSetting(
     mode=EncryptionMode.SSE_C,

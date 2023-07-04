@@ -10,7 +10,6 @@
 from __future__ import annotations
 
 import io
-
 from abc import ABCMeta, abstractmethod
 from functools import partial
 

@@ -12,8 +12,8 @@ from __future__ import annotations
 import hashlib
 import io
 
-from b2sdk.stream.wrapper import StreamWithLengthWrapper
 from b2sdk.stream.base import ReadOnlyStreamMixin
+from b2sdk.stream.wrapper import StreamWithLengthWrapper
 
 
 class StreamWithHash(ReadOnlyStreamMixin, StreamWithLengthWrapper):

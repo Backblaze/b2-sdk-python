@@ -8,16 +8,30 @@
 #
 ######################################################################
 from __future__ import annotations
+
 from collections import defaultdict
 from contextlib import ExitStack
-from unittest import mock
 from enum import Enum
 from functools import partial
+from unittest import mock
 
-from apiver_deps import UpPolicy, B2DownloadAction, AbstractSyncEncryptionSettingsProvider, UploadSourceLocalFileRange, UploadSourceLocalFile, SyncPolicyManager, CopySource
-from apiver_deps_exception import DestFileNewer, InvalidArgument
-from apiver_deps import KeepOrDeleteMode, NewerFileSyncMode, CompareVersionMode, FileVersion, IncrementalHexDigester
 import pytest
+from apiver_deps import (
+    AbstractSyncEncryptionSettingsProvider,
+    B2DownloadAction,
+    CompareVersionMode,
+    CopySource,
+    FileVersion,
+    IncrementalHexDigester,
+    KeepOrDeleteMode,
+    NewerFileSyncMode,
+    SyncPolicyManager,
+    UploadSourceLocalFile,
+    UploadSourceLocalFileRange,
+    UpPolicy,
+)
+from apiver_deps_exception import DestFileNewer, InvalidArgument
+
 from ..fixtures.folder import *
 from .fixtures import *
 

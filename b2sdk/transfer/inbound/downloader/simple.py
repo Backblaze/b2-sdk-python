@@ -9,15 +9,16 @@
 ######################################################################
 from __future__ import annotations
 
-from io import IOBase
 import logging
+from io import IOBase
 
 from requests.models import Response
 
-from .abstract import AbstractDownloader
-from b2sdk.file_version import DownloadVersion
 from b2sdk.encryption.setting import EncryptionSetting
+from b2sdk.file_version import DownloadVersion
 from b2sdk.session import B2Session
+
+from .abstract import AbstractDownloader
 
 logger = logging.getLogger(__name__)
 

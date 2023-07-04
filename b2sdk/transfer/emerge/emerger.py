@@ -19,7 +19,7 @@ from b2sdk.progress import AbstractProgressListener
 from b2sdk.transfer.emerge.executor import EmergeExecutor
 from b2sdk.transfer.emerge.planner.planner import EmergePlan, EmergePlanner
 from b2sdk.transfer.emerge.write_intent import WriteIntent
-from b2sdk.utils import B2TraceMetaAbstract, iterator_peek, Sha1HexDigest
+from b2sdk.utils import B2TraceMetaAbstract, Sha1HexDigest, iterator_peek
 
 logger = logging.getLogger(__name__)
 

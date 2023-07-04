@@ -11,8 +11,8 @@ from __future__ import annotations
 
 from abc import ABCMeta, abstractmethod
 
-from ..encryption.setting import EncryptionSetting
 from ..bucket import Bucket
+from ..encryption.setting import EncryptionSetting
 from ..file_version import FileVersion
 
 

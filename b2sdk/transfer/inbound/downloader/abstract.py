@@ -10,18 +10,17 @@
 from __future__ import annotations
 
 import hashlib
-
 from abc import abstractmethod
 from concurrent.futures import ThreadPoolExecutor
 from io import IOBase
 
 from requests.models import Response
 
+from b2sdk.encryption.setting import EncryptionSetting
 from b2sdk.file_version import DownloadVersion
 from b2sdk.session import B2Session
 from b2sdk.utils import B2TraceMetaAbstract
 from b2sdk.utils.range_ import Range
-from b2sdk.encryption.setting import EncryptionSetting
 
 
 class EmptyHasher:

@@ -10,8 +10,6 @@
 from __future__ import annotations
 
 import pytest
-
-from b2sdk.exception import ResourceNotFound
 from apiver_deps_exception import (
     AlreadyFailed,
     B2Error,
@@ -23,7 +21,6 @@ from apiver_deps_exception import (
     DuplicateBucketName,
     FileAlreadyHidden,
     FileNotPresent,
-    interpret_b2_error,
     InvalidAuthToken,
     MissingPart,
     PartSha1Mismatch,
@@ -33,7 +30,10 @@ from apiver_deps_exception import (
     TransactionCapExceeded,
     Unauthorized,
     UnknownError,
+    interpret_b2_error,
 )
+
+from b2sdk.exception import ResourceNotFound
 
 
 class TestB2Error:

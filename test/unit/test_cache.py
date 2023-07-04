@@ -12,10 +12,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import pytest
-
+from apiver_deps import AuthInfoCache, DummyCache, InMemoryAccountInfo, InMemoryCache
 from pytest_lazyfixture import lazy_fixture
-
-from apiver_deps import DummyCache, InMemoryCache, AuthInfoCache, InMemoryAccountInfo
 
 
 @pytest.fixture

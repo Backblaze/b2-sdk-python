@@ -10,8 +10,8 @@
 from __future__ import annotations
 
 from b2sdk.encryption.setting import EncryptionSetting
-from b2sdk.transfer.outbound.outbound_source import OutboundTransferSource
 from b2sdk.http_constants import LARGE_FILE_SHA1
+from b2sdk.transfer.outbound.outbound_source import OutboundTransferSource
 
 
 class CopySource(OutboundTransferSource):

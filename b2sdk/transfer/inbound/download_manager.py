@@ -12,18 +12,17 @@ from __future__ import annotations
 import logging
 
 from b2sdk.encryption.setting import EncryptionSetting
-from b2sdk.progress import DoNothingProgressListener
-
 from b2sdk.exception import (
     InvalidRange,
 )
+from b2sdk.progress import DoNothingProgressListener
 from b2sdk.utils import B2TraceMetaAbstract
 
+from ...utils.thread_pool import ThreadPoolMixin
+from ..transfer_manager import TransferManager
 from .downloaded_file import DownloadedFile
 from .downloader.parallel import ParallelDownloader
 from .downloader.simple import SimpleDownloader
-from ..transfer_manager import TransferManager
-from ...utils.thread_pool import ThreadPoolMixin
 
 logger = logging.getLogger(__name__)
 
