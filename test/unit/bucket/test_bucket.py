@@ -1198,7 +1198,7 @@ class TestUpdate(TestCaseWithBucket):
             bucket_info={'info': 'o'},
             cors_rules={'andrea': 'corr'},
             lifecycle_rules=[{
-                'life': 'is life'
+                'fileNamePrefix': 'is_life'
             }],
             default_server_side_encryption=SSE_B2_AES,
             default_retention=BucketRetentionSetting(
@@ -1247,7 +1247,7 @@ class TestUpdate(TestCaseWithBucket):
                                 }
                         },
                     'lifecycleRules': [{
-                        'life': 'is life'
+                        'fileNamePrefix': 'is_life'
                     }],
                     'options': set(),
                     'revision': 2
@@ -1261,7 +1261,7 @@ class TestUpdate(TestCaseWithBucket):
                 'type_': 'allPrivate',
                 'bucket_info': {'info': 'o'},
                 'cors_rules': {'andrea': 'corr'},
-                'lifecycle_rules': [{'life': 'is life'}],
+                'lifecycle_rules': [{'fileNamePrefix': 'is_life'}],
                 'options_set': set(),
                 'default_server_side_encryption': SSE_B2_AES,
                 'default_retention': BucketRetentionSetting(RetentionMode.COMPLIANCE, RetentionPeriod(years=7)),
@@ -1288,17 +1288,17 @@ class TestUpdate(TestCaseWithBucket):
         current_revision = self.bucket.revision
         self.bucket.update(
             lifecycle_rules=[{
-                'life': 'is life'
+                'fileNamePrefix': 'is_life'
             }],
             if_revision_is=current_revision,
         )
         updated_bucket = self.api.get_bucket_by_name(self.bucket.name)
-        self.assertEqual([{'life': 'is life'}], updated_bucket.lifecycle_rules)
+        self.assertEqual([{'fileNamePrefix': 'is_life'}], updated_bucket.lifecycle_rules)
 
         try:
             self.bucket.update(
                 lifecycle_rules=[{
-                    'another': 'life'
+                    'fileNamePrefix': 'is_life'
                 }],
                 if_revision_is=current_revision,  # this is now the old revision
             )
@@ -1306,7 +1306,7 @@ class TestUpdate(TestCaseWithBucket):
             pass
 
         not_updated_bucket = self.api.get_bucket_by_name(self.bucket.name)
-        self.assertEqual([{'life': 'is life'}], not_updated_bucket.lifecycle_rules)
+        self.assertEqual([{'fileNamePrefix': 'is_life'}], not_updated_bucket.lifecycle_rules)
 
     def test_is_file_lock_enabled(self):
         assert not self.bucket.is_file_lock_enabled

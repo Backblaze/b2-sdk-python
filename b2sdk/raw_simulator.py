@@ -53,7 +53,7 @@ from .file_lock import (
     LegalHold,
 )
 from .file_version import UNVERIFIED_CHECKSUM_PREFIX
-from .raw_api import ALL_CAPABILITIES, AbstractRawApi, MetadataDirectiveMode
+from .raw_api import ALL_CAPABILITIES, AbstractRawApi, LifecycleRule, MetadataDirectiveMode
 from .replication.types import ReplicationStatus
 from .stream.hashing import StreamWithHash
 from .utils import ConcurrentUsedAuthTokenGuard, b2_url_decode, b2_url_encode, hex_sha1_of_bytes
@@ -503,7 +503,7 @@ class BucketSimulator:
         bucket_type,
         bucket_info=None,
         cors_rules=None,
-        lifecycle_rules=None,
+        lifecycle_rules: list[LifecycleRule] | None = None,
         options_set=None,
         default_server_side_encryption=None,
         is_file_lock_enabled: bool | None = None,
@@ -959,7 +959,7 @@ class BucketSimulator:
         bucket_type=None,
         bucket_info=None,
         cors_rules=None,
-        lifecycle_rules=None,
+        lifecycle_rules: list[LifecycleRule] | None = None,
         if_revision_is: int | None = None,
         default_server_side_encryption: EncryptionSetting | None = None,
         default_retention: BucketRetentionSetting | None = None,
@@ -1272,7 +1272,7 @@ class RawSimulator(AbstractRawApi):
         bucket_type,
         bucket_info=None,
         cors_rules=None,
-        lifecycle_rules=None,
+        lifecycle_rules: list[LifecycleRule] | None = None,
         default_server_side_encryption: EncryptionSetting | None = None,
         is_file_lock_enabled: bool | None = None,
         replication: ReplicationConfiguration | None = None,
@@ -1762,7 +1762,7 @@ class RawSimulator(AbstractRawApi):
         bucket_type=None,
         bucket_info=None,
         cors_rules=None,
-        lifecycle_rules=None,
+        lifecycle_rules: list[LifecycleRule] | None = None,
         if_revision_is=None,
         default_server_side_encryption: EncryptionSetting | None = None,
         default_retention: BucketRetentionSetting | None = None,

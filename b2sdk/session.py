@@ -23,7 +23,7 @@ from b2sdk.cache import AbstractCache, AuthInfoCache, DummyCache
 from b2sdk.encryption.setting import EncryptionSetting
 from b2sdk.exception import InvalidAuthToken, Unauthorized
 from b2sdk.file_lock import BucketRetentionSetting, FileRetentionSetting, LegalHold
-from b2sdk.raw_api import ALL_CAPABILITIES, REALM_URLS
+from b2sdk.raw_api import ALL_CAPABILITIES, REALM_URLS, LifecycleRule
 from b2sdk.replication.setting import ReplicationConfiguration
 
 logger = logging.getLogger(__name__)
@@ -145,7 +145,7 @@ class B2Session:
         bucket_type,
         bucket_info=None,
         cors_rules=None,
-        lifecycle_rules=None,
+        lifecycle_rules: list[LifecycleRule] | None = None,
         default_server_side_encryption=None,
         is_file_lock_enabled: bool | None = None,
         replication: ReplicationConfiguration | None = None,
@@ -318,7 +318,7 @@ class B2Session:
         bucket_type=None,
         bucket_info=None,
         cors_rules=None,
-        lifecycle_rules=None,
+        lifecycle_rules: list[LifecycleRule] | None = None,
         if_revision_is=None,
         default_server_side_encryption: EncryptionSetting | None = None,
         default_retention: BucketRetentionSetting | None = None,

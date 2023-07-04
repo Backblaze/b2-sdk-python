@@ -30,7 +30,7 @@ from .file_lock import FileRetentionSetting, LegalHold
 from .file_version import DownloadVersionFactory, FileIdAndName, FileVersion, FileVersionFactory
 from .large_file.services import LargeFileServices
 from .progress import AbstractProgressListener
-from .raw_api import API_VERSION
+from .raw_api import API_VERSION, LifecycleRule
 from .replication.setting import ReplicationConfiguration
 from .session import B2Session
 from .transfer import (
@@ -229,7 +229,7 @@ class B2Api(metaclass=B2TraceMeta):
         bucket_type,
         bucket_info=None,
         cors_rules=None,
-        lifecycle_rules=None,
+        lifecycle_rules: list[LifecycleRule] | None = None,
         default_server_side_encryption: EncryptionSetting | None = None,
         is_file_lock_enabled: bool | None = None,
         replication: ReplicationConfiguration | None = None,

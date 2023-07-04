@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+* Improved `lifecycle_rules` argument type annotations
+
 ### Deprecated
 * Deprecate `file_infos` argument. Use `file_info` instead. Old argument name won't be supported in v3.
 
