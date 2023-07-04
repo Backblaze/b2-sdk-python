@@ -291,15 +291,13 @@ class UpAndDeletePolicy(UpPolicy):
     """
 
     def _get_hide_delete_actions(self):
-        for action in super()._get_hide_delete_actions():
-            yield action
-        for action in make_b2_delete_actions(
+        yield from super()._get_hide_delete_actions()
+        yield from make_b2_delete_actions(
             self._source_path,
             self._dest_path,
             self._dest_folder,
             self._transferred,
-        ):
-            yield action
+        )
 
 
 class UpAndKeepDaysPolicy(UpPolicy):
