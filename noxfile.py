@@ -36,7 +36,6 @@ REQUIREMENTS_TEST = [
     "pytest-cov==3.0.0",
     "pytest-mock==3.6.1",
     'pytest-lazy-fixture==0.6.3',
-    'pyfakefs==4.5.6',
     'pytest-xdist==2.5.0',
     'pytest-timeout==2.1.0',
 ]
@@ -104,7 +103,7 @@ def unit(session):
     """Run unit tests."""
     install_myself(session)
     session.run('pip', 'install', *REQUIREMENTS_TEST)
-    args = ['--doctest-modules', '-p', 'pyfakefs', '-n', 'auto']
+    args = ['--doctest-modules', '-n', 'auto']
     if not SKIP_COVERAGE:
         args += ['--cov=b2sdk', '--cov-branch', '--cov-report=xml']
     # TODO: Use session.parametrize for apiver

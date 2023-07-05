@@ -67,7 +67,11 @@ class TestDatabseMigrations:
 
 class TestSqliteAccountProfileFileLocation:
     @pytest.fixture(autouse=True)
-    def setup(self, monkeypatch, fs):
+    def setup(self, monkeypatch, tmpdir):
+        monkeypatch.setenv(
+            'HOME', str(tmpdir)
+        )  # this affects .expanduser() and protects the real HOME folder
+        monkeypatch.setenv("USERPROFILE", str(tmpdir))  # same as HOME, but for Windows
         monkeypatch.delenv(B2_ACCOUNT_INFO_ENV_VAR, raising=False)
         monkeypatch.delenv(XDG_CONFIG_HOME_ENV_VAR, raising=False)
 
