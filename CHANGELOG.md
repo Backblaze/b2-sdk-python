@@ -117,6 +117,7 @@ no backward-incompatible changes are planned at this point.
 ### Added
 * Add `included_sources` module for keeping track of included modified third-party libraries
 * Add `include_existing_files` parameter to `ReplicationSetupHelper`
+* Add `get_b2sdk_doc_urls` function for extraction of external documentation URLs during runtime
 
 ### Changed
 * Downloading compressed files with `Content-Encoding` header set no longer causes them to be decompressed on the fly - it's an option

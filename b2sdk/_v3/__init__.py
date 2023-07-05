@@ -66,6 +66,7 @@ from b2sdk.utils import (
 )
 
 from b2sdk.utils import trace_call
+from b2sdk.utils.docs import get_b2sdk_doc_urls
 
 # data classes
 

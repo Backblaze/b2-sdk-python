@@ -87,6 +87,13 @@ class MetadataDirectiveMode(Enum):
 
 
 class LifecycleRule(TypedDict):
+    """
+    Lifecycle Rule.
+
+    External documentation: `B2 Cloud Storage Lifecycle Rules`_.
+
+    .. _B2 Cloud Storage Lifecycle Rules: https://www.backblaze.com/docs/cloud-storage-lifecycle-rules
+    """
     fileNamePrefix: str
     daysFromHidingToDeleting: NotRequired[int | None]
     daysFromUploadingToHiding: NotRequired[int | None]
