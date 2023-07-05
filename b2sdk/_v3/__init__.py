@@ -118,6 +118,7 @@ from b2sdk.raw_simulator import RawSimulator
 from b2sdk.raw_api import AbstractRawApi
 from b2sdk.raw_api import B2RawHTTPApi
 from b2sdk.raw_api import MetadataDirectiveMode
+from b2sdk.raw_api import LifecycleRule
 
 # stream
 
