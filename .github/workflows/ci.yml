@@ -94,6 +94,11 @@ jobs:
             python-version: "pypy-3.10"
           - os: "windows-latest"
             python-version: "pypy-3.10"
+          # FIXME remove these exclusions after 3.12 release; 3.12-dev setlocale(...) is broken on Windows & Mac
+          - os: "macos-latest"
+            python-version: "3.12-dev"
+          - os: "windows-latest"
+            python-version: "3.12-dev"
     steps:
       - uses: actions/checkout@v3
         with:
