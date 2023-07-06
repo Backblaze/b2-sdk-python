@@ -7,13 +7,12 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
-from typing import Optional, List, Tuple
+from functools import wraps
 
 from .exception import MissingAccountData
 from .upload_url_pool import UrlPoolAccountInfo
-
-from functools import wraps
 
 
 def _raise_missing_if_result_is_none(function):
@@ -39,12 +38,12 @@ class InMemoryAccountInfo(UrlPoolAccountInfo):
     """
 
     def __init__(self, *args, **kwargs):
-        super(InMemoryAccountInfo, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._clear_in_memory_account_fields()
 
     def clear(self):
         self._clear_in_memory_account_fields()
-        return super(InMemoryAccountInfo, self).clear()
+        return super().clear()
 
     def _clear_in_memory_account_fields(self):
         self._account_id = None
@@ -82,13 +81,13 @@ class InMemoryAccountInfo(UrlPoolAccountInfo):
     def get_bucket_id_or_none_from_bucket_name(self, bucket_name):
         return self._buckets.get(bucket_name)
 
-    def get_bucket_name_or_none_from_bucket_id(self, bucket_id: str) -> Optional[str]:
+    def get_bucket_name_or_none_from_bucket_id(self, bucket_id: str) -> str | None:
         for name, cached_id_ in self._buckets.items():
             if cached_id_ == bucket_id:
                 return name
         return None
 
-    def list_bucket_names_ids(self) -> List[Tuple[str, str]]:
+    def list_bucket_names_ids(self) -> list[tuple[str, str]]:
         return [(name, id_) for name, id_ in self._buckets.items()]
 
     def save_bucket(self, bucket):

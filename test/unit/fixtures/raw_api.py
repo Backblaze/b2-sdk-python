@@ -7,11 +7,11 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
 from copy import copy
 
 import pytest
-
 from apiver_deps import ALL_CAPABILITIES, B2RawHTTPApi
 
 

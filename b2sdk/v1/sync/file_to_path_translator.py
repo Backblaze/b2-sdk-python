@@ -7,8 +7,7 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
-
-from typing import Tuple
+from __future__ import annotations
 
 from b2sdk import v2
 
@@ -18,7 +17,7 @@ from .file import B2File, B2FileVersion, File, FileVersion
 # The goal is to create v1.File objects together with v1.FileVersion objects from v2.SyncPath objects
 def make_files_from_paths(
     dest_path: v2.AbstractSyncPath, source_path: v2.AbstractSyncPath, sync_type: str
-) -> Tuple[File, File]:
+) -> tuple[File, File]:
     assert sync_type in ('b2-to-b2', 'b2-to-local', 'local-to-b2')
     sync_type_split = sync_type.split('-')
 
@@ -52,7 +51,7 @@ _path_translation_map = {'b2': _translate_b2_path_to_file, 'local': _translate_l
 
 # The goal is to create v2.SyncPath objects from v1.File objects
 def make_paths_from_files(dest_file: File, source_file: File,
-                          sync_type: str) -> Tuple[v2.AbstractSyncPath, v2.AbstractSyncPath]:
+                          sync_type: str) -> tuple[v2.AbstractSyncPath, v2.AbstractSyncPath]:
     assert sync_type in ('b2-to-b2', 'b2-to-local', 'local-to-b2')
     sync_type_split = sync_type.split('-')
 

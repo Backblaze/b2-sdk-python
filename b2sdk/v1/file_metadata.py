@@ -7,6 +7,7 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
 import b2sdk.v2 as v2
 
@@ -52,7 +53,7 @@ class FileMetadata:
     @classmethod
     def _encode_content_sha1(cls, content_sha1, content_sha1_verified):
         if not content_sha1_verified:
-            return '%s%s' % (cls.UNVERIFIED_CHECKSUM_PREFIX, content_sha1)
+            return f'{cls.UNVERIFIED_CHECKSUM_PREFIX}{content_sha1}'
         return content_sha1
 
     @classmethod

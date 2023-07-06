@@ -7,16 +7,26 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
-
-from typing import Optional
+from __future__ import annotations
 
 from ..scan.folder import AbstractFolder
 from ..scan.path import AbstractPath
 from ..transfer.outbound.upload_source import UploadMode
-from .policy import AbstractFileSyncPolicy, CompareVersionMode, CopyAndDeletePolicy, \
-    CopyAndKeepDaysPolicy, CopyPolicy, DownAndDeletePolicy, DownAndKeepDaysPolicy, \
-    DownPolicy, NewerFileSyncMode, UpAndDeletePolicy, UpAndKeepDaysPolicy, UpPolicy
 from .encryption_provider import AbstractSyncEncryptionSettingsProvider
+from .policy import (
+    AbstractFileSyncPolicy,
+    CompareVersionMode,
+    CopyAndDeletePolicy,
+    CopyAndKeepDaysPolicy,
+    CopyPolicy,
+    DownAndDeletePolicy,
+    DownAndKeepDaysPolicy,
+    DownPolicy,
+    NewerFileSyncMode,
+    UpAndDeletePolicy,
+    UpAndKeepDaysPolicy,
+    UpPolicy,
+)
 
 
 class SyncPolicyManager:
@@ -31,9 +41,9 @@ class SyncPolicyManager:
     def get_policy(
         self,
         sync_type: str,
-        source_path: Optional[AbstractPath],
+        source_path: AbstractPath | None,
         source_folder: AbstractFolder,
-        dest_path: Optional[AbstractPath],
+        dest_path: AbstractPath | None,
         dest_folder: AbstractFolder,
         now_millis: int,
         delete: bool,
@@ -111,7 +121,7 @@ class SyncPolicyManager:
             else:
                 return CopyPolicy
         raise NotImplementedError(
-            'invalid sync type: %s, keep_days: %s, delete: %s' % (
+            'invalid sync type: {}, keep_days: {}, delete: {}'.format(
                 sync_type,
                 keep_days,
                 delete,

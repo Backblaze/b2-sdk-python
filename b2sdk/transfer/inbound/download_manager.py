@@ -7,23 +7,22 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
 import logging
-from typing import Optional
 
 from b2sdk.encryption.setting import EncryptionSetting
-from b2sdk.progress import DoNothingProgressListener
-
 from b2sdk.exception import (
     InvalidRange,
 )
+from b2sdk.progress import DoNothingProgressListener
 from b2sdk.utils import B2TraceMetaAbstract
 
+from ...utils.thread_pool import ThreadPoolMixin
+from ..transfer_manager import TransferManager
 from .downloaded_file import DownloadedFile
 from .downloader.parallel import ParallelDownloader
 from .downloader.simple import SimpleDownloader
-from ..transfer_manager import TransferManager
-from ...utils.thread_pool import ThreadPoolMixin
 
 logger = logging.getLogger(__name__)
 
@@ -46,9 +45,9 @@ class DownloadManager(TransferManager, ThreadPoolMixin, metaclass=B2TraceMetaAbs
 
     def __init__(
         self,
-        write_buffer_size: Optional[int] = None,
+        write_buffer_size: int | None = None,
         check_hash: bool = True,
-        max_download_streams_per_file: Optional[int] = None,
+        max_download_streams_per_file: int | None = None,
         **kwargs
     ):
         """
@@ -82,7 +81,7 @@ class DownloadManager(TransferManager, ThreadPoolMixin, metaclass=B2TraceMetaAbs
         url,
         progress_listener=None,
         range_=None,
-        encryption: Optional[EncryptionSetting] = None,
+        encryption: EncryptionSetting | None = None,
     ) -> DownloadedFile:
         """
         :param url: url from which the file should be downloaded

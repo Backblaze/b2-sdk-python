@@ -7,13 +7,13 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
 import sys
-
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from queue import Queue
-from typing import ClassVar, Iterator, Optional, Tuple, Type
+from typing import ClassVar, Iterator
 
 from ..api import B2Api
 from ..bucket import Bucket
@@ -23,7 +23,12 @@ from ..scan.folder import B2Folder
 from ..scan.path import B2Path
 from ..scan.policies import DEFAULT_SCAN_MANAGER, ScanPoliciesManager
 from ..scan.report import ProgressReport
-from ..scan.scan import AbstractScanReport, AbstractScanResult, CountAndSampleScanReport, zip_folders
+from ..scan.scan import (
+    AbstractScanReport,
+    AbstractScanResult,
+    CountAndSampleScanReport,
+    zip_folders,
+)
 from .setting import ReplicationRule
 from .types import ReplicationStatus
 
@@ -39,26 +44,26 @@ class ReplicationScanResult(AbstractScanResult):
     """
 
     # source attrs
-    source_replication_status: Optional[ReplicationStatus] = None
-    source_has_hide_marker: Optional[bool] = None
-    source_encryption_mode: Optional[EncryptionMode] = None
-    source_has_large_metadata: Optional[bool] = None
-    source_has_file_retention: Optional[bool] = None
-    source_has_legal_hold: Optional[bool] = None
+    source_replication_status: ReplicationStatus | None = None
+    source_has_hide_marker: bool | None = None
+    source_encryption_mode: EncryptionMode | None = None
+    source_has_large_metadata: bool | None = None
+    source_has_file_retention: bool | None = None
+    source_has_legal_hold: bool | None = None
 
     # destination attrs
-    destination_replication_status: Optional[ReplicationStatus] = None
+    destination_replication_status: ReplicationStatus | None = None
 
     # source & destination relation attrs
-    metadata_differs: Optional[bool] = None
-    hash_differs: Optional[bool] = None
+    metadata_differs: bool | None = None
+    hash_differs: bool | None = None
 
     LARGE_METADATA_SIZE: ClassVar[int] = 2048
 
     @classmethod
     def from_files(
-        cls, source_file: Optional[B2Path] = None, destination_file: Optional[B2Path] = None
-    ) -> 'ReplicationScanResult':
+        cls, source_file: B2Path | None = None, destination_file: B2Path | None = None
+    ) -> ReplicationScanResult:
         params = {}
 
         if source_file:
@@ -130,12 +135,12 @@ class ReplicationMonitor:
 
     bucket: Bucket
     rule: ReplicationRule
-    destination_api: Optional[B2Api] = None  # if None -> will use `api` of source (bucket)
+    destination_api: B2Api | None = None  # if None -> will use `api` of source (bucket)
     report: ProgressReport = field(default_factory=lambda: ProgressReport(sys.stdout, False))
     scan_policies_manager: ScanPoliciesManager = DEFAULT_SCAN_MANAGER
 
     REPORT_CLASS: ClassVar[AbstractScanReport] = ReplicationReport
-    B2_FOLDER_CLASS: ClassVar[Type] = B2Folder
+    B2_FOLDER_CLASS: ClassVar[type] = B2Folder
     QUEUE_SIZE: ClassVar[int] = 20_000
 
     def __post_init__(self):
@@ -172,7 +177,7 @@ class ReplicationMonitor:
             api=destination_bucket.api,
         )
 
-    def iter_pairs(self) -> Iterator[Tuple[Optional[B2Path], Optional[B2Path]]]:
+    def iter_pairs(self) -> Iterator[tuple[B2Path | None, B2Path | None]]:
         """
         Iterate over files in source and destination and yield pairs.
         Required for replication inspection in-depth.

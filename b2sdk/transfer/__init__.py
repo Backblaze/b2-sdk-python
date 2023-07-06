@@ -7,6 +7,7 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
 from .inbound.download_manager import DownloadManager
 from .outbound.copy_manager import CopyManager

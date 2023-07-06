@@ -7,18 +7,14 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
 import io
 import logging
 import pathlib
-from typing import Optional, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from requests.models import Response
-
-from ...encryption.setting import EncryptionSetting
-from ...file_version import DownloadVersion
-from ...progress import AbstractProgressListener
-from ...stream.progress import WritingStreamWithProgress
 
 from b2sdk.exception import (
     ChecksumMismatch,
@@ -29,6 +25,11 @@ from b2sdk.exception import (
     TruncatedOutput,
 )
 from b2sdk.utils import set_file_mtime
+
+from ...encryption.setting import EncryptionSetting
+from ...file_version import DownloadVersion
+from ...progress import AbstractProgressListener
+from ...stream.progress import WritingStreamWithProgress
 
 if TYPE_CHECKING:
     from .download_manager import DownloadManager
@@ -117,10 +118,10 @@ class DownloadedFile:
     def __init__(
         self,
         download_version: DownloadVersion,
-        download_manager: 'DownloadManager',
-        range_: Optional[Tuple[int, int]],
+        download_manager: DownloadManager,
+        range_: tuple[int, int] | None,
         response: Response,
-        encryption: Optional[EncryptionSetting],
+        encryption: EncryptionSetting | None,
         progress_listener: AbstractProgressListener,
         write_buffer_size=None,
         check_hash=True,

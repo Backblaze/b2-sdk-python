@@ -7,11 +7,12 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
 from abc import ABCMeta, abstractclassmethod, abstractmethod
 from collections import Counter
 from dataclasses import dataclass, field
-from typing import ClassVar, Dict, Optional, Tuple, Type
+from typing import ClassVar
 
 from ..file_version import FileVersion
 from .folder import AbstractFolder
@@ -25,7 +26,7 @@ def zip_folders(
     folder_b: AbstractFolder,
     reporter: ProgressReport,
     policies_manager: ScanPoliciesManager = DEFAULT_SCAN_MANAGER,
-) -> Tuple[Optional[AbstractPath], Optional[AbstractPath]]:
+) -> tuple[AbstractPath | None, AbstractPath | None]:
     """
     Iterate over all of the files in the union of two folders,
     matching file names.
@@ -76,7 +77,7 @@ class AbstractScanResult(metaclass=ABCMeta):
     """
 
     @abstractclassmethod
-    def from_files(cls, *files: Optional[AbstractPath]) -> 'AbstractScanResult':
+    def from_files(cls, *files: AbstractPath | None) -> AbstractScanResult:
         pass
 
 
@@ -85,10 +86,10 @@ class AbstractScanReport(metaclass=ABCMeta):
     """
     Aggregation of valuable information about files after scanning.
     """
-    SCAN_RESULT_CLASS: ClassVar[Type] = AbstractScanResult
+    SCAN_RESULT_CLASS: ClassVar[type] = AbstractScanResult
 
     @abstractmethod
-    def add(self, *files: Optional[AbstractPath]) -> None:
+    def add(self, *files: AbstractPath | None) -> None:
         pass
 
 
@@ -99,14 +100,14 @@ class CountAndSampleScanReport(AbstractScanReport):
     also stores first and last seen examples of such files.
     """
     counter_by_status: Counter = field(default_factory=Counter)
-    samples_by_status_first: Dict[AbstractScanResult, Tuple[FileVersion, ...]] = field(
+    samples_by_status_first: dict[AbstractScanResult, tuple[FileVersion, ...]] = field(
         default_factory=dict
     )
-    samples_by_status_last: Dict[AbstractScanResult, Tuple[FileVersion, ...]] = field(
+    samples_by_status_last: dict[AbstractScanResult, tuple[FileVersion, ...]] = field(
         default_factory=dict
     )
 
-    def add(self, *files: Optional[AbstractPath]) -> None:
+    def add(self, *files: AbstractPath | None) -> None:
         status = self.SCAN_RESULT_CLASS.from_files(*files)
         self.counter_by_status[status] += 1
 

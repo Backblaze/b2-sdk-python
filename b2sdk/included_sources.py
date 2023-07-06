@@ -7,26 +7,25 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
 # This module provides a list of third party sources included and modified in b2sdk, so it can be exposed to
 # B2 Command Line Tool for printing, for legal compliance reasons
-
 import dataclasses
-from typing import Dict, List
 
-_included_sources: List['IncludedSourceMeta'] = []
+_included_sources: list[IncludedSourceMeta] = []
 
 
 @dataclasses.dataclass
 class IncludedSourceMeta:
     name: str
     comment: str
-    files: Dict[str, str]
+    files: dict[str, str]
 
 
 def add_included_source(src: IncludedSourceMeta):
     _included_sources.append(src)
 
 
-def get_included_sources() -> List['IncludedSourceMeta']:
+def get_included_sources() -> list[IncludedSourceMeta]:
     return _included_sources

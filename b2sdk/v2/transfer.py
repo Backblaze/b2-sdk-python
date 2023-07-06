@@ -7,9 +7,10 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
 from concurrent.futures import Future, ThreadPoolExecutor
-from typing import Callable, Optional
+from typing import Callable
 
 from b2sdk import _v3 as v3
 
@@ -19,7 +20,7 @@ class LazyThreadPool:
     Lazily initialized thread pool.
     """
 
-    def __init__(self, max_workers: Optional[int] = None, **kwargs):
+    def __init__(self, max_workers: int | None = None, **kwargs):
         self._max_workers = max_workers
         self._thread_pool = None  # type: 'Optional[ThreadPoolExecutor]'
         super().__init__(**kwargs)

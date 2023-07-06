@@ -7,6 +7,7 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
 import concurrent.futures as futures
 import os
@@ -15,22 +16,36 @@ import sys
 import threading
 import time
 import unittest
-from unittest.mock import MagicMock, ANY
+from unittest.mock import ANY, MagicMock
 
 import pytest
 
 from ..test_base import TestBase
-
-from .deps import B2Folder, LocalFolder
-from .deps import BoundedQueueExecutor, zip_folders
-from .deps import LocalSyncPath, B2SyncPath
-from .deps import FileVersionInfo
-from .deps import KeepOrDeleteMode, NewerFileSyncMode, CompareVersionMode
-from .deps import ScanPoliciesManager, DEFAULT_SCAN_MANAGER
-from .deps import Synchronizer
-from .deps import TempDir
-from .deps import parse_sync_folder
-from .deps_exception import UnSyncableFilename, NotADirectory, UnableToCreateDirectory, EmptyDirectory, InvalidArgument, CommandError
+from .deps import (
+    DEFAULT_SCAN_MANAGER,
+    B2Folder,
+    B2SyncPath,
+    BoundedQueueExecutor,
+    CompareVersionMode,
+    FileVersionInfo,
+    KeepOrDeleteMode,
+    LocalFolder,
+    LocalSyncPath,
+    NewerFileSyncMode,
+    ScanPoliciesManager,
+    Synchronizer,
+    TempDir,
+    parse_sync_folder,
+    zip_folders,
+)
+from .deps_exception import (
+    CommandError,
+    EmptyDirectory,
+    InvalidArgument,
+    NotADirectory,
+    UnableToCreateDirectory,
+    UnSyncableFilename,
+)
 
 DAY = 86400000  # milliseconds
 TODAY = DAY * 100  # an arbitrary reference time for testing
@@ -71,7 +86,7 @@ class TestFolder(TestSync):
     MOD_TIMES = {'.dot_file': TODAY - DAY, 'hello.': TODAY - DAY}
 
     def setUp(self):
-        super(TestFolder, self).setUp()
+        super().setUp()
 
         self.root_dir = ''
 
@@ -261,7 +276,7 @@ class TestLocalFolder(TestFolder):
     __test__ = True
 
     def setUp(self):
-        super(TestLocalFolder, self).setUp()
+        super().setUp()
 
         self.temp_dir = TempDir()
         self.root_dir = self.temp_dir.__enter__()
@@ -397,7 +412,7 @@ class TestB2Folder(TestFolder):
     }
 
     def setUp(self):
-        super(TestB2Folder, self).setUp()
+        super().setUp()
         self.bucket = MagicMock()
         self.bucket.ls.return_value = []
         self.api = MagicMock()
@@ -665,7 +680,7 @@ class TestParseSyncFolder(TestBase):
     def test_local(self):
         if platform.system() == 'Windows':
             drive, _ = os.path.splitdrive(os.getcwd())
-            expected = 'LocalFolder(\\\\?\\%s\\foo)' % (drive,)
+            expected = f'LocalFolder(\\\\?\\{drive}\\foo)'
         else:
             expected = 'LocalFolder(/foo)'
         self._check_one(expected, '/foo')
@@ -673,7 +688,7 @@ class TestParseSyncFolder(TestBase):
     def test_local_trailing_slash(self):
         if platform.system() == 'Windows':
             drive, _ = os.path.splitdrive(os.getcwd())
-            expected = 'LocalFolder(\\\\?\\%s\\foo)' % (drive,)
+            expected = f'LocalFolder(\\\\?\\{drive}\\foo)'
         else:
             expected = 'LocalFolder(/foo)'
         self._check_one(expected, '/foo/')

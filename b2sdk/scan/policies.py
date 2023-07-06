@@ -7,11 +7,11 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
 import logging
 import re
-
-from typing import Iterable, Optional, Union
+from typing import Iterable
 
 from ..file_version import FileVersion
 from .exception import InvalidArgument, check_invalid_argument
@@ -122,14 +122,14 @@ class ScanPoliciesManager:
 
     def __init__(
         self,
-        exclude_dir_regexes: Iterable[Union[str, re.Pattern]] = tuple(),
-        exclude_file_regexes: Iterable[Union[str, re.Pattern]] = tuple(),
-        include_file_regexes: Iterable[Union[str, re.Pattern]] = tuple(),
+        exclude_dir_regexes: Iterable[str | re.Pattern] = tuple(),
+        exclude_file_regexes: Iterable[str | re.Pattern] = tuple(),
+        include_file_regexes: Iterable[str | re.Pattern] = tuple(),
         exclude_all_symlinks: bool = False,
-        exclude_modified_before: Optional[int] = None,
-        exclude_modified_after: Optional[int] = None,
-        exclude_uploaded_before: Optional[int] = None,
-        exclude_uploaded_after: Optional[int] = None,
+        exclude_modified_before: int | None = None,
+        exclude_modified_after: int | None = None,
+        exclude_uploaded_before: int | None = None,
+        exclude_uploaded_after: int | None = None,
     ):
         """
         :param exclude_dir_regexes: regexes to exclude directories

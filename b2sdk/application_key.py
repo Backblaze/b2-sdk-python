@@ -7,8 +7,7 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
-
-from typing import List, Optional
+from __future__ import annotations
 
 
 class BaseApplicationKey:
@@ -18,12 +17,12 @@ class BaseApplicationKey:
         self,
         key_name: str,
         application_key_id: str,
-        capabilities: List[str],
+        capabilities: list[str],
         account_id: str,
-        expiration_timestamp_millis: Optional[int] = None,
-        bucket_id: Optional[str] = None,
-        name_prefix: Optional[str] = None,
-        options: Optional[List[str]] = None,
+        expiration_timestamp_millis: int | None = None,
+        bucket_id: str | None = None,
+        name_prefix: str | None = None,
+        options: list[str] | None = None,
     ):
         """
         :param key_name: name of the key, assigned by user
@@ -94,7 +93,7 @@ class ApplicationKey(BaseApplicationKey):
     """Dataclass for storing info about an application key returned by delete-key or list-keys."""
 
     @classmethod
-    def from_api_response(cls, response: dict) -> 'ApplicationKey':
+    def from_api_response(cls, response: dict) -> ApplicationKey:
         """Create an ApplicationKey object from a delete-key or list-key response (a parsed json object)."""
         return cls(**cls.parse_response_dict(response))
 
@@ -107,12 +106,12 @@ class FullApplicationKey(BaseApplicationKey):
         key_name: str,
         application_key_id: str,
         application_key: str,
-        capabilities: List[str],
+        capabilities: list[str],
         account_id: str,
-        expiration_timestamp_millis: Optional[int] = None,
-        bucket_id: Optional[str] = None,
-        name_prefix: Optional[str] = None,
-        options: Optional[List[str]] = None,
+        expiration_timestamp_millis: int | None = None,
+        bucket_id: str | None = None,
+        name_prefix: str | None = None,
+        options: list[str] | None = None,
     ):
         """
         :param key_name: name of the key, assigned by user
@@ -138,7 +137,7 @@ class FullApplicationKey(BaseApplicationKey):
         )
 
     @classmethod
-    def from_create_response(cls, response: dict) -> 'FullApplicationKey':
+    def from_create_response(cls, response: dict) -> FullApplicationKey:
         """Create a FullApplicationKey object from a create-key response (a parsed json object)."""
         return cls(**cls.parse_response_dict(response))
 

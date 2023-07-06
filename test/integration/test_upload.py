@@ -7,16 +7,16 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
 import io
-from typing import Optional
 
-from .fixtures import b2_auth_data  # noqa
 from .base import IntegrationTestBase
+from .fixtures import b2_auth_data  # noqa
 
 
 class TestUnboundStreamUpload(IntegrationTestBase):
-    def assert_data_uploaded_via_stream(self, data: bytes, part_size: Optional[int] = None):
+    def assert_data_uploaded_via_stream(self, data: bytes, part_size: int | None = None):
         bucket = self.create_bucket()
         stream = io.BytesIO(data)
         file_name = 'unbound_stream'

@@ -7,15 +7,16 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
 import hashlib
 import io
+from test.unit.test_base import TestBase
 
 from b2sdk.utils import (
     IncrementalHexDigester,
     Sha1HexDigest,
 )
-from test.unit.test_base import TestBase
 
 
 class TestIncrementalHexDigester(TestBase):

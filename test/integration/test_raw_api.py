@@ -7,6 +7,8 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
+
 import io
 import os
 import random
@@ -20,10 +22,15 @@ import pytest
 from b2sdk.b2http import B2Http
 from b2sdk.encryption.setting import EncryptionAlgorithm, EncryptionMode, EncryptionSetting
 from b2sdk.exception import DisablingFileLockNotSupported
+from b2sdk.file_lock import (
+    NO_RETENTION_FILE_SETTING,
+    BucketRetentionSetting,
+    RetentionMode,
+    RetentionPeriod,
+)
+from b2sdk.raw_api import ALL_CAPABILITIES, REALM_URLS, B2RawHTTPApi
 from b2sdk.replication.setting import ReplicationConfiguration, ReplicationRule
 from b2sdk.replication.types import ReplicationStatus
-from b2sdk.file_lock import BucketRetentionSetting, NO_RETENTION_FILE_SETTING, RetentionMode, RetentionPeriod
-from b2sdk.raw_api import ALL_CAPABILITIES, B2RawHTTPApi, REALM_URLS
 from b2sdk.utils import hex_sha1_of_stream
 
 
@@ -93,7 +100,7 @@ def raw_api_test_helper(raw_api, should_cleanup_old_buckets):
     auth_dict = authorize_raw_api(raw_api)
     missing_capabilities = set(ALL_CAPABILITIES) - {'readBuckets', 'listAllBucketNames'
                                                    } - set(auth_dict['allowed']['capabilities'])
-    assert not missing_capabilities, 'it appears that the raw_api integration test is being run with a non-full key. Missing capabilities: %s' % (
+    assert not missing_capabilities, 'it appears that the raw_api integration test is being run with a non-full key. Missing capabilities: {}'.format(
         missing_capabilities,
     )
 

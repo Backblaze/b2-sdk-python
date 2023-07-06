@@ -7,6 +7,7 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
 # -*- coding: utf-8 -*-
 #
@@ -45,6 +46,7 @@ from b2sdk.version import VERSION  # noqa: E402
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
+    'sphinx_autodoc_typehints',
     'sphinx.ext.intersphinx',
     'sphinx.ext.ifconfig',
     'sphinx.ext.viewcode',
@@ -133,6 +135,8 @@ autodoc_default_options = {
     'members': True,
     'undoc-members': True,
 }  # yapf: disable
+
+always_document_param_types = True
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,

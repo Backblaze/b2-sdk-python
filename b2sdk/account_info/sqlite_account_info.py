@@ -7,6 +7,7 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
 import json
 import logging
@@ -15,8 +16,6 @@ import re
 import sqlite3
 import stat
 import threading
-
-from typing import List, Optional, Tuple
 
 from .exception import CorruptAccountInfo, MissingAccountData
 from .upload_url_pool import UrlPoolAccountInfo
@@ -42,7 +41,7 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
     completed.
     """
 
-    def __init__(self, file_name=None, last_upgrade_to_run=None, profile: Optional[str] = None):
+    def __init__(self, file_name=None, last_upgrade_to_run=None, profile: str | None = None):
         """
         Initialize SqliteAccountInfo.
 
@@ -78,7 +77,7 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
         self._validate_database(last_upgrade_to_run)
         with self._get_connection() as conn:
             self._create_tables(conn, last_upgrade_to_run)
-        super(SqliteAccountInfo, self).__init__()
+        super().__init__()
 
     # dirty trick to use parameters in the docstring
     if getattr(__init__, '__doc__', None):  # don't break when using `python -oo`
@@ -94,7 +93,7 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
     @classmethod
     def _get_user_account_info_path(cls, file_name=None, profile=None):
         if profile and not B2_ACCOUNT_INFO_PROFILE_NAME_REGEXP.match(profile):
-            raise ValueError('Invalid profile name: {}'.format(profile))
+            raise ValueError(f'Invalid profile name: {profile}')
 
         if file_name:
             if profile:
@@ -111,7 +110,7 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
             user_account_info_path = B2_ACCOUNT_INFO_DEFAULT_FILE
         elif XDG_CONFIG_HOME_ENV_VAR in os.environ:
             config_home = os.environ[XDG_CONFIG_HOME_ENV_VAR]
-            file_name = 'db-{}.sqlite'.format(profile) if profile else 'account_info'
+            file_name = f'db-{profile}.sqlite' if profile else 'account_info'
             user_account_info_path = os.path.join(config_home, 'b2', file_name)
             if not os.path.exists(os.path.join(config_home, 'b2')):
                 os.makedirs(os.path.join(config_home, 'b2'), mode=0o755)
@@ -360,7 +359,7 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
                 ]
             )
 
-    def _ensure_update(self, update_number, update_commands: List[str]):
+    def _ensure_update(self, update_number, update_commands: list[str]):
         """
         Run the update with the given number if it hasn't been done yet.
 
@@ -554,7 +553,7 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
     def _get_account_info_or_raise(self, column_name):
         try:
             with self._get_connection() as conn:
-                cursor = conn.execute('SELECT %s FROM account;' % (column_name,))
+                cursor = conn.execute(f'SELECT {column_name} FROM account;')
                 value = cursor.fetchone()[0]
                 return value
         except Exception as e:
@@ -590,10 +589,10 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
             'SELECT bucket_id FROM bucket WHERE bucket_name = ?;', (bucket_name,)
         )
 
-    def get_bucket_name_or_none_from_bucket_id(self, bucket_id: str) -> Optional[str]:
+    def get_bucket_name_or_none_from_bucket_id(self, bucket_id: str) -> str | None:
         return self._safe_query('SELECT bucket_name FROM bucket WHERE bucket_id = ?;', (bucket_id,))
 
-    def list_bucket_names_ids(self) -> List[Tuple[str, str]]:
+    def list_bucket_names_ids(self) -> list[tuple[str, str]]:
         with self._get_connection() as conn:
             cursor = conn.execute('SELECT bucket_name, bucket_id FROM bucket;')
             return cursor.fetchall()

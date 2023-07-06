@@ -7,20 +7,19 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
+
 import contextlib
 import io
-from contextlib import suppress
-from io import BytesIO
 import os
 import pathlib
 import platform
 import unittest.mock as mock
-
-import pytest
-
-from ..test_base import TestBase, create_key
+from contextlib import suppress
+from io import BytesIO
 
 import apiver_deps
+import pytest
 from apiver_deps_exception import (
     AlreadyFailed,
     B2ConnectionError,
@@ -39,41 +38,65 @@ from apiver_deps_exception import (
     InvalidUploadSource,
     MaxRetriesExceeded,
     RestrictedBucketMissing,
-    SSECKeyError,
     SourceReplicationConflict,
+    SSECKeyError,
     UnsatisfiableRange,
 )
+
+from ..test_base import TestBase, create_key
+
 if apiver_deps.V <= 1:
     from apiver_deps import DownloadDestBytes, PreSeekedDownloadDest
     from apiver_deps import FileVersionInfo as VFileVersionInfo
 else:
     DownloadDestBytes, PreSeekedDownloadDest = None, None  # these classes are not present, thus not needed, in v2
     from apiver_deps import FileVersion as VFileVersionInfo
-from apiver_deps import B2Api
-from apiver_deps import B2HttpApiConfig
-from apiver_deps import B2Session
-from apiver_deps import Bucket, BucketFactory
-from apiver_deps import DownloadedFile
-from apiver_deps import DownloadVersion
-from apiver_deps import LargeFileUploadState
-from apiver_deps import MetadataDirectiveMode
-from apiver_deps import Part
-from apiver_deps import AbstractProgressListener
-from apiver_deps import StubAccountInfo, RawSimulator, BucketSimulator, FakeResponse, FileSimulator
-from apiver_deps import AbstractDownloader
-from apiver_deps import ParallelDownloader
-from apiver_deps import Range
-from apiver_deps import SimpleDownloader
-from apiver_deps import UploadSourceBytes
-from apiver_deps import DummyCache, InMemoryCache
-from apiver_deps import hex_sha1_of_bytes, TempDir
-from apiver_deps import EncryptionAlgorithm, EncryptionSetting, EncryptionMode, EncryptionKey, SSE_NONE, SSE_B2_AES
-from apiver_deps import CopySource, UploadSourceLocalFile, WriteIntent
-from apiver_deps import BucketRetentionSetting, FileRetentionSetting, LegalHold, RetentionMode, RetentionPeriod, \
-    NO_RETENTION_FILE_SETTING
-from apiver_deps import ReplicationConfiguration, ReplicationRule
-from apiver_deps import LARGE_FILE_SHA1
-from apiver_deps import UploadMode
+from apiver_deps import (
+    LARGE_FILE_SHA1,
+    NO_RETENTION_FILE_SETTING,
+    SSE_B2_AES,
+    SSE_NONE,
+    AbstractDownloader,
+    AbstractProgressListener,
+    B2Api,
+    B2HttpApiConfig,
+    B2Session,
+    Bucket,
+    BucketFactory,
+    BucketRetentionSetting,
+    BucketSimulator,
+    CopySource,
+    DownloadedFile,
+    DownloadVersion,
+    DummyCache,
+    EncryptionAlgorithm,
+    EncryptionKey,
+    EncryptionMode,
+    EncryptionSetting,
+    FakeResponse,
+    FileRetentionSetting,
+    FileSimulator,
+    InMemoryCache,
+    LargeFileUploadState,
+    LegalHold,
+    MetadataDirectiveMode,
+    ParallelDownloader,
+    Part,
+    Range,
+    RawSimulator,
+    ReplicationConfiguration,
+    ReplicationRule,
+    RetentionMode,
+    RetentionPeriod,
+    SimpleDownloader,
+    StubAccountInfo,
+    TempDir,
+    UploadMode,
+    UploadSourceBytes,
+    UploadSourceLocalFile,
+    WriteIntent,
+    hex_sha1_of_bytes,
+)
 
 pytestmark = [pytest.mark.apiver(from_ver=1)]
 
@@ -194,7 +217,7 @@ class CanRetry(B2Error):
     """
 
     def __init__(self, can_retry):
-        super(CanRetry, self).__init__(None, None, None, None, None)
+        super().__init__(None, None, None, None, None)
         self.can_retry = can_retry
 
     def should_retry_upload(self):
@@ -1846,7 +1869,7 @@ class TestConcatenate(TestCaseWithBucket):
                         UploadSourceLocalFile(path),
                         CopySource(f2_id, length=len(data), offset=0, encryption=SSE_C_AES_2),
                     ],
-                    file_name='created_file_%s' % (len(data),),
+                    file_name=f'created_file_{len(data)}',
                     encryption=SSE_C_AES
                 )
             self.assertIsInstance(created_file, VFileVersionInfo)
@@ -1856,7 +1879,7 @@ class TestConcatenate(TestCaseWithBucket):
             )
             expected = (
                 mock.ANY,
-                'created_file_%s' % (len(data),),
+                f'created_file_{len(data)}',
                 mock.ANY,  # FIXME: this should be equal to len(data) * 3,
                 # but there is a problem in the simulator/test code somewhere
                 SSE_C_AES_NO_SECRET
@@ -1935,7 +1958,7 @@ class DownloadTestsBase:
     DATA = NotImplemented
 
     def setUp(self):
-        super(DownloadTestsBase, self).setUp()
+        super().setUp()
         self.file_version = self.bucket.upload_bytes(self.DATA.encode(), 'file1')
         self.encrypted_file_version = self.bucket.upload_bytes(
             self.DATA.encode(), 'enc_file1', encryption=SSE_C_AES
@@ -2150,7 +2173,7 @@ class DownloadTests(DownloadTestsBase):
             path = os.path.join(d, 'file2')
             data = b'12345678901234567890'
             write_file(path, data)
-            with io.open(path, 'rb+') as file:
+            with open(path, 'rb+') as file:
                 file.seek(3)
                 self.download_file_by_id(
                     self.file_version.id_,
@@ -2225,7 +2248,7 @@ class DownloadTests(DownloadTestsBase):
             path = os.path.join(d, 'file2')
             data = b'12345678901234567890'
             write_file(path, data)
-            with io.open(path, 'rb+') as file:
+            with open(path, 'rb+') as file:
                 file.seek(7)
                 self.download_file_by_id(
                     self.file_version.id_,
@@ -2333,7 +2356,7 @@ class TestDownloadSimple(
     TestCaseWithBucket,
 ):
     def setUp(self):
-        super(TestDownloadSimple, self).setUp()
+        super().setUp()
         download_manager = self.bucket.api.services.download_manager
         download_manager.strategies = [SimpleDownloader(force_chunk_size=20)]
 
@@ -2344,7 +2367,7 @@ class TestDownloadParallel(
     TestCaseWithBucket,
 ):
     def setUp(self):
-        super(TestDownloadParallel, self).setUp()
+        super().setUp()
         download_manager = self.bucket.api.services.download_manager
         download_manager.strategies = [
             ParallelDownloader(
@@ -2359,7 +2382,7 @@ class TestDownloadParallelALotOfStreams(DownloadTestsBase, TestCaseWithBucket):
     DATA = ''.join(['01234567890abcdef'] * 32)
 
     def setUp(self):
-        super(TestDownloadParallelALotOfStreams, self).setUp()
+        super().setUp()
         download_manager = self.bucket.api.services.download_manager
         download_manager.strategies = [
             # this should produce 32 streams with 16 single byte writes
@@ -2388,7 +2411,7 @@ class TruncatedFakeResponse(FakeResponse):
     """
 
     def __init__(self, *args, **kwargs):
-        super(TruncatedFakeResponse, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.data_bytes = self.data_bytes[:4]
 
 
@@ -2409,14 +2432,14 @@ class TestCaseWithTruncatedDownloadBucket(TestCaseWithBucket):
 
 class TestTruncatedDownloadSimple(DownloadTests, TestCaseWithTruncatedDownloadBucket):
     def setUp(self):
-        super(TestTruncatedDownloadSimple, self).setUp()
+        super().setUp()
         download_manager = self.bucket.api.services.download_manager
         download_manager.strategies = [SimpleDownloader(force_chunk_size=20)]
 
 
 class TestTruncatedDownloadParallel(DownloadTests, TestCaseWithTruncatedDownloadBucket):
     def setUp(self):
-        super(TestTruncatedDownloadParallel, self).setUp()
+        super().setUp()
         download_manager = self.bucket.api.services.download_manager
         download_manager.strategies = [
             ParallelDownloader(
@@ -2479,7 +2502,7 @@ class TestDownloadTuneWriteBuffer(DownloadTestsBase, TestCaseWithBucket):
                 mock_open.side_effect = open
                 self.bucket.download_file_by_id(self.file_version.id_).save_to(path)
                 mock_open.assert_called_once_with(path, mock.ANY, buffering=self.ALIGN_FACTOR)
-                with open(path, 'r') as f:
+                with open(path) as f:
                     contents = f.read()
                     assert contents == self.DATA
 
@@ -2529,17 +2552,17 @@ class TestDownloadNoHashChecking(DownloadTestsBase, TestCaseWithBucket):
             assert downloaded_file.download_version.content_sha1 != ''
 
 
-class DecodeTestsBase(object):
+class DecodeTestsBase:
     def setUp(self):
-        super(DecodeTestsBase, self).setUp()
+        super().setUp()
         self.bucket.upload_bytes(
-            'Test File 1'.encode(), 'test.txt?foo=bar', file_info={'custom_info': 'aaa?bbb'}
+            b'Test File 1', 'test.txt?foo=bar', file_info={'custom_info': 'aaa?bbb'}
         )
         self.bucket.upload_bytes(
-            'Test File 2'.encode(), 'test.txt%3Ffoo=bar', file_info={'custom_info': 'aaa%3Fbbb'}
+            b'Test File 2', 'test.txt%3Ffoo=bar', file_info={'custom_info': 'aaa%3Fbbb'}
         )
-        self.bucket.upload_bytes('Test File 3'.encode(), 'test.txt%3Ffoo%3Dbar')
-        self.bucket.upload_bytes('Test File 4'.encode(), 'test.txt%253Ffoo%253Dbar')
+        self.bucket.upload_bytes(b'Test File 3', 'test.txt%3Ffoo%3Dbar')
+        self.bucket.upload_bytes(b'Test File 4', 'test.txt%253Ffoo%253Dbar')
         self.bytes_io = io.BytesIO()
         if apiver_deps.V <= 1:
             self.download_dest = DownloadDestBytes()

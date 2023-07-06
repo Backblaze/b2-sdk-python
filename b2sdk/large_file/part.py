@@ -7,6 +7,7 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
 
 class PartFactory:
@@ -37,7 +38,7 @@ class Part:
         self.content_sha1 = content_sha1
 
     def __repr__(self):
-        return '<%s %s %s %s %s>' % (
+        return '<{} {} {} {} {}>'.format(
             self.__class__.__name__, self.file_id, self.part_number, self.content_length,
             self.content_sha1
         )

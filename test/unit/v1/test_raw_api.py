@@ -7,17 +7,22 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
+
 import pytest
 
 from ..test_base import TestBase
-
-from .deps import EncryptionAlgorithm
-from .deps import EncryptionKey
-from .deps import EncryptionMode
-from .deps import EncryptionSetting
-from .deps import B2RawHTTPApi
-from .deps import B2Http
-from .deps import BucketRetentionSetting, RetentionPeriod, RetentionMode
+from .deps import (
+    B2Http,
+    B2RawHTTPApi,
+    BucketRetentionSetting,
+    EncryptionAlgorithm,
+    EncryptionKey,
+    EncryptionMode,
+    EncryptionSetting,
+    RetentionMode,
+    RetentionPeriod,
+)
 from .deps_exception import UnusableFileName, WrongEncryptionModeForBucketDefault
 
 # Unicode characters for testing filenames.  (0x0394 is a letter Delta.)
@@ -37,7 +42,7 @@ class TestRawAPIFilenames(TestBase):
 
         :param filename: unicode (or str) that follows the rules
         """
-        print(u"Filename \"{0}\" should be OK".format(filename))
+        print(f"Filename \"{filename}\" should be OK")
         self.assertTrue(self.raw_api.check_b2_filename(filename) is None)
 
     def _should_raise(self, filename, exception_message):
@@ -47,11 +52,11 @@ class TestRawAPIFilenames(TestBase):
         :param exception_message: regexp that matches the exception's detailed message
         """
         print(
-            u"Filename \"{0}\" should raise UnusableFileName(\".*{1}.*\").".format(
+            "Filename \"{}\" should raise UnusableFileName(\".*{}.*\").".format(
                 filename, exception_message
             )
         )
-        with self.assertRaisesRegexp(UnusableFileName, exception_message):
+        with self.assertRaisesRegex(UnusableFileName, exception_message):
             self.raw_api.check_b2_filename(filename)
 
     def test_b2_filename_checker(self):
@@ -69,35 +74,35 @@ class TestRawAPIFilenames(TestBase):
 
         # Examples from doc:
         self._should_be_ok('Kitten Videos')
-        self._should_be_ok(u'\u81ea\u7531.txt')
+        self._should_be_ok('\u81ea\u7531.txt')
 
         # Check length
         # 1024 bytes is ok if the segments are at most 250 chars.
         s_1024 = 4 * (250 * 'x' + '/') + 20 * 'y'
         self._should_be_ok(s_1024)
         # 1025 is too long.
-        self._should_raise(s_1024 + u'x', "too long")
+        self._should_raise(s_1024 + 'x', "too long")
         # 1024 bytes with two byte characters should also work.
-        s_1024_two_byte = 4 * (125 * TWO_BYTE_UNICHR + u'/') + 20 * u'y'
+        s_1024_two_byte = 4 * (125 * TWO_BYTE_UNICHR + '/') + 20 * 'y'
         self._should_be_ok(s_1024_two_byte)
         # But 1025 bytes is too long.
-        self._should_raise(s_1024_two_byte + u'x', "too long")
+        self._should_raise(s_1024_two_byte + 'x', "too long")
 
         # Names with unicode values < 32, and DEL aren't allowed.
-        self._should_raise(u'hey' + CHAR_UNDER_32, "contains code.*less than 32")
+        self._should_raise('hey' + CHAR_UNDER_32, "contains code.*less than 32")
         # Unicode in the filename shouldn't break the exception message.
         self._should_raise(TWO_BYTE_UNICHR + CHAR_UNDER_32, "contains code.*less than 32")
         self._should_raise(DEL_CHAR, "DEL.*not allowed")
 
         # Names can't start or end with '/' or contain '//'
-        self._should_raise(u'/hey', "not start.*/")
-        self._should_raise(u'hey/', "not .*end.*/")
-        self._should_raise(u'not//allowed', "contain.*//")
+        self._should_raise('/hey', "not start.*/")
+        self._should_raise('hey/', "not .*end.*/")
+        self._should_raise('not//allowed', "contain.*//")
 
         # Reject segments longer than 250 bytes
-        self._should_raise(u'foo/' + 251 * u'x', "segment too long")
+        self._should_raise('foo/' + 251 * 'x', "segment too long")
         # So a segment of 125 two-byte chars plus one should also fail.
-        self._should_raise(u'foo/' + 125 * TWO_BYTE_UNICHR + u'x', "segment too long")
+        self._should_raise('foo/' + 125 * TWO_BYTE_UNICHR + 'x', "segment too long")
 
 
 class BucketTestBase:

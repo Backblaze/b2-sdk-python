@@ -7,11 +7,12 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
 import hashlib
 import io
 import queue
-from typing import Callable, Iterator, Union
+from typing import Callable, Iterator
 
 from b2sdk.transfer.emerge.exception import UnboundStreamBufferTimeout
 from b2sdk.transfer.emerge.write_intent import WriteIntent
@@ -33,7 +34,7 @@ class IOWrapper(io.BytesIO):
 
     def __init__(
         self,
-        data: Union[bytes, bytearray],
+        data: bytes | bytearray,
         release_function: Callable[[], None],
     ):
         """

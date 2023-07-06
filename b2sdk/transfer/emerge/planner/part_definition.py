@@ -7,14 +7,14 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
 from abc import ABCMeta, abstractmethod
 from functools import partial
+from typing import TYPE_CHECKING
 
 from b2sdk.stream.chained import ChainedStream
 from b2sdk.stream.range import wrap_with_range
-from typing import TYPE_CHECKING
-
 from b2sdk.utils import hex_sha1_of_unlimited_stream
 
 if TYPE_CHECKING:
@@ -42,7 +42,7 @@ class BaseEmergePartDefinition(metaclass=ABCMeta):
 
 
 class UploadEmergePartDefinition(BaseEmergePartDefinition):
-    def __init__(self, upload_source: "UnboundSourceBytes", relative_offset, length):
+    def __init__(self, upload_source: UnboundSourceBytes, relative_offset, length):
         self.upload_source = upload_source
         self.relative_offset = relative_offset
         self.length = length

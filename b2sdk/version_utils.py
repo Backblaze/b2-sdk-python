@@ -7,13 +7,15 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
-from abc import ABCMeta, abstractmethod
-from functools import wraps
 import inspect
 import warnings
+from abc import ABCMeta, abstractmethod
+from functools import wraps
 
 from pkg_resources import parse_version
+
 from b2sdk.version import VERSION
 
 
@@ -48,7 +50,7 @@ class AbstractVersionDecorator(metaclass=ABCMeta):
         The actual implementation of decorator. Needs self.source to be set before it's called.
         """
         if self.cutoff_version and self.changed_version:
-            assert self.changed_version < self.cutoff_version, '%s decorator is set to start renaming %s %r starting at version %s and finishing in %s. It needs to start at a lower version and finish at a higher version.' % (
+            assert self.changed_version < self.cutoff_version, '{} decorator is set to start renaming {} {!r} starting at version {} and finishing in {}. It needs to start at a lower version and finish at a higher version.'.format(
                 self.__class__.__name__,
                 self.WHAT,
                 self.source,
@@ -83,10 +85,10 @@ class rename_argument(AbstractDeprecator):
 
     def __init__(self, source, *args, **kwargs):
         self.source = source
-        super(rename_argument, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def __call__(self, func):
-        super(rename_argument, self).__call__(func)
+        super().__call__(func)
         signature = inspect.signature(func)
         has_target_arg = self.target in signature.parameters or any(
             p.kind == p.VAR_KEYWORD for p in signature.parameters.values()
@@ -96,7 +98,7 @@ class rename_argument(AbstractDeprecator):
         @wraps(func)
         def wrapper(*args, **kwargs):
             if self.source in kwargs:
-                assert self.target not in kwargs, 'both argument names were provided: %r (deprecated) and %r (new)' % (
+                assert self.target not in kwargs, 'both argument names were provided: {!r} (deprecated) and {!r} (new)'.format(
                     self.source, self.target
                 )
                 kwargs[self.target] = kwargs[self.source]
@@ -137,17 +139,17 @@ class rename_function(AbstractDeprecator):
     def __init__(self, target, *args, **kwargs):
         if callable(target):
             target = target.__name__
-        super(rename_function, self).__init__(target, *args, **kwargs)
+        super().__init__(target, *args, **kwargs)
 
     def __call__(self, func):
         self.source = func.__name__
-        super(rename_function, self).__call__(func)
+        super().__call__(func)
 
         @wraps(func)
         def wrapper(*args, **kwargs):
             warnings.warn(
-                '%r is deprecated since version %s - it was moved to %r, please switch to use that. The proxy for the old name is going to be removed in %s.'
-                % (
+                '{!r} is deprecated since version {} - it was moved to {!r}, please switch to use that. The proxy for the old name is going to be removed in {}.'
+                .format(
                     func.__name__,
                     self.changed_version,
                     self.target,

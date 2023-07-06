@@ -7,17 +7,18 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
-from io import IOBase
-from typing import Optional
 import logging
+from io import IOBase
 
 from requests.models import Response
 
-from .abstract import AbstractDownloader
-from b2sdk.file_version import DownloadVersion
 from b2sdk.encryption.setting import EncryptionSetting
+from b2sdk.file_version import DownloadVersion
 from b2sdk.session import B2Session
+
+from .abstract import AbstractDownloader
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +33,7 @@ class SimpleDownloader(AbstractDownloader):
         response: Response,
         download_version: DownloadVersion,
         session: B2Session,
-        encryption: Optional[EncryptionSetting] = None,
+        encryption: EncryptionSetting | None = None,
     ):
         actual_size = self._get_remote_range(response, download_version).size()
         chunk_size = self._get_chunk_size(actual_size)
@@ -84,7 +85,7 @@ class SimpleDownloader(AbstractDownloader):
         response: Response,
         download_version: DownloadVersion,
         session: B2Session,
-        encryption: Optional[EncryptionSetting] = None,
+        encryption: EncryptionSetting | None = None,
     ):
         future = self._thread_pool.submit(
             self._download, file, response, download_version, session, encryption

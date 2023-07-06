@@ -7,12 +7,12 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
 from abc import ABCMeta, abstractmethod
-from typing import Dict, Optional
 
-from ..encryption.setting import EncryptionSetting
 from ..bucket import Bucket
+from ..encryption.setting import EncryptionSetting
 from ..file_version import FileVersion
 
 
@@ -27,9 +27,9 @@ class AbstractSyncEncryptionSettingsProvider(metaclass=ABCMeta):
         self,
         bucket: Bucket,
         b2_file_name: str,
-        file_info: Optional[dict],
+        file_info: dict | None,
         length: int,
-    ) -> Optional[EncryptionSetting]:
+    ) -> EncryptionSetting | None:
         """
         Return an EncryptionSetting for uploading an object or None if server should decide.
         """
@@ -39,7 +39,7 @@ class AbstractSyncEncryptionSettingsProvider(metaclass=ABCMeta):
         self,
         bucket: Bucket,
         source_file_version: FileVersion,
-    ) -> Optional[EncryptionSetting]:
+    ) -> EncryptionSetting | None:
         """
         Return an EncryptionSetting for a source of copying an object or None if not required
         """
@@ -50,8 +50,8 @@ class AbstractSyncEncryptionSettingsProvider(metaclass=ABCMeta):
         bucket: Bucket,
         dest_b2_file_name: str,
         source_file_version: FileVersion,
-        target_file_info: Optional[dict] = None,
-    ) -> Optional[EncryptionSetting]:
+        target_file_info: dict | None = None,
+    ) -> EncryptionSetting | None:
         """
         Return an EncryptionSetting for a destination for copying an object or None if server should decide
         """
@@ -61,7 +61,7 @@ class AbstractSyncEncryptionSettingsProvider(metaclass=ABCMeta):
         self,
         bucket: Bucket,
         file_version: FileVersion,
-    ) -> Optional[EncryptionSetting]:
+    ) -> EncryptionSetting | None:
         """
         Return an EncryptionSetting for downloading an object from, or None if not required
         """
@@ -97,24 +97,23 @@ class BasicSyncEncryptionSettingsProvider(AbstractSyncEncryptionSettingsProvider
 
     def __init__(
         self,
-        read_bucket_settings: Dict[str, Optional[EncryptionSetting]],
-        write_bucket_settings: Dict[str, Optional[EncryptionSetting]],
+        read_bucket_settings: dict[str, EncryptionSetting | None],
+        write_bucket_settings: dict[str, EncryptionSetting | None],
     ):
         self.read_bucket_settings = read_bucket_settings
         self.write_bucket_settings = write_bucket_settings
 
-    def get_setting_for_upload(self, bucket, *args, **kwargs) -> Optional[EncryptionSetting]:
+    def get_setting_for_upload(self, bucket, *args, **kwargs) -> EncryptionSetting | None:
         return self.write_bucket_settings.get(bucket.name)
 
     def get_source_setting_for_copy(self, bucket, *args, **kwargs) -> None:
         return self.read_bucket_settings.get(bucket.name)
 
-    def get_destination_setting_for_copy(self, bucket, *args,
-                                         **kwargs) -> Optional[EncryptionSetting]:
+    def get_destination_setting_for_copy(self, bucket, *args, **kwargs) -> EncryptionSetting | None:
         return self.write_bucket_settings.get(bucket.name)
 
     def get_setting_for_download(self, bucket, *args, **kwargs) -> None:
         return self.read_bucket_settings.get(bucket.name)
 
     def __repr__(self):
-        return '<%s:%s>' % (self.__class__.__name__, self.bucket_settings)
+        return f'<{self.__class__.__name__}:{self.bucket_settings}>'

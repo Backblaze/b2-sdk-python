@@ -7,6 +7,7 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
 from b2sdk.encryption.setting import EncryptionSettingFactory
 from b2sdk.file_lock import FileRetentionSetting, LegalHold
@@ -40,7 +41,7 @@ class UnfinishedLargeFile:
         self.cache_control = file_dict.get('cacheControl')
 
     def __repr__(self):
-        return '<%s %s %s>' % (self.__class__.__name__, self.bucket_id, self.file_name)
+        return f'<{self.__class__.__name__} {self.bucket_id} {self.file_name}>'
 
     def __eq__(self, other):
         return isinstance(other, self.__class__) and self.__dict__ == other.__dict__

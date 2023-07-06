@@ -7,12 +7,11 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
-
-from typing import Optional
+from __future__ import annotations
 
 from b2sdk.encryption.setting import EncryptionSetting
-from b2sdk.transfer.outbound.outbound_source import OutboundTransferSource
 from b2sdk.http_constants import LARGE_FILE_SHA1
+from b2sdk.transfer.outbound.outbound_source import OutboundTransferSource
 
 
 class CopySource(OutboundTransferSource):
@@ -21,7 +20,7 @@ class CopySource(OutboundTransferSource):
         file_id,
         offset=0,
         length=None,
-        encryption: Optional[EncryptionSetting] = None,
+        encryption: EncryptionSetting | None = None,
         source_file_info=None,
         source_content_type=None,
     ):

@@ -7,9 +7,11 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
-import re
-import pytest
+from __future__ import annotations
 
+import re
+
+import pytest
 from apiver_deps import ScanPoliciesManager
 from apiver_deps_exception import InvalidArgument
 

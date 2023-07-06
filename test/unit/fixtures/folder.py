@@ -7,14 +7,13 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
 from unittest import mock
 
 import apiver_deps
 import pytest
-
-from apiver_deps import B2Folder, LocalFolder, LocalPath
-from apiver_deps import DEFAULT_SCAN_MANAGER
+from apiver_deps import DEFAULT_SCAN_MANAGER, B2Folder, LocalFolder, LocalPath
 
 if apiver_deps.V <= 1:
     from apiver_deps import FileVersionInfo as VFileVersion

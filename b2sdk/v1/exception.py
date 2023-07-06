@@ -7,6 +7,7 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
 from b2sdk.v2.exception import *  # noqa
 v2DestFileNewer = DestFileNewer
@@ -21,7 +22,7 @@ class CommandError(B2Error):
     """
 
     def __init__(self, message):
-        super(CommandError, self).__init__()
+        super().__init__()
         self.message = message
 
     def __str__(self):
@@ -37,7 +38,7 @@ class DestFileNewer(v2DestFileNewer):
         self.source_prefix = source_prefix
 
     def __str__(self):
-        return 'source file is older than destination: %s%s with a time of %s cannot be synced to %s%s with a time of %s, unless a valid newer_file_mode is provided' % (
+        return 'source file is older than destination: {}{} with a time of {} cannot be synced to {}{} with a time of {}, unless a valid newer_file_mode is provided'.format(
             self.source_prefix,
             self.source_file.name,
             self.source_file.latest_version().mod_time,

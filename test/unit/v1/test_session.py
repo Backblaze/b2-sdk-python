@@ -7,14 +7,13 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
 import unittest.mock as mock
 
 from ..test_base import TestBase
-
+from .deps import ALL_CAPABILITIES, B2Session
 from .deps_exception import InvalidAuthToken, Unauthorized
-from .deps import ALL_CAPABILITIES
-from .deps import B2Session
 
 
 class TestB2Session(TestBase):
@@ -57,7 +56,7 @@ class TestB2Session(TestBase):
             namePrefix=None,
         )
         self.raw_api.get_file_info_by_id.side_effect = Unauthorized('no_go', 'code')
-        with self.assertRaisesRegexp(
+        with self.assertRaisesRegex(
             Unauthorized, r'no_go for application key with no restrictions \(code\)'
         ):
             self.session.get_file_info_by_id(None)
@@ -70,7 +69,7 @@ class TestB2Session(TestBase):
             namePrefix=None,
         )
         self.raw_api.get_file_info_by_id.side_effect = Unauthorized('', 'code')
-        with self.assertRaisesRegexp(
+        with self.assertRaisesRegex(
             Unauthorized, r'unauthorized for application key with no restrictions \(code\)'
         ):
             self.session.get_file_info_by_id(None)
@@ -83,7 +82,7 @@ class TestB2Session(TestBase):
             namePrefix='prefix/',
         )
         self.raw_api.get_file_info_by_id.side_effect = Unauthorized('no_go', 'code')
-        with self.assertRaisesRegexp(
+        with self.assertRaisesRegex(
             Unauthorized,
             r"no_go for application key with capabilities 'readFiles', restricted to bucket 'my-bucket', restricted to files that start with 'prefix/' \(code\)"
         ):

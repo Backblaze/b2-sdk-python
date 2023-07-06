@@ -7,9 +7,10 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
 from abc import ABCMeta, abstractmethod
-from typing import Optional, List, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from b2sdk.account_info.abstract import AbstractAccountInfo
@@ -28,11 +29,11 @@ class AbstractCache(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def get_bucket_name_or_none_from_bucket_id(self, bucket_id: str) -> Optional[str]:
+    def get_bucket_name_or_none_from_bucket_id(self, bucket_id: str) -> str | None:
         pass
 
     @abstractmethod
-    def list_bucket_names_ids(self) -> List[Tuple[str, str]]:
+    def list_bucket_names_ids(self) -> list[tuple[str, str]]:
         """
         List buckets in the cache.
 
@@ -59,13 +60,13 @@ class DummyCache(AbstractCache):
     def get_bucket_id_or_none_from_bucket_name(self, name):
         return None
 
-    def get_bucket_name_or_none_from_bucket_id(self, bucket_id: str) -> Optional[str]:
+    def get_bucket_name_or_none_from_bucket_id(self, bucket_id: str) -> str | None:
         return None
 
     def get_bucket_name_or_none_from_allowed(self):
         return None
 
-    def list_bucket_names_ids(self) -> List[Tuple[str, str]]:
+    def list_bucket_names_ids(self) -> list[tuple[str, str]]:
         return []
 
     def save_bucket(self, bucket):
@@ -87,7 +88,7 @@ class InMemoryCache(AbstractCache):
     def get_bucket_id_or_none_from_bucket_name(self, name):
         return self.name_id_map.get(name)
 
-    def get_bucket_name_or_none_from_bucket_id(self, bucket_id: str) -> Optional[str]:
+    def get_bucket_name_or_none_from_bucket_id(self, bucket_id: str) -> str | None:
         for name, cached_id_ in self.name_id_map.items():
             if cached_id_ == bucket_id:
                 return name
@@ -96,7 +97,7 @@ class InMemoryCache(AbstractCache):
     def get_bucket_name_or_none_from_allowed(self):
         return self.bucket_name
 
-    def list_bucket_names_ids(self) -> List[Tuple[str, str]]:
+    def list_bucket_names_ids(self) -> list[tuple[str, str]]:
         return sorted(tuple(item) for item in self.name_id_map.items())
 
     def save_bucket(self, bucket):
@@ -111,19 +112,19 @@ class AuthInfoCache(AbstractCache):
     A cache that stores data persistently in StoredAccountInfo.
     """
 
-    def __init__(self, info: 'AbstractAccountInfo'):
+    def __init__(self, info: AbstractAccountInfo):
         self.info = info
 
     def get_bucket_id_or_none_from_bucket_name(self, name):
         return self.info.get_bucket_id_or_none_from_bucket_name(name)
 
-    def get_bucket_name_or_none_from_bucket_id(self, bucket_id) -> Optional[str]:
+    def get_bucket_name_or_none_from_bucket_id(self, bucket_id) -> str | None:
         return self.info.get_bucket_name_or_none_from_bucket_id(bucket_id)
 
     def get_bucket_name_or_none_from_allowed(self):
         return self.info.get_bucket_name_or_none_from_allowed()
 
-    def list_bucket_names_ids(self) -> List[Tuple[str, str]]:
+    def list_bucket_names_ids(self) -> list[tuple[str, str]]:
         return self.info.list_bucket_names_ids()
 
     def save_bucket(self, bucket):

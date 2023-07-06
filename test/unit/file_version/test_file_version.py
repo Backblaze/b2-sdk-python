@@ -7,24 +7,26 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
-
-import pytest
+from __future__ import annotations
 
 import apiver_deps
-from apiver_deps import B2Api
-from apiver_deps import B2HttpApiConfig
-from apiver_deps import DownloadVersion
-from apiver_deps import DummyCache
-from apiver_deps import EncryptionAlgorithm
-from apiver_deps import EncryptionKey
-from apiver_deps import EncryptionMode
-from apiver_deps import EncryptionSetting
-from apiver_deps import FileIdAndName
-from apiver_deps import FileRetentionSetting
-from apiver_deps import InMemoryAccountInfo
-from apiver_deps import LegalHold
-from apiver_deps import RawSimulator
-from apiver_deps import RetentionMode
+import pytest
+from apiver_deps import (
+    B2Api,
+    B2HttpApiConfig,
+    DownloadVersion,
+    DummyCache,
+    EncryptionAlgorithm,
+    EncryptionKey,
+    EncryptionMode,
+    EncryptionSetting,
+    FileIdAndName,
+    FileRetentionSetting,
+    InMemoryAccountInfo,
+    LegalHold,
+    RawSimulator,
+    RetentionMode,
+)
 from apiver_deps_exception import FileNotPresent
 
 if apiver_deps.V <= 1:

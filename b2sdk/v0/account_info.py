@@ -7,6 +7,7 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
 from b2sdk import version_utils
 from b2sdk import v1
@@ -47,7 +48,7 @@ class OldAccountInfoMethods:
     ):
         # we need to enumerate all the parameters and cannot just "*args, **kwargs" because
         # the deprecation decorator doesn't feel safe with the kwargs approach
-        return super(OldAccountInfoMethods, self).set_auth_data(
+        return super().set_auth_data(
             account_id,
             auth_token,
             api_url,

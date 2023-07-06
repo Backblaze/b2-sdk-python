@@ -7,11 +7,11 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
 from unittest.mock import MagicMock
 
 import pytest
-
 from apiver_deps import SyncReport
 
 
@@ -20,7 +20,7 @@ class TestSyncReport:
         stdout = MagicMock()
         stdout.write = MagicMock(
             side_effect=[
-                UnicodeEncodeError('codec', u'foo', 100, 105, 'artificial UnicodeEncodeError')
+                UnicodeEncodeError('codec', 'foo', 100, 105, 'artificial UnicodeEncodeError')
             ] + list(range(25))
         )
         sync_report = SyncReport(stdout, False)

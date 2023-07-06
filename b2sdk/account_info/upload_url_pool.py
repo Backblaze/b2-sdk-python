@@ -7,10 +7,11 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
-from abc import abstractmethod
 import collections
 import threading
+from abc import abstractmethod
 
 from .abstract import AbstractAccountInfo
 
@@ -79,13 +80,13 @@ class UrlPoolAccountInfo(AbstractAccountInfo):
     )  #: A url pool class to use for large files.
 
     def __init__(self):
-        super(UrlPoolAccountInfo, self).__init__()
+        super().__init__()
         self._reset_upload_pools()
 
     @abstractmethod
     def clear(self):
         self._reset_upload_pools()
-        return super(UrlPoolAccountInfo, self).clear()
+        return super().clear()
 
     def _reset_upload_pools(self):
         self._bucket_uploads = self.BUCKET_UPLOAD_POOL_CLASS()

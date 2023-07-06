@@ -16,17 +16,15 @@ import random
 import re
 import threading
 import time
-
 from contextlib import contextmanager, suppress
-from typing import Optional
+
+from requests.structures import CaseInsensitiveDict
 
 from b2sdk.http_constants import FILE_INFO_HEADER_PREFIX, HEX_DIGITS_AT_END
 from b2sdk.replication.setting import ReplicationConfiguration
-from requests.structures import CaseInsensitiveDict
 
 from .b2http import ResponseContextManager
 from .encryption.setting import EncryptionMode, EncryptionSetting
-from .replication.types import ReplicationStatus
 from .exception import (
     BadJson,
     BadRequest,
@@ -43,8 +41,8 @@ from .exception import (
     MissingPart,
     NonExistentBucket,
     PartSha1Mismatch,
-    SSECKeyError,
     SourceReplicationConflict,
+    SSECKeyError,
     Unauthorized,
     UnsatisfiableRange,
 )
@@ -56,6 +54,7 @@ from .file_lock import (
 )
 from .file_version import UNVERIFIED_CHECKSUM_PREFIX
 from .raw_api import ALL_CAPABILITIES, AbstractRawApi, MetadataDirectiveMode
+from .replication.types import ReplicationStatus
 from .stream.hashing import StreamWithHash
 from .utils import ConcurrentUsedAuthTokenGuard, b2_url_decode, b2_url_encode, hex_sha1_of_bytes
 
@@ -173,11 +172,11 @@ class FileSimulator:
         data_bytes,
         upload_timestamp,
         range_=None,
-        server_side_encryption: Optional[EncryptionSetting] = None,
-        file_retention: Optional[FileRetentionSetting] = None,
+        server_side_encryption: EncryptionSetting | None = None,
+        file_retention: FileRetentionSetting | None = None,
         legal_hold: LegalHold = LegalHold.UNSET,
-        replication_status: Optional[ReplicationStatus] = None,
-        cache_control: Optional[str] = None,
+        replication_status: ReplicationStatus | None = None,
+        cache_control: str | None = None,
     ):
         if action == 'hide':
             assert server_side_encryption is None
@@ -277,9 +276,7 @@ class FileSimulator:
             elif self.server_side_encryption.mode in (EncryptionMode.NONE, EncryptionMode.UNKNOWN):
                 pass
             else:
-                raise ValueError(
-                    'Unsupported encryption mode: %s' % (self.server_side_encryption.mode,)
-                )
+                raise ValueError(f'Unsupported encryption mode: {self.server_side_encryption.mode}')
 
         if range_ is not None:
             headers['Content-Range'] = 'bytes %d-%d/%d' % (
@@ -427,7 +424,7 @@ class FileSimulator:
             parts = parts[:max_part_count]
         return dict(parts=parts, nextPartNumber=next_part_number)
 
-    def check_encryption(self, request_encryption: Optional[EncryptionSetting]):
+    def check_encryption(self, request_encryption: EncryptionSetting | None):
         if not self.CHECK_ENCRYPTION:
             return
         file_mode, file_secret = self._get_encryption_mode_and_secret(self.server_side_encryption)
@@ -443,7 +440,7 @@ class FileSimulator:
         else:
             raise ValueError('Unsupported EncryptionMode: %s' % (file_mode))
 
-    def _get_encryption_mode_and_secret(self, encryption: Optional[EncryptionSetting]):
+    def _get_encryption_mode_and_secret(self, encryption: EncryptionSetting | None):
         if encryption is None:
             return None, None
         mode = encryption.mode
@@ -478,7 +475,7 @@ class FakeResponse:
     def request(self):
         headers = CaseInsensitiveDict()
         if self.range_ is not None:
-            headers['Range'] = '%s-%s' % self.range_
+            headers['Range'] = '{}-{}'.format(*self.range_)
         return FakeRequest(self.url, headers)
 
     def close(self):
@@ -509,8 +506,8 @@ class BucketSimulator:
         lifecycle_rules=None,
         options_set=None,
         default_server_side_encryption=None,
-        is_file_lock_enabled: Optional[bool] = None,
-        replication: Optional[ReplicationConfiguration] = None,
+        is_file_lock_enabled: bool | None = None,
+        replication: ReplicationConfiguration | None = None,
     ):
         assert bucket_type in ['allPrivate', 'allPublic']
         self.api = api
@@ -628,7 +625,7 @@ class BucketSimulator:
         file_id,
         url,
         range_=None,
-        encryption: Optional[EncryptionSetting] = None,
+        encryption: EncryptionSetting | None = None,
     ):
         file_sim = self.file_id_to_file[file_id]
         file_sim.check_encryption(encryption)
@@ -640,7 +637,7 @@ class BucketSimulator:
         file_name,
         url,
         range_=None,
-        encryption: Optional[EncryptionSetting] = None,
+        encryption: EncryptionSetting | None = None,
     ):
         files = self.list_file_names(self.api.current_token, file_name,
                                      1)['files']  # token is not important here
@@ -752,11 +749,11 @@ class BucketSimulator:
         content_type=None,
         file_info=None,
         destination_bucket_id=None,
-        destination_server_side_encryption: Optional[EncryptionSetting] = None,
-        source_server_side_encryption: Optional[EncryptionSetting] = None,
-        file_retention: Optional[FileRetentionSetting] = None,
-        legal_hold: Optional[LegalHold] = None,
-        cache_control: Optional[str] = None,
+        destination_server_side_encryption: EncryptionSetting | None = None,
+        source_server_side_encryption: EncryptionSetting | None = None,
+        file_retention: FileRetentionSetting | None = None,
+        legal_hold: LegalHold | None = None,
+        cache_control: str | None = None,
     ):
         if metadata_directive is not None:
             assert metadata_directive in tuple(MetadataDirectiveMode), metadata_directive
@@ -933,11 +930,11 @@ class BucketSimulator:
         file_name,
         content_type,
         file_info,
-        server_side_encryption: Optional[EncryptionSetting] = None,
-        file_retention: Optional[FileRetentionSetting] = None,
-        legal_hold: Optional[LegalHold] = None,
-        custom_upload_timestamp: Optional[int] = None,
-        cache_control: Optional[str] = None,
+        server_side_encryption: EncryptionSetting | None = None,
+        file_retention: FileRetentionSetting | None = None,
+        legal_hold: LegalHold | None = None,
+        custom_upload_timestamp: int | None = None,
+        cache_control: str | None = None,
     ):
         file_id = self._next_file_id()
         sse = server_side_encryption or self.default_server_side_encryption
@@ -963,11 +960,11 @@ class BucketSimulator:
         bucket_info=None,
         cors_rules=None,
         lifecycle_rules=None,
-        if_revision_is: Optional[int] = None,
-        default_server_side_encryption: Optional[EncryptionSetting] = None,
-        default_retention: Optional[BucketRetentionSetting] = None,
-        replication: Optional[ReplicationConfiguration] = None,
-        is_file_lock_enabled: Optional[bool] = None,
+        if_revision_is: int | None = None,
+        default_server_side_encryption: EncryptionSetting | None = None,
+        default_retention: BucketRetentionSetting | None = None,
+        replication: ReplicationConfiguration | None = None,
+        is_file_lock_enabled: bool | None = None,
     ):
         if if_revision_is is not None and self.revision != if_revision_is:
             raise Conflict()
@@ -1068,7 +1065,7 @@ class BucketSimulator:
         content_length,
         sha1_sum,
         input_stream,
-        server_side_encryption: Optional[EncryptionSetting] = None,
+        server_side_encryption: EncryptionSetting | None = None,
     ):
         part_data = self._simulate_chunked_post(input_stream, content_length)
         assert len(part_data) == content_length
@@ -1276,9 +1273,9 @@ class RawSimulator(AbstractRawApi):
         bucket_info=None,
         cors_rules=None,
         lifecycle_rules=None,
-        default_server_side_encryption: Optional[EncryptionSetting] = None,
-        is_file_lock_enabled: Optional[bool] = None,
-        replication: Optional[ReplicationConfiguration] = None,
+        default_server_side_encryption: EncryptionSetting | None = None,
+        is_file_lock_enabled: bool | None = None,
+        replication: ReplicationConfiguration | None = None,
     ):
         if not re.match(r'^[-a-zA-Z0-9]*$', bucket_name):
             raise BadJson('illegal bucket name: ' + bucket_name)
@@ -1409,7 +1406,7 @@ class RawSimulator(AbstractRawApi):
         account_auth_token_or_none,
         url,
         range_=None,
-        encryption: Optional[EncryptionSetting] = None
+        encryption: EncryptionSetting | None = None
     ):
         # TODO: check auth token if bucket is not public
         matcher = self.DOWNLOAD_URL_MATCHER.match(url)
@@ -1445,7 +1442,7 @@ class RawSimulator(AbstractRawApi):
         key_sim = self.key_id_to_key.pop(application_key_id, None)
         if key_sim is None:
             raise BadRequest(
-                'application key does not exist: %s' % (application_key_id,),
+                f'application key does not exist: {application_key_id}',
                 'bad_request',
             )
         self.all_application_keys = [
@@ -1518,9 +1515,9 @@ class RawSimulator(AbstractRawApi):
         destination_bucket_id=None,
         destination_server_side_encryption=None,
         source_server_side_encryption=None,
-        file_retention: Optional[FileRetentionSetting] = None,
-        legal_hold: Optional[LegalHold] = None,
-        cache_control: Optional[str] = None,
+        file_retention: FileRetentionSetting | None = None,
+        legal_hold: LegalHold | None = None,
+        cache_control: str | None = None,
     ):
         bucket_id = self.file_id_to_bucket_id[source_file_id]
         bucket = self._get_bucket_by_id(bucket_id)
@@ -1559,8 +1556,8 @@ class RawSimulator(AbstractRawApi):
         large_file_id,
         part_number,
         bytes_range=None,
-        destination_server_side_encryption: Optional[EncryptionSetting] = None,
-        source_server_side_encryption: Optional[EncryptionSetting] = None,
+        destination_server_side_encryption: EncryptionSetting | None = None,
+        source_server_side_encryption: EncryptionSetting | None = None,
     ):
         if destination_server_side_encryption is not None and destination_server_side_encryption.mode == EncryptionMode.SSE_B2:
             raise ValueError(
@@ -1733,11 +1730,11 @@ class RawSimulator(AbstractRawApi):
         file_name,
         content_type,
         file_info,
-        server_side_encryption: Optional[EncryptionSetting] = None,
-        file_retention: Optional[FileRetentionSetting] = None,
-        legal_hold: Optional[LegalHold] = None,
-        custom_upload_timestamp: Optional[int] = None,
-        cache_control: Optional[str] = None,
+        server_side_encryption: EncryptionSetting | None = None,
+        file_retention: FileRetentionSetting | None = None,
+        legal_hold: LegalHold | None = None,
+        custom_upload_timestamp: int | None = None,
+        cache_control: str | None = None,
     ):
         bucket = self._get_bucket_by_id(bucket_id)
         self._assert_account_auth(api_url, account_auth_token, bucket.account_id, 'writeFiles')
@@ -1767,10 +1764,10 @@ class RawSimulator(AbstractRawApi):
         cors_rules=None,
         lifecycle_rules=None,
         if_revision_is=None,
-        default_server_side_encryption: Optional[EncryptionSetting] = None,
-        default_retention: Optional[BucketRetentionSetting] = None,
-        replication: Optional[ReplicationConfiguration] = None,
-        is_file_lock_enabled: Optional[bool] = None,
+        default_server_side_encryption: EncryptionSetting | None = None,
+        default_retention: BucketRetentionSetting | None = None,
+        replication: ReplicationConfiguration | None = None,
+        is_file_lock_enabled: bool | None = None,
     ):
         assert bucket_type or bucket_info or cors_rules or lifecycle_rules or default_server_side_encryption or replication or is_file_lock_enabled is not None
         bucket = self._get_bucket_by_id(bucket_id)
@@ -1900,7 +1897,7 @@ class RawSimulator(AbstractRawApi):
         content_length,
         sha1_sum,
         input_stream,
-        server_side_encryption: Optional[EncryptionSetting] = None,
+        server_side_encryption: EncryptionSetting | None = None,
     ):
         with ConcurrentUsedAuthTokenGuard(
             self.currently_used_auth_tokens[upload_auth_token], upload_auth_token

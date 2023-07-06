@@ -7,24 +7,26 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
-from abc import ABCMeta, abstractmethod
+from __future__ import annotations
+
 import json
-import unittest.mock as mock
 import os
 import platform
 import shutil
 import stat
 import tempfile
+import unittest.mock as mock
+from abc import ABCMeta, abstractmethod
 
 from apiver_deps import (
     ALL_CAPABILITIES,
-    AbstractAccountInfo,
-    InMemoryAccountInfo,
-    UploadUrlPool,
-    SqliteAccountInfo,
-    TempDir,
     B2_ACCOUNT_INFO_ENV_VAR,
     XDG_CONFIG_HOME_ENV_VAR,
+    AbstractAccountInfo,
+    InMemoryAccountInfo,
+    SqliteAccountInfo,
+    TempDir,
+    UploadUrlPool,
 )
 from apiver_deps_exception import CorruptAccountInfo, MissingAccountData
 
@@ -334,7 +336,7 @@ class TestSqliteAccountInfo(AccountInfoBase):
     @pytest.fixture(autouse=True)
     def setUp(self, request):
         self.db_path = tempfile.NamedTemporaryFile(
-            prefix='tmp_b2_tests_%s__' % (request.node.name,), delete=True
+            prefix=f'tmp_b2_tests_{request.node.name}__', delete=True
         ).name
         try:
             os.unlink(self.db_path)

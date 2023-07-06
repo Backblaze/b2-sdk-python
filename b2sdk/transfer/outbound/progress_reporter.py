@@ -7,6 +7,7 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
 from b2sdk.progress import AbstractProgressListener
 
@@ -26,7 +27,7 @@ class PartProgressReporter(AbstractProgressListener):
         """
         :param b2sdk.bucket.LargeFileUploadState large_file_upload_state: object to relay the progress to
         """
-        super(PartProgressReporter, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.large_file_upload_state = large_file_upload_state
         self.prev_byte_count = 0
 

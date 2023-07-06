@@ -7,6 +7,7 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
 import sys
 
@@ -19,4 +20,4 @@ VERSION = version('b2sdk')
 
 PYTHON_VERSION = '.'.join(map(str, sys.version_info[:3]))  # something like: 3.9.1
 
-USER_AGENT = 'backblaze-b2/%s python/%s' % (VERSION, PYTHON_VERSION)
+USER_AGENT = f'backblaze-b2/{VERSION} python/{PYTHON_VERSION}'

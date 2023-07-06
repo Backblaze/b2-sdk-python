@@ -7,12 +7,12 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
 import re
-
 from builtins import classmethod
 from dataclasses import dataclass, field
-from typing import ClassVar, Dict, List, Optional
+from typing import ClassVar
 
 
 @dataclass
@@ -61,7 +61,7 @@ class ReplicationRule:
         }
 
     @classmethod
-    def from_dict(cls, value_dict: dict) -> 'ReplicationRule':
+    def from_dict(cls, value_dict: dict) -> ReplicationRule:
         kwargs = {}
         for field_, protocolField in (
             ('destination_bucket_id', 'destinationBucketId'),
@@ -85,10 +85,10 @@ class ReplicationConfiguration:
     Hold information about bucket replication configuration
     """
     # configuration as source:
-    rules: List[ReplicationRule] = field(default_factory=list)
-    source_key_id: Optional[str] = None
+    rules: list[ReplicationRule] = field(default_factory=list)
+    source_key_id: str | None = None
     # configuration as destination:
-    source_to_destination_key_mapping: Dict[str, str] = field(default_factory=dict)
+    source_to_destination_key_mapping: dict[str, str] = field(default_factory=dict)
 
     def __post_init__(self):
         if self.rules and not self.source_key_id:
@@ -175,7 +175,7 @@ class ReplicationConfiguration:
     serialize_to_json_for_request = as_dict
 
     @classmethod
-    def from_dict(cls, value_dict: dict) -> 'ReplicationConfiguration':
+    def from_dict(cls, value_dict: dict) -> ReplicationConfiguration:
         source_dict = value_dict.get('asReplicationSource') or {}
         destination_dict = value_dict.get('asReplicationDestination') or {}
 
@@ -193,10 +193,10 @@ class ReplicationConfiguration:
 @dataclass
 class ReplicationConfigurationFactory:
     is_client_authorized_to_read: bool
-    value: Optional[ReplicationConfiguration]
+    value: ReplicationConfiguration | None
 
     @classmethod
-    def from_bucket_dict(cls, bucket_dict: dict) -> 'ReplicationConfigurationFactory':
+    def from_bucket_dict(cls, bucket_dict: dict) -> ReplicationConfigurationFactory:
         """
         Returns ReplicationConfigurationFactory for the given bucket dict
         retrieved from the api.

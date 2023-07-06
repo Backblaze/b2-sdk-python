@@ -7,6 +7,7 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
 import logging
 
@@ -32,22 +33,21 @@ class Synchronizer(SynchronizerV1):
 
     def __init__(self, *args, **kwargs):
         try:
-            super(Synchronizer, self).__init__(*args, **kwargs)
+            super().__init__(*args, **kwargs)
         except InvalidArgument as e:
-            raise CommandError('--%s %s' % (e.parameter_name, e.message))
+            raise CommandError(f'--{e.parameter_name} {e.message}')
 
     def _make_file_sync_actions(self, *args, **kwargs):
         try:
-            for i in super(Synchronizer, self)._make_file_sync_actions(*args, **kwargs):
-                yield i
+            yield from super()._make_file_sync_actions(*args, **kwargs)
         except DestFileNewerV1 as e:
             raise DestFileNewer(e.dest_file, e.source_file, e.dest_prefix, e.source_prefix)
 
     def sync_folders(self, *args, **kwargs):
         try:
-            super(Synchronizer, self).sync_folders(*args, **kwargs)
+            super().sync_folders(*args, **kwargs)
         except InvalidArgument as e:
-            raise CommandError('--%s %s' % (e.parameter_name, e.message))
+            raise CommandError(f'--{e.parameter_name} {e.message}')
         except IncompleteSync as e:
             raise CommandError(str(e))
 
@@ -150,7 +150,7 @@ def make_folder_sync_actions(
             encryption_settings_provider=encryption_settings_provider
         )
     except InvalidArgument as e:
-        raise CommandError('--%s %s' % (e.parameter_name, e.message))
+        raise CommandError(f'--{e.parameter_name} {e.message}')
 
 
 @trace_call(logger)

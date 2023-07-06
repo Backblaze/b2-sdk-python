@@ -7,15 +7,15 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
 import hashlib
 import io
 import logging
 import os
-
 from abc import abstractmethod
-from enum import auto, Enum, unique
-from typing import Callable, List, Optional, Union
+from enum import Enum, auto, unique
+from typing import Callable
 
 from b2sdk.exception import InvalidUploadSource
 from b2sdk.file_version import BaseFileVersion
@@ -23,7 +23,12 @@ from b2sdk.http_constants import DEFAULT_MIN_PART_SIZE
 from b2sdk.stream.range import RangeOfInputStream, wrap_with_range
 from b2sdk.transfer.outbound.copy_source import CopySource
 from b2sdk.transfer.outbound.outbound_source import OutboundTransferSource
-from b2sdk.utils import hex_sha1_of_unlimited_stream, Sha1HexDigest, IncrementalHexDigester, hex_sha1_of_stream
+from b2sdk.utils import (
+    IncrementalHexDigester,
+    Sha1HexDigest,
+    hex_sha1_of_stream,
+    hex_sha1_of_unlimited_stream,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +46,7 @@ class AbstractUploadSource(OutboundTransferSource):
     """
 
     @abstractmethod
-    def get_content_sha1(self) -> Optional[Sha1HexDigest]:
+    def get_content_sha1(self) -> Sha1HexDigest | None:
         """
         Returns a 40-character string containing the hex SHA1 checksum of the data in the file.
         """
@@ -70,8 +75,8 @@ class AbstractUploadSource(OutboundTransferSource):
 class UploadSourceBytes(AbstractUploadSource):
     def __init__(
         self,
-        data_bytes: Union[bytes, bytearray],
-        content_sha1: Optional[Sha1HexDigest] = None,
+        data_bytes: bytes | bytearray,
+        content_sha1: Sha1HexDigest | None = None,
     ):
         """
         Initialize upload source using given bytes.
@@ -93,7 +98,7 @@ class UploadSourceBytes(AbstractUploadSource):
     def get_content_length(self) -> int:
         return len(self.data_bytes)
 
-    def get_content_sha1(self) -> Optional[Sha1HexDigest]:
+    def get_content_sha1(self) -> Sha1HexDigest | None:
         if self.content_sha1 is None:
             self.content_sha1 = hashlib.sha1(self.data_bytes).hexdigest()
         return self.content_sha1
@@ -108,8 +113,8 @@ class UploadSourceBytes(AbstractUploadSource):
 class UploadSourceLocalFileBase(AbstractUploadSource):
     def __init__(
         self,
-        local_path: Union[os.PathLike, str],
-        content_sha1: Optional[Sha1HexDigest] = None,
+        local_path: os.PathLike | str,
+        content_sha1: Sha1HexDigest | None = None,
     ):
         """
         Initialize upload source using provided path.
@@ -142,13 +147,13 @@ class UploadSourceLocalFileBase(AbstractUploadSource):
     def get_content_length(self) -> int:
         return self.content_length
 
-    def get_content_sha1(self) -> Optional[Sha1HexDigest]:
+    def get_content_sha1(self) -> Sha1HexDigest | None:
         if self.content_sha1 is None:
             self.content_sha1 = self._hex_sha1_of_file()
         return self.content_sha1
 
     def open(self):
-        return io.open(self.local_path, 'rb')
+        return open(self.local_path, 'rb')
 
     def _hex_sha1_of_file(self) -> Sha1HexDigest:
         with self.open() as f:
@@ -161,10 +166,10 @@ class UploadSourceLocalFileBase(AbstractUploadSource):
 class UploadSourceLocalFileRange(UploadSourceLocalFileBase):
     def __init__(
         self,
-        local_path: Union[os.PathLike, str],
-        content_sha1: Optional[Sha1HexDigest] = None,
+        local_path: os.PathLike | str,
+        content_sha1: Sha1HexDigest | None = None,
         offset: int = 0,
-        length: Optional[int] = None,
+        length: int | None = None,
     ):
         """
         Initialize upload source using provided path.
@@ -199,7 +204,7 @@ class UploadSourceLocalFileRange(UploadSourceLocalFileBase):
         )
 
     def open(self):
-        fp = super(UploadSourceLocalFileRange, self).open()
+        fp = super().open()
         return wrap_with_range(fp, self.file_size, self.offset, self.content_length)
 
 
@@ -207,8 +212,8 @@ class UploadSourceLocalFile(UploadSourceLocalFileBase):
     def get_incremental_sources(
         self,
         file_version: BaseFileVersion,
-        min_part_size: Optional[int] = None,
-    ) -> List[OutboundTransferSource]:
+        min_part_size: int | None = None,
+    ) -> list[OutboundTransferSource]:
         """
         Split the upload into a copy and upload source constructing an incremental upload
 
@@ -285,8 +290,8 @@ class UploadSourceStream(AbstractUploadSource):
     def __init__(
         self,
         stream_opener: Callable[[], io.IOBase],
-        stream_length: Optional[int] = None,
-        stream_sha1: Optional[Sha1HexDigest] = None,
+        stream_length: int | None = None,
+        stream_sha1: Sha1HexDigest | None = None,
     ):
         """
         Initialize upload source using arbitrary function.
@@ -318,7 +323,7 @@ class UploadSourceStream(AbstractUploadSource):
             self._set_content_length_and_sha1()
         return self._content_length
 
-    def get_content_sha1(self) -> Optional[Sha1HexDigest]:
+    def get_content_sha1(self) -> Sha1HexDigest | None:
         if self._content_sha1 is None:
             self._set_content_length_and_sha1()
         return self._content_sha1
@@ -340,8 +345,8 @@ class UploadSourceStreamRange(UploadSourceStream):
         self,
         stream_opener: Callable[[], io.IOBase],
         offset: int = 0,
-        stream_length: Optional[int] = None,
-        stream_sha1: Optional[Sha1HexDigest] = None,
+        stream_length: int | None = None,
+        stream_sha1: Sha1HexDigest | None = None,
     ):
         """
         Initialize upload source using arbitrary function.
@@ -353,7 +358,7 @@ class UploadSourceStreamRange(UploadSourceStream):
         :param stream_sha1: SHA1 of the stream. If ``None``, data will be calculated from
                       the stream the first time it's required.
         """
-        super(UploadSourceStreamRange, self).__init__(
+        super().__init__(
             stream_opener,
             stream_length=stream_length,
             stream_sha1=stream_sha1,
@@ -374,6 +379,4 @@ class UploadSourceStreamRange(UploadSourceStream):
         )
 
     def open(self):
-        return RangeOfInputStream(
-            super(UploadSourceStreamRange, self).open(), self._offset, self._content_length
-        )
+        return RangeOfInputStream(super().open(), self._offset, self._content_length)

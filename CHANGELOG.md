@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Replaced `pyflakes` with `ruff` for linting
 * Refactored logic for resuming large file uploads to unify code paths, correct inconsistencies, and enhance configurability (#381)
 * Automatically set copyright date when generating the docs
+* Use modern type hints in documentation (achieved through combination of PEP 563 & 585 and `sphinx-autodoc-typehints`)
 
 ## [1.21.0] - 2023-04-17
 

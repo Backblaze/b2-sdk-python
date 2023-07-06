@@ -7,14 +7,14 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
 import logging
-from typing import Optional
 
 from b2sdk.encryption.setting import EncryptionMode, EncryptionSetting
-from b2sdk.http_constants import SSE_C_KEY_ID_FILE_INFO_KEY_NAME
 from b2sdk.exception import AlreadyFailed, CopyArgumentsMismatch, SSECKeyIdMismatchInCopy
 from b2sdk.file_lock import FileRetentionSetting, LegalHold
+from b2sdk.http_constants import SSE_C_KEY_ID_FILE_INFO_KEY_NAME
 from b2sdk.raw_api import MetadataDirectiveMode
 from b2sdk.transfer.transfer_manager import TransferManager
 from b2sdk.utils.thread_pool import ThreadPoolMixin
@@ -41,11 +41,11 @@ class CopyManager(TransferManager, ThreadPoolMixin):
         file_info,
         destination_bucket_id,
         progress_listener,
-        destination_encryption: Optional[EncryptionSetting] = None,
-        source_encryption: Optional[EncryptionSetting] = None,
-        legal_hold: Optional[LegalHold] = None,
-        file_retention: Optional[FileRetentionSetting] = None,
-        cache_control: Optional[str] = None,
+        destination_encryption: EncryptionSetting | None = None,
+        source_encryption: EncryptionSetting | None = None,
+        legal_hold: LegalHold | None = None,
+        file_retention: FileRetentionSetting | None = None,
+        cache_control: str | None = None,
     ):
         # Run small copies in the same thread pool as large file copies,
         # so that they share resources during a sync.
@@ -71,8 +71,8 @@ class CopyManager(TransferManager, ThreadPoolMixin):
         part_number,
         large_file_upload_state,
         finished_parts=None,
-        destination_encryption: Optional[EncryptionSetting] = None,
-        source_encryption: Optional[EncryptionSetting] = None,
+        destination_encryption: EncryptionSetting | None = None,
+        source_encryption: EncryptionSetting | None = None,
     ):
         return self._thread_pool.submit(
             self._copy_part,
@@ -92,8 +92,8 @@ class CopyManager(TransferManager, ThreadPoolMixin):
         part_number,
         large_file_upload_state,
         finished_parts,
-        destination_encryption: Optional[EncryptionSetting],
-        source_encryption: Optional[EncryptionSetting],
+        destination_encryption: EncryptionSetting | None,
+        source_encryption: EncryptionSetting | None,
     ):
         """
         Copy a file part to started large file.
@@ -147,11 +147,11 @@ class CopyManager(TransferManager, ThreadPoolMixin):
         file_info,
         destination_bucket_id,
         progress_listener,
-        destination_encryption: Optional[EncryptionSetting],
-        source_encryption: Optional[EncryptionSetting],
-        legal_hold: Optional[LegalHold] = None,
-        file_retention: Optional[FileRetentionSetting] = None,
-        cache_control: Optional[str] = None,
+        destination_encryption: EncryptionSetting | None,
+        source_encryption: EncryptionSetting | None,
+        legal_hold: LegalHold | None = None,
+        file_retention: FileRetentionSetting | None = None,
+        cache_control: str | None = None,
     ):
         with progress_listener:
             progress_listener.set_total_bytes(copy_source.get_content_length() or 0)
@@ -203,12 +203,12 @@ class CopyManager(TransferManager, ThreadPoolMixin):
     def establish_sse_c_file_metadata(
         cls,
         metadata_directive: MetadataDirectiveMode,
-        destination_file_info: Optional[dict],
-        destination_content_type: Optional[str],
-        destination_server_side_encryption: Optional[EncryptionSetting],
-        source_server_side_encryption: Optional[EncryptionSetting],
-        source_file_info: Optional[dict],
-        source_content_type: Optional[str],
+        destination_file_info: dict | None,
+        destination_content_type: str | None,
+        destination_server_side_encryption: EncryptionSetting | None,
+        source_server_side_encryption: EncryptionSetting | None,
+        source_file_info: dict | None,
+        source_content_type: str | None,
     ):
         assert metadata_directive in (MetadataDirectiveMode.REPLACE, MetadataDirectiveMode.COPY)
 
@@ -235,10 +235,11 @@ class CopyManager(TransferManager, ThreadPoolMixin):
 
         if source_file_info is None or source_content_type is None:
             raise SSECKeyIdMismatchInCopy(
-                'attempting to copy file using %s without providing source_file_info '
-                'and source_content_type for differing sse_c_key_ids: source="%s", '
-                'destination="%s"' %
-                (MetadataDirectiveMode.COPY, source_key_id, destination_key_id)
+                'attempting to copy file using {} without providing source_file_info '
+                'and source_content_type for differing sse_c_key_ids: source="{}", '
+                'destination="{}"'.format(
+                    MetadataDirectiveMode.COPY, source_key_id, destination_key_id
+                )
             )
 
         destination_file_info = source_file_info.copy()

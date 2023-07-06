@@ -7,6 +7,7 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
 # These constants are needed in different modules, so they are stored in this module, that
 # imports nothing, thus avoiding circular imports

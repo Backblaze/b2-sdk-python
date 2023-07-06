@@ -7,9 +7,9 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
 from enum import Enum, unique
-from typing import Optional
 
 
 @unique
@@ -20,6 +20,6 @@ class ReplicationStatus(Enum):
     REPLICA = 'REPLICA'
 
     @classmethod
-    def from_response_headers(cls, headers: dict) -> Optional['ReplicationStatus']:
+    def from_response_headers(cls, headers: dict) -> ReplicationStatus | None:
         value = headers.get('X-Bz-Replication-Status', None)
         return value and cls[value.upper()]

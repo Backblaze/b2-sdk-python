@@ -7,9 +7,9 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
 import io
-
 from abc import ABCMeta, abstractmethod
 from functools import partial
 
@@ -49,7 +49,7 @@ class BaseUploadSubpart(metaclass=ABCMeta):
 
 class RemoteSourceUploadSubpart(BaseUploadSubpart):
     def __init__(self, *args, **kwargs):
-        super(RemoteSourceUploadSubpart, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._download_buffer_cache = None
 
     def get_subpart_id(self):

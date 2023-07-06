@@ -7,9 +7,9 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
 from ..test_base import TestBase
-
 from .deps import DEFAULT_SCAN_MANAGER, ScanPoliciesManager
 from .deps_exception import InvalidArgument
 

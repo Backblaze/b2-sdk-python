@@ -14,6 +14,7 @@ See:
 https://packaging.python.org/en/latest/distributing.html
 https://github.com/pypa/sampleproject
 """
+from __future__ import annotations
 
 import sys
 
@@ -39,7 +40,7 @@ with open('README.md', encoding='utf-8') as f:
 
 def read_requirements(extra=None):
     if extra is not None:
-        file = 'requirements-{}.txt'.format(extra)
+        file = f'requirements-{extra}.txt'
     else:
         file = 'requirements.txt'
 

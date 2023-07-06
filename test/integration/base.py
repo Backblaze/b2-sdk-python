@@ -7,6 +7,7 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
 import http.client
 import os
@@ -15,8 +16,15 @@ import pytest
 
 from b2sdk.v2 import current_time_millis
 from b2sdk.v2.exception import DuplicateBucketName
+
 from .bucket_cleaner import BucketCleaner
-from .helpers import GENERAL_BUCKET_NAME_PREFIX, BUCKET_NAME_LENGTH, BUCKET_CREATED_AT_MILLIS, bucket_name_part, authorize
+from .helpers import (
+    BUCKET_CREATED_AT_MILLIS,
+    BUCKET_NAME_LENGTH,
+    GENERAL_BUCKET_NAME_PREFIX,
+    authorize,
+    bucket_name_part,
+)
 
 
 class IntegrationTestBase:
@@ -79,13 +87,13 @@ class IntegrationTestBase:
         print('Bucket metadata:')
         bucket_dict = bucket.as_dict()
         for info_key, info in bucket_dict.items():
-            print('\t%s: "%s"' % (info_key, info))
+            print(f'\t{info_key}: "{info}"')
 
         print('All files (and their versions) inside the bucket:')
         ls_generator = bucket.ls(recursive=True, latest_only=False)
         for file_version, _directory in ls_generator:
             # as_dict() is bound to have more info than we can use,
             # but maybe some of it will cast some light on the issue.
-            print('\t%s (%s)' % (file_version.file_name, file_version.as_dict()))
+            print(f'\t{file_version.file_name} ({file_version.as_dict()})')
 
         print(' DUPLICATED BUCKET DEBUG END '.center(60, '='))

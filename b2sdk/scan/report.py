@@ -7,11 +7,11 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
 import logging
 import threading
 import time
-
 from dataclasses import dataclass
 from io import TextIOWrapper
 
@@ -130,13 +130,11 @@ class ProgressReport:
             if not self.encoding_warning_was_already_printed:
                 self.encoding_warning_was_already_printed = True
                 self.stdout.write(
-                    '!WARNING! this terminal cannot properly handle progress reporting.  encoding is %s.\n'
-                    % (self.stdout.encoding,)
+                    f'!WARNING! this terminal cannot properly handle progress reporting.  encoding is {self.stdout.encoding}.\n'
                 )
             self.stdout.write(line.encode('ascii', 'backslashreplace').decode())
             logger.warning(
-                'could not output the following line with encoding %s on stdout due to %s: %s' %
-                (self.stdout.encoding, encode_error, line)
+                f'could not output the following line with encoding {self.stdout.encoding} on stdout due to {encode_error}: {line}'
             )
         if newline:
             self.stdout.write('\n')
@@ -170,7 +168,7 @@ class ProgressReport:
 
         :param path: file path
         """
-        self.warnings.append('WARNING: %s could not be accessed (broken symlink?)' % (path,))
+        self.warnings.append(f'WARNING: {path} could not be accessed (broken symlink?)')
 
     def local_permission_error(self, path: str) -> None:
         """
@@ -178,9 +176,7 @@ class ProgressReport:
 
         :param path: file path
         """
-        self.warnings.append(
-            'WARNING: %s could not be accessed (no permissions to read?)' % (path,)
-        )
+        self.warnings.append(f'WARNING: {path} could not be accessed (no permissions to read?)')
 
     def symlink_skipped(self, path: str) -> None:
         pass
@@ -192,7 +188,7 @@ class ProgressReport:
         :param path: file path
         """
         self.warnings.append(
-            'WARNING: %s is a circular symlink, which was already visited. Skipping.' % (path,)
+            f'WARNING: {path} is a circular symlink, which was already visited. Skipping.'
         )
 
 

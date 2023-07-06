@@ -7,8 +7,8 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
-from typing import Optional
 import enum
 
 from .exception import UnexpectedCloudBehaviour
@@ -32,7 +32,7 @@ class RetentionPeriod:
     """Represent a time period (either in days or in years) that is used as a default for bucket retention"""
     KNOWN_UNITS = ['days', 'years']
 
-    def __init__(self, years: Optional[int] = None, days: Optional[int] = None):
+    def __init__(self, years: int | None = None, days: int | None = None):
         """Create a retention period, provide exactly one of: days, years"""
         assert (years is None) != (days is None)
         if years is not None:
@@ -64,7 +64,7 @@ class RetentionPeriod:
         }
 
     def __repr__(self):
-        return '%s(%s %s)' % (self.__class__.__name__, self.duration, self.unit)
+        return f'{self.__class__.__name__}({self.duration} {self.unit})'
 
     def __eq__(self, other):
         return self.unit == other.unit and self.duration == other.duration
@@ -73,14 +73,14 @@ class RetentionPeriod:
 class FileRetentionSetting:
     """Represent file retention settings, i.e. whether the file is retained, in which mode and until when"""
 
-    def __init__(self, mode: RetentionMode, retain_until: Optional[int] = None):
+    def __init__(self, mode: RetentionMode, retain_until: int | None = None):
         if mode in RETENTION_MODES_REQUIRING_PERIODS and retain_until is None:
-            raise ValueError('must specify retain_until for retention mode %s' % (mode,))
+            raise ValueError(f'must specify retain_until for retention mode {mode}')
         self.mode = mode
         self.retain_until = retain_until
 
     @classmethod
-    def from_file_version_dict(cls, file_version_dict: dict) -> 'FileRetentionSetting':
+    def from_file_version_dict(cls, file_version_dict: dict) -> FileRetentionSetting:
         """
         Returns FileRetentionSetting for the given file_version_dict retrieved from the api. E.g.
 
@@ -124,7 +124,7 @@ class FileRetentionSetting:
     @classmethod
     def from_file_retention_value_dict(
         cls, file_retention_value_dict: dict
-    ) -> 'FileRetentionSetting':
+    ) -> FileRetentionSetting:
 
         mode = file_retention_value_dict['mode']
         if mode is None:
@@ -136,11 +136,11 @@ class FileRetentionSetting:
         )
 
     @classmethod
-    def from_server_response(cls, server_response: dict) -> 'FileRetentionSetting':
+    def from_server_response(cls, server_response: dict) -> FileRetentionSetting:
         return cls.from_file_retention_value_dict(server_response['fileRetention'])
 
     @classmethod
-    def from_response_headers(cls, headers) -> 'FileRetentionSetting':
+    def from_response_headers(cls, headers) -> FileRetentionSetting:
         retention_mode_header = 'X-Bz-File-Retention-Mode'
         retain_until_header = 'X-Bz-File-Retention-Retain-Until-Timestamp'
         if retention_mode_header in headers:
@@ -179,7 +179,7 @@ class FileRetentionSetting:
         return self.mode == other.mode and self.retain_until == other.retain_until
 
     def __repr__(self):
-        return '%s(%s, %s)' % (
+        return '{}({}, {})'.format(
             self.__class__.__name__, repr(self.mode.value), repr(self.retain_until)
         )
 
@@ -206,7 +206,7 @@ class LegalHold(enum.Enum):
         return self is LegalHold.UNKNOWN
 
     @classmethod
-    def from_file_version_dict(cls, file_version_dict: dict) -> 'LegalHold':
+    def from_file_version_dict(cls, file_version_dict: dict) -> LegalHold:
         if 'legalHold' not in file_version_dict:
             if file_version_dict['action'] not in ACTIONS_WITHOUT_LOCK_SETTINGS:
                 raise UnexpectedCloudBehaviour(
@@ -219,15 +219,15 @@ class LegalHold(enum.Enum):
         return cls.from_string_or_none(file_version_dict['legalHold']['value'])
 
     @classmethod
-    def from_server_response(cls, server_response: dict) -> 'LegalHold':
+    def from_server_response(cls, server_response: dict) -> LegalHold:
         return cls.from_string_or_none(server_response['legalHold'])
 
     @classmethod
-    def from_string_or_none(cls, string: Optional[str]) -> 'LegalHold':
+    def from_string_or_none(cls, string: str | None) -> LegalHold:
         return cls(string)
 
     @classmethod
-    def from_response_headers(cls, headers) -> 'LegalHold':
+    def from_response_headers(cls, headers) -> LegalHold:
         legal_hold_header = 'X-Bz-File-Legal-Hold'
         if legal_hold_header in headers:
             return cls(headers['X-Bz-File-Legal-Hold'])
@@ -251,9 +251,9 @@ class BucketRetentionSetting:
     """Represent bucket's default file retention settings, i.e. whether the files should be retained, in which mode
        and for how long"""
 
-    def __init__(self, mode: RetentionMode, period: Optional[RetentionPeriod] = None):
+    def __init__(self, mode: RetentionMode, period: RetentionPeriod | None = None):
         if mode in RETENTION_MODES_REQUIRING_PERIODS and period is None:
-            raise ValueError('must specify period for retention mode %s' % (mode,))
+            raise ValueError(f'must specify period for retention mode {mode}')
         self.mode = mode
         self.period = period
 
@@ -295,7 +295,7 @@ class BucketRetentionSetting:
         return self.mode == other.mode and self.period == other.period
 
     def __repr__(self):
-        return '%s(%s, %s)' % (self.__class__.__name__, repr(self.mode.value), repr(self.period))
+        return f'{self.__class__.__name__}({repr(self.mode.value)}, {repr(self.period)})'
 
 
 class FileLockConfiguration:
@@ -305,7 +305,7 @@ class FileLockConfiguration:
     def __init__(
         self,
         default_retention: BucketRetentionSetting,
-        is_file_lock_enabled: Optional[bool],
+        is_file_lock_enabled: bool | None,
     ):
         self.default_retention = default_retention
         self.is_file_lock_enabled = is_file_lock_enabled
@@ -357,7 +357,7 @@ class FileLockConfiguration:
         return self.default_retention == other.default_retention and self.is_file_lock_enabled == other.is_file_lock_enabled
 
     def __repr__(self):
-        return '%s(%s, %s)' % (
+        return '{}({}, {})'.format(
             self.__class__.__name__, repr(self.default_retention), repr(self.is_file_lock_enabled)
         )
 

@@ -7,12 +7,11 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
-
-from typing import Optional
+from __future__ import annotations
 
 from b2sdk.v2 import *
 
-from .helpers import GENERAL_BUCKET_NAME_PREFIX, BUCKET_CREATED_AT_MILLIS, authorize
+from .helpers import BUCKET_CREATED_AT_MILLIS, GENERAL_BUCKET_NAME_PREFIX, authorize
 
 ONE_HOUR_MILLIS = 60 * 60 * 1000
 
@@ -23,7 +22,7 @@ class BucketCleaner:
         dont_cleanup_old_buckets: bool,
         b2_application_key_id: str,
         b2_application_key: str,
-        current_run_prefix: Optional[str] = None
+        current_run_prefix: str | None = None
     ):
         self.current_run_prefix = current_run_prefix
         self.dont_cleanup_old_buckets = dont_cleanup_old_buckets
@@ -63,8 +62,7 @@ class BucketCleaner:
                         elif file_version_info.file_retention.mode == RetentionMode.COMPLIANCE:
                             if file_version_info.file_retention.retain_until > current_time_millis():  # yapf: disable
                                 print(
-                                    'File version: %s cannot be removed due to compliance mode retention'
-                                    % (file_version_info.id_,)
+                                    f'File version: {file_version_info.id_} cannot be removed due to compliance mode retention'
                                 )
                                 files_leftover = True
                                 continue
@@ -72,8 +70,7 @@ class BucketCleaner:
                             pass
                         else:
                             raise ValueError(
-                                'Unknown retention mode: %s' %
-                                (file_version_info.file_retention.mode,)
+                                f'Unknown retention mode: {file_version_info.file_retention.mode}'
                             )
                     if file_version_info.legal_hold.is_on():
                         print('Removing legal hold from file version:', file_version_info.id_)

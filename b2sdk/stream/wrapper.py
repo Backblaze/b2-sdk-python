@@ -7,6 +7,7 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
 import io
 
@@ -21,7 +22,7 @@ class StreamWrapper(io.IOBase):
         :param stream: the stream to read from or write to
         """
         self.stream = stream
-        super(StreamWrapper, self).__init__()
+        super().__init__()
 
     def seekable(self):
         return self.stream.seekable()
@@ -90,7 +91,7 @@ class StreamWithLengthWrapper(StreamWrapper):
         :param stream: the stream to read from or write to
         :param int length: length of the stream
         """
-        super(StreamWithLengthWrapper, self).__init__(stream)
+        super().__init__(stream)
         self.length = length
 
     def __len__(self):

@@ -7,14 +7,21 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
+
+from b2sdk.http_constants import SSE_C_KEY_ID_FILE_INFO_KEY_NAME
+from b2sdk.transfer.outbound.copy_manager import CopyManager
 
 from ..test_base import TestBase
-
+from .deps import (
+    SSE_B2_AES,
+    EncryptionAlgorithm,
+    EncryptionKey,
+    EncryptionMode,
+    EncryptionSetting,
+    MetadataDirectiveMode,
+)
 from .deps_exception import SSECKeyIdMismatchInCopy
-from .deps import MetadataDirectiveMode
-from .deps import EncryptionAlgorithm, EncryptionSetting, EncryptionMode, EncryptionKey, SSE_B2_AES
-from b2sdk.transfer.outbound.copy_manager import CopyManager
-from b2sdk.http_constants import SSE_C_KEY_ID_FILE_INFO_KEY_NAME
 
 SSE_C_AES = EncryptionSetting(
     mode=EncryptionMode.SSE_C,

@@ -7,21 +7,20 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
 import hashlib
-
 from abc import abstractmethod
 from concurrent.futures import ThreadPoolExecutor
 from io import IOBase
-from typing import Optional
 
 from requests.models import Response
 
+from b2sdk.encryption.setting import EncryptionSetting
 from b2sdk.file_version import DownloadVersion
 from b2sdk.session import B2Session
 from b2sdk.utils import B2TraceMetaAbstract
 from b2sdk.utils.range_ import Range
-from b2sdk.encryption.setting import EncryptionSetting
 
 
 class EmptyHasher:
@@ -49,11 +48,11 @@ class AbstractDownloader(metaclass=B2TraceMetaAbstract):
 
     def __init__(
         self,
-        thread_pool: Optional[ThreadPoolExecutor] = None,
-        force_chunk_size: Optional[int] = None,
-        min_chunk_size: Optional[int] = None,
-        max_chunk_size: Optional[int] = None,
-        align_factor: Optional[int] = None,
+        thread_pool: ThreadPoolExecutor | None = None,
+        force_chunk_size: int | None = None,
+        min_chunk_size: int | None = None,
+        max_chunk_size: int | None = None,
+        align_factor: int | None = None,
         check_hash: bool = True,
         **kwargs
     ):
@@ -76,7 +75,7 @@ class AbstractDownloader(metaclass=B2TraceMetaAbstract):
             return hashlib.sha1()
         return EmptyHasher()
 
-    def _get_chunk_size(self, content_length: Optional[int]):
+    def _get_chunk_size(self, content_length: int | None):
         if self._forced_chunk_size is not None:
             return self._forced_chunk_size
         ideal = max(content_length // 1000, self._align_factor)
@@ -113,7 +112,7 @@ class AbstractDownloader(metaclass=B2TraceMetaAbstract):
         response: Response,
         download_version: DownloadVersion,
         session: B2Session,
-        encryption: Optional[EncryptionSetting] = None,
+        encryption: EncryptionSetting | None = None,
     ):
         """
         @returns (bytes_read, actual_sha1)

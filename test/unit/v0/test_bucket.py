@@ -7,16 +7,50 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
-from io import BytesIO
 import os
 import platform
 import unittest.mock as mock
+from io import BytesIO
 
 import pytest
 
 from ..test_base import TestBase
-
+from .deps import (
+    NO_RETENTION_FILE_SETTING,
+    SSE_B2_AES,
+    SSE_NONE,
+    AbstractProgressListener,
+    B2Api,
+    BucketSimulator,
+    CopySource,
+    DownloadDestBytes,
+    EncryptionAlgorithm,
+    EncryptionKey,
+    EncryptionMode,
+    EncryptionSetting,
+    EncryptionSettingFactory,
+    FakeResponse,
+    FileRetentionSetting,
+    FileSimulator,
+    FileVersionInfo,
+    LargeFileUploadState,
+    LegalHold,
+    MetadataDirectiveMode,
+    ParallelDownloader,
+    Part,
+    PreSeekedDownloadDest,
+    RawSimulator,
+    RetentionMode,
+    SimpleDownloader,
+    StubAccountInfo,
+    TempDir,
+    UploadSourceBytes,
+    UploadSourceLocalFile,
+    WriteIntent,
+    hex_sha1_of_bytes,
+)
 from .deps_exception import (
     AlreadyFailed,
     B2Error,
@@ -25,25 +59,9 @@ from .deps_exception import (
     InvalidRange,
     InvalidUploadSource,
     MaxRetriesExceeded,
-    UnsatisfiableRange,
     SSECKeyError,
+    UnsatisfiableRange,
 )
-from .deps import B2Api
-from .deps import LargeFileUploadState
-from .deps import DownloadDestBytes, PreSeekedDownloadDest
-from .deps import FileVersionInfo
-from .deps import LegalHold, FileRetentionSetting, RetentionMode, NO_RETENTION_FILE_SETTING
-from .deps import MetadataDirectiveMode
-from .deps import Part
-from .deps import AbstractProgressListener
-from .deps import StubAccountInfo, RawSimulator, BucketSimulator, FakeResponse, FileSimulator
-from .deps import ParallelDownloader
-from .deps import SimpleDownloader
-from .deps import UploadSourceBytes
-from .deps import hex_sha1_of_bytes, TempDir
-from .deps import EncryptionAlgorithm, EncryptionSetting, EncryptionSettingFactory, EncryptionMode, \
-    EncryptionKey, SSE_NONE, SSE_B2_AES
-from .deps import CopySource, UploadSourceLocalFile, WriteIntent
 
 SSE_C_AES = EncryptionSetting(
     mode=EncryptionMode.SSE_C,
@@ -142,7 +160,7 @@ class CanRetry(B2Error):
     """
 
     def __init__(self, can_retry):
-        super(CanRetry, self).__init__(None, None, None, None, None)
+        super().__init__(None, None, None, None, None)
         self.can_retry = can_retry
 
     def should_retry_upload(self):
@@ -997,7 +1015,7 @@ class TestConcatenate(TestCaseWithBucket):
                         UploadSourceLocalFile(path),
                         CopySource(f2_id, length=len(data), offset=0, encryption=SSE_C_AES_2),
                     ],
-                    file_name='created_file_%s' % (len(data),),
+                    file_name=f'created_file_{len(data)}',
                     encryption=SSE_C_AES
                 )
             self.assertIsInstance(created_file, FileVersionInfo)
@@ -1007,7 +1025,7 @@ class TestConcatenate(TestCaseWithBucket):
             )
             expected = (
                 mock.ANY,
-                'created_file_%s' % (len(data),),
+                f'created_file_{len(data)}',
                 mock.ANY,  # FIXME: this should be equal to len(data) * 3,
                 # but there is a problem in the simulator/test code somewhere
                 SSE_C_AES_NO_SECRET
@@ -1045,7 +1063,7 @@ class DownloadTests:
     DATA = 'abcdefghijklmnopqrs'
 
     def setUp(self):
-        super(DownloadTests, self).setUp()
+        super().setUp()
         self.file_info = self.bucket.upload_bytes(self.DATA.encode(), 'file1')
         self.encrypted_file_info = self.bucket.upload_bytes(
             self.DATA.encode(), 'enc_file1', encryption=SSE_C_AES
@@ -1201,14 +1219,14 @@ class TestDownloadDefault(DownloadTests, EmptyFileDownloadScenarioMixin, TestCas
 
 class TestDownloadSimple(DownloadTests, EmptyFileDownloadScenarioMixin, TestCaseWithBucket):
     def setUp(self):
-        super(TestDownloadSimple, self).setUp()
+        super().setUp()
         download_manager = self.bucket.api.services.download_manager
         download_manager.strategies = [SimpleDownloader(force_chunk_size=20)]
 
 
 class TestDownloadParallel(DownloadTests, TestCaseWithBucket):
     def setUp(self):
-        super(TestDownloadParallel, self).setUp()
+        super().setUp()
         download_manager = self.bucket.api.services.download_manager
         download_manager.strategies = [
             ParallelDownloader(
@@ -1229,7 +1247,7 @@ class TruncatedFakeResponse(FakeResponse):
     """
 
     def __init__(self, *args, **kwargs):
-        super(TruncatedFakeResponse, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.data_bytes = self.data_bytes[:4]
 
 
@@ -1250,14 +1268,14 @@ class TestCaseWithTruncatedDownloadBucket(TestCaseWithBucket):
 
 class TestTruncatedDownloadSimple(DownloadTests, TestCaseWithTruncatedDownloadBucket):
     def setUp(self):
-        super(TestTruncatedDownloadSimple, self).setUp()
+        super().setUp()
         download_manager = self.bucket.api.services.download_manager
         download_manager.strategies = [SimpleDownloader(force_chunk_size=20)]
 
 
 class TestTruncatedDownloadParallel(DownloadTests, TestCaseWithTruncatedDownloadBucket):
     def setUp(self):
-        super(TestTruncatedDownloadParallel, self).setUp()
+        super().setUp()
         download_manager = self.bucket.api.services.download_manager
         download_manager.strategies = [
             ParallelDownloader(

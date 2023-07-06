@@ -7,20 +7,20 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
 import gzip
 import io
 import pathlib
 from pprint import pprint
-from typing import Optional, Tuple
 from unittest import mock
 
-from b2sdk.v2 import *
 from b2sdk.utils import Sha1HexDigest
+from b2sdk.v2 import *
 
+from .base import IntegrationTestBase
 from .fixtures import *  # pyflakes: disable
 from .helpers import authorize
-from .base import IntegrationTestBase
 
 
 class TestDownload(IntegrationTestBase):
@@ -60,7 +60,7 @@ class TestDownload(IntegrationTestBase):
                 assert file_info[LARGE_FILE_SHA1] == sha1
 
     def _file_helper(self, bucket, sha1_sum=None,
-                     bytes_to_write: Optional[int] = None) -> Tuple[DownloadVersion, Sha1HexDigest]:
+                     bytes_to_write: int | None = None) -> tuple[DownloadVersion, Sha1HexDigest]:
         bytes_to_write = bytes_to_write or int(self.info.get_absolute_minimum_part_size()) * 2 + 1
         with TempDir() as temp_dir:
             temp_dir = pathlib.Path(temp_dir)

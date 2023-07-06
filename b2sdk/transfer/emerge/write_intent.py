@@ -7,8 +7,7 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
-
-from typing import Optional
+from __future__ import annotations
 
 from b2sdk.utils import Sha1HexDigest
 
@@ -67,7 +66,7 @@ class WriteIntent:
         """
         return self.outbound_source.is_upload()
 
-    def get_content_sha1(self) -> Optional[Sha1HexDigest]:
+    def get_content_sha1(self) -> Sha1HexDigest | None:
         """
         Return a 40-character string containing the hex SHA1 checksum, which can be used as the `large_file_sha1` entry.
 

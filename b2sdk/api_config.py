@@ -7,8 +7,10 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
-from typing import Optional, Callable, Type
+from typing import Callable
+
 import requests
 
 from .raw_api import AbstractRawApi, B2RawHTTPApi
@@ -22,8 +24,8 @@ class B2HttpApiConfig:
         self,
         http_session_factory: Callable[[], requests.Session] = requests.Session,
         install_clock_skew_hook: bool = True,
-        user_agent_append: Optional[str] = None,
-        _raw_api_class: Optional[Type[AbstractRawApi]] = None,
+        user_agent_append: str | None = None,
+        _raw_api_class: type[AbstractRawApi] | None = None,
         decode_content: bool = False
     ):
         """

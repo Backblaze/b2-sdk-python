@@ -7,9 +7,10 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
-from .deps import FileMetadata
 from ..test_base import TestBase
+from .deps import FileMetadata
 
 
 def snake_to_camel(name):

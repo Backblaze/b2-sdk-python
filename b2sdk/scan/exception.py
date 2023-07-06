@@ -7,9 +7,10 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
 from contextlib import contextmanager
-from typing import Iterator, Type
+from typing import Iterator
 
 from ..exception import B2Error, B2SimpleError
 
@@ -30,10 +31,10 @@ class EnvironmentEncodingError(B2Error):
         self.encoding = encoding
 
     def __str__(self):
-        return """file name %s cannot be decoded with system encoding (%s).
+        return """file name {} cannot be decoded with system encoding ({}).
 We think this is an environment error which you should workaround by
 setting your system encoding properly, for example like this:
-export LANG=en_US.UTF-8""" % (
+export LANG=en_US.UTF-8""".format(
             self.filename,
             self.encoding,
         )
@@ -54,7 +55,7 @@ class InvalidArgument(B2Error):
         self.message = message
 
     def __str__(self):
-        return "%s %s" % (self.parameter_name, self.message)
+        return f"{self.parameter_name} {self.message}"
 
 
 class UnsupportedFilename(B2Error):
@@ -72,12 +73,12 @@ class UnsupportedFilename(B2Error):
         self.message = message
 
     def __str__(self):
-        return "%s: %s" % (self.message, self.filename)
+        return f"{self.message}: {self.filename}"
 
 
 @contextmanager
 def check_invalid_argument(parameter_name: str, message: str,
-                           *exceptions: Type[Exception]) -> Iterator[None]:
+                           *exceptions: type[Exception]) -> Iterator[None]:
     """Raise `InvalidArgument` in case of one of given exception was thrown."""
     try:
         yield

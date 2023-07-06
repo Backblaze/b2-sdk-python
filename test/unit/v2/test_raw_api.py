@@ -7,13 +7,15 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
+
+from test.helpers import patch_bind_params
 from unittest.mock import Mock
 
 import pytest
 
-from b2sdk.v2 import B2RawHTTPApi, B2Http
 from b2sdk import _v3 as v3
-from test.helpers import patch_bind_params
+from b2sdk.v2 import B2Http, B2RawHTTPApi
 
 
 @pytest.fixture

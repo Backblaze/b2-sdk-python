@@ -7,17 +7,18 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
 from b2sdk.http_constants import (
     GIGABYTE,
     MEGABYTE,
 )
-from b2sdk.transfer.emerge.planner.planner import EmergePlanner
 from b2sdk.transfer.emerge.planner.part_definition import (
     CopyEmergePartDefinition,
     UploadEmergePartDefinition,
     UploadSubpartsEmergePartDefinition,
 )
+from b2sdk.transfer.emerge.planner.planner import EmergePlanner
 from b2sdk.transfer.emerge.planner.upload_subpart import (
     LocalSourceUploadSubpart,
     RemoteSourceUploadSubpart,
@@ -31,12 +32,12 @@ from .test_base import TestBase
 
 class UploadSource(UploadSourceStream):
     def __init__(self, length):
-        super(UploadSource, self).__init__(lambda: None, length)
+        super().__init__(lambda: None, length)
 
 
 class CopySource(OrigCopySource):
     def __init__(self, length):
-        super(CopySource, self).__init__(id(self), length=length)
+        super().__init__(id(self), length=length)
 
 
 def part(source_or_def_list, *offset_len):

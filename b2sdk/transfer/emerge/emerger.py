@@ -7,9 +7,10 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
 import logging
-from typing import Dict, Iterator, Optional, List
+from typing import Iterator
 
 from b2sdk.encryption.setting import EncryptionSetting
 from b2sdk.file_lock import FileRetentionSetting, LegalHold
@@ -18,7 +19,7 @@ from b2sdk.progress import AbstractProgressListener
 from b2sdk.transfer.emerge.executor import EmergeExecutor
 from b2sdk.transfer.emerge.planner.planner import EmergePlan, EmergePlanner
 from b2sdk.transfer.emerge.write_intent import WriteIntent
-from b2sdk.utils import B2TraceMetaAbstract, iterator_peek, Sha1HexDigest
+from b2sdk.utils import B2TraceMetaAbstract, Sha1HexDigest, iterator_peek
 
 logger = logging.getLogger(__name__)
 
@@ -46,11 +47,11 @@ class Emerger(metaclass=B2TraceMetaAbstract):
     @classmethod
     def _get_updated_file_info_with_large_file_sha1(
         cls,
-        file_info: Optional[Dict[str, str]],
-        write_intents: Optional[List[WriteIntent]],
+        file_info: dict[str, str] | None,
+        write_intents: list[WriteIntent] | None,
         emerge_plan: EmergePlan,
-        large_file_sha1: Optional[Sha1HexDigest] = None,
-    ) -> Optional[Dict[str, str]]:
+        large_file_sha1: Sha1HexDigest | None = None,
+    ) -> dict[str, str] | None:
         if not emerge_plan.is_large_file():
             # Emerge plan doesn't construct a large file, no point setting the large_file_sha1
             return file_info
@@ -79,15 +80,15 @@ class Emerger(metaclass=B2TraceMetaAbstract):
         recommended_upload_part_size=None,
         continue_large_file_id=None,
         max_queue_size=None,
-        encryption: Optional[EncryptionSetting] = None,
-        file_retention: Optional[FileRetentionSetting] = None,
-        legal_hold: Optional[LegalHold] = None,
-        min_part_size: Optional[int] = None,
-        max_part_size: Optional[int] = None,
-        large_file_sha1: Optional[Sha1HexDigest] = None,
+        encryption: EncryptionSetting | None = None,
+        file_retention: FileRetentionSetting | None = None,
+        legal_hold: LegalHold | None = None,
+        min_part_size: int | None = None,
+        max_part_size: int | None = None,
+        large_file_sha1: Sha1HexDigest | None = None,
         check_first_intent_for_sha1: bool = True,
-        custom_upload_timestamp: Optional[int] = None,
-        cache_control: Optional[str] = None,
+        custom_upload_timestamp: int | None = None,
+        cache_control: str | None = None,
     ):
         planner = self.get_emerge_planner(
             min_part_size=min_part_size,
@@ -133,21 +134,21 @@ class Emerger(metaclass=B2TraceMetaAbstract):
     def emerge(
         self,
         bucket_id: str,
-        write_intents: List[WriteIntent],
+        write_intents: list[WriteIntent],
         file_name: str,
-        content_type: Optional[str],
-        file_info: Optional[Dict[str, str]],
+        content_type: str | None,
+        file_info: dict[str, str] | None,
         progress_listener: AbstractProgressListener,
-        recommended_upload_part_size: Optional[int] = None,
-        continue_large_file_id: Optional[str] = None,
-        encryption: Optional[EncryptionSetting] = None,
-        file_retention: Optional[FileRetentionSetting] = None,
-        legal_hold: Optional[LegalHold] = None,
-        min_part_size: Optional[int] = None,
-        max_part_size: Optional[int] = None,
-        large_file_sha1: Optional[Sha1HexDigest] = None,
-        custom_upload_timestamp: Optional[int] = None,
-        cache_control: Optional[str] = None,
+        recommended_upload_part_size: int | None = None,
+        continue_large_file_id: str | None = None,
+        encryption: EncryptionSetting | None = None,
+        file_retention: FileRetentionSetting | None = None,
+        legal_hold: LegalHold | None = None,
+        min_part_size: int | None = None,
+        max_part_size: int | None = None,
+        large_file_sha1: Sha1HexDigest | None = None,
+        custom_upload_timestamp: int | None = None,
+        cache_control: str | None = None,
     ):
         """
         Create a new file (object in the cloud, really) from an iterable (list, tuple etc) of write intents.
@@ -198,20 +199,20 @@ class Emerger(metaclass=B2TraceMetaAbstract):
         bucket_id: str,
         write_intent_iterator: Iterator[WriteIntent],
         file_name: str,
-        content_type: Optional[str],
-        file_info: Optional[Dict[str, str]],
+        content_type: str | None,
+        file_info: dict[str, str] | None,
         progress_listener: AbstractProgressListener,
-        recommended_upload_part_size: Optional[int] = None,
-        continue_large_file_id: Optional[str] = None,
+        recommended_upload_part_size: int | None = None,
+        continue_large_file_id: str | None = None,
         max_queue_size: int = DEFAULT_STREAMING_MAX_QUEUE_SIZE,
-        encryption: Optional[EncryptionSetting] = None,
-        file_retention: Optional[FileRetentionSetting] = None,
-        legal_hold: Optional[LegalHold] = None,
-        min_part_size: Optional[int] = None,
-        max_part_size: Optional[int] = None,
-        large_file_sha1: Optional[Sha1HexDigest] = None,
-        custom_upload_timestamp: Optional[int] = None,
-        cache_control: Optional[str] = None,
+        encryption: EncryptionSetting | None = None,
+        file_retention: FileRetentionSetting | None = None,
+        legal_hold: LegalHold | None = None,
+        min_part_size: int | None = None,
+        max_part_size: int | None = None,
+        large_file_sha1: Sha1HexDigest | None = None,
+        custom_upload_timestamp: int | None = None,
+        cache_control: str | None = None,
     ):
         """
         Create a new file (object in the cloud, really) from a stream of write intents.
@@ -264,20 +265,20 @@ class Emerger(metaclass=B2TraceMetaAbstract):
         bucket_id: str,
         write_intent_iterator: Iterator[WriteIntent],
         file_name: str,
-        content_type: Optional[str],
-        file_info: Optional[Dict[str, str]],
+        content_type: str | None,
+        file_info: dict[str, str] | None,
         progress_listener: AbstractProgressListener,
-        recommended_upload_part_size: Optional[int] = None,
-        continue_large_file_id: Optional[str] = None,
+        recommended_upload_part_size: int | None = None,
+        continue_large_file_id: str | None = None,
         max_queue_size: int = 1,
-        encryption: Optional[EncryptionSetting] = None,
-        file_retention: Optional[FileRetentionSetting] = None,
-        legal_hold: Optional[LegalHold] = None,
-        min_part_size: Optional[int] = None,
-        max_part_size: Optional[int] = None,
-        large_file_sha1: Optional[Sha1HexDigest] = None,
-        custom_upload_timestamp: Optional[int] = None,
-        cache_control: Optional[str] = None,
+        encryption: EncryptionSetting | None = None,
+        file_retention: FileRetentionSetting | None = None,
+        legal_hold: LegalHold | None = None,
+        min_part_size: int | None = None,
+        max_part_size: int | None = None,
+        large_file_sha1: Sha1HexDigest | None = None,
+        custom_upload_timestamp: int | None = None,
+        cache_control: str | None = None,
     ):
         """
         Create a new file (object in the cloud, really) from an unbound stream of write intents.
@@ -328,9 +329,9 @@ class Emerger(metaclass=B2TraceMetaAbstract):
 
     def get_emerge_planner(
         self,
-        recommended_upload_part_size: Optional[int] = None,
-        min_part_size: Optional[int] = None,
-        max_part_size: Optional[int] = None,
+        recommended_upload_part_size: int | None = None,
+        min_part_size: int | None = None,
+        max_part_size: int | None = None,
     ):
         return EmergePlanner.from_account_info(
             self.services.session.account_info,

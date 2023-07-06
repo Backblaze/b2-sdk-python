@@ -7,23 +7,33 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
 import datetime
-import requests
-import socket
 import locale
-
-from ..test_base import TestBase
+from unittest.mock import MagicMock, call, patch
 
 import apiver_deps
-from apiver_deps_exception import BadDateFormat, BadJson, BrokenPipe, B2ConnectionError, ClockSkew, ConnectionReset, ServiceError, UnknownError, UnknownHost, TooManyRequests, InvalidJsonResponse, PotentialS3EndpointPassedAsRealm
-from apiver_deps import USER_AGENT
-from apiver_deps import B2Http
-from apiver_deps import B2HttpApiConfig
-from apiver_deps import ClockSkewHook
+import requests
+from apiver_deps import USER_AGENT, B2Http, B2HttpApiConfig, ClockSkewHook
+from apiver_deps_exception import (
+    B2ConnectionError,
+    BadDateFormat,
+    BadJson,
+    BrokenPipe,
+    ClockSkew,
+    ConnectionReset,
+    InvalidJsonResponse,
+    PotentialS3EndpointPassedAsRealm,
+    ServiceError,
+    TooManyRequests,
+    UnknownError,
+    UnknownHost,
+)
+
 from b2sdk.b2http import setlocale
 
-from unittest.mock import call, MagicMock, patch
+from ..test_base import TestBase
 
 
 class TestTranslateErrors(TestBase):
@@ -50,7 +60,7 @@ class TestTranslateErrors(TestBase):
         def fcn():
             raise requests.ConnectionError(
                 requests.packages.urllib3.exceptions.ProtocolError(
-                    "dummy", socket.error(20, 'Broken pipe')
+                    "dummy", OSError(20, 'Broken pipe')
                 )
             )
 
@@ -291,9 +301,7 @@ class TestB2Http(TestBase):
 class TestB2HttpUserAgentAppend(TestB2Http):
 
     UA_APPEND = 'ua_extra_string'
-    EXPECTED_HEADERS = {
-        **TestB2Http.EXPECTED_HEADERS, 'User-Agent': '%s %s' % (USER_AGENT, UA_APPEND)
-    }
+    EXPECTED_HEADERS = {**TestB2Http.EXPECTED_HEADERS, 'User-Agent': f'{USER_AGENT} {UA_APPEND}'}
 
 
 class TestSetLocaleContextManager(TestBase):

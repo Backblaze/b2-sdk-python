@@ -7,8 +7,7 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
-
-from typing import List
+from __future__ import annotations
 
 from b2sdk.v1 import FileVersionInfo
 from b2sdk.http_constants import SRC_LAST_MODIFIED_MILLIS
@@ -28,7 +27,7 @@ class File:
 
     __slots__ = ['name', 'versions']
 
-    def __init__(self, name, versions: List['FileVersion']):
+    def __init__(self, name, versions: list[FileVersion]):
         """
         :param str name: a relative file name
         :param List[FileVersion] versions: a list of file versions
@@ -36,14 +35,14 @@ class File:
         self.name = name
         self.versions = versions
 
-    def latest_version(self) -> 'FileVersion':
+    def latest_version(self) -> FileVersion:
         """
         Return the latest file version.
         """
         return self.versions[0]
 
     def __repr__(self):
-        return '%s(%s, [%s])' % (
+        return '{}({}, [{}])'.format(
             self.__class__.__name__, self.name, ', '.join(repr(v) for v in self.versions)
         )
 
@@ -55,14 +54,14 @@ class B2File(File):
 
     __slots__ = ['name', 'versions']
 
-    def __init__(self, name, versions: List['FileVersion']):
+    def __init__(self, name, versions: list[FileVersion]):
         """
         :param str name: a relative file name
         :param List[FileVersion] versions: a list of file versions
         """
         super().__init__(name, versions)
 
-    def latest_version(self) -> 'FileVersion':
+    def latest_version(self) -> FileVersion:
         return super().latest_version()
 
 
@@ -94,7 +93,7 @@ class FileVersion:
         self.size = size
 
     def __repr__(self):
-        return '%s(%s, %s, %s, %s)' % (
+        return '{}({}, {}, {}, {})'.format(
             self.__class__.__name__,
             repr(self.id_),
             repr(self.name),

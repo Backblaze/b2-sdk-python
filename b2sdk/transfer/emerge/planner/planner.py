@@ -7,14 +7,19 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from __future__ import annotations
 
-from math import ceil
 import hashlib
 import json
-
 from abc import ABCMeta, abstractmethod
 from collections import deque
+from math import ceil
 
+from b2sdk.http_constants import (
+    DEFAULT_MAX_PART_SIZE,
+    DEFAULT_MIN_PART_SIZE,
+    DEFAULT_RECOMMENDED_UPLOAD_PART_SIZE,
+)
 from b2sdk.transfer.emerge.planner.part_definition import (
     CopyEmergePartDefinition,
     UploadEmergePartDefinition,
@@ -23,11 +28,6 @@ from b2sdk.transfer.emerge.planner.part_definition import (
 from b2sdk.transfer.emerge.planner.upload_subpart import (
     LocalSourceUploadSubpart,
     RemoteSourceUploadSubpart,
-)
-from b2sdk.http_constants import (
-    DEFAULT_MIN_PART_SIZE,
-    DEFAULT_MAX_PART_SIZE,
-    DEFAULT_RECOMMENDED_UPLOAD_PART_SIZE,
 )
 from b2sdk.utils import iterator_peek
 
@@ -632,7 +632,7 @@ class BaseEmergePlan(metaclass=ABCMeta):
 
 class EmergePlan(BaseEmergePlan):
     def __init__(self, emerge_parts):
-        super(EmergePlan, self).__init__(list(emerge_parts))
+        super().__init__(list(emerge_parts))
         self._is_large_file = len(self.emerge_parts) > 1
 
     def is_large_file(self):
