@@ -10,6 +10,22 @@
 from __future__ import annotations
 
 
+class MissingDocURL(Exception):
+    pass
+
+
+def ensure_b2sdk_doc_urls(cls: type):
+    """
+    Decorator to indicate (and verify) that class has external documentation URLs.
+
+    Used for to validate that all classes have external documentation URLs properly defined.
+    """
+    urls = get_b2sdk_doc_urls(cls)
+    if not urls:
+        raise MissingDocURL(f'No documentation URLs found for {cls.__name__}')
+    return cls
+
+
 def get_b2sdk_doc_urls(type_: type) -> dict[str, str]:
     """
     Get the external documentation URLs for a b2sdk class.

@@ -12,7 +12,25 @@ from __future__ import annotations
 import pytest
 
 from b2sdk.raw_api import AbstractRawApi, LifecycleRule
-from b2sdk.utils.docs import get_b2sdk_doc_urls
+from b2sdk.utils.docs import MissingDocURL, ensure_b2sdk_doc_urls, get_b2sdk_doc_urls
+
+
+def test_b2sdk_doc_urls():
+    @ensure_b2sdk_doc_urls
+    class MyCustomClass:
+        """
+        This is a custom class with `Documentation URL`_.
+
+        .. _Documentation URL: https://example.com
+        """
+
+
+def test_b2sdk_doc_urls__no_urls_error():
+    with pytest.raises(MissingDocURL):
+
+        @ensure_b2sdk_doc_urls
+        class MyCustomClass:
+            pass
 
 
 @pytest.mark.parametrize(

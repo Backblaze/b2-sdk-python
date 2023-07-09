@@ -22,6 +22,7 @@ except ImportError:
     from typing_extensions import NotRequired, TypedDict
 
 from b2sdk.http_constants import FILE_INFO_HEADER_PREFIX
+from b2sdk.utils.docs import ensure_b2sdk_doc_urls
 
 from .encryption.setting import EncryptionMode, EncryptionSetting
 from .exception import (
@@ -86,6 +87,7 @@ class MetadataDirectiveMode(Enum):
     REPLACE = 402  #: ignore the source file metadata and set it to provided values
 
 
+@ensure_b2sdk_doc_urls
 class LifecycleRule(TypedDict):
     """
     Lifecycle Rule.
