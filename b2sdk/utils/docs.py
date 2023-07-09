@@ -30,7 +30,7 @@ def get_b2sdk_doc_urls(type_: type) -> dict[str, str]:
     """
     Get the external documentation URLs for a b2sdk class.
 
-    Bon-b2sdk classes are not, and will not be supported.
+    Non-b2sdk classes are not, and will not be supported.
 
     :param type_: the class to get the documentation URLs for
     :return: a dictionary mapping link names to URLs
