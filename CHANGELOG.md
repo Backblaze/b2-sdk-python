@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+* Declare official support of Python 3.12
 * Improved `lifecycle_rules` argument type annotations
 
 ### Deprecated
@@ -20,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Fix crash on upload retry with unbound data source
 
 ### Infrastructure
+* Remove unsupported PyPy versions (3.7, 3.8) from tests matrix and add PyPy 3.9 & 3.10 instead
 * Replaced `pyflakes` with `ruff` for linting
 * Refactored logic for resuming large file uploads to unify code paths, correct inconsistencies, and enhance configurability (#381)
 * Automatically set copyright date when generating the docs
