@@ -17,6 +17,7 @@ from .file_metadata import FileMetadata
 from .file_version import FileVersionInfo, FileVersionInfoFactory, file_version_info_from_download_version
 from b2sdk import v2
 from b2sdk.utils import validate_b2_file_name
+from ..raw_api import LifecycleRule
 
 
 # Overridden to retain the obsolete copy_file and start_large_file methods
@@ -212,7 +213,7 @@ class Bucket(v2.Bucket):
         bucket_type: str | None = None,
         bucket_info: dict | None = None,
         cors_rules: dict | None = None,
-        lifecycle_rules: list | None = None,
+        lifecycle_rules: list[LifecycleRule] | None = None,
         if_revision_is: int | None = None,
         default_server_side_encryption: v2.EncryptionSetting | None = None,
         default_retention: v2.BucketRetentionSetting | None = None,

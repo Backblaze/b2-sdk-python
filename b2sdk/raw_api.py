@@ -16,7 +16,13 @@ from enum import Enum, unique
 from logging import getLogger
 from typing import Any
 
+try:
+    from typing import NotRequired, TypedDict
+except ImportError:
+    from typing_extensions import NotRequired, TypedDict
+
 from b2sdk.http_constants import FILE_INFO_HEADER_PREFIX
+from b2sdk.utils.docs import ensure_b2sdk_doc_urls
 
 from .encryption.setting import EncryptionMode, EncryptionSetting
 from .exception import (
@@ -81,6 +87,20 @@ class MetadataDirectiveMode(Enum):
     REPLACE = 402  #: ignore the source file metadata and set it to provided values
 
 
+@ensure_b2sdk_doc_urls
+class LifecycleRule(TypedDict):
+    """
+    Lifecycle Rule.
+
+    External documentation: `B2 Cloud Storage Lifecycle Rules`_.
+
+    .. _B2 Cloud Storage Lifecycle Rules: https://www.backblaze.com/docs/cloud-storage-lifecycle-rules
+    """
+    fileNamePrefix: str
+    daysFromHidingToDeleting: NotRequired[int | None]
+    daysFromUploadingToHiding: NotRequired[int | None]
+
+
 class AbstractRawApi(metaclass=ABCMeta):
     """
     Direct access to the B2 web apis.
@@ -138,7 +158,7 @@ class AbstractRawApi(metaclass=ABCMeta):
         bucket_type,
         bucket_info=None,
         cors_rules=None,
-        lifecycle_rules=None,
+        lifecycle_rules: list[LifecycleRule] | None = None,
         default_server_side_encryption: EncryptionSetting | None = None,
         is_file_lock_enabled: bool | None = None,
         replication: ReplicationConfiguration | None = None,
@@ -296,7 +316,7 @@ class AbstractRawApi(metaclass=ABCMeta):
         bucket_type=None,
         bucket_info=None,
         cors_rules=None,
-        lifecycle_rules=None,
+        lifecycle_rules: list[LifecycleRule] | None = None,
         if_revision_is=None,
         default_server_side_encryption: EncryptionSetting | None = None,
         default_retention: BucketRetentionSetting | None = None,
@@ -451,7 +471,7 @@ class B2RawHTTPApi(AbstractRawApi):
         bucket_type,
         bucket_info=None,
         cors_rules=None,
-        lifecycle_rules=None,
+        lifecycle_rules: list[LifecycleRule] | None = None,
         default_server_side_encryption: EncryptionSetting | None = None,
         is_file_lock_enabled: bool | None = None,
         replication: ReplicationConfiguration | None = None,
@@ -765,7 +785,7 @@ class B2RawHTTPApi(AbstractRawApi):
         bucket_type=None,
         bucket_info=None,
         cors_rules=None,
-        lifecycle_rules=None,
+        lifecycle_rules: list[LifecycleRule] | None = None,
         if_revision_is=None,
         default_server_side_encryption: EncryptionSetting | None = None,
         default_retention: BucketRetentionSetting | None = None,

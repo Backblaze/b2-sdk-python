@@ -33,6 +33,7 @@ from .file_lock import (
 )
 from .file_version import DownloadVersion, FileVersion
 from .progress import AbstractProgressListener, DoNothingProgressListener
+from .raw_api import LifecycleRule
 from .replication.setting import ReplicationConfiguration, ReplicationConfigurationFactory
 from .transfer.emerge.executor import AUTO_CONTENT_TYPE
 from .transfer.emerge.unbound_write_intent import UnboundWriteIntentGenerator
@@ -67,7 +68,7 @@ class Bucket(metaclass=B2TraceMeta):
         type_=None,
         bucket_info=None,
         cors_rules=None,
-        lifecycle_rules=None,
+        lifecycle_rules: list[LifecycleRule] | None = None,
         revision=None,
         bucket_dict=None,
         options_set=None,
@@ -85,7 +86,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param str type_: a bucket type
         :param dict bucket_info: an info to store with a bucket
         :param dict cors_rules: CORS rules to store with a bucket
-        :param list lifecycle_rules: lifecycle rules of the bucket
+        :param lifecycle_rules: lifecycle rules of the bucket
         :param int revision: a bucket revision number
         :param dict bucket_dict: a dictionary which contains bucket parameters
         :param set options_set: set of bucket options strings
@@ -149,7 +150,7 @@ class Bucket(metaclass=B2TraceMeta):
         bucket_type: str | None = None,
         bucket_info: dict | None = None,
         cors_rules: dict | None = None,
-        lifecycle_rules: list | None = None,
+        lifecycle_rules: list[LifecycleRule] | None = None,
         if_revision_is: int | None = None,
         default_server_side_encryption: EncryptionSetting | None = None,
         default_retention: BucketRetentionSetting | None = None,

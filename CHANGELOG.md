@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 * Declare official support of Python 3.12
+* Improved `lifecycle_rules` argument type annotations
 
 ### Deprecated
 * Deprecate `file_infos` argument. Use `file_info` instead. Old argument name won't be supported in v3.
@@ -118,6 +119,7 @@ no backward-incompatible changes are planned at this point.
 ### Added
 * Add `included_sources` module for keeping track of included modified third-party libraries
 * Add `include_existing_files` parameter to `ReplicationSetupHelper`
+* Add `get_b2sdk_doc_urls` function for extraction of external documentation URLs during runtime
 
 ### Changed
 * Downloading compressed files with `Content-Encoding` header set no longer causes them to be decompressed on the fly - it's an option

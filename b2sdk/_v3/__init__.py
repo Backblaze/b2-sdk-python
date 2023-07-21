@@ -66,6 +66,7 @@ from b2sdk.utils import (
 )
 
 from b2sdk.utils import trace_call
+from b2sdk.utils.docs import get_b2sdk_doc_urls
 
 # data classes
 
@@ -118,6 +119,7 @@ from b2sdk.raw_simulator import RawSimulator
 from b2sdk.raw_api import AbstractRawApi
 from b2sdk.raw_api import B2RawHTTPApi
 from b2sdk.raw_api import MetadataDirectiveMode
+from b2sdk.raw_api import LifecycleRule
 
 # stream
 
