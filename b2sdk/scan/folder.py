@@ -97,11 +97,12 @@ class AbstractFolder(metaclass=ABCMeta):
         """
 
 
-def join_b2_path(relative_dir_path: str, file_name: str):
+def join_b2_path(relative_dir_path: str | Path, file_name: str):
     """
     Like os.path.join, but for B2 file names where the root directory is called ''.
     """
-    if relative_dir_path == '':
+    relative_dir_path = str(relative_dir_path)
+    if relative_dir_path in ('', '.'):
         return file_name
     else:
         return relative_dir_path + '/' + file_name
@@ -112,15 +113,16 @@ class LocalFolder(AbstractFolder):
     Folder interface to a directory on the local machine.
     """
 
-    def __init__(self, root):
+    def __init__(self, root: str | Path):
         """
         Initialize a new folder.
 
         :param root: path to the root of the local folder.  Must be unicode.
-        :type root: str
         """
+        if isinstance(root, Path):
+            root = str(root)
         if not isinstance(root, str):
-            raise ValueError('folder path should be unicode: %s' % repr(root))
+            raise ValueError('folder path should be str or pathlib.Path: %s' % repr(root))
         self.root = fix_windows_path_limit(os.path.abspath(root))
 
     def folder_type(self):
@@ -248,9 +250,7 @@ class LocalFolder(AbstractFolder):
                 )
 
             local_path = local_dir / name
-            relative_file_path = join_b2_path(
-                str(relative_dir_path), name
-            )  # file path relative to the scan point
+            relative_file_path = join_b2_path(relative_dir_path, name)
 
             # Skip broken symlinks or other inaccessible files
             if not is_file_readable(str(local_path), reporter):
