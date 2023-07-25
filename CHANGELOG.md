@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+* Require `typing_extensions` on Python 3.11 (already required on earlier versinons) for better compatibility with pydantic v2
+
 ## [1.22.1] - 2023-07-24
 
 ### Fixed
