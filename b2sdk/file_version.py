@@ -516,21 +516,27 @@ class FileVersionFactory:
 
         if file_name is None:
             raise ValueError('no fileName or file')
-        
+
         if id_ is None:
             raise ValueError('no fileId or x-bz-file-id')
 
         size = file_version_dict.get('size')
+
         if size is None:
-            size = file_version_dict.get('contentLength') 
+            size = file_version_dict.get('contentLength')
         if size is None:
             size = file_version_dict.get('content-length')
+
         if size is None:
             raise ValueError('no size or contentLength')
 
-        upload_timestamp = file_version_dict.get('uploadTimestamp', file_version_dict.get('x-bz-upload-timestamp'))
+        upload_timestamp = file_version_dict.get(
+            'uploadTimestamp', file_version_dict.get('x-bz-upload-timestamp')
+        )
         content_type = file_version_dict.get('contentType', file_version_dict.get('content-type'))
-        content_sha1 = file_version_dict.get('contentSha1', file_version_dict.get('x-bz-content-sha1'))
+        content_sha1 = file_version_dict.get(
+            'contentSha1', file_version_dict.get('x-bz-content-sha1')
+        )
         content_md5 = file_version_dict.get('contentMd5')
         file_info = file_version_dict.get('fileInfo')
         server_side_encryption = EncryptionSettingFactory.from_file_version_dict(file_version_dict)
