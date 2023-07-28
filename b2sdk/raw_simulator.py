@@ -16,6 +16,7 @@ import random
 import re
 import threading
 import time
+from builtins import breakpoint
 from contextlib import contextmanager, suppress
 
 from requests.structures import CaseInsensitiveDict
@@ -202,7 +203,6 @@ class FileSimulator:
         self.legal_hold = legal_hold if legal_hold is not None else LegalHold.UNSET
         self.replication_status = replication_status
         self.cache_control = cache_control
-
         if action == 'start':
             self.parts = []
 
@@ -1031,6 +1031,8 @@ class BucketSimulator:
         file_id = self._next_file_id()
 
         encryption = server_side_encryption or self.default_server_side_encryption
+        if cache_control:
+            file_info['b2-cache-control'] = cache_control
         if encryption:  # FIXME: remove this part when RawApi<->Encryption adapters are implemented properly
             file_info = encryption.add_key_id_to_file_info(file_info)
 
