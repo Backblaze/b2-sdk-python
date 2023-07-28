@@ -508,23 +508,24 @@ class FileVersionFactory:
             'action was provided by both info_dict and function argument'
         action = file_version_dict.get('action') or force_action
 
-        file_version_dict['action'] = action
+        if force_action is not None:
+            file_version_dict['action'] = force_action
 
         file_name = file_version_dict.get('fileName', file_version_dict.get('x-bz-file-name'))
         id_ = file_version_dict.get('fileId', file_version_dict.get('x-bz-file-id'))
 
         if file_name is None:
             raise ValueError('no fileName or file')
+        
         if id_ is None:
             raise ValueError('no fileId or x-bz-file-id')
 
-        if 'size' in file_version_dict:
-            size = file_version_dict['size']
-        elif 'contentLength' in file_version_dict:
-            size = file_version_dict['contentLength']
-        elif 'content-length' in file_version_dict:
-            size = file_version_dict['content-length']
-        else:
+        size = file_version_dict.get('size')
+        if size is None:
+            size = file_version_dict.get('contentLength') 
+        if size is None:
+            size = file_version_dict.get('content-length')
+        if size is None:
             raise ValueError('no size or contentLength')
 
         upload_timestamp = file_version_dict.get('uploadTimestamp', file_version_dict.get('x-bz-upload-timestamp'))
