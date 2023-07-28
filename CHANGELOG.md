@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.22.1] - 2023-07-28
+
+
+### Fixed
+* Fix `RawSimulator` handling of `cache_control` parameter during tests.
+
 ## [1.22.0] - 2023-07-21
 
 ### Added
