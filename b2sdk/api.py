@@ -587,6 +587,18 @@ class B2Api(metaclass=B2TraceMeta):
             self.session.get_file_info_by_id(file_id)
         )
 
+    def get_file_info_by_name(self, bucket_name: str, file_name: str) -> FileVersion:
+        """
+        Gets info about file version. Similar to `get-file-info` but 
+        takes the bucket name and file name instead of file id.
+
+        :param str file_id: the id of the file whose info will be retrieved.
+        """
+        return self.file_version_factory.from_api_response(
+            self.session.get_file_info_by_name(bucket_name, file_name),
+            force_action='folder',
+        )
+
     def check_bucket_name_restrictions(self, bucket_name: str):
         """
         Check to see if the allowed field from authorize-account has a bucket restriction.

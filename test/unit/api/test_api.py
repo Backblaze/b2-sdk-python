@@ -97,6 +97,37 @@ class TestApi:
             assert isinstance(result, VFileVersion)
             assert result == created_file
 
+    def test_get_file_info_by_name(self):
+        self._authorize_account()
+        bucket = self.api.create_bucket('bucket1', 'allPrivate')
+        bucket.upload_bytes(
+            b'hello world',
+            'file',
+        )
+        result = self.api.get_file_info_by_name('bucket1', 'file')
+        assert result.as_dict() == {
+            'fileId': '9999',
+            'fileName': 'file',
+            'fileInfo': {},
+            'serverSideEncryption': {
+                'mode': 'none'
+            },
+            'legalHold': None,
+            'fileRetention': {
+                'mode': None,
+                'retainUntilTimestamp': None
+            },
+            'cacheControl': None,
+            'size': 11,
+            'uploadTimestamp': 5000,
+            'contentType': 'b2/x-auto',
+            'contentSha1': '2aae6c35c94fcfb415dbe95f408b9ce91ee846ed',
+            'replicationStatus': None,
+            'accountId': None,
+            'bucketId': None,
+            'action': 'folder',
+        }
+
     @pytest.mark.parametrize(
         'expected_delete_bucket_output',
         [
