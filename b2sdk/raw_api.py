@@ -17,9 +17,9 @@ from logging import getLogger
 from typing import Any
 
 try:
-    from typing import NotRequired, TypedDict
-except ImportError:
     from typing_extensions import NotRequired, TypedDict
+except ImportError:
+    from typing import NotRequired, TypedDict
 
 from b2sdk.http_constants import FILE_INFO_HEADER_PREFIX
 from b2sdk.utils.docs import ensure_b2sdk_doc_urls
