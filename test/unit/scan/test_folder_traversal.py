@@ -15,6 +15,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from b2sdk.scan.folder import LocalFolder
+from b2sdk.scan.policies import ScanPoliciesManager
 from b2sdk.utils import fix_windows_path_limit
 
 
@@ -506,4 +507,26 @@ class TestFolderTraversal:
         assert absolute_paths == [
             fix_windows_path_limit(str(tmp_path / "a" / "a.txt")),
             fix_windows_path_limit(str(tmp_path / "g" / "g.txt")),
+        ]
+
+    def test_folder_all_files__dir_excluded_by_regex(self, tmp_path):
+        """
+        bar$ regex should exclude bar directory and all files inside it
+        """
+        d1_dir = tmp_path / "d1"
+        d1_dir.mkdir()
+        (d1_dir / "file1.txt").touch()
+
+        bar_dir = tmp_path / "bar"
+        bar_dir.mkdir()
+        (bar_dir / "file2.txt").touch()
+
+        scan_policy = ScanPoliciesManager(exclude_dir_regexes=["bar$"])
+
+        folder = LocalFolder(tmp_path)
+        local_paths = folder.all_files(reporter=None, policies_manager=scan_policy)
+        absolute_paths = [path.absolute_path for path in local_paths]
+
+        assert absolute_paths == [
+            fix_windows_path_limit(str(d1_dir / "file1.txt")),
         ]
