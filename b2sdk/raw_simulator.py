@@ -16,7 +16,7 @@ import random
 import re
 import threading
 import time
-from builtins import breakpoint
+
 from contextlib import contextmanager, suppress
 
 from requests.structures import CaseInsensitiveDict
@@ -203,6 +203,7 @@ class FileSimulator:
         self.legal_hold = legal_hold if legal_hold is not None else LegalHold.UNSET
         self.replication_status = replication_status
         self.cache_control = cache_control
+
         if action == 'start':
             self.parts = []
 
