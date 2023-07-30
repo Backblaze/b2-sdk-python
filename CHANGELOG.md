@@ -15,7 +15,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 * Fix regression in dir exclusion patterns introduced in 1.22.0
 
-
 ## [1.22.0] - 2023-07-21
 
 ### Added
