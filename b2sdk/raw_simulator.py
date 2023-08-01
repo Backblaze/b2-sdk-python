@@ -1031,6 +1031,8 @@ class BucketSimulator:
         file_id = self._next_file_id()
 
         encryption = server_side_encryption or self.default_server_side_encryption
+        if cache_control:
+            file_info['b2-cache-control'] = cache_control
         if encryption:  # FIXME: remove this part when RawApi<->Encryption adapters are implemented properly
             file_info = encryption.add_key_id_to_file_info(file_info)
 

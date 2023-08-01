@@ -160,13 +160,13 @@ class TestFileVersion:
             X-Bz-File-Name: test_file
             Content-Type: b2/x-auto
             X-Bz-Content-Sha1: 0feca720e2c29dafb2c900713ba560e03b758711
+            X-Bz-Info-b2-cache-control: private%2C%20max-age%3D3600
             X-Bz-Server-Side-Encryption-Customer-Algorithm: AES256
             X-Bz-Server-Side-Encryption-Customer-Key: KioqKioqKioqKioqKioqKioqKioqKioqKioqKioqKio=
             X-Bz-Server-Side-Encryption-Customer-Key-Md5: SaaDheEjzuynJH8eW6AEpQ==
             X-Bz-File-Legal-Hold: off
             X-Bz-File-Retention-Mode: None
             X-Bz-File-Retention-Retain-Until-Timestamp: None
-            X-Bz-Info-b2-cache-control: private%2C%20max-age%3D3600
         """.strip().replace(': ', '').replace(' ', '').replace('\n', '').encode('utf8')
 
         assert not file_version.has_large_header
