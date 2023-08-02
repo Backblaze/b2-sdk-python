@@ -108,7 +108,8 @@ class FileRetentionSetting:
             }
         """
         if 'fileRetention' not in file_version_dict:
-            if file_version_dict['action'] not in ACTIONS_WITHOUT_LOCK_SETTINGS:
+            action = file_version_dict.get('action')
+            if action is not None and file_version_dict['action'] not in ACTIONS_WITHOUT_LOCK_SETTINGS:
                 raise UnexpectedCloudBehaviour(
                     'No fileRetention provided for file version with action=%s' %
                     (file_version_dict['action'])
@@ -208,7 +209,8 @@ class LegalHold(enum.Enum):
     @classmethod
     def from_file_version_dict(cls, file_version_dict: dict) -> LegalHold:
         if 'legalHold' not in file_version_dict:
-            if file_version_dict['action'] not in ACTIONS_WITHOUT_LOCK_SETTINGS:
+            action = file_version_dict.get('action')
+            if action is not None and action not in ACTIONS_WITHOUT_LOCK_SETTINGS:
                 raise UnexpectedCloudBehaviour(
                     'legalHold not provided for file version with action=%s' %
                     (file_version_dict['action'])

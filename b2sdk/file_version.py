@@ -508,14 +508,11 @@ class FileVersionFactory:
             'action was provided by both info_dict and function argument'
         action = file_version_dict.get('action') or force_action
 
-        if force_action is not None:
-            file_version_dict['action'] = force_action
-
         file_name = file_version_dict.get('fileName', file_version_dict.get('x-bz-file-name'))
         id_ = file_version_dict.get('fileId', file_version_dict.get('x-bz-file-id'))
 
         if file_name is None:
-            raise ValueError('no fileName or file')
+            raise ValueError('no fileName or x-bz-file-name')
 
         if id_ is None:
             raise ValueError('no fileId or x-bz-file-id')

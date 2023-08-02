@@ -595,9 +595,7 @@ class B2Api(metaclass=B2TraceMeta):
         :param str file_id: the id of the file whose info will be retrieved.
         """
         return self.file_version_factory.from_api_response(
-            self.session.get_file_info_by_name(bucket_name, file_name),
-            force_action='folder',
-        )
+            self.session.get_file_info_by_name(bucket_name, file_name))
 
     def check_bucket_name_restrictions(self, bucket_name: str):
         """

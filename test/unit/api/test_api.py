@@ -125,7 +125,6 @@ class TestApi:
             'replicationStatus': None,
             'accountId': None,
             'bucketId': None,
-            'action': 'folder',
         }
 
     @pytest.mark.parametrize(
