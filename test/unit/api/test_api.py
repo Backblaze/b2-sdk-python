@@ -105,7 +105,8 @@ class TestApi:
             'file',
         )
         result = self.api.get_file_info_by_name('bucket1', 'file')
-        assert result.as_dict() == {
+
+        expected_result = {
             'fileId': '9999',
             'fileName': 'file',
             'fileInfo': {},
@@ -123,9 +124,16 @@ class TestApi:
             'contentType': 'b2/x-auto',
             'contentSha1': '2aae6c35c94fcfb415dbe95f408b9ce91ee846ed',
             'replicationStatus': None,
-            'accountId': None,
-            'bucketId': None,
         }
+
+        if apiver_deps.V <= 1:
+            expected_result.update({
+                'accountId': None,
+                'action': 'upload',
+                'bucketId': None,
+            })
+
+        assert result.as_dict() == expected_result
 
     @pytest.mark.parametrize(
         'expected_delete_bucket_output',

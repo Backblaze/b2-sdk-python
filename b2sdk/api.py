@@ -27,7 +27,13 @@ from .exception import (
     RestrictedBucketMissing,
 )
 from .file_lock import FileRetentionSetting, LegalHold
-from .file_version import DownloadVersionFactory, FileIdAndName, FileVersion, FileVersionFactory
+from .file_version import (
+    DownloadVersion,
+    DownloadVersionFactory,
+    FileIdAndName,
+    FileVersion,
+    FileVersionFactory,
+)
 from .large_file.services import LargeFileServices
 from .progress import AbstractProgressListener
 from .raw_api import API_VERSION, LifecycleRule
@@ -587,16 +593,15 @@ class B2Api(metaclass=B2TraceMeta):
             self.session.get_file_info_by_id(file_id)
         )
 
-    def get_file_info_by_name(self, bucket_name: str, file_name: str) -> FileVersion:
+    def get_file_info_by_name(self, bucket_name: str, file_name: str) -> DownloadVersion:
         """
-        Gets info about file version. Similar to `get-file-info` but 
+        Gets info about file version. Similar to `get_file_info` but 
         takes the bucket name and file name instead of file id.
 
         :param str file_id: the id of the file whose info will be retrieved.
         """
-        return self.file_version_factory.from_api_response(
-            self.session.get_file_info_by_name(bucket_name, file_name)
-        )
+        bucket = self.get_bucket_by_name(bucket_name)
+        return bucket.get_file_info_by_name(file_name)
 
     def check_bucket_name_restrictions(self, bucket_name: str):
         """

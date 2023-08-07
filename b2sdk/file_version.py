@@ -488,52 +488,23 @@ class FileVersionFactory:
                "replicationStatus": "completed"
            }
 
-        or this:
-
-        .. code-block:: python
-
-            {
-                "content-length": 11, 
-                "content-type": "b2/x-auto", 
-                "x-bz-content-sha1": "2aae6c35c94fcfb415dbe95f408b9ce91ee846ed", 
-                "x-bz-upload-timestamp": 5000, 
-                "x-bz-file-id": "9999", 
-                "x-bz-file-name": "file"
-            }
-
         into a :py:class:`b2sdk.v2.FileVersion` object.
 
         """
         assert file_version_dict.get('action') is None or force_action is None, \
             'action was provided by both info_dict and function argument'
         action = file_version_dict.get('action') or force_action
-
-        file_name = file_version_dict.get('fileName', file_version_dict.get('x-bz-file-name'))
-        id_ = file_version_dict.get('fileId', file_version_dict.get('x-bz-file-id'))
-
-        if file_name is None:
-            raise ValueError('no fileName or x-bz-file-name')
-
-        if id_ is None:
-            raise ValueError('no fileId or x-bz-file-id')
-
-        size = file_version_dict.get('size')
-
-        if size is None:
-            size = file_version_dict.get('contentLength')
-        if size is None:
-            size = file_version_dict.get('content-length')
-
-        if size is None:
+        file_name = file_version_dict['fileName']
+        id_ = file_version_dict['fileId']
+        if 'size' in file_version_dict:
+            size = file_version_dict['size']
+        elif 'contentLength' in file_version_dict:
+            size = file_version_dict['contentLength']
+        else:
             raise ValueError('no size or contentLength')
-
-        upload_timestamp = file_version_dict.get(
-            'uploadTimestamp', file_version_dict.get('x-bz-upload-timestamp')
-        )
-        content_type = file_version_dict.get('contentType', file_version_dict.get('content-type'))
-        content_sha1 = file_version_dict.get(
-            'contentSha1', file_version_dict.get('x-bz-content-sha1')
-        )
+        upload_timestamp = file_version_dict.get('uploadTimestamp')
+        content_type = file_version_dict.get('contentType')
+        content_sha1 = file_version_dict.get('contentSha1')
         content_md5 = file_version_dict.get('contentMd5')
         file_info = file_version_dict.get('fileInfo')
         server_side_encryption = EncryptionSettingFactory.from_file_version_dict(file_version_dict)
@@ -554,8 +525,8 @@ class FileVersionFactory:
             content_sha1,
             file_info,
             upload_timestamp,
-            file_version_dict.get('accountId'),
-            file_version_dict.get('bucketId'),
+            file_version_dict['accountId'],
+            file_version_dict['bucketId'],
             action,
             content_md5,
             server_side_encryption,
