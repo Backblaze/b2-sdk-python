@@ -108,8 +108,8 @@ class TestApi:
         result = self.api.get_file_info_by_name('bucket1', 'file')
 
         expected_result = {
-            'fileId': new_file.id_,
-            'fileName': new_file.file_name,
+            'fileId': '9999',
+            'fileName': 'file',
             'fileInfo': {},
             'serverSideEncryption': {
                 'mode': 'none'
@@ -121,7 +121,7 @@ class TestApi:
             },
             'cacheControl': None,
             'size': 11,
-            'uploadTimestamp': new_file.upload_timestamp,
+            'uploadTimestamp': 5000,
             'contentType': 'b2/x-auto',
             'contentSha1': '2aae6c35c94fcfb415dbe95f408b9ce91ee846ed',
             'replicationStatus': None,
@@ -147,8 +147,8 @@ class TestApi:
         result = self.api.get_file_info_by_name('bucket1', 'hidden-file.txt')
 
         expected_result = {
-            'fileId': hidden_file.id_,
-            'fileName': hidden_file.file_name,
+            'fileId': '9998',
+            'fileName': 'hidden-file.txt',
             'fileInfo': {},
             'serverSideEncryption': {
                 'mode': 'none'
@@ -160,7 +160,7 @@ class TestApi:
             },
             'cacheControl': None,
             'size': 0,
-            'uploadTimestamp': hidden_file.upload_timestamp,
+            'uploadTimestamp': 5001,
             'contentSha1': 'none',
             'replicationStatus': None,
         }
