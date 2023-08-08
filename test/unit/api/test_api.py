@@ -101,7 +101,7 @@ class TestApi:
     def test_get_file_info_by_name(self):
         self._authorize_account()
         bucket = self.api.create_bucket('bucket1', 'allPrivate')
-        new_file = bucket.upload_bytes(
+        bucket.upload_bytes(
             b'hello world',
             'file',
         )
@@ -143,7 +143,7 @@ class TestApi:
             b'hello world',
             'hidden-file.txt',
         )
-        hidden_file = bucket.hide_file('hidden-file.txt')
+        bucket.hide_file('hidden-file.txt')
         result = self.api.get_file_info_by_name('bucket1', 'hidden-file.txt')
 
         expected_result = {
