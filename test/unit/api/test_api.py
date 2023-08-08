@@ -22,6 +22,7 @@ from apiver_deps import (
     B2Http,
     B2HttpApiConfig,
     EncryptionAlgorithm,
+    EncryptionKey,
     EncryptionMode,
     EncryptionSetting,
     FileIdAndName,
@@ -33,7 +34,7 @@ from apiver_deps import (
     RawSimulator,
     RetentionMode,
 )
-from apiver_deps_exception import InvalidArgument, RestrictedBucket
+from apiver_deps_exception import FileNotPresent, InvalidArgument, RestrictedBucket
 
 from ..test_base import create_key
 
@@ -100,15 +101,15 @@ class TestApi:
     def test_get_file_info_by_name(self):
         self._authorize_account()
         bucket = self.api.create_bucket('bucket1', 'allPrivate')
-        bucket.upload_bytes(
+        new_file = bucket.upload_bytes(
             b'hello world',
             'file',
         )
         result = self.api.get_file_info_by_name('bucket1', 'file')
 
         expected_result = {
-            'fileId': '9999',
-            'fileName': 'file',
+            'fileId': new_file.id_,
+            'fileName': new_file.file_name,
             'fileInfo': {},
             'serverSideEncryption': {
                 'mode': 'none'
@@ -120,7 +121,7 @@ class TestApi:
             },
             'cacheControl': None,
             'size': 11,
-            'uploadTimestamp': 5000,
+            'uploadTimestamp': new_file.upload_timestamp,
             'contentType': 'b2/x-auto',
             'contentSha1': '2aae6c35c94fcfb415dbe95f408b9ce91ee846ed',
             'replicationStatus': None,
@@ -134,6 +135,74 @@ class TestApi:
             })
 
         assert result.as_dict() == expected_result
+
+    def test_get_hidden_file_info_by_name(self):
+        self._authorize_account()
+        bucket = self.api.create_bucket('bucket1', 'allPrivate')
+        bucket.upload_bytes(
+            b'hello world',
+            'hidden-file.txt',
+        )
+        hidden_file = bucket.hide_file('hidden-file.txt')
+        result = self.api.get_file_info_by_name('bucket1', 'hidden-file.txt')
+
+        expected_result = {
+            'fileId': hidden_file.id_,
+            'fileName': hidden_file.file_name,
+            'fileInfo': {},
+            'serverSideEncryption': {
+                'mode': 'none'
+            },
+            'legalHold': None,
+            'fileRetention': {
+                'mode': None,
+                'retainUntilTimestamp': None
+            },
+            'cacheControl': None,
+            'size': 0,
+            'uploadTimestamp': hidden_file.upload_timestamp,
+            'contentSha1': 'none',
+            'replicationStatus': None,
+        }
+
+        if apiver_deps.V <= 1:
+            expected_result.update({
+                'accountId': None,
+                'action': 'upload',
+                'bucketId': None,
+            })
+
+        assert result.as_dict() == expected_result
+
+    def test_get_non_existent_file_info_by_name(self):
+        self._authorize_account()
+        _ = self.api.create_bucket('bucket1', 'allPrivate')
+        with pytest.raises(FileNotPresent):
+            _ = self.api.get_file_info_by_name('bucket1', 'file-does-not-exist.txt')
+
+    def test_get_file_info_by_name_with_properties(self):
+        encr_setting = EncryptionSetting(
+            EncryptionMode.SSE_C, EncryptionAlgorithm.AES256, EncryptionKey(b'secret', None)
+        )
+        lh_setting = LegalHold.ON
+        retention_setting = FileRetentionSetting(RetentionMode.COMPLIANCE, 100)
+
+        self._authorize_account()
+        bucket = self.api.create_bucket('bucket1', 'allPrivate', is_file_lock_enabled=True)
+        _ = bucket.upload_bytes(
+            b'hello world',
+            'file',
+            encryption=encr_setting,
+            legal_hold=lh_setting,
+            file_retention=retention_setting
+        )
+
+        result = self.api.get_file_info_by_name('bucket1', 'file')
+
+        assert encr_setting.mode == result.server_side_encryption.mode
+        assert encr_setting.algorithm == result.server_side_encryption.algorithm
+        assert lh_setting == result.legal_hold
+        assert retention_setting == result.file_retention
 
     @pytest.mark.parametrize(
         'expected_delete_bucket_output',
