@@ -595,10 +595,11 @@ class B2Api(metaclass=B2TraceMeta):
 
     def get_file_info_by_name(self, bucket_name: str, file_name: str) -> DownloadVersion:
         """
-        Gets info about file version. Similar to `get_file_info` but 
+        Gets info about a file version. Similar to `get_file_info` but 
         takes the bucket name and file name instead of file id.
 
-        :param str file_id: the id of the file whose info will be retrieved.
+        :param str bucket_name: The name of the bucket where the file resides.
+        :param str file_name: The name of the file whose info will be retrieved.
         """
         bucket = self.get_bucket_by_name(bucket_name)
         return bucket.get_file_info_by_name(file_name)
