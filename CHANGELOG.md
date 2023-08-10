@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+* Add `get_file_info_by_name` to the B2Api class
+
 ### Fixed
 * Require `typing_extensions` on Python 3.11 (already required on earlier versinons) for better compatibility with pydantic v2
 * Fix `RawSimulator` handling of `cache_control` parameter during tests.
