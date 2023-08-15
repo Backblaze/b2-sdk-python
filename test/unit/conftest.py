@@ -152,3 +152,9 @@ def apiver(request):
 def apiver_int(apiver):
     """Get apiver as an int, e.g. `2`."""
     return int(apiver[1:])
+
+
+@pytest.fixture(scope='session')
+def apiver_deps():
+    import apiver_deps  # noqa: F401
+    return apiver_deps

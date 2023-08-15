@@ -12,6 +12,8 @@ from __future__ import annotations
 # These constants are needed in different modules, so they are stored in this module, that
 # imports nothing, thus avoiding circular imports
 
+LIST_FILE_NAMES_MAX_LIMIT = 10000  # https://www.backblaze.com/b2/docs/b2_list_file_names.html
+
 FILE_INFO_HEADER_PREFIX = 'X-Bz-Info-'
 FILE_INFO_HEADER_PREFIX_LOWER = FILE_INFO_HEADER_PREFIX.lower()
 
