@@ -9,11 +9,12 @@
 ######################################################################
 from __future__ import annotations
 
+import apiver_deps
 import pytest
 
 
 @pytest.mark.apiver(from_ver=2)
-def test_public_constants(apiver_deps):
+def test_public_constants():
     assert set(dir(apiver_deps)) >= {
         "ALL_CAPABILITIES",
         "B2_ACCOUNT_INFO_DEFAULT_FILE",
