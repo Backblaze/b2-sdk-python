@@ -32,6 +32,7 @@ from .file_lock import (
     LegalHold,
 )
 from .file_version import DownloadVersion, FileVersion
+from .http_constants import LIST_FILE_NAMES_MAX_LIMIT
 from .progress import AbstractProgressListener, DoNothingProgressListener
 from .raw_api import LifecycleRule
 from .replication.setting import ReplicationConfiguration, ReplicationConfigurationFactory
@@ -293,12 +294,14 @@ class Bucket(metaclass=B2TraceMeta):
         """
         return self.api.list_parts(file_id, start_part_number, batch_size)
 
-    def list_file_versions(self, file_name, fetch_count=None):
+    def list_file_versions(
+        self, file_name: str, fetch_count: int | None = LIST_FILE_NAMES_MAX_LIMIT
+    ):
         """
         Lists all of the versions for a single file.
 
-        :param str file_name: the name of the file to list.
-        :param int,None fetch_count: how many entries to list per API call or ``None`` to use the default. Acceptable values: 1 - 10000
+        :param file_name: the name of the file to list.
+        :param fetch_count: how many entries to list per API call or ``None`` to use the default. Acceptable values: 1 - 10000
         :rtype: generator[b2sdk.v2.FileVersion]
         """
         if fetch_count is not None and fetch_count <= 0:
@@ -328,7 +331,7 @@ class Bucket(metaclass=B2TraceMeta):
         folder_to_list: str = '',
         latest_only: bool = True,
         recursive: bool = False,
-        fetch_count: int | None = 10000,
+        fetch_count: int | None = LIST_FILE_NAMES_MAX_LIMIT,
         with_wildcard: bool = False,
     ):
         """
@@ -347,7 +350,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param latest_only: when ``False`` returns info about all versions of a file,
                             when ``True``, just returns info about the most recent versions
         :param recursive: if ``True``, list folders recursively
-        :param fetch_count: how many entries to return or ``None`` to use the default. Acceptable values: 1 - 10000
+        :param fetch_count: how many entries to list per API call or ``None`` to use the default. Acceptable values: 1 - 10000
         :param with_wildcard: Accepts "*", "?", "[]" and "[!]" in folder_to_list, similarly to what shell does.
                               As of 1.19.0 it can only be enabled when recursive is also enabled.
                               Also, in this mode, folder_to_list is considered to be a filename or a pattern.
@@ -649,20 +652,22 @@ class Bucket(metaclass=B2TraceMeta):
         ``min_part_size``, ``recommended_upload_part_size`` and ``max_part_size`` should
         all be greater than ``account_info.get_absolute_minimum_part_size()``.
 
-        ``buffers_count`` describes a desired number of buffers that are to be used. Minimal amount is two, as we need
+        ``buffers_count`` describes a desired number of buffers that are to be used.
+        Minimal amount is 2.
         to determine the method of uploading this stream (if there's only a single buffer we send it as a normal file,
         if there are at least two – as a large file).
-        Number of buffers determines the amount of memory used by the streaming process and, in turns, describe
-        the amount of data that can be pulled from ``read_only_object`` while also uploading it. Providing multiple
-        buffers also allows for higher parallelization. Default two buffers allow for the process to fill one buffer
-        with data while the other one is being sent to the B2. While only one buffer can be filled with data at once,
+        Number of buffers determines the amount of memory used by the streaming process and
+        the amount of data that can be pulled from ``read_only_object`` while also uploading it.
+        Providing more buffers allows for higher upload parallelization.
+        While only one buffer can be filled with data at once,
         all others are used to send the data in parallel (limited only by the number of parallel threads).
-        Buffer size can be controlled by ``buffer_size`` parameter. If left unset, it will default to
-        a value of ``recommended_upload_part_size``, whatever it resolves to be.
+
+        Buffer size can be controlled by ``buffer_size`` parameter.
+        If left unset, it will default to a value of ``recommended_upload_part_size``.
         Note that in the current implementation buffers are (almost) directly sent to B2, thus whatever is picked
         as the ``buffer_size`` will also become the size of the part when uploading a large file in this manner.
         In rare cases, namely when the whole buffer was sent, but there was an error during sending of last bytes
-        and a retry was issued, another buffer (above the aforementioned limit) will be allocated.
+        and a retry was issued, additional buffer (above the aforementioned limit) will be temporarily allocated.
 
         .. note:
             ``custom_upload_timestamp`` is disabled by default - please talk to customer support to enable it on your account (if you really need it)
