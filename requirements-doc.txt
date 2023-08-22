@@ -1,5 +1,5 @@
 sadisplay
-sphinx<6.0
+sphinx<8.0
 sphinx-autobuild
 sphinx-rtd-theme
 sphinx_autodoc_typehints
