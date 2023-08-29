@@ -1207,15 +1207,17 @@ class Bucket(metaclass=B2TraceMeta):
             max_part_size=max_part_size,
         )
 
-    def delete_file_version(self, file_id, file_name):
+    def delete_file_version(self, file_id: str, file_name: str, bypass_governance: bool = False):
         """
         Delete a file version.
 
-        :param str file_id: a file ID
-        :param str file_name: a file name
+        :param file_id: a file ID
+        :param file_name: a file name
+        :param bypass_governance: Must be set to true if deleting a file version protected by Object Lock governance
+                                  mode retention settings (unless its retention period expired)
         """
         # filename argument is not first, because one day it may become optional
-        return self.api.delete_file_version(file_id, file_name)
+        return self.api.delete_file_version(file_id, file_name, bypass_governance)
 
     @disable_trace
     def as_dict(self):

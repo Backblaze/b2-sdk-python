@@ -14,6 +14,7 @@ import io
 import os
 import pathlib
 import platform
+import time
 import unittest.mock as mock
 from contextlib import suppress
 from io import BytesIO
@@ -21,6 +22,7 @@ from io import BytesIO
 import apiver_deps
 import pytest
 from apiver_deps_exception import (
+    AccessDenied,
     AlreadyFailed,
     B2ConnectionError,
     B2Error,
@@ -566,6 +568,22 @@ class TestLs(TestCaseWithBucket):
 
         expected = [('hello.txt', 15, 'upload', None)]
         self.assertBucketContents(expected, '', show_versions=True)
+
+    def test_delete_file_version_bypass_governance(self):
+        data = b'hello world'
+
+        file_id = self.bucket.upload_bytes(
+            data,
+            'hello.txt',
+            file_retention=FileRetentionSetting(RetentionMode.GOVERNANCE,
+                                                int(time.time()) + 100),
+        ).id_
+
+        with pytest.raises(AccessDenied):
+            self.bucket.delete_file_version(file_id, 'hello.txt')
+
+        self.bucket.delete_file_version(file_id, 'hello.txt', bypass_governance=True)
+        self.assertBucketContents([], '', show_versions=True)
 
     def test_non_recursive_returns_folder_names(self):
         data = b'hello world'

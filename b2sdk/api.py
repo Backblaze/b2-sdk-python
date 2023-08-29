@@ -460,12 +460,15 @@ class B2Api(metaclass=B2TraceMeta):
         """
         return self.services.large_file.cancel_large_file(file_id)
 
-    def delete_file_version(self, file_id: str, file_name: str) -> FileIdAndName:
+    def delete_file_version(
+        self, file_id: str, file_name: str, bypass_governance: bool = False
+    ) -> FileIdAndName:
         """
-        Permanently and irrevocably delete one version of a file.
+        Permanently and irrevocably delete one version of a file. bypass_governance must be set to true if deleting a
+        file version protected by Object Lock governance mode retention settings (unless its retention period expired)
         """
         # filename argument is not first, because one day it may become optional
-        response = self.session.delete_file_version(file_id, file_name)
+        response = self.session.delete_file_version(file_id, file_name, bypass_governance)
         return FileIdAndName.from_cancel_or_delete_response(response)
 
     # download
