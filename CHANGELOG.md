@@ -6,11 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.24.0] - 2023-08-31
+
+### Added
+* 'bypass_governance' flag to delete_file_version
+
 ## [1.23.0] - 2023-08-10
 
 ### Added
 * Add `get_file_info_by_name` to the B2Api class
-* 'bypass_governance' flag to delete_file_version
 
 ### Fixed
 * Require `typing_extensions` on Python 3.11 (already required on earlier versinons) for better compatibility with pydantic v2
@@ -479,7 +483,8 @@ has changed.
 ### Added
 Initial official release of SDK as a separate package (until now it was a part of B2 CLI)
 
-[Unreleased]: https://github.com/Backblaze/b2-sdk-python/compare/v1.23.0...HEAD
+[Unreleased]: https://github.com/Backblaze/b2-sdk-python/compare/v1.24.0...HEAD
+[1.24.0]: https://github.com/Backblaze/b2-sdk-python/compare/v1.23.0...v1.24.0
 [1.23.0]: https://github.com/Backblaze/b2-sdk-python/compare/v1.22.1...v1.23.0
 [1.22.1]: https://github.com/Backblaze/b2-sdk-python/compare/v1.22.0...v1.22.1
 [1.22.0]: https://github.com/Backblaze/b2-sdk-python/compare/v1.21.0...v1.22.0
