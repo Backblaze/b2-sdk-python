@@ -182,8 +182,10 @@ class B2Session:
     def delete_bucket(self, account_id, bucket_id):
         return self._wrap_default_token(self.raw_api.delete_bucket, account_id, bucket_id)
 
-    def delete_file_version(self, file_id, file_name):
-        return self._wrap_default_token(self.raw_api.delete_file_version, file_id, file_name)
+    def delete_file_version(self, file_id, file_name, bypass_governance: bool = False):
+        return self._wrap_default_token(
+            self.raw_api.delete_file_version, file_id, file_name, bypass_governance
+        )
 
     def download_file_from_url(self, url, range_=None, encryption: EncryptionSetting | None = None):
         return self._wrap_token(

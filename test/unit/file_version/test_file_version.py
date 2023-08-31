@@ -9,6 +9,8 @@
 ######################################################################
 from __future__ import annotations
 
+import time
+
 import apiver_deps
 import pytest
 from apiver_deps import (
@@ -27,7 +29,7 @@ from apiver_deps import (
     RawSimulator,
     RetentionMode,
 )
-from apiver_deps_exception import FileNotPresent
+from apiver_deps_exception import AccessDenied, FileNotPresent
 
 if apiver_deps.V <= 1:
     from apiver_deps import FileVersionInfo as VFileVersion
@@ -137,6 +139,21 @@ class TestFileVersion:
         assert isinstance(ret, FileIdAndName)
         with pytest.raises(FileNotPresent):
             self.bucket.get_file_info_by_name(self.file_version.file_name)
+
+    def test_delete_bypass_governance(self):
+        locked_file_version = self.bucket.upload_bytes(
+            b'nothing',
+            'test_file_with_governance',
+            file_retention=FileRetentionSetting(RetentionMode.GOVERNANCE,
+                                                int(time.time()) + 100),
+        )
+
+        with pytest.raises(AccessDenied):
+            locked_file_version.delete()
+
+        locked_file_version.delete(bypass_governance=True)
+        with pytest.raises(FileNotPresent):
+            self.bucket.get_file_info_by_name(locked_file_version.file_name)
 
     def test_delete_download_version(self):
         download_version = self.api.download_file_by_id(self.file_version.id_).download_version

@@ -21,10 +21,11 @@ import pytest
 
 from b2sdk.b2http import B2Http
 from b2sdk.encryption.setting import EncryptionAlgorithm, EncryptionMode, EncryptionSetting
-from b2sdk.exception import DisablingFileLockNotSupported
+from b2sdk.exception import DisablingFileLockNotSupported, Unauthorized
 from b2sdk.file_lock import (
     NO_RETENTION_FILE_SETTING,
     BucketRetentionSetting,
+    FileRetentionSetting,
     RetentionMode,
     RetentionPeriod,
 )
@@ -369,6 +370,10 @@ def raw_api_test_helper(raw_api, should_cleanup_old_buckets):
         server_side_encryption=sse_b2_aes,
         #custom_upload_timestamp=12345,
         cache_control='private, max-age=2222',
+        file_retention=FileRetentionSetting(
+            RetentionMode.GOVERNANCE,
+            int(time.time() + 100) * 1000,
+        )
     )
 
     file_id = file_dict['fileId']
@@ -549,6 +554,13 @@ def raw_api_test_helper(raw_api, should_cleanup_old_buckets):
             'allPrivate',
             is_file_lock_enabled=False,
         )
+
+    # b2_delete_file_version
+    print('b2_delete_file_version')
+
+    with pytest.raises(Unauthorized):
+        raw_api.delete_file_version(api_url, account_auth_token, file_id, file_name)
+    raw_api.delete_file_version(api_url, account_auth_token, file_id, file_name, True)
 
     # Clean up this test.
     _clean_and_delete_bucket(raw_api, api_url, account_auth_token, account_id, bucket_id)

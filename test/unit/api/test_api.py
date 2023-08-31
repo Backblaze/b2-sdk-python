@@ -34,7 +34,7 @@ from apiver_deps import (
     RawSimulator,
     RetentionMode,
 )
-from apiver_deps_exception import FileNotPresent, InvalidArgument, RestrictedBucket
+from apiver_deps_exception import AccessDenied, FileNotPresent, InvalidArgument, RestrictedBucket
 
 from ..test_base import create_key
 
@@ -632,3 +632,20 @@ class TestApi:
 
         assert self.api.get_key(key_id) is None
         assert self.api.get_key('non-existent') is None
+
+    def test_delete_file_version_bypass_governance(self):
+        self._authorize_account()
+        bucket = self.api.create_bucket('bucket1', 'allPrivate')
+        created_file = bucket.upload_bytes(
+            b'hello world',
+            'file',
+            file_retention=FileRetentionSetting(RetentionMode.GOVERNANCE,
+                                                int(time.time()) + 100),
+        )
+
+        with pytest.raises(AccessDenied):
+            self.api.delete_file_version(created_file.id_, 'file')
+
+        self.api.delete_file_version(created_file.id_, 'file', bypass_governance=True)
+        with pytest.raises(FileNotPresent):
+            bucket.get_file_info_by_name(created_file.file_name)

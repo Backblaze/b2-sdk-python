@@ -191,7 +191,9 @@ class AbstractRawApi(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def delete_file_version(self, api_url, account_auth_token, file_id, file_name):
+    def delete_file_version(
+        self, api_url, account_auth_token, file_id, file_name, bypass_governance: bool = False
+    ):
         pass
 
     @abstractmethod
@@ -528,13 +530,16 @@ class B2RawHTTPApi(AbstractRawApi):
             bucketId=bucket_id
         )
 
-    def delete_file_version(self, api_url, account_auth_token, file_id, file_name):
+    def delete_file_version(
+        self, api_url, account_auth_token, file_id, file_name, bypass_governance: bool = False
+    ):
         return self._post_json(
             api_url,
             'b2_delete_file_version',
             account_auth_token,
             fileId=file_id,
-            fileName=file_name
+            fileName=file_name,
+            bypassGovernance=bypass_governance,
         )
 
     def delete_key(self, api_url, account_auth_token, application_key_id):

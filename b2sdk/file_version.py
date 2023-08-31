@@ -177,8 +177,10 @@ class BaseFileVersion:
             all_slots.extend(getattr(klass, '__slots__', []))
         return all_slots
 
-    def delete(self) -> FileIdAndName:
-        return self.api.delete_file_version(self.id_, self.file_name)
+    def delete(self, bypass_governance: bool = False) -> FileIdAndName:
+        """Delete this file version. bypass_governance must be set to true if deleting a file version protected by
+        Object Lock governance mode retention settings (unless its retention period expired)"""
+        return self.api.delete_file_version(self.id_, self.file_name, bypass_governance)
 
     def update_legal_hold(self, legal_hold: LegalHold) -> BaseFileVersion:
         legal_hold = self.api.update_file_legal_hold(self.id_, self.file_name, legal_hold)

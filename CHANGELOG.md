@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 * Add `get_file_info_by_name` to the B2Api class
+* 'bypass_governance' flag to delete_file_version
 
 ### Fixed
 * Require `typing_extensions` on Python 3.11 (already required on earlier versinons) for better compatibility with pydantic v2

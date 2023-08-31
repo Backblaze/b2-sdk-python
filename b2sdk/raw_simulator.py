@@ -26,6 +26,7 @@ from b2sdk.replication.setting import ReplicationConfiguration
 from .b2http import ResponseContextManager
 from .encryption.setting import EncryptionMode, EncryptionSetting
 from .exception import (
+    AccessDenied,
     BadJson,
     BadRequest,
     BadUploadUrl,
@@ -51,6 +52,7 @@ from .file_lock import (
     BucketRetentionSetting,
     FileRetentionSetting,
     LegalHold,
+    RetentionMode,
 )
 from .file_version import UNVERIFIED_CHECKSUM_PREFIX
 from .raw_api import ALL_CAPABILITIES, AbstractRawApi, LifecycleRule, MetadataDirectiveMode
@@ -524,9 +526,8 @@ class BucketSimulator:
         # File IDs count down, so that the most recent will come first when they are sorted.
         self.file_id_counter = iter(range(self.FIRST_FILE_NUMBER, 0, -1))
         self.upload_timestamp_counter = iter(range(5000, 9999))
-        self.file_id_to_file = dict()
-        # It would be nice to use an OrderedDict for this, but 2.6 doesn't have it.
-        self.file_name_and_id_to_file = dict()
+        self.file_id_to_file: dict[str, FileSimulator] = dict()
+        self.file_name_and_id_to_file: dict[tuple[str, str], FileSimulator] = dict()
         if default_server_side_encryption is None:
             default_server_side_encryption = EncryptionSetting(mode=EncryptionMode.NONE)
         self.default_server_side_encryption = default_server_side_encryption
@@ -536,6 +537,12 @@ class BucketSimulator:
         if self.replication is not None:
             assert self.replication.asReplicationSource is None or self.replication.asReplicationSource.rules
             assert self.replication.asReplicationDestination is None or self.replication.asReplicationDestination.sourceToDestinationKeyMapping
+
+    def get_file(self, file_id, file_name) -> FileSimulator:
+        try:
+            return self.file_name_and_id_to_file[(file_name, file_id)]
+        except KeyError:
+            raise FileNotPresent(file_id_or_name=file_id)
 
     def is_allowed_to_read_bucket_encryption_setting(self, account_auth_token):
         return self._check_capability(account_auth_token, 'readBucketEncryption')
@@ -612,9 +619,23 @@ class BucketSimulator:
             fileName=file_sim.name
         )  # yapf: disable
 
-    def delete_file_version(self, file_id, file_name):
+    def delete_file_version(
+        self, account_auth_token, file_id, file_name, bypass_governance: bool = False
+    ):
         key = (file_name, file_id)
-        file_sim = self.file_name_and_id_to_file[key]
+        file_sim = self.get_file(file_id, file_name)
+        if file_sim.file_retention:
+            if file_sim.file_retention.retain_until and file_sim.file_retention.retain_until > int(
+                time.time()
+            ):
+                if file_sim.file_retention.mode == RetentionMode.COMPLIANCE:
+                    raise AccessDenied()
+                elif file_sim.file_retention.mode == RetentionMode.GOVERNANCE:
+                    if not bypass_governance:
+                        raise AccessDenied()
+                    if not self._check_capability(account_auth_token, 'bypassGovernance'):
+                        raise AccessDenied()
+
         del self.file_name_and_id_to_file[key]
         del self.file_id_to_file[file_id]
         return dict(fileId=file_id, fileName=file_name, uploadTimestamp=file_sim.upload_timestamp)
@@ -1180,10 +1201,10 @@ class RawSimulator(AbstractRawApi):
         # Counter for generating account IDs an their matching master application keys.
         self.account_counter = 0
 
-        self.bucket_name_to_bucket = dict()
-        self.bucket_id_to_bucket = dict()
+        self.bucket_name_to_bucket: dict[str, BucketSimulator] = dict()
+        self.bucket_id_to_bucket: dict[str, BucketSimulator] = dict()
         self.bucket_id_counter = iter(range(100))
-        self.file_id_to_bucket_id = {}
+        self.file_id_to_bucket_id: dict[str, str] = {}
         self.all_application_keys = []
         self.app_key_counter = 0
         self.upload_errors = []
@@ -1354,11 +1375,15 @@ class RawSimulator(AbstractRawApi):
         self.all_application_keys.append(key_sim)
         return key_sim.as_created_key()
 
-    def delete_file_version(self, api_url, account_auth_token, file_id, file_name):
-        bucket_id = self.file_id_to_bucket_id[file_id]
+    def delete_file_version(
+        self, api_url, account_auth_token, file_id, file_name, bypass_governance: bool = False
+    ):
+        bucket_id = self.file_id_to_bucket_id.get(file_id)
+        if not bucket_id:
+            raise FileNotPresent(file_id_or_name=file_id)
         bucket = self._get_bucket_by_id(bucket_id)
         self._assert_account_auth(api_url, account_auth_token, bucket.account_id, 'deleteFiles')
-        return bucket.delete_file_version(file_id, file_name)
+        return bucket.delete_file_version(account_auth_token, file_id, file_name, bypass_governance)
 
     def update_file_retention(
         self,
@@ -1934,7 +1959,7 @@ class RawSimulator(AbstractRawApi):
             if file_name is not None and not file_name.startswith(key_sim.name_prefix_or_none):
                 raise Unauthorized('', 'unauthorized')
 
-    def _get_bucket_by_id(self, bucket_id):
+    def _get_bucket_by_id(self, bucket_id) -> BucketSimulator:
         if bucket_id not in self.bucket_id_to_bucket:
             raise NonExistentBucket(bucket_id)
         return self.bucket_id_to_bucket[bucket_id]
