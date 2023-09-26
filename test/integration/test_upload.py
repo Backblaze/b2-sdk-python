@@ -12,9 +12,10 @@ from __future__ import annotations
 import io
 
 from b2sdk.b2http import B2Http
-from b2sdk.encryption.setting import EncryptionSetting, EncryptionKey
-from b2sdk.encryption.types import EncryptionMode, EncryptionAlgorithm
+from b2sdk.encryption.setting import EncryptionKey, EncryptionSetting
+from b2sdk.encryption.types import EncryptionAlgorithm, EncryptionMode
 from b2sdk.v2 import B2RawHTTPApi
+
 from .base import IntegrationTestBase
 from .fixtures import b2_auth_data  # noqa
 from .test_raw_api import authorize_raw_api
