@@ -508,9 +508,7 @@ class B2Session:
             key_messages.append('with no restrictions')
 
         # Make a new message
-        new_message = unauthorized.message
-        if new_message == '':
-            new_message = 'unauthorized'
+        new_message = unauthorized.message or 'unauthorized'
         new_message += ' for application key ' + ', '.join(key_messages)
 
         return Unauthorized(new_message, unauthorized.code)
