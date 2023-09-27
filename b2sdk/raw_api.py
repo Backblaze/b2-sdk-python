@@ -758,6 +758,9 @@ class B2RawHTTPApi(AbstractRawApi):
             )
             kwargs['serverSideEncryption'] = server_side_encryption.serialize_to_json_for_request()
 
+            if server_side_encryption.mode == EncryptionMode.SSE_C:
+                file_info = server_side_encryption.add_key_id_to_file_info(file_info)
+
         if legal_hold is not None:
             kwargs['legalHold'] = legal_hold.to_server()
 

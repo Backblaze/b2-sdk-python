@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+* Fix missing key ID for large file encrypted with SSE-C
+* Fix concatenating error message when message is None
+
+
 ## [1.24.0] - 2023-08-31
 
 ### Added
