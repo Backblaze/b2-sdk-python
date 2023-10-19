@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Infrastructure
-* Fix readthedocs build
+* Fix readthedocs build by updating to v2 configuration schema
 * Fix spellcheck erroring out on LICENSE file
 
 ## [1.24.1] - 2023-09-27
