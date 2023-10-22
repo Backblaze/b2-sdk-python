@@ -38,7 +38,7 @@ class UnfinishedLargeFile:
         self.encryption = EncryptionSettingFactory.from_file_version_dict(file_dict)
         self.file_retention = FileRetentionSetting.from_file_version_dict(file_dict)
         self.legal_hold = LegalHold.from_file_version_dict(file_dict)
-        self.cache_control = file_dict.get('cacheControl')
+        self.cache_control = (self.file_info or {}).get('b2-cache-control')
 
     def __repr__(self):
         return f'<{self.__class__.__name__} {self.bucket_id} {self.file_name}>'

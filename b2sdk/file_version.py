@@ -128,7 +128,6 @@ class BaseFileVersion:
             'file_retention': self.file_retention,
             'legal_hold': self.legal_hold,
             'replication_status': self.replication_status,
-            'cache_control': self.cache_control,
         }  # yapf: disable
 
     def as_dict(self):
@@ -140,7 +139,6 @@ class BaseFileVersion:
             'serverSideEncryption': self.server_side_encryption.as_dict(),
             'legalHold': self.legal_hold.value,
             'fileRetention': self.file_retention.as_dict(),
-            'cacheControl': self.cache_control,
         }
 
         if self.size is not None:
@@ -516,7 +514,7 @@ class FileVersionFactory:
         replication_status_value = file_version_dict.get('replicationStatus')
         replication_status = replication_status_value and ReplicationStatus[
             replication_status_value.upper()]
-        cache_control = file_version_dict.get('cacheControl')
+        cache_control = (file_info or {}).get('b2-cache-control')
 
         return self.FILE_VERSION_CLASS(
             self.api,

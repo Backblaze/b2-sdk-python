@@ -771,7 +771,8 @@ class B2RawHTTPApi(AbstractRawApi):
             kwargs['custom_upload_timestamp'] = custom_upload_timestamp
 
         if cache_control is not None:
-            kwargs['cacheControl'] = cache_control
+            file_info = file_info or {}
+            file_info['b2-cache-control'] = cache_control
 
         return self._post_json(
             api_url,
@@ -1061,7 +1062,8 @@ class B2RawHTTPApi(AbstractRawApi):
             kwargs['fileRetention'] = file_retention.serialize_to_json_for_request()
 
         if cache_control is not None:
-            kwargs['cacheControl'] = cache_control
+            file_info = file_info or {}
+            file_info['b2-cache-control'] = cache_control
 
         try:
             return self._post_json(
