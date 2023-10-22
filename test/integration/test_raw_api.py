@@ -443,7 +443,7 @@ def raw_api_test_helper(raw_api, should_cleanup_old_buckets):
     # b2_copy_file
     print('b2_copy_file')
     copy_file_name = 'test_copy.txt'
-    raw_api.copy_file(api_url, account_auth_token, file_id, copy_file_name)
+    raw_api.copy_file(api_url, account_auth_token, file_id, copy_file_name, cache_control="private, max-age=3600")
 
     # b2_get_file_info_by_id
     print('b2_get_file_info_by_id')

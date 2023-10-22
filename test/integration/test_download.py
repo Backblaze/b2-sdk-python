@@ -50,7 +50,8 @@ class TestDownload(IntegrationTestBase):
                         bucket.download_file_by_name('a_single_zero').save(io_)
                 assert exc_info.value.args == ('no strategy suitable for download was found!',)
 
-                f, sha1 = self._file_helper(bucket)
+                cache_control = "private, max-age=3600"
+                f, sha1 = self._file_helper(bucket, cache_control=cache_control)
                 if zero._type() != 'large':
                     # if we are here, that's not the production server!
                     assert f.download_version.content_sha1_verified  # large files don't have sha1, lets not check
@@ -58,9 +59,10 @@ class TestDownload(IntegrationTestBase):
                 file_info = f.download_version.file_info
                 assert LARGE_FILE_SHA1 in file_info
                 assert file_info[LARGE_FILE_SHA1] == sha1
+                assert f.download_version.cache_control == cache_control
 
     def _file_helper(self, bucket, sha1_sum=None,
-                     bytes_to_write: int | None = None) -> tuple[DownloadVersion, Sha1HexDigest]:
+                     bytes_to_write: int | None = None, cache_control: str | None = None) -> tuple[DownloadVersion, Sha1HexDigest]:
         bytes_to_write = bytes_to_write or int(self.info.get_absolute_minimum_part_size()) * 2 + 1
         with TempDir() as temp_dir:
             temp_dir = pathlib.Path(temp_dir)
@@ -71,6 +73,7 @@ class TestDownload(IntegrationTestBase):
                 source_small_file,
                 'small_file',
                 sha1_sum=sha1_sum,
+                cache_control=cache_control
             )
             target_small_file = pathlib.Path(temp_dir) / 'target_small_file'
 
@@ -83,8 +86,10 @@ class TestDownload(IntegrationTestBase):
 
     def test_small(self):
         bucket = self.create_bucket()
-        f, _ = self._file_helper(bucket, bytes_to_write=1)
+        cache_control = "private, max-age=3600"
+        f, _ = self._file_helper(bucket, bytes_to_write=1, cache_control=cache_control)
         assert f.download_version.content_sha1_verified
+        assert f.download_version.cache_control == cache_control
 
     def test_small_unverified(self):
         bucket = self.create_bucket()
