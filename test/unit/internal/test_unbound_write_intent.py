@@ -22,7 +22,7 @@ from b2sdk.transfer.emerge.unbound_write_intent import (
 from b2sdk.transfer.emerge.write_intent import WriteIntent
 from b2sdk.utils import hex_sha1_of_bytes
 
-from .test_base import TestBase
+from ..test_base import TestBase
 
 
 class TestIOWrapper(TestBase):
