@@ -17,11 +17,27 @@ We encourage outside contributors to perform changes on our codebase. Many such 
    * checks if the documentation can be built properly
 * maintain other Continuous Integration tools (coverage tracker)
 
+See also the "Pull-Request Workflow" section below.
+
+## Project Overview
+
+* The project uses [nox](https://github.com/theacodes/nox) as a command runner so that verifications can be run across multiple python versions
+* The project is built on pull requests via [github actions](./.github/workflows/ci.yml)
+* Tests can be found in the [`test`](./b2sdk/test) directory and are split into unit/integration/static
+    * `unit` is divided into tests for core areas, and tests for the various sdk versions. `v_all` is the recommended place to add API unit tests, as each method can be decorated with its applicable versions
+    * `integration` will require a Backblaze account, but will not use capabilities beyond the free "Class A" transactions
+    * `static` is licensing etc.
+* The SDK promises a clear version policy (see [main README](./README.md)). SOME NOTE ABOUT VERSIONING STRATEGY AND HOW v0, v1, v2 SHOULD BE DONE ON THE TECHNICAL SIDE - ITS NOT QUITE CLEAR TO ME
+* Changes for each version are found in the [CHANGELOG](./CHANGELOG.md). **It is expected this is updated with each PR introducing functional changes**. CI will enforce this.
+* The project is released via [github worklows](./.github/workflows/cd.yml). See the [readme](./README.release.md)
+
+## System Setup
+
+1. You must have at least one (preferably more) current available version of python on the system. [`pyenv`](https://github.com/pyenv/pyenv#basic-github-checkout) is recommended as a version manager.  
+<PERSONALLY I WOULD PROVIDE A RECOMMENDED COMMAND HERE TO INSTALL ALL PYTHON VERSIONS e.g. `for v in $(cat .python-version); do pyenv install $v; done` or whatever>
+1. You must have `nox` installed in your environment to run test commands
+
 ## Developer Info
-
-You'll need to have [nox](https://github.com/theacodes/nox) installed:
-
-* `pip install nox`
 
 With `nox`, you can run different sessions (default are `lint` and `test`):
 
@@ -101,3 +117,14 @@ To build the documentation and watch for changes (including the source code):
 To just build the documentation:
 
     nox --non-interactive -s doc
+
+## Pull-Request Workflow
+
+Each knows best how to work for themselves. But we recommend the following:
+
+1. Fetch the code. Identify the areas which will be changed. Identify how your changes fall into the SDK versioning strategy as explained above.
+1. Identify which tests are applicable to your changes and where they fit within the test strategy.
+1. Write your code + tests
+1. Run the test/linting workflows on at least two major python versions. If your changes are significant, run the integration tests.
+1. Submit your PR and ensure the build is passing.  
+Feel free to post an earlier version of your work with a failing build to ask questions so long as you identify it as a work-in-progress.
