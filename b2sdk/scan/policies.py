@@ -43,7 +43,7 @@ class RegexSet:
         return any(c.match(s) is not None for c in self._compiled_list)
 
 
-def convert_dir_regex_to_dir_prefix_regex(dir_regex):
+def convert_dir_regex_to_dir_prefix_regex(dir_regex: str | re.Pattern) -> str:
     """
     The patterns used to match directory names (and file names) are allowed
     to match a prefix of the name.  This 'feature' was unintentional, but is
@@ -65,8 +65,10 @@ def convert_dir_regex_to_dir_prefix_regex(dir_regex):
     either the regex ends in '$' or does not.
 
     :param dir_regex: a regular expression string or literal
-    :type dir_regex: str
+    :return: a regular expression string which matches the directory prefix
     """
+    if isinstance(dir_regex, re.Pattern):
+        dir_regex = dir_regex.pattern
     if dir_regex.endswith('$'):
         return dir_regex[:-1] + r'/'
     else:

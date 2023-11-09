@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+* Fix ScanPoliciesManager support for compiled regexes
+
 ### Infrastructure
 * Fix readthedocs build by updating to v2 configuration schema
 * Fix spellcheck erroring out on LICENSE file

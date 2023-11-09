@@ -70,3 +70,15 @@ class TestScanPoliciesManager:
         }
         with pytest.raises(exception):
             ScanPoliciesManager(**kwargs)
+
+    @pytest.mark.apiver(from_ver=2)
+    def test_re_pattern_argument_support(self):
+        kwargs = {
+            param: (re.compile(r".*"),)
+            for param in (
+                "exclude_dir_regexes",
+                "exclude_file_regexes",
+                "include_file_regexes",
+            )
+        }
+        ScanPoliciesManager(**kwargs)
