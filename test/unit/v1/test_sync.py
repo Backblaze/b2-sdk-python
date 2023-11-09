@@ -13,6 +13,7 @@ import concurrent.futures as futures
 import os
 import platform
 import sys
+import tempfile
 import threading
 import time
 import unittest
@@ -34,7 +35,6 @@ from .deps import (
     NewerFileSyncMode,
     ScanPoliciesManager,
     Synchronizer,
-    TempDir,
     parse_sync_folder,
     zip_folders,
 )
@@ -278,7 +278,7 @@ class TestLocalFolder(TestFolder):
     def setUp(self):
         super().setUp()
 
-        self.temp_dir = TempDir()
+        self.temp_dir = tempfile.TemporaryDirectory()
         self.root_dir = self.temp_dir.__enter__()
 
     def tearDown(self):
@@ -711,7 +711,7 @@ class TestFolderExceptions:
         ],
     )
     def test_ensure_present_not_a_dir(self, exception, msg):
-        with TempDir() as path:
+        with tempfile.TemporaryDirectory() as path:
             file = os.path.join(path, 'clearly_a_file')
             with open(file, 'w') as f:
                 f.write(' ')
@@ -729,7 +729,7 @@ class TestFolderExceptions:
         ],
     )
     def test_ensure_present_unable_to_create(self, exception, msg):
-        with TempDir() as path:
+        with tempfile.TemporaryDirectory() as path:
             file = os.path.join(path, 'clearly_a_file')
             with open(file, 'w') as f:
                 f.write(' ')
@@ -749,7 +749,7 @@ class TestFolderExceptions:
         ],
     )
     def test_ensure_non_empty(self, exception, msg):
-        with TempDir() as path:
+        with tempfile.TemporaryDirectory() as path:
             folder = parse_sync_folder(path, MagicMock())
             with pytest.raises(exception, match=msg):
                 folder.ensure_non_empty()

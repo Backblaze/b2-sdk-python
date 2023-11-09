@@ -12,6 +12,7 @@ from __future__ import annotations
 import gzip
 import io
 import pathlib
+import tempfile
 from pprint import pprint
 from unittest import mock
 
@@ -19,7 +20,7 @@ from b2sdk.utils import Sha1HexDigest
 from b2sdk.v2 import *
 
 from .base import IntegrationTestBase
-from .fixtures import *  # pyflakes: disable
+from .fixtures import *  # noqa: F401, F403
 from .helpers import authorize
 
 
@@ -62,7 +63,7 @@ class TestDownload(IntegrationTestBase):
     def _file_helper(self, bucket, sha1_sum=None,
                      bytes_to_write: int | None = None) -> tuple[DownloadVersion, Sha1HexDigest]:
         bytes_to_write = bytes_to_write or int(self.info.get_absolute_minimum_part_size()) * 2 + 1
-        with TempDir() as temp_dir:
+        with tempfile.TemporaryDirectory() as temp_dir:
             temp_dir = pathlib.Path(temp_dir)
             source_small_file = pathlib.Path(temp_dir) / 'source_small_file'
             with open(source_small_file, 'wb') as small_file:
@@ -95,7 +96,7 @@ class TestDownload(IntegrationTestBase):
 
     def test_gzip(self):
         bucket = self.create_bucket()
-        with TempDir() as temp_dir:
+        with tempfile.TemporaryDirectory() as temp_dir:
             temp_dir = pathlib.Path(temp_dir)
             source_file = temp_dir / 'compressed_file.gz'
             downloaded_uncompressed_file = temp_dir / 'downloaded_uncompressed_file'

@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+* Mark `TempDir` as deprecated in favor of `tempfile.TemporaryDirectory`
+
 ### Fixed
 * Fix ScanPoliciesManager support for compiled regexes
 
