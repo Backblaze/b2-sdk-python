@@ -14,13 +14,11 @@ import hashlib
 import os
 import platform
 import re
-import shutil
-import tempfile
 import time
 from dataclasses import dataclass, field
 from decimal import Decimal
 from itertools import chain
-from typing import Any, Iterator, List, NewType, Optional, Tuple, TypeVar
+from typing import Any, Iterator, NewType, TypeVar
 from urllib.parse import quote, unquote_plus
 
 from logfury.v1 import DefaultTraceAbstractMeta, DefaultTraceMeta, limit_trace_arguments, disable_trace, trace_call
@@ -326,24 +324,6 @@ def fix_windows_path_limit(path):
             return path
     else:
         return path
-
-
-class TempDir:
-    """
-    Context manager that creates and destroys a temporary directory.
-    """
-
-    def __enter__(self):
-        """
-        Return the unicode path to the temp dir.
-        """
-        dirpath_bytes = tempfile.mkdtemp()
-        self.dirpath = str(dirpath_bytes.replace('\\', '\\\\'))
-        return self.dirpath
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        shutil.rmtree(self.dirpath)
-        return None  # do not hide exception
 
 
 def _pick_scale_and_suffix(x):

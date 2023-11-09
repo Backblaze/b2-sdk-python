@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import os
 import platform
+import tempfile
 import unittest.mock as mock
 from io import BytesIO
 
@@ -45,7 +46,6 @@ from .deps import (
     RetentionMode,
     SimpleDownloader,
     StubAccountInfo,
-    TempDir,
     UploadSourceBytes,
     UploadSourceLocalFile,
     WriteIntent,
@@ -762,7 +762,7 @@ class TestUpload(TestCaseWithBucket):
         self.assertEqual(SSE_C_AES_NO_SECRET, file_info.server_side_encryption)
 
     def test_upload_local_file_sse_b2(self):
-        with TempDir() as d:
+        with tempfile.TemporaryDirectory() as d:
             path = os.path.join(d, 'file1')
             data = b'hello world'
             write_file(path, data)
@@ -772,7 +772,7 @@ class TestUpload(TestCaseWithBucket):
             self._check_file_contents('file1', data)
 
     def test_upload_local_file_sse_c(self):
-        with TempDir() as d:
+        with tempfile.TemporaryDirectory() as d:
             path = os.path.join(d, 'file1')
             data = b'hello world'
             write_file(path, data)
@@ -782,7 +782,7 @@ class TestUpload(TestCaseWithBucket):
             self._check_file_contents('file1', data)
 
     def test_upload_local_file_retention(self):
-        with TempDir() as d:
+        with tempfile.TemporaryDirectory() as d:
             path = os.path.join(d, 'file1')
             data = b'hello world'
             write_file(path, data)
@@ -805,7 +805,7 @@ class TestUpload(TestCaseWithBucket):
         self.assertTrue(progress_listener.is_valid())
 
     def test_upload_local_file_cache_control(self):
-        with TempDir() as d:
+        with tempfile.TemporaryDirectory() as d:
             path = os.path.join(d, 'file1')
             data = b'hello world'
             write_file(path, data)
@@ -820,7 +820,7 @@ class TestUpload(TestCaseWithBucket):
         self.assertEqual(cache_control, file_info.cache_control)
 
     def test_upload_local_file(self):
-        with TempDir() as d:
+        with tempfile.TemporaryDirectory() as d:
             path = os.path.join(d, 'file1')
             data = b'hello world'
             write_file(path, data)
@@ -829,7 +829,7 @@ class TestUpload(TestCaseWithBucket):
 
     @pytest.mark.skipif(platform.system() == 'Windows', reason='no os.mkfifo() on Windows')
     def test_upload_fifo(self):
-        with TempDir() as d:
+        with tempfile.TemporaryDirectory() as d:
             path = os.path.join(d, 'file1')
             os.mkfifo(path)
             with self.assertRaises(InvalidUploadSource):
@@ -837,7 +837,7 @@ class TestUpload(TestCaseWithBucket):
 
     @pytest.mark.skipif(platform.system() == 'Windows', reason='no os.symlink() on Windows')
     def test_upload_dead_symlink(self):
-        with TempDir() as d:
+        with tempfile.TemporaryDirectory() as d:
             path = os.path.join(d, 'file1')
             os.symlink('non-existing', path)
             with self.assertRaises(InvalidUploadSource):
@@ -983,7 +983,7 @@ class TestConcatenate(TestCaseWithBucket):
 
         f1_id = self.bucket.upload_bytes(data, 'f1').id_
         f2_id = self.bucket.upload_bytes(data, 'f1').id_
-        with TempDir() as d:
+        with tempfile.TemporaryDirectory() as d:
             path = os.path.join(d, 'file')
             write_file(path, data)
             created_file = self._create_remote(
@@ -1006,7 +1006,7 @@ class TestConcatenate(TestCaseWithBucket):
         for data in [b'hello_world', self._make_data(self.simulator.MIN_PART_SIZE * 3)]:
             f1_id = self.bucket.upload_bytes(data, 'f1', encryption=SSE_C_AES).id_
             f2_id = self.bucket.upload_bytes(data, 'f1', encryption=SSE_C_AES_2).id_
-            with TempDir() as d:
+            with tempfile.TemporaryDirectory() as d:
                 path = os.path.join(d, 'file')
                 write_file(path, data)
                 created_file = self._create_remote(
@@ -1136,7 +1136,7 @@ class DownloadTests:
         #
         # 123defghij1234567890
 
-        with TempDir() as d:
+        with tempfile.TemporaryDirectory() as d:
             path = os.path.join(d, 'file2')
             download_dest = PreSeekedDownloadDest(seek_target=3, local_file_path=path)
             data = b'12345678901234567890'
@@ -1167,7 +1167,7 @@ class DownloadTests:
         #
         # 1234567defghij567890
 
-        with TempDir() as d:
+        with tempfile.TemporaryDirectory() as d:
             path = os.path.join(d, 'file2')
             download_dest = PreSeekedDownloadDest(seek_target=7, local_file_path=path)
             data = b'12345678901234567890'

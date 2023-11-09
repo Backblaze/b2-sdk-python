@@ -14,6 +14,7 @@ import io
 import os
 import pathlib
 import platform
+import tempfile
 import time
 import unittest.mock as mock
 from contextlib import suppress
@@ -92,7 +93,6 @@ from apiver_deps import (
     RetentionPeriod,
     SimpleDownloader,
     StubAccountInfo,
-    TempDir,
     UploadMode,
     UploadSourceBytes,
     UploadSourceLocalFile,
@@ -1408,7 +1408,7 @@ class TestUpload(TestCaseWithBucket):
         self.assertEqual(SSE_C_AES_NO_SECRET, file_info.server_side_encryption)
 
     def test_upload_local_file_sse_b2(self):
-        with TempDir() as d:
+        with tempfile.TemporaryDirectory() as d:
             path = os.path.join(d, 'file1')
             data = b'hello world'
             write_file(path, data)
@@ -1418,7 +1418,7 @@ class TestUpload(TestCaseWithBucket):
             self._check_file_contents('file1', data)
 
     def test_upload_local_file_sse_c(self):
-        with TempDir() as d:
+        with tempfile.TemporaryDirectory() as d:
             path = os.path.join(d, 'file1')
             data = b'hello world'
             write_file(path, data)
@@ -1428,7 +1428,7 @@ class TestUpload(TestCaseWithBucket):
             self._check_file_contents('file1', data)
 
     def test_upload_local_file_retention(self):
-        with TempDir() as d:
+        with tempfile.TemporaryDirectory() as d:
             path = os.path.join(d, 'file1')
             data = b'hello world'
             write_file(path, data)
@@ -1445,7 +1445,7 @@ class TestUpload(TestCaseWithBucket):
             self.assertEqual(LegalHold.ON, file_info.legal_hold)
 
     def test_upload_local_file_cache_control(self):
-        with TempDir() as d:
+        with tempfile.TemporaryDirectory() as d:
             path = os.path.join(d, 'file1')
             data = b'hello world'
             write_file(path, data)
@@ -1470,7 +1470,7 @@ class TestUpload(TestCaseWithBucket):
         self.assertTrue(progress_listener.is_valid())
 
     def test_upload_local_file(self):
-        with TempDir() as d:
+        with tempfile.TemporaryDirectory() as d:
             path = os.path.join(d, 'file1')
             data = b'hello world'
             write_file(path, data)
@@ -1484,7 +1484,7 @@ class TestUpload(TestCaseWithBucket):
 
     @pytest.mark.apiver(from_ver=2)
     def test_upload_local_file_incremental(self):
-        with TempDir() as d:
+        with tempfile.TemporaryDirectory() as d:
             path = os.path.join(d, 'file1')
 
             small_data = b'Hello world!'
@@ -1543,7 +1543,7 @@ class TestUpload(TestCaseWithBucket):
 
     @pytest.mark.skipif(platform.system() == 'Windows', reason='no os.mkfifo() on Windows')
     def test_upload_fifo(self):
-        with TempDir() as d:
+        with tempfile.TemporaryDirectory() as d:
             path = os.path.join(d, 'file1')
             os.mkfifo(path)
             with self.assertRaises(InvalidUploadSource):
@@ -1551,14 +1551,14 @@ class TestUpload(TestCaseWithBucket):
 
     @pytest.mark.skipif(platform.system() == 'Windows', reason='no os.symlink() on Windows')
     def test_upload_dead_symlink(self):
-        with TempDir() as d:
+        with tempfile.TemporaryDirectory() as d:
             path = os.path.join(d, 'file1')
             os.symlink('non-existing', path)
             with self.assertRaises(InvalidUploadSource):
                 self.bucket.upload_local_file(path, 'file1')
 
     def test_upload_local_wrong_sha(self):
-        with TempDir() as d:
+        with tempfile.TemporaryDirectory() as d:
             path = os.path.join(d, 'file123')
             data = b'hello world'
             write_file(path, data)
@@ -1600,7 +1600,7 @@ class TestUpload(TestCaseWithBucket):
         self.assertTrue(progress_listener.is_valid())
 
     def test_upload_local_large_file(self):
-        with TempDir() as d:
+        with tempfile.TemporaryDirectory() as d:
             path = os.path.join(d, 'file1')
             data = self._make_data(self.simulator.MIN_PART_SIZE * 3)
             write_file(path, data)
@@ -1610,7 +1610,7 @@ class TestUpload(TestCaseWithBucket):
 
     def test_upload_local_large_file_over_10k_parts(self):
         pytest.skip('this test is really slow and impedes development')  # TODO: fix it
-        with TempDir() as d:
+        with tempfile.TemporaryDirectory() as d:
             path = os.path.join(d, 'file1')
             data = self._make_data(self.simulator.MIN_PART_SIZE * 10001)  # 2MB on the simulator
             write_file(path, data)
@@ -1622,7 +1622,7 @@ class TestUpload(TestCaseWithBucket):
         data = b'hello world' * 20000
 
         f1_id = self.bucket.upload_bytes(data, 'f1').id_
-        with TempDir():
+        with tempfile.TemporaryDirectory():
             write_intents = [
                 WriteIntent(
                     CopySource(f1_id, length=len(data), offset=0),
@@ -1745,7 +1745,7 @@ class TestUpload(TestCaseWithBucket):
         self._check_file_contents('file1', data)
 
     def test_upload_stream_from_file(self):
-        with TempDir() as d:
+        with tempfile.TemporaryDirectory() as d:
             path = os.path.join(d, 'file1')
             data = self._make_data(self.simulator.MIN_PART_SIZE * 3)
             write_file(path, data)
@@ -1855,7 +1855,7 @@ class TestConcatenate(TestCaseWithBucket):
 
         f1_id = self.bucket.upload_bytes(data, 'f1').id_
         f2_id = self.bucket.upload_bytes(data, 'f1').id_
-        with TempDir() as d:
+        with tempfile.TemporaryDirectory() as d:
             path = os.path.join(d, 'file')
             write_file(path, data)
             created_file = self._create_remote(
@@ -1878,7 +1878,7 @@ class TestConcatenate(TestCaseWithBucket):
         for data in [b'hello_world', self._make_data(self.simulator.MIN_PART_SIZE * 3)]:
             f1_id = self.bucket.upload_bytes(data, 'f1', encryption=SSE_C_AES).id_
             f2_id = self.bucket.upload_bytes(data, 'f1', encryption=SSE_C_AES_2).id_
-            with TempDir() as d:
+            with tempfile.TemporaryDirectory() as d:
                 path = os.path.join(d, 'file')
                 write_file(path, data)
                 created_file = self._create_remote(
@@ -1935,7 +1935,7 @@ class TestCustomTimestamp(TestCaseWithBucket):
         # upload
         self.bucket.upload_bytes(data, 'file0', custom_upload_timestamp=0)
 
-        with TempDir() as d:
+        with tempfile.TemporaryDirectory() as d:
             path = os.path.join(d, 'file1')
             write_file(path, data)
             self.bucket.upload_local_file(path, 'file1', custom_upload_timestamp=1)
@@ -2160,7 +2160,7 @@ class DownloadTests(DownloadTestsBase):
         #
         # 123defghij1234567890
 
-        with TempDir() as d:
+        with tempfile.TemporaryDirectory() as d:
             path = os.path.join(d, 'file2')
             download_dest = PreSeekedDownloadDest(seek_target=3, local_file_path=path)
             data = b'12345678901234567890'
@@ -2187,7 +2187,7 @@ class DownloadTests(DownloadTestsBase):
         #
         # 123defghij1234567890
 
-        with TempDir() as d:
+        with tempfile.TemporaryDirectory() as d:
             path = os.path.join(d, 'file2')
             data = b'12345678901234567890'
             write_file(path, data)
@@ -2203,7 +2203,7 @@ class DownloadTests(DownloadTestsBase):
 
     @pytest.mark.apiver(from_ver=2)
     def test_download_update_mtime_v2(self):
-        with TempDir() as d:
+        with tempfile.TemporaryDirectory() as d:
             file_version = self.bucket.upload_bytes(
                 self.DATA.encode(), 'file1', file_info={'src_last_modified_millis': '1000'}
             )
@@ -2230,7 +2230,7 @@ class DownloadTests(DownloadTestsBase):
         #
         # 1234567defghij567890
 
-        with TempDir() as d:
+        with tempfile.TemporaryDirectory() as d:
             path = os.path.join(d, 'file2')
             download_dest = PreSeekedDownloadDest(seek_target=7, local_file_path=path)
             data = b'12345678901234567890'
@@ -2262,7 +2262,7 @@ class DownloadTests(DownloadTestsBase):
         #
         # 1234567defghij567890
 
-        with TempDir() as d:
+        with tempfile.TemporaryDirectory() as d:
             path = os.path.join(d, 'file2')
             data = b'12345678901234567890'
             write_file(path, data)
@@ -2306,7 +2306,7 @@ class UnverifiedChecksumDownloadScenarioMixin:
     """ use with DownloadTests """
 
     def test_download_by_name_unverified_checksum(self):
-        with TempDir() as d:
+        with tempfile.TemporaryDirectory() as d:
             path = os.path.join(d, 'file1')
             data = b'hello world'
             write_file(path, data)
@@ -2514,7 +2514,7 @@ class TestDownloadTuneWriteBuffer(DownloadTestsBase, TestCaseWithBucket):
             assert downloader._get_chunk_size(len(self.DATA)) % self.ALIGN_FACTOR == 0
 
     def test_buffering_in_save_to(self):
-        with TempDir() as d:
+        with tempfile.TemporaryDirectory() as d:
             path = os.path.join(d, 'file2')
             with mock.patch('b2sdk.transfer.inbound.downloaded_file.open') as mock_open:
                 mock_open.side_effect = open
@@ -2699,14 +2699,14 @@ class TestDownloadLocalDirectoryIssues(TestCaseWithBucket):
 
     @pytest.mark.apiver(from_ver=2)
     def test_download_file_to_unknown_directory(self):
-        with TempDir() as temp_dir:
+        with tempfile.TemporaryDirectory() as temp_dir:
             target_file = pathlib.Path(temp_dir) / 'non-existing-directory' / 'some-file'
             with self.assertRaises(DestinationDirectoryDoesntExist):
                 self.bucket.download_file_by_name(self.file_version.file_name).save_to(target_file)
 
     @pytest.mark.apiver(from_ver=2)
     def test_download_file_targeting_directory(self):
-        with TempDir() as temp_dir:
+        with tempfile.TemporaryDirectory() as temp_dir:
             target_file = pathlib.Path(temp_dir) / 'existing-directory'
             os.makedirs(target_file, exist_ok=True)
 
@@ -2715,7 +2715,7 @@ class TestDownloadLocalDirectoryIssues(TestCaseWithBucket):
 
     @pytest.mark.apiver(from_ver=2)
     def test_download_file_targeting_directory_is_a_file(self):
-        with TempDir() as temp_dir:
+        with tempfile.TemporaryDirectory() as temp_dir:
             some_file = pathlib.Path(temp_dir) / 'existing-file'
             some_file.write_bytes(b'i-am-a-file')
             target_file = some_file / 'save-target'
@@ -2730,7 +2730,7 @@ class TestDownloadLocalDirectoryIssues(TestCaseWithBucket):
     )
     def test_download_file_no_access_to_directory(self):
         chain = contextlib.ExitStack()
-        temp_dir = chain.enter_context(TempDir())
+        temp_dir = chain.enter_context(tempfile.TemporaryDirectory())
 
         with chain:
             target_directory = pathlib.Path(temp_dir) / 'impossible-directory'

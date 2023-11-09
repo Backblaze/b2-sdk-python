@@ -18,6 +18,7 @@ import tempfile
 import unittest.mock as mock
 from abc import ABCMeta, abstractmethod
 
+import pytest
 from apiver_deps import (
     ALL_CAPABILITIES,
     B2_ACCOUNT_INFO_ENV_VAR,
@@ -25,15 +26,14 @@ from apiver_deps import (
     AbstractAccountInfo,
     InMemoryAccountInfo,
     SqliteAccountInfo,
-    TempDir,
     UploadUrlPool,
 )
 from apiver_deps_exception import CorruptAccountInfo, MissingAccountData
 
-from .fixtures import *
+from .fixtures import *  # noqa: F401, F403
 
 
-class WindowsSafeTempDir(TempDir):
+class WindowsSafeTempDir(tempfile.TemporaryDirectory):
     def __exit__(self, exc_type, exc_val, exc_tb):
         try:
             super().__exit__(exc_type, exc_val, exc_tb)

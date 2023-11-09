@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import os
+import tempfile
 
 from ..test_base import TestBase
 from .deps import (
@@ -17,7 +18,6 @@ from .deps import (
     DownloadDestProgressWrapper,
     PreSeekedDownloadDest,
     ProgressListenerForTest,
-    TempDir,
 )
 
 
@@ -33,7 +33,7 @@ class TestDownloadDestLocalFile(TestBase):
         Check that the file gets written and that its mod time gets set.
         """
         mod_time = 1500222333000
-        with TempDir() as temp_dir:
+        with tempfile.TemporaryDirectory() as temp_dir:
             download_dest, file_path = self._make_dest(temp_dir)
             with download_dest.make_file_context(
                 "file_id", "file_name", 100, "content_type", "sha1", {}, mod_time
@@ -47,7 +47,7 @@ class TestDownloadDestLocalFile(TestBase):
             self.assertEqual(mod_time, int(os.path.getmtime(file_path) * 1000))
 
     def test_failed_write_deletes_partial_file(self):
-        with TempDir() as temp_dir:
+        with tempfile.TemporaryDirectory() as temp_dir:
             download_dest, file_path = self._make_dest(temp_dir)
             try:
                 with download_dest.make_file_context(
@@ -76,7 +76,7 @@ class TestDownloadDestProgressWrapper(TestBase):
         Check that the file gets written and that its mod time gets set.
         """
         mod_time = 1500222333000
-        with TempDir() as temp_dir:
+        with tempfile.TemporaryDirectory() as temp_dir:
             file_path = os.path.join(temp_dir, "test.txt")
             download_local_file = DownloadDestLocalFile(file_path)
             progress_listener = ProgressListenerForTest()
