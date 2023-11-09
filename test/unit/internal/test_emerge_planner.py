@@ -27,7 +27,7 @@ from b2sdk.transfer.emerge.write_intent import WriteIntent
 from b2sdk.transfer.outbound.copy_source import CopySource as OrigCopySource
 from b2sdk.transfer.outbound.upload_source import UploadSourceStream
 
-from .test_base import TestBase
+from ..test_base import TestBase
 
 
 class UploadSource(UploadSourceStream):
