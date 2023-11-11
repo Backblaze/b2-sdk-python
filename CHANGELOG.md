@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+* Add `*_PART_SIZE` constants to public interface
+
 ### Changed
 * Mark `TempDir` as deprecated in favor of `tempfile.TemporaryDirectory`
 
