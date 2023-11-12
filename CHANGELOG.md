@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Fix spellcheck erroring out on LICENSE file
 * Fix snyk reporting vulnerability due to tornado package use in docs generation
 * Deduplicate test_base files in test suite
+* Refactor integration tests for better pytest compatibility & eager bucket cleanup
 
 ## [1.24.1] - 2023-09-27
 

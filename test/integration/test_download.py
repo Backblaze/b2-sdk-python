@@ -16,11 +16,12 @@ import tempfile
 from pprint import pprint
 from unittest import mock
 
+import pytest
+
 from b2sdk.utils import Sha1HexDigest
 from b2sdk.v2 import *
 
 from .base import IntegrationTestBase
-from .fixtures import *  # noqa: F401, F403
 from .helpers import authorize
 
 
