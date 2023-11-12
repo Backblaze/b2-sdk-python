@@ -77,7 +77,7 @@ def bucket_cleaner(bucket_name_prefix, dont_cleanup_old_buckets, _b2_api):
 
 
 @pytest.fixture(scope="session")
-def b2_api(_b2_api):
+def b2_api(_b2_api, bucket_cleaner):
     return _b2_api
 
 

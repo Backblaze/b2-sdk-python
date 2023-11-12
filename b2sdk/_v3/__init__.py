@@ -64,6 +64,11 @@ from b2sdk.utils import (
     IncrementalHexDigester,
 )
 
+from b2sdk._internal.utils.filesystem import (
+    points_to_fifo,
+    points_to_stdout,
+    STDOUT_FILEPATH,
+)
 from b2sdk.utils import trace_call
 from b2sdk.utils.docs import get_b2sdk_doc_urls
 

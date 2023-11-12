@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import contextlib
 import inspect
+import io
 from unittest.mock import patch
 
 
@@ -33,3 +34,13 @@ def patch_bind_params(instance, method_name):
             *mock_method.call_args[0], **mock_method.call_args[1]
         ).arguments
         yield mock_method
+
+
+class NonSeekableIO(io.BytesIO):
+    """Emulate a non-seekable file"""
+
+    def seek(self, *args, **kwargs):
+        raise OSError('not seekable')
+
+    def seekable(self):
+        return False

@@ -7,12 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-* Add `*_PART_SIZE` constants to public interface
+* Add `*_PART_SIZE` constants
+* Add `points_to_fifo`, `points_to_stdout`, `STDOUT_FILEPATH` to API
 
 ### Changed
 * Mark `TempDir` as deprecated in favor of `tempfile.TemporaryDirectory`
 
 ### Fixed
+* Fix downloading to a non-seekable file, such as /dev/stdout
 * Fix ScanPoliciesManager support for compiled regexes
 
 ### Infrastructure

@@ -19,6 +19,7 @@ import time
 import unittest.mock as mock
 from contextlib import suppress
 from io import BytesIO
+from test.helpers import NonSeekableIO
 
 import apiver_deps
 import pytest
@@ -2289,6 +2290,26 @@ class DownloadTests(DownloadTestsBase):
             contents = f.read()
             self.assertEqual(contents, expected_contents)
 
+    @pytest.mark.apiver(from_ver=2)
+    def test_download_to_non_seekable_file(self):
+        file_version = self.bucket.upload_bytes(self.DATA.encode(), 'file1')
+
+        non_seekable_strategies = [
+            strat for strat in self.bucket.api.services.download_manager.strategies
+            if not isinstance(strat, ParallelDownloader)
+        ]
+        context = contextlib.nullcontext() if non_seekable_strategies else pytest.raises(
+            ValueError,
+            match='no strategy suitable for download was found!',
+        )
+        output_file = NonSeekableIO()
+        with context:
+            self.download_file_by_id(
+                file_version.id_,
+                v2_file=output_file,
+            )
+            assert output_file.getvalue() == self.DATA.encode()
+
 
 # download empty file
 
@@ -2515,14 +2536,12 @@ class TestDownloadTuneWriteBuffer(DownloadTestsBase, TestCaseWithBucket):
 
     def test_buffering_in_save_to(self):
         with tempfile.TemporaryDirectory() as d:
-            path = os.path.join(d, 'file2')
+            path = pathlib.Path(d) / 'file2'
             with mock.patch('b2sdk.transfer.inbound.downloaded_file.open') as mock_open:
                 mock_open.side_effect = open
                 self.bucket.download_file_by_id(self.file_version.id_).save_to(path)
                 mock_open.assert_called_once_with(path, mock.ANY, buffering=self.ALIGN_FACTOR)
-                with open(path) as f:
-                    contents = f.read()
-                    assert contents == self.DATA
+                assert path.read_text() == self.DATA
 
     def test_set_write_buffer_parallel_called_get_chunk_size(self):
         self._check_called_on_downloader(
