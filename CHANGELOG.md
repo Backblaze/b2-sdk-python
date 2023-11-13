@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 * Add `*_PART_SIZE` constants to public interface
+* Add `expires`, `content_disposition`, `content_encoding`, `content_language` arguments to various `Bucket` methods
 
 ### Changed
 * Mark `TempDir` as deprecated in favor of `tempfile.TemporaryDirectory`
