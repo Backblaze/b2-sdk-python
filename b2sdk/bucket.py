@@ -556,11 +556,18 @@ class Bucket(metaclass=B2TraceMeta):
         :param bool legal_hold: legal hold setting
         :param Sha1HexDigest,None large_file_sha1: SHA-1 hash of the result file or ``None`` if unknown
         :param int,None custom_upload_timestamp: override object creation date, expressed as a number of milliseconds since epoch
-        :param str,None cache_control: an optional cache control setting. Syntax based on the section 14.9 of RFC 2616. Example string value: 'public, max-age=86400, s-maxage=3600, no-transform'.
-        :param str,datetime.datetime,None expires: an optional cache expiration setting. Syntax based on the section 14.21 of RFC 2616. Example string value: 'Thu, 01 Dec 2050 16:00:00 GMT'. If datetime is passed, it will be converted to a date in the same format.
-        :param str,None content_disposition: an optional content disposition setting. Syntax based on the section 19.5.1 of RFC 2616. Example string value: 'attachment; filename="fname.ext"'.
-        :param str,None content_encoding: an optional content encoding setting. Syntax based on the section 14.11 of RFC 2616. Example string value: 'gzip'.
-        :param str,None content_language: an optional content language setting. Syntax based on the section 14.12 of RFC 2616. Example string value: 'mi, en'.
+        :param str,None cache_control: an optional cache control setting. Syntax based on the section 14.9 of RFC 2616.
+            Example string value: 'public, max-age=86400, s-maxage=3600, no-transform'.
+        :param str,datetime.datetime,None expires: an optional cache expiration setting.
+            If this argument is a string, its syntax must based on the section 14.21 of RFC 2616.
+            Example string value: 'Thu, 01 Dec 2050 16:00:00 GMT'. If this argument is a datetime,
+            it will be converted to a date in the same format.
+        :param str,None content_disposition: an optional content disposition setting. Syntax based on the section 19.5.1 of RFC 2616.
+            Example string value: 'attachment; filename="fname.ext"'.
+        :param str,None content_encoding: an optional content encoding setting.Syntax based on the section 14.11 of RFC 2616.
+            Example string value: 'gzip'.
+        :param str,None content_language: an optional content language setting. Syntax based on the section 14.12 of RFC 2616.
+            Example string value: 'mi, en_US'.
         :rtype: b2sdk.v2.FileVersion
         """
         upload_source = UploadSourceBytes(data_bytes)
@@ -624,11 +631,18 @@ class Bucket(metaclass=B2TraceMeta):
         :param bool legal_hold: legal hold setting
         :param b2sdk.v2.UploadMode upload_mode: desired upload mode
         :param int,None custom_upload_timestamp: override object creation date, expressed as a number of milliseconds since epoch
-        :param str,None cache_control: an optional cache control setting. Syntax based on the section 14.9 of RFC 2616. Example string value: 'public, max-age=86400, s-maxage=3600, no-transform'.
-        :param str,datetime.datetime,None expires: an optional cache expiration setting. Syntax based on the section 14.21 of RFC 2616. Example string value: 'Thu, 01 Dec 2050 16:00:00 GMT'. If datetime is passed, it will be converted to a date in the same format.
-        :param str,None content_disposition: an optional content disposition setting. Syntax based on the section 19.5.1 of RFC 2616. Example string value: 'attachment; filename="fname.ext"'.
-        :param str,None content_encoding: an optional content encoding setting. Syntax based on the section 14.11 of RFC 2616. Example string value: 'gzip'.
-        :param str,None content_language: an optional content language setting. Syntax based on the section 14.12 of RFC 2616. Example string value: 'mi, en'.
+        :param str,None cache_control: an optional cache control setting. Syntax based on the section 14.9 of RFC 2616.
+            Example string value: 'public, max-age=86400, s-maxage=3600, no-transform'.
+        :param str,datetime.datetime,None expires: an optional cache expiration setting.
+            If this argument is a string, its syntax must based on the section 14.21 of RFC 2616.
+            Example string value: 'Thu, 01 Dec 2050 16:00:00 GMT'. If this argument is a datetime,
+            it will be converted to a date in the same format.
+        :param str,None content_disposition: an optional content disposition setting. Syntax based on the section 19.5.1 of RFC 2616.
+            Example string value: 'attachment; filename="fname.ext"'.
+        :param str,None content_encoding: an optional content encoding setting.Syntax based on the section 14.11 of RFC 2616.
+            Example string value: 'gzip'.
+        :param str,None content_language: an optional content language setting. Syntax based on the section 14.12 of RFC 2616.
+            Example string value: 'mi, en_US'.
         :rtype: b2sdk.v2.FileVersion
         """
         upload_source = UploadSourceLocalFile(local_path=local_file, content_sha1=sha1_sum)
@@ -759,11 +773,18 @@ class Bucket(metaclass=B2TraceMeta):
         :param read_size: size of a single read operation performed on the ``read_only_object``
         :param unused_buffer_timeout_seconds: amount of time that a buffer can be idle before returning error
         :param int,None custom_upload_timestamp: override object creation date, expressed as a number of milliseconds since epoch
-        :param str,None cache_control: an optional cache control setting. Syntax based on the section 14.9 of RFC 2616. Example string value: 'public, max-age=86400, s-maxage=3600, no-transform'.
-        :param str,datetime.datetime,None expires: an optional cache expiration setting. Syntax based on the section 14.21 of RFC 2616. Example string value: 'Thu, 01 Dec 2050 16:00:00 GMT'. If datetime is passed, it will be converted to a date in the same format.
-        :param str,None content_disposition: an optional content disposition setting. Syntax based on the section 19.5.1 of RFC 2616. Example string value: 'attachment; filename="fname.ext"'.
-        :param str,None content_encoding: an optional content encoding setting. Syntax based on the section 14.11 of RFC 2616. Example string value: 'gzip'.
-        :param str,None content_language: an optional content language setting. Syntax based on the section 14.12 of RFC 2616. Example string value: 'mi, en'.
+        :param str,None cache_control: an optional cache control setting. Syntax based on the section 14.9 of RFC 2616.
+            Example string value: 'public, max-age=86400, s-maxage=3600, no-transform'.
+        :param str,datetime.datetime,None expires: an optional cache expiration setting.
+            If this argument is a string, its syntax must based on the section 14.21 of RFC 2616.
+            Example string value: 'Thu, 01 Dec 2050 16:00:00 GMT'. If this argument is a datetime,
+            it will be converted to a date in the same format.
+        :param str,None content_disposition: an optional content disposition setting. Syntax based on the section 19.5.1 of RFC 2616.
+            Example string value: 'attachment; filename="fname.ext"'.
+        :param str,None content_encoding: an optional content encoding setting.Syntax based on the section 14.11 of RFC 2616.
+            Example string value: 'gzip'.
+        :param str,None content_language: an optional content language setting. Syntax based on the section 14.12 of RFC 2616.
+            Example string value: 'mi, en_US'.
         :rtype: b2sdk.v2.FileVersion
         """
         if buffers_count <= 1:
@@ -857,11 +878,18 @@ class Bucket(metaclass=B2TraceMeta):
         :param bool legal_hold: legal hold setting
         :param Sha1HexDigest,None large_file_sha1: SHA-1 hash of the result file or ``None`` if unknown
         :param int,None custom_upload_timestamp: override object creation date, expressed as a number of milliseconds since epoch
-        :param str,None cache_control: an optional cache control setting. Syntax based on the section 14.9 of RFC 2616. Example string value: 'public, max-age=86400, s-maxage=3600, no-transform'.
-        :param str,datetime.datetime,None expires: an optional cache expiration setting. Syntax based on the section 14.21 of RFC 2616. Example string value: 'Thu, 01 Dec 2050 16:00:00 GMT'. If datetime is passed, it will be converted to a date in the same format.
-        :param str,None content_disposition: an optional content disposition setting. Syntax based on the section 19.5.1 of RFC 2616. Example string value: 'attachment; filename="fname.ext"'.
-        :param str,None content_encoding: an optional content encoding setting. Syntax based on the section 14.11 of RFC 2616. Example string value: 'gzip'.
-        :param str,None content_language: an optional content language setting. Syntax based on the section 14.12 of RFC 2616. Example string value: 'mi, en'.
+        :param str,None cache_control: an optional cache control setting. Syntax based on the section 14.9 of RFC 2616.
+            Example string value: 'public, max-age=86400, s-maxage=3600, no-transform'.
+        :param str,datetime.datetime,None expires: an optional cache expiration setting.
+            If this argument is a string, its syntax must based on the section 14.21 of RFC 2616.
+            Example string value: 'Thu, 01 Dec 2050 16:00:00 GMT'. If this argument is a datetime,
+            it will be converted to a date in the same format.
+        :param str,None content_disposition: an optional content disposition setting. Syntax based on the section 19.5.1 of RFC 2616.
+            Example string value: 'attachment; filename="fname.ext"'.
+        :param str,None content_encoding: an optional content encoding setting.Syntax based on the section 14.11 of RFC 2616.
+            Example string value: 'gzip'.
+        :param str,None content_language: an optional content language setting. Syntax based on the section 14.12 of RFC 2616.
+            Example string value: 'mi, en_US'.
         :rtype: b2sdk.v2.FileVersion
         """
         return self.create_file(
@@ -936,11 +964,18 @@ class Bucket(metaclass=B2TraceMeta):
         :param int max_part_size: upper limit of part size for the transfer planner, in bytes
         :param Sha1HexDigest,None large_file_sha1: SHA-1 hash of the result file or ``None`` if unknown
         :param int,None custom_upload_timestamp: override object creation date, expressed as a number of milliseconds since epoch
-        :param str,None cache_control: an optional cache control setting. Syntax based on the section 14.9 of RFC 2616. Example string value: 'public, max-age=86400, s-maxage=3600, no-transform'.
-        :param str,datetime.datetime,None expires: an optional cache expiration setting. Syntax based on the section 14.21 of RFC 2616. Example string value: 'Thu, 01 Dec 2050 16:00:00 GMT'. If datetime is passed, it will be converted to a date in the same format.
-        :param str,None content_disposition: an optional content disposition setting. Syntax based on the section 19.5.1 of RFC 2616. Example string value: 'attachment; filename="fname.ext"'.
-        :param str,None content_encoding: an optional content encoding setting. Syntax based on the section 14.11 of RFC 2616. Example string value: 'gzip'.
-        :param str,None content_language: an optional content language setting. Syntax based on the section 14.12 of RFC 2616. Example string value: 'mi, en'.
+        :param str,None cache_control: an optional cache control setting. Syntax based on the section 14.9 of RFC 2616.
+            Example string value: 'public, max-age=86400, s-maxage=3600, no-transform'.
+        :param str,datetime.datetime,None expires: an optional cache expiration setting.
+            If this argument is a string, its syntax must based on the section 14.21 of RFC 2616.
+            Example string value: 'Thu, 01 Dec 2050 16:00:00 GMT'. If this argument is a datetime,
+            it will be converted to a date in the same format.
+        :param str,None content_disposition: an optional content disposition setting. Syntax based on the section 19.5.1 of RFC 2616.
+            Example string value: 'attachment; filename="fname.ext"'.
+        :param str,None content_encoding: an optional content encoding setting.Syntax based on the section 14.11 of RFC 2616.
+            Example string value: 'gzip'.
+        :param str,None content_language: an optional content language setting. Syntax based on the section 14.12 of RFC 2616.
+            Example string value: 'mi, en_US'.
         """
         return self._create_file(
             self.api.services.emerger.emerge,
@@ -1019,11 +1054,18 @@ class Bucket(metaclass=B2TraceMeta):
         :param int max_part_size: upper limit of part size for the transfer planner, in bytes
         :param Sha1HexDigest,None large_file_sha1: SHA-1 hash of the result file or ``None`` if unknown
         :param int,None custom_upload_timestamp: override object creation date, expressed as a number of milliseconds since epoch
-        :param str,None cache_control: an optional cache control setting. Syntax based on the section 14.9 of RFC 2616. Example string value: 'public, max-age=86400, s-maxage=3600, no-transform'.
-        :param str,datetime.datetime,None expires: an optional cache expiration setting. Syntax based on the section 14.21 of RFC 2616. Example string value: 'Thu, 01 Dec 2050 16:00:00 GMT'. If datetime is passed, it will be converted to a date in the same format.
-        :param str,None content_disposition: an optional content disposition setting. Syntax based on the section 19.5.1 of RFC 2616. Example string value: 'attachment; filename="fname.ext"'.
-        :param str,None content_encoding: an optional content encoding setting. Syntax based on the section 14.11 of RFC 2616. Example string value: 'gzip'.
-        :param str,None content_language: an optional content language setting. Syntax based on the section 14.12 of RFC 2616. Example string value: 'mi, en'.
+        :param str,None cache_control: an optional cache control setting. Syntax based on the section 14.9 of RFC 2616.
+            Example string value: 'public, max-age=86400, s-maxage=3600, no-transform'.
+        :param str,datetime.datetime,None expires: an optional cache expiration setting.
+            If this argument is a string, its syntax must based on the section 14.21 of RFC 2616.
+            Example string value: 'Thu, 01 Dec 2050 16:00:00 GMT'. If this argument is a datetime,
+            it will be converted to a date in the same format.
+        :param str,None content_disposition: an optional content disposition setting. Syntax based on the section 19.5.1 of RFC 2616.
+            Example string value: 'attachment; filename="fname.ext"'.
+        :param str,None content_encoding: an optional content encoding setting.Syntax based on the section 14.11 of RFC 2616.
+            Example string value: 'gzip'.
+        :param str,None content_language: an optional content language setting. Syntax based on the section 14.12 of RFC 2616.
+            Example string value: 'mi, en_US'.
         """
         return self._create_file(
             self.api.services.emerger.emerge_stream,
@@ -1149,11 +1191,18 @@ class Bucket(metaclass=B2TraceMeta):
         :param int max_part_size: upper limit of part size for the transfer planner, in bytes
         :param Sha1HexDigest,None large_file_sha1: SHA-1 hash of the result file or ``None`` if unknown
         :param int,None custom_upload_timestamp: override object creation date, expressed as a number of milliseconds since epoch
-        :param str,None cache_control: an optional cache control setting. Syntax based on the section 14.9 of RFC 2616. Example string value: 'public, max-age=86400, s-maxage=3600, no-transform'.
-        :param str,datetime.datetime,None expires: an optional cache expiration setting. Syntax based on the section 14.21 of RFC 2616. Example string value: 'Thu, 01 Dec 2050 16:00:00 GMT'. If datetime is passed, it will be converted to a date in the same format.
-        :param str,None content_disposition: an optional content disposition setting. Syntax based on the section 19.5.1 of RFC 2616. Example string value: 'attachment; filename="fname.ext"'.
-        :param str,None content_encoding: an optional content encoding setting. Syntax based on the section 14.11 of RFC 2616. Example string value: 'gzip'.
-        :param str,None content_language: an optional content language setting. Syntax based on the section 14.12 of RFC 2616. Example string value: 'mi, en'.
+        :param str,None cache_control: an optional cache control setting. Syntax based on the section 14.9 of RFC 2616.
+            Example string value: 'public, max-age=86400, s-maxage=3600, no-transform'.
+        :param str,datetime.datetime,None expires: an optional cache expiration setting.
+            If this argument is a string, its syntax must based on the section 14.21 of RFC 2616.
+            Example string value: 'Thu, 01 Dec 2050 16:00:00 GMT'. If this argument is a datetime,
+            it will be converted to a date in the same format.
+        :param str,None content_disposition: an optional content disposition setting. Syntax based on the section 19.5.1 of RFC 2616.
+            Example string value: 'attachment; filename="fname.ext"'.
+        :param str,None content_encoding: an optional content encoding setting.Syntax based on the section 14.11 of RFC 2616.
+            Example string value: 'gzip'.
+        :param str,None content_language: an optional content language setting. Syntax based on the section 14.12 of RFC 2616.
+            Example string value: 'mi, en_US'.
         """
         return self.create_file(
             list(WriteIntent.wrap_sources_iterator(outbound_sources)),
@@ -1220,11 +1269,18 @@ class Bucket(metaclass=B2TraceMeta):
         :param bool legal_hold: legal hold setting
         :param Sha1HexDigest,None large_file_sha1: SHA-1 hash of the result file or ``None`` if unknown
         :param int,None custom_upload_timestamp: override object creation date, expressed as a number of milliseconds since epoch
-        :param str,None cache_control: an optional cache control setting. Syntax based on the section 14.9 of RFC 2616. Example string value: 'public, max-age=86400, s-maxage=3600, no-transform'.
-        :param str,datetime.datetime,None expires: an optional cache expiration setting. Syntax based on the section 14.21 of RFC 2616. Example string value: 'Thu, 01 Dec 2050 16:00:00 GMT'. If datetime is passed, it will be converted to a date in the same format.
-        :param str,None content_disposition: an optional content disposition setting. Syntax based on the section 19.5.1 of RFC 2616. Example string value: 'attachment; filename="fname.ext"'.
-        :param str,None content_encoding: an optional content encoding setting. Syntax based on the section 14.11 of RFC 2616. Example string value: 'gzip'.
-        :param str,None content_language: an optional content language setting. Syntax based on the section 14.12 of RFC 2616. Example string value: 'mi, en'.
+        :param str,None cache_control: an optional cache control setting. Syntax based on the section 14.9 of RFC 2616.
+            Example string value: 'public, max-age=86400, s-maxage=3600, no-transform'.
+        :param str,datetime.datetime,None expires: an optional cache expiration setting.
+            If this argument is a string, its syntax must based on the section 14.21 of RFC 2616.
+            Example string value: 'Thu, 01 Dec 2050 16:00:00 GMT'. If this argument is a datetime,
+            it will be converted to a date in the same format.
+        :param str,None content_disposition: an optional content disposition setting. Syntax based on the section 19.5.1 of RFC 2616.
+            Example string value: 'attachment; filename="fname.ext"'.
+        :param str,None content_encoding: an optional content encoding setting.Syntax based on the section 14.11 of RFC 2616.
+            Example string value: 'gzip'.
+        :param str,None content_language: an optional content language setting. Syntax based on the section 14.12 of RFC 2616.
+            Example string value: 'mi, en_US'.
         """
         return self.create_file_stream(
             WriteIntent.wrap_sources_iterator(outbound_sources_iterator),
@@ -1316,13 +1372,18 @@ class Bucket(metaclass=B2TraceMeta):
         :param str,None source_content_type: source file's content type, useful when copying files with SSE-C
         :param b2sdk.v2.FileRetentionSetting file_retention: file retention setting for the new file.
         :param bool legal_hold: legal hold setting for the new file.
-        :param str,None cache_control: an optional cache control setting. Syntax based on the section 14.9 of RFC 2616. Example string value: 'public, max-age=86400, s-maxage=3600, no-transform'.
-        :param int min_part_size: lower limit of part size for the transfer planner, in bytes
-        :param int max_part_size: upper limit of part size for the transfer planner, in bytes
-        :param str,datetime.datetime,None expires: an optional cache expiration setting. Syntax based on the section 14.21 of RFC 2616. Example string value: 'Thu, 01 Dec 2050 16:00:00 GMT'. If datetime is passed, it will be converted to a date in the same format.
-        :param str,None content_disposition: an optional content disposition setting. Syntax based on the section 19.5.1 of RFC 2616. Example string value: 'attachment; filename="fname.ext"'.
-        :param str,None content_encoding: an optional content encoding setting. Syntax based on the section 14.11 of RFC 2616. Example string value: 'gzip'.
-        :param str,None content_language: an optional content language setting. Syntax based on the section 14.12 of RFC 2616. Example string value: 'mi, en'.
+        :param str,None cache_control: an optional cache control setting. Syntax based on the section 14.9 of RFC 2616.
+            Example string value: 'public, max-age=86400, s-maxage=3600, no-transform'.
+        :param str,datetime.datetime,None expires: an optional cache expiration setting.
+            If this argument is a string, its syntax must based on the section 14.21 of RFC 2616.
+            Example string value: 'Thu, 01 Dec 2050 16:00:00 GMT'. If this argument is a datetime,
+            it will be converted to a date in the same format.
+        :param str,None content_disposition: an optional content disposition setting. Syntax based on the section 19.5.1 of RFC 2616.
+            Example string value: 'attachment; filename="fname.ext"'.
+        :param str,None content_encoding: an optional content encoding setting.Syntax based on the section 14.11 of RFC 2616.
+            Example string value: 'gzip'.
+        :param str,None content_language: an optional content language setting. Syntax based on the section 14.12 of RFC 2616.
+            Example string value: 'mi, en_US'.
         """
 
         copy_source = CopySource(

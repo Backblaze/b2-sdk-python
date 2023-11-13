@@ -316,6 +316,9 @@ class FileVersion(BaseFileVersion):
         return self.file_info.get('b2-expires')
 
     def expires_parsed(self) -> dt.datetime | None:
+        """Returns the expiration date as a datetime object, or None if there is no expiration date.
+        Raises ValueError if `expires` property is not a valid HTTP-date."""
+
         if self.expires is None:
             return None
         return _parse_http_date(self.expires)
@@ -483,6 +486,9 @@ class DownloadVersion(BaseFileVersion):
         )
 
     def expires_parsed(self) -> dt.datetime | None:
+        """Returns the expiration date as a datetime object, or None if there is no expiration date.
+        Raises ValueError if `expires` property is not a valid HTTP-date."""
+
         if self.expires is None:
             return None
         return _parse_http_date(self.expires)
