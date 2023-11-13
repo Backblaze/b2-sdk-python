@@ -2839,7 +2839,7 @@ class TestFileInfoB2Fields(TestCaseWithBucket):
 
     def test_upload_local_file(self):
         for test_case in self.test_cases:
-            with TempDir() as d:
+            with tempfile.TemporaryDirectory() as d:
                 path = os.path.join(d, 'file1')
                 data = b''
                 write_file(path, data)
@@ -2868,10 +2868,8 @@ class TestFileInfoB2Fields(TestCaseWithBucket):
     def test_download_version(self):
         for test_case in self.test_cases:
             file_version = self.bucket.upload_bytes(b'', 'file1', **test_case.kwargs)
-            with TempDir() as dir:
-                path = os.path.join(dir, 'file')
-                download_file = self.bucket.download_file_by_id(file_version.id_, path)
-                test_case.assert_(download_file.download_version)
+            download_file = self.bucket.download_file_by_id(file_version.id_)
+            test_case.assert_(download_file.download_version)
 
 
 # Listing where every other response returns no entries and pointer to the next file
