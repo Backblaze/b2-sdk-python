@@ -36,9 +36,9 @@ def _parse_http_date(timestamp_str: str) -> dt.datetime:
     # as defined in RFC7231 7.1.1.1. Backblaze is more premissive than
     # the standard here.
     http_data_formats = [
-        '%a, %d %b %Y %H:%M:%S GMT', # IMF-fixdate
-        '%A, %d-%b-%y %H:%M:%S GMT', # obsolete RFC 850 format
-        '%a %b %d %H:%M:%S %Y', # ANSI C's asctime() format
+        '%a, %d %b %Y %H:%M:%S GMT',  # IMF-fixdate
+        '%A, %d-%b-%y %H:%M:%S GMT',  # obsolete RFC 850 format
+        '%a %b %d %H:%M:%S %Y',  # ANSI C's asctime() format
     ]
     for format in http_data_formats:
         try:

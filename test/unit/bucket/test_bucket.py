@@ -10,8 +10,8 @@
 from __future__ import annotations
 
 import contextlib
-import datetime
 import dataclasses
+import datetime
 import io
 import os
 import pathlib
@@ -2751,7 +2751,6 @@ class TestDownloadLocalDirectoryIssues(TestCaseWithBucket):
 
 
 class TestFileInfoB2Fields(TestCaseWithBucket):
-
     @dataclasses.dataclass
     class TestCase:
         fields: dict[str, str]
@@ -2760,7 +2759,7 @@ class TestFileInfoB2Fields(TestCaseWithBucket):
         expires_parsed_raises: bool = False
 
         @property
-        def kwargs(self)-> dict[str, str | datetime.datetime]:
+        def kwargs(self) -> dict[str, str | datetime.datetime]:
             kws = {**self.fields}
             if self.expires_dt:
                 kws['expires'] = self.expires_dt
@@ -2818,7 +2817,9 @@ class TestFileInfoB2Fields(TestCaseWithBucket):
         # Passing `expires`` as a datetime in non-UTC timezone
         TestCase(
             fields={'expires': 'Sun, 06 Nov 1994 08:49:37 GMT'},
-            expires_dt=datetime.datetime(1994, 11, 6, 9, 49, 37, tzinfo=datetime.timezone(datetime.timedelta(hours=1))),
+            expires_dt=datetime.datetime(
+                1994, 11, 6, 9, 49, 37, tzinfo=datetime.timezone(datetime.timedelta(hours=1))
+            ),
             expires_parsed=datetime.datetime(1994, 11, 6, 8, 49, 37, tzinfo=datetime.timezone.utc),
             expires_parsed_raises=False,
         ),
@@ -2831,7 +2832,9 @@ class TestFileInfoB2Fields(TestCaseWithBucket):
 
     def test_upload_unbound_stream(self):
         for test_case in self.test_cases:
-            file_version = self.bucket.upload_unbound_stream(io.BytesIO(b'data'), 'file1', **test_case.kwargs)
+            file_version = self.bucket.upload_unbound_stream(
+                io.BytesIO(b'data'), 'file1', **test_case.kwargs
+            )
             test_case.assert_(file_version)
 
     def test_upload_local_file(self):
@@ -2857,7 +2860,9 @@ class TestFileInfoB2Fields(TestCaseWithBucket):
             content_type = None
             if test_case.fields:
                 content_type = 'text/plain'
-            copied_file_version = self.bucket.copy(file_version.id_, 'file2', content_type=content_type, **test_case.kwargs)
+            copied_file_version = self.bucket.copy(
+                file_version.id_, 'file2', content_type=content_type, **test_case.kwargs
+            )
             test_case.assert_(copied_file_version)
 
     def test_download_version(self):

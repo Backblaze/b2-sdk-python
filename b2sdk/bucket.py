@@ -9,8 +9,8 @@
 ######################################################################
 from __future__ import annotations
 
-import fnmatch
 import datetime as dt
+import fnmatch
 import logging
 import pathlib
 from contextlib import suppress
@@ -115,7 +115,10 @@ class Bucket(metaclass=B2TraceMeta):
     def _add_file_info_item(self, file_info: dict[str, str], name: str, value: str | None):
         if value is not None:
             if name in file_info and file_info[name] != value:
-                logger.warning('Overwriting file info key %s with value %s (previous value %s)', name, value, file_info[name])
+                logger.warning(
+                    'Overwriting file info key %s with value %s (previous value %s)', name, value,
+                    file_info[name]
+                )
             file_info[name] = value
 
     def _merge_file_info_and_headers_params(
