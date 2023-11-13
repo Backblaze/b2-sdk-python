@@ -299,7 +299,6 @@ class FileSimulator:
             action=self.action,
             uploadTimestamp=self.upload_timestamp,
             replicationStatus=self.replication_status and self.replication_status.value,
-            cacheControl=self.cache_control,
         )  # yapf: disable
         if self.server_side_encryption is not None:
             result['serverSideEncryption'
@@ -321,7 +320,6 @@ class FileSimulator:
             action=self.action,
             uploadTimestamp=self.upload_timestamp,
             replicationStatus=self.replication_status and self.replication_status.value,
-            cacheControl=self.cache_control,
         )  # yapf: disable
         if self.server_side_encryption is not None:
             result['serverSideEncryption'
@@ -346,7 +344,6 @@ class FileSimulator:
             fileInfo=self.file_info,
             uploadTimestamp=self.upload_timestamp,
             replicationStatus=self.replication_status and self.replication_status.value,
-            cacheControl=self.cache_control,
         )  # yapf: disable
         if self.server_side_encryption is not None:
             result['serverSideEncryption'

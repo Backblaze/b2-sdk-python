@@ -361,6 +361,8 @@ class AbstractRawApi(metaclass=ABCMeta):
             'Content-Type': content_type,
             'X-Bz-Content-Sha1': content_sha1,
         }
+        if cache_control is not None:
+            file_info['b2-cache-control'] = cache_control
         for k, v in file_info.items():
             headers[FILE_INFO_HEADER_PREFIX + k] = b2_url_encode(v)
         if server_side_encryption is not None:
@@ -374,9 +376,6 @@ class AbstractRawApi(metaclass=ABCMeta):
 
         if file_retention is not None:
             file_retention.add_to_to_upload_headers(headers)
-
-        if cache_control is not None:
-            headers['X-Bz-Info-b2-cache-control'] = b2_url_encode(cache_control)
 
         if custom_upload_timestamp is not None:
             headers['X-Bz-Custom-Upload-Timestamp'] = str(custom_upload_timestamp)
@@ -771,7 +770,8 @@ class B2RawHTTPApi(AbstractRawApi):
             kwargs['custom_upload_timestamp'] = custom_upload_timestamp
 
         if cache_control is not None:
-            kwargs['cacheControl'] = cache_control
+            file_info = file_info or {}
+            file_info['b2-cache-control'] = cache_control
 
         return self._post_json(
             api_url,
@@ -1039,6 +1039,9 @@ class B2RawHTTPApi(AbstractRawApi):
 
         if content_type is not None:
             kwargs['contentType'] = content_type
+        if cache_control is not None:
+            file_info = file_info or {}
+            file_info['b2-cache-control'] = cache_control
         if file_info is not None:
             kwargs['fileInfo'] = file_info
         if destination_bucket_id is not None:
@@ -1059,9 +1062,6 @@ class B2RawHTTPApi(AbstractRawApi):
 
         if file_retention is not None:
             kwargs['fileRetention'] = file_retention.serialize_to_json_for_request()
-
-        if cache_control is not None:
-            kwargs['cacheControl'] = cache_control
 
         try:
             return self._post_json(

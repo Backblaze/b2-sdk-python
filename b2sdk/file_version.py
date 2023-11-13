@@ -9,6 +9,7 @@
 ######################################################################
 from __future__ import annotations
 
+import datetime as dt
 import re
 from copy import deepcopy
 from typing import TYPE_CHECKING, Any
@@ -26,6 +27,26 @@ if TYPE_CHECKING:
     from .transfer.inbound.downloaded_file import DownloadedFile
 
 UNVERIFIED_CHECKSUM_PREFIX = 'unverified:'
+
+
+def _parse_http_date(timestamp_str: str) -> dt.datetime:
+    # See https://datatracker.ietf.org/doc/html/rfc7231#section-7.1.1.1
+    # for the list of supported formats.
+    # We don't parse non-GTM dates because they are not valid HTTP-dates
+    # as defined in RFC7231 7.1.1.1. Backblaze is more premissive than
+    # the standard here.
+    http_data_formats = [
+        '%a, %d %b %Y %H:%M:%S GMT', # IMF-fixdate
+        '%A, %d-%b-%y %H:%M:%S GMT', # obsolete RFC 850 format
+        '%a %b %d %H:%M:%S %Y', # ANSI C's asctime() format
+    ]
+    for format in http_data_formats:
+        try:
+            timestamp = dt.datetime.strptime(timestamp_str, format)
+            return timestamp.replace(tzinfo=dt.timezone.utc)
+        except ValueError:
+            pass
+    raise ValueError("Value %s is not a valid HTTP-date, won't be parsed.", timestamp_str)
 
 
 class BaseFileVersion:
@@ -73,6 +94,9 @@ class BaseFileVersion:
         file_retention: FileRetentionSetting = NO_RETENTION_FILE_SETTING,
         legal_hold: LegalHold = LegalHold.UNSET,
         replication_status: ReplicationStatus | None = None,
+        # `cache_control` is left for legacy reasons. Cache controls header should
+        # be present in `file_info`. If cache_control is provided, it will
+        # be used instead of the one from `file_info`.
         cache_control: str | None = None,
     ):
         self.api = api
@@ -87,7 +111,10 @@ class BaseFileVersion:
         self.file_retention = file_retention
         self.legal_hold = legal_hold
         self.replication_status = replication_status
-        self.cache_control = cache_control
+        if cache_control is None:
+            self.cache_control = (file_info or {}).get('b2-cache-control')
+        else:
+            self.cache_control = cache_control
 
         if SRC_LAST_MODIFIED_MILLIS in self.file_info:
             self.mod_time_millis = int(self.file_info[SRC_LAST_MODIFIED_MILLIS])
@@ -140,6 +167,8 @@ class BaseFileVersion:
             'serverSideEncryption': self.server_side_encryption.as_dict(),
             'legalHold': self.legal_hold.value,
             'fileRetention': self.file_retention.as_dict(),
+            # `cacheControl`` is not actually present in the raw api output. We're leaving it here
+            # in order not to break backwards-compatibility.
             'cacheControl': self.cache_control,
         }
 
@@ -282,6 +311,27 @@ class FileVersion(BaseFileVersion):
             cache_control=cache_control,
         )
 
+    @property
+    def expires(self) -> str | None:
+        return self.file_info.get('b2-expires')
+
+    def expires_parsed(self) -> dt.datetime | None:
+        if self.expires is None:
+            return None
+        return _parse_http_date(self.expires)
+
+    @property
+    def content_disposition(self) -> str | None:
+        return self.file_info.get('b2-content-disposition')
+
+    @property
+    def content_encoding(self) -> str | None:
+        return self.file_info.get('b2-content-encoding')
+
+    @property
+    def content_language(self) -> str | None:
+        return self.file_info.get('b2-content-language')
+
     def _get_args_for_clone(self):
         args = super()._get_args_for_clone()
         args.update(
@@ -381,8 +431,8 @@ class DownloadVersion(BaseFileVersion):
         'content_disposition',
         'content_length',
         'content_language',
-        '_expires',
-        '_cache_control',
+        'expires',
+        'cache_control',
         'content_encoding',
     ]
 
@@ -412,8 +462,8 @@ class DownloadVersion(BaseFileVersion):
         self.content_disposition = content_disposition
         self.content_length = content_length
         self.content_language = content_language
-        self._expires = expires  # TODO: parse the string representation of this timestamp to datetime in DownloadVersionFactory
-        self._cache_control = cache_control  # TODO: parse the string representation of this mapping to dict in DownloadVersionFactory
+        self.expires = expires
+        self.cache_control = cache_control
         self.content_encoding = content_encoding
 
         super().__init__(
@@ -432,6 +482,11 @@ class DownloadVersion(BaseFileVersion):
             cache_control=cache_control,
         )
 
+    def expires_parsed(self) -> dt.datetime | None:
+        if self.expires is None:
+            return None
+        return _parse_http_date(self.expires)
+
     def _get_args_for_clone(self):
         args = super()._get_args_for_clone()
         args.update(
@@ -440,8 +495,8 @@ class DownloadVersion(BaseFileVersion):
                 'content_disposition': self.content_disposition,
                 'content_length': self.content_length,
                 'content_language': self.content_language,
-                'expires': self._expires,
-                'cache_control': self._cache_control,
+                'expires': self.expires,
+                'cache_control': self.cache_control,
                 'content_encoding': self.content_encoding,
             }
         )
@@ -516,7 +571,6 @@ class FileVersionFactory:
         replication_status_value = file_version_dict.get('replicationStatus')
         replication_status = replication_status_value and ReplicationStatus[
             replication_status_value.upper()]
-        cache_control = file_version_dict.get('cacheControl')
 
         return self.FILE_VERSION_CLASS(
             self.api,
@@ -535,7 +589,6 @@ class FileVersionFactory:
             file_retention,
             legal_hold,
             replication_status,
-            cache_control,
         )
 
 
@@ -575,11 +628,6 @@ class DownloadVersionFactory:
             size = content_length = int(headers['Content-Length'])
             range_ = Range(0, max(size - 1, 0))
 
-        if 'Cache-Control' in headers:
-            cache_control = b2_url_decode(headers['Cache-Control'])
-        else:
-            cache_control = None
-
         return DownloadVersion(
             api=self.api,
             id_=headers['x-bz-file-id'],
@@ -595,7 +643,7 @@ class DownloadVersionFactory:
             content_length=content_length,
             content_language=headers.get('Content-Language'),
             expires=headers.get('Expires'),
-            cache_control=cache_control,
+            cache_control=headers.get('Cache-Control'),
             content_encoding=headers.get('Content-Encoding'),
             file_retention=FileRetentionSetting.from_response_headers(headers),
             legal_hold=LegalHold.from_response_headers(headers),

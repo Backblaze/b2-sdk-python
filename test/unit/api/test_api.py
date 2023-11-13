@@ -94,7 +94,6 @@ class TestApi:
                     'mode': 'none'
                 },
                 'uploadTimestamp': 5000,
-                'cacheControl': 'private, max-age=3600',
             }
         else:
             assert isinstance(result, VFileVersion)

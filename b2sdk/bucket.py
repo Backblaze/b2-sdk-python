@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import fnmatch
+import datetime as dt
 import logging
 import pathlib
 from contextlib import suppress
@@ -110,6 +111,38 @@ class Bucket(metaclass=B2TraceMeta):
         self.default_retention = default_retention
         self.is_file_lock_enabled = is_file_lock_enabled
         self.replication = replication
+
+    def _add_file_info_item(self, file_info: dict[str, str], name: str, value: str | None):
+        if value is not None:
+            if name in file_info and file_info[name] != value:
+                logger.warning('Overwriting file info key %s with value %s (previous value %s)', name, value, file_info[name])
+            file_info[name] = value
+
+    def _merge_file_info_and_headers_params(
+        self,
+        file_info: dict | None,
+        cache_control: str | None,
+        expires: str | dt.datetime | None,
+        content_disposition: str | None,
+        content_encoding: str | None,
+        content_language: str | None,
+    ) -> dict | None:
+        updated_file_info = {**(file_info or {})}
+
+        if isinstance(expires, dt.datetime):
+            expires = expires.astimezone(dt.timezone.utc)
+            expires = dt.datetime.strftime(expires, '%a, %d %b %Y %H:%M:%S GMT')
+
+        self._add_file_info_item(updated_file_info, 'b2-expires', expires)
+        self._add_file_info_item(updated_file_info, 'b2-cache-control', cache_control)
+        self._add_file_info_item(updated_file_info, 'b2-content-disposition', content_disposition)
+        self._add_file_info_item(updated_file_info, 'b2-content-encoding', content_encoding)
+        self._add_file_info_item(updated_file_info, 'b2-content-language', content_language)
+
+        # If file_info was None and we didn't add anything, we want to return None
+        if not updated_file_info:
+            return file_info
+        return updated_file_info
 
     def get_fresh_state(self) -> Bucket:
         """
@@ -499,6 +532,10 @@ class Bucket(metaclass=B2TraceMeta):
         large_file_sha1: Sha1HexDigest | None = None,
         custom_upload_timestamp: int | None = None,
         cache_control: str | None = None,
+        expires: str | dt.datetime | None = None,
+        content_disposition: str | None = None,
+        content_encoding: str | None = None,
+        content_language: str | None = None,
     ):
         """
         Upload bytes in memory to a B2 file.
@@ -517,6 +554,10 @@ class Bucket(metaclass=B2TraceMeta):
         :param Sha1HexDigest,None large_file_sha1: SHA-1 hash of the result file or ``None`` if unknown
         :param int,None custom_upload_timestamp: override object creation date, expressed as a number of milliseconds since epoch
         :param str,None cache_control: an optional cache control setting. Syntax based on the section 14.9 of RFC 2616. Example string value: 'public, max-age=86400, s-maxage=3600, no-transform'.
+        :param str,datetime.datetime,None expires: an optional cache expiration setting. Syntax based on the section 14.21 of RFC 2616. Example string value: 'Thu, 01 Dec 2050 16:00:00 GMT'.
+        :param str,None content_disposition: an optional content disposition setting. Syntax based on the section 19.5.1 of RFC 2616. Example string value: 'attachment; filename="fname.ext"'.
+        :param str,None content_encoding: an optional content encoding setting. Syntax based on the section 14.11 of RFC 2616. Example string value: 'gzip'.
+        :param str,None content_language: an optional content language setting. Syntax based on the section 14.12 of RFC 2616. Example string value: 'mi, en'.
         :rtype: b2sdk.v2.FileVersion
         """
         upload_source = UploadSourceBytes(data_bytes)
@@ -532,6 +573,10 @@ class Bucket(metaclass=B2TraceMeta):
             large_file_sha1=large_file_sha1,
             custom_upload_timestamp=custom_upload_timestamp,
             cache_control=cache_control,
+            expires=expires,
+            content_disposition=content_disposition,
+            content_encoding=content_encoding,
+            content_language=content_language,
         )
 
     def upload_local_file(
@@ -549,6 +594,10 @@ class Bucket(metaclass=B2TraceMeta):
         upload_mode: UploadMode = UploadMode.FULL,
         custom_upload_timestamp: int | None = None,
         cache_control: str | None = None,
+        expires: str | dt.datetime | None = None,
+        content_disposition: str | None = None,
+        content_encoding: str | None = None,
+        content_language: str | None = None,
     ):
         """
         Upload a file on local disk to a B2 file.
@@ -573,6 +622,10 @@ class Bucket(metaclass=B2TraceMeta):
         :param b2sdk.v2.UploadMode upload_mode: desired upload mode
         :param int,None custom_upload_timestamp: override object creation date, expressed as a number of milliseconds since epoch
         :param str,None cache_control: an optional cache control setting. Syntax based on the section 14.9 of RFC 2616. Example string value: 'public, max-age=86400, s-maxage=3600, no-transform'.
+        :param str,None expires: an optional cache expiration setting. Syntax based on the section 14.21 of RFC 2616. Example string value: 'Thu, 01 Dec 2050 16:00:00 GMT'.
+        :param str,None content_disposition: an optional content disposition setting. Syntax based on the section 19.5.1 of RFC 2616. Example string value: 'attachment; filename="fname.ext"'.
+        :param str,None content_encoding: an optional content encoding setting. Syntax based on the section 14.11 of RFC 2616. Example string value: 'gzip'.
+        :param str,None content_language: an optional content language setting. Syntax based on the section 14.12 of RFC 2616. Example string value: 'mi, en'.
         :rtype: b2sdk.v2.FileVersion
         """
         upload_source = UploadSourceLocalFile(local_path=local_file, content_sha1=sha1_sum)
@@ -592,6 +645,14 @@ class Bucket(metaclass=B2TraceMeta):
                     # the upload will be incremental, but the SHA1 sum is unknown, calculate it now
                     large_file_sha1 = upload_source.get_content_sha1()
 
+        file_info = self._merge_file_info_and_headers_params(
+            file_info=file_info,
+            cache_control=cache_control,
+            expires=expires,
+            content_disposition=content_disposition,
+            content_encoding=content_encoding,
+            content_language=content_language,
+        )
         return self.concatenate(
             sources,
             file_name,
@@ -604,7 +665,6 @@ class Bucket(metaclass=B2TraceMeta):
             legal_hold=legal_hold,
             large_file_sha1=large_file_sha1,
             custom_upload_timestamp=custom_upload_timestamp,
-            cache_control=cache_control,
         )
 
     def upload_unbound_stream(
@@ -627,6 +687,10 @@ class Bucket(metaclass=B2TraceMeta):
         unused_buffer_timeout_seconds: float = 3600.0,
         custom_upload_timestamp: int | None = None,
         cache_control: str | None = None,
+        expires: str | dt.datetime | None = None,
+        content_disposition: str | None = None,
+        content_encoding: str | None = None,
+        content_language: str | None = None,
     ):
         """
         Upload an unbound file-like read-only object to a B2 file.
@@ -693,6 +757,10 @@ class Bucket(metaclass=B2TraceMeta):
         :param unused_buffer_timeout_seconds: amount of time that a buffer can be idle before returning error
         :param int,None custom_upload_timestamp: override object creation date, expressed as a number of milliseconds since epoch
         :param str,None cache_control: an optional cache control setting. Syntax based on the section 14.9 of RFC 2616. Example string value: 'public, max-age=86400, s-maxage=3600, no-transform'.
+        :param str,None expires: an optional cache expiration setting. Syntax based on the section 14.21 of RFC 2616. Example string value: 'Thu, 01 Dec 2050 16:00:00 GMT'.
+        :param str,None content_disposition: an optional content disposition setting. Syntax based on the section 19.5.1 of RFC 2616. Example string value: 'attachment; filename="fname.ext"'.
+        :param str,None content_encoding: an optional content encoding setting. Syntax based on the section 14.11 of RFC 2616. Example string value: 'gzip'.
+        :param str,None content_language: an optional content language setting. Syntax based on the section 14.12 of RFC 2616. Example string value: 'mi, en'.
         :rtype: b2sdk.v2.FileVersion
         """
         if buffers_count <= 1:
@@ -707,6 +775,14 @@ class Bucket(metaclass=B2TraceMeta):
             planner = self.api.services.emerger.get_emerge_planner()
             buffer_size = planner.recommended_upload_part_size
 
+        file_info = self._merge_file_info_and_headers_params(
+            file_info=file_info,
+            cache_control=cache_control,
+            expires=expires,
+            content_disposition=content_disposition,
+            content_encoding=content_encoding,
+            content_language=content_language,
+        )
         return self._create_file(
             self.api.services.emerger.emerge_unbound,
             UnboundWriteIntentGenerator(
@@ -732,7 +808,6 @@ class Bucket(metaclass=B2TraceMeta):
             max_queue_size=buffers_count - 1,
             large_file_sha1=large_file_sha1,
             custom_upload_timestamp=custom_upload_timestamp,
-            cache_control=cache_control,
         )
 
     def upload(
@@ -749,6 +824,10 @@ class Bucket(metaclass=B2TraceMeta):
         large_file_sha1: Sha1HexDigest | None = None,
         custom_upload_timestamp: int | None = None,
         cache_control: str | None = None,
+        expires: str | dt.datetime | None = None,
+        content_disposition: str | None = None,
+        content_encoding: str | None = None,
+        content_language: str | None = None,
     ):
         """
         Upload a file to B2, retrying as needed.
@@ -776,6 +855,10 @@ class Bucket(metaclass=B2TraceMeta):
         :param Sha1HexDigest,None large_file_sha1: SHA-1 hash of the result file or ``None`` if unknown
         :param int,None custom_upload_timestamp: override object creation date, expressed as a number of milliseconds since epoch
         :param str,None cache_control: an optional cache control setting. Syntax based on the section 14.9 of RFC 2616. Example string value: 'public, max-age=86400, s-maxage=3600, no-transform'.
+        :param str,None expires: an optional cache expiration setting. Syntax based on the section 14.21 of RFC 2616. Example string value: 'Thu, 01 Dec 2050 16:00:00 GMT'.
+        :param str,None content_disposition: an optional content disposition setting. Syntax based on the section 19.5.1 of RFC 2616. Example string value: 'attachment; filename="fname.ext"'.
+        :param str,None content_encoding: an optional content encoding setting. Syntax based on the section 14.11 of RFC 2616. Example string value: 'gzip'.
+        :param str,None content_language: an optional content language setting. Syntax based on the section 14.12 of RFC 2616. Example string value: 'mi, en'.
         :rtype: b2sdk.v2.FileVersion
         """
         return self.create_file(
@@ -792,6 +875,10 @@ class Bucket(metaclass=B2TraceMeta):
             large_file_sha1=large_file_sha1,
             custom_upload_timestamp=custom_upload_timestamp,
             cache_control=cache_control,
+            expires=expires,
+            content_disposition=content_disposition,
+            content_encoding=content_encoding,
+            content_language=content_language,
         )
 
     def create_file(
@@ -811,6 +898,10 @@ class Bucket(metaclass=B2TraceMeta):
         large_file_sha1=None,
         custom_upload_timestamp: int | None = None,
         cache_control: str | None = None,
+        expires: str | dt.datetime | None = None,
+        content_disposition: str | None = None,
+        content_encoding: str | None = None,
+        content_language: str | None = None,
     ):
         """
         Creates a new file in this bucket using an iterable (list, tuple etc) of remote or local sources.
@@ -843,6 +934,10 @@ class Bucket(metaclass=B2TraceMeta):
         :param Sha1HexDigest,None large_file_sha1: SHA-1 hash of the result file or ``None`` if unknown
         :param int,None custom_upload_timestamp: override object creation date, expressed as a number of milliseconds since epoch
         :param str,None cache_control: an optional cache control setting. Syntax based on the section 14.9 of RFC 2616. Example string value: 'public, max-age=86400, s-maxage=3600, no-transform'.
+        :param str,None expires: an optional cache expiration setting. Syntax based on the section 14.21 of RFC 2616. Example string value: 'Thu, 01 Dec 2050 16:00:00 GMT'.
+        :param str,None content_disposition: an optional content disposition setting. Syntax based on the section 19.5.1 of RFC 2616. Example string value: 'attachment; filename="fname.ext"'.
+        :param str,None content_encoding: an optional content encoding setting. Syntax based on the section 14.11 of RFC 2616. Example string value: 'gzip'.
+        :param str,None content_language: an optional content language setting. Syntax based on the section 14.12 of RFC 2616. Example string value: 'mi, en'.
         """
         return self._create_file(
             self.api.services.emerger.emerge,
@@ -861,6 +956,10 @@ class Bucket(metaclass=B2TraceMeta):
             large_file_sha1=large_file_sha1,
             custom_upload_timestamp=custom_upload_timestamp,
             cache_control=cache_control,
+            expires=expires,
+            content_disposition=content_disposition,
+            content_encoding=content_encoding,
+            content_language=content_language,
         )
 
     def create_file_stream(
@@ -880,6 +979,10 @@ class Bucket(metaclass=B2TraceMeta):
         large_file_sha1=None,
         custom_upload_timestamp: int | None = None,
         cache_control: str | None = None,
+        expires: str | dt.datetime | None = None,
+        content_disposition: str | None = None,
+        content_encoding: str | None = None,
+        content_language: str | None = None,
     ):
         """
         Creates a new file in this bucket using a stream of multiple remote or local sources.
@@ -914,6 +1017,10 @@ class Bucket(metaclass=B2TraceMeta):
         :param Sha1HexDigest,None large_file_sha1: SHA-1 hash of the result file or ``None`` if unknown
         :param int,None custom_upload_timestamp: override object creation date, expressed as a number of milliseconds since epoch
         :param str,None cache_control: an optional cache control setting. Syntax based on the section 14.9 of RFC 2616. Example string value: 'public, max-age=86400, s-maxage=3600, no-transform'.
+        :param str,None expires: an optional cache expiration setting. Syntax based on the section 14.21 of RFC 2616. Example string value: 'Thu, 01 Dec 2050 16:00:00 GMT'.
+        :param str,None content_disposition: an optional content disposition setting. Syntax based on the section 19.5.1 of RFC 2616. Example string value: 'attachment; filename="fname.ext"'.
+        :param str,None content_encoding: an optional content encoding setting. Syntax based on the section 14.11 of RFC 2616. Example string value: 'gzip'.
+        :param str,None content_language: an optional content language setting. Syntax based on the section 14.12 of RFC 2616. Example string value: 'mi, en'.
         """
         return self._create_file(
             self.api.services.emerger.emerge_stream,
@@ -932,6 +1039,10 @@ class Bucket(metaclass=B2TraceMeta):
             large_file_sha1=large_file_sha1,
             custom_upload_timestamp=custom_upload_timestamp,
             cache_control=cache_control,
+            expires=expires,
+            content_disposition=content_disposition,
+            content_encoding=content_encoding,
+            content_language=content_language,
         )
 
     def _create_file(
@@ -950,11 +1061,24 @@ class Bucket(metaclass=B2TraceMeta):
         min_part_size=None,
         max_part_size=None,
         large_file_sha1=None,
+        cache_control: str | None = None,
+        expires: str | dt.datetime | None = None,
+        content_disposition: str | None = None,
+        content_encoding: str | None = None,
+        content_language: str | None = None,
         **kwargs
     ):
         validate_b2_file_name(file_name)
         progress_listener = progress_listener or DoNothingProgressListener()
 
+        file_info = self._merge_file_info_and_headers_params(
+            file_info=file_info,
+            cache_control=cache_control,
+            expires=expires,
+            content_disposition=content_disposition,
+            content_encoding=content_encoding,
+            content_language=content_language,
+        )
         return emerger_method(
             self.id_,
             write_intents_iterable,
@@ -990,6 +1114,10 @@ class Bucket(metaclass=B2TraceMeta):
         large_file_sha1=None,
         custom_upload_timestamp: int | None = None,
         cache_control: str | None = None,
+        expires: str | dt.datetime | None = None,
+        content_disposition: str | None = None,
+        content_encoding: str | None = None,
+        content_language: str | None = None,
     ):
         """
         Creates a new file in this bucket by concatenating multiple remote or local sources.
@@ -1019,6 +1147,10 @@ class Bucket(metaclass=B2TraceMeta):
         :param Sha1HexDigest,None large_file_sha1: SHA-1 hash of the result file or ``None`` if unknown
         :param int,None custom_upload_timestamp: override object creation date, expressed as a number of milliseconds since epoch
         :param str,None cache_control: an optional cache control setting. Syntax based on the section 14.9 of RFC 2616. Example string value: 'public, max-age=86400, s-maxage=3600, no-transform'.
+        :param str,None expires: an optional cache expiration setting. Syntax based on the section 14.21 of RFC 2616. Example string value: 'Thu, 01 Dec 2050 16:00:00 GMT'.
+        :param str,None content_disposition: an optional content disposition setting. Syntax based on the section 19.5.1 of RFC 2616. Example string value: 'attachment; filename="fname.ext"'.
+        :param str,None content_encoding: an optional content encoding setting. Syntax based on the section 14.11 of RFC 2616. Example string value: 'gzip'.
+        :param str,None content_language: an optional content language setting. Syntax based on the section 14.12 of RFC 2616. Example string value: 'mi, en'.
         """
         return self.create_file(
             list(WriteIntent.wrap_sources_iterator(outbound_sources)),
@@ -1036,6 +1168,10 @@ class Bucket(metaclass=B2TraceMeta):
             large_file_sha1=large_file_sha1,
             custom_upload_timestamp=custom_upload_timestamp,
             cache_control=cache_control,
+            expires=expires,
+            content_disposition=content_disposition,
+            content_encoding=content_encoding,
+            content_language=content_language,
         )
 
     def concatenate_stream(
@@ -1053,6 +1189,10 @@ class Bucket(metaclass=B2TraceMeta):
         large_file_sha1: Sha1HexDigest | None = None,
         custom_upload_timestamp: int | None = None,
         cache_control: str | None = None,
+        expires: str | dt.datetime | None = None,
+        content_disposition: str | None = None,
+        content_encoding: str | None = None,
+        content_language: str | None = None,
     ):
         """
         Creates a new file in this bucket by concatenating stream of multiple remote or local sources.
@@ -1078,6 +1218,10 @@ class Bucket(metaclass=B2TraceMeta):
         :param Sha1HexDigest,None large_file_sha1: SHA-1 hash of the result file or ``None`` if unknown
         :param int,None custom_upload_timestamp: override object creation date, expressed as a number of milliseconds since epoch
         :param str,None cache_control: an optional cache control setting. Syntax based on the section 14.9 of RFC 2616. Example string value: 'public, max-age=86400, s-maxage=3600, no-transform'.
+        :param str,None expires: an optional cache expiration setting. Syntax based on the section 14.21 of RFC 2616. Example string value: 'Thu, 01 Dec 2050 16:00:00 GMT'.
+        :param str,None content_disposition: an optional content disposition setting. Syntax based on the section 19.5.1 of RFC 2616. Example string value: 'attachment; filename="fname.ext"'.
+        :param str,None content_encoding: an optional content encoding setting. Syntax based on the section 14.11 of RFC 2616. Example string value: 'gzip'.
+        :param str,None content_language: an optional content language setting. Syntax based on the section 14.12 of RFC 2616. Example string value: 'mi, en'.
         """
         return self.create_file_stream(
             WriteIntent.wrap_sources_iterator(outbound_sources_iterator),
@@ -1093,6 +1237,10 @@ class Bucket(metaclass=B2TraceMeta):
             large_file_sha1=large_file_sha1,
             custom_upload_timestamp=custom_upload_timestamp,
             cache_control=cache_control,
+            expires=expires,
+            content_disposition=content_disposition,
+            content_encoding=content_encoding,
+            content_language=content_language,
         )
 
     def get_download_url(self, filename):
@@ -1136,6 +1284,10 @@ class Bucket(metaclass=B2TraceMeta):
         cache_control: str | None = None,
         min_part_size=None,
         max_part_size=None,
+        expires: str | dt.datetime | None = None,
+        content_disposition: str | None = None,
+        content_encoding: str | None = None,
+        content_language: str | None = None,
     ):
         """
         Creates a new file in this bucket by (server-side) copying from an existing file.
@@ -1164,6 +1316,10 @@ class Bucket(metaclass=B2TraceMeta):
         :param str,None cache_control: an optional cache control setting. Syntax based on the section 14.9 of RFC 2616. Example string value: 'public, max-age=86400, s-maxage=3600, no-transform'.
         :param int min_part_size: lower limit of part size for the transfer planner, in bytes
         :param int max_part_size: upper limit of part size for the transfer planner, in bytes
+        :param str,None expires: an optional cache expiration setting. Syntax based on the section 14.21 of RFC 2616. Example string value: 'Thu, 01 Dec 2050 16:00:00 GMT'.
+        :param str,None content_disposition: an optional content disposition setting. Syntax based on the section 19.5.1 of RFC 2616. Example string value: 'attachment; filename="fname.ext"'.
+        :param str,None content_encoding: an optional content encoding setting. Syntax based on the section 14.11 of RFC 2616. Example string value: 'gzip'.
+        :param str,None content_language: an optional content language setting. Syntax based on the section 14.12 of RFC 2616. Example string value: 'mi, en'.
         """
 
         copy_source = CopySource(
@@ -1179,6 +1335,14 @@ class Bucket(metaclass=B2TraceMeta):
             validate_b2_file_name(new_file_name)
             try:
                 progress_listener = progress_listener or DoNothingProgressListener()
+                file_info = self._merge_file_info_and_headers_params(
+                    file_info=file_info,
+                    cache_control=cache_control,
+                    expires=expires,
+                    content_disposition=content_disposition,
+                    content_encoding=content_encoding,
+                    content_language=content_language,
+                )
                 return self.api.services.copy_manager.copy_file(
                     copy_source,
                     new_file_name,
@@ -1190,7 +1354,6 @@ class Bucket(metaclass=B2TraceMeta):
                     source_encryption=source_encryption,
                     file_retention=file_retention,
                     legal_hold=legal_hold,
-                    cache_control=cache_control,
                 ).result()
             except CopySourceTooBig as e:
                 copy_source.length = e.size

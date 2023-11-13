@@ -60,8 +60,17 @@ class TestDownload(IntegrationTestBase):
                 assert LARGE_FILE_SHA1 in file_info
                 assert file_info[LARGE_FILE_SHA1] == sha1
 
-    def _file_helper(self, bucket, sha1_sum=None,
-                     bytes_to_write: int | None = None) -> tuple[DownloadVersion, Sha1HexDigest]:
+    def _file_helper(
+        self,
+        bucket,
+        sha1_sum=None,
+        bytes_to_write: int | None = None,
+        cache_control: str | None = None,
+        expires: str | None = None,
+        content_disposition: str | None = None,
+        content_encoding: str | None = None,
+        content_language: str | None = None,
+    ) -> tuple[DownloadVersion, Sha1HexDigest]:
         bytes_to_write = bytes_to_write or int(self.info.get_absolute_minimum_part_size()) * 2 + 1
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_dir = pathlib.Path(temp_dir)
@@ -72,6 +81,11 @@ class TestDownload(IntegrationTestBase):
                 source_small_file,
                 'small_file',
                 sha1_sum=sha1_sum,
+                cache_control=cache_control,
+                expires=expires,
+                content_disposition=content_disposition,
+                content_encoding=content_encoding,
+                content_language=content_language,
             )
             target_small_file = pathlib.Path(temp_dir) / 'target_small_file'
 
@@ -86,6 +100,29 @@ class TestDownload(IntegrationTestBase):
         bucket = self.create_bucket()
         f, _ = self._file_helper(bucket, bytes_to_write=1)
         assert f.download_version.content_sha1_verified
+
+    def _b2_file_info_kwargs(self):
+        kwargs = {
+            'cache_control': 'max-age=3600',
+            'expires': 'Wed, 21 Oct 2105 07:28:00 GMT',
+            'content_disposition': 'attachment; filename="fname.ext"',
+            'content_encoding': 'utf-8',
+            'content_language': 'en',
+        }
+        return kwargs
+
+    def _assert_correct_b2_file_info(self, file_version, kwargs):
+        for key, value in kwargs.items():
+            assert value == getattr(file_version, key)
+
+    def test_b2_headers(self):
+        bucket = self.create_bucket()
+        kwargs = self._b2_file_info_kwargs()
+        f, _ = self._file_helper(bucket, bytes_to_write=1, **kwargs)
+        assert f.download_version.content_sha1_verified
+        self._assert_correct_b2_file_info(f.download_version, kwargs)
+        file_version = bucket.get_file_info_by_id(f.download_version.id_)
+        self._assert_correct_b2_file_info(file_version, kwargs)
 
     def test_small_unverified(self):
         bucket = self.create_bucket()
