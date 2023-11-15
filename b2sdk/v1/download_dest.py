@@ -93,11 +93,7 @@ class DownloadDestLocalFile(AbstractDownloadDestination):
             with open(self.local_file_path, self.MODE) as f:
                 yield f
 
-            # After it's closed, set the mod time.
-            # This is an ugly hack to make the tests work.  I can't think
-            # of any other cases where set_file_mtime might fail.
-            if self.local_file_path != os.devnull:
-                set_file_mtime(self.local_file_path, mod_time_millis)
+            set_file_mtime(self.local_file_path, mod_time_millis)
 
             # Set the flag that means to leave the downloaded file on disk.
             completed = True

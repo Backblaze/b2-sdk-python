@@ -556,7 +556,11 @@ class PotentialS3EndpointPassedAsRealm(InvalidJsonResponse):
     pass
 
 
-class DestinationDirectoryError(B2Error):
+class DestinationError(B2Error):
+    pass
+
+
+class DestinationDirectoryError(DestinationError):
     pass
 
 

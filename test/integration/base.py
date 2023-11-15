@@ -9,55 +9,42 @@
 ######################################################################
 from __future__ import annotations
 
-import http.client
-import os
+from test.integration.bucket_cleaner import BucketCleaner
+from test.integration.helpers import (
+    BUCKET_CREATED_AT_MILLIS,
+    random_bucket_name,
+)
 
 import pytest
 
-from b2sdk.v2 import current_time_millis
+from b2sdk.v2 import B2Api, current_time_millis
 from b2sdk.v2.exception import DuplicateBucketName
 
-from .bucket_cleaner import BucketCleaner
-from .helpers import (
-    BUCKET_CREATED_AT_MILLIS,
-    BUCKET_NAME_LENGTH,
-    GENERAL_BUCKET_NAME_PREFIX,
-    authorize,
-    bucket_name_part,
-)
 
-
+@pytest.mark.usefixtures("cls_setup")
 class IntegrationTestBase:
-    @pytest.fixture(autouse=True)
-    def set_http_debug(self):
-        if os.environ.get('B2_DEBUG_HTTP'):
-            http.client.HTTPConnection.debuglevel = 1
+    b2_api: B2Api
+    this_run_bucket_name_prefix: str
+    bucket_cleaner: BucketCleaner
 
-    @pytest.fixture(autouse=True)
-    def save_settings(self, dont_cleanup_old_buckets, b2_auth_data):
-        type(self).dont_cleanup_old_buckets = dont_cleanup_old_buckets
-        type(self).b2_auth_data = b2_auth_data
-
-    @classmethod
-    def setup_class(cls):
-        cls.this_run_bucket_name_prefix = GENERAL_BUCKET_NAME_PREFIX + bucket_name_part(8)
-
-    @classmethod
-    def teardown_class(cls):
-        BucketCleaner(
-            cls.dont_cleanup_old_buckets,
-            *cls.b2_auth_data,
-            current_run_prefix=cls.this_run_bucket_name_prefix
-        ).cleanup_buckets()
+    @pytest.fixture(autouse=True, scope="class")
+    def cls_setup(self, request, b2_api, b2_auth_data, bucket_name_prefix, bucket_cleaner):
+        cls = request.cls
+        cls.b2_auth_data = b2_auth_data
+        cls.this_run_bucket_name_prefix = bucket_name_prefix
+        cls.bucket_cleaner = bucket_cleaner
+        cls.b2_api = b2_api
+        cls.info = b2_api.account_info
 
     @pytest.fixture(autouse=True)
     def setup_method(self):
-        self.b2_api, self.info = authorize(self.b2_auth_data)
+        self.buckets_created = []
+        yield
+        for bucket in self.buckets_created:
+            self.bucket_cleaner.cleanup_bucket(bucket)
 
     def generate_bucket_name(self):
-        return self.this_run_bucket_name_prefix + bucket_name_part(
-            BUCKET_NAME_LENGTH - len(self.this_run_bucket_name_prefix)
-        )
+        return random_bucket_name(self.this_run_bucket_name_prefix)
 
     def write_zeros(self, file, number):
         line = b'0' * 1000 + b'\n'
@@ -70,7 +57,7 @@ class IntegrationTestBase:
     def create_bucket(self):
         bucket_name = self.generate_bucket_name()
         try:
-            return self.b2_api.create_bucket(
+            bucket = self.b2_api.create_bucket(
                 bucket_name,
                 'allPublic',
                 bucket_info={BUCKET_CREATED_AT_MILLIS: str(current_time_millis())}
@@ -78,6 +65,8 @@ class IntegrationTestBase:
         except DuplicateBucketName:
             self._duplicated_bucket_name_debug_info(bucket_name)
             raise
+        self.buckets_created.append(bucket)
+        return bucket
 
     def _duplicated_bucket_name_debug_info(self, bucket_name: str) -> None:
         # Trying to obtain as much information as possible about this bucket.

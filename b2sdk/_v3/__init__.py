@@ -64,6 +64,11 @@ from b2sdk.utils import (
     IncrementalHexDigester,
 )
 
+from b2sdk._internal.utils.filesystem import (
+    points_to_fifo,
+    points_to_stdout,
+    STDOUT_FILEPATH,
+)
 from b2sdk.utils import trace_call
 from b2sdk.utils.docs import get_b2sdk_doc_urls
 
@@ -239,6 +244,9 @@ from b2sdk.cache import AuthInfoCache
 from b2sdk.cache import DummyCache
 from b2sdk.cache import InMemoryCache
 from b2sdk.http_constants import (
+    BUCKET_NAME_CHARS,
+    BUCKET_NAME_CHARS_UNIQ,
+    BUCKET_NAME_LENGTH_RANGE,
     DEFAULT_MAX_PART_SIZE,
     DEFAULT_MIN_PART_SIZE,
     DEFAULT_RECOMMENDED_UPLOAD_PART_SIZE,

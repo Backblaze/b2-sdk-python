@@ -7,12 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-* Add `*_PART_SIZE` constants to public interface
+* Add `*_PART_SIZE`, `BUCKET_NAME_*`, `STDOUT_FILEPATH` constants
+* Add `points_to_fifo`, `points_to_stdout` functions
 
 ### Changed
 * Mark `TempDir` as deprecated in favor of `tempfile.TemporaryDirectory`
 
 ### Fixed
+* Fix downloading to a non-seekable file, such as /dev/stdout
 * Fix ScanPoliciesManager support for compiled regexes
 
 ### Infrastructure
@@ -20,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Fix spellcheck erroring out on LICENSE file
 * Fix snyk reporting vulnerability due to tornado package use in docs generation
 * Deduplicate test_base files in test suite
+* Refactor integration tests for better pytest compatibility & eager bucket cleanup
 
 ## [1.24.1] - 2023-09-27
 
