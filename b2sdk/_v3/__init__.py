@@ -244,6 +244,9 @@ from b2sdk.cache import AuthInfoCache
 from b2sdk.cache import DummyCache
 from b2sdk.cache import InMemoryCache
 from b2sdk.http_constants import (
+    BUCKET_NAME_CHARS,
+    BUCKET_NAME_CHARS_UNIQ,
+    BUCKET_NAME_LENGTH_RANGE,
     DEFAULT_MAX_PART_SIZE,
     DEFAULT_MIN_PART_SIZE,
     DEFAULT_RECOMMENDED_UPLOAD_PART_SIZE,
