@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.25.0] - 2023-11-15
+
 ### Added
 * Add `*_PART_SIZE`, `BUCKET_NAME_*`, `STDOUT_FILEPATH` constants
 * Add `points_to_fifo`, `points_to_stdout` functions
@@ -507,7 +509,8 @@ has changed.
 ### Added
 Initial official release of SDK as a separate package (until now it was a part of B2 CLI)
 
-[Unreleased]: https://github.com/Backblaze/b2-sdk-python/compare/v1.24.1...HEAD
+[Unreleased]: https://github.com/Backblaze/b2-sdk-python/compare/v1.25.0...HEAD
+[1.25.0]: https://github.com/Backblaze/b2-sdk-python/compare/v1.24.1...v1.25.0
 [1.24.1]: https://github.com/Backblaze/b2-sdk-python/compare/v1.24.0...v1.24.1
 [1.24.0]: https://github.com/Backblaze/b2-sdk-python/compare/v1.23.0...v1.24.0
 [1.23.0]: https://github.com/Backblaze/b2-sdk-python/compare/v1.22.1...v1.23.0

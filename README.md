@@ -27,7 +27,7 @@ b2sdk follows [Semantic Versioning](https://semver.org/) policy, so in essence t
 Therefore when setting up b2sdk as a dependency, please make sure to match the version appropriately, for example you could put this in your `requirements.txt` to make sure your code is compatible with the `b2sdk` version your user will get from pypi:
 
 ```
-b2sdk>=0.0.0,<1.0.0
+b2sdk>=1.25.0,<2
 ```
 
 # Release History
