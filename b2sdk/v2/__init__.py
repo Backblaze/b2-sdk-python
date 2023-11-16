@@ -36,3 +36,13 @@ from .raw_simulator import RawSimulator
 
 from .raw_api import AbstractRawApi
 from .raw_api import B2RawHTTPApi
+
+# file_version
+
+from .file_version import FileVersion
+from .file_version import FileVersionFactory
+
+# large_file
+
+from .large_file import LargeFileServices
+from .large_file import UnfinishedLargeFile

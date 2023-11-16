@@ -34,6 +34,8 @@ class _OldRawAPI:
         *args,
         **kwargs
     ) -> dict:
+        if cache_control is not None:
+            file_info['b2-cache-control'] = cache_control
         return super().get_upload_file_headers(
             upload_auth_token,
             file_name,
@@ -45,7 +47,6 @@ class _OldRawAPI:
             file_retention,
             legal_hold,
             custom_upload_timestamp,
-            cache_control,
             *args,
             **kwargs,
         )
@@ -69,6 +70,8 @@ class _OldRawAPI:
         *args,
         **kwargs
     ):
+        if cache_control is not None:
+            file_info['b2-cache-control'] = cache_control
         return super().upload_file(
             upload_url,
             upload_auth_token,
@@ -82,7 +85,6 @@ class _OldRawAPI:
             file_retention,
             legal_hold,
             custom_upload_timestamp,
-            cache_control,
             *args,
             **kwargs,
         )

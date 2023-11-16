@@ -40,7 +40,6 @@ def test_b2_raw_http_api__get_upload_file_headers__supports_file_infos(
             file_retention=None,
             legal_hold=None,
             custom_upload_timestamp=None,
-            cache_control=None,
         )
     assert mock_method.get_bound_call_args()["file_info"] == file_info
     assert 'file_infos' not in mock_method.call_args[1]

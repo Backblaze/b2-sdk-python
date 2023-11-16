@@ -79,6 +79,7 @@ from b2sdk.file_version import FileVersion
 from b2sdk.file_version import FileVersionFactory
 from b2sdk.large_file.part import Part
 from b2sdk.large_file.unfinished_large_file import UnfinishedLargeFile
+from b2sdk.large_file.services import LargeFileServices
 from b2sdk.utils.range_ import Range
 
 # file lock

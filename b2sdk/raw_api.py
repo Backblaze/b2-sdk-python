@@ -130,7 +130,6 @@ class AbstractRawApi(metaclass=ABCMeta):
         source_server_side_encryption: EncryptionSetting | None = None,
         file_retention: FileRetentionSetting | None = None,
         legal_hold: LegalHold | None = None,
-        cache_control: str | None = None,
     ):
         pass
 
@@ -304,7 +303,6 @@ class AbstractRawApi(metaclass=ABCMeta):
         server_side_encryption: EncryptionSetting | None = None,
         file_retention: FileRetentionSetting | None = None,
         legal_hold: LegalHold | None = None,
-        cache_control: str | None = None,
     ):
         pass
 
@@ -352,7 +350,6 @@ class AbstractRawApi(metaclass=ABCMeta):
         file_retention: FileRetentionSetting | None,
         legal_hold: LegalHold | None,
         custom_upload_timestamp: int | None = None,
-        cache_control: str | None = None,
     ) -> dict:
         headers = {
             'Authorization': upload_auth_token,
@@ -361,8 +358,6 @@ class AbstractRawApi(metaclass=ABCMeta):
             'Content-Type': content_type,
             'X-Bz-Content-Sha1': content_sha1,
         }
-        if cache_control is not None:
-            file_info['b2-cache-control'] = cache_control
         for k, v in file_info.items():
             headers[FILE_INFO_HEADER_PREFIX + k] = b2_url_encode(v)
         if server_side_encryption is not None:
@@ -397,7 +392,6 @@ class AbstractRawApi(metaclass=ABCMeta):
         file_retention: FileRetentionSetting | None = None,
         legal_hold: LegalHold | None = None,
         custom_upload_timestamp: int | None = None,
-        cache_control: str | None = None,
     ):
         pass
 
@@ -748,7 +742,6 @@ class B2RawHTTPApi(AbstractRawApi):
         file_retention: FileRetentionSetting | None = None,
         legal_hold: LegalHold | None = None,
         custom_upload_timestamp: int | None = None,
-        cache_control: str | None = None,
     ):
         kwargs = {}
         if server_side_encryption is not None:
@@ -768,10 +761,6 @@ class B2RawHTTPApi(AbstractRawApi):
 
         if custom_upload_timestamp is not None:
             kwargs['custom_upload_timestamp'] = custom_upload_timestamp
-
-        if cache_control is not None:
-            file_info = file_info or {}
-            file_info['b2-cache-control'] = cache_control
 
         return self._post_json(
             api_url,
@@ -939,7 +928,6 @@ class B2RawHTTPApi(AbstractRawApi):
         file_retention: FileRetentionSetting | None = None,
         legal_hold: LegalHold | None = None,
         custom_upload_timestamp: int | None = None,
-        cache_control: str | None = None,
     ):
         """
         Upload one, small file to b2.
@@ -956,7 +944,6 @@ class B2RawHTTPApi(AbstractRawApi):
         :param file_retention: retention setting for the file
         :param legal_hold: legal hold setting for the file
         :param custom_upload_timestamp: custom upload timestamp for the file
-        :param cache_control: an optional cache control setting. Syntax based on the section 14.9 of RFC 2616. Example string value: 'public, max-age=86400, s-maxage=3600, no-transform'.
         :return:
         """
         # Raise UnusableFileName if the file_name doesn't meet the rules.
@@ -972,7 +959,6 @@ class B2RawHTTPApi(AbstractRawApi):
             file_retention=file_retention,
             legal_hold=legal_hold,
             custom_upload_timestamp=custom_upload_timestamp,
-            cache_control=cache_control,
         )
         return self.b2_http.post_content_return_json(upload_url, headers, data_stream)
 
@@ -1015,7 +1001,6 @@ class B2RawHTTPApi(AbstractRawApi):
         source_server_side_encryption: EncryptionSetting | None = None,
         file_retention: FileRetentionSetting | None = None,
         legal_hold: LegalHold | None = None,
-        cache_control: str | None = None,
     ):
         kwargs = {}
         if bytes_range is not None:
@@ -1039,9 +1024,6 @@ class B2RawHTTPApi(AbstractRawApi):
 
         if content_type is not None:
             kwargs['contentType'] = content_type
-        if cache_control is not None:
-            file_info = file_info or {}
-            file_info['b2-cache-control'] = cache_control
         if file_info is not None:
             kwargs['fileInfo'] = file_info
         if destination_bucket_id is not None:

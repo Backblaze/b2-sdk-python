@@ -9,8 +9,11 @@
 ######################################################################
 from __future__ import annotations
 
+import datetime as dt
+
 from b2sdk.encryption.setting import EncryptionSettingFactory
 from b2sdk.file_lock import FileRetentionSetting, LegalHold
+from b2sdk.utils.http_date import parse_http_date
 
 
 class UnfinishedLargeFile:
@@ -38,7 +41,34 @@ class UnfinishedLargeFile:
         self.encryption = EncryptionSettingFactory.from_file_version_dict(file_dict)
         self.file_retention = FileRetentionSetting.from_file_version_dict(file_dict)
         self.legal_hold = LegalHold.from_file_version_dict(file_dict)
-        self.cache_control = file_dict.get('cacheControl')
+
+    @property
+    def cache_control(self) -> str | None:
+        return (self.file_info or {}).get('b2-cache-control')
+
+    @property
+    def expires(self) -> str | None:
+        return (self.file_info or {}).get('b2-expires')
+
+    def expires_parsed(self) -> dt.datetime | None:
+        """Return the expiration date as a datetime object, or None if there is no expiration date.
+        Raise ValueError if `expires` property is not a valid HTTP-date."""
+
+        if self.expires is None:
+            return None
+        return parse_http_date(self.expires)
+
+    @property
+    def content_disposition(self) -> str | None:
+        return (self.file_info or {}).get('b2-content-disposition')
+
+    @property
+    def content_encoding(self) -> str | None:
+        return (self.file_info or {}).get('b2-content-encoding')
+
+    @property
+    def content_language(self) -> str | None:
+        return (self.file_info or {}).get('b2-content-language')
 
     def __repr__(self):
         return f'<{self.__class__.__name__} {self.bucket_id} {self.file_name}>'

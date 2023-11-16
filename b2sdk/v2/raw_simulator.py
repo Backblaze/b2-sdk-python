@@ -33,6 +33,8 @@ class BucketSimulator(v3.BucketSimulator):
         *args,
         **kwargs
     ):
+        if cache_control is not None:
+            file_info['b2-cache-control'] = cache_control
         return super().upload_file(
             upload_id,
             upload_auth_token,
@@ -46,7 +48,6 @@ class BucketSimulator(v3.BucketSimulator):
             file_retention,
             legal_hold,
             custom_upload_timestamp,
-            cache_control,
             *args,
             **kwargs,
         )
@@ -71,6 +72,8 @@ class RawSimulator(v3.RawSimulator):
         *args,
         **kwargs
     ) -> dict:
+        if cache_control is not None:
+            file_info['b2-cache-control'] = cache_control
         return super().get_upload_file_headers(
             upload_auth_token,
             file_name,
@@ -82,7 +85,6 @@ class RawSimulator(v3.RawSimulator):
             file_retention,
             legal_hold,
             custom_upload_timestamp,
-            cache_control,
             *args,
             **kwargs,
         )
@@ -106,6 +108,8 @@ class RawSimulator(v3.RawSimulator):
         *args,
         **kwargs
     ):
+        if cache_control is not None:
+            file_info['b2-cache-control'] = cache_control
         return super().upload_file(
             upload_url,
             upload_auth_token,
@@ -119,7 +123,6 @@ class RawSimulator(v3.RawSimulator):
             file_retention,
             legal_hold,
             custom_upload_timestamp,
-            cache_control,
             *args,
             **kwargs,
         )
