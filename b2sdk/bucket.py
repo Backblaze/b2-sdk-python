@@ -559,9 +559,9 @@ class Bucket(metaclass=B2TraceMeta):
         :param str,None cache_control: an optional cache control setting. Syntax based on the section 14.9 of RFC 2616.
             Example string value: 'public, max-age=86400, s-maxage=3600, no-transform'.
         :param str,datetime.datetime,None expires: an optional cache expiration setting.
-            If this argument is a string, its syntax must based on the section 14.21 of RFC 2616.
+            If this argument is a string, its syntax must be based on the section 14.21 of RFC 2616.
             Example string value: 'Thu, 01 Dec 2050 16:00:00 GMT'. If this argument is a datetime,
-            it will be converted to a date in the same format.
+            it will be converted to a string in the same format.
         :param str,None content_disposition: an optional content disposition setting. Syntax based on the section 19.5.1 of RFC 2616.
             Example string value: 'attachment; filename="fname.ext"'.
         :param str,None content_encoding: an optional content encoding setting.Syntax based on the section 14.11 of RFC 2616.
@@ -634,9 +634,9 @@ class Bucket(metaclass=B2TraceMeta):
         :param str,None cache_control: an optional cache control setting. Syntax based on the section 14.9 of RFC 2616.
             Example string value: 'public, max-age=86400, s-maxage=3600, no-transform'.
         :param str,datetime.datetime,None expires: an optional cache expiration setting.
-            If this argument is a string, its syntax must based on the section 14.21 of RFC 2616.
+            If this argument is a string, its syntax must be based on the section 14.21 of RFC 2616.
             Example string value: 'Thu, 01 Dec 2050 16:00:00 GMT'. If this argument is a datetime,
-            it will be converted to a date in the same format.
+            it will be converted to a string in the same format.
         :param str,None content_disposition: an optional content disposition setting. Syntax based on the section 19.5.1 of RFC 2616.
             Example string value: 'attachment; filename="fname.ext"'.
         :param str,None content_encoding: an optional content encoding setting.Syntax based on the section 14.11 of RFC 2616.
@@ -776,9 +776,9 @@ class Bucket(metaclass=B2TraceMeta):
         :param str,None cache_control: an optional cache control setting. Syntax based on the section 14.9 of RFC 2616.
             Example string value: 'public, max-age=86400, s-maxage=3600, no-transform'.
         :param str,datetime.datetime,None expires: an optional cache expiration setting.
-            If this argument is a string, its syntax must based on the section 14.21 of RFC 2616.
+            If this argument is a string, its syntax must be based on the section 14.21 of RFC 2616.
             Example string value: 'Thu, 01 Dec 2050 16:00:00 GMT'. If this argument is a datetime,
-            it will be converted to a date in the same format.
+            it will be converted to a string in the same format.
         :param str,None content_disposition: an optional content disposition setting. Syntax based on the section 19.5.1 of RFC 2616.
             Example string value: 'attachment; filename="fname.ext"'.
         :param str,None content_encoding: an optional content encoding setting.Syntax based on the section 14.11 of RFC 2616.
@@ -881,9 +881,9 @@ class Bucket(metaclass=B2TraceMeta):
         :param str,None cache_control: an optional cache control setting. Syntax based on the section 14.9 of RFC 2616.
             Example string value: 'public, max-age=86400, s-maxage=3600, no-transform'.
         :param str,datetime.datetime,None expires: an optional cache expiration setting.
-            If this argument is a string, its syntax must based on the section 14.21 of RFC 2616.
+            If this argument is a string, its syntax must be based on the section 14.21 of RFC 2616.
             Example string value: 'Thu, 01 Dec 2050 16:00:00 GMT'. If this argument is a datetime,
-            it will be converted to a date in the same format.
+            it will be converted to a string in the same format.
         :param str,None content_disposition: an optional content disposition setting. Syntax based on the section 19.5.1 of RFC 2616.
             Example string value: 'attachment; filename="fname.ext"'.
         :param str,None content_encoding: an optional content encoding setting.Syntax based on the section 14.11 of RFC 2616.
@@ -967,9 +967,9 @@ class Bucket(metaclass=B2TraceMeta):
         :param str,None cache_control: an optional cache control setting. Syntax based on the section 14.9 of RFC 2616.
             Example string value: 'public, max-age=86400, s-maxage=3600, no-transform'.
         :param str,datetime.datetime,None expires: an optional cache expiration setting.
-            If this argument is a string, its syntax must based on the section 14.21 of RFC 2616.
+            If this argument is a string, its syntax must be based on the section 14.21 of RFC 2616.
             Example string value: 'Thu, 01 Dec 2050 16:00:00 GMT'. If this argument is a datetime,
-            it will be converted to a date in the same format.
+            it will be converted to a string in the same format.
         :param str,None content_disposition: an optional content disposition setting. Syntax based on the section 19.5.1 of RFC 2616.
             Example string value: 'attachment; filename="fname.ext"'.
         :param str,None content_encoding: an optional content encoding setting.Syntax based on the section 14.11 of RFC 2616.
@@ -1057,9 +1057,9 @@ class Bucket(metaclass=B2TraceMeta):
         :param str,None cache_control: an optional cache control setting. Syntax based on the section 14.9 of RFC 2616.
             Example string value: 'public, max-age=86400, s-maxage=3600, no-transform'.
         :param str,datetime.datetime,None expires: an optional cache expiration setting.
-            If this argument is a string, its syntax must based on the section 14.21 of RFC 2616.
+            If this argument is a string, its syntax must be based on the section 14.21 of RFC 2616.
             Example string value: 'Thu, 01 Dec 2050 16:00:00 GMT'. If this argument is a datetime,
-            it will be converted to a date in the same format.
+            it will be converted to a string in the same format.
         :param str,None content_disposition: an optional content disposition setting. Syntax based on the section 19.5.1 of RFC 2616.
             Example string value: 'attachment; filename="fname.ext"'.
         :param str,None content_encoding: an optional content encoding setting.Syntax based on the section 14.11 of RFC 2616.
@@ -1194,9 +1194,9 @@ class Bucket(metaclass=B2TraceMeta):
         :param str,None cache_control: an optional cache control setting. Syntax based on the section 14.9 of RFC 2616.
             Example string value: 'public, max-age=86400, s-maxage=3600, no-transform'.
         :param str,datetime.datetime,None expires: an optional cache expiration setting.
-            If this argument is a string, its syntax must based on the section 14.21 of RFC 2616.
+            If this argument is a string, its syntax must be based on the section 14.21 of RFC 2616.
             Example string value: 'Thu, 01 Dec 2050 16:00:00 GMT'. If this argument is a datetime,
-            it will be converted to a date in the same format.
+            it will be converted to a string in the same format.
         :param str,None content_disposition: an optional content disposition setting. Syntax based on the section 19.5.1 of RFC 2616.
             Example string value: 'attachment; filename="fname.ext"'.
         :param str,None content_encoding: an optional content encoding setting.Syntax based on the section 14.11 of RFC 2616.
@@ -1272,9 +1272,9 @@ class Bucket(metaclass=B2TraceMeta):
         :param str,None cache_control: an optional cache control setting. Syntax based on the section 14.9 of RFC 2616.
             Example string value: 'public, max-age=86400, s-maxage=3600, no-transform'.
         :param str,datetime.datetime,None expires: an optional cache expiration setting.
-            If this argument is a string, its syntax must based on the section 14.21 of RFC 2616.
+            If this argument is a string, its syntax must be based on the section 14.21 of RFC 2616.
             Example string value: 'Thu, 01 Dec 2050 16:00:00 GMT'. If this argument is a datetime,
-            it will be converted to a date in the same format.
+            it will be converted to a string in the same format.
         :param str,None content_disposition: an optional content disposition setting. Syntax based on the section 19.5.1 of RFC 2616.
             Example string value: 'attachment; filename="fname.ext"'.
         :param str,None content_encoding: an optional content encoding setting.Syntax based on the section 14.11 of RFC 2616.
@@ -1375,9 +1375,9 @@ class Bucket(metaclass=B2TraceMeta):
         :param str,None cache_control: an optional cache control setting. Syntax based on the section 14.9 of RFC 2616.
             Example string value: 'public, max-age=86400, s-maxage=3600, no-transform'.
         :param str,datetime.datetime,None expires: an optional cache expiration setting.
-            If this argument is a string, its syntax must based on the section 14.21 of RFC 2616.
+            If this argument is a string, its syntax must be based on the section 14.21 of RFC 2616.
             Example string value: 'Thu, 01 Dec 2050 16:00:00 GMT'. If this argument is a datetime,
-            it will be converted to a date in the same format.
+            it will be converted to a string in the same format.
         :param str,None content_disposition: an optional content disposition setting. Syntax based on the section 19.5.1 of RFC 2616.
             Example string value: 'attachment; filename="fname.ext"'.
         :param str,None content_encoding: an optional content encoding setting.Syntax based on the section 14.11 of RFC 2616.
