@@ -12,7 +12,6 @@ from __future__ import annotations
 import datetime as dt
 
 from .base import IntegrationTestBase
-from .fixtures import b2_auth_data  # noqa
 
 
 class TestFileVersionAttributes(IntegrationTestBase):

@@ -9,8 +9,15 @@
 ######################################################################
 from __future__ import annotations
 
+import string
+
 # These constants are needed in different modules, so they are stored in this module, that
 # imports nothing, thus avoiding circular imports
+
+# https://www.backblaze.com/docs/cloud-storage-buckets#bucket-names
+BUCKET_NAME_CHARS = string.ascii_lowercase + string.digits + '-'
+BUCKET_NAME_CHARS_UNIQ = string.ascii_lowercase + string.digits + '-'
+BUCKET_NAME_LENGTH_RANGE = (6, 63)
 
 LIST_FILE_NAMES_MAX_LIMIT = 10000  # https://www.backblaze.com/b2/docs/b2_list_file_names.html
 
