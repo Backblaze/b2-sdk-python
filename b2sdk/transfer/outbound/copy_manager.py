@@ -45,7 +45,6 @@ class CopyManager(TransferManager, ThreadPoolMixin):
         source_encryption: EncryptionSetting | None = None,
         legal_hold: LegalHold | None = None,
         file_retention: FileRetentionSetting | None = None,
-        cache_control: str | None = None,
     ):
         # Run small copies in the same thread pool as large file copies,
         # so that they share resources during a sync.
@@ -61,7 +60,6 @@ class CopyManager(TransferManager, ThreadPoolMixin):
             source_encryption=source_encryption,
             legal_hold=legal_hold,
             file_retention=file_retention,
-            cache_control=cache_control,
         )
 
     def copy_part(
@@ -151,7 +149,6 @@ class CopyManager(TransferManager, ThreadPoolMixin):
         source_encryption: EncryptionSetting | None,
         legal_hold: LegalHold | None = None,
         file_retention: FileRetentionSetting | None = None,
-        cache_control: str | None = None,
     ):
         with progress_listener:
             progress_listener.set_total_bytes(copy_source.get_content_length() or 0)
@@ -191,7 +188,6 @@ class CopyManager(TransferManager, ThreadPoolMixin):
                 source_server_side_encryption=source_encryption,
                 legal_hold=legal_hold,
                 file_retention=file_retention,
-                cache_control=cache_control,
             )
             file_version = self.services.api.file_version_factory.from_api_response(response)
             if progress_listener is not None:

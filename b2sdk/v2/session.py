@@ -37,6 +37,8 @@ class B2Session(v3.B2Session):
         *args,
         **kwargs
     ):
+        if cache_control is not None:
+            file_info['b2-cache-control'] = cache_control
         return super().upload_file(
             bucket_id,
             file_name,
@@ -49,7 +51,6 @@ class B2Session(v3.B2Session):
             file_retention,
             legal_hold,
             custom_upload_timestamp,
-            cache_control,
             *args,
             **kwargs,
         )

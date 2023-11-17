@@ -15,11 +15,14 @@ from .bucket import Bucket, BucketFactory
 from .exception import BucketIdNotFound
 from .session import B2Session
 from .transfer import DownloadManager, UploadManager
+from .file_version import FileVersionFactory
+from .large_file import LargeFileServices
 
 
 class Services(v3.Services):
     UPLOAD_MANAGER_CLASS = staticmethod(UploadManager)
     DOWNLOAD_MANAGER_CLASS = staticmethod(DownloadManager)
+    LARGE_FILE_SERVICES_CLASS = staticmethod(LargeFileServices)
 
 
 # override to use legacy B2Session with legacy B2Http
@@ -30,6 +33,7 @@ class B2Api(v3.B2Api):
     BUCKET_CLASS = staticmethod(Bucket)
     BUCKET_FACTORY_CLASS = staticmethod(BucketFactory)
     SERVICES_CLASS = staticmethod(Services)
+    FILE_VERSION_FACTORY_CLASS = staticmethod(FileVersionFactory)
 
     # Legacy init in case something depends on max_workers defaults = 10
     def __init__(self, *args, **kwargs):

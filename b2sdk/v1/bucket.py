@@ -61,6 +61,9 @@ class Bucket(v2.Bucket):
         :param bool legal_hold: legalHold setting for the new file
         :param str cache_control: cache control setting for the new file. Syntax based on the section 14.9 of RC 2616. Example string value: 'public, max-age=86400, s-maxage=3600, no-transform'.
         """
+        file_info = file_info or {}
+        if cache_control is not None:
+            file_info['b2-cache-control'] = cache_control
         return self.api.session.copy_file(
             file_id,
             new_file_name,
@@ -73,7 +76,6 @@ class Bucket(v2.Bucket):
             source_server_side_encryption=source_encryption,
             file_retention=file_retention,
             legal_hold=legal_hold,
-            cache_control=cache_control,
         )
 
     def start_large_file(
@@ -95,6 +97,9 @@ class Bucket(v2.Bucket):
         :param bool legal_hold: legalHold setting for the new file
         :param str,None cache_control: an optional cache control setting. Syntax based on the section 14.9 of RFC 2616. Example string value: 'public, max-age=86400, s-maxage=3600, no-transform'.
         """
+        file_info = file_info or {}
+        if cache_control is not None:
+            file_info['b2-cache-control'] = cache_control
         validate_b2_file_name(file_name)
         return self.api.services.large_file.start_large_file(
             self.id_,
@@ -103,7 +108,6 @@ class Bucket(v2.Bucket):
             file_info=file_info,
             file_retention=file_retention,
             legal_hold=legal_hold,
-            cache_control=cache_control,
         )
 
     def download_file_by_name(

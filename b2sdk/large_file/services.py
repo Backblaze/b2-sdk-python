@@ -17,6 +17,9 @@ from b2sdk.large_file.unfinished_large_file import UnfinishedLargeFile
 
 
 class LargeFileServices:
+
+    UNFINISHED_LARGE_FILE_CLASS = staticmethod(UnfinishedLargeFile)
+
     def __init__(self, services):
         self.services = services
 
@@ -57,7 +60,7 @@ class LargeFileServices:
                 bucket_id, start_file_id, batch_size, prefix
             )
             for file_dict in batch['files']:
-                yield UnfinishedLargeFile(file_dict)
+                yield self.UNFINISHED_LARGE_FILE_CLASS(file_dict)
             start_file_id = batch.get('nextFileId')
             if start_file_id is None:
                 break
@@ -86,7 +89,6 @@ class LargeFileServices:
         encryption: EncryptionSetting | None = None,
         file_retention: FileRetentionSetting | None = None,
         legal_hold: LegalHold | None = None,
-        cache_control: str | None = None,
     ):
         """
         Start a large file transfer.
@@ -97,9 +99,8 @@ class LargeFileServices:
         :param b2sdk.v2.EncryptionSetting encryption: encryption settings (``None`` if unknown)
         :param b2sdk.v2.FileRetentionSetting file_retention: file retention setting
         :param b2sdk.v2.LegalHold legal_hold: legal hold setting
-        :param str,None cache_control: an optional cache control setting. Syntax based on the section 14.9 of RFC 2616. Example string value: 'public, max-age=86400, s-maxage=3600, no-transform'.
         """
-        return UnfinishedLargeFile(
+        return self.UNFINISHED_LARGE_FILE_CLASS(
             self.services.session.start_large_file(
                 bucket_id,
                 file_name,
@@ -108,7 +109,6 @@ class LargeFileServices:
                 server_side_encryption=encryption,
                 file_retention=file_retention,
                 legal_hold=legal_hold,
-                cache_control=cache_control,
             )
         )
 
