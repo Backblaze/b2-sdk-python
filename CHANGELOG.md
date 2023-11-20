@@ -14,7 +14,6 @@ upcoming release can be found in [changelog.d](changelog.d).
 ### Added
 - Add `*_PART_SIZE`, `BUCKET_NAME_*`, `STDOUT_FILEPATH` constants
 - Add `points_to_fifo`, `points_to_stdout` functions
-- Add `expires`, `content_disposition`, `content_encoding`, `content_language` arguments to various `Bucket` methods
 
 ### Changed
 - Mark `TempDir` as deprecated in favor of `tempfile.TemporaryDirectory`
