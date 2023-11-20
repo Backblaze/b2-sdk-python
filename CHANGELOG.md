@@ -9,6 +9,18 @@ upcoming release can be found in [changelog.d](changelog.d).
 
 <!-- towncrier release notes start -->
 
+## 1.26.0 - 2023-11-20
+
+
+### Added
+
+- Add `expires`, `content_disposition`, `content_encoding`, `content_language` arguments to various `Bucket` methods ([#357](https://github.com/Backblaze/b2-sdk-python/issues/357))
+
+### Infrastructure
+
+- Towncrier changelog generation - to avoid conflicts when simultaneously working on PRs
+
+
 ## 1.25.0 - 2023-11-15
 
 ### Added
