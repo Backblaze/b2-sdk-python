@@ -19,6 +19,7 @@ upcoming release can be found in [changelog.d](changelog.d).
 ### Infrastructure
 
 - Towncrier changelog generation - to avoid conflicts when simultaneously working on PRs
+- Fix towncrier generated changelog to work with mindsers/changelog-reader-action
 
 
 ## [1.25.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v1.25.0) - 2023-11-15
