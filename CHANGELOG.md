@@ -9,7 +9,7 @@ upcoming release can be found in [changelog.d](changelog.d).
 
 <!-- towncrier release notes start -->
 
-## 1.26.0 - 2023-11-20
+## [1.26.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v1.26.0) - 2023-11-20
 
 
 ### Added
@@ -21,7 +21,7 @@ upcoming release can be found in [changelog.d](changelog.d).
 - Towncrier changelog generation - to avoid conflicts when simultaneously working on PRs
 
 
-## 1.25.0 - 2023-11-15
+## [1.25.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v1.25.0) - 2023-11-15
 
 ### Added
 - Add `*_PART_SIZE`, `BUCKET_NAME_*`, `STDOUT_FILEPATH` constants
@@ -41,18 +41,18 @@ upcoming release can be found in [changelog.d](changelog.d).
 - Deduplicate test_base files in test suite
 - Refactor integration tests for better pytest compatibility & eager bucket cleanup
 
-## 1.24.1 - 2023-09-27
+## [1.24.1](https://github.com/Backblaze/b2-sdk-python/releases/tag/v1.24.1) - 2023-09-27
 
 ### Fixed
 - Fix missing key ID for large file encrypted with SSE-C
 - Fix concatenating error message when message is None
 
-## 1.24.0 - 2023-08-31
+## [1.24.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v1.24.0) - 2023-08-31
 
 ### Added
 - 'bypass_governance' flag to delete_file_version
 
-## 1.23.0 - 2023-08-10
+## [1.23.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v1.23.0) - 2023-08-10
 
 ### Added
 - Add `get_file_info_by_name` to the B2Api class
@@ -61,12 +61,12 @@ upcoming release can be found in [changelog.d](changelog.d).
 - Require `typing_extensions` on Python 3.11 (already required on earlier versions) for better compatibility with pydantic v2
 - Fix `RawSimulator` handling of `cache_control` parameter during tests.
 
-## 1.22.1 - 2023-07-24
+## [1.22.1](https://github.com/Backblaze/b2-sdk-python/releases/tag/v1.22.1) - 2023-07-24
 
 ### Fixed
 - Fix regression in dir exclusion patterns introduced in 1.22.0
 
-## 1.22.0 - 2023-07-21
+## [1.22.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v1.22.0) - 2023-07-21
 
 ### Added
 - Declare official support of Python 3.12
@@ -89,7 +89,7 @@ upcoming release can be found in [changelog.d](changelog.d).
 - Automatically set copyright date when generating the docs
 - Use modern type hints in documentation (achieved through combination of PEP 563 & 585 and `sphinx-autodoc-typehints`)
 
-## 1.21.0 - 2023-04-17
+## [1.21.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v1.21.0) - 2023-04-17
 
 ### Added
 - Add support for custom upload timestamp
@@ -99,7 +99,7 @@ upcoming release can be found in [changelog.d](changelog.d).
 - Remove dependency from `arrow`
 - Build Python wheels for distribution
 
-## 1.20.0 - 2023-03-23
+## [1.20.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v1.20.0) - 2023-03-23
 
 ### Added
 - Add `use_cache` parameter to `B2Api.list_buckets`
@@ -113,7 +113,7 @@ upcoming release can be found in [changelog.d](changelog.d).
 ### Infrastructure
 - Disable changelog verification for dependabot PRs
 
-## 1.19.0 - 2023-01-24
+## [1.19.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v1.19.0) - 2023-01-24
 
 ### Added
 - Authorizing a key for a single bucket ensures that this bucket is cached
@@ -135,7 +135,7 @@ upcoming release can be found in [changelog.d](changelog.d).
 - Upgraded GitHub actions checkout to v3, python-setup to v4
 - Additional tests for `IncrementalHexDigester`
 
-## 1.18.0 - 2022-09-20
+## [1.18.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v1.18.0) - 2022-09-20
 
 ### Added
 - Logging performance summary of parallel download threads
@@ -152,7 +152,7 @@ upcoming release can be found in [changelog.d](changelog.d).
 - Re-enable changelog validation in CI
 - StatsCollector contains context managers for gathering performance statistics
 
-## 1.17.3 - 2022-07-15
+## [1.17.3](https://github.com/Backblaze/b2-sdk-python/releases/tag/v1.17.3) - 2022-07-15
 
 ### Fixed
 - Fix `FileVersion._get_upload_headers` when encryption key is `None`
@@ -162,18 +162,18 @@ upcoming release can be found in [changelog.d](changelog.d).
 - Add `B2_DEBUG_HTTP` env variable to enable network-level test debugging
 - Disable changelog validation temporarily
 
-## 1.17.2 - 2022-06-24
+## [1.17.2](https://github.com/Backblaze/b2-sdk-python/releases/tag/v1.17.2) - 2022-06-24
 
 ### Fixed
 - Fix a race in progress reporter
 - Fix import of replication
 
-## 1.17.1 - 2022-06-23 [YANKED]
+## [1.17.1](https://github.com/Backblaze/b2-sdk-python/releases/tag/v1.17.1) - 2022-06-23 [YANKED]
 
 ### Fixed
 - Fix importing scan module
 
-## 1.17.0 - 2022-06-23 [YANKED]
+## [1.17.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v1.17.0) - 2022-06-23 [YANKED]
 
 As in version 1.16.0, the replication API may still be unstable, however
 no backward-incompatible changes are planned at this point.
@@ -203,7 +203,7 @@ no backward-incompatible changes are planned at this point.
 - Extract folder/bucket scanning into a new `scan` module
 - Enable pip cache in CI
 
-## 1.16.0 - 2022-04-27
+## [1.16.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v1.16.0) - 2022-04-27
 
 This release contains a preview of replication support. It allows for basic
 usage of B2 replication feature (currently in closed beta).
@@ -228,7 +228,7 @@ Expect substantial amount of work on sdk interface:
 - Fix license test on Windows
 - Fix cryptic errors when running integration tests with a non-full key
 
-## 1.15.0 - 2022-04-12
+## [1.15.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v1.15.0) - 2022-04-12
 
 ### Changed
 - Don't run coverage in pypy in CI
@@ -259,17 +259,17 @@ Expect substantial amount of work on sdk interface:
 ### Removed
 - Drop support for Python 3.5 and Python 3.6
 
-## 1.14.1 - 2022-02-23
+## [1.14.1](https://github.com/Backblaze/b2-sdk-python/releases/tag/v1.14.1) - 2022-02-23
 
 ### Security
 - Fix setting permissions for local sqlite database (thanks to Jan Schejbal for responsible disclosure!)
 
-## 1.14.0 - 2021-12-23
+## [1.14.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v1.14.0) - 2021-12-23
 
 ### Fixed
 - Relax constraint on arrow to allow for versions >= 1.0.2
 
-## 1.13.0 - 2021-10-24
+## [1.13.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v1.13.0) - 2021-10-24
 
 ### Added
 - Add support for Python 3.10
@@ -280,7 +280,7 @@ Expect substantial amount of work on sdk interface:
 ### Fixed
 - Fix pypy selector in CI
 
-## 1.12.0 - 2021-08-06
+## [1.12.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v1.12.0) - 2021-08-06
 
 ### Changed
 - The `importlib-metadata` requirement is less strictly bound now (just >=3.3.0 for python > 3.5).
@@ -297,13 +297,13 @@ Expect substantial amount of work on sdk interface:
 ### Removed
 - One unused import.
 
-## 1.11.0 - 2021-06-24
+## [1.11.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v1.11.0) - 2021-06-24
 
 ### Changed
 - apiver `v2` interface released. `from b2sdk.v2 import ...` is now the recommended import,
   but `from b2sdk.v1 import ...` works as before
 
-## 1.10.0 - 2021-06-23
+## [1.10.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v1.10.0) - 2021-06-23
 
 ### Added
 - `get_fresh_state` method added to `FileVersion` and `Bucket`
@@ -328,7 +328,7 @@ Expect substantial amount of work on sdk interface:
 ### Removed
 - Remove deprecated `SyncReport` methods
 
-## 1.9.0 - 2021-06-07
+## [1.9.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v1.9.0) - 2021-06-07
 
 ### Added
 - `ScanPoliciesManager` is able to filter b2 files by upload timestamp
@@ -347,7 +347,7 @@ Expect substantial amount of work on sdk interface:
 ### Fixed
 - Fix call to incorrect internal api in `B2Api.get_download_url_for_file_name`
 
-## 1.8.0 - 2021-05-21
+## [1.8.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v1.8.0) - 2021-05-21
 
 ### Added
 - Add `get_bucket_name_or_none_from_bucket_id` to `AccountInfo` and `Cache`
@@ -373,7 +373,7 @@ Expect substantial amount of work on sdk interface:
 - Remove `Bucket.copy_file` and `Bucket.start_large_file`
 - Remove `FileVersionInfo.format_ls_entry` and `FileVersionInfo.format_folder_ls_entry`
 
-## 1.7.0 - 2021-04-22
+## [1.7.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v1.7.0) - 2021-04-22
 
 ### Added
 - Add `__slots__` and `__eq__` to `FileVersionInfo` for memory usage optimization and ease of testing
@@ -390,7 +390,7 @@ Expect substantial amount of work on sdk interface:
 - Make tqdm-based progress reporters less jumpy and easier to read
 - Fix emerger examples in docs
 
-## 1.6.0 - 2021-04-08
+## [1.6.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v1.6.0) - 2021-04-08
 
 ### Added
 - Fetch S3-compatible API URL from `authorize_account`
@@ -399,7 +399,7 @@ Expect substantial amount of work on sdk interface:
 - Exclude packages inside the test package when installing
 - Fix for server response change regarding SSE
 
-## 1.5.0 - 2021-03-25
+## [1.5.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v1.5.0) - 2021-03-25
 
 ### Added
 - Add `dependabot.yml`
@@ -411,7 +411,7 @@ Expect substantial amount of work on sdk interface:
 ### Fixed
 - Pin `setuptools-scm<6.0` as `>=6.0` doesn't support Python 3.5
 
-## 1.4.0 - 2021-03-03
+## [1.4.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v1.4.0) - 2021-03-03
 
 ### Changed
 - Add an ability to provide `bucket_id` filter parameter for `list_buckets`
@@ -421,7 +421,7 @@ Expect substantial amount of work on sdk interface:
 ### Fixed
 - Fix docs autogen
 
-## 1.3.0 - 2021-01-13
+## [1.3.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v1.3.0) - 2021-01-13
 
 ### Added
 - Add custom exception for `403 transaction_cap_exceeded`
@@ -433,7 +433,7 @@ Expect substantial amount of work on sdk interface:
 - Use `setuptools-scm` for versioning
 - Clean up CI steps
 
-## 1.2.0 - 2020-11-03
+## [1.2.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v1.2.0) - 2020-11-03
 
 ### Added
 - Add support for Python 3.9
@@ -451,17 +451,17 @@ Expect substantial amount of work on sdk interface:
 - Allow to set an empty bucket info during the update
 - Fix docs generation in CI
 
-## 1.1.4 - 2020-07-15
+## [1.1.4](https://github.com/Backblaze/b2-sdk-python/releases/tag/v1.1.4) - 2020-07-15
 
 ### Added
 - Allow specifying custom realm in B2Session.authorize_account
 
-## 1.1.2 - 2020-07-06
+## [1.1.2](https://github.com/Backblaze/b2-sdk-python/releases/tag/v1.1.2) - 2020-07-06
 
 ### Fixed
 - Fix upload part for file range on Python 2.7
 
-## 1.1.0 - 2020-06-24
+## [1.1.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v1.1.0) - 2020-06-24
 
 ### Added
 - Add `list_file_versions` method to buckets.
@@ -483,33 +483,33 @@ Expect substantial amount of work on sdk interface:
 ### Fixed
 - Fix handling of modification time of files
 
-## 1.0.2 - 2019-10-15
+## [1.0.2](https://github.com/Backblaze/b2-sdk-python/releases/tag/v1.0.2) - 2019-10-15
 
 ### Changed
 - Remove upper version limit for arrow dependency
 
-## 1.0.0 - 2019-10-03
+## [1.0.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v1.0.0) - 2019-10-03
 
 ### Fixed
 - Minor bug fix.
 
-## 1.0.0-rc1 - 2019-07-09
+## [1.0.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v1.0.0)-rc1 - 2019-07-09
 
 ### Deprecated
 - Deprecate some transitional method names to v0 in preparation for v1.0.0.
 
-## 0.1.10 - 2019-07-09
+## [0.1.10](https://github.com/Backblaze/b2-sdk-python/releases/tag/v0.1.10) - 2019-07-09
 
 ### Removed
 - Remove a parameter (which did nothing, really) from `b2sdk.v1.Bucket.copy_file` signature
 
-## 0.1.8 - 2019-06-28
+## [0.1.8](https://github.com/Backblaze/b2-sdk-python/releases/tag/v0.1.8) - 2019-06-28
 
 ### Added
 - Add support for b2_copy_file
 - Add support for `prefix` parameter on ls-like calls
 
-## 0.1.6 - 2019-04-24
+## [0.1.6](https://github.com/Backblaze/b2-sdk-python/releases/tag/v0.1.6) - 2019-04-24
 
 ### Changed
 - Rename account ID for authentication to application key ID.
@@ -519,7 +519,7 @@ has changed.
 ### Fixed
 - Fix transferer crashing on empty file download attempt
 
-## 0.1.4 - 2019-04-04
+## [0.1.4](https://github.com/Backblaze/b2-sdk-python/releases/tag/v0.1.4) - 2019-04-04
 
 ### Added
 Initial official release of SDK as a separate package (until now it was a part of B2 CLI)
