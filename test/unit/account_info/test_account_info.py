@@ -334,7 +334,7 @@ class TestSqliteAccountInfo(AccountInfoBase):
     PERSISTENCE = True
 
     @pytest.fixture(autouse=True)
-    def setUp(self, request):
+    def setUp(self, request, monkeypatch):
         self.db_path = tempfile.NamedTemporaryFile(
             prefix=f'tmp_b2_tests_{request.node.name}__', delete=True
         ).name
@@ -345,6 +345,9 @@ class TestSqliteAccountInfo(AccountInfoBase):
         self.test_home = tempfile.mkdtemp()
 
         yield
+
+        monkeypatch.delenv(XDG_CONFIG_HOME_ENV_VAR, raising=False)
+
         for cleanup_method in [
             lambda: os.unlink(self.db_path), lambda: shutil.rmtree(self.test_home)
         ]:
@@ -414,30 +417,24 @@ class TestSqliteAccountInfo(AccountInfoBase):
                 last_upgrade_to_run=last_upgrade_to_run,
             )
 
-    def test_uses_default(self):
-        account_info = self._make_sqlite_account_info(
-            env={
-                'HOME': self.test_home,
-                'USERPROFILE': self.test_home,
-            }
-        )
-        actual_path = os.path.abspath(account_info.filename)
-        assert os.path.join(self.test_home, '.b2_account_info') == actual_path
-
     def test_uses_xdg_config_home(self, apiver):
+        is_xdg_os = bool(SqliteAccountInfo.get_xdg_config_path())
         with WindowsSafeTempDir() as d:
             account_info = self._make_sqlite_account_info(
                 env={
                     'HOME': self.test_home,
                     'USERPROFILE': self.test_home,
-                    XDG_CONFIG_HOME_ENV_VAR: d,
+                    # pass the env. variable on XDG-like OS only
+                    XDG_CONFIG_HOME_ENV_VAR: is_xdg_os and d,
                 }
             )
             if apiver in ['v0', 'v1']:
                 expected_path = os.path.abspath(os.path.join(self.test_home, '.b2_account_info'))
-            else:
+            elif is_xdg_os:
                 assert os.path.exists(os.path.join(d, 'b2'))
                 expected_path = os.path.abspath(os.path.join(d, 'b2', 'account_info'))
+            else:
+                expected_path = os.path.abspath(os.path.join(self.test_home, '.b2_account_info'))
             actual_path = os.path.abspath(account_info.filename)
             assert expected_path == actual_path
 
