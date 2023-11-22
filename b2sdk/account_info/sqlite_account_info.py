@@ -15,6 +15,7 @@ import os
 import re
 import sqlite3
 import stat
+import sys
 import threading
 
 from .exception import CorruptAccountInfo, MissingAccountData
@@ -53,7 +54,7 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
 
         If ``profile`` arg is provided:
 
-        * ``{XDG_CONFIG_HOME_ENV_VAR}/b2/db-<profile>.sqlite``, if ``{XDG_CONFIG_HOME_ENV_VAR}`` env var is set
+        * ``${XDG_CONFIG_HOME_ENV_VAR}/b2/db-<profile>.sqlite`` on XDG-compatible OSes (Linux)
         * ``{B2_ACCOUNT_INFO_PROFILE_FILE}``
 
         Otherwise:
@@ -61,10 +62,10 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
         * ``file_name``, if truthy
         * ``{B2_ACCOUNT_INFO_ENV_VAR}`` env var's value, if set
         * ``{B2_ACCOUNT_INFO_DEFAULT_FILE}``, if it exists
-        * ``{XDG_CONFIG_HOME_ENV_VAR}/b2/account_info``, if ``{XDG_CONFIG_HOME_ENV_VAR}`` env var is set
+        * ``${XDG_CONFIG_HOME_ENV_VAR}/b2/account_info`` on XDG-compatible OSes (Linux)
         * ``{B2_ACCOUNT_INFO_DEFAULT_FILE}``, as default
 
-        If the directory ``{XDG_CONFIG_HOME_ENV_VAR}/b2`` does not exist (and is needed), it is created.
+        If the directory ``${XDG_CONFIG_HOME_ENV_VAR}/b2`` does not exist (and is needed), it is created.
 
         :param str file_name: The sqlite file to use; overrides the default.
         :param int last_upgrade_to_run: For testing only, override the auto-update on the db.
@@ -91,9 +92,11 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
         )
 
     @classmethod
-    def _get_user_account_info_path(cls, file_name=None, profile=None):
+    def _get_user_account_info_path(cls, file_name: str | None = None, profile: str | None = None):
         if profile and not B2_ACCOUNT_INFO_PROFILE_NAME_REGEXP.match(profile):
             raise ValueError(f'Invalid profile name: {profile}')
+
+        xdg_compatible_os = sys.platform in ('linux',) or 'bsd' in sys.platform
 
         if file_name:
             if profile:
@@ -108,12 +111,12 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
             user_account_info_path = os.environ[B2_ACCOUNT_INFO_ENV_VAR]
         elif os.path.exists(os.path.expanduser(B2_ACCOUNT_INFO_DEFAULT_FILE)) and not profile:
             user_account_info_path = B2_ACCOUNT_INFO_DEFAULT_FILE
-        elif XDG_CONFIG_HOME_ENV_VAR in os.environ:
-            config_home = os.environ[XDG_CONFIG_HOME_ENV_VAR]
+        elif xdg_compatible_os:
+            # if following env. variable not present, fallback to ~/.config as expected by XDG standard
+            config_home = os.getenv(XDG_CONFIG_HOME_ENV_VAR) or os.path.expanduser('~/.config')
             file_name = f'db-{profile}.sqlite' if profile else 'account_info'
             user_account_info_path = os.path.join(config_home, 'b2', file_name)
-            if not os.path.exists(os.path.join(config_home, 'b2')):
-                os.makedirs(os.path.join(config_home, 'b2'), mode=0o755)
+            os.makedirs(os.path.join(config_home, 'b2'), mode=0o755, exist_ok=True)
         elif profile:
             user_account_info_path = B2_ACCOUNT_INFO_PROFILE_FILE.format(profile=profile)
         else:
