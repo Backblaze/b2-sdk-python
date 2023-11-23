@@ -334,7 +334,7 @@ class TestSqliteAccountInfo(AccountInfoBase):
     PERSISTENCE = True
 
     @pytest.fixture(autouse=True)
-    def setUp(self, request, monkeypatch):
+    def setUp(self, request):
         self.db_path = tempfile.NamedTemporaryFile(
             prefix=f'tmp_b2_tests_{request.node.name}__', delete=True
         ).name
@@ -345,8 +345,6 @@ class TestSqliteAccountInfo(AccountInfoBase):
         self.test_home = tempfile.mkdtemp()
 
         yield
-
-        monkeypatch.delenv(XDG_CONFIG_HOME_ENV_VAR, raising=False)
 
         for cleanup_method in [
             lambda: os.unlink(self.db_path), lambda: shutil.rmtree(self.test_home)
