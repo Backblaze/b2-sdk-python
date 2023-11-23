@@ -245,7 +245,6 @@ class B2HideAction(AbstractAction):
         """
         bucket.hide_file(self.b2_file_name)
 
-    # TODO: This function uses SyncReport.update_transfer, while others are enough with ProgressReport interface.
     def do_report(self, bucket: Bucket, reporter: SyncReport):
         """
         Report the hiding action performed.
@@ -464,7 +463,6 @@ class B2DeleteAction(AbstractAction):
         """
         bucket.api.delete_file_version(self.file_id, self.b2_file_name)
 
-    # TODO: This function uses SyncReport.update_transfer, while others are enough with ProgressReport interface.
     def do_report(self, bucket: Bucket, reporter: SyncReport):
         """
         Report the deleting action performed.
@@ -506,7 +504,6 @@ class LocalDeleteAction(AbstractAction):
         """
         os.unlink(self.full_path)
 
-    # TODO: This function uses SyncReport.update_transfer, while others are enough with ProgressReport interface.
     def do_report(self, bucket: Bucket, reporter: SyncReport):
         """
         Report the deleting of a local file action performed.
