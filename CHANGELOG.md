@@ -37,7 +37,6 @@ upcoming release can be found in [changelog.d](changelog.d).
 - Mark `TempDir` as deprecated in favor of `tempfile.TemporaryDirectory`
 
 ### Fixed
-* Fix ScanPoliciesManager support for compiled regexes
 - Fix downloading to a non-seekable file, such as /dev/stdout
 - Fix ScanPoliciesManager support for compiled regexes
 
