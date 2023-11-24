@@ -92,6 +92,11 @@ jobs:
             python-version: "pypy-3.10"
           - os: "windows-latest"
             python-version: "pypy-3.10"
+          # TODO: 3.12 setlocale(...) is broken on Windows & Mac
+          - os: "macos-latest"
+            python-version: "3.12"
+          - os: "windows-latest"
+            python-version: "3.12"
     steps:
       - uses: actions/checkout@v3
         with:
