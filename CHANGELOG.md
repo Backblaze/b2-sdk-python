@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 * Fix ScanPoliciesManager support for compiled regexes
+* Add missing import to Synchronizer docs example
 
 ### Infrastructure
 * Fix readthedocs build by updating to v2 configuration schema
