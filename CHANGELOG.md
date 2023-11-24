@@ -16,6 +16,7 @@ upcoming release can be found in [changelog.d](changelog.d).
 
 ## [1.26.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v1.26.0) - 2023-11-20
 
+
 ### Added
 
 - Add `expires`, `content_disposition`, `content_encoding`, `content_language` arguments to various `Bucket` methods ([#357](https://github.com/Backblaze/b2-sdk-python/issues/357))
@@ -24,6 +25,7 @@ upcoming release can be found in [changelog.d](changelog.d).
 
 - Towncrier changelog generation - to avoid conflicts when simultaneously working on PRs
 - Fix towncrier generated changelog to work with mindsers/changelog-reader-action
+
 
 ## [1.25.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v1.25.0) - 2023-11-15
 
