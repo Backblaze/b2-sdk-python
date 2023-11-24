@@ -470,11 +470,11 @@ class TestSqliteAccountInfo(AccountInfoBase):
 
     def test_resolve_xdg_os_default(self):
         is_xdg_os = bool(SqliteAccountInfo._get_xdg_config_path())
-        assert is_xdg_os == sys.platform not in ('win32', 'darwin')
+        assert is_xdg_os == (sys.platform not in ('win32', 'darwin'))
 
     def test_resolve_xdg_os_default_no_env_var(self, monkeypatch):
         # ensure that XDG_CONFIG_HOME_ENV_VAR doesn't to resolve XDG-like OS
         monkeypatch.delenv(XDG_CONFIG_HOME_ENV_VAR, raising=False)
 
         is_xdg_os = bool(SqliteAccountInfo._get_xdg_config_path())
-        assert is_xdg_os == sys.platform not in ('win32', 'darwin')
+        assert is_xdg_os == (sys.platform not in ('win32', 'darwin'))
