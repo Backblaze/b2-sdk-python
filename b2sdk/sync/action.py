@@ -9,6 +9,7 @@
 ######################################################################
 from __future__ import annotations
 
+import contextlib
 import logging
 import os
 from abc import ABCMeta, abstractmethod
@@ -159,14 +160,17 @@ class B2UploadAction(AbstractAction):
             # The upload will be incremental, calculate the large_file_sha1
             large_file_sha1 = self._upload_source.get_content_sha1()
 
-        bucket.concatenate(
-            sources,
-            self.b2_file_name,
-            progress_listener=progress_listener,
-            file_info=file_info,
-            encryption=encryption,
-            large_file_sha1=large_file_sha1,
-        )
+        with contextlib.ExitStack() as exit_stack:
+            if progress_listener:
+                exit_stack.enter_context(progress_listener)
+            bucket.concatenate(
+                sources,
+                self.b2_file_name,
+                progress_listener=progress_listener,
+                file_info=file_info,
+                encryption=encryption,
+                large_file_sha1=large_file_sha1,
+            )
 
     def do_report(self, bucket: Bucket, reporter: ProgressReport) -> None:
         """
@@ -315,13 +319,15 @@ class B2DownloadAction(AbstractAction):
             bucket=bucket,
             file_version=self.source_path.selected_version,
         )
-
-        downloaded_file = bucket.download_file_by_id(
-            self.source_path.selected_version.id_,
-            progress_listener=progress_listener,
-            encryption=encryption,
-        )
-        downloaded_file.save_to(download_path)
+        with contextlib.ExitStack() as exit_stack:
+            if progress_listener:
+                exit_stack.enter_context(progress_listener)
+            downloaded_file = bucket.download_file_by_id(
+                self.source_path.selected_version.id_,
+                progress_listener=progress_listener,
+                encryption=encryption,
+            )
+            downloaded_file.save_to(download_path)
 
         # Move the file into place
         with suppress(OSError):
@@ -404,16 +410,19 @@ class B2CopyAction(AbstractAction):
             dest_b2_file_name=self.dest_b2_file_name,
         )
 
-        bucket.copy(
-            self.source_path.selected_version.id_,
-            self.dest_b2_file_name,
-            length=self.source_path.size,
-            progress_listener=progress_listener,
-            destination_encryption=destination_encryption,
-            source_encryption=source_encryption,
-            source_file_info=self.source_path.selected_version.file_info,
-            source_content_type=self.source_path.selected_version.content_type,
-        )
+        with contextlib.ExitStack() as exit_stack:
+            if progress_listener:
+                exit_stack.enter_context(progress_listener)
+            bucket.copy(
+                self.source_path.selected_version.id_,
+                self.dest_b2_file_name,
+                length=self.source_path.size,
+                progress_listener=progress_listener,
+                destination_encryption=destination_encryption,
+                source_encryption=source_encryption,
+                source_file_info=self.source_path.selected_version.file_info,
+                source_content_type=self.source_path.selected_version.content_type,
+            )
 
     def do_report(self, bucket: Bucket, reporter: ProgressReport) -> None:
         """

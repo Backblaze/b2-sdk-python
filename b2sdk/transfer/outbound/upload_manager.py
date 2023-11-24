@@ -202,46 +202,41 @@ class UploadManager(TransferManager, ThreadPoolMixin):
         content_length = upload_source.get_content_length()
         exception_info_list = []
         progress_listener.set_total_bytes(content_length)
-        with progress_listener:
-            for _ in range(self.MAX_UPLOAD_ATTEMPTS):
-                try:
-                    with upload_source.open() as file:
-                        input_stream = ReadingStreamWithProgress(
-                            file, progress_listener, length=content_length
-                        )
-                        if upload_source.is_sha1_known():
-                            content_sha1 = upload_source.get_content_sha1()
-                        else:
-                            input_stream = StreamWithHash(
-                                input_stream, stream_length=content_length
-                            )
-                            content_sha1 = HEX_DIGITS_AT_END
-                        # it is important that `len()` works on `input_stream`
-                        response = self.services.session.upload_file(
-                            bucket_id,
-                            file_name,
-                            len(input_stream),
-                            content_type,
-                            content_sha1,
-                            file_info,
-                            input_stream,
-                            server_side_encryption=encryption,  # todo: client side encryption
-                            file_retention=file_retention,
-                            legal_hold=legal_hold,
-                            custom_upload_timestamp=custom_upload_timestamp,
-                        )
-                        if content_sha1 == HEX_DIGITS_AT_END:
-                            content_sha1 = input_stream.hash
-                        assert content_sha1 == 'do_not_verify' or content_sha1 == response[
-                            'contentSha1'], '{} != {}'.format(
-                                content_sha1, response['contentSha1']
-                            )
-                        return self.services.api.file_version_factory.from_api_response(response)
+        for _ in range(self.MAX_UPLOAD_ATTEMPTS):
+            try:
+                with upload_source.open() as file:
+                    input_stream = ReadingStreamWithProgress(
+                        file, progress_listener, length=content_length
+                    )
+                    if upload_source.is_sha1_known():
+                        content_sha1 = upload_source.get_content_sha1()
+                    else:
+                        input_stream = StreamWithHash(input_stream, stream_length=content_length)
+                        content_sha1 = HEX_DIGITS_AT_END
+                    # it is important that `len()` works on `input_stream`
+                    response = self.services.session.upload_file(
+                        bucket_id,
+                        file_name,
+                        len(input_stream),
+                        content_type,
+                        content_sha1,
+                        file_info,
+                        input_stream,
+                        server_side_encryption=encryption,  # todo: client side encryption
+                        file_retention=file_retention,
+                        legal_hold=legal_hold,
+                        custom_upload_timestamp=custom_upload_timestamp,
+                    )
+                    if content_sha1 == HEX_DIGITS_AT_END:
+                        content_sha1 = input_stream.hash
+                    assert content_sha1 == 'do_not_verify' or content_sha1 == response[
+                        'contentSha1'], '{} != {}'.format(content_sha1, response['contentSha1'])
+                    return self.services.api.file_version_factory.from_api_response(response)
 
-                except B2Error as e:
-                    if not e.should_retry_upload():
-                        raise
-                    exception_info_list.append(e)
-                    self.account_info.clear_bucket_upload_data(bucket_id)
+            except B2Error as e:
+                if not e.should_retry_upload():
+                    raise
+                exception_info_list.append(e)
+                self.account_info.clear_bucket_upload_data(bucket_id)
 
         raise MaxRetriesExceeded(self.MAX_UPLOAD_ATTEMPTS, exception_info_list)
