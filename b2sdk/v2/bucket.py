@@ -15,6 +15,7 @@ from b2sdk import _v3 as v3
 from b2sdk._v3.exception import BucketIdNotFound as v3BucketIdNotFound
 from b2sdk.v2._compat import _file_infos_rename
 from .exception import BucketIdNotFound
+from .file_version import FileVersionFactory
 
 if typing.TYPE_CHECKING:
     from b2sdk.utils import Sha1HexDigest
@@ -22,6 +23,9 @@ if typing.TYPE_CHECKING:
 
 # Overridden to raise old style BucketIdNotFound exception
 class Bucket(v3.Bucket):
+
+    FILE_VERSION_FACTORY_CLASS = staticmethod(FileVersionFactory)
+
     def get_fresh_state(self) -> Bucket:
         try:
             return super().get_fresh_state()

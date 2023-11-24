@@ -62,6 +62,8 @@ class FileVersionInfo(v2.FileVersion):
         self.file_retention = file_retention
         self._api = api
         self.cache_control = cache_control
+        if self.cache_control is None:
+            self.cache_control = (file_info or {}).get('b2-cache-control')
 
         # allow common tests to execute without hitting attributeerror
 

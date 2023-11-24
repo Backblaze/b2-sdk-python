@@ -365,11 +365,13 @@ def raw_api_test_helper(raw_api, should_cleanup_old_buckets):
         len(file_contents),
         'text/plain',
         file_sha1,
-        {'color': 'blue'},
+        {
+            'color': 'blue',
+            'b2-cache-control': 'private, max-age=2222'
+        },
         io.BytesIO(file_contents),
         server_side_encryption=sse_b2_aes,
         #custom_upload_timestamp=12345,
-        cache_control='private, max-age=2222',
         file_retention=FileRetentionSetting(
             RetentionMode.GOVERNANCE,
             int(time.time() + 100) * 1000,

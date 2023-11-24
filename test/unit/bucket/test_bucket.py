@@ -10,6 +10,8 @@
 from __future__ import annotations
 
 import contextlib
+import dataclasses
+import datetime
 import io
 import os
 import pathlib
@@ -19,6 +21,7 @@ import time
 import unittest.mock as mock
 from contextlib import suppress
 from io import BytesIO
+from test.helpers import NonSeekableIO
 
 import apiver_deps
 import pytest
@@ -2289,6 +2292,26 @@ class DownloadTests(DownloadTestsBase):
             contents = f.read()
             self.assertEqual(contents, expected_contents)
 
+    @pytest.mark.apiver(from_ver=2)
+    def test_download_to_non_seekable_file(self):
+        file_version = self.bucket.upload_bytes(self.DATA.encode(), 'file1')
+
+        non_seekable_strategies = [
+            strat for strat in self.bucket.api.services.download_manager.strategies
+            if not isinstance(strat, ParallelDownloader)
+        ]
+        context = contextlib.nullcontext() if non_seekable_strategies else pytest.raises(
+            ValueError,
+            match='no strategy suitable for download was found!',
+        )
+        output_file = NonSeekableIO()
+        with context:
+            self.download_file_by_id(
+                file_version.id_,
+                v2_file=output_file,
+            )
+            assert output_file.getvalue() == self.DATA.encode()
+
 
 # download empty file
 
@@ -2515,14 +2538,12 @@ class TestDownloadTuneWriteBuffer(DownloadTestsBase, TestCaseWithBucket):
 
     def test_buffering_in_save_to(self):
         with tempfile.TemporaryDirectory() as d:
-            path = os.path.join(d, 'file2')
+            path = pathlib.Path(d) / 'file2'
             with mock.patch('b2sdk.transfer.inbound.downloaded_file.open') as mock_open:
                 mock_open.side_effect = open
                 self.bucket.download_file_by_id(self.file_version.id_).save_to(path)
                 mock_open.assert_called_once_with(path, mock.ANY, buffering=self.ALIGN_FACTOR)
-                with open(path) as f:
-                    contents = f.read()
-                    assert contents == self.DATA
+                assert path.read_text() == self.DATA
 
     def test_set_write_buffer_parallel_called_get_chunk_size(self):
         self._check_called_on_downloader(
@@ -2746,6 +2767,128 @@ class TestDownloadLocalDirectoryIssues(TestCaseWithBucket):
             target_file = target_directory / 'target_file'
             with self.assertRaises(DestinationDirectoryDoesntAllowOperation):
                 self.bucket.download_file_by_name(self.file_version.file_name).save_to(target_file)
+
+
+class TestFileInfoB2Fields(TestCaseWithBucket):
+    @dataclasses.dataclass
+    class TestCase:
+        fields: dict[str, str]
+        expires_dt: datetime.datetime | None = None
+        expires_parsed: datetime.datetime | None = None
+        expires_parsed_raises: bool = False
+
+        @property
+        def kwargs(self) -> dict[str, str | datetime.datetime]:
+            kws = {**self.fields}
+            if self.expires_dt:
+                kws['expires'] = self.expires_dt
+            return kws
+
+        def assert_(self, version):
+            for name, value in self.fields.items():
+                assert getattr(version, name) == value
+
+            if self.expires_parsed_raises:
+                with pytest.raises(ValueError):
+                    version.expires_parsed()
+            else:
+                assert version.expires_parsed() == self.expires_parsed
+
+    test_cases = [
+        TestCase(fields={}),
+        TestCase(
+            fields={
+                'cache_control': 'max-age=3600',
+                'expires': 'Sun, 06 Nov 1994 08:49:37 GMT',
+                'content_disposition': 'attachment; filename="fname.ext"',
+                'content_encoding': 'utf-8',
+                'content_language': 'en_US',
+            },
+            expires_parsed=datetime.datetime(1994, 11, 6, 8, 49, 37, tzinfo=datetime.timezone.utc),
+        ),
+        # RFC 850 format
+        TestCase(
+            fields={'expires': 'Sunday, 06-Nov-95 08:49:37 GMT'},
+            expires_parsed=datetime.datetime(1995, 11, 6, 8, 49, 37, tzinfo=datetime.timezone.utc),
+        ),
+        # ANSI C's asctime() format
+        TestCase(
+            fields={'expires': 'Sun Nov  6 08:49:37 1996'},
+            expires_parsed=datetime.datetime(1996, 11, 6, 8, 49, 37, tzinfo=datetime.timezone.utc),
+        ),
+        # Non-standard date format
+        TestCase(
+            fields={'expires': '2020-01-01 00:00:00'},
+            expires_parsed_raises=True,
+        ),
+        # Non-GMT timezone
+        TestCase(
+            fields={'expires': 'Sunday, 06-Nov-95 08:49:37 PDT'},
+            expires_parsed_raises=True,
+        ),
+        # Passing `expires`` as a datetime
+        TestCase(
+            fields={'expires': 'Sun, 06 Nov 1994 08:49:37 GMT'},
+            expires_dt=datetime.datetime(1994, 11, 6, 8, 49, 37, tzinfo=datetime.timezone.utc),
+            expires_parsed=datetime.datetime(1994, 11, 6, 8, 49, 37, tzinfo=datetime.timezone.utc),
+            expires_parsed_raises=False,
+        ),
+        # Passing `expires`` as a datetime in non-UTC timezone
+        TestCase(
+            fields={'expires': 'Sun, 06 Nov 1994 08:49:37 GMT'},
+            expires_dt=datetime.datetime(
+                1994, 11, 6, 9, 49, 37, tzinfo=datetime.timezone(datetime.timedelta(hours=1))
+            ),
+            expires_parsed=datetime.datetime(1994, 11, 6, 8, 49, 37, tzinfo=datetime.timezone.utc),
+            expires_parsed_raises=False,
+        ),
+    ]
+
+    def test_upload_bytes(self):
+        for test_case in self.test_cases:
+            file_version = self.bucket.upload_bytes(b'', 'file1', **test_case.kwargs)
+            test_case.assert_(file_version)
+
+    def test_upload_unbound_stream(self):
+        for test_case in self.test_cases:
+            file_version = self.bucket.upload_unbound_stream(
+                io.BytesIO(b'data'), 'file1', **test_case.kwargs
+            )
+            test_case.assert_(file_version)
+
+    def test_upload_local_file(self):
+        for test_case in self.test_cases:
+            with tempfile.TemporaryDirectory() as d:
+                path = os.path.join(d, 'file1')
+                data = b''
+                write_file(path, data)
+                file_version = self.bucket.upload_local_file(path, 'file1', **test_case.kwargs)
+                test_case.assert_(file_version)
+
+    def test_copy_with_file_info(self):
+        for test_case in self.test_cases:
+            file_version = self.bucket.upload_bytes(b'', 'file1', **test_case.kwargs)
+            copied_file_version = self.bucket.copy(file_version.id_, 'file2')
+            test_case.assert_(copied_file_version)
+
+    def test_copy_overwriting_file_info(self):
+        for test_case in self.test_cases:
+            file_version = self.bucket.upload_bytes(b'', 'file1')
+            # For reasons I don't know, the content type must be supplied if and only if
+            # file info is supplied - otherwise the SDK raises an exception forbidding that.
+            content_type = None
+            if test_case.fields:
+                content_type = 'text/plain'
+            copied_file_version = self.bucket.copy(
+                file_version.id_, 'file2', content_type=content_type, **test_case.kwargs
+            )
+            test_case.assert_(copied_file_version)
+
+    def test_download_version(self):
+        for test_case in self.test_cases:
+            file_version = self.bucket.upload_bytes(b'', 'file1', **test_case.kwargs)
+            download_file = self.bucket.download_file_by_id(file_version.id_)
+            test_case.assert_(download_file.download_version)
 
 
 # Listing where every other response returns no entries and pointer to the next file

@@ -94,7 +94,6 @@ class TestApi:
                     'mode': 'none'
                 },
                 'uploadTimestamp': 5000,
-                'cacheControl': 'private, max-age=3600',
             }
         else:
             assert isinstance(result, VFileVersion)
@@ -121,7 +120,6 @@ class TestApi:
                 'mode': None,
                 'retainUntilTimestamp': None
             },
-            'cacheControl': None,
             'size': 11,
             'uploadTimestamp': 5000,
             'contentType': 'b2/x-auto',
@@ -160,7 +158,6 @@ class TestApi:
                 'mode': None,
                 'retainUntilTimestamp': None
             },
-            'cacheControl': None,
             'size': 0,
             'uploadTimestamp': 5001,
             'contentSha1': 'none',

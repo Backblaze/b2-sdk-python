@@ -11,7 +11,9 @@ from __future__ import annotations
 
 import base64
 import hashlib
+import logging
 import os
+import pathlib
 import platform
 import re
 import time
@@ -22,6 +24,8 @@ from typing import Any, Iterator, NewType, TypeVar
 from urllib.parse import quote, unquote_plus
 
 from logfury.v1 import DefaultTraceAbstractMeta, DefaultTraceMeta, limit_trace_arguments, disable_trace, trace_call
+
+logger = logging.getLogger(__name__)
 
 Sha1HexDigest = NewType('Sha1HexDigest', str)
 T = TypeVar('T')
@@ -277,14 +281,26 @@ def get_file_mtime(local_path):
     return int(mod_time)
 
 
-def set_file_mtime(local_path, mod_time_millis):
+def is_special_file(path: str | pathlib.Path) -> bool:
+    """
+    Is the path a special file, such as /dev/null or stdout?
+
+    :param path: a "file" path
+    :return: True if the path is a special file
+    """
+    path_str = str(path)
+    return (
+        path == os.devnull or path_str.startswith('/dev/') or
+        platform.system() == 'Windows' and path_str.upper() in ('CON', 'NUL')
+    )
+
+
+def set_file_mtime(local_path: str | pathlib.Path, mod_time_millis: int) -> None:
     """
     Set modification time of a file in milliseconds.
 
     :param local_path: a file path
-    :type local_path: str
     :param mod_time_millis: time to be set
-    :type mod_time_millis: int
     """
     mod_time = mod_time_millis / 1000.0
 
@@ -299,7 +315,11 @@ def set_file_mtime(local_path, mod_time_millis):
     # See #617 for details.
     mod_time = float(Decimal('%.3f5' % mod_time))
 
-    os.utime(local_path, (mod_time, mod_time))
+    try:
+        os.utime(local_path, (mod_time, mod_time))
+    except OSError:
+        if not is_special_file(local_path):
+            raise
 
 
 def fix_windows_path_limit(path):

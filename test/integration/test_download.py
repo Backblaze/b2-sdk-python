@@ -11,16 +11,20 @@ from __future__ import annotations
 
 import gzip
 import io
+import os
 import pathlib
+import platform
 import tempfile
 from pprint import pprint
 from unittest import mock
 
+import pytest
+
+from b2sdk._internal.utils.filesystem import _IS_WINDOWS
 from b2sdk.utils import Sha1HexDigest
 from b2sdk.v2 import *
 
 from .base import IntegrationTestBase
-from .fixtures import *  # noqa: F401, F403
 from .helpers import authorize
 
 
@@ -125,3 +129,54 @@ class TestDownload(IntegrationTestBase):
             )
             with open(downloaded_uncompressed_file, 'rb') as duf:
                 assert duf.read() == data_to_write
+
+
+@pytest.fixture
+def source_file(tmp_path):
+    source_file = tmp_path / 'source.txt'
+    source_file.write_text('hello world')
+    return source_file
+
+
+@pytest.fixture
+def uploaded_source_file_version(bucket, source_file):
+    file_version = bucket.upload_local_file(str(source_file), source_file.name)
+    return file_version
+
+
+@pytest.mark.skipif(platform.system() == 'Windows', reason='no os.mkfifo() on Windows')
+def test_download_to_fifo(bucket, tmp_path, source_file, uploaded_source_file_version, bg_executor):
+    output_file = tmp_path / 'output.txt'
+    os.mkfifo(output_file)
+    output_string = None
+
+    def reader():
+        nonlocal output_string
+        output_string = output_file.read_text()
+
+    reader_future = bg_executor.submit(reader)
+
+    bucket.download_file_by_id(file_id=uploaded_source_file_version.id_).save_to(output_file)
+
+    reader_future.result(timeout=1)
+    assert source_file.read_text() == output_string
+
+
+@pytest.fixture
+def binary_cap(request):
+    """
+    Get best suited capture.
+
+    For Windows we need capsys as capfd fails, while on any other (i.e. POSIX systems) we need capfd.
+    This is sadly tied directly to how .save_to() is implemented, as Windows required special handling.
+    """
+    cap = request.getfixturevalue("capsysbinary" if _IS_WINDOWS else "capfdbinary")
+    yield cap
+
+
+def test_download_to_stdout(bucket, source_file, uploaded_source_file_version, binary_cap):
+    output_file = "CON" if _IS_WINDOWS else "/dev/stdout"
+
+    bucket.download_file_by_id(file_id=uploaded_source_file_version.id_).save_to(output_file)
+
+    assert binary_cap.readouterr().out == source_file.read_bytes()

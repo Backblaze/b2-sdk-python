@@ -17,7 +17,6 @@ from b2sdk.encryption.types import EncryptionAlgorithm, EncryptionMode
 from b2sdk.v2 import B2RawHTTPApi
 
 from .base import IntegrationTestBase
-from .fixtures import b2_auth_data  # noqa
 from .test_raw_api import authorize_raw_api
 
 

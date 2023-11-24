@@ -52,7 +52,7 @@ def source_bucket(api, destination_bucket) -> Bucket:
             ReplicationRule(
                 destination_bucket_id=destination_bucket.id_,
                 name='name',
-                file_name_prefix='folder/',  # TODO: is last slash needed?
+                file_name_prefix='folder/',
             ),
         ],
         source_key_id='hoho|trololo',

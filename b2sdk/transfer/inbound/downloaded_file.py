@@ -9,22 +9,31 @@
 ######################################################################
 from __future__ import annotations
 
+import contextlib
 import io
 import logging
 import pathlib
-from typing import TYPE_CHECKING
+import sys
+from typing import TYPE_CHECKING, BinaryIO
 
 from requests.models import Response
 
+from b2sdk._internal.utils.filesystem import _IS_WINDOWS, points_to_fifo, points_to_stdout
 from b2sdk.exception import (
     ChecksumMismatch,
     DestinationDirectoryDoesntAllowOperation,
     DestinationDirectoryDoesntExist,
+    DestinationError,
     DestinationIsADirectory,
     DestinationParentIsNotADirectory,
     TruncatedOutput,
 )
 from b2sdk.utils import set_file_mtime
+
+try:
+    from typing_extensions import Literal
+except ImportError:
+    from typing import Literal
 
 from ...encryption.setting import EncryptionSetting
 from ...file_version import DownloadVersion
@@ -40,6 +49,9 @@ logger = logging.getLogger(__name__)
 class MtimeUpdatedFile(io.IOBase):
     """
     Helper class that facilitates updating a files mod_time after closing.
+
+    Over the time this class has grown, and now it also adds better exception handling.
+
     Usage:
 
     .. code-block: python
@@ -50,12 +62,26 @@ class MtimeUpdatedFile(io.IOBase):
        #  'some_local_path' has the mod_time set according to metadata in B2
     """
 
-    def __init__(self, path_, mod_time_millis: int, mode='wb+', buffering=None):
-        self.path_ = path_
+    def __init__(
+        self,
+        path_: str | pathlib.Path,
+        mod_time_millis: int,
+        mode: Literal['wb', 'wb+'] = 'wb+',
+        buffering: int | None = None,
+    ):
+        self.path = pathlib.Path(path_) if isinstance(path_, str) else path_
         self.mode = mode
         self.buffering = buffering if buffering is not None else -1
         self.mod_time_to_set = mod_time_millis
         self.file = None
+
+    @property
+    def path_(self) -> str:
+        return str(self.path)
+
+    @path_.setter
+    def path_(self, value: str) -> None:
+        self.path = pathlib.Path(value)
 
     def write(self, value):
         """
@@ -69,6 +95,9 @@ class MtimeUpdatedFile(io.IOBase):
         """
         raise NotImplementedError
 
+    def seekable(self) -> bool:
+        return self.file.seekable()
+
     def seek(self, offset, whence=0):
         return self.file.seek(offset, whence)
 
@@ -77,7 +106,7 @@ class MtimeUpdatedFile(io.IOBase):
 
     def __enter__(self):
         try:
-            path = pathlib.Path(self.path_)
+            path = self.path
             if not path.parent.exists():
                 raise DestinationDirectoryDoesntExist()
 
@@ -91,14 +120,18 @@ class MtimeUpdatedFile(io.IOBase):
         except PermissionError as ex:
             raise DestinationDirectoryDoesntAllowOperation() from ex
 
-        # All remaining problems should be with permissions.
         try:
-            self.file = open(self.path_, self.mode, buffering=self.buffering)
+            self.file = open(
+                self.path,
+                self.mode,
+                buffering=self.buffering,
+            )
         except PermissionError as ex:
             raise DestinationDirectoryDoesntAllowOperation() from ex
 
         self.write = self.file.write
         self.read = self.file.read
+        self.mode = self.file.mode
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -106,7 +139,7 @@ class MtimeUpdatedFile(io.IOBase):
         set_file_mtime(self.path_, self.mod_time_to_set)
 
     def __str__(self):
-        return str(self.path_)
+        return str(self.path)
 
 
 class DownloadedFile:
@@ -157,7 +190,7 @@ class DownloadedFile:
             if bytes_read != desired_length:
                 raise TruncatedOutput(bytes_read, desired_length)
 
-    def save(self, file, allow_seeking=True):
+    def save(self, file: BinaryIO, allow_seeking: bool | None = None) -> None:
         """
         Read data from B2 cloud and write it to a file-like object
 
@@ -165,6 +198,12 @@ class DownloadedFile:
         :param allow_seeking: if False, download strategies that rely on seeking to write data
                               (parallel strategies) will be discarded.
         """
+        if allow_seeking is None:
+            allow_seeking = file.seekable()
+        elif allow_seeking and not file.seekable():
+            logger.warning('File is not seekable, disabling strategies that require seeking')
+            allow_seeking = False
+
         if self.progress_listener:
             file = WritingStreamWithProgress(file, self.progress_listener)
             if self.range_ is not None:
@@ -187,7 +226,12 @@ class DownloadedFile:
         )
         self._validate_download(bytes_read, actual_sha1)
 
-    def save_to(self, path_, mode='wb+', allow_seeking=True):
+    def save_to(
+        self,
+        path_: str | pathlib.Path,
+        mode: Literal['wb', 'wb+'] | None = None,
+        allow_seeking: bool | None = None,
+    ) -> None:
         """
         Open a local file and write data from B2 cloud to it, also update the mod_time.
 
@@ -196,10 +240,34 @@ class DownloadedFile:
         :param allow_seeking: if False, download strategies that rely on seeking to write data
                               (parallel strategies) will be discarded.
         """
+        path_ = pathlib.Path(path_)
+        is_stdout = points_to_stdout(path_)
+        if is_stdout or points_to_fifo(path_):
+            if mode not in (None, 'wb'):
+                raise DestinationError(f'invalid mode requested {mode!r} for FIFO file {path_!r}')
+
+            if is_stdout and _IS_WINDOWS:
+                if self.write_buffer_size and self.write_buffer_size not in (
+                    -1, io.DEFAULT_BUFFER_SIZE
+                ):
+                    logger.warning(
+                        'Unable to set arbitrary write_buffer_size for stdout on Windows'
+                    )
+                context = contextlib.nullcontext(sys.stdout.buffer)
+            else:
+                context = open(path_, 'wb', buffering=self.write_buffer_size or -1)
+
+            try:
+                with context as file:
+                    return self.save(file, allow_seeking=allow_seeking)
+            finally:
+                if not is_stdout:
+                    set_file_mtime(path_, self.download_version.mod_time_millis)
+
         with MtimeUpdatedFile(
             path_,
             mod_time_millis=self.download_version.mod_time_millis,
-            mode=mode,
+            mode=mode or 'wb+',
             buffering=self.write_buffer_size,
         ) as file:
-            self.save(file, allow_seeking=allow_seeking)
+            return self.save(file, allow_seeking=allow_seeking)

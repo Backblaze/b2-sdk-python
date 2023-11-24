@@ -71,6 +71,7 @@ class Services:
     UPLOAD_MANAGER_CLASS = staticmethod(UploadManager)
     COPY_MANAGER_CLASS = staticmethod(CopyManager)
     DOWNLOAD_MANAGER_CLASS = staticmethod(DownloadManager)
+    LARGE_FILE_SERVICES_CLASS = staticmethod(LargeFileServices)
 
     def __init__(
         self,
@@ -95,7 +96,7 @@ class Services:
         """
         self.api = api
         self.session = api.session
-        self.large_file = LargeFileServices(self)
+        self.large_file = self.LARGE_FILE_SERVICES_CLASS(self)
         self.upload_manager = self.UPLOAD_MANAGER_CLASS(
             services=self, max_workers=max_upload_workers
         )

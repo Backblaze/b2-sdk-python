@@ -10,6 +10,8 @@
 from __future__ import annotations
 
 import os
+import re
+import subprocess
 
 import nox
 
@@ -32,6 +34,7 @@ PY_PATHS = ['b2sdk', 'test', 'noxfile.py', 'setup.py']
 
 REQUIREMENTS_FORMAT = ['yapf==0.27', 'ruff==0.0.270']
 REQUIREMENTS_LINT = REQUIREMENTS_FORMAT + ['pytest==6.2.5', 'liccheck==0.6.2']
+REQUIREMENTS_RELEASE = ['towncrier==23.11.0']
 REQUIREMENTS_TEST = [
     "pytest==6.2.5",
     "pytest-cov==3.0.0",
@@ -206,3 +209,39 @@ def doc_cover(session):
         # If there is no undocumented files, the report should have only 2 lines (header)
         if sum(1 for _ in fd) != 2:
             session.error('sphinx coverage has failed')
+
+
+@nox.session(python=PYTHON_DEFAULT_VERSION)
+def make_release_commit(session):
+    """
+    Runs `towncrier build`, commits changes, tags, all that is left to do is pushing
+    """
+    if session.posargs:
+        version = session.posargs[0]
+    else:
+        session.error('Provide -- {release_version} (X.Y.Z - without leading "v")')
+
+    if not re.match(r'^\d+\.\d+\.\d+$', version):
+        session.error(
+            f'Provided version="{version}". Version must be of the form X.Y.Z where '
+            f'X, Y and Z are integers'
+        )
+
+    local_changes = subprocess.check_output(['git', 'diff', '--stat'])
+    if local_changes:
+        session.error('Uncommitted changes detected')
+
+    current_branch = subprocess.check_output(['git', 'rev-parse', '--abbrev-ref', 'HEAD']).decode()
+    if current_branch != 'master':
+        session.log('WARNING: releasing from a branch different than master')
+
+    session.run('pip', 'install', *REQUIREMENTS_RELEASE)
+    session.run('towncrier', 'build', '--yes', '--version', version)
+
+    session.log(
+        f'CHANGELOG updated, changes ready to commit and push\n'
+        f'    git commit -m release {version}\n'
+        f'    git tag v{version}\n'
+        f'    git push {{UPSTREAM_NAME}} v{version}\n'
+        f'    git push {{UPSTREAM_NAME}} {current_branch}'
+    )

@@ -9,6 +9,7 @@
 ######################################################################
 from __future__ import annotations
 
+import datetime as dt
 import re
 from copy import deepcopy
 from typing import TYPE_CHECKING, Any
@@ -19,6 +20,7 @@ from .http_constants import FILE_INFO_HEADER_PREFIX_LOWER, LARGE_FILE_SHA1, SRC_
 from .progress import AbstractProgressListener
 from .replication.types import ReplicationStatus
 from .utils import Sha1HexDigest, b2_url_decode
+from .utils.http_date import parse_http_date
 from .utils.range_ import Range
 
 if TYPE_CHECKING:
@@ -49,7 +51,6 @@ class BaseFileVersion:
         'file_retention',
         'mod_time_millis',
         'replication_status',
-        'cache_control',
     ]
     _TYPE_MATCHER = re.compile('[a-z0-9]+_[a-z0-9]+_f([0-9]).*')
     _FILE_TYPE = {
@@ -73,7 +74,6 @@ class BaseFileVersion:
         file_retention: FileRetentionSetting = NO_RETENTION_FILE_SETTING,
         legal_hold: LegalHold = LegalHold.UNSET,
         replication_status: ReplicationStatus | None = None,
-        cache_control: str | None = None,
     ):
         self.api = api
         self.id_ = id_
@@ -87,7 +87,6 @@ class BaseFileVersion:
         self.file_retention = file_retention
         self.legal_hold = legal_hold
         self.replication_status = replication_status
-        self.cache_control = cache_control
 
         if SRC_LAST_MODIFIED_MILLIS in self.file_info:
             self.mod_time_millis = int(self.file_info[SRC_LAST_MODIFIED_MILLIS])
@@ -128,7 +127,6 @@ class BaseFileVersion:
             'file_retention': self.file_retention,
             'legal_hold': self.legal_hold,
             'replication_status': self.replication_status,
-            'cache_control': self.cache_control,
         }  # yapf: disable
 
     def as_dict(self):
@@ -140,7 +138,6 @@ class BaseFileVersion:
             'serverSideEncryption': self.server_side_encryption.as_dict(),
             'legalHold': self.legal_hold.value,
             'fileRetention': self.file_retention.as_dict(),
-            'cacheControl': self.cache_control,
         }
 
         if self.size is not None:
@@ -259,7 +256,6 @@ class FileVersion(BaseFileVersion):
         file_retention: FileRetentionSetting = NO_RETENTION_FILE_SETTING,
         legal_hold: LegalHold = LegalHold.UNSET,
         replication_status: ReplicationStatus | None = None,
-        cache_control: str | None = None,
     ):
         self.account_id = account_id
         self.bucket_id = bucket_id
@@ -279,8 +275,35 @@ class FileVersion(BaseFileVersion):
             file_retention=file_retention,
             legal_hold=legal_hold,
             replication_status=replication_status,
-            cache_control=cache_control,
         )
+
+    @property
+    def cache_control(self) -> str | None:
+        return self.file_info.get('b2-cache-control')
+
+    @property
+    def expires(self) -> str | None:
+        return self.file_info.get('b2-expires')
+
+    def expires_parsed(self) -> dt.datetime | None:
+        """Return the expiration date as a datetime object, or None if there is no expiration date.
+        Raise ValueError if `expires` property is not a valid HTTP-date."""
+
+        if self.expires is None:
+            return None
+        return parse_http_date(self.expires)
+
+    @property
+    def content_disposition(self) -> str | None:
+        return self.file_info.get('b2-content-disposition')
+
+    @property
+    def content_encoding(self) -> str | None:
+        return self.file_info.get('b2-content-encoding')
+
+    @property
+    def content_language(self) -> str | None:
+        return self.file_info.get('b2-content-language')
 
     def _get_args_for_clone(self):
         args = super()._get_args_for_clone()
@@ -352,7 +375,6 @@ class FileVersion(BaseFileVersion):
             server_side_encryption=sse,
             file_retention=self.file_retention,
             legal_hold=self.legal_hold,
-            cache_control=self.cache_control,
         )
 
         headers_str = ''.join(
@@ -381,8 +403,8 @@ class DownloadVersion(BaseFileVersion):
         'content_disposition',
         'content_length',
         'content_language',
-        '_expires',
-        '_cache_control',
+        'expires',
+        'cache_control',
         'content_encoding',
     ]
 
@@ -412,8 +434,8 @@ class DownloadVersion(BaseFileVersion):
         self.content_disposition = content_disposition
         self.content_length = content_length
         self.content_language = content_language
-        self._expires = expires  # TODO: parse the string representation of this timestamp to datetime in DownloadVersionFactory
-        self._cache_control = cache_control  # TODO: parse the string representation of this mapping to dict in DownloadVersionFactory
+        self.expires = expires
+        self.cache_control = cache_control
         self.content_encoding = content_encoding
 
         super().__init__(
@@ -429,8 +451,29 @@ class DownloadVersion(BaseFileVersion):
             file_retention=file_retention,
             legal_hold=legal_hold,
             replication_status=replication_status,
-            cache_control=cache_control,
         )
+
+    def expires_parsed(self) -> dt.datetime | None:
+        """Return the expiration date as a datetime object, or None if there is no expiration date.
+        Raise ValueError if `expires` property is not a valid HTTP-date."""
+
+        if self.expires is None:
+            return None
+        return parse_http_date(self.expires)
+
+    def as_dict(self) -> dict:
+        result = super().as_dict()
+        if self.cache_control is not None:
+            result['cacheControl'] = self.cache_control
+        if self.expires is not None:
+            result['expires'] = self.expires
+        if self.content_disposition is not None:
+            result['contentDisposition'] = self.content_disposition
+        if self.content_encoding is not None:
+            result['contentEncoding'] = self.content_encoding
+        if self.content_language is not None:
+            result['contentLanguage'] = self.content_language
+        return result
 
     def _get_args_for_clone(self):
         args = super()._get_args_for_clone()
@@ -440,8 +483,8 @@ class DownloadVersion(BaseFileVersion):
                 'content_disposition': self.content_disposition,
                 'content_length': self.content_length,
                 'content_language': self.content_language,
-                'expires': self._expires,
-                'cache_control': self._cache_control,
+                'expires': self.expires,
+                'cache_control': self.cache_control,
                 'content_encoding': self.content_encoding,
             }
         )
@@ -516,7 +559,6 @@ class FileVersionFactory:
         replication_status_value = file_version_dict.get('replicationStatus')
         replication_status = replication_status_value and ReplicationStatus[
             replication_status_value.upper()]
-        cache_control = file_version_dict.get('cacheControl')
 
         return self.FILE_VERSION_CLASS(
             self.api,
@@ -535,7 +577,6 @@ class FileVersionFactory:
             file_retention,
             legal_hold,
             replication_status,
-            cache_control,
         )
 
 
@@ -575,11 +616,6 @@ class DownloadVersionFactory:
             size = content_length = int(headers['Content-Length'])
             range_ = Range(0, max(size - 1, 0))
 
-        if 'Cache-Control' in headers:
-            cache_control = b2_url_decode(headers['Cache-Control'])
-        else:
-            cache_control = None
-
         return DownloadVersion(
             api=self.api,
             id_=headers['x-bz-file-id'],
@@ -595,7 +631,7 @@ class DownloadVersionFactory:
             content_length=content_length,
             content_language=headers.get('Content-Language'),
             expires=headers.get('Expires'),
-            cache_control=cache_control,
+            cache_control=headers.get('Cache-Control'),
             content_encoding=headers.get('Content-Encoding'),
             file_retention=FileRetentionSetting.from_response_headers(headers),
             legal_hold=LegalHold.from_response_headers(headers),
