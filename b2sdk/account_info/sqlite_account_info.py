@@ -93,14 +93,14 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
         )
 
     @classmethod
-    def get_xdg_config_path(cls) -> str | None:
+    def _get_xdg_config_path(cls) -> str | None:
         """
         Return XDG config path if the OS is XDG-compatible (Linux, BSD), None otherwise.
 
         If $XDG_CONFIG_HOME is empty but the OS is XDG compliant, fallback to ~/.config as expected by XDG standard.
         """
         xdg_config_home = os.getenv(XDG_CONFIG_HOME_ENV_VAR)
-        if xdg_config_home or sys.platform.startswith(('linux', 'freebsd', 'openbsd', 'netbsd')):
+        if xdg_config_home or sys.platform not in ('win32', 'darwin'):
             return xdg_config_home or os.path.join(os.path.expanduser('~/.config'))
         return None
 
@@ -110,7 +110,7 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
             raise ValueError(f'Invalid profile name: {profile}')
 
         profile_file = B2_ACCOUNT_INFO_PROFILE_FILE.format(profile=profile) if profile else None
-        xdg_config_path = cls.get_xdg_config_path()
+        xdg_config_path = cls._get_xdg_config_path()
 
         if file_name:
             if profile:

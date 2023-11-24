@@ -14,6 +14,7 @@ import os
 import platform
 import shutil
 import stat
+import sys
 import tempfile
 import unittest.mock as mock
 from abc import ABCMeta, abstractmethod
@@ -416,16 +417,18 @@ class TestSqliteAccountInfo(AccountInfoBase):
             )
 
     def test_uses_xdg_config_home(self, apiver):
-        is_xdg_os = bool(SqliteAccountInfo.get_xdg_config_path())
+        is_xdg_os = bool(SqliteAccountInfo._get_xdg_config_path())
         with WindowsSafeTempDir() as d:
-            account_info = self._make_sqlite_account_info(
-                env={
-                    'HOME': self.test_home,
-                    'USERPROFILE': self.test_home,
-                    # pass the env. variable on XDG-like OS only
-                    XDG_CONFIG_HOME_ENV_VAR: is_xdg_os and d,
-                }
-            )
+            env = {
+                'HOME': self.test_home,
+                'USERPROFILE': self.test_home,
+            }
+
+            if is_xdg_os:
+                # pass the env. variable on XDG-like OS only
+                env[XDG_CONFIG_HOME_ENV_VAR] = d
+
+            account_info = self._make_sqlite_account_info(env=env)
             if apiver in ['v0', 'v1']:
                 expected_path = os.path.abspath(os.path.join(self.test_home, '.b2_account_info'))
             elif is_xdg_os:
@@ -464,3 +467,14 @@ class TestSqliteAccountInfo(AccountInfoBase):
             expected_path = os.path.abspath(os.path.join(d, 'b2_account_info'))
             actual_path = os.path.abspath(account_info.filename)
             assert expected_path == actual_path
+
+    def test_resolve_xdg_os_default(self):
+        is_xdg_os = bool(SqliteAccountInfo._get_xdg_config_path())
+        assert is_xdg_os == sys.platform not in ('win32', 'darwin')
+
+    def test_resolve_xdg_os_default_no_env_var(self, monkeypatch):
+        # ensure that XDG_CONFIG_HOME_ENV_VAR doesn't to resolve XDG-like OS
+        monkeypatch.delenv(XDG_CONFIG_HOME_ENV_VAR, raising=False)
+
+        is_xdg_os = bool(SqliteAccountInfo._get_xdg_config_path())
+        assert is_xdg_os == sys.platform not in ('win32', 'darwin')

@@ -96,7 +96,7 @@ class TestSqliteAccountProfileFileLocation:
         )
 
     def test_profile(self, monkeypatch):
-        xdg_config_path = SqliteAccountInfo.get_xdg_config_path()
+        xdg_config_path = SqliteAccountInfo._get_xdg_config_path()
         if xdg_config_path:
             expected_path = (xdg_config_path, 'b2', 'db-foo.sqlite')
         else:
@@ -135,7 +135,7 @@ class TestSqliteAccountProfileFileLocation:
         )
 
     def test_default_file(self):
-        xdg_config_path = SqliteAccountInfo.get_xdg_config_path()
+        xdg_config_path = SqliteAccountInfo._get_xdg_config_path()
         if xdg_config_path:
             expected_path = os.path.join(xdg_config_path, 'b2', 'account_info')
         else:
