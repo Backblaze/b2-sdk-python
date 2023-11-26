@@ -15,6 +15,7 @@ from b2sdk.encryption.setting import EncryptionMode, EncryptionSetting
 from b2sdk.exception import AlreadyFailed, CopyArgumentsMismatch, SSECKeyIdMismatchInCopy
 from b2sdk.file_lock import FileRetentionSetting, LegalHold
 from b2sdk.http_constants import SSE_C_KEY_ID_FILE_INFO_KEY_NAME
+from b2sdk.progress import AbstractProgressListener
 from b2sdk.raw_api import MetadataDirectiveMode
 from b2sdk.transfer.transfer_manager import TransferManager
 from b2sdk.utils.thread_pool import ThreadPoolMixin
@@ -144,7 +145,7 @@ class CopyManager(TransferManager, ThreadPoolMixin):
         content_type,
         file_info,
         destination_bucket_id,
-        progress_listener,
+        progress_listener: AbstractProgressListener,
         destination_encryption: EncryptionSetting | None,
         source_encryption: EncryptionSetting | None,
         legal_hold: LegalHold | None = None,
@@ -187,8 +188,7 @@ class CopyManager(TransferManager, ThreadPoolMixin):
             file_retention=file_retention,
         )
         file_version = self.services.api.file_version_factory.from_api_response(response)
-        if progress_listener is not None:
-            progress_listener.bytes_completed(file_version.size)
+        progress_listener.bytes_completed(file_version.size)
 
         return file_version
 
