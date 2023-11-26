@@ -14,7 +14,7 @@ import warnings
 from abc import ABCMeta, abstractmethod
 from functools import wraps
 
-from pkg_resources import parse_version
+from packaging.version import parse
 
 from b2sdk.version import VERSION
 
@@ -28,7 +28,7 @@ class AbstractVersionDecorator(metaclass=ABCMeta):
         """
         if current_version is None:  # this is for tests only
             current_version = VERSION  # TODO autodetect by going up the qualname tree and trying getattr(part, '__version__')
-        self.current_version = parse_version(current_version)  #: current version
+        self.current_version = parse(current_version)  #: current version
         self.reason = reason
 
         self.changed_version = self._parse_if_not_none(
@@ -42,7 +42,7 @@ class AbstractVersionDecorator(metaclass=ABCMeta):
     def _parse_if_not_none(cls, version):
         if version is None:
             return None
-        return parse_version(version)
+        return parse(version)
 
     @abstractmethod
     def __call__(self, func):

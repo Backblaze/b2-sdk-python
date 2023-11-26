@@ -208,28 +208,27 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
             )
         file_id = unfinished_file.file_id
 
-        with self.progress_listener:
-            large_file_upload_state = LargeFileUploadState(self.progress_listener)
+        large_file_upload_state = LargeFileUploadState(self.progress_listener)
 
-            part_futures = []
-            for part_number, emerge_part in emerge_plan.enumerate_emerge_parts():
-                execution_step_factory = LargeFileEmergeExecutionStepFactory(
-                    self,
-                    emerge_part,
-                    part_number,
-                    file_id,
-                    large_file_upload_state,
-                    finished_parts=finished_parts,
-                    # it already knows encryption from BaseMergeExecution being passed as self
-                )
-                execution_step = execution_step_factory.get_execution_step()
-                future = self._execute_step(execution_step)
-                part_futures.append(future)
+        part_futures = []
+        for part_number, emerge_part in emerge_plan.enumerate_emerge_parts():
+            execution_step_factory = LargeFileEmergeExecutionStepFactory(
+                self,
+                emerge_part,
+                part_number,
+                file_id,
+                large_file_upload_state,
+                finished_parts=finished_parts,
+                # it already knows encryption from BaseMergeExecution being passed as self
+            )
+            execution_step = execution_step_factory.get_execution_step()
+            future = self._execute_step(execution_step)
+            part_futures.append(future)
 
-            # Collect the sha1 checksums of the parts as the uploads finish.
-            # If any of them raised an exception, that same exception will
-            # be raised here by result()
-            part_sha1_array = [f.result()['contentSha1'] for f in part_futures]
+        # Collect the sha1 checksums of the parts as the uploads finish.
+        # If any of them raised an exception, that same exception will
+        # be raised here by result()
+        part_sha1_array = [f.result()['contentSha1'] for f in part_futures]
 
         # Finish the large file
         response = self.services.session.finish_large_file(file_id, part_sha1_array)
