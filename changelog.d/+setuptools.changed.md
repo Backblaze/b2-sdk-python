@@ -1,1 +1,0 @@
-Add dependency on `setuptools` and `packaging` as they are not shipped by cpython 3.12 and are used in production code.

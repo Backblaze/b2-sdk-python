@@ -1,1 +1,0 @@
-Fix closing of passed progress listeners in `Bucket.upload` and `Bucket.copy`
