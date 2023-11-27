@@ -9,10 +9,24 @@ upcoming release can be found in [changelog.d](changelog.d).
 
 <!-- towncrier release notes start -->
 
+
 ## [Unreleased]
 
 ### Fixed
 - Add missing import to Synchronizer docs example
+
+
+## [1.27.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v1.27.0) - 2023-11-26
+
+
+### Changed
+
+- Add dependency on `setuptools` and `packaging` as they are not shipped by cpython 3.12 and are used in production code.
+
+### Fixed
+
+- Fix closing of passed progress listeners in `Bucket.upload` and `Bucket.copy`
+
 
 ## [1.26.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v1.26.0) - 2023-11-20
 

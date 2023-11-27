@@ -15,6 +15,7 @@ from b2sdk.encryption.setting import EncryptionMode, EncryptionSetting
 from b2sdk.exception import AlreadyFailed, CopyArgumentsMismatch, SSECKeyIdMismatchInCopy
 from b2sdk.file_lock import FileRetentionSetting, LegalHold
 from b2sdk.http_constants import SSE_C_KEY_ID_FILE_INFO_KEY_NAME
+from b2sdk.progress import AbstractProgressListener
 from b2sdk.raw_api import MetadataDirectiveMode
 from b2sdk.transfer.transfer_manager import TransferManager
 from b2sdk.utils.thread_pool import ThreadPoolMixin
@@ -144,54 +145,50 @@ class CopyManager(TransferManager, ThreadPoolMixin):
         content_type,
         file_info,
         destination_bucket_id,
-        progress_listener,
+        progress_listener: AbstractProgressListener,
         destination_encryption: EncryptionSetting | None,
         source_encryption: EncryptionSetting | None,
         legal_hold: LegalHold | None = None,
         file_retention: FileRetentionSetting | None = None,
     ):
-        with progress_listener:
-            progress_listener.set_total_bytes(copy_source.get_content_length() or 0)
+        progress_listener.set_total_bytes(copy_source.get_content_length() or 0)
 
-            bytes_range = copy_source.get_bytes_range()
+        bytes_range = copy_source.get_bytes_range()
 
-            if content_type is None:
-                if file_info is not None:
-                    raise CopyArgumentsMismatch(
-                        'File info can be set only when content type is set'
-                    )
-                metadata_directive = MetadataDirectiveMode.COPY
-            else:
-                if file_info is None:
-                    raise CopyArgumentsMismatch(
-                        'File info can be not set only when content type is not set'
-                    )
-                metadata_directive = MetadataDirectiveMode.REPLACE
-            metadata_directive, file_info, content_type = self.establish_sse_c_file_metadata(
-                metadata_directive=metadata_directive,
-                destination_file_info=file_info,
-                destination_content_type=content_type,
-                destination_server_side_encryption=destination_encryption,
-                source_server_side_encryption=source_encryption,
-                source_file_info=copy_source.source_file_info,
-                source_content_type=copy_source.source_content_type,
-            )
-            response = self.services.session.copy_file(
-                copy_source.file_id,
-                file_name,
-                bytes_range=bytes_range,
-                metadata_directive=metadata_directive,
-                content_type=content_type,
-                file_info=file_info,
-                destination_bucket_id=destination_bucket_id,
-                destination_server_side_encryption=destination_encryption,
-                source_server_side_encryption=source_encryption,
-                legal_hold=legal_hold,
-                file_retention=file_retention,
-            )
-            file_version = self.services.api.file_version_factory.from_api_response(response)
-            if progress_listener is not None:
-                progress_listener.bytes_completed(file_version.size)
+        if content_type is None:
+            if file_info is not None:
+                raise CopyArgumentsMismatch('File info can be set only when content type is set')
+            metadata_directive = MetadataDirectiveMode.COPY
+        else:
+            if file_info is None:
+                raise CopyArgumentsMismatch(
+                    'File info can be not set only when content type is not set'
+                )
+            metadata_directive = MetadataDirectiveMode.REPLACE
+        metadata_directive, file_info, content_type = self.establish_sse_c_file_metadata(
+            metadata_directive=metadata_directive,
+            destination_file_info=file_info,
+            destination_content_type=content_type,
+            destination_server_side_encryption=destination_encryption,
+            source_server_side_encryption=source_encryption,
+            source_file_info=copy_source.source_file_info,
+            source_content_type=copy_source.source_content_type,
+        )
+        response = self.services.session.copy_file(
+            copy_source.file_id,
+            file_name,
+            bytes_range=bytes_range,
+            metadata_directive=metadata_directive,
+            content_type=content_type,
+            file_info=file_info,
+            destination_bucket_id=destination_bucket_id,
+            destination_server_side_encryption=destination_encryption,
+            source_server_side_encryption=source_encryption,
+            legal_hold=legal_hold,
+            file_retention=file_retention,
+        )
+        file_version = self.services.api.file_version_factory.from_api_response(response)
+        progress_listener.bytes_completed(file_version.size)
 
         return file_version
 

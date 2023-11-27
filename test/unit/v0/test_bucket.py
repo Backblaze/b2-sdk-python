@@ -127,9 +127,7 @@ class StubProgressListener(AbstractProgressListener):
         valid, _ = self.is_valid_reason(**kwargs)
         return valid
 
-    def is_valid_reason(
-        self, check_closed=True, check_progress=True, check_monotonic_progress=False
-    ):
+    def is_valid_reason(self, check_progress=True, check_monotonic_progress=False):
         progress_end = -1
         if self.history[progress_end] == 'closed':
             progress_end = -2
@@ -144,8 +142,6 @@ class StubProgressListener(AbstractProgressListener):
                 prev = val
         if self.total != self.last_byte_count:
             return False, 'total different than last_byte_count'
-        if check_closed and self.history[-1] != 'closed':
-            return False, 'no "closed" at the end of history'
         if check_progress and len(self.history[1:progress_end]) < 2:
             return False, 'progress in history has less than 2 entries'
         return True, ''
@@ -1075,7 +1071,6 @@ class DownloadTests:
         assert self.download_dest.get_bytes_written() == expected_result.encode()
         if check_progress_listener:
             valid, reason = self.progress_listener.is_valid_reason(
-                check_closed=False,
                 check_progress=False,
                 check_monotonic_progress=True,
             )
