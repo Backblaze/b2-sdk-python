@@ -312,7 +312,11 @@ class TestApi:
 
         # now check it with no readBucketEncryption permission to see that it's unknown
         key = create_key(self.api, ['listBuckets'], 'key1')
-        self.api.authorize_account('production', key.id_, key.application_key)
+        self.api.authorize_account(
+            application_key_id=key.id_,
+            application_key=key.application_key,
+            realm='production',
+        )
         buckets = {
             b.name: b
             for b in self.api.list_buckets()  # scan again with new key
@@ -352,7 +356,11 @@ class TestApi:
         key = create_key(self.api, ['listBuckets'], 'key1')
 
         # authorize with the key
-        self.api.authorize_account('production', key.id_, key.application_key)
+        self.api.authorize_account(
+            application_key_id=key.id_,
+            application_key=key.application_key,
+            realm='production',
+        )
 
         # expire the auth token we just got
         self.raw_api.expire_auth_token(self.account_info.get_account_auth_token())
@@ -365,14 +373,22 @@ class TestApi:
         bucket1 = self.api.create_bucket('bucket1', 'allPrivate')
         self.api.create_bucket('bucket2', 'allPrivate')
         key = create_key(self.api, ['listBuckets'], 'key1', bucket_id=bucket1.id_)
-        self.api.authorize_account('production', key.id_, key.application_key)
+        self.api.authorize_account(
+            application_key_id=key.id_,
+            application_key=key.application_key,
+            realm='production',
+        )
         assert [b.name for b in self.api.list_buckets(bucket_name=bucket1.name)] == ['bucket1']
 
     def test_get_bucket_by_name_with_bucket_restriction(self):
         self._authorize_account()
         bucket1 = self.api.create_bucket('bucket1', 'allPrivate')
         key = create_key(self.api, ['listBuckets'], 'key1', bucket_id=bucket1.id_)
-        self.api.authorize_account('production', key.id_, key.application_key)
+        self.api.authorize_account(
+            application_key_id=key.id_,
+            application_key=key.application_key,
+            realm='production',
+        )
         assert self.api.get_bucket_by_name('bucket1').id_ == bucket1.id_
 
     def test_list_buckets_with_restriction_and_wrong_name(self):
@@ -380,7 +396,11 @@ class TestApi:
         bucket1 = self.api.create_bucket('bucket1', 'allPrivate')
         bucket2 = self.api.create_bucket('bucket2', 'allPrivate')
         key = create_key(self.api, ['listBuckets'], 'key1', bucket_id=bucket1.id_)
-        self.api.authorize_account('production', key.id_, key.application_key)
+        self.api.authorize_account(
+            application_key_id=key.id_,
+            application_key=key.application_key,
+            realm='production',
+        )
         with pytest.raises(RestrictedBucket) as excinfo:
             self.api.list_buckets(bucket_name=bucket2.name)
         assert str(excinfo.value) == 'Application key is restricted to bucket: bucket1'
@@ -390,7 +410,11 @@ class TestApi:
         bucket1 = self.api.create_bucket('bucket1', 'allPrivate')
         self.api.create_bucket('bucket2', 'allPrivate')
         key = create_key(self.api, ['listBuckets'], 'key1', bucket_id=bucket1.id_)
-        self.api.authorize_account('production', key.id_, key.application_key)
+        self.api.authorize_account(
+            application_key_id=key.id_,
+            application_key=key.application_key,
+            realm='production',
+        )
         with pytest.raises(RestrictedBucket) as excinfo:
             self.api.list_buckets()
         assert str(excinfo.value) == 'Application key is restricted to bucket: bucket1'
@@ -400,13 +424,21 @@ class TestApi:
         bucket1 = self.api.create_bucket('bucket1', 'allPrivate')
         self.api.create_bucket('bucket2', 'allPrivate')
         key = create_key(self.api, ['listBuckets'], 'key1', bucket_id=bucket1.id_)
-        self.api.authorize_account('production', key.id_, key.application_key)
+        self.api.authorize_account(
+            application_key_id=key.id_,
+            application_key=key.application_key,
+            realm='production',
+        )
         with pytest.raises(RestrictedBucket) as excinfo:
             self.api.list_buckets(bucket_id='not the one bound to the key')
         assert str(excinfo.value) == f'Application key is restricted to bucket: {bucket1.id_}'
 
     def _authorize_account(self):
-        self.api.authorize_account('production', self.application_key_id, self.master_key)
+        self.api.authorize_account(
+            application_key_id=self.application_key_id,
+            application_key=self.master_key,
+            realm='production',
+        )
 
     def test_update_file_retention(self):
         self._authorize_account()

@@ -28,6 +28,7 @@ class Services(v3.Services):
 # override to use legacy B2Session with legacy B2Http
 # and to raise old style BucketIdNotFound exception
 # and to use old style Bucket
+# and to use legacy authorize_account signature
 class B2Api(v3.B2Api):
     SESSION_CLASS = staticmethod(B2Session)
     BUCKET_CLASS = staticmethod(Bucket)
@@ -46,3 +47,12 @@ class B2Api(v3.B2Api):
             return super().get_bucket_by_id(bucket_id)
         except v3BucketIdNotFound as e:
             raise BucketIdNotFound(e.bucket_id)
+
+    # one should put "@limit_trace_arguments(only=('self', 'realm'))" here but logfury meta magic copies the appropriate
+    # attributes from base classes
+    def authorize_account(self, realm, application_key_id, application_key):
+        return super().authorize_account(
+            application_key_id=application_key_id,
+            application_key=application_key,
+            realm=realm,
+        )
