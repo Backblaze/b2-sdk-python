@@ -84,7 +84,7 @@ jobs:
       fail-fast: false
       matrix:
         os: ["ubuntu-latest", "macos-latest", "windows-latest"]
-        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11", "3.12", "pypy-3.9", "pypy-3.10"]
+        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11", "3.12", "pypy-3.9", "pypy-3.9-nightly", "pypy-3.10"]
         exclude:
           - os: "macos-latest"
             python-version: "pypy-3.9"
@@ -94,6 +94,13 @@ jobs:
             python-version: "pypy-3.10"
           - os: "windows-latest"
             python-version: "pypy-3.10"
+          # TODO: pypy-3.9 started breaking on windows, due to some prints leftover in pypy release
+          - os: "ubuntu-latest"
+            python-version: "pypy-3.9-nightly"
+          - os: "macos-latest"
+            python-version: "pypy-3.9-nightly"
+          - os: "windows-latest"
+            python-version: "pypy-3.9"
     steps:
       - uses: actions/checkout@v3
         with:
