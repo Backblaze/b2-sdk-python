@@ -15,6 +15,7 @@ from abc import ABCMeta, abstractmethod
 from collections import deque
 from math import ceil
 
+from b2sdk.exception import InvalidUserInput
 from b2sdk.http_constants import (
     DEFAULT_MAX_PART_SIZE,
     DEFAULT_MIN_PART_SIZE,
@@ -94,7 +95,14 @@ class EmergePlanner:
         self.min_part_size = min_part_size or DEFAULT_MIN_PART_SIZE
         self.recommended_upload_part_size = recommended_upload_part_size or DEFAULT_RECOMMENDED_UPLOAD_PART_SIZE
         self.max_part_size = max_part_size or DEFAULT_MAX_PART_SIZE
-        assert self.min_part_size <= self.recommended_upload_part_size <= self.max_part_size
+        if self.min_part_size > self.recommended_upload_part_size:
+            raise InvalidUserInput(
+                f"min_part_size value ({self.min_part_size}) exceeding recommended_upload_part_size value ({self.recommended_upload_part_size})"
+            )
+        if self.recommended_upload_part_size > self.max_part_size:
+            raise InvalidUserInput(
+                f"recommended_upload_part_size value ({self.recommended_upload_part_size}) exceeding max_part_size value ({self.max_part_size})"
+            )
 
     @classmethod
     def from_account_info(
