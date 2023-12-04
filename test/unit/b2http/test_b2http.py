@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import datetime
 import locale
+import sys
 from unittest.mock import MagicMock, call, patch
 
 import apiver_deps
@@ -32,7 +33,6 @@ from apiver_deps_exception import (
 )
 
 from b2sdk.b2http import setlocale
-
 from ..test_base import TestBase
 
 
@@ -306,9 +306,11 @@ class TestB2HttpUserAgentAppend(TestB2Http):
 
 class TestSetLocaleContextManager(TestBase):
     def test_set_locale_context_manager(self):
-        test_locale = locale.normalize(
-            'C.utf8'
-        )  # C.UTF-8 on Ubuntu 18.04 Bionic, C.utf8 on Ubuntu 22.04 Jammy
+        # C.UTF-8 on Ubuntu 18.04 Bionic, C.utf8 on Ubuntu 22.04 Jammy
+        # Neither macOS nor Windows have C.UTF-8 locale, and they use `en_US.UTF-8`.
+        # Since Python 3.12, locale.normalize no longer falls back
+        # to the `en_US` version, so we're providing it here manually.
+        test_locale = locale.normalize('C.UTF-8' if sys.platform == 'linux' else 'en_US.UTF-8')
         other_locale = 'C'
 
         saved = locale.setlocale(locale.LC_ALL)
