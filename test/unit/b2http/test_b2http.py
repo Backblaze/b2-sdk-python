@@ -33,6 +33,7 @@ from apiver_deps_exception import (
 )
 
 from b2sdk.b2http import setlocale
+
 from ..test_base import TestBase
 
 
