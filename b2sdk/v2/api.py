@@ -48,8 +48,8 @@ class B2Api(v3.B2Api):
         except v3BucketIdNotFound as e:
             raise BucketIdNotFound(e.bucket_id)
 
-    # one should put "@limit_trace_arguments(only=('self', 'realm'))" here but logfury meta magic copies the appropriate
-    # attributes from base classes
+    # one could contemplate putting "@limit_trace_arguments(only=('self', 'realm'))" here but logfury meta magic copies
+    # the appropriate attributes from base classes
     def authorize_account(self, realm, application_key_id, application_key):
         return super().authorize_account(
             application_key_id=application_key_id,

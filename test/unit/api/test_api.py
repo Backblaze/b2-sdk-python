@@ -55,6 +55,29 @@ class TestApi:
         self.raw_api = self.api.session.raw_api
         (self.application_key_id, self.master_key) = self.raw_api.create_account()
 
+    @pytest.mark.apiver(from_ver=3)
+    def test_authorize_signature_v3_default_realm(self):
+        self.api.authorize_account(
+            self.application_key_id,
+            self.master_key,
+        )
+
+    @pytest.mark.apiver(from_ver=3)
+    def test_authorize_signature_v3_explicit_realm(self):
+        self.api.authorize_account(
+            self.application_key_id,
+            self.master_key,
+            'production',
+        )
+
+    @pytest.mark.apiver(to_ver=2)
+    def test_authorize_signature_up_to_ver_2(self):
+        self.api.authorize_account(
+            'production',
+            self.application_key_id,
+            self.master_key,
+        )
+
     def test_get_file_info(self):
         self._authorize_account()
         bucket = self.api.create_bucket('bucket1', 'allPrivate')
