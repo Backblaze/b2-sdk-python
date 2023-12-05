@@ -248,16 +248,14 @@ def make_release_commit(session):
     )
 
 
-def load_allowed_change_types(project_toml: pathlib.Path = pathlib.Path('./pyproject.toml')) -> set[str]:
+def load_allowed_change_types(project_toml: pathlib.Path = pathlib.Path('./pyproject.toml')
+                             ) -> set[str]:
     """
     Load the list of allowed change types from the pyproject.toml file.
     """
     import tomllib
     configuration = tomllib.loads(project_toml.read_text())
-    return set(
-        entry['directory']
-        for entry in configuration['tool']['towncrier']['type']
-    )
+    return set(entry['directory'] for entry in configuration['tool']['towncrier']['type'])
 
 
 def is_changelog_filename_valid(filename: str, allowed_change_types: set[str]) -> tuple[bool, str]:
@@ -272,7 +270,7 @@ def is_changelog_filename_valid(filename: str, allowed_change_types: set[str]) -
         description, change_type, extension = filename.rsplit('.', maxsplit=2)
     except ValueError:
         # Not enough values to unpack.
-        return False, f"Doesn't follow the \"<description>.<change_type>.md\" pattern."
+        return False, "Doesn't follow the \"<description>.<change_type>.md\" pattern."
 
     # Check whether the filename ends with .md.
     if extension != wanted_extension:
@@ -280,14 +278,16 @@ def is_changelog_filename_valid(filename: str, allowed_change_types: set[str]) -
 
     # Check whether the change type is valid.
     if change_type not in allowed_change_types:
-        error_reasons.append(f"Change type '{change_type}' doesn't match allowed types: {allowed_change_types}.")
+        error_reasons.append(
+            f"Change type '{change_type}' doesn't match allowed types: {allowed_change_types}."
+        )
 
     # Check whether the description makes sense.
     try:
         int(description)
     except ValueError:
         if description[0] != '+':
-            error_reasons.append(f"Doesn't start with a number nor a plus sign.")
+            error_reasons.append("Doesn't start with a number nor a plus sign.")
 
     return len(error_reasons) == 0, ' / '.join(error_reasons) if error_reasons else ''
 
@@ -339,7 +339,9 @@ def towncrier_check(session):
 
         # Check whether the file isn't too big.
         if filename.lstat().st_size > 16 * 1024:
-            session.log(f'File {filename.name} content is too big – it should be smaller than 16kB.')
+            session.log(
+                f'File {filename.name} content is too big – it should be smaller than 16kB.'
+            )
             is_error = True
             continue
 
@@ -359,4 +361,6 @@ def towncrier_check(session):
             continue
 
     if is_error:
-        session.error(f'Found errors in the changelog.d directory. Check logs above for more information')
+        session.error(
+            'Found errors in the changelog.d directory. Check logs above for more information'
+        )
