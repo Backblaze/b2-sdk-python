@@ -174,6 +174,12 @@ class UnboundWriteIntentGenerator:
             offset += len(self.buffer)
             self._rotate_leftovers()
 
+        # If we didn't stream anything, we should still provide
+        # at least an empty WriteIntent, so that the file will be created.
+        if offset == 0:
+            source = UnboundSourceBytes(bytearray(), release_function=lambda: None)
+            yield WriteIntent(source, destination_offset=offset)
+
     def _trim_to_leftovers(self) -> None:
         if len(self.buffer) <= self.buffer_size_bytes:
             return
