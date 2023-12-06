@@ -2850,6 +2850,13 @@ class TestFileInfoB2Fields(TestCaseWithBucket):
             )
             test_case.assert_(file_version)
 
+    def test_upload_empty_unbound_stream(self):
+        for test_case in self.test_cases:
+            file_version = self.bucket.upload_unbound_stream(
+                io.BytesIO(b''), 'file1', **test_case.kwargs
+            )
+            test_case.assert_(file_version)
+
     def test_upload_local_file(self):
         for test_case in self.test_cases:
             with tempfile.TemporaryDirectory() as d:
