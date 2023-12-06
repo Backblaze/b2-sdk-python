@@ -9,6 +9,25 @@ upcoming release can be found in [changelog.d](changelog.d).
 
 <!-- towncrier release notes start -->
 
+## [1.28.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v1.28.0) - 2023-12-06
+
+
+### Changed
+
+- On XDG compatible OSes (Linux, BSD), the profile file is now created in `$XDG_CONFIG_HOME` (with a fallback to `~/.config/` in absence of given env. variable).
+- Replace blank `assert` with exception when size values for parts upload are misaligned.
+
+### Fixed
+
+- Streaming from empty stream no longer ends with "Empty emerge parts iterator" error.
+
+### Infrastructure
+
+- Changelog entries are now validated as a part of CI pipeline.
+- Disable dependabot requests for updates unrelated to security issues.
+- Fixed tests failing because of changes made to `locale.normalize` in Python 3.12.
+
+
 ## [1.27.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v1.27.0) - 2023-11-26
 
 
