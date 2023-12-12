@@ -250,7 +250,11 @@ class TestCaseWithBucket(TestBase):
         self.api = self.get_api()
         self.simulator = self.api.session.raw_api
         (self.account_id, self.master_key) = self.simulator.create_account()
-        self.api.authorize_account('production', self.account_id, self.master_key)
+        self.api.authorize_account(
+            application_key_id=self.account_id,
+            application_key=self.master_key,
+            realm='production',
+        )
         self.api_url = self.account_info.get_api_url()
         self.account_auth_token = self.account_info.get_account_auth_token()
         self.bucket = self.api.create_bucket(self.bucket_name, 'allPublic')
@@ -463,7 +467,11 @@ class TestGetFileInfo(TestCaseWithBucket):
             ]
         )
 
-        low_perm_api.authorize_account('production', low_perm_key.id_, low_perm_key.application_key)
+        low_perm_api.authorize_account(
+            application_key_id=low_perm_key.id_,
+            application_key=low_perm_key.application_key,
+            realm='production',
+        )
         low_perm_bucket = low_perm_api.get_bucket_by_name('my-bucket-with-file-lock')
 
         file_version = low_perm_bucket.get_file_info_by_name('a')
@@ -2680,7 +2688,11 @@ class TestAuthorizeForBucket(TestCaseWithBucket):
             bucket_id=self.bucket_id,
         )
 
-        self.api.authorize_account('production', key.id_, key.application_key)
+        self.api.authorize_account(
+            application_key_id=key.id_,
+            application_key=key.application_key,
+            realm='production',
+        )
 
         # Check whether the bucket fetching performs an API call.
         with mock.patch.object(self.api, 'list_buckets') as mock_list_buckets:
@@ -2702,7 +2714,11 @@ class TestAuthorizeForBucket(TestCaseWithBucket):
         )
 
         with self.assertRaises(RestrictedBucketMissing):
-            self.api.authorize_account('production', key.id_, key.application_key)
+            self.api.authorize_account(
+                application_key_id=key.id_,
+                application_key=key.application_key,
+                realm='production',
+            )
 
 
 class TestDownloadLocalDirectoryIssues(TestCaseWithBucket):

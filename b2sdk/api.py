@@ -209,13 +209,13 @@ class B2Api(metaclass=B2TraceMeta):
         return self.session.authorize_automatically()
 
     @limit_trace_arguments(only=('self', 'realm'))
-    def authorize_account(self, realm, application_key_id, application_key):
+    def authorize_account(self, application_key_id, application_key, realm='production'):
         """
         Perform account authorization.
 
-        :param str realm: a realm to authorize account in (usually just "production")
         :param str application_key_id: :term:`application key ID`
         :param str application_key: user's :term:`application key`
+        :param str realm: a realm to authorize account in (usually just "production")
         """
         self.session.authorize_account(realm, application_key_id, application_key)
         self._populate_bucket_cache_from_key()
