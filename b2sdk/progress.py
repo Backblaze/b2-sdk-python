@@ -28,33 +28,56 @@ class AbstractProgressListener(metaclass=ABCMeta):
     a percent done.
     """
 
-    def __init__(self):
+    def __init__(self, description: str = ''):
+        self.description = description
         self._closed = False
 
     @abstractmethod
-    def set_total_bytes(self, total_byte_count):
+    def set_total_bytes(self, total_byte_count: int) -> None:
         """
         Always called before __enter__ to set the expected total number of bytes.
 
         May be called more than once if an upload is retried.
 
-        :param int total_byte_count: expected total number of bytes
+        :param total_byte_count: expected total number of bytes
         """
 
     @abstractmethod
-    def bytes_completed(self, byte_count):
+    def bytes_completed(self, byte_count: int) -> None:
         """
         Report the given number of bytes that have been transferred
         so far.  This is not a delta, it is the total number of bytes
         transferred so far.
 
-        Transfer can fail and restart from beginning so byte count can
+        Transfer can fail and restart from the beginning, so byte count can
         decrease between calls.
 
-        :param int byte_count: number of bytes have been transferred
+        :param byte_count: number of bytes have been transferred
         """
 
-    def close(self):
+    def _can_change_description(self) -> bool:
+        """
+        Determines, on a per-implementation basis, whether the description can be changed at this time.
+        """
+        return True
+
+    def change_description(self, new_description: str) -> bool:
+        """
+        Ability to change the description after the listener is started.
+
+        Note: whether the change of description is allowed depends on the implementation.
+        The safest option is to change the description before setting the total bytes.
+
+        :param new_description: the new description to be used
+        :return: information whether the description was changed
+        """
+        if not self._can_change_description():
+            return False
+
+        self.description = new_description
+        return True
+
+    def close(self) -> None:
         """
         Must be called when you're done with the listener.
         In well-structured code, should be called only once.
@@ -81,13 +104,12 @@ class TqdmProgressListener(AbstractProgressListener):
     Progress listener based on tqdm library.
     """
 
-    def __init__(self, description, *args, **kwargs):
-        self.description = description
+    def __init__(self, *args, **kwargs):
         self.tqdm = None  # set in set_total_bytes()
         self.prev_value = 0
         super().__init__(*args, **kwargs)
 
-    def set_total_bytes(self, total_byte_count):
+    def set_total_bytes(self, total_byte_count: int) -> None:
         if self.tqdm is None:
             self.tqdm = tqdm(
                 desc=self.description,
@@ -100,7 +122,7 @@ class TqdmProgressListener(AbstractProgressListener):
                 mininterval=0.2,
             )
 
-    def bytes_completed(self, byte_count):
+    def bytes_completed(self, byte_count: int) -> None:
         # tqdm doesn't support running the progress bar backwards,
         # so on an upload retry, it just won't move until it gets
         # past the point where it failed.
@@ -108,7 +130,10 @@ class TqdmProgressListener(AbstractProgressListener):
             self.tqdm.update(byte_count - self.prev_value)
             self.prev_value = byte_count
 
-    def close(self):
+    def _can_change_description(self) -> bool:
+        return self.tqdm is None
+
+    def close(self) -> None:
         if self.tqdm is not None:
             self.tqdm.close()
         super().close()
@@ -119,27 +144,30 @@ class SimpleProgressListener(AbstractProgressListener):
     Just a simple progress listener which prints info on a console.
     """
 
-    def __init__(self, description, *args, **kwargs):
-        self.desc = description
+    def __init__(self, *args, **kwargs):
         self.complete = 0
         self.last_time = time.time()
         self.any_printed = False
+        self.total = 0  # set in set_total_bytes()
         super().__init__(*args, **kwargs)
 
-    def set_total_bytes(self, total_byte_count):
+    def set_total_bytes(self, total_byte_count: int) -> None:
         self.total = total_byte_count
 
-    def bytes_completed(self, byte_count):
+    def bytes_completed(self, byte_count: int) -> None:
         now = time.time()
         elapsed = now - self.last_time
         if 3 <= elapsed and self.total != 0:
             if not self.any_printed:
-                print(self.desc)
+                print(self.description)
             print('     %d%%' % int(100.0 * byte_count / self.total))
             self.last_time = now
             self.any_printed = True
 
-    def close(self):
+    def _can_change_description(self) -> bool:
+        return not self.any_printed
+
+    def close(self) -> None:
         if self.any_printed:
             print('    DONE.')
         super().close()
@@ -150,42 +178,42 @@ class DoNothingProgressListener(AbstractProgressListener):
     This listener gives no output whatsoever.
     """
 
-    def set_total_bytes(self, total_byte_count):
+    def set_total_bytes(self, total_byte_count: int) -> None:
         pass
 
-    def bytes_completed(self, byte_count):
+    def bytes_completed(self, byte_count: int) -> None:
         pass
 
 
 class ProgressListenerForTest(AbstractProgressListener):
     """
-    Capture all of the calls so they can be checked.
+    Capture all the calls so they can be checked.
     """
 
     def __init__(self, *args, **kwargs):
         self.calls = []
         super().__init__(*args, **kwargs)
 
-    def set_total_bytes(self, total_byte_count):
+    def set_total_bytes(self, total_byte_count: int) -> None:
         self.calls.append('set_total_bytes(%d)' % (total_byte_count,))
 
-    def bytes_completed(self, byte_count):
+    def bytes_completed(self, byte_count: int) -> None:
         self.calls.append('bytes_completed(%d)' % (byte_count,))
 
-    def close(self):
+    def close(self) -> None:
         self.calls.append('close()')
         super().close()
 
-    def get_calls(self):
+    def get_calls(self) -> list[str]:
         return self.calls
 
 
-def make_progress_listener(description, quiet):
+def make_progress_listener(description: str, quiet: bool) -> AbstractProgressListener:
     """
     Return a progress listener object depending on some conditions.
 
-    :param str description: listener description
-    :param bool quiet: if ``True``, do not output anything
+    :param description: listener description
+    :param quiet: if ``True``, do not output anything
     :return: a listener object
     """
     if quiet:
