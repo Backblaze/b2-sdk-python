@@ -1,1 +1,1 @@
-Change v3.B2Api.authorize_account signature to make `realm` optional and `"production"` by default
+Change v3.B2Api.authorize_account signature to make `realm` optional and `"production"` by default.
