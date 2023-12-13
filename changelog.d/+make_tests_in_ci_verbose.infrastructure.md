@@ -1,1 +1,0 @@
-Add `-v` to pytest in CI.
