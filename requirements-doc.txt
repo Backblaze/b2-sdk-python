@@ -1,7 +1,0 @@
-sadisplay
-sphinx<6.0
-sphinx-autobuild
-sphinx-rtd-theme
-sphinx_autodoc_typehints
-sphinxcontrib-plantuml
-tornado>=6.3.3 # not directly required, pinned by Snyk to avoid a vulnerability

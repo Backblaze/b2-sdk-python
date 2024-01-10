@@ -16,11 +16,15 @@ import subprocess
 
 import nox
 
+# Required for PDM to use nox's virtualenvs
+os.environ.update({"PDM_IGNORE_SAVED_PYTHON": "1"})
+
 CI = os.environ.get('CI') is not None
 NOX_PYTHONS = os.environ.get('NOX_PYTHONS')
-SKIP_COVERAGE = os.environ.get('SKIP_COVERAGE') == 'true'
 
 PYTHON_VERSIONS = [
+    'pypy3.9',
+    'pypy3.10',
     '3.7',
     '3.8',
     '3.9',
@@ -31,20 +35,7 @@ PYTHON_VERSIONS = [
 
 PYTHON_DEFAULT_VERSION = PYTHON_VERSIONS[-1]
 
-PY_PATHS = ['b2sdk', 'test', 'noxfile.py', 'setup.py']
-
-REQUIREMENTS_FORMAT = ['yapf==0.27', 'ruff==0.0.270']
-REQUIREMENTS_LINT = REQUIREMENTS_FORMAT + ['pytest==6.2.5', 'liccheck==0.6.2']
-REQUIREMENTS_RELEASE = ['towncrier==23.11.0']
-REQUIREMENTS_TEST = [
-    "pytest==6.2.5",
-    "pytest-cov==3.0.0",
-    "pytest-mock==3.6.1",
-    'pytest-lazy-fixture==0.6.3',
-    'pytest-xdist==2.5.0',
-    'pytest-timeout==2.1.0',
-]
-REQUIREMENTS_BUILD = ['setuptools>=20.2', 'wheel>=0.40']
+PY_PATHS = ['b2sdk', 'test', 'noxfile.py']
 
 nox.options.reuse_existing_virtualenvs = True
 nox.options.sessions = [
@@ -52,24 +43,24 @@ nox.options.sessions = [
     'test',
 ]
 
-# In CI, use Python interpreter provided by GitHub Actions
-if CI:
-    nox.options.force_venv_backend = 'none'
+
+def pdm_install(session: nox.Session, *groups: str, dev=True) -> None:
+    # dev dependencies are installed by default
+    prod_args = [] if dev else ['--prod']
+    group_args = []
+    for group in groups:
+        group_args.extend(['--group', group])
+    session.run('pdm', 'install', *prod_args, *group_args, external=True)
 
 
-def install_myself(session, extras=None):
-    """Install from the source."""
-    arg = '.'
-    if extras:
-        arg += '[%s]' % ','.join(extras)
-
-    session.run('pip', 'install', '-e', arg)
+def skip_coverage(python_version: str) -> bool:
+    return python_version.startswith('pypy')
 
 
 @nox.session(name='format', python=PYTHON_DEFAULT_VERSION)
 def format_(session):
     """Lint the code and apply fixes in-place whenever possible."""
-    session.run('pip', 'install', *REQUIREMENTS_FORMAT)
+    pdm_install(session, 'format')
     # TODO: incremental mode for yapf
     session.run('yapf', '--in-place', '--parallel', '--recursive', *PY_PATHS)
     session.run('ruff', 'check', '--fix', *PY_PATHS)
@@ -86,8 +77,8 @@ def format_(session):
 @nox.session(python=PYTHON_DEFAULT_VERSION)
 def lint(session):
     """Run linters in readonly mode."""
-    install_myself(session)
-    session.run('pip', 'install', *REQUIREMENTS_LINT)
+    # We need to install 'doc' group because liccheck needs to inspect it.
+    pdm_install(session, 'doc', 'lint')
     session.run('yapf', '--diff', '--parallel', '--recursive', *PY_PATHS)
     session.run('ruff', 'check', *PY_PATHS)
     # session.run(
@@ -100,42 +91,42 @@ def lint(session):
     # )
 
     session.run('pytest', 'test/static')
-    session.run('liccheck', '-s', 'setup.cfg')
+    session.run('liccheck', '-s', 'pyproject.toml')
+
+    # Check if the lockfile is up to date
+    session.run('pdm', 'lock', '--check', external=True)
 
 
 @nox.session(python=PYTHON_VERSIONS)
 def unit(session):
     """Run unit tests."""
-    install_myself(session)
-    session.run('pip', 'install', *REQUIREMENTS_TEST)
+    pdm_install(session, 'test')
     args = ['--doctest-modules', '-n', 'auto']
-    if not SKIP_COVERAGE:
+    if not skip_coverage(session.python):
         args += ['--cov=b2sdk', '--cov-branch', '--cov-report=xml']
     # TODO: Use session.parametrize for apiver
     session.run('pytest', '--api=v3', *args, *session.posargs, 'test/unit')
-    if not SKIP_COVERAGE:
+    if not skip_coverage(session.python):
         args += ['--cov-append']
     session.run('pytest', '--api=v2', *args, *session.posargs, 'test/unit')
     session.run('pytest', '--api=v1', *args, *session.posargs, 'test/unit')
     session.run('pytest', '--api=v0', *args, *session.posargs, 'test/unit')
 
-    if not SKIP_COVERAGE and not session.posargs:
+    if not skip_coverage(session.python) and not session.posargs:
         session.notify('cover')
 
 
 @nox.session(python=PYTHON_VERSIONS)
 def integration(session):
     """Run integration tests."""
-    install_myself(session)
-    session.run('pip', 'install', *REQUIREMENTS_TEST)
+    pdm_install(session, 'test')
     session.run('pytest', '-s', *session.posargs, 'test/integration')
 
 
 @nox.session(python=PYTHON_DEFAULT_VERSION)
 def cleanup_old_buckets(session):
     """Remove buckets from previous test runs."""
-    install_myself(session)
-    session.run('pip', 'install', *REQUIREMENTS_TEST)
+    pdm_install(session, 'test')
     session.run('python', '-m', 'test.integration.cleanup_buckets')
 
 
@@ -153,7 +144,7 @@ def test(session):
 @nox.session
 def cover(session):
     """Perform coverage analysis."""
-    session.run('pip', 'install', 'coverage')
+    pdm_install(session, 'test')
     session.run('coverage', 'report', '--fail-under=75', '--show-missing', '--skip-covered')
     session.run('coverage', 'erase')
 
@@ -161,11 +152,7 @@ def cover(session):
 @nox.session(python=PYTHON_DEFAULT_VERSION)
 def build(session):
     """Build the distribution."""
-    session.run('pip', 'install', *REQUIREMENTS_BUILD)
-    session.run('python', 'setup.py', 'check', '--metadata', '--strict')
-    session.run('rm', '-rf', 'build', 'dist', 'b2sdk.egg-info', external=True)
-    session.run('python', 'setup.py', 'sdist', *session.posargs)
-    session.run('python', 'setup.py', 'bdist_wheel', *session.posargs)
+    session.run('pdm', 'build', external=True)
 
     # Set outputs for GitHub Actions
     if CI:
@@ -181,7 +168,7 @@ def build(session):
 @nox.session(python=PYTHON_DEFAULT_VERSION)
 def doc(session):
     """Build the documentation."""
-    install_myself(session, extras=['doc'])
+    pdm_install(session, 'doc', dev=False)
     session.cd('doc')
     sphinx_args = ['-b', 'html', '-T', '-W', 'source', 'build/html']
     session.run('rm', '-rf', 'build', external=True)
@@ -199,7 +186,7 @@ def doc(session):
 @nox.session
 def doc_cover(session):
     """Perform coverage analysis for the documentation."""
-    install_myself(session, extras=['doc'])
+    pdm_install(session, 'doc', dev=False)
     session.cd('doc')
     sphinx_args = ['-b', 'coverage', '-T', '-W', 'source', 'build/coverage']
     report_file = 'build/coverage/python.txt'
@@ -236,7 +223,7 @@ def make_release_commit(session):
     if current_branch != 'master':
         session.log('WARNING: releasing from a branch different than master')
 
-    session.run('pip', 'install', *REQUIREMENTS_RELEASE)
+    pdm_install(session, 'release')
     session.run('towncrier', 'build', '--yes', '--version', version)
 
     session.log(
