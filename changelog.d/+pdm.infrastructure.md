@@ -1,0 +1,1 @@
+Package the library using [pdm](https://pdm-project.org), use locked dependencies in CI.

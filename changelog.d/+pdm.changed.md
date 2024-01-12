@@ -1,1 +1,0 @@
-Package the library using [pdm](https://pdm-project.org).

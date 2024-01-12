@@ -1,1 +1,0 @@
-Use locked dependencies for running CI actions.

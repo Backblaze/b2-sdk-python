@@ -44,11 +44,11 @@ nox.options.sessions = [
 ]
 
 
-def pdm_install(session: nox.Session, *groups: str, dev=True) -> None:
+def pdm_install(session: nox.Session, *args: str, dev: bool=True) -> None:
     # dev dependencies are installed by default
     prod_args = [] if dev else ['--prod']
     group_args = []
-    for group in groups:
+    for group in args:
         group_args.extend(['--group', group])
     session.run('pdm', 'install', *prod_args, *group_args, external=True)
 
