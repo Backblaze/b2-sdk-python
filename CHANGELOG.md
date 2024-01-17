@@ -9,11 +9,40 @@ upcoming release can be found in [changelog.d](changelog.d).
 
 <!-- towncrier release notes start -->
 
+## [1.29.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v1.29.0) - 2023-12-13
 
-## [Unreleased]
+
+### Changed
+
+- Change v3.B2Api.authorize_account signature to make `realm` optional and `"production"` by default.
+
+### Added
+
+- Progress listener instances can now change their descriptions during run. This allows for e.g.: changing description after file headers are downloaded but before the content is fetched.
+
+### Infrastructure
+
+- Add `-v` to pytest in CI.
+- Run windows pypy3.9 tests on nightly builds.
+
+
+## [1.28.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v1.28.0) - 2023-12-06
+
+
+### Changed
+
+- On XDG compatible OSes (Linux, BSD), the profile file is now created in `$XDG_CONFIG_HOME` (with a fallback to `~/.config/` in absence of given env. variable).
+- Replace blank `assert` with exception when size values for parts upload are misaligned.
 
 ### Fixed
-- Add missing import to Synchronizer docs example
+
+- Streaming from empty stream no longer ends with "Empty emerge parts iterator" error.
+
+### Infrastructure
+
+- Changelog entries are now validated as a part of CI pipeline.
+- Disable dependabot requests for updates unrelated to security issues.
+- Fixed tests failing because of changes made to `locale.normalize` in Python 3.12.
 
 
 ## [1.27.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v1.27.0) - 2023-11-26

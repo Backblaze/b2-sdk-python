@@ -95,9 +95,15 @@ class TestSqliteAccountProfileFileLocation:
             os.path.join('~', 'custom', 'b2', 'db-secondary.sqlite')
         )
 
-    def test_profile(self):
+    def test_profile(self, monkeypatch):
+        xdg_config_path = SqliteAccountInfo._get_xdg_config_path()
+        if xdg_config_path:
+            expected_path = (xdg_config_path, 'b2', 'db-foo.sqlite')
+        else:
+            expected_path = ('~', '.b2db-foo.sqlite')
+
         account_info_path = SqliteAccountInfo._get_user_account_info_path(profile='foo')
-        assert account_info_path == os.path.expanduser(os.path.join('~', '.b2db-foo.sqlite'))
+        assert account_info_path == os.path.expanduser(os.path.join(*expected_path))
 
     def test_file_name(self):
         account_info_path = SqliteAccountInfo._get_user_account_info_path(
@@ -129,5 +135,11 @@ class TestSqliteAccountProfileFileLocation:
         )
 
     def test_default_file(self):
+        xdg_config_path = SqliteAccountInfo._get_xdg_config_path()
+        if xdg_config_path:
+            expected_path = os.path.join(xdg_config_path, 'b2', 'account_info')
+        else:
+            expected_path = B2_ACCOUNT_INFO_DEFAULT_FILE
+
         account_info_path = SqliteAccountInfo._get_user_account_info_path()
-        assert account_info_path == os.path.expanduser(B2_ACCOUNT_INFO_DEFAULT_FILE)
+        assert account_info_path == os.path.expanduser(expected_path)

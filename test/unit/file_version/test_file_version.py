@@ -47,7 +47,11 @@ class TestFileVersion:
         )
         self.raw_api = self.api.session.raw_api
         (self.application_key_id, self.master_key) = self.raw_api.create_account()
-        self.api.authorize_account('production', self.application_key_id, self.master_key)
+        self.api.authorize_account(
+            application_key_id=self.application_key_id,
+            application_key=self.master_key,
+            realm='production',
+        )
         self.bucket = self.api.create_bucket('testbucket', 'allPrivate', is_file_lock_enabled=True)
         self.file_version = self.bucket.upload_bytes(
             b'nothing', 'test_file', cache_control='private, max-age=3600'

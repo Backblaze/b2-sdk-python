@@ -32,7 +32,11 @@ def api() -> B2Api:
 
     simulator = api.session.raw_api
     account_id, master_key = simulator.create_account()
-    api.authorize_account('production', account_id, master_key)
+    api.authorize_account(
+        application_key_id=account_id,
+        application_key=master_key,
+        realm='production',
+    )
     # api_url = account_info.get_api_url()
     # account_auth_token = account_info.get_account_auth_token()1
     return api

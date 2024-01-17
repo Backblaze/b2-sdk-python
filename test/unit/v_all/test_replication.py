@@ -39,7 +39,11 @@ class TestReplication(TestBase):
         self.application_key_id, self.master_key = self.raw_api.create_account()
 
     def _authorize_account(self):
-        self.api.authorize_account('production', self.application_key_id, self.master_key)
+        self.api.authorize_account(
+            realm='production',
+            application_key_id=self.application_key_id,
+            application_key=self.master_key,
+        )
 
     @pytest.mark.apiver(from_ver=2)
     def test_setup_both(self):

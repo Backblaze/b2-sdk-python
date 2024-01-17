@@ -116,7 +116,11 @@ class TestApi(TestBase):
         (self.application_key_id, self.master_key) = self.raw_api.create_account()
 
     def _authorize_account(self):
-        self.api.authorize_account('production', self.application_key_id, self.master_key)
+        self.api.authorize_account(
+            realm='production',
+            application_key_id=self.application_key_id,
+            application_key=self.master_key,
+        )
 
     @pytest.mark.apiver(to_ver=1)
     def test_get_bucket_by_id_up_to_v1(self):
