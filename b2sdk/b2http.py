@@ -432,6 +432,7 @@ class B2Http:
                         raise PotentialS3EndpointPassedAsRealm(response.content)
                     error = {
                         'message': response.content.decode('utf-8', errors='replace'),
+                        'code': 'non_json_response',
                     }
                 extra_error_keys = error.keys() - ('code', 'status', 'message')
                 if extra_error_keys:

@@ -118,11 +118,10 @@ class TestTranslateErrors(TestBase):
         response.content = b'{' * 500
         response.url = 'https://example.com'
 
-        with self.assertRaises(BadRequest) as error:
+        with pytest.raises(BadRequest) as exc_info:
             B2Http._translate_errors(lambda: response)
 
-            content_length = min(len(response.content), len(error.content))
-            self.assertEqual(response.content[:content_length], error.content[:content_length])
+        assert str(exc_info.value) == f"{response.content.decode()} (non_json_response)"
 
     def test_potential_s3_endpoint_passed_as_realm(self):
         response = MagicMock()
