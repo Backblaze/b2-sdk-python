@@ -34,7 +34,7 @@ Following are the important optional arguments that can be provided while initia
 
     >>> from b2sdk.v2 import ScanPoliciesManager
     >>> from b2sdk.v2 import parse_folder
-    >>> from b2sdk.v2 import Synchronizer
+    >>> from b2sdk.v2 import Synchronizer, SyncReport
     >>> from b2sdk.v2 import KeepOrDeleteMode, CompareVersionMode, NewerFileSyncMode
     >>> import time
     >>> import sys

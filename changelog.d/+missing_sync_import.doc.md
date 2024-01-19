@@ -1,0 +1,1 @@
+Add missing import in Synchronizer docs example.
