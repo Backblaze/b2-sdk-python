@@ -15,16 +15,17 @@ import sys
 from unittest.mock import MagicMock, call, patch
 
 import apiver_deps
+import pytest
 import requests
 from apiver_deps import USER_AGENT, B2Http, B2HttpApiConfig, ClockSkewHook
 from apiver_deps_exception import (
     B2ConnectionError,
     BadDateFormat,
     BadJson,
+    BadRequest,
     BrokenPipe,
     ClockSkew,
     ConnectionReset,
-    InvalidJsonResponse,
     PotentialS3EndpointPassedAsRealm,
     ServiceError,
     TooManyRequests,
@@ -117,7 +118,7 @@ class TestTranslateErrors(TestBase):
         response.content = b'{' * 500
         response.url = 'https://example.com'
 
-        with self.assertRaises(InvalidJsonResponse) as error:
+        with self.assertRaises(BadRequest) as error:
             B2Http._translate_errors(lambda: response)
 
             content_length = min(len(response.content), len(error.content))
@@ -131,6 +132,18 @@ class TestTranslateErrors(TestBase):
 
         with self.assertRaises(PotentialS3EndpointPassedAsRealm):
             B2Http._translate_errors(lambda: response)
+
+
+def test_b2_error__nginx_html():
+    """
+    While errors with HTML description should not happen, we should not crash on them.
+    """
+    response = MagicMock()
+    response.status_code = 502
+    response.content = b'<html><body><h1>502 Bad Gateway</h1></body></html>'
+    with pytest.raises(ServiceError) as exc_info:
+        B2Http._translate_errors(lambda: response)
+    assert response.content.decode('utf-8') in str(exc_info.value)
 
 
 class TestTranslateAndRetry(TestBase):

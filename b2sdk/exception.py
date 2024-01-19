@@ -545,8 +545,8 @@ class InvalidJsonResponse(B2SimpleError):
 
     def __init__(self, content: bytes):
         self.content = content
-        message = '%s' % self.content[:self.UP_TO_BYTES_COUNT]
-        if len(content) > self.UP_TO_BYTES_COUNT:
+        message = self.content[:self.UP_TO_BYTES_COUNT].decode('utf-8', errors='replace')
+        if len(self.content) > self.UP_TO_BYTES_COUNT:
             message += '...'
 
         super().__init__(message)
