@@ -9,6 +9,18 @@ upcoming release can be found in [changelog.d](changelog.d).
 
 <!-- towncrier release notes start -->
 
+## [1.29.1](https://github.com/Backblaze/b2-sdk-python/releases/tag/v1.29.1) - 2024-01-23
+
+
+### Fixed
+
+- Handle non-json encoded B2 error responses, i.e. retry on 502 and 504 errors.
+
+### Doc
+
+- Add missing import in Synchronizer docs example.
+
+
 ## [1.29.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v1.29.0) - 2023-12-13
 
 
