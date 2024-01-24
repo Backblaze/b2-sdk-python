@@ -145,6 +145,36 @@ def test_b2_error__nginx_html():
     assert response.content.decode('utf-8') in str(exc_info.value)
 
 
+def test_b2_error__invalid_error_format():
+    """
+    Handling of invalid error format.
+
+    If server returns valid JSON, but not matching B2 error schema, we should still raise ServiceError.
+    """
+    response = MagicMock()
+    response.status_code = 503
+    # valid JSON, but not a valid B2 error (it should be a dict, not a list)
+    response.content = b'[]'
+    with pytest.raises(ServiceError) as exc_info:
+        B2Http._translate_errors(lambda: response)
+    assert '503' in str(exc_info.value)
+
+
+def test_b2_error__invalid_error_values():
+    """
+    Handling of invalid error values.
+
+    If server returns valid JSON, but not matching B2 error schema, we should still raise ServiceError.
+    """
+    response = MagicMock()
+    response.status_code = 503
+    # valid JSON, but not a valid B2 error (code and status values (and therefore types!) are swapped)
+    response.content = b'{"code": 503, "message": "Service temporarily unavailable", "status": "service_unavailable"}'
+    with pytest.raises(ServiceError) as exc_info:
+        B2Http._translate_errors(lambda: response)
+    assert '503 Service temporarily unavailable' in str(exc_info.value)
+
+
 class TestTranslateAndRetry(TestBase):
     def setUp(self):
         self.response = MagicMock()
