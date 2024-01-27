@@ -13,6 +13,7 @@ import os
 import pathlib
 import re
 import subprocess
+import sys
 
 import nox
 
@@ -21,6 +22,10 @@ os.environ.update({"PDM_IGNORE_SAVED_PYTHON": "1"})
 
 CI = os.environ.get('CI') is not None
 NOX_PYTHONS = os.environ.get('NOX_PYTHONS')
+
+if CI and not NOX_PYTHONS:
+    NOX_PYTHONS = sys.executable
+    print(f"CI job mode; using provided interpreter only; equivalent to NOX_PYTHONS={NOX_PYTHONS}")
 
 PYTHON_VERSIONS = [
     'pypy3.9',
