@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import os
 import pathlib
+import platform
 import re
 import subprocess
 
@@ -22,6 +23,12 @@ os.environ.update({"PDM_IGNORE_SAVED_PYTHON": "1"})
 CI = os.environ.get('CI') is not None
 NOX_PYTHONS = os.environ.get('NOX_PYTHONS')
 
+if CI and not NOX_PYTHONS:
+    NOX_PYTHONS = ""
+    print(
+        f"CI job mode; using provided interpreter only; equivalent to NOX_PYTHONS={NOX_PYTHONS!r}"
+    )
+
 PYTHON_VERSIONS = [
     'pypy3.9',
     'pypy3.10',
@@ -31,9 +38,13 @@ PYTHON_VERSIONS = [
     '3.10',
     '3.11',
     '3.12',
-] if NOX_PYTHONS is None else NOX_PYTHONS.split(',')
+]
+if NOX_PYTHONS:
+    PYTHON_VERSIONS = NOX_PYTHONS.split(',')
+elif NOX_PYTHONS == "":
+    PYTHON_VERSIONS = None
 
-PYTHON_DEFAULT_VERSION = PYTHON_VERSIONS[-1]
+PYTHON_DEFAULT_VERSION = PYTHON_VERSIONS[-1] if PYTHON_VERSIONS else None
 
 PY_PATHS = ['b2sdk', 'test', 'noxfile.py']
 
@@ -53,8 +64,8 @@ def pdm_install(session: nox.Session, *args: str, dev: bool = True) -> None:
     session.run('pdm', 'install', *prod_args, *group_args, external=True)
 
 
-def skip_coverage(python_version: str) -> bool:
-    return python_version.startswith('pypy')
+def skip_coverage(python_version: str | None) -> bool:
+    return (python_version or platform.python_implementation()).lower().startswith('pypy')
 
 
 @nox.session(name='format', python=PYTHON_DEFAULT_VERSION)
