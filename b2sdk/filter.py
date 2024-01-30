@@ -37,8 +37,16 @@ class Filter:
 class FilterMatcher:
     """
     Holds a list of filters and matches a string (i.e. file name) against them.
+
+    The order of filters matters. The *last* matching filter decides whether
+    the string is included or excluded. If no filter matches, the string is
+    included by default.
+
     If the given list of filters contains only INCLUDE filters, then it is
-    assumed that all files are excluded by default.
+    assumed that all files are excluded by default. In this case, an additional
+    EXCLUDE filter is prepended to the list.
+
+    :param filters: list of filters
     """
 
     def __init__(self, filters: Sequence[Filter]):
