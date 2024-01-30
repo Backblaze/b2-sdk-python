@@ -10,8 +10,9 @@
 from __future__ import annotations
 
 import fnmatch
+from dataclasses import dataclass
 from enum import Enum
-from typing import NamedTuple, Sequence
+from typing import Sequence
 
 
 class FilterType(Enum):
@@ -19,7 +20,8 @@ class FilterType(Enum):
     EXCLUDE = "exclude"
 
 
-class Filter(NamedTuple):
+@dataclass
+class Filter:
     type: FilterType
     pattern: str
 
