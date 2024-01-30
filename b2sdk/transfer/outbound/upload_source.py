@@ -192,15 +192,8 @@ class UploadSourceLocalFileRange(UploadSourceLocalFileBase):
 
     def __repr__(self) -> str:
         return (
-            '<{classname} local_path={local_path} offset={offset} '
-            'content_length={content_length} content_sha1={content_sha1} id={id}>'
-        ).format(
-            classname=self.__class__.__name__,
-            local_path=self.local_path,
-            offset=self.offset,
-            content_length=self.content_length,
-            content_sha1=self.content_sha1,
-            id=id(self),
+            f'<{self.__class__.__name__} local_path={self.local_path} offset={self.offset} '
+            f'content_length={self.content_length} content_sha1={self.content_sha1} id={id(self)}>'
         )
 
     def open(self):

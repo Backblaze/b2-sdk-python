@@ -182,9 +182,7 @@ class B2UploadAction(AbstractAction):
         reporter.print_completion('upload ' + self.relative_name)
 
     def __str__(self) -> str:
-        return 'b2_upload({}, {}, {})'.format(
-            self.local_full_path, self.b2_file_name, self.mod_time_millis
-        )
+        return f'b2_upload({self.local_full_path}, {self.b2_file_name}, {self.mod_time_millis})'
 
 
 class B2IncrementalUploadAction(B2UploadAction):

@@ -121,11 +121,7 @@ class SyncPolicyManager:
             else:
                 return CopyPolicy
         raise NotImplementedError(
-            'invalid sync type: {}, keep_days: {}, delete: {}'.format(
-                sync_type,
-                keep_days,
-                delete,
-            )
+            f'invalid sync type: {sync_type}, keep_days: {keep_days}, delete: {delete}'
         )
 
 
