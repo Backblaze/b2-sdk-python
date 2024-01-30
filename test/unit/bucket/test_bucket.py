@@ -883,9 +883,10 @@ class TestLs(TestCaseWithBucket):
             ('b/2/test.tsv', len(data), 'upload', None),
         ]
         actual = [
-            (info.file_name, info.size, info.action, folder)
-            for (info,
-                 folder) in self.bucket_ls(recursive=True, filters=[include('b/2/test.[tc]sv')])
+            (info.file_name, info.size, info.action, folder) for (info, folder) in self.bucket_ls(
+                recursive=True,
+                filters=[include('b/2/test.[tc]sv')],
+            )
         ]
         self.assertEqual(expected, actual)
 
@@ -894,9 +895,10 @@ class TestLs(TestCaseWithBucket):
             ('b/2/test.ksv', len(data), 'upload', None),
         ]
         actual = [
-            (info.file_name, info.size, info.action, folder)
-            for (info,
-                 folder) in self.bucket_ls(recursive=True, filters=[exclude('b/2/test.[tc]sv')])
+            (info.file_name, info.size, info.action, folder) for (info, folder) in self.bucket_ls(
+                recursive=True,
+                filters=[exclude('b/2/test.[tc]sv')],
+            )
         ]
         self.assertEqual(expected, actual)
 
@@ -911,9 +913,10 @@ class TestLs(TestCaseWithBucket):
             ('b/2/test.tsv', len(data), 'upload', None),
         ]
         actual = [
-            (info.file_name, info.size, info.action, folder)
-            for (info,
-                 folder) in self.bucket_ls(recursive=True, filters=[include('b/2/test.[!ck]sv')])
+            (info.file_name, info.size, info.action, folder) for (info, folder) in self.bucket_ls(
+                recursive=True,
+                filters=[include('b/2/test.[!ck]sv')],
+            )
         ]
         self.assertEqual(expected, actual)
 
@@ -923,9 +926,10 @@ class TestLs(TestCaseWithBucket):
             ('b/2/test.ksv', len(data), 'upload', None),
         ]
         actual = [
-            (info.file_name, info.size, info.action, folder)
-            for (info,
-                 folder) in self.bucket_ls(recursive=True, filters=[exclude('b/2/test.[!ck]sv')])
+            (info.file_name, info.size, info.action, folder) for (info, folder) in self.bucket_ls(
+                recursive=True,
+                filters=[exclude('b/2/test.[!ck]sv')],
+            )
         ]
         self.assertEqual(expected, actual)
 
@@ -972,8 +976,12 @@ class TestLs(TestCaseWithBucket):
             ('b/a.txt', len(data), 'upload', None),
         ]
         actual = [
-            (info.file_name, info.size, info.action, folder) for (info, folder) in self.
-            bucket_ls('*.txt', recursive=True, with_wildcard=True, filters=[exclude('*-2.txt')])
+            (info.file_name, info.size, info.action, folder) for (info, folder) in self.bucket_ls(
+                '*.txt',
+                recursive=True,
+                with_wildcard=True,
+                filters=[exclude('*-2.txt')],
+            )
         ]
         self.assertEqual(expected, actual)
 
@@ -1002,10 +1010,11 @@ class TestLs(TestCaseWithBucket):
             ('b/a-1.csv', len(data), 'upload', None),
         ]
         actual = [
-            (info.file_name, info.size, info.action, folder) for (info, folder) in self.
-            bucket_ls(recursive=True, filters=[include('b/*'),
-                                               exclude('*.txt'),
-                                               include('a.txt')])
+            (info.file_name, info.size, info.action, folder) for (info, folder) in self.bucket_ls(
+                recursive=True,
+                filters=[include('b/*'), exclude('*.txt'),
+                         include('a.txt')],
+            )
         ]
         self.assertEqual(expected, actual)
 
