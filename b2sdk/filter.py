@@ -35,6 +35,12 @@ def exclude(pattern: str) -> Filter:
 
 
 class FilterMatcher:
+    """
+    Holds a list of filters and matches a string (i.e. file name) against them.
+    If the given list of filters contains only INCLUDE filters, then it is
+    assumed that all files are excluded by default.
+    """
+
     def __init__(self, filters: Sequence[Filter]):
         if filters and all(filter_.type == FilterType.INCLUDE for filter_ in filters):
             filters = [Filter(type=FilterType.EXCLUDE, pattern="*"), *filters]
