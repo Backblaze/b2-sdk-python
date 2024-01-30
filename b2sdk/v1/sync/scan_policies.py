@@ -132,10 +132,7 @@ class ScanPoliciesManagerWrapper(v2.ScanPoliciesManager):
         self.exclude_all_symlinks = scan_policies_manager.exclude_all_symlinks
 
     def __repr__(self):
-        return "{}({})".format(
-            self.__class__.__name__,
-            self.scan_policies_manager,
-        )
+        return f"{self.__class__.__name__}({self.scan_policies_manager})"
 
     def should_exclude_local_path(self, local_path: v2.LocalSyncPath):
         if self.scan_policies_manager.should_exclude_file_version(

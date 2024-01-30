@@ -23,10 +23,7 @@ class SyncEncryptionSettingsProviderWrapper(v2.AbstractSyncEncryptionSettingsPro
         self.provider = provider
 
     def __repr__(self):
-        return "{}({})".format(
-            self.__class__.__name__,
-            self.provider,
-        )
+        return f"{self.__class__.__name__}({self.provider})"
 
     def get_setting_for_upload(
         self,

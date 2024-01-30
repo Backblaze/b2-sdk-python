@@ -1,0 +1,1 @@
+Update `ruff` linter and apply it to all files.

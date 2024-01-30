@@ -278,14 +278,13 @@ class LocalFolder(AbstractFolder):
         # the sort key, is the first thing in the triple.
         for (name, local_path, relative_file_path) in sorted(names):
             if name.endswith('/'):
-                for subdir_file in self._walk_relative_paths(
+                yield from self._walk_relative_paths(
                     local_path,
                     relative_file_path,
                     reporter,
                     policies_manager,
                     visited_symlinks,
-                ):
-                    yield subdir_file
+                )
             else:
                 # Check that the file still exists and is accessible, since it can take a long time
                 # to iterate through large folders

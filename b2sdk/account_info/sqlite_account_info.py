@@ -119,8 +119,7 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
         elif B2_ACCOUNT_INFO_ENV_VAR in os.environ:
             if profile:
                 raise ValueError(
-                    'Provide either {} env var or profile, not both'.
-                    format(B2_ACCOUNT_INFO_ENV_VAR)
+                    f'Provide either {B2_ACCOUNT_INFO_ENV_VAR} env var or profile, not both'
                 )
             user_account_info_path = os.environ[B2_ACCOUNT_INFO_ENV_VAR]
         elif not profile and os.path.exists(os.path.expanduser(B2_ACCOUNT_INFO_DEFAULT_FILE)):

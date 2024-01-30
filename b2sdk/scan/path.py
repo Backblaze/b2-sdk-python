@@ -76,11 +76,8 @@ class B2Path(AbstractPath):
     def __repr__(self):
         return '{}({}, [{}])'.format(
             self.__class__.__name__, self.relative_path, ', '.join(
-                '({}, {}, {})'.format(
-                    repr(fv.id_),
-                    repr(fv.mod_time_millis),
-                    repr(fv.action),
-                ) for fv in self.all_versions
+                f'({repr(fv.id_)}, {repr(fv.mod_time_millis)}, {repr(fv.action)})'
+                for fv in self.all_versions
             )
         )
 

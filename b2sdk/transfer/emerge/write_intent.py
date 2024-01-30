@@ -27,13 +27,8 @@ class WriteIntent:
 
     def __repr__(self):
         return (
-            '<{classname} outbound_source={outbound_source} '
-            'destination_offset={destination_offset} id={id}>'
-        ).format(
-            classname=self.__class__.__name__,
-            outbound_source=repr(self.outbound_source),
-            destination_offset=self.destination_offset,
-            id=id(self),
+            f'<{self.__class__.__name__} outbound_source={repr(self.outbound_source)} '
+            f'destination_offset={self.destination_offset} id={id(self)}>'
         )
 
     @property
