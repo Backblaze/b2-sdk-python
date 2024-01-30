@@ -25,13 +25,13 @@ class Filter:
     type: FilterType
     pattern: str
 
+    @classmethod
+    def include(cls, pattern: str) -> Filter:
+        return cls(type=FilterType.INCLUDE, pattern=pattern)
 
-def include(pattern: str) -> Filter:
-    return Filter(type=FilterType.INCLUDE, pattern=pattern)
-
-
-def exclude(pattern: str) -> Filter:
-    return Filter(type=FilterType.EXCLUDE, pattern=pattern)
+    @classmethod
+    def exclude(cls, pattern: str) -> Filter:
+        return cls(type=FilterType.EXCLUDE, pattern=pattern)
 
 
 class FilterMatcher:

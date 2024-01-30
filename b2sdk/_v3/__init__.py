@@ -259,4 +259,4 @@ from b2sdk.session import B2Session
 from b2sdk.utils.thread_pool import ThreadPoolMixin
 
 # filter
-from b2sdk.filter import FilterType, Filter, include, exclude
+from b2sdk.filter import FilterType, Filter
