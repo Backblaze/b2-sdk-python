@@ -371,7 +371,7 @@ class Bucket(metaclass=B2TraceMeta):
         recursive: bool = False,
         fetch_count: int | None = LIST_FILE_NAMES_MAX_LIMIT,
         with_wildcard: bool = False,
-        filters: Sequence[Filter] | None = None,
+        filters: Sequence[Filter] = (),
     ):
         """
         Pretend that folders exist and yields the information about the files in a folder.

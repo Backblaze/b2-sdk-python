@@ -35,10 +35,8 @@ def exclude(pattern: str) -> Filter:
 
 
 class FilterMatcher:
-    def __init__(self, filters: Sequence[Filter] | None = None):
-        if not filters:
-            filters = []
-        elif all(filter_.type == FilterType.INCLUDE for filter_ in filters):
+    def __init__(self, filters: Sequence[Filter]):
+        if filters and all(filter_.type == FilterType.INCLUDE for filter_ in filters):
             filters = [Filter(type=FilterType.EXCLUDE, pattern="*"), *filters]
 
         self.filters = filters
