@@ -1,1 +1,1 @@
-Added support for filters to `Bucket.ls()`.
+Add support for filters to `Bucket.ls()`.
