@@ -14,6 +14,7 @@ import fnmatch
 import logging
 import pathlib
 from contextlib import suppress
+from typing import Sequence
 
 from .encryption.setting import EncryptionSetting, EncryptionSettingFactory
 from .encryption.types import EncryptionMode
@@ -33,6 +34,7 @@ from .file_lock import (
     LegalHold,
 )
 from .file_version import DownloadVersion, FileVersion
+from .filter import Filter, FilterMatcher
 from .http_constants import LIST_FILE_NAMES_MAX_LIMIT
 from .progress import AbstractProgressListener, DoNothingProgressListener
 from .raw_api import LifecycleRule
@@ -369,6 +371,7 @@ class Bucket(metaclass=B2TraceMeta):
         recursive: bool = False,
         fetch_count: int | None = LIST_FILE_NAMES_MAX_LIMIT,
         with_wildcard: bool = False,
+        filters: Sequence[Filter] | None = None,
     ):
         """
         Pretend that folders exist and yields the information about the files in a folder.
@@ -390,6 +393,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param with_wildcard: Accepts "*", "?", "[]" and "[!]" in folder_to_list, similarly to what shell does.
                               As of 1.19.0 it can only be enabled when recursive is also enabled.
                               Also, in this mode, folder_to_list is considered to be a filename or a pattern.
+        :param filters: list of filters to apply to the files returned by the server.
         :rtype: generator[tuple[b2sdk.v2.FileVersion, str]]
         :returns: generator of (file_version, folder_name) tuples
 
@@ -445,6 +449,7 @@ class Bucket(metaclass=B2TraceMeta):
         # "folder".   If the first search doesn't produce enough results,
         # then we keep calling list_file_names until we get all of the
         # names in this "folder".
+        filter_matcher = FilterMatcher(filters)
         current_dir = None
         start_file_name = prefix
         start_file_id = None
@@ -466,6 +471,10 @@ class Bucket(metaclass=B2TraceMeta):
                 ):
                     # File doesn't match our wildcard rules
                     continue
+
+                if not filter_matcher.match(file_version.file_name):
+                    continue
+
                 after_prefix = file_version.file_name[len(prefix):]
                 # In case of wildcards, we don't care about folders at all, and it's recursive by default.
                 if '/' not in after_prefix or recursive:

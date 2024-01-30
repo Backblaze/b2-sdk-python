@@ -100,7 +100,9 @@ from apiver_deps import (
     UploadSourceBytes,
     UploadSourceLocalFile,
     WriteIntent,
+    exclude,
     hex_sha1_of_bytes,
+    include,
 )
 
 pytestmark = [pytest.mark.apiver(from_ver=1)]
@@ -785,6 +787,227 @@ class TestLs(TestCaseWithBucket):
         actual = [
             (info.file_name, info.size, info.action, folder)
             for (info, folder) in self.bucket_ls('b/a.txt', recursive=True, with_wildcard=True)
+        ]
+        self.assertEqual(expected, actual)
+
+    def test_filters_wildcard_matching(self):
+        data = b'hello world'
+        self.bucket.upload_bytes(data, 'a')
+        self.bucket.upload_bytes(data, 'b/1/test-1.txt')
+        self.bucket.upload_bytes(data, 'b/2/test-2.csv')
+        self.bucket.upload_bytes(data, 'b/2/test-3.txt')
+        self.bucket.upload_bytes(data, 'b/3/test-4.jpg')
+        self.bucket.upload_bytes(data, 'b/3/test-4.txt')
+        self.bucket.upload_bytes(data, 'b/3/test-5.txt')
+        expected = [
+            ('b/1/test-1.txt', len(data), 'upload', None),
+            ('b/2/test-3.txt', len(data), 'upload', None),
+            ('b/3/test-4.txt', len(data), 'upload', None),
+            ('b/3/test-5.txt', len(data), 'upload', None),
+        ]
+        actual = [
+            (info.file_name, info.size, info.action, folder)
+            for (info, folder) in self.bucket_ls('b/', recursive=True, filters=[include("*.txt")])
+        ]
+        self.assertEqual(expected, actual)
+
+    def test_filters_wildcard_matching_including_root(self):
+        data = b'hello world'
+        self.bucket.upload_bytes(data, 'b/1/test.csv')
+        self.bucket.upload_bytes(data, 'b/1/test.txt')
+        self.bucket.upload_bytes(data, 'b/2/test.tsv')
+        self.bucket.upload_bytes(data, 'b/2/test.txt')
+        self.bucket.upload_bytes(data, 'b/3/test.txt')
+        self.bucket.upload_bytes(data, 'test.txt')
+        self.bucket.upload_bytes(data, 'test.csv')
+
+        expected = [
+            ('b/1/test.txt', len(data), 'upload', None),
+            ('b/2/test.txt', len(data), 'upload', None),
+            ('b/3/test.txt', len(data), 'upload', None),
+            ('test.txt', len(data), 'upload', None),
+        ]
+        actual = [
+            (info.file_name, info.size, info.action, folder)
+            for (info, folder) in self.bucket_ls(recursive=True, filters=[include('*.txt')])
+        ]
+        self.assertEqual(expected, actual)
+
+        expected = [
+            ('b/1/test.csv', len(data), 'upload', None),
+            ('b/2/test.tsv', len(data), 'upload', None),
+            ('test.csv', len(data), 'upload', None),
+        ]
+        actual = [
+            (info.file_name, info.size, info.action, folder)
+            for (info, folder) in self.bucket_ls(recursive=True, filters=[exclude('*.txt')])
+        ]
+        self.assertEqual(expected, actual)
+
+    def test_filters_single_character_matching(self):
+        data = b'hello world'
+        self.bucket.upload_bytes(data, 'a')
+        self.bucket.upload_bytes(data, 'b/2/test.csv')
+        self.bucket.upload_bytes(data, 'b/2/test.txt')
+        self.bucket.upload_bytes(data, 'b/2/test.tsv')
+
+        expected = [
+            ('b/2/test.csv', len(data), 'upload', None),
+            ('b/2/test.tsv', len(data), 'upload', None),
+        ]
+        actual = [
+            (info.file_name, info.size, info.action, folder)
+            for (info,
+                 folder) in self.bucket_ls(recursive=True, filters=[include('b/2/test.?sv')])
+        ]
+        self.assertEqual(expected, actual)
+
+        expected = [
+            ('a', len(data), 'upload', None),
+            ('b/2/test.txt', len(data), 'upload', None),
+        ]
+        actual = [
+            (info.file_name, info.size, info.action, folder)
+            for (info,
+                 folder) in self.bucket_ls(recursive=True, filters=[exclude('b/2/test.?sv')])
+        ]
+        self.assertEqual(expected, actual)
+
+    def test_filters_sequence_matching(self):
+        data = b'hello world'
+        self.bucket.upload_bytes(data, 'a')
+        self.bucket.upload_bytes(data, 'b/2/test.csv')
+        self.bucket.upload_bytes(data, 'b/2/test.ksv')
+        self.bucket.upload_bytes(data, 'b/2/test.tsv')
+
+        expected = [
+            ('b/2/test.csv', len(data), 'upload', None),
+            ('b/2/test.tsv', len(data), 'upload', None),
+        ]
+        actual = [
+            (info.file_name, info.size, info.action, folder)
+            for (info,
+                 folder) in self.bucket_ls(recursive=True, filters=[include('b/2/test.[tc]sv')])
+        ]
+        self.assertEqual(expected, actual)
+
+        expected = [
+            ('a', len(data), 'upload', None),
+            ('b/2/test.ksv', len(data), 'upload', None),
+        ]
+        actual = [
+            (info.file_name, info.size, info.action, folder)
+            for (info,
+                 folder) in self.bucket_ls(recursive=True, filters=[exclude('b/2/test.[tc]sv')])
+        ]
+        self.assertEqual(expected, actual)
+
+    def test_filters_negative_sequence_matching(self):
+        data = b'hello world'
+        self.bucket.upload_bytes(data, 'a')
+        self.bucket.upload_bytes(data, 'b/2/test.csv')
+        self.bucket.upload_bytes(data, 'b/2/test.ksv')
+        self.bucket.upload_bytes(data, 'b/2/test.tsv')
+
+        expected = [
+            ('b/2/test.tsv', len(data), 'upload', None),
+        ]
+        actual = [
+            (info.file_name, info.size, info.action, folder)
+            for (info,
+                 folder) in self.bucket_ls(recursive=True, filters=[include('b/2/test.[!ck]sv')])
+        ]
+        self.assertEqual(expected, actual)
+
+        expected = [
+            ('a', len(data), 'upload', None),
+            ('b/2/test.csv', len(data), 'upload', None),
+            ('b/2/test.ksv', len(data), 'upload', None),
+        ]
+        actual = [
+            (info.file_name, info.size, info.action, folder)
+            for (info,
+                 folder) in self.bucket_ls(recursive=True, filters=[exclude('b/2/test.[!ck]sv')])
+        ]
+        self.assertEqual(expected, actual)
+
+    def test_filters_matching_exact_filename(self):
+        data = b'hello world'
+        self.bucket.upload_bytes(data, 'b/a.txt')
+        self.bucket.upload_bytes(data, 'b/b.txt')
+
+        expected = [
+            ('b/a.txt', len(data), 'upload', None),
+        ]
+        actual = [
+            (info.file_name, info.size, info.action, folder)
+            for (info, folder) in self.bucket_ls(recursive=True, filters=[include('b/a.txt')])
+        ]
+        self.assertEqual(expected, actual)
+
+        expected = [
+            ('b/b.txt', len(data), 'upload', None),
+        ]
+        actual = [
+            (info.file_name, info.size, info.action, folder)
+            for (info, folder) in self.bucket_ls(recursive=True, filters=[exclude('b/a.txt')])
+        ]
+        self.assertEqual(expected, actual)
+
+    def test_filters_mixed_with_wildcards(self):
+        data = b'hello world'
+        self.bucket.upload_bytes(data, 'a.csv')
+        self.bucket.upload_bytes(data, 'a.txt')
+        self.bucket.upload_bytes(data, 'b/a-1.csv')
+        self.bucket.upload_bytes(data, 'b/a-1.txt')
+        self.bucket.upload_bytes(data, 'b/a-2.csv')
+        self.bucket.upload_bytes(data, 'b/a-2.txt')
+        self.bucket.upload_bytes(data, 'b/a-a.csv')
+        self.bucket.upload_bytes(data, 'b/a-a.txt')
+        self.bucket.upload_bytes(data, 'b/a.csv')
+        self.bucket.upload_bytes(data, 'b/a.txt')
+
+        expected = [
+            ('a.txt', len(data), 'upload', None),
+            ('b/a-1.txt', len(data), 'upload', None),
+            ('b/a-a.txt', len(data), 'upload', None),
+            ('b/a.txt', len(data), 'upload', None),
+        ]
+        actual = [
+            (info.file_name, info.size, info.action, folder)
+            for (info, folder) in self.bucket_ls('*.txt',
+                                                 recursive=True,
+                                                 with_wildcard=True,
+                                                 filters=[exclude('*-2.txt')])
+        ]
+        self.assertEqual(expected, actual)
+
+        expected = [
+            ('b/a-1.csv', len(data), 'upload', None),
+            ('b/a-1.txt', len(data), 'upload', None),
+        ]
+        actual = [
+            (info.file_name, info.size, info.action, folder)
+            for (info, folder) in self.bucket_ls('b/?-[1234567890].*',
+                                                 recursive=True,
+                                                 with_wildcard=True,
+                                                 filters=[exclude('*-2.*')])
+        ]
+        self.assertEqual(expected, actual)
+
+    def test_filters_combination(self):
+        data = b'hello world'
+        self.bucket.upload_bytes(data, 'a.txt')
+        self.bucket.upload_bytes(data, 'b/a-1.csv')
+        self.bucket.upload_bytes(data, 'b/a-1.txt')
+
+        expected = [
+            ('a.txt', len(data), 'upload', None),
+            ('b/a-1.csv', len(data), 'upload', None),
+        ]
+        actual = [
+            (info.file_name, info.size, info.action, folder)
+            for (info, folder) in self.bucket_ls(recursive=True, filters=[include('b/*'), exclude('*.txt'), include('a.txt')])
         ]
         self.assertEqual(expected, actual)
 
