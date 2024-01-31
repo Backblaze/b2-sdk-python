@@ -23,12 +23,6 @@ os.environ.update({"PDM_IGNORE_SAVED_PYTHON": "1"})
 CI = os.environ.get('CI') is not None
 NOX_PYTHONS = os.environ.get('NOX_PYTHONS')
 
-if CI and not NOX_PYTHONS:
-    NOX_PYTHONS = ""
-    print(
-        f"CI job mode; using provided interpreter only; equivalent to NOX_PYTHONS={NOX_PYTHONS!r}"
-    )
-
 PYTHON_VERSIONS = [
     'pypy3.9',
     'pypy3.10',
@@ -38,13 +32,23 @@ PYTHON_VERSIONS = [
     '3.10',
     '3.11',
     '3.12',
-]
-if NOX_PYTHONS:
-    PYTHON_VERSIONS = NOX_PYTHONS.split(',')
-elif NOX_PYTHONS == "":
-    PYTHON_VERSIONS = None
+] if NOX_PYTHONS is None else NOX_PYTHONS.split(',')
 
-PYTHON_DEFAULT_VERSION = PYTHON_VERSIONS[-1] if PYTHON_VERSIONS else None
+
+def _detect_python_nox_id() -> str:
+    major, minor, *_ = platform.python_version_tuple()
+    python_nox_id = f"{major}.{minor}"
+    if platform.python_implementation() == 'PyPy':
+        python_nox_id = f"pypy{python_nox_id}"
+    return python_nox_id
+
+
+if CI and not NOX_PYTHONS:
+    # this is done to allow it to work even if `nox -p` was passed to nox
+    PYTHON_VERSIONS = [_detect_python_nox_id()]
+    print(f"CI job mode; using provided interpreter only; PYTHON_VERSIONS={PYTHON_VERSIONS!r}")
+
+PYTHON_DEFAULT_VERSION = PYTHON_VERSIONS[-1]
 
 PY_PATHS = ['b2sdk', 'test', 'noxfile.py']
 
