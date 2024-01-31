@@ -257,3 +257,6 @@ from b2sdk.http_constants import (
 )
 from b2sdk.session import B2Session
 from b2sdk.utils.thread_pool import ThreadPoolMixin
+
+# filter
+from b2sdk.filter import FilterType, Filter
