@@ -97,8 +97,8 @@ class ReplicationConfiguration:
         for source, destination in self.source_to_destination_key_mapping.items():
             if not source or not destination:
                 raise ValueError(
-                    "source_to_destination_key_mapping must not contain \
-                     empty keys or values: ({}, {})".format(source, destination)
+                    f"source_to_destination_key_mapping must not contain \
+                     empty keys or values: ({source}, {destination})"
                 )
 
     @property

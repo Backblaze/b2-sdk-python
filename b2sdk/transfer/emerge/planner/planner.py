@@ -417,7 +417,7 @@ class EmergePlanner:
             if incoming_offset is not None and last_sent_offset < incoming_offset:
                 raise ValueError(
                     'Cannot emerge file with holes. '
-                    'Found hole range: ({}, {})'.format(last_sent_offset, incoming_offset)
+                    f'Found hole range: ({last_sent_offset}, {incoming_offset})'
                 )
 
             if incoming_intent is None:
@@ -688,10 +688,7 @@ class EmergePart:
         self.verification_ranges = verification_ranges
 
     def __repr__(self):
-        return '<{classname} part_definition={part_definition}>'.format(
-            classname=self.__class__.__name__,
-            part_definition=repr(self.part_definition),
-        )
+        return f'<{self.__class__.__name__} part_definition={repr(self.part_definition)}>'
 
     def get_length(self):
         return self.part_definition.get_length()

@@ -179,9 +179,7 @@ class FileRetentionSetting:
         return self.mode == other.mode and self.retain_until == other.retain_until
 
     def __repr__(self):
-        return '{}({}, {})'.format(
-            self.__class__.__name__, repr(self.mode.value), repr(self.retain_until)
-        )
+        return f'{self.__class__.__name__}({repr(self.mode.value)}, {repr(self.retain_until)})'
 
 
 @enum.unique

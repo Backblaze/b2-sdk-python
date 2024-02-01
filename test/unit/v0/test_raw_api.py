@@ -52,9 +52,7 @@ class TestRawAPIFilenames(TestBase):
         :param exception_message: regexp that matches the exception's detailed message
         """
         print(
-            "Filename \"{}\" should raise UnusableFileName(\".*{}.*\").".format(
-                filename, exception_message
-            )
+            f"Filename \"{filename}\" should raise UnusableFileName(\".*{exception_message}.*\")."
         )
         with self.assertRaisesRegex(UnusableFileName, exception_message):
             self.raw_api.check_b2_filename(filename)

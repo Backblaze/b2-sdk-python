@@ -377,10 +377,7 @@ class MaxFileSizeExceeded(B2Error):
         self.max_allowed_size = max_allowed_size
 
     def __str__(self):
-        return 'Allowed file size of exceeded: {} > {}'.format(
-            self.size,
-            self.max_allowed_size,
-        )
+        return f'Allowed file size of exceeded: {self.size} > {self.max_allowed_size}'
 
 
 class MaxRetriesExceeded(B2Error):
@@ -391,10 +388,7 @@ class MaxRetriesExceeded(B2Error):
 
     def __str__(self):
         exceptions = '\n'.join(str(wrapped_error) for wrapped_error in self.exception_info_list)
-        return 'FAILED to upload after {} tries. Encountered exceptions: {}'.format(
-            self.limit,
-            exceptions,
-        )
+        return f'FAILED to upload after {self.limit} tries. Encountered exceptions: {exceptions}'
 
 
 class MissingPart(B2SimpleError):
@@ -545,8 +539,8 @@ class InvalidJsonResponse(B2SimpleError):
 
     def __init__(self, content: bytes):
         self.content = content
-        message = '%s' % self.content[:self.UP_TO_BYTES_COUNT]
-        if len(content) > self.UP_TO_BYTES_COUNT:
+        message = self.content[:self.UP_TO_BYTES_COUNT].decode('utf-8', errors='replace')
+        if len(self.content) > self.UP_TO_BYTES_COUNT:
             message += '...'
 
         super().__init__(message)

@@ -34,7 +34,6 @@ from .exception import (
     BrokenPipe,
     ClockSkew,
     ConnectionReset,
-    InvalidJsonResponse,
     PotentialS3EndpointPassedAsRealm,
     UnknownError,
     UnknownHost,
@@ -420,18 +419,44 @@ class B2Http:
         response = None
         try:
             response = fcn()
-            if response.status_code not in [200, 206]:
+            if response.status_code not in (200, 206):
                 # Decode the error object returned by the service
-                error = json.loads(response.content.decode('utf-8')) if response.content else {}
+                try:
+                    error = json.loads(response.content.decode('utf-8')) if response.content else {}
+                    if not isinstance(error, dict):
+                        raise ValueError('json error value is not a dict')
+                except (json.JSONDecodeError, UnicodeDecodeError, ValueError):
+                    logger.error('failed to decode error response: %r', response.content)
+                    # When the user points to an S3 endpoint, he won't receive the JSON error
+                    # he expects. In that case, we can provide at least a hint of "what happened".
+                    # s3 url has the form of e.g. https://s3.us-west-000.backblazeb2.com
+                    if '://s3.' in response.url:
+                        raise PotentialS3EndpointPassedAsRealm(response.content)
+                    error = {
+                        'message': response.content.decode('utf-8', errors='replace'),
+                        'code': 'non_json_response',
+                    }
                 extra_error_keys = error.keys() - ('code', 'status', 'message')
                 if extra_error_keys:
                     logger.debug(
                         'received error has extra (unsupported) keys: %s', extra_error_keys
                     )
+
+                try:
+                    status = int(error.get('status', response.status_code))
+                    if status != response.status_code:
+                        raise ValueError('status code is not equal to the one in the response')
+                except (TypeError, ValueError) as exc:
+                    logger.warning(
+                        'Inconsistent status codes returned by the server %r != %r; parsing exception: %r',
+                        error.get('status'), response.status_code, exc
+                    )
+                    status = response.status_code
+
                 raise interpret_b2_error(
-                    int(error.get('status', response.status_code)),
-                    error.get('code'),
-                    error.get('message'),
+                    status,
+                    str(error['code']) if 'code' in error else None,
+                    str(error['message']) if 'message' in error else None,
                     response.headers,
                     post_params,
                 )
@@ -461,17 +486,6 @@ class B2Http:
 
         except requests.Timeout as e:
             raise B2RequestTimeout(str(e))
-
-        except json.JSONDecodeError:
-            if response is None:
-                raise RuntimeError('Got JSON error without a response.')
-
-            # When the user points to an S3 endpoint, he won't receive the JSON error
-            # he expects. In that case, we can provide at least a hint of "what happened".
-            # s3 url has the form of e.g. https://s3.us-west-000.backblazeb2.com
-            if '://s3.' in response.url:
-                raise PotentialS3EndpointPassedAsRealm(response.content)
-            raise InvalidJsonResponse(response.content)
 
         except Exception as e:
             text = repr(e)

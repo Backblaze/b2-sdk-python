@@ -332,10 +332,7 @@ class ReplicationSetupHelper(metaclass=B2TraceMeta):
         existing_names = set(rr.name for rr in current_rules)
         suffixes = cls._get_rule_name_candidate_suffixes()
         while True:
-            candidate = '{}{}'.format(
-                destination_bucket.name,
-                next(suffixes),
-            )  # use := after dropping 3.7
+            candidate = f'{destination_bucket.name}{next(suffixes)}'  # use := after dropping 3.7
             if candidate not in existing_names:
                 return candidate
 

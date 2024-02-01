@@ -1,0 +1,1 @@
+Add support for filters to `Bucket.ls()`.
