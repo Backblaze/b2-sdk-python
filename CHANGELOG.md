@@ -9,6 +9,14 @@ upcoming release can be found in [changelog.d](changelog.d).
 
 <!-- towncrier release notes start -->
 
+## [1.30.1](https://github.com/Backblaze/b2-sdk-python/releases/tag/v1.30.1) - 2024-02-02
+
+
+### Fixed
+
+- Fix package author metadata.
+
+
 ## [1.30.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v1.30.0) - 2024-02-02
 
 
