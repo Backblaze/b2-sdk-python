@@ -3,7 +3,7 @@ name = "b2sdk"
 description = "Backblaze B2 SDK"
 dynamic = ["version"]
 authors = [
-    {name = "Backblaze, Inc", email = "support@backblaze.com"},
+    {name = "Backblaze Inc", email = "support@backblaze.com"},
 ]
 dependencies = [
     "importlib-metadata>=3.3.0; python_version < '3.8'",

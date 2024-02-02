@@ -1,0 +1,1 @@
+Fix package author metadata.
