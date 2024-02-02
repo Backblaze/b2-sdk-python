@@ -9,6 +9,24 @@ upcoming release can be found in [changelog.d](changelog.d).
 
 <!-- towncrier release notes start -->
 
+## [1.30.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v1.30.0) - 2024-02-02
+
+
+### Fixed
+
+- Fix escape sequence warnings present in python 3.12. ([#458](https://github.com/Backblaze/b2-sdk-python/issues/458))
+- Handle json encoded, invalid B2 error responses, preventing exceptions such as `invalid literal for int() with base 10: 'service_unavailable'`.
+
+### Added
+
+- Add support for filters to `Bucket.ls()`.
+
+### Infrastructure
+
+- Package the library using [pdm](https://pdm-project.org), use locked dependencies in CI.
+- Update `ruff` linter and apply it to all files.
+
+
 ## [1.29.1](https://github.com/Backblaze/b2-sdk-python/releases/tag/v1.29.1) - 2024-01-23
 
 

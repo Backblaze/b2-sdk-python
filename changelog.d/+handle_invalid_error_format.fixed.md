@@ -1,1 +1,0 @@
-Handle json encoded, invalid B2 error responses, preventing exceptions such as `invalid literal for int() with base 10: 'service_unavailable'`.
