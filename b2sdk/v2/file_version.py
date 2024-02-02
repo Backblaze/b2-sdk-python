@@ -27,7 +27,7 @@ class FileVersion(v3.FileVersion):
     """
     A structure which represents a version of a file (in B2 cloud).
 
-    :ivar str ~.id\_: ``fileId``
+    :ivar str ~.id_: ``fileId``
     :ivar str ~.file_name: full file name (with path)
     :ivar ~.size: size in bytes, can be ``None`` (unknown)
     :ivar str ~.content_type: RFC 822 content type, for example ``"application/octet-stream"``
