@@ -17,6 +17,8 @@ import subprocess
 
 import nox
 
+UPSTREAM_REPO_URL = 'git@github.com:Backblaze/b2-sdk-python.git'
+
 # Required for PDM to use nox's virtualenvs
 os.environ.update({"PDM_IGNORE_SAVED_PYTHON": "1"})
 
@@ -243,10 +245,11 @@ def make_release_commit(session):
 
     session.log(
         f'CHANGELOG updated, changes ready to commit and push\n'
+        f'    git remote add upstream {UPSTREAM_REPO_URL!r} 2>/dev/null || git remote get-url upstream\n'
         f'    git commit -m "release {version}"\n'
         f'    git tag v{version}\n'
-        f'    git push {{UPSTREAM_NAME}} v{version}\n'
-        f'    git push {{UPSTREAM_NAME}} {current_branch}'
+        f'    git push upstream v{version}\n'
+        f'    git push upstream {current_branch}'
     )
 
 
