@@ -21,6 +21,11 @@ from contextlib import contextmanager
 from random import random
 from typing import Any
 
+try:
+    from typing_extensions import Literal
+except ImportError:
+    from typing import Literal
+
 import requests
 from requests.adapters import HTTPAdapter
 
@@ -40,6 +45,7 @@ from .exception import (
     interpret_b2_error,
 )
 from .requests import NotDecompressingResponse
+from .utils.typing import JSON
 from .version import USER_AGENT
 
 LOCALE_LOCK = threading.Lock()
@@ -215,15 +221,119 @@ class B2Http:
         """
         self.callbacks.append(callback)
 
+    def request(
+        self,
+        method: Literal['POST', 'GET'],
+        url: str,
+        headers: dict[str, str],
+        data: io.BytesIO | bytes | None = None,
+        try_count: int = TRY_COUNT_DATA,
+        params: dict[str, str] | None = None,
+        *,
+        stream: bool = False,
+        _timeout: int | None = None,
+    ) -> requests.Response:
+        """
+        Use like this:
+
+        .. code-block:: python
+
+           try:
+               response_dict = b2_http.post_content_return_json(url, headers, data)
+               ...
+           except B2Error as e:
+               ...
+
+        :param method: HTTP method: 'POST' or 'GET'
+        :param url: a URL to call
+        :param headers: headers to send.
+        :param data: raw bytes or a file-like object to send
+        :param try_count: a number of retries
+        :param params: a dict that will be converted to query string for GET requests or additional metadata for POST requests
+        :param stream: if True, the response will be streamed
+        :return: final response
+        :raises: B2Error if the request fails
+        """
+        method = method.upper()
+        request_headers = {**headers, 'User-Agent': self.user_agent}
+
+        def do_request():
+            # This may retry, so each time we need to rewind the data back to the beginning.
+            if data is not None and not isinstance(data, bytes):
+                data.seek(0)
+            self._run_pre_request_hooks(method, url, request_headers)
+            response = self.session.request(
+                method,
+                url,
+                headers=request_headers,
+                data=data,
+                params=params if method == 'GET' else None,
+                timeout=(self.CONNECTION_TIMEOUT, _timeout or self.TIMEOUT_FOR_UPLOAD),
+                stream=stream,
+            )
+            self._run_post_request_hooks(method, url, request_headers, response)
+            return response
+
+        return self._translate_and_retry(do_request, try_count, params)
+
+    def request_content_return_json(
+        self,
+        method: Literal['POST', 'GET'],
+        url: str,
+        headers: dict[str, str],
+        data: io.BytesIO | bytes | None = None,
+        try_count: int = TRY_COUNT_DATA,
+        params: dict[str, str] | None = None,
+        *,
+        _timeout: int | None = None,
+    ) -> JSON:
+        """
+        Use like this:
+
+        .. code-block:: python
+
+           try:
+               response_dict = b2_http.post_content_return_json(url, headers, data)
+               ...
+           except B2Error as e:
+               ...
+
+        :param method: HTTP method: 'POST' or 'GET'
+        :param url: a URL to call
+        :param headers: headers to send.
+        :param data: raw bytes or a file-like object to send
+        :return: decoded JSON
+        """
+        response = self.request(
+            method,
+            url,
+            headers={
+                **headers, 'Accept': 'application/json'
+            },
+            data=data,
+            try_count=try_count,
+            params=params,
+            _timeout=_timeout
+        )
+
+        # Decode the JSON that came back.  If we've gotten this far,
+        # we know we have a status of 200 OK.  In this case, the body
+        # of the response is always JSON, so we don't need to handle
+        # it being something else.
+        try:
+            return json.loads(response.content.decode('utf-8'))
+        finally:
+            response.close()
+
     def post_content_return_json(
         self,
-        url,
-        headers,
-        data,
+        url: str,
+        headers: dict[str, str],
+        data: bytes | io.IOBase,
         try_count: int = TRY_COUNT_DATA,
-        post_params=None,
+        post_params: dict[str, str] | None = None,
         _timeout: int | None = None,
-    ):
+    ) -> JSON:
         """
         Use like this:
 
@@ -237,41 +347,17 @@ class B2Http:
 
         :param str url: a URL to call
         :param dict headers: headers to send.
-        :param data: bytes (Python 3) or str (Python 2), or a file-like object, to send
+        :param data: a file-like object to send
         :return: a dict that is the decoded JSON
-        :rtype: dict
         """
-        request_headers = {**headers, 'User-Agent': self.user_agent}
-
-        # Do the HTTP POST.  This may retry, so each post needs to
-        # rewind the data back to the beginning.
-        def do_post():
-            data.seek(0)
-            self._run_pre_request_hooks('POST', url, request_headers)
-            response = self.session.post(
-                url,
-                headers=request_headers,
-                data=data,
-                timeout=(self.CONNECTION_TIMEOUT, _timeout or self.TIMEOUT_FOR_UPLOAD),
-            )
-            self._run_post_request_hooks('POST', url, request_headers, response)
-            return response
-
         try:
-            response = self._translate_and_retry(do_post, try_count, post_params)
+            return self.request_content_return_json(
+                'POST', url, headers, data, try_count, post_params, _timeout=_timeout
+            )
         except B2RequestTimeout:
             # this forces a token refresh, which is necessary if request is still alive
             # on the server but has terminated for some reason on the client. See #79
             raise B2RequestTimeoutDuringUpload()
-
-        # Decode the JSON that came back.  If we've gotten this far,
-        # we know we have a status of 200 OK.  In this case, the body
-        # of the response is always JSON, so we don't need to handle
-        # it being something else.
-        try:
-            return json.loads(response.content.decode('utf-8'))
-        finally:
-            response.close()
 
     def post_json_return_json(self, url, headers, params, try_count: int = TRY_COUNT_OTHER):
         """
@@ -298,10 +384,13 @@ class B2Http:
         # to indicate the timeouts should be designed.
         timeout = self.TIMEOUT_FOR_COPY
 
-        data = io.BytesIO(json.dumps(params).encode())
+        data = json.dumps(params).encode()
         return self.post_content_return_json(
             url,
-            headers,
+            {
+                **headers,
+                'Content-Type': 'application/json',
+            },
             data,
             try_count,
             params,
@@ -332,21 +421,9 @@ class B2Http:
         :param int try_count: a number or retries
         :return: Context manager that returns an object that supports iter_content()
         """
-        request_headers = {**headers, 'User-Agent': self.user_agent}
-
-        # Do the HTTP GET.
-        def do_get():
-            self._run_pre_request_hooks('GET', url, request_headers)
-            response = self.session.get(
-                url,
-                headers=request_headers,
-                stream=True,
-                timeout=(self.CONNECTION_TIMEOUT, self.TIMEOUT),
-            )
-            self._run_post_request_hooks('GET', url, request_headers, response)
-            return response
-
-        response = self._translate_and_retry(do_get, try_count, None)
+        response = self.request(
+            'GET', url, headers=headers, try_count=try_count, stream=True, _timeout=self.TIMEOUT
+        )
         return ResponseContextManager(response)
 
     def head_content(
@@ -354,7 +431,7 @@ class B2Http:
         url: str,
         headers: dict[str, Any],
         try_count: int = TRY_COUNT_HEAD,
-    ) -> dict[str, Any]:
+    ) -> requests.Response:
         """
         Does a HEAD instead of a GET for the URL.
         The response's content is limited to the headers.
@@ -375,24 +452,9 @@ class B2Http:
         :param str url: a URL to call
         :param dict headers: headers to send
         :param int try_count: a number or retries
-        :return: the decoded response
-        :rtype: dict
+        :return: HTTP response
         """
-        request_headers = {**headers, 'User-Agent': self.user_agent}
-
-        # Do the HTTP HEAD.
-        def do_head():
-            self._run_pre_request_hooks('HEAD', url, request_headers)
-            response = self.session.head(
-                url,
-                headers=request_headers,
-                stream=True,
-                timeout=(self.CONNECTION_TIMEOUT, self.TIMEOUT),
-            )
-            self._run_post_request_hooks('HEAD', url, request_headers, response)
-            return response
-
-        return self._translate_and_retry(do_head, try_count, None)
+        return self.request('HEAD', url, headers=headers, try_count=try_count)
 
     @classmethod
     def _get_user_agent(cls, user_agent_append):
@@ -505,13 +567,16 @@ class B2Http:
             raise UnknownError(text)
 
     @classmethod
-    def _translate_and_retry(cls, fcn, try_count, post_params=None):
+    def _translate_and_retry(
+        cls, fcn: callable, try_count: int, post_params: dict[str, Any] | None = None
+    ):
         """
         Try calling fcn try_count times, retrying only if
         the exception is a retryable B2Error.
 
-        :param int try_count: a number of retries
-        :param dict post_params: request parameters
+        :param fcn: request function to call
+        :param try_count: a number of retries
+        :param post_params: request parameters
         """
         # For all but the last try, catch the exception.
         wait_time = 1.0

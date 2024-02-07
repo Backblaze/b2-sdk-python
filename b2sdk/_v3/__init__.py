@@ -260,3 +260,6 @@ from b2sdk.utils.thread_pool import ThreadPoolMixin
 
 # filter
 from b2sdk.filter import FilterType, Filter
+
+# typing
+from b2sdk.utils.typing import JSON

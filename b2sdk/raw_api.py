@@ -16,6 +16,8 @@ from enum import Enum, unique
 from logging import getLogger
 from typing import Any
 
+from .utils.typing import JSON
+
 try:
     from typing_extensions import NotRequired, TypedDict
 except ImportError:
@@ -435,23 +437,27 @@ class B2RawHTTPApi(AbstractRawApi):
     def __init__(self, b2_http):
         self.b2_http = b2_http
 
-    def _post_json(self, base_url, api_name, auth, **params) -> dict[str, Any]:
+    def _post_json(self, base_url: str, endpoint: str, auth: str, **params) -> JSON:
         """
         A helper method for calling an API with the given auth and params.
 
         :param base_url: something like "https://api001.backblazeb2.com/"
         :param auth: passed in Authorization header
-        :param api_name: example: "b2_create_bucket"
+        :param endpoint: example: "b2_create_bucket"
         :param args: the rest of the parameters are passed to b2
         :return: the decoded JSON response
-        :rtype: dict
         """
-        url = f'{base_url}/b2api/{API_VERSION}/{api_name}'
+        url = f'{base_url}/b2api/{API_VERSION}/{endpoint}'
         headers = {'Authorization': auth}
         return self.b2_http.post_json_return_json(url, headers, params)
 
+    def _get_json(self, base_url: str, endpoint: str, auth: str, **params) -> JSON:
+        url = f'{base_url}/b2api/{API_VERSION}/{endpoint}'
+        headers = {'Authorization': auth}
+        return self.b2_http.request_content_return_json('GET', url, headers, params=params)
+
     def authorize_account(self, realm_url, application_key_id, application_key):
-        auth = b'Basic ' + base64.b64encode((f'{application_key_id}:{application_key}').encode())
+        auth = f"Basic {base64.b64encode(f'{application_key_id}:{application_key}'.encode()).decode()}"
         return self._post_json(realm_url, 'b2_authorize_account', auth)
 
     def cancel_large_file(self, api_url, account_auth_token, file_id):
