@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import logging
 from contextlib import ExitStack
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypeVar
 
 from b2sdk.encryption.setting import EncryptionMode, EncryptionSetting
 from b2sdk.exception import (
@@ -31,7 +31,9 @@ from .progress_reporter import PartProgressReporter
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    from ...utils.typing import _TypeUploadSource
+    from b2sdk.transfer.outbound.upload_source import AbstractUploadSource
+
+    _TypeUploadSource = TypeVar("_TypeUploadSource", bound=AbstractUploadSource)
 
 
 class UploadManager(TransferManager, ThreadPoolMixin):

@@ -9,8 +9,11 @@
 ######################################################################
 from __future__ import annotations
 
-from typing import TypeVar
+from typing import Dict, List, Union
 
-from b2sdk.transfer.outbound.upload_source import AbstractUploadSource
+try:
+    from typing_extensions import TypeAlias
+except ImportError:
+    from typing import TypeAlias
 
-_TypeUploadSource = TypeVar("_TypeUploadSource", bound=AbstractUploadSource)
+JSON: TypeAlias = Union[Dict[str, "JSON"], List["JSON"], str, int, float, bool, None]

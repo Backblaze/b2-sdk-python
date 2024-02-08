@@ -265,6 +265,10 @@ class TestB2Http(TestBase):
     UA_APPEND = None
     HEADERS = dict(my_header='my_value')
     EXPECTED_HEADERS = {'my_header': 'my_value', 'User-Agent': USER_AGENT}
+    EXPECTED_JSON_HEADERS = {
+        **EXPECTED_HEADERS, 'Content-Type': 'application/json',
+        'Accept': 'application/json'
+    }
     PARAMS = dict(fileSize=100)
     PARAMS_JSON_BYTES = b'{"fileSize": 100}'
 
@@ -289,62 +293,68 @@ class TestB2Http(TestBase):
             )
 
     def test_post_json_return_json(self):
-        self.session.post.return_value = self.response
+        self.session.request.return_value = self.response
         self.response.status_code = 200
         self.response.content = b'{"color": "blue"}'
         response_dict = self.b2_http.post_json_return_json(self.URL, self.HEADERS, self.PARAMS)
         self.assertEqual({'color': 'blue'}, response_dict)
-        (pos_args, kw_args) = self.session.post.call_args
-        self.assertEqual(self.URL, pos_args[0])
-        self.assertEqual(self.EXPECTED_HEADERS, kw_args['headers'])
-        actual_data = kw_args['data']
-        actual_data.seek(0)
-        self.assertEqual(self.PARAMS_JSON_BYTES, actual_data.read())
+        (pos_args, kw_args) = self.session.request.call_args
+        assert pos_args[:2] == ('POST', self.URL)
+        assert kw_args['headers'] == self.EXPECTED_JSON_HEADERS
+        assert kw_args['data'] == self.PARAMS_JSON_BYTES
 
     def test_callback(self):
         callback = MagicMock()
         callback.pre_request = MagicMock()
         callback.post_request = MagicMock()
         self.b2_http.add_callback(callback)
-        self.session.post.return_value = self.response
+        self.session.request.return_value = self.response
         self.response.status_code = 200
         self.response.content = b'{"color": "blue"}'
         self.b2_http.post_json_return_json(self.URL, self.HEADERS, self.PARAMS)
-        callback.pre_request.assert_called_with('POST', 'http://example.com', self.EXPECTED_HEADERS)
+        callback.pre_request.assert_called_with(
+            'POST', 'http://example.com', self.EXPECTED_JSON_HEADERS
+        )
         callback.post_request.assert_called_with(
-            'POST', 'http://example.com', self.EXPECTED_HEADERS, self.response
+            'POST', 'http://example.com', self.EXPECTED_JSON_HEADERS, self.response
         )
 
     def test_get_content(self):
-        self.session.get.return_value = self.response
+        self.session.request.return_value = self.response
         self.response.status_code = 200
         with self.b2_http.get_content(self.URL, self.HEADERS) as r:
             self.assertIs(self.response, r)
-        self.session.get.assert_called_with(
+        self.session.request.assert_called_with(
+            'GET',
             self.URL,
             headers=self.EXPECTED_HEADERS,
+            data=None,
+            params=None,
             stream=True,
             timeout=(B2Http.CONNECTION_TIMEOUT, B2Http.TIMEOUT),
         )
         self.response.close.assert_not_called()  # prevent premature close() on requests.Response
 
     def test_head_content(self):
-        self.session.head.return_value = self.response
+        self.session.request.return_value = self.response
         self.response.status_code = 200
         self.response.headers = {"color": "blue"}
 
         response = self.b2_http.head_content(self.URL, self.HEADERS)
 
         self.assertEqual({'color': 'blue'}, response.headers)
-        (pos_args, kw_args) = self.session.head.call_args
-        self.assertEqual(self.URL, pos_args[0])
-        self.assertEqual(self.EXPECTED_HEADERS, kw_args['headers'])
+        (pos_args, kw_args) = self.session.request.call_args
+        assert pos_args[:2] == ('HEAD', self.URL)
+        assert kw_args['headers'] == self.EXPECTED_HEADERS
 
 
 class TestB2HttpUserAgentAppend(TestB2Http):
 
     UA_APPEND = 'ua_extra_string'
     EXPECTED_HEADERS = {**TestB2Http.EXPECTED_HEADERS, 'User-Agent': f'{USER_AGENT} {UA_APPEND}'}
+    EXPECTED_JSON_HEADERS = {
+        **TestB2Http.EXPECTED_JSON_HEADERS, 'User-Agent': EXPECTED_HEADERS['User-Agent']
+    }
 
 
 class TestSetLocaleContextManager(TestBase):
