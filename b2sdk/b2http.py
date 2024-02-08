@@ -19,7 +19,7 @@ import threading
 import time
 from contextlib import contextmanager
 from random import random
-from typing import Any
+from typing import Any, Callable
 
 try:
     from typing_extensions import Literal
@@ -223,7 +223,7 @@ class B2Http:
 
     def request(
         self,
-        method: Literal['POST', 'GET'],
+        method: Literal['POST', 'GET', 'HEAD'],
         url: str,
         headers: dict[str, str],
         data: io.BytesIO | bytes | None = None,
@@ -239,18 +239,19 @@ class B2Http:
         .. code-block:: python
 
            try:
-               response_dict = b2_http.post_content_return_json(url, headers, data)
+               response_dict = b2_http.request('POST', url, headers, data)
                ...
            except B2Error as e:
                ...
 
-        :param method: HTTP method: 'POST' or 'GET'
+        :param method: uppercase HTTP method name
         :param url: a URL to call
         :param headers: headers to send.
         :param data: raw bytes or a file-like object to send
         :param try_count: a number of retries
         :param params: a dict that will be converted to query string for GET requests or additional metadata for POST requests
         :param stream: if True, the response will be streamed
+        :param _timeout: a timeout for the request in seconds if not default
         :return: final response
         :raises: B2Error if the request fails
         """
@@ -278,7 +279,7 @@ class B2Http:
 
     def request_content_return_json(
         self,
-        method: Literal['POST', 'GET'],
+        method: Literal['POST', 'GET', 'HEAD'],
         url: str,
         headers: dict[str, str],
         data: io.BytesIO | bytes | None = None,
@@ -293,12 +294,12 @@ class B2Http:
         .. code-block:: python
 
            try:
-               response_dict = b2_http.post_content_return_json(url, headers, data)
+               response_dict = b2_http.request_content_return_json('POST', url, headers, data)
                ...
            except B2Error as e:
                ...
 
-        :param method: HTTP method: 'POST' or 'GET'
+        :param method: uppercase HTTP method name
         :param url: a URL to call
         :param headers: headers to send.
         :param data: raw bytes or a file-like object to send
@@ -568,7 +569,7 @@ class B2Http:
 
     @classmethod
     def _translate_and_retry(
-        cls, fcn: callable, try_count: int, post_params: dict[str, Any] | None = None
+        cls, fcn: Callable, try_count: int, post_params: dict[str, Any] | None = None
     ):
         """
         Try calling fcn try_count times, retrying only if
