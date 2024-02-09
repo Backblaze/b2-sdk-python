@@ -14,6 +14,11 @@ import inspect
 import io
 from unittest.mock import patch
 
+try:
+    import pydantic
+except ImportError:
+    pydantic = None
+
 
 @contextlib.contextmanager
 def patch_bind_params(instance, method_name):
@@ -44,3 +49,14 @@ class NonSeekableIO(io.BytesIO):
 
     def seekable(self):
         return False
+
+
+def type_validator_factory(type_):
+    """
+    Equivalent of `TypeAdapter(type_).validate_python` and noop under Python <3.8.
+
+    To be removed when we drop support for Python <3.8.
+    """
+    if pydantic:
+        return pydantic.TypeAdapter(type_).validate_python
+    return lambda *args, **kwargs: None
