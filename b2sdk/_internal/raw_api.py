@@ -13,15 +13,15 @@ import base64
 from abc import ABCMeta, abstractmethod
 from enum import Enum, unique
 from logging import getLogger
-from typing import Any
+from typing import Any, Iterable
 
 from .utils.escape import unprintable_to_hex
 from .utils.typing import JSON
 
 try:
-    from typing_extensions import NotRequired, TypedDict
+    from typing_extensions import Literal, NotRequired, TypedDict
 except ImportError:
-    from typing import NotRequired, TypedDict
+    from typing import Literal, NotRequired, TypedDict
 
 from .encryption.setting import EncryptionMode, EncryptionSetting
 from .exception import (
@@ -73,6 +73,8 @@ ALL_CAPABILITIES = [
     'shareFiles',
     'writeFiles',
     'deleteFiles',
+    'readBucketNotifications',
+    'writeBucketNotifications',
 ]
 
 # API version number to use when calling the service
@@ -100,6 +102,67 @@ class LifecycleRule(TypedDict):
     fileNamePrefix: str
     daysFromHidingToDeleting: NotRequired[int | None]
     daysFromUploadingToHiding: NotRequired[int | None]
+
+
+class NameValueDict(TypedDict):
+    name: str
+    value: str
+
+
+class NotificationTargetConfiguration(TypedDict):
+    """
+    Notification Target Configuration.
+
+    `hmacSha256SigningSecret`, if present, has to be a string of 32 alphanumeric characters.
+    """
+    # TODO: add URL to the documentation
+
+    targetType: Literal['webhook']
+    url: str
+    customHeaders: NotRequired[list[NameValueDict] | None]
+    hmacSha256SigningSecret: NotRequired[str]
+
+
+EVENT_TYPE = Literal[
+    'b2:ObjectCreated:*', 'b2:ObjectCreated:Upload', 'b2:ObjectCreated:MultipartUpload',
+    'b2:ObjectCreated:Copy', 'b2:ObjectCreated:Replica', 'b2:ObjectCreated:MultipartReplica',
+    'b2:ObjectDeleted:*', 'b2:ObjectDeleted:Delete', 'b2:ObjectDeleted:LifecycleRule',
+    'b2:HideMarkerCreated:*', 'b2:HideMarkerCreated:Hide', 'b2:HideMarkerCreated:LifecycleRule',]
+
+
+class _NotificationRule(TypedDict):
+    """
+    Notification Rule.
+    """
+    eventTypes: list[EVENT_TYPE]
+    isEnabled: bool
+    name: str
+    objectNamePrefix: str
+    targetConfiguration: NotificationTargetConfiguration
+    suspensionReason: NotRequired[str]
+
+
+class NotificationRule(_NotificationRule):
+    """
+    Notification Rule.
+
+    When creating or modifying a notification rule, `isSuspended` and `suspensionReason` are ignored.
+    """
+    isSuspended: NotRequired[bool]
+
+
+class NotificationRuleResponse(_NotificationRule):
+    isSuspended: bool
+
+
+def notification_rule_response_to_request(rule: NotificationRuleResponse) -> NotificationRule:
+    """
+    Convert NotificationRuleResponse to NotificationRule.
+    """
+    rule = rule.copy()
+    for key in ('isSuspended', 'suspensionReason'):
+        rule.pop(key, None)
+    return rule
 
 
 class AbstractRawApi(metaclass=ABCMeta):
@@ -414,6 +477,18 @@ class AbstractRawApi(metaclass=ABCMeta):
 
     def get_download_url_by_name(self, download_url, bucket_name, file_name):
         return download_url + '/file/' + bucket_name + '/' + b2_url_encode(file_name)
+
+    @abstractmethod
+    def set_bucket_notification_rules(
+        self, api_url: str, account_auth_token: str, bucket_id: str,
+        rules: Iterable[NotificationRule]
+    ) -> list[NotificationRuleResponse]:
+        pass
+
+    @abstractmethod
+    def get_bucket_notification_rules(self, api_url: str, account_auth_token: str,
+                                      bucket_id: str) -> list[NotificationRuleResponse]:
+        pass
 
 
 class B2RawHTTPApi(AbstractRawApi):
@@ -1087,6 +1162,30 @@ class B2RawHTTPApi(AbstractRawApi):
             )
         except AccessDenied:
             raise SSECKeyError()
+
+    def set_bucket_notification_rules(
+        self, api_url: str, account_auth_token: str, bucket_id: str, rules: list[NotificationRule]
+    ) -> list[NotificationRuleResponse]:
+        return self._post_json(
+            api_url,
+            'b2_set_bucket_notification_rules',
+            account_auth_token,
+            **{
+                'bucketId': bucket_id,
+                'eventNotificationRules': rules,
+            },
+        )["eventNotificationRules"]
+
+    def get_bucket_notification_rules(self, api_url: str, account_auth_token: str,
+                                      bucket_id: str) -> list[NotificationRuleResponse]:
+        return self._get_json(
+            api_url,
+            'b2_get_bucket_notification_rules',
+            account_auth_token,
+            **{
+                'bucketId': bucket_id,
+            },
+        )["eventNotificationRules"]
 
 
 def _add_range_header(headers, range_):

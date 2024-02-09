@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import logging
 import re
+import typing
 import warnings
 from abc import ABCMeta
 from typing import Any
@@ -574,6 +575,47 @@ class DestinationDirectoryDoesntAllowOperation(DestinationDirectoryError):
     pass
 
 
+class EventTypeError(BadRequest):
+    pass
+
+
+class EventTypeCategoriesError(EventTypeError):
+    pass
+
+
+class EventTypeOverlapError(EventTypeError):
+    pass
+
+
+class EventTypesEmptyError(EventTypeError):
+    pass
+
+
+class EventTypeInvalidError(EventTypeError):
+    pass
+
+
+def _event_type_invalid_error(code: str, message: str, **_) -> B2Error:
+    from b2sdk._internal.raw_api import EVENT_TYPE
+
+    valid_types = sorted(typing.get_args(EVENT_TYPE))
+    return EventTypeInvalidError(
+        f"Event Type error: {message!r}. Valid types: {sorted(valid_types)!r}", code
+    )
+
+
+_error_handlers: dict[tuple[int, str | None], typing.Callable] = {
+    (400, "event_type_categories"):
+        lambda code, message, **_: EventTypeCategoriesError(message, code),
+    (400, "event_type_overlap"):
+        lambda code, message, **_: EventTypeOverlapError(message, code),
+    (400, "event_types_empty"):
+        lambda code, message, **_: EventTypesEmptyError(message, code),
+    (400, "event_type_invalid"):
+        _event_type_invalid_error,
+}
+
+
 @trace_call(logger)
 def interpret_b2_error(
     status: int,
@@ -583,6 +625,19 @@ def interpret_b2_error(
     post_params: dict[str, Any] | None = None
 ) -> B2Error:
     post_params = post_params or {}
+
+    handler = _error_handlers.get((status, code))
+    if handler:
+        error = handler(
+            status=status,
+            code=code,
+            message=message,
+            response_headers=response_headers,
+            post_params=post_params
+        )
+        if error:
+            return error
+
     if status == 400 and code == "already_hidden":
         return FileAlreadyHidden(post_params.get('fileName'))
     elif status == 400 and code == 'bad_json':

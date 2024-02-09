@@ -31,7 +31,7 @@ from b2sdk._internal.api import B2Api
 from b2sdk._internal.api import Services
 from b2sdk._internal.bucket import Bucket
 from b2sdk._internal.bucket import BucketFactory
-from b2sdk._internal.raw_api import ALL_CAPABILITIES, REALM_URLS
+from b2sdk._internal.raw_api import ALL_CAPABILITIES, REALM_URLS, EVENT_TYPE
 
 # encryption
 
@@ -138,6 +138,7 @@ from b2sdk._internal.raw_api import AbstractRawApi
 from b2sdk._internal.raw_api import B2RawHTTPApi
 from b2sdk._internal.raw_api import MetadataDirectiveMode
 from b2sdk._internal.raw_api import LifecycleRule
+from b2sdk._internal.raw_api import NotificationRule, NotificationRuleResponse, notification_rule_response_to_request
 
 # stream
 

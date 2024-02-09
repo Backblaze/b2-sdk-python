@@ -14,7 +14,7 @@ import fnmatch
 import logging
 import pathlib
 from contextlib import suppress
-from typing import Sequence
+from typing import Iterable, Sequence
 
 from .encryption.setting import EncryptionSetting, EncryptionSettingFactory
 from .encryption.types import EncryptionMode
@@ -37,7 +37,7 @@ from .file_version import DownloadVersion, FileVersion
 from .filter import Filter, FilterMatcher
 from .http_constants import LIST_FILE_NAMES_MAX_LIMIT
 from .progress import AbstractProgressListener, DoNothingProgressListener
-from .raw_api import LifecycleRule
+from .raw_api import LifecycleRule, NotificationRule, NotificationRuleResponse
 from .replication.setting import ReplicationConfiguration, ReplicationConfigurationFactory
 from .transfer.emerge.executor import AUTO_CONTENT_TYPE
 from .transfer.emerge.unbound_write_intent import UnboundWriteIntentGenerator
@@ -1491,6 +1491,19 @@ class Bucket(metaclass=B2TraceMeta):
 
     def __repr__(self):
         return f'Bucket<{self.id_},{self.name},{self.type_}>'
+
+    def get_notification_rules(self) -> list[NotificationRuleResponse]:
+        """
+        Get all notification rules for this bucket.
+        """
+        return self.api.session.get_bucket_notification_rules(self.id_)
+
+    def set_notification_rules(self,
+                               rules: Iterable[NotificationRule]) -> list[NotificationRuleResponse]:
+        """
+        Set notification rules for this bucket.
+        """
+        return self.api.session.set_bucket_notification_rules(self.id_, rules)
 
 
 class BucketFactory:

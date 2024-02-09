@@ -572,3 +572,11 @@ class B2Session:
             file_name,
             legal_hold,
         )
+
+    def get_bucket_notification_rules(self, bucket_id):
+        return self._wrap_default_token(self.raw_api.get_bucket_notification_rules, bucket_id)
+
+    def set_bucket_notification_rules(self, bucket_id, rules):
+        return self._wrap_default_token(
+            self.raw_api.set_bucket_notification_rules, bucket_id, rules
+        )

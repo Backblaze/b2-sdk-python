@@ -1,0 +1,1 @@
+Add set&get notification rules methods to Bucket API.
