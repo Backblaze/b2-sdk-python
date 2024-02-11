@@ -1356,7 +1356,7 @@ class Bucket(metaclass=B2TraceMeta):
         content_disposition: str | None = None,
         content_encoding: str | None = None,
         content_language: str | None = None,
-    ):
+    ) -> FileVersion:
         """
         Creates a new file in this bucket by (server-side) copying from an existing file.
 

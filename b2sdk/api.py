@@ -240,7 +240,7 @@ class B2Api(metaclass=B2TraceMeta):
         default_server_side_encryption: EncryptionSetting | None = None,
         is_file_lock_enabled: bool | None = None,
         replication: ReplicationConfiguration | None = None,
-    ):
+    ) -> Bucket:
         """
         Create a bucket.
 
@@ -350,7 +350,7 @@ class B2Api(metaclass=B2TraceMeta):
         # There is no such bucket.
         raise BucketIdNotFound(bucket_id)
 
-    def get_bucket_by_name(self, bucket_name: str):
+    def get_bucket_by_name(self, bucket_name: str) -> Bucket:
         """
         Return the Bucket matching the given bucket_name.
 
@@ -386,7 +386,8 @@ class B2Api(metaclass=B2TraceMeta):
         account_id = self.account_info.get_account_id()
         self.session.delete_bucket(account_id, bucket.id_)
 
-    def list_buckets(self, bucket_name=None, bucket_id=None, *, use_cache: bool = False):
+    def list_buckets(self, bucket_name=None, bucket_id=None, *,
+                     use_cache: bool = False) -> list[Bucket]:
         """
         Call ``b2_list_buckets`` and return a list of buckets.
 
@@ -502,7 +503,7 @@ class B2Api(metaclass=B2TraceMeta):
         valid_duration_seconds: int | None = None,
         bucket_id: str | None = None,
         name_prefix: str | None = None,
-    ):
+    ) -> FullApplicationKey:
         """
         Create a new :term:`application key`.
 
@@ -537,7 +538,7 @@ class B2Api(metaclass=B2TraceMeta):
 
         return self.delete_key_by_id(application_key.id_)
 
-    def delete_key_by_id(self, application_key_id: str):
+    def delete_key_by_id(self, application_key_id: str) -> ApplicationKey:
         """
         Delete :term:`application key`.
 
