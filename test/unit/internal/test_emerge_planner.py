@@ -9,7 +9,15 @@
 ######################################################################
 from __future__ import annotations
 
+from unittest.mock import create_autospec
+
+import pytest
+
+from b2sdk.account_info.abstract import AbstractAccountInfo
 from b2sdk.http_constants import (
+    DEFAULT_MAX_PART_SIZE,
+    DEFAULT_MIN_PART_SIZE,
+    DEFAULT_RECOMMENDED_UPLOAD_PART_SIZE,
     GIGABYTE,
     MEGABYTE,
 )
@@ -624,3 +632,53 @@ class TestEmergePlanner(TestBase):
                     self.assertIs(emerge_part_def.copy_source, expected_part_def.copy_source)
                 self.assertEqual(emerge_part_def.relative_offset, expected_part_def.relative_offset)
                 self.assertEqual(emerge_part_def.length, expected_part_def.length)
+
+
+@pytest.fixture
+def account_info():
+    mock_account_info = create_autospec(AbstractAccountInfo)
+    mock_account_info.get_recommended_part_size.return_value = 150 * MEGABYTE
+    return mock_account_info
+
+
+def test_emerge_planner_from_account_info(account_info):
+    planner = EmergePlanner.from_account_info(account_info=account_info)
+    assert planner.min_part_size == DEFAULT_MIN_PART_SIZE
+    assert planner.recommended_upload_part_size == 150 * MEGABYTE
+    assert planner.max_part_size == DEFAULT_MAX_PART_SIZE
+
+
+@pytest.mark.parametrize(
+    'min_part_size, recommended_upload_part_size, max_part_size, expected',
+    [
+        (100 * MEGABYTE, None, None, {
+            'min_part_size': 100 * MEGABYTE
+        }),
+        (
+            GIGABYTE, GIGABYTE, None, {
+                'min_part_size': GIGABYTE,
+                'recommended_upload_part_size': GIGABYTE
+            }
+        ),
+        (
+            None, None, DEFAULT_RECOMMENDED_UPLOAD_PART_SIZE // 2, {
+                'recommended_upload_part_size': DEFAULT_RECOMMENDED_UPLOAD_PART_SIZE // 2,
+                'max_part_size': DEFAULT_RECOMMENDED_UPLOAD_PART_SIZE // 2
+            }
+        ),
+    ],
+)
+def test_emerge_planner_from_account_info__with_explicitly_set_params(
+    min_part_size, recommended_upload_part_size, max_part_size, expected, account_info
+):
+    planner = EmergePlanner.from_account_info(
+        account_info=account_info,
+        min_part_size=min_part_size,
+        recommended_upload_part_size=recommended_upload_part_size,
+        max_part_size=max_part_size
+    )
+    assert planner.min_part_size == expected.get('min_part_size', DEFAULT_MIN_PART_SIZE)
+    assert planner.recommended_upload_part_size == expected.get(
+        'recommended_upload_part_size', 150 * MEGABYTE
+    )
+    assert planner.max_part_size == expected.get('max_part_size', DEFAULT_MAX_PART_SIZE)

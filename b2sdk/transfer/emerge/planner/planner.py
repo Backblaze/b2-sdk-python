@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import typing
 from abc import ABCMeta, abstractmethod
 from collections import deque
 from math import ceil
@@ -31,6 +32,9 @@ from b2sdk.transfer.emerge.planner.upload_subpart import (
     RemoteSourceUploadSubpart,
 )
 from b2sdk.utils import iterator_peek
+
+if typing.TYPE_CHECKING:
+    from b2sdk.account_info.abstract import AbstractAccountInfo
 
 
 class UploadBuffer:
@@ -83,18 +87,30 @@ class UploadBuffer:
         return self.__class__(start_offset, buff_slice)
 
 
+def _filter_out_none(*args):
+    return (arg for arg in args if arg is not None)
+
+
 class EmergePlanner:
     """ Creates a list of actions required for advanced creation of an object in the cloud from an iterator of write intent objects """
 
     def __init__(
         self,
-        min_part_size=None,
-        recommended_upload_part_size=None,
-        max_part_size=None,
+        min_part_size: int | None = None,
+        recommended_upload_part_size: int | None = None,
+        max_part_size: int | None = None,
     ):
-        self.min_part_size = min_part_size or DEFAULT_MIN_PART_SIZE
-        self.recommended_upload_part_size = recommended_upload_part_size or DEFAULT_RECOMMENDED_UPLOAD_PART_SIZE
-        self.max_part_size = max_part_size or DEFAULT_MAX_PART_SIZE
+        # ensure default values are do not break min<=recommended<=max condition,
+        # while respecting user input and not auto fixing if something was provided explicitly
+        self.min_part_size = min(
+            DEFAULT_MIN_PART_SIZE, *_filter_out_none(recommended_upload_part_size, max_part_size)
+        ) if min_part_size is None else min_part_size
+        self.recommended_upload_part_size = recommended_upload_part_size or max(
+            DEFAULT_RECOMMENDED_UPLOAD_PART_SIZE, self.min_part_size
+        )
+        self.max_part_size = max_part_size or max(
+            DEFAULT_MAX_PART_SIZE, self.recommended_upload_part_size
+        )
         if self.min_part_size > self.recommended_upload_part_size:
             raise InvalidUserInput(
                 f"min_part_size value ({self.min_part_size}) exceeding recommended_upload_part_size value ({self.recommended_upload_part_size})"
@@ -107,17 +123,19 @@ class EmergePlanner:
     @classmethod
     def from_account_info(
         cls,
-        account_info,
+        account_info: AbstractAccountInfo,
         min_part_size=None,
         recommended_upload_part_size=None,
         max_part_size=None
     ):
         if recommended_upload_part_size is None:
             recommended_upload_part_size = account_info.get_recommended_part_size()
-        if min_part_size is None and recommended_upload_part_size < DEFAULT_MIN_PART_SIZE:
-            min_part_size = recommended_upload_part_size
-        if max_part_size is None and recommended_upload_part_size > DEFAULT_MAX_PART_SIZE:
-            max_part_size = recommended_upload_part_size
+            # AccountInfo defaults should not break the min<=recommended<=max condition when
+            # other params were provided explicitly
+            if min_part_size is not None:
+                recommended_upload_part_size = max(recommended_upload_part_size, min_part_size)
+            if max_part_size is not None:
+                recommended_upload_part_size = min(recommended_upload_part_size, max_part_size)
         kwargs = {
             'min_part_size': min_part_size,
             'recommended_upload_part_size': recommended_upload_part_size,
