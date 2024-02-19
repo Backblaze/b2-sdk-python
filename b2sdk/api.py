@@ -12,6 +12,7 @@ from __future__ import annotations
 import logging
 from contextlib import suppress
 from typing import Generator
+from collections.abc import Sequence
 
 from .account_info.abstract import AbstractAccountInfo
 from .account_info.exception import MissingAccountData
@@ -387,7 +388,7 @@ class B2Api(metaclass=B2TraceMeta):
         self.session.delete_bucket(account_id, bucket.id_)
 
     def list_buckets(self, bucket_name=None, bucket_id=None, *,
-                     use_cache: bool = False) -> list[Bucket]:
+                     use_cache: bool = False) -> Sequence[Bucket]:
         """
         Call ``b2_list_buckets`` and return a list of buckets.
 
