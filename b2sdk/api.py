@@ -10,9 +10,9 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Sequence
 from contextlib import suppress
 from typing import Generator
-from collections.abc import Sequence
 
 from .account_info.abstract import AbstractAccountInfo
 from .account_info.exception import MissingAccountData
