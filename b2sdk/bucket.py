@@ -633,7 +633,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param content_type: the MIME type, or ``None`` to accept the default based on file extension of the B2 file name
         :param file_info: a file info to store with the file or ``None`` to not store anything
         :param sha1_sum: file SHA1 hash or ``None`` to compute it automatically
-         a minimum size of a part
+        :param min_part_size: lower limit of part size for the transfer planner, in bytes
         :param b2sdk.v2.AbstractProgressListener,None progress_listener: a progress listener object to use, or ``None`` to not report progress
         :param b2sdk.v2.EncryptionSetting encryption: encryption settings (``None`` if unknown)
         :param b2sdk.v2.FileRetentionSetting file_retention: file retention setting
@@ -770,10 +770,10 @@ class Bucket(metaclass=B2TraceMeta):
         :param encryption: encryption settings (``None`` if unknown)
         :param file_retention: file retention setting
         :param legal_hold: legal hold setting
-         a minimum size of a part
         :param recommended_upload_part_size: the recommended part size to use for uploading local sources
                         or ``None`` to determine automatically
-        :param max_part_size: a maximum size of a part
+        :param min_part_size: lower limit of part size for the transfer planner, in bytes
+        :param max_part_size: upper limit of part size for the transfer planner, in bytes
         :param large_file_sha1: SHA-1 hash of the result file or ``None`` if unknown
         :param buffers_count: desired number of buffers allocated, cannot be smaller than 2
         :param buffer_size: size of a single buffer that we pull data to or upload data to B2. If ``None``,
@@ -880,7 +880,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param str file_name: the file name of the new B2 file
         :param str,None content_type: the MIME type, or ``None`` to accept the default based on file extension of the B2 file name
         :param dict,None file_info: a file info to store with the file or ``None`` to not store anything
-        :param int,None min_part_size: the smallest part size to use or ``None`` to determine automatically
+        :param min_part_size: lower limit of part size for the transfer planner, in bytes
         :param b2sdk.v2.AbstractProgressListener,None progress_listener: a progress listener object to use, or ``None`` to not report progress
         :param b2sdk.v2.EncryptionSetting encryption: encryption settings (``None`` if unknown)
         :param b2sdk.v2.FileRetentionSetting file_retention: file retention setting
@@ -969,7 +969,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param b2sdk.v2.EncryptionSetting encryption: encryption settings (``None`` if unknown)
         :param b2sdk.v2.FileRetentionSetting file_retention: file retention setting
         :param bool legal_hold: legal hold setting
-         lower limit of part size for the transfer planner, in bytes
+        :param min_part_size: lower limit of part size for the transfer planner, in bytes
         :param max_part_size: upper limit of part size for the transfer planner, in bytes
         :param Sha1HexDigest,None large_file_sha1: SHA-1 hash of the result file or ``None`` if unknown
         :param int,None custom_upload_timestamp: override object creation date, expressed as a number of milliseconds since epoch
@@ -1383,6 +1383,8 @@ class Bucket(metaclass=B2TraceMeta):
         :param bool legal_hold: legal hold setting for the new file.
         :param str,None cache_control: an optional cache control setting. Syntax based on the section 14.9 of RFC 2616.
             Example string value: 'public, max-age=86400, s-maxage=3600, no-transform'.
+        :param min_part_size: lower limit of part size for the transfer planner, in bytes
+        :param max_part_size: upper limit of part size for the transfer planner, in bytes
         :param str,datetime.datetime,None expires: an optional cache expiration setting.
             If this argument is a string, its syntax must be based on the section 14.21 of RFC 2616.
             Example string value: 'Thu, 01 Dec 2050 16:00:00 GMT'. If this argument is a datetime,

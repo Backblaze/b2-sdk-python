@@ -100,7 +100,7 @@ class EmergePlanner:
         recommended_upload_part_size: int | None = None,
         max_part_size: int | None = None,
     ):
-        # ensure default values are do not break min<=recommended<=max condition,
+        # ensure default values do not break min<=recommended<=max condition,
         # while respecting user input and not auto fixing if something was provided explicitly
         self.min_part_size = min(
             DEFAULT_MIN_PART_SIZE, *_filter_out_none(recommended_upload_part_size, max_part_size)
