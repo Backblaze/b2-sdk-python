@@ -9,6 +9,21 @@ upcoming release can be found in [changelog.d](changelog.d).
 
 <!-- towncrier release notes start -->
 
+## [1.31.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v1.31.0) - 2024-02-19
+
+
+### Fixed
+
+- Remove obsolete test scripts from b2sdk package: `test_upload_url_concurrency`, `b2sdk.b2http:test_http`. ([#471](https://github.com/Backblaze/b2-sdk-python/issues/471))
+
+### Added
+
+- Allow for `min_part_size` that is greater than default `recommended_part_size` value, without having to explicitly set `recommended_part_size` value.
+- Add `GET` method support to `B2Http`.
+- Add `JSON` type annotation and fix type hints in `B2Http` methods.
+- Add more type hints to API methods.
+
+
 ## [1.30.1](https://github.com/Backblaze/b2-sdk-python/releases/tag/v1.30.1) - 2024-02-02
 
 
