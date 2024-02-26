@@ -9,10 +9,27 @@
 ######################################################################
 from __future__ import annotations
 
+import os
 from concurrent.futures import Future, ThreadPoolExecutor
 from typing import Callable
 
+try:
+    from typing_extensions import Protocol
+except ImportError:
+    from typing import Protocol
+
 from b2sdk.utils import B2TraceMetaAbstract
+
+
+class DynamicThreadPoolExecutorProtocol(Protocol):
+    def submit(self, fn: Callable, *args, **kwargs) -> Future:
+        ...
+
+    def set_size(self, max_workers: int) -> None:
+        """Set the size of the thread pool."""
+
+    def get_size(self) -> int:
+        """Return the current size of the thread pool."""
 
 
 class LazyThreadPool:
@@ -23,6 +40,10 @@ class LazyThreadPool:
     _THREAD_POOL_FACTORY = ThreadPoolExecutor
 
     def __init__(self, max_workers: int | None = None, **kwargs):
+        if max_workers is None:
+            max_workers = min(
+                32, (os.cpu_count() or 1) + 4
+            )  # same default as in ThreadPoolExecutor
         self._max_workers = max_workers
         self._thread_pool: ThreadPoolExecutor | None = None
         super().__init__(**kwargs)
@@ -49,7 +70,8 @@ class LazyThreadPool:
             old_thread_pool.shutdown(wait=True)
         self._max_workers = max_workers
 
-    def get_size(self) -> int | None:
+    def get_size(self) -> int:
+        """Return the current size of the thread pool."""
         return self._max_workers
 
 
@@ -62,7 +84,7 @@ class ThreadPoolMixin(metaclass=B2TraceMetaAbstract):
 
     def __init__(
         self,
-        thread_pool: ThreadPoolExecutor | None = None,
+        thread_pool: DynamicThreadPoolExecutorProtocol | None = None,
         max_workers: int | None = None,
         **kwargs,
     ):
@@ -88,5 +110,5 @@ class ThreadPoolMixin(metaclass=B2TraceMetaAbstract):
         """
         return self._thread_pool.set_size(max_workers)
 
-    def get_thread_pool_size(self) -> int | None:
+    def get_thread_pool_size(self) -> int:
         return self._thread_pool.get_size()
