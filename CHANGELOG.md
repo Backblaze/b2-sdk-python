@@ -9,6 +9,18 @@ upcoming release can be found in [changelog.d](changelog.d).
 
 <!-- towncrier release notes start -->
 
+## [1.32.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v1.32.0) - 2024-02-26
+
+
+### Added
+
+- Add `set_thread_pool_size`, `get_thread_pool_size` to *Manger classes.
+
+### Infrastructure
+
+- Fix schema graph rendering in readthedocs documentation.
+
+
 ## [1.31.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v1.31.0) - 2024-02-19
 
 
