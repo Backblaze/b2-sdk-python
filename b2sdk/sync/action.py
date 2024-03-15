@@ -22,6 +22,7 @@ from ..scan.path import B2Path
 from ..sync.report import ProgressReport, SyncReport
 from ..transfer.outbound.outbound_source import OutboundTransferSource
 from ..transfer.outbound.upload_source import UploadSourceLocalFile
+from ..utils.escape import escape_control_chars
 from .encryption_provider import AbstractSyncEncryptionSettingsProvider
 from .report import SyncFileReporter
 
@@ -179,7 +180,7 @@ class B2UploadAction(AbstractAction):
         :param bucket: a Bucket object
         :param reporter: a place to report errors
         """
-        reporter.print_completion('upload ' + self.relative_name)
+        reporter.print_completion(f'upload {escape_control_chars(self.relative_name)}')
 
     def __str__(self) -> str:
         return f'b2_upload({self.local_full_path}, {self.b2_file_name}, {self.mod_time_millis})'
@@ -255,7 +256,7 @@ class B2HideAction(AbstractAction):
         :param reporter: a place to report errors
         """
         reporter.update_transfer(1, 0)
-        reporter.print_completion('hide   ' + self.relative_name)
+        reporter.print_completion(f'hide   {escape_control_chars(self.relative_name)}')
 
     def __str__(self) -> str:
         return f'b2_hide({self.b2_file_name})'
@@ -478,7 +479,7 @@ class B2DeleteAction(AbstractAction):
         :param reporter: a place to report errors
         """
         reporter.update_transfer(1, 0)
-        reporter.print_completion('delete ' + self.relative_name + ' ' + self.note)
+        reporter.print_completion(f"delete {escape_control_chars(self.relative_name)} {self.note}")
 
     def __str__(self) -> str:
         return f'b2_delete({self.b2_file_name}, {self.file_id}, {self.note})'
@@ -519,7 +520,7 @@ class LocalDeleteAction(AbstractAction):
         :param reporter: a place to report errors
         """
         reporter.update_transfer(1, 0)
-        reporter.print_completion('delete ' + self.relative_name)
+        reporter.print_completion(f'delete {escape_control_chars(self.relative_name)}')
 
     def __str__(self) -> str:
         return f'local_delete({self.full_path})'

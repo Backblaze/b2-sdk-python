@@ -10,12 +10,12 @@
 from __future__ import annotations
 
 import base64
-import re
 from abc import ABCMeta, abstractmethod
 from enum import Enum, unique
 from logging import getLogger
 from typing import Any
 
+from .utils.escape import unprintable_to_hex
 from .utils.typing import JSON
 
 try:
@@ -873,21 +873,6 @@ class B2RawHTTPApi(AbstractRawApi):
         except AccessDenied:
             raise RetentionWriteError()
 
-    def unprintable_to_hex(self, string):
-        """
-        Replace unprintable chars in string with a hex representation.
-
-        :param string: an arbitrary string, possibly with unprintable characters.
-        :return: the string, with unprintable characters changed to hex (e.g., "\x07")
-
-        """
-        unprintables_pattern = re.compile(r'[\x00-\x1f]')
-
-        def hexify(match):
-            return fr'\x{ord(match.group()):02x}'
-
-        return unprintables_pattern.sub(hexify, string)
-
     def check_b2_filename(self, filename):
         """
         Raise an appropriate exception with details if the filename is unusable.
@@ -906,7 +891,7 @@ class B2RawHTTPApi(AbstractRawApi):
         lowest_unicode_value = ord(min(filename))
         if lowest_unicode_value < 32:
             message = "Filename \"{}\" contains code {} (hex {:02x}), less than 32.".format(
-                self.unprintable_to_hex(filename), lowest_unicode_value, lowest_unicode_value
+                unprintable_to_hex(filename), lowest_unicode_value, lowest_unicode_value
             )
             raise UnusableFileName(message)
         # No DEL for you.

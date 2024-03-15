@@ -51,6 +51,9 @@ class _OldRawAPI:
             **kwargs,
         )
 
+    def unprintable_to_hex(self, s):
+        return v3.unprintable_to_hex(s)
+
     @_file_infos_rename
     def upload_file(
         self,

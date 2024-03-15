@@ -257,6 +257,7 @@ from b2sdk.http_constants import (
 )
 from b2sdk.session import B2Session
 from b2sdk.utils.thread_pool import ThreadPoolMixin
+from b2sdk.utils.escape import unprintable_to_hex, escape_control_chars, substitute_control_chars
 
 # filter
 from b2sdk.filter import FilterType, Filter
