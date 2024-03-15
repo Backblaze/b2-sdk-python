@@ -9,6 +9,19 @@ upcoming release can be found in [changelog.d](changelog.d).
 
 <!-- towncrier release notes start -->
 
+## [1.33.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v1.33.0) - 2024-03-15
+
+
+### Fixed
+
+- Escape control characters whenever printing object and bucket names to improve security.
+- Remove unused `setuptools` from default dependency list.
+
+### Added
+
+- Added control character escaping methods.
+
+
 ## [1.32.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v1.32.0) - 2024-02-26
 
 
