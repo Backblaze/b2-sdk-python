@@ -114,7 +114,7 @@ class TqdmProgressListener(AbstractProgressListener):
     def set_total_bytes(self, total_byte_count: int) -> None:
         if self.tqdm is None:
             self.tqdm = tqdm(
-                desc=self.description,
+                desc=escape_control_chars(self.description),
                 total=total_byte_count,
                 unit='B',
                 unit_scale=True,
