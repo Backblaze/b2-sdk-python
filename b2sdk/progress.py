@@ -12,6 +12,8 @@ from __future__ import annotations
 import time
 from abc import ABCMeta, abstractmethod
 
+from .utils.escape import escape_control_chars
+
 try:
     from tqdm import tqdm  # displays a nice progress bar
 except ImportError:
@@ -159,7 +161,7 @@ class SimpleProgressListener(AbstractProgressListener):
         elapsed = now - self.last_time
         if 3 <= elapsed and self.total != 0:
             if not self.any_printed:
-                print(self.description)
+                print(escape_control_chars(self.description))
             print('     %d%%' % int(100.0 * byte_count / self.total))
             self.last_time = now
             self.any_printed = True
