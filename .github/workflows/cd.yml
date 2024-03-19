@@ -14,7 +14,7 @@ jobs:
       B2_PYPI_PASSWORD: ${{ secrets.B2_PYPI_PASSWORD }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: Set up Python ${{ env.PYTHON_DEFAULT_VERSION }}
@@ -35,7 +35,7 @@ jobs:
           version: ${{ steps.build.outputs.version }}
       - name: Create GitHub release and upload the distribution
         id: create-release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           name: ${{ steps.build.outputs.version }}
           body: ${{ steps.read-changelog.outputs.changes }}
