@@ -204,6 +204,15 @@ class DownloadedFile:
             logger.warning('File is not seekable, disabling strategies that require seeking')
             allow_seeking = False
 
+        if allow_seeking:  # check if file allows reading from arbitrary position
+            try:
+                file.read(0)
+            except io.UnsupportedOperation:
+                logger.warning(
+                    'File is seekable, but does not allow reads, disabling strategies that require seeking'
+                )
+                allow_seeking = False
+
         if self.progress_listener:
             file = WritingStreamWithProgress(file, self.progress_listener)
             if self.range_ is not None:

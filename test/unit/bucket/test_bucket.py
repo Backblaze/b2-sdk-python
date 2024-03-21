@@ -2556,6 +2556,34 @@ class DownloadTests(DownloadTestsBase):
             )
             assert output_file.getvalue() == self.DATA.encode()
 
+    @pytest.mark.apiver(from_ver=2)
+    def test_download_to_seekable_but_no_read_file(self):
+        file_version = self.bucket.upload_bytes(self.DATA.encode(), 'file1')
+
+        non_seekable_strategies = [
+            strat for strat in self.bucket.api.services.download_manager.strategies
+            if not isinstance(strat, ParallelDownloader)
+        ]
+        context = contextlib.nullcontext() if non_seekable_strategies else pytest.raises(
+            ValueError,
+            match='no strategy suitable for download was found!',
+        )
+        output_file = io.BytesIO()
+        seekable_but_not_readable = io.BufferedWriter(output_file)
+
+        # test sanity check
+        assert seekable_but_not_readable.seekable()
+        with pytest.raises(io.UnsupportedOperation):
+            seekable_but_not_readable.read(0)
+
+        with context:
+            self.download_file_by_id(
+                file_version.id_,
+                v2_file=seekable_but_not_readable,
+            )
+            seekable_but_not_readable.flush()
+            assert output_file.getvalue() == self.DATA.encode()
+
 
 # download empty file
 
