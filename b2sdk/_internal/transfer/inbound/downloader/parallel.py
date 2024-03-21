@@ -30,6 +30,12 @@ logger = logging.getLogger(__name__)
 
 
 class ParallelDownloader(AbstractDownloader):
+    """
+    Downloader using threads to download&write multiple parts of an object in parallel.
+
+    Each part is downloaded by its own thread, while all writes are done by additional dedicated thread.
+    This can increase performance even for a small file, as fetching & writing can be done in parallel.
+    """
     # situations to consider:
     #
     # local file start                                         local file end
@@ -60,14 +66,7 @@ class ParallelDownloader(AbstractDownloader):
         self.max_streams = max_streams
         self.min_part_size = min_part_size
 
-    def is_suitable(self, download_version: DownloadVersion, allow_seeking: bool):
-        if not super().is_suitable(download_version, allow_seeking):
-            return False
-        return self._get_number_of_streams(
-            download_version.content_length
-        ) >= 2 and download_version.content_length >= 2 * self.min_part_size
-
-    def _get_number_of_streams(self, content_length):
+    def _get_number_of_streams(self, content_length: int) -> int:
         num_streams = content_length // self.min_part_size
         if self.max_streams is not None:
             num_streams = min(num_streams, self.max_streams)
@@ -75,7 +74,7 @@ class ParallelDownloader(AbstractDownloader):
             max_threadpool_workers = getattr(self._thread_pool, '_max_workers', None)
             if max_threadpool_workers is not None:
                 num_streams = min(num_streams, max_threadpool_workers)
-        return num_streams
+        return max(num_streams, 1)
 
     def download(
         self,

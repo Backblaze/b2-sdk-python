@@ -48,15 +48,14 @@ class TestDownload(IntegrationTestBase):
                 ]
             ):
 
-                # let's check that small file downloads fail with these settings
-                zero = bucket.upload_bytes(b'0', 'a_single_zero')
-                with pytest.raises(ValueError) as exc_info:
-                    with io.BytesIO() as io_:
-                        bucket.download_file_by_name('a_single_zero').save(io_)
-                assert exc_info.value.args == ('no strategy suitable for download was found!',)
+                # let's check that small file downloads do not fail with these settings
+                small_file_version = bucket.upload_bytes(b'0', 'a_single_char')
+                with io.BytesIO() as io_:
+                    bucket.download_file_by_name('a_single_char').save(io_)
+                    assert io_.getvalue() == b'0'
 
                 f, sha1 = self._file_helper(bucket)
-                if zero._type() != 'large':
+                if small_file_version._type() != 'large':
                     # if we are here, that's not the production server!
                     assert f.download_version.content_sha1_verified  # large files don't have sha1, lets not check
 
@@ -115,11 +114,7 @@ class TestDownload(IntegrationTestBase):
             self.b2_api.download_file_by_id(file_id=file_version.id_).save_to(
                 str(downloaded_compressed_file)
             )
-            with open(downloaded_compressed_file, 'rb') as dcf:
-                downloaded_data = dcf.read()
-                with open(source_file, 'rb') as sf:
-                    source_data = sf.read()
-                    assert downloaded_data == source_data
+            assert downloaded_compressed_file.read_bytes() == source_file.read_bytes()
 
             decompressing_api, _ = authorize(
                 self.b2_auth_data, B2HttpApiConfig(decode_content=True)
@@ -127,8 +122,7 @@ class TestDownload(IntegrationTestBase):
             decompressing_api.download_file_by_id(file_id=file_version.id_).save_to(
                 str(downloaded_uncompressed_file)
             )
-            with open(downloaded_uncompressed_file, 'rb') as duf:
-                assert duf.read() == data_to_write
+            assert downloaded_uncompressed_file.read_bytes() == data_to_write
 
 
 @pytest.fixture
