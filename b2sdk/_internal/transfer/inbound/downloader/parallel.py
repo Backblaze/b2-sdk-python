@@ -56,6 +56,7 @@ class ParallelDownloader(AbstractDownloader):
     #      cloud file start                                         cloud file end
     #
     FINISH_HASHING_BUFFER_SIZE = 1024**2
+    SUPPORTS_DECODE_CONTENT = False
 
     def __init__(self, min_part_size: int, max_streams: int | None = None, **kwargs):
         """
