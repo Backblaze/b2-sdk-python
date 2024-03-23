@@ -11,7 +11,6 @@ dependencies = [
     "requests<3.0.0,>=2.9.1",
     "tqdm<5.0.0,>=4.5.0",
     "typing-extensions>=4.7.1; python_version < '3.12'",
-    "packaging>=21.0",
 ]
 requires-python = ">=3.7"
 readme = "README.md"
