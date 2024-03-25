@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import collections
+import dataclasses
 import io
 import logging
 import random
@@ -448,25 +449,52 @@ class FileSimulator:
         return mode, secret
 
 
-FakeRequest = collections.namedtuple('FakeRequest', 'url headers')
+@dataclasses.dataclass
+class FakeRequest:
+    url: str
+    headers: CaseInsensitiveDict
+
+
+@dataclasses.dataclass
+class FakeRaw:
+    data_bytes: bytes
+    _position: int = 0
+
+    def tell(self):
+        return self._position
+
+    def read(self, size):
+        data = self.data_bytes[self._position:self._position + size]
+        self._position += len(data)
+        return data
 
 
 class FakeResponse:
     def __init__(self, account_auth_token_or_none, file_sim, url, range_=None):
-        self.data_bytes = file_sim.data_bytes
+        self.raw = FakeRaw(file_sim.data_bytes)
         self.headers = file_sim.as_download_headers(account_auth_token_or_none, range_)
         self.url = url
         self.range_ = range_
         if range_ is not None:
             self.data_bytes = self.data_bytes[range_[0]:range_[1] + 1]
 
+    @property
+    def data_bytes(self):
+        return self.raw.data_bytes
+
+    @data_bytes.setter
+    def data_bytes(self, value):
+        self.raw = FakeRaw(value)
+
     def iter_content(self, chunk_size=1):
-        start = 0
         rnd = random.Random(self.url)
-        while start <= len(self.data_bytes):
-            time.sleep(rnd.random() * 0.01)
-            yield self.data_bytes[start:start + chunk_size]
-            start += chunk_size
+        while True:
+            chunk = self.raw.read(chunk_size)
+            if chunk:
+                time.sleep(rnd.random() * 0.01)
+                yield chunk
+            else:
+                break
 
     @property
     def request(self):
