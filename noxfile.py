@@ -185,7 +185,7 @@ def build(session):
 @nox.session(python=PYTHON_DEFAULT_VERSION)
 def doc(session):
     """Build the documentation."""
-    pdm_install(session, 'doc', dev=False)
+    pdm_install(session, 'doc')
     session.cd('doc')
     sphinx_args = ['-b', 'html', '-T', '-W', 'source', 'build/html']
     session.run('rm', '-rf', 'build', external=True)
@@ -203,7 +203,7 @@ def doc(session):
 @nox.session
 def doc_cover(session):
     """Perform coverage analysis for the documentation."""
-    pdm_install(session, 'doc', dev=False)
+    pdm_install(session, 'doc')
     session.cd('doc')
     sphinx_args = ['-b', 'coverage', '-T', '-W', 'source', 'build/coverage']
     report_file = 'build/coverage/python.txt'

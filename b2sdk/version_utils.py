@@ -10,13 +10,42 @@
 from __future__ import annotations
 
 import inspect
+import re
 import warnings
 from abc import ABCMeta, abstractmethod
-from functools import wraps
-
-from packaging.version import parse
+from functools import total_ordering, wraps
 
 from b2sdk.version import VERSION
+
+
+@total_ordering
+class _Version:
+    """
+    Rudimentary semver version parser.
+
+    It uses VERY naive parsing which is only supposed to produce a tuple, able to
+    compare major.minor.patch versions.
+    It does not support PEP 440 epoch, pre-releases, post-releases, local versions, etc.
+    """
+
+    def __init__(self, version: str):
+        self._raw = version
+        self._parsed = self._parse_version(version)
+
+    def __str__(self):
+        return self._raw
+
+    def __eq__(self, other):
+        return self._parsed == other._parsed
+
+    def __lt__(self, other):
+        return self._parsed < other._parsed
+
+    @classmethod
+    def _parse_version(cls, version: str) -> tuple[int, ...]:
+        if "!" in version:  # strip PEP 440 epoch
+            version = version.split("!", 1)[1]
+        return tuple(map(int, re.findall(r'\d+', version)))
 
 
 class AbstractVersionDecorator(metaclass=ABCMeta):
@@ -28,7 +57,7 @@ class AbstractVersionDecorator(metaclass=ABCMeta):
         """
         if current_version is None:  # this is for tests only
             current_version = VERSION  # TODO autodetect by going up the qualname tree and trying getattr(part, '__version__')
-        self.current_version = parse(current_version)  #: current version
+        self.current_version = _Version(current_version)  #: current version
         self.reason = reason
 
         self.changed_version = self._parse_if_not_none(
@@ -42,7 +71,7 @@ class AbstractVersionDecorator(metaclass=ABCMeta):
     def _parse_if_not_none(cls, version):
         if version is None:
             return None
-        return parse(version)
+        return _Version(version)
 
     @abstractmethod
     def __call__(self, func):
