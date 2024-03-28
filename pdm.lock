@@ -5,7 +5,7 @@
 groups = ["default", "doc", "format", "lint", "release", "test"]
 strategy = ["cross_platform", "inherit_metadata"]
 lock_version = "4.4.1"
-content_hash = "sha256:f16200da2f17f26d7386b162cbd1074ac56190b7a1fc4f34bbd3ecdbd588083c"
+content_hash = "sha256:78947fc090f35b8b375b70a0ecf4f2bf589496c8bbc81d5001bbd8fb570d0927"
 
 [[package]]
 name = "alabaster"
@@ -628,7 +628,7 @@ name = "packaging"
 version = "23.2"
 requires_python = ">=3.7"
 summary = "Core utilities for Python packages"
-groups = ["default", "doc", "lint", "test"]
+groups = ["doc", "lint", "test"]
 files = [
     {file = "packaging-23.2-py3-none-any.whl", hash = "sha256:8c491190033a9af7e1d931d0b5dacc2ef47509b34dd0de67ed209b5203fc88c7"},
     {file = "packaging-23.2.tar.gz", hash = "sha256:048fb0e9405036518eaaf48a55953c750c11e1a1b68e0dd1a9d62ed0c092cfc5"},
