@@ -77,20 +77,20 @@ class TestSqliteAccountProfileFileLocation:
 
     def test_invalid_profile_name(self):
         with pytest.raises(ValueError):
-            SqliteAccountInfo._get_user_account_info_path(profile='&@(*$')
+            SqliteAccountInfo.get_user_account_info_path(profile='&@(*$')
 
     def test_profile_and_file_name_conflict(self):
         with pytest.raises(ValueError):
-            SqliteAccountInfo._get_user_account_info_path(file_name='foo', profile='bar')
+            SqliteAccountInfo.get_user_account_info_path(file_name='foo', profile='bar')
 
     def test_profile_and_env_var_conflict(self, monkeypatch):
         monkeypatch.setenv(B2_ACCOUNT_INFO_ENV_VAR, 'foo')
         with pytest.raises(ValueError):
-            SqliteAccountInfo._get_user_account_info_path(profile='bar')
+            SqliteAccountInfo.get_user_account_info_path(profile='bar')
 
     def test_profile_and_xdg_config_env_var(self, monkeypatch):
         monkeypatch.setenv(XDG_CONFIG_HOME_ENV_VAR, os.path.join('~', 'custom'))
-        account_info_path = SqliteAccountInfo._get_user_account_info_path(profile='secondary')
+        account_info_path = SqliteAccountInfo.get_user_account_info_path(profile='secondary')
         assert account_info_path == os.path.expanduser(
             os.path.join('~', 'custom', 'b2', 'db-secondary.sqlite')
         )
@@ -102,18 +102,18 @@ class TestSqliteAccountProfileFileLocation:
         else:
             expected_path = ('~', '.b2db-foo.sqlite')
 
-        account_info_path = SqliteAccountInfo._get_user_account_info_path(profile='foo')
+        account_info_path = SqliteAccountInfo.get_user_account_info_path(profile='foo')
         assert account_info_path == os.path.expanduser(os.path.join(*expected_path))
 
     def test_file_name(self):
-        account_info_path = SqliteAccountInfo._get_user_account_info_path(
+        account_info_path = SqliteAccountInfo.get_user_account_info_path(
             file_name=os.path.join('~', 'foo')
         )
         assert account_info_path == os.path.expanduser(os.path.join('~', 'foo'))
 
     def test_env_var(self, monkeypatch):
         monkeypatch.setenv(B2_ACCOUNT_INFO_ENV_VAR, os.path.join('~', 'foo'))
-        account_info_path = SqliteAccountInfo._get_user_account_info_path()
+        account_info_path = SqliteAccountInfo.get_user_account_info_path()
         assert account_info_path == os.path.expanduser(os.path.join('~', 'foo'))
 
     def test_default_file_if_exists(self, monkeypatch):
@@ -124,12 +124,12 @@ class TestSqliteAccountProfileFileLocation:
         os.makedirs(parent_dir, exist_ok=True)
         with open(account_file_path, 'w') as account_file:
             account_file.write('')
-        account_info_path = SqliteAccountInfo._get_user_account_info_path()
+        account_info_path = SqliteAccountInfo.get_user_account_info_path()
         assert account_info_path == os.path.expanduser(B2_ACCOUNT_INFO_DEFAULT_FILE)
 
     def test_xdg_config_env_var(self, monkeypatch):
         monkeypatch.setenv(XDG_CONFIG_HOME_ENV_VAR, os.path.join('~', 'custom'))
-        account_info_path = SqliteAccountInfo._get_user_account_info_path()
+        account_info_path = SqliteAccountInfo.get_user_account_info_path()
         assert account_info_path == os.path.expanduser(
             os.path.join('~', 'custom', 'b2', 'account_info')
         )
@@ -141,5 +141,5 @@ class TestSqliteAccountProfileFileLocation:
         else:
             expected_path = B2_ACCOUNT_INFO_DEFAULT_FILE
 
-        account_info_path = SqliteAccountInfo._get_user_account_info_path()
+        account_info_path = SqliteAccountInfo.get_user_account_info_path()
         assert account_info_path == os.path.expanduser(expected_path)

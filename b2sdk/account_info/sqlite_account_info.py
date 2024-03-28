@@ -73,7 +73,7 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
         """
         self.thread_local = threading.local()
 
-        self.filename = self._get_user_account_info_path(file_name=file_name, profile=profile)
+        self.filename = self.get_user_account_info_path(file_name=file_name, profile=profile)
         logger.debug('%s file path to use: %s', self.__class__.__name__, self.filename)
 
         self._validate_database(last_upgrade_to_run)
@@ -105,7 +105,7 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
         return None
 
     @classmethod
-    def _get_user_account_info_path(cls, file_name: str | None = None, profile: str | None = None):
+    def get_user_account_info_path(cls, file_name: str | None = None, profile: str | None = None):
         if profile and not B2_ACCOUNT_INFO_PROFILE_NAME_REGEXP.match(profile):
             raise ValueError(f'Invalid profile name: {profile}')
 
