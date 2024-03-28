@@ -1,7 +1,7 @@
-:mod:`b2sdk.stream.progress` Streams with progress reporting
-============================================================
+:mod:`b2sdk._internal.stream.progress` Streams with progress reporting
+======================================================================
 
-.. automodule:: b2sdk.stream.progress
+.. automodule:: b2sdk._internal.stream.progress
     :members:
     :undoc-members:
     :show-inheritance:

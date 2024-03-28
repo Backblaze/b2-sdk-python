@@ -1,5 +1,5 @@
 :mod:`b2sdk._internal.utils`
-========================================
+============================
 
 .. automodule:: b2sdk._internal.utils
     :members:

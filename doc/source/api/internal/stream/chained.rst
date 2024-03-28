@@ -1,7 +1,7 @@
-:mod:`b2sdk.stream.chained` ChainedStream
-============================================
+:mod:`b2sdk._internal.stream.chained` ChainedStream
+===================================================
 
-.. automodule:: b2sdk.stream.chained
+.. automodule:: b2sdk._internal.stream.chained
     :members:
     :undoc-members:
     :show-inheritance:

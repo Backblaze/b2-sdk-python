@@ -1,7 +1,7 @@
-:mod:`b2sdk.raw_simulator` -- B2 raw api simulator
-==================================================
+:mod:`b2sdk._internal.raw_simulator` -- B2 raw api simulator
+============================================================
 
-.. automodule:: b2sdk.raw_simulator
+.. automodule:: b2sdk._internal.raw_simulator
     :members:
     :undoc-members:
     :show-inheritance:

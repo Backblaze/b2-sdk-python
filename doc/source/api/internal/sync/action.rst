@@ -1,7 +1,7 @@
-:mod:`b2sdk.sync.action`
-=======================================
+:mod:`b2sdk._internal.sync.action`
+==================================
 
-.. automodule:: b2sdk.sync.action
+.. automodule:: b2sdk._internal.sync.action
     :members:
     :undoc-members:
     :show-inheritance:

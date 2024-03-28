@@ -1,7 +1,7 @@
-:mod:`b2sdk.transfer.inbound.downloader.parallel` -- ParallelTransferer
-=======================================================================
+:mod:`b2sdk._internal.transfer.inbound.downloader.parallel` -- ParallelTransferer
+=================================================================================
 
-.. automodule:: b2sdk.transfer.inbound.downloader.parallel
+.. automodule:: b2sdk._internal.transfer.inbound.downloader.parallel
     :members:
     :undoc-members:
     :show-inheritance:

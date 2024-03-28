@@ -1,5 +1,5 @@
 B2 Api client
-===============================================
+=============
 
 .. autoclass:: b2sdk.v2.B2Api()
     :inherited-members:

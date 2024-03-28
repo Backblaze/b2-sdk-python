@@ -1,5 +1,5 @@
 Progress reporters
-==========================================
+==================
 
 .. note::
    Concrete classes described in this chapter implement methods defined in ``AbstractProgressListener``
@@ -26,4 +26,3 @@ Progress reporters
    :no-members:
 
 .. autofunction:: b2sdk.v2.make_progress_listener
-

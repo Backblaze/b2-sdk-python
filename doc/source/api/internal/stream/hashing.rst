@@ -1,7 +1,7 @@
-:mod:`b2sdk.stream.hashing` StreamWithHash
-============================================
+:mod:`b2sdk._internal.stream.hashing` StreamWithHash
+====================================================
 
-.. automodule:: b2sdk.stream.hashing
+.. automodule:: b2sdk._internal.stream.hashing
     :members:
     :undoc-members:
     :show-inheritance:

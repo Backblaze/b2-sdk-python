@@ -1,7 +1,7 @@
-:mod:`b2sdk.transfer.inbound.download_manager` -- Manager of downloaders
-========================================================================
+:mod:`b2sdk._internal.transfer.inbound.download_manager` -- Manager of downloaders
+==================================================================================
 
-.. automodule:: b2sdk.transfer.inbound.download_manager
+.. automodule:: b2sdk._internal.transfer.inbound.download_manager
     :members:
     :undoc-members:
     :show-inheritance:
