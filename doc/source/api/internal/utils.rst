@@ -1,7 +1,7 @@
-:mod:`b2sdk.utils`
+:mod:`b2sdk._internal.utils`
 ========================================
 
-.. automodule:: b2sdk.utils
+.. automodule:: b2sdk._internal.utils
     :members:
     :undoc-members:
     :show-inheritance:

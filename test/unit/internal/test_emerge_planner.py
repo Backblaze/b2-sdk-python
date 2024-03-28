@@ -13,27 +13,27 @@ from unittest.mock import create_autospec
 
 import pytest
 
-from b2sdk.account_info.abstract import AbstractAccountInfo
-from b2sdk.http_constants import (
+from b2sdk._internal.account_info.abstract import AbstractAccountInfo
+from b2sdk._internal.http_constants import (
     DEFAULT_MAX_PART_SIZE,
     DEFAULT_MIN_PART_SIZE,
     DEFAULT_RECOMMENDED_UPLOAD_PART_SIZE,
     GIGABYTE,
     MEGABYTE,
 )
-from b2sdk.transfer.emerge.planner.part_definition import (
+from b2sdk._internal.transfer.emerge.planner.part_definition import (
     CopyEmergePartDefinition,
     UploadEmergePartDefinition,
     UploadSubpartsEmergePartDefinition,
 )
-from b2sdk.transfer.emerge.planner.planner import EmergePlanner
-from b2sdk.transfer.emerge.planner.upload_subpart import (
+from b2sdk._internal.transfer.emerge.planner.planner import EmergePlanner
+from b2sdk._internal.transfer.emerge.planner.upload_subpart import (
     LocalSourceUploadSubpart,
     RemoteSourceUploadSubpart,
 )
-from b2sdk.transfer.emerge.write_intent import WriteIntent
-from b2sdk.transfer.outbound.copy_source import CopySource as OrigCopySource
-from b2sdk.transfer.outbound.upload_source import UploadSourceStream
+from b2sdk._internal.transfer.emerge.write_intent import WriteIntent
+from b2sdk._internal.transfer.outbound.copy_source import CopySource as OrigCopySource
+from b2sdk._internal.transfer.outbound.upload_source import UploadSourceStream
 
 from ..test_base import TestBase
 

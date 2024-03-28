@@ -13,14 +13,14 @@ import io
 import string
 from unittest.mock import MagicMock
 
-from b2sdk.transfer.emerge.unbound_write_intent import (
+from b2sdk._internal.transfer.emerge.unbound_write_intent import (
     IOWrapper,
     UnboundSourceBytes,
     UnboundStreamBufferTimeout,
     UnboundWriteIntentGenerator,
 )
-from b2sdk.transfer.emerge.write_intent import WriteIntent
-from b2sdk.utils import hex_sha1_of_bytes
+from b2sdk._internal.transfer.emerge.write_intent import WriteIntent
+from b2sdk._internal.utils import hex_sha1_of_bytes
 
 from ..test_base import TestBase
 

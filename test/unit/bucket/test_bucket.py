@@ -2783,7 +2783,7 @@ class TestDownloadTuneWriteBuffer(DownloadTestsBase, TestCaseWithBucket):
     def test_buffering_in_save_to(self):
         with tempfile.TemporaryDirectory() as d:
             path = pathlib.Path(d) / 'file2'
-            with mock.patch('b2sdk.transfer.inbound.downloaded_file.open') as mock_open:
+            with mock.patch('b2sdk._internal.transfer.inbound.downloaded_file.open') as mock_open:
                 mock_open.side_effect = open
                 self.bucket.download_file_by_id(self.file_version.id_).save_to(path)
                 mock_open.assert_called_once_with(path, mock.ANY, buffering=self.ALIGN_FACTOR)

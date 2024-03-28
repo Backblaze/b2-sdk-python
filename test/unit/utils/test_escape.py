@@ -8,7 +8,11 @@
 #
 ######################################################################
 
-from b2sdk.utils.escape import escape_control_chars, substitute_control_chars, unprintable_to_hex
+from b2sdk._internal.utils.escape import (
+    escape_control_chars,
+    substitute_control_chars,
+    unprintable_to_hex,
+)
 
 
 def test_unprintable_to_hex():

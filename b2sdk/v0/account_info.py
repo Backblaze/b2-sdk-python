@@ -9,7 +9,7 @@
 ######################################################################
 from __future__ import annotations
 
-from b2sdk import version_utils
+from b2sdk._internal import version_utils
 from b2sdk import v1
 
 

@@ -107,7 +107,7 @@ AccountInfo helper classes
    .. caution::
       This class is not part of the public interface. To find out how to safely use it, read :ref:`this <semantic_versioning>`.
 
-.. autoclass:: b2sdk.account_info.upload_url_pool.UploadUrlPool()
+.. autoclass:: b2sdk._internal.account_info.upload_url_pool.UploadUrlPool()
    :inherited-members:
    :private-members:
 

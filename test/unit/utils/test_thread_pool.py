@@ -11,7 +11,7 @@ from concurrent.futures import Future
 
 import pytest
 
-from b2sdk.utils.thread_pool import LazyThreadPool
+from b2sdk._internal.utils.thread_pool import LazyThreadPool
 
 
 class TestLazyThreadPool:

@@ -12,7 +12,7 @@ from __future__ import annotations
 import pytest
 from apiver_deps import Filter
 
-from b2sdk.filter import FilterMatcher
+from b2sdk._internal.filter import FilterMatcher
 
 
 @pytest.mark.parametrize(

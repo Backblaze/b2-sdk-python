@@ -14,9 +14,9 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from b2sdk.scan.folder import LocalFolder
-from b2sdk.scan.policies import ScanPoliciesManager
-from b2sdk.utils import fix_windows_path_limit
+from b2sdk._internal.scan.folder import LocalFolder
+from b2sdk._internal.scan.policies import ScanPoliciesManager
+from b2sdk._internal.utils import fix_windows_path_limit
 
 
 class TestFolderTraversal:
