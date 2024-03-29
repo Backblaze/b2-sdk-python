@@ -15,11 +15,10 @@ from dataclasses import dataclass, field
 from queue import Queue
 from typing import ClassVar, Iterator
 
-from b2sdk._internal.api import B2Api
-from b2sdk._internal.bucket import Bucket
-from b2sdk._internal.file_lock import NO_RETENTION_FILE_SETTING, LegalHold
-
+from ..api import B2Api
+from ..bucket import Bucket
 from ..encryption.setting import EncryptionMode
+from ..file_lock import NO_RETENTION_FILE_SETTING, LegalHold
 from ..scan.folder import B2Folder
 from ..scan.path import B2Path
 from ..scan.policies import DEFAULT_SCAN_MANAGER, ScanPoliciesManager

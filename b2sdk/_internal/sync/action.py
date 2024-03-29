@@ -15,15 +15,14 @@ import os
 from abc import ABCMeta, abstractmethod
 from contextlib import suppress
 
-from b2sdk._internal.bucket import Bucket
-from b2sdk._internal.file_version import FileVersion
-from b2sdk._internal.http_constants import SRC_LAST_MODIFIED_MILLIS
-from b2sdk._internal.utils.escape import escape_control_chars
-
+from ..bucket import Bucket
+from ..file_version import FileVersion
+from ..http_constants import SRC_LAST_MODIFIED_MILLIS
 from ..scan.path import B2Path
 from ..sync.report import ProgressReport, SyncReport
 from ..transfer.outbound.outbound_source import OutboundTransferSource
 from ..transfer.outbound.upload_source import UploadSourceLocalFile
+from ..utils.escape import escape_control_chars
 from .encryption_provider import AbstractSyncEncryptionSettingsProvider
 from .report import SyncFileReporter
 

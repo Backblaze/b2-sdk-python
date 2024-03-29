@@ -14,9 +14,8 @@ import logging
 import urllib
 import urllib.parse
 
-from b2sdk._internal.http_constants import SSE_C_KEY_ID_FILE_INFO_KEY_NAME, SSE_C_KEY_ID_HEADER
-from b2sdk._internal.utils import b64_of_bytes, md5_of_bytes
-
+from ..http_constants import SSE_C_KEY_ID_FILE_INFO_KEY_NAME, SSE_C_KEY_ID_HEADER
+from ..utils import b64_of_bytes, md5_of_bytes
 from .types import (
     ENCRYPTION_MODES_WITH_MANDATORY_ALGORITHM,
     ENCRYPTION_MODES_WITH_MANDATORY_KEY,

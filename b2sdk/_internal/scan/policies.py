@@ -13,8 +13,7 @@ import logging
 import re
 from typing import Iterable
 
-from b2sdk._internal.file_version import FileVersion
-
+from ..file_version import FileVersion
 from .exception import InvalidArgument, check_invalid_argument
 from .path import LocalPath
 

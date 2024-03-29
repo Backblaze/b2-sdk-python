@@ -35,10 +35,9 @@ try:
 except ImportError:
     from typing import Literal
 
-from b2sdk._internal.file_version import DownloadVersion
-from b2sdk._internal.progress import AbstractProgressListener
-
 from ...encryption.setting import EncryptionSetting
+from ...file_version import DownloadVersion
+from ...progress import AbstractProgressListener
 from ...stream.progress import WritingStreamWithProgress
 
 if TYPE_CHECKING:

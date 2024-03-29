@@ -9,7 +9,7 @@
 ######################################################################
 from __future__ import annotations
 
-from b2sdk._internal.exception import B2SimpleError
+from ..exception import B2SimpleError
 
 
 class IncompleteSync(B2SimpleError):

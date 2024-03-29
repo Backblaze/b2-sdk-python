@@ -15,15 +15,16 @@ from enum import Enum, unique
 from logging import getLogger
 from typing import Any
 
-from b2sdk._internal.utils.escape import unprintable_to_hex
-from b2sdk._internal.utils.typing import JSON
+from .utils.escape import unprintable_to_hex
+from .utils.typing import JSON
 
 try:
     from typing_extensions import NotRequired, TypedDict
 except ImportError:
     from typing import NotRequired, TypedDict
 
-from b2sdk._internal.exception import (
+from .encryption.setting import EncryptionMode, EncryptionSetting
+from .exception import (
     AccessDenied,
     FileOrBucketNotFound,
     InvalidMetadataDirective,
@@ -33,13 +34,11 @@ from b2sdk._internal.exception import (
     UnusableFileName,
     WrongEncryptionModeForBucketDefault,
 )
-from b2sdk._internal.http_constants import FILE_INFO_HEADER_PREFIX
-from b2sdk._internal.utils import b2_url_encode
-from b2sdk._internal.utils.docs import ensure_b2sdk_doc_urls
-
-from .encryption.setting import EncryptionMode, EncryptionSetting
 from .file_lock import BucketRetentionSetting, FileRetentionSetting, LegalHold
+from .http_constants import FILE_INFO_HEADER_PREFIX
 from .replication.setting import ReplicationConfiguration
+from .utils import b2_url_encode
+from .utils.docs import ensure_b2sdk_doc_urls
 
 # All supported realms
 REALM_URLS = {

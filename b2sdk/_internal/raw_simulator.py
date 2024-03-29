@@ -20,7 +20,9 @@ from contextlib import contextmanager, suppress
 
 from requests.structures import CaseInsensitiveDict
 
-from b2sdk._internal.exception import (
+from .b2http import ResponseContextManager
+from .encryption.setting import EncryptionMode, EncryptionSetting
+from .exception import (
     AccessDenied,
     BadJson,
     BadRequest,
@@ -42,17 +44,6 @@ from b2sdk._internal.exception import (
     Unauthorized,
     UnsatisfiableRange,
 )
-from b2sdk._internal.http_constants import FILE_INFO_HEADER_PREFIX, HEX_DIGITS_AT_END
-from b2sdk._internal.replication.setting import ReplicationConfiguration
-from b2sdk._internal.utils import (
-    ConcurrentUsedAuthTokenGuard,
-    b2_url_decode,
-    b2_url_encode,
-    hex_sha1_of_bytes,
-)
-
-from .b2http import ResponseContextManager
-from .encryption.setting import EncryptionMode, EncryptionSetting
 from .file_lock import (
     NO_RETENTION_BUCKET_SETTING,
     BucketRetentionSetting,
@@ -61,9 +52,12 @@ from .file_lock import (
     RetentionMode,
 )
 from .file_version import UNVERIFIED_CHECKSUM_PREFIX
+from .http_constants import FILE_INFO_HEADER_PREFIX, HEX_DIGITS_AT_END
 from .raw_api import ALL_CAPABILITIES, AbstractRawApi, LifecycleRule, MetadataDirectiveMode
+from .replication.setting import ReplicationConfiguration
 from .replication.types import ReplicationStatus
 from .stream.hashing import StreamWithHash
+from .utils import ConcurrentUsedAuthTokenGuard, b2_url_decode, b2_url_encode, hex_sha1_of_bytes
 
 logger = logging.getLogger(__name__)
 

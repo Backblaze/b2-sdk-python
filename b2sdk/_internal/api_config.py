@@ -13,7 +13,7 @@ from typing import Callable
 
 import requests
 
-from b2sdk._internal.raw_api import AbstractRawApi, B2RawHTTPApi
+from .raw_api import AbstractRawApi, B2RawHTTPApi
 
 
 class B2HttpApiConfig:

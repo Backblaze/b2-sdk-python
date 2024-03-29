@@ -14,8 +14,7 @@ from collections import Counter
 from dataclasses import dataclass, field
 from typing import ClassVar
 
-from b2sdk._internal.file_version import FileVersion
-
+from ..file_version import FileVersion
 from .folder import AbstractFolder
 from .path import AbstractPath
 from .policies import DEFAULT_SCAN_MANAGER, ScanPoliciesManager

@@ -18,8 +18,7 @@ from abc import ABCMeta, abstractmethod
 from pathlib import Path
 from typing import Iterator
 
-from b2sdk._internal.utils import fix_windows_path_limit, get_file_mtime, is_file_readable
-
+from ..utils import fix_windows_path_limit, get_file_mtime, is_file_readable
 from .exception import (
     EmptyDirectory,
     EnvironmentEncodingError,

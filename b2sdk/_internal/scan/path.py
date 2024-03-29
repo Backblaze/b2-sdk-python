@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
-from b2sdk._internal.file_version import FileVersion
+from ..file_version import FileVersion
 
 
 class AbstractPath(ABC):

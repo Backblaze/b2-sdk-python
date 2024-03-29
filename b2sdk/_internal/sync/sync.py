@@ -14,8 +14,7 @@ import logging
 from enum import Enum, unique
 from typing import cast
 
-from b2sdk._internal.bounded_queue_executor import BoundedQueueExecutor
-
+from ..bounded_queue_executor import BoundedQueueExecutor
 from ..scan.exception import InvalidArgument
 from ..scan.folder import AbstractFolder, B2Folder, LocalFolder
 from ..scan.path import AbstractPath

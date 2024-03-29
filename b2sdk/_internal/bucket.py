@@ -16,18 +16,6 @@ import pathlib
 from contextlib import suppress
 from typing import Sequence
 
-from b2sdk._internal.progress import AbstractProgressListener, DoNothingProgressListener
-from b2sdk._internal.raw_api import LifecycleRule
-from b2sdk._internal.transfer.emerge.executor import AUTO_CONTENT_TYPE
-from b2sdk._internal.utils import (
-    B2TraceMeta,
-    Sha1HexDigest,
-    b2_url_encode,
-    disable_trace,
-    limit_trace_arguments,
-    validate_b2_file_name,
-)
-
 from .encryption.setting import EncryptionSetting, EncryptionSettingFactory
 from .encryption.types import EncryptionMode
 from .exception import (
@@ -48,12 +36,23 @@ from .file_lock import (
 from .file_version import DownloadVersion, FileVersion
 from .filter import Filter, FilterMatcher
 from .http_constants import LIST_FILE_NAMES_MAX_LIMIT
+from .progress import AbstractProgressListener, DoNothingProgressListener
+from .raw_api import LifecycleRule
 from .replication.setting import ReplicationConfiguration, ReplicationConfigurationFactory
+from .transfer.emerge.executor import AUTO_CONTENT_TYPE
 from .transfer.emerge.unbound_write_intent import UnboundWriteIntentGenerator
 from .transfer.emerge.write_intent import WriteIntent
 from .transfer.inbound.downloaded_file import DownloadedFile
 from .transfer.outbound.copy_source import CopySource
 from .transfer.outbound.upload_source import UploadMode, UploadSourceBytes, UploadSourceLocalFile
+from .utils import (
+    B2TraceMeta,
+    Sha1HexDigest,
+    b2_url_encode,
+    disable_trace,
+    limit_trace_arguments,
+    validate_b2_file_name,
+)
 
 logger = logging.getLogger(__name__)
 

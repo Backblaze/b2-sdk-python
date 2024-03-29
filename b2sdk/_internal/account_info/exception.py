@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from abc import ABCMeta
 
-from b2sdk._internal.exception import B2Error
+from ..exception import B2Error
 
 
 class AccountInfoError(B2Error, metaclass=ABCMeta):

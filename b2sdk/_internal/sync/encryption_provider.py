@@ -11,10 +11,9 @@ from __future__ import annotations
 
 from abc import ABCMeta, abstractmethod
 
-from b2sdk._internal.bucket import Bucket
-from b2sdk._internal.file_version import FileVersion
-
+from ..bucket import Bucket
 from ..encryption.setting import EncryptionSetting
+from ..file_version import FileVersion
 
 
 class AbstractSyncEncryptionSettingsProvider(metaclass=ABCMeta):

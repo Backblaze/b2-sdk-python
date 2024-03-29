@@ -14,10 +14,9 @@ import time
 import typing
 from dataclasses import dataclass
 
-from b2sdk._internal.progress import AbstractProgressListener
-from b2sdk._internal.utils import format_and_scale_fraction, format_and_scale_number
-
+from ..progress import AbstractProgressListener
 from ..scan.report import ProgressReport
+from ..utils import format_and_scale_fraction, format_and_scale_number
 
 logger = logging.getLogger(__name__)
 

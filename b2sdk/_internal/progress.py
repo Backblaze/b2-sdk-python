@@ -12,7 +12,7 @@ from __future__ import annotations
 import time
 from abc import ABCMeta, abstractmethod
 
-from b2sdk._internal.utils.escape import escape_control_chars
+from .utils.escape import escape_control_chars
 
 try:
     from tqdm import tqdm  # displays a nice progress bar

@@ -14,8 +14,7 @@ from abc import ABCMeta, abstractmethod
 from enum import Enum, unique
 from typing import cast
 
-from b2sdk._internal.exception import DestFileNewer
-
+from ..exception import DestFileNewer
 from ..scan.exception import InvalidArgument
 from ..scan.folder import AbstractFolder, B2Folder
 from ..scan.path import AbstractPath, B2Path

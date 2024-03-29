@@ -15,7 +15,7 @@ import time
 from dataclasses import dataclass
 from io import TextIOWrapper
 
-from b2sdk._internal.utils import format_and_scale_number
+from ..utils import format_and_scale_number
 
 logger = logging.getLogger(__name__)
 
