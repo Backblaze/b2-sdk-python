@@ -9,8 +9,8 @@
 ######################################################################
 from __future__ import annotations
 
-from b2sdk.http_constants import SSE_C_KEY_ID_FILE_INFO_KEY_NAME
-from b2sdk.transfer.outbound.copy_manager import CopyManager
+from b2sdk._internal.http_constants import SSE_C_KEY_ID_FILE_INFO_KEY_NAME
+from b2sdk._internal.transfer.outbound.copy_manager import CopyManager
 
 from ..test_base import TestBase
 from .deps import (

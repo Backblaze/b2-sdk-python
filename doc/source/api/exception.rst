@@ -1,5 +1,5 @@
 Exceptions
-====================================
+==========
 
 .. todo::
    improve documentation of exceptions, automodule -> autoclass?

@@ -1,7 +1,7 @@
-:mod:`b2sdk.transfer.outbound.upload_source`
-============================================
+:mod:`b2sdk._internal.transfer.outbound.upload_source`
+======================================================
 
-.. automodule:: b2sdk.transfer.outbound.upload_source
+.. automodule:: b2sdk._internal.transfer.outbound.upload_source
     :members:
     :undoc-members:
     :show-inheritance:

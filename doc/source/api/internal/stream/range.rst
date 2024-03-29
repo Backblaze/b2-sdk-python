@@ -1,7 +1,7 @@
-:mod:`b2sdk.stream.range` RangeOfInputStream
-=============================================
+:mod:`b2sdk._internal.stream.range` RangeOfInputStream
+======================================================
 
-.. automodule:: b2sdk.stream.range
+.. automodule:: b2sdk._internal.stream.range
     :members:
     :undoc-members:
     :show-inheritance:

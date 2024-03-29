@@ -10,7 +10,7 @@
 from __future__ import annotations
 
 from b2sdk import _v3 as v3
-from b2sdk.utils.thread_pool import LazyThreadPool  # noqa: F401
+from b2sdk._internal.utils.thread_pool import LazyThreadPool  # noqa: F401
 
 
 class ThreadPoolMixin(v3.ThreadPoolMixin):

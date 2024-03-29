@@ -1,5 +1,5 @@
 Enums
-===============================================
+=====
 
 .. autoclass:: b2sdk.v2.MetadataDirectiveMode
    :inherited-members:
@@ -12,4 +12,3 @@ Enums
 
 .. autoclass:: b2sdk.v2.KeepOrDeleteMode
    :inherited-members:
-

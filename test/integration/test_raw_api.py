@@ -19,20 +19,24 @@ import traceback
 
 import pytest
 
-from b2sdk.b2http import B2Http
-from b2sdk.encryption.setting import EncryptionAlgorithm, EncryptionMode, EncryptionSetting
-from b2sdk.exception import DisablingFileLockNotSupported, Unauthorized
-from b2sdk.file_lock import (
+from b2sdk._internal.b2http import B2Http
+from b2sdk._internal.encryption.setting import (
+    EncryptionAlgorithm,
+    EncryptionMode,
+    EncryptionSetting,
+)
+from b2sdk._internal.exception import DisablingFileLockNotSupported, Unauthorized
+from b2sdk._internal.file_lock import (
     NO_RETENTION_FILE_SETTING,
     BucketRetentionSetting,
     FileRetentionSetting,
     RetentionMode,
     RetentionPeriod,
 )
-from b2sdk.raw_api import ALL_CAPABILITIES, REALM_URLS, B2RawHTTPApi
-from b2sdk.replication.setting import ReplicationConfiguration, ReplicationRule
-from b2sdk.replication.types import ReplicationStatus
-from b2sdk.utils import hex_sha1_of_stream
+from b2sdk._internal.raw_api import ALL_CAPABILITIES, REALM_URLS, B2RawHTTPApi
+from b2sdk._internal.replication.setting import ReplicationConfiguration, ReplicationRule
+from b2sdk._internal.replication.types import ReplicationStatus
+from b2sdk._internal.utils import hex_sha1_of_stream
 
 
 # TODO: rewrite to separate test cases

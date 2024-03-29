@@ -16,7 +16,7 @@ import operator
 from sadisplay import describe, render
 from sqlalchemy import create_engine, MetaData
 
-from b2sdk.account_info.sqlite_account_info import SqliteAccountInfo
+from b2sdk._internal.account_info.sqlite_account_info import SqliteAccountInfo
 
 
 def main():

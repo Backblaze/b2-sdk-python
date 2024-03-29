@@ -15,8 +15,8 @@ import logging
 import os
 
 from b2sdk import v2
-from b2sdk.account_info.sqlite_account_info import DEFAULT_ABSOLUTE_MINIMUM_PART_SIZE
-from b2sdk.utils import limit_trace_arguments
+from b2sdk._internal.account_info.sqlite_account_info import DEFAULT_ABSOLUTE_MINIMUM_PART_SIZE
+from b2sdk._internal.utils import limit_trace_arguments
 
 logger = logging.getLogger(__name__)
 

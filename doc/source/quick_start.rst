@@ -178,7 +178,7 @@ Upload file
             file_name=b2_file_name,
             file_infos=file_info,
         )
-    <b2sdk.file_version.FileVersion at 0x7fc8cd560550>
+    <b2sdk._internal.file_version.FileVersion at 0x7fc8cd560550>
 
 This will work regardless of the size of the file - ``upload_local_file`` automatically uses large file upload API when necessary.
 

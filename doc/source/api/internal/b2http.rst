@@ -1,4 +1,4 @@
-:mod:`b2sdk.b2http` -- thin http client wrapper
-===============================================
+:mod:`b2sdk._internal.b2http` -- thin http client wrapper
+=========================================================
 
-.. automodule:: b2sdk.b2http
+.. automodule:: b2sdk._internal.b2http

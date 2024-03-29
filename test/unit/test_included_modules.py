@@ -11,8 +11,8 @@ from __future__ import annotations
 
 import pathlib
 
-from b2sdk import requests
-from b2sdk.requests.included_source_meta import included_source_meta
+from b2sdk._internal import requests
+from b2sdk._internal.requests.included_source_meta import included_source_meta
 
 
 def test_requests_notice_file():

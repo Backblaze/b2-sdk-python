@@ -9,15 +9,21 @@
 ######################################################################
 from __future__ import annotations
 
-import sys
+from sys import version_info as _version_info
 
 try:
-    from importlib.metadata import version
-except ModuleNotFoundError:
-    from importlib_metadata import version  # for python 3.7
+    from importlib.metadata import version as _version
+except ModuleNotFoundError:  # python 3.7
+    from importlib_metadata import version as _version
 
-VERSION = version('b2sdk')
+__all__ = [
+    "VERSION",
+    "PYTHON_VERSION",
+    "USER_AGENT",
+]
 
-PYTHON_VERSION = '.'.join(map(str, sys.version_info[:3]))  # something like: 3.9.1
+VERSION = _version("b2sdk")
 
-USER_AGENT = f'backblaze-b2/{VERSION} python/{PYTHON_VERSION}'
+PYTHON_VERSION = ".".join(map(str, _version_info[:3]))  # something like: 3.9.1
+
+USER_AGENT = f"backblaze-b2/{VERSION} python/{PYTHON_VERSION}"

@@ -11,8 +11,8 @@ from __future__ import annotations
 
 import pytest
 
-from b2sdk.raw_api import AbstractRawApi, LifecycleRule
-from b2sdk.utils.docs import MissingDocURL, ensure_b2sdk_doc_urls, get_b2sdk_doc_urls
+from b2sdk._internal.raw_api import AbstractRawApi, LifecycleRule
+from b2sdk._internal.utils.docs import MissingDocURL, ensure_b2sdk_doc_urls, get_b2sdk_doc_urls
 
 
 def test_b2sdk_doc_urls():

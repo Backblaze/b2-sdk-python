@@ -13,7 +13,7 @@ import hashlib
 import io
 from test.unit.test_base import TestBase
 
-from b2sdk.utils import (
+from b2sdk._internal.utils import (
     IncrementalHexDigester,
     Sha1HexDigest,
 )

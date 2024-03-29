@@ -1,7 +1,7 @@
-:mod:`b2sdk.scan.scan`
-================================================
+:mod:`b2sdk._internal.scan.scan`
+================================
 
-.. automodule:: b2sdk.scan.scan
+.. automodule:: b2sdk._internal.scan.scan
     :members:
     :undoc-members:
     :show-inheritance:

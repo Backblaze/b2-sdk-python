@@ -23,7 +23,7 @@ from test.integration.helpers import (
 
 import pytest
 
-from b2sdk.utils import current_time_millis
+from b2sdk._internal.utils import current_time_millis
 
 
 def pytest_addoption(parser):

@@ -13,7 +13,7 @@ from typing import Any, overload
 
 from .download_dest import AbstractDownloadDestination
 from b2sdk import v2
-from b2sdk.api import Services
+from b2sdk._internal.api import Services
 from .account_info import AbstractAccountInfo
 from .bucket import Bucket, BucketFactory, download_file_and_return_info_dict
 from .cache import AbstractCache
@@ -51,7 +51,7 @@ class B2Api(v2.B2Api):
                       :class:`~b2sdk.v1.SqliteAccountInfo`
 
         :param cache: It is used by B2Api to cache the mapping between bucket name and bucket ids.
-                      default is :class:`~b2sdk.cache.DummyCache`
+                      default is :class:`~b2sdk._internal.cache.DummyCache`
 
         :param max_upload_workers: a number of upload threads
         :param max_copy_workers: a number of copy threads
