@@ -10,9 +10,9 @@
 from __future__ import annotations
 
 # Set default logging handler to avoid "No handler found" warnings.
-import logging
+import logging as _logging
 
-logging.getLogger("b2sdk").addHandler(logging.NullHandler())
+_logging.getLogger("b2sdk").addHandler(_logging.NullHandler())
 
 
 class UrllibWarningFilter:
@@ -20,7 +20,7 @@ class UrllibWarningFilter:
         return record.msg != "Connection pool is full, discarding connection: %s"
 
 
-logging.getLogger('urllib3.connectionpool').addFilter(UrllibWarningFilter())
+_logging.getLogger('urllib3.connectionpool').addFilter(UrllibWarningFilter())
 
 # this file maps the external interface into internal interface
 # it will come handy if we ever need to move something
