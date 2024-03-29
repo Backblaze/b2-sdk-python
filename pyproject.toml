@@ -9,7 +9,6 @@ dependencies = [
     "importlib-metadata>=3.3.0; python_version < '3.8'",
     "logfury<2.0.0,>=1.0.1",
     "requests<3.0.0,>=2.9.1",
-    "tqdm<5.0.0,>=4.5.0",
     "typing-extensions>=4.7.1; python_version < '3.12'",
 ]
 requires-python = ">=3.7"
@@ -166,6 +165,7 @@ test = [
     "pytest-lazy-fixture==0.6.3",
     "pytest-xdist==2.5.0",
     "pytest-timeout==2.1.0",
+    "tqdm<5.0.0,>=4.5.0",
 ]
 release = [
     "towncrier==23.11.0; python_version>='3.8'",

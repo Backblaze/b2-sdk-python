@@ -104,9 +104,13 @@ class AbstractProgressListener(metaclass=ABCMeta):
 class TqdmProgressListener(AbstractProgressListener):
     """
     Progress listener based on tqdm library.
+
+    This listener displays a nice progress bar, but requires `tqdm` package to be installed.
     """
 
     def __init__(self, *args, **kwargs):
+        if tqdm is None:
+            raise ModuleNotFoundError("No module named 'tqdm' found")
         self.tqdm = None  # set in set_total_bytes()
         self.prev_value = 0
         super().__init__(*args, **kwargs)
@@ -212,7 +216,7 @@ class ProgressListenerForTest(AbstractProgressListener):
 
 def make_progress_listener(description: str, quiet: bool) -> AbstractProgressListener:
     """
-    Return a progress listener object depending on some conditions.
+    Produce the best progress listener available for the given parameters.
 
     :param description: listener description
     :param quiet: if ``True``, do not output anything
