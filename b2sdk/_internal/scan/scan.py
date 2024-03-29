@@ -35,8 +35,8 @@ def zip_folders(
     in both folders.  Either file (but not both) will be None if the
     file is in only one folder.
 
-    :param b2sdk.scan.folder.AbstractFolder folder_a: first folder object.
-    :param b2sdk.scan.folder.AbstractFolder folder_b: second folder object.
+    :param b2sdk._internal.scan.folder.AbstractFolder folder_a: first folder object.
+    :param b2sdk._internal.scan.folder.AbstractFolder folder_b: second folder object.
     :param reporter: reporter object
     :param policies_manager: policies manager object
     :return: yields two element tuples

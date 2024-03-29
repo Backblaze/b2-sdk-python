@@ -37,7 +37,7 @@ def count_files(local_folder, reporter, policies_manager):
     """
     Count all of the files in a local folder.
 
-    :param b2sdk.scan.folder.AbstractFolder local_folder: a folder object.
+    :param b2sdk._internal.scan.folder.AbstractFolder local_folder: a folder object.
     :param reporter: reporter object
     """
     # Don't pass in a reporter to all_files.  Broken symlinks will be reported
