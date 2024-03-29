@@ -31,7 +31,7 @@ class Emerger(metaclass=B2TraceMetaAbstract):
     This class can be used to build advanced copy workflows like incremental upload.
 
     It creates a emerge plan and pass it to emerge executor - all complex logic
-    is actually implemented in :class:`b2sdk.transfer.emerge.planner.planner.EmergePlanner`
+    is actually implemented in :class:`b2sdk._internal.transfer.emerge.planner.planner.EmergePlanner`
     and :class:`b2sdk.transfer.emerge.executor.EmergeExecutor`
     """
 

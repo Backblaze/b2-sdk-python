@@ -68,7 +68,7 @@ class NotDecompressingResponse(Response):
     @classmethod
     def from_builtin_response(cls, response: Response):
         """
-        Create a :class:`b2sdk.requests.NotDecompressingResponse` object from a :class:`requests.Response` object.
+        Create a :class:`b2sdk._internal.requests.NotDecompressingResponse` object from a :class:`requests.Response` object.
         Don't use :code:`Response.__getstate__` and :code:`Response.__setstate__`
         because these assume that the content has been consumed, which will never be true in our case.
         """

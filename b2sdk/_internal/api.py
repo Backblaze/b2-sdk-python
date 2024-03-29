@@ -160,7 +160,7 @@ class B2Api(metaclass=B2TraceMeta):
                       :class:`~b2sdk.v2.SqliteAccountInfo`
 
         :param cache: It is used by B2Api to cache the mapping between bucket name and bucket ids.
-                      default is :class:`~b2sdk.cache.DummyCache`
+                      default is :class:`~b2sdk._internal.cache.DummyCache`
 
         :param max_upload_workers: a number of upload threads
         :param max_copy_workers: a number of copy threads
@@ -198,8 +198,10 @@ class B2Api(metaclass=B2TraceMeta):
     def raw_api(self):
         """
         .. warning::
-            :class:`~b2sdk.raw_api.B2RawHTTPApi` attribute is deprecated.
-            :class:`~b2sdk.session.B2Session` expose all :class:`~b2sdk.raw_api.B2RawHTTPApi` methods now."""
+            :class:`~b2sdk._internal.raw_api.B2RawHTTPApi` attribute is deprecated.
+            :class:`~b2sdk._internal.session.B2Session` expose all
+            :class:`~b2sdk._internal.raw_api.B2RawHTTPApi` methods now.
+        """
         return self.session.raw_api
 
     def authorize_automatically(self):

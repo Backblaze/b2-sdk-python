@@ -617,7 +617,7 @@ class B2Http:
 
 class NotDecompressingHTTPAdapter(HTTPAdapter):
     """
-    HTTP adapter that uses :class:`b2sdk.requests.NotDecompressingResponse` instead of the default
+    HTTP adapter that uses :class:`b2sdk._internal.requests.NotDecompressingResponse` instead of the default
     :code:`requests.Response` class.
     """
 
