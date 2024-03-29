@@ -32,7 +32,7 @@ class Emerger(metaclass=B2TraceMetaAbstract):
 
     It creates a emerge plan and pass it to emerge executor - all complex logic
     is actually implemented in :class:`b2sdk._internal.transfer.emerge.planner.planner.EmergePlanner`
-    and :class:`b2sdk.transfer.emerge.executor.EmergeExecutor`
+    and :class:`b2sdk._internal.transfer.emerge.executor.EmergeExecutor`
     """
 
     DEFAULT_STREAMING_MAX_QUEUE_SIZE = 100

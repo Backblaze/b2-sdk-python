@@ -61,11 +61,11 @@ class B2Session:
                       :class:`~b2sdk.v2.SqliteAccountInfo`
 
         :param cache: an instance of the one of the following classes:
-                      :class:`~b2sdk.cache.DummyCache`, :class:`~b2sdk.cache.InMemoryCache`,
-                      :class:`~b2sdk.cache.AuthInfoCache`,
-                      or any custom class derived from :class:`~b2sdk.cache.AbstractCache`
+                      :class:`~b2sdk._internal.cache.DummyCache`, :class:`~b2sdk._internal.cache.InMemoryCache`,
+                      :class:`~b2sdk._internal.cache.AuthInfoCache`,
+                      or any custom class derived from :class:`~b2sdk._internal.cache.AbstractCache`
                       It is used by B2Api to cache the mapping between bucket name and bucket ids.
-                      default is :class:`~b2sdk.cache.DummyCache`
+                      default is :class:`~b2sdk._internal.cache.DummyCache`
 
         :param api_config
         """

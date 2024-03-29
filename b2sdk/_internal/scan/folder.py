@@ -344,7 +344,7 @@ class B2Folder(AbstractFolder):
         :param folder_name: a folder name
         :type folder_name: str
         :param api: an API object
-        :type api: b2sdk.api.B2Api
+        :type api: b2sdk._internal.api.B2Api
         """
         self.bucket_name = bucket_name
         self.folder_name = folder_name

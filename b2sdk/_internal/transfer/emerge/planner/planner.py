@@ -349,7 +349,7 @@ class EmergePlanner:
     def _buff_split(self, upload_buffer):
         """ Split upload buffer to parts candidates - smaller upload buffers.
 
-        :rtype iterator[b2sdk.transfer.emerge.planner.planner.UploadBuffer]:
+        :rtype iterator[b2sdk._internal.transfer.emerge.planner.planner.UploadBuffer]:
         """
         if upload_buffer.intent_count() == 0:
             return
@@ -369,8 +369,8 @@ class EmergePlanner:
 
         In result left part cannot be split more, and nothing can be assumed about right part.
 
-        :rtype tuple(b2sdk.transfer.emerge.planner.planner.UploadBuffer,
-                     b2sdk.transfer.emerge.planner.planner.UploadBuffer):
+        :rtype tuple(b2sdk._internal.transfer.emerge.planner.planner.UploadBuffer,
+                     b2sdk._internal.transfer.emerge.planner.planner.UploadBuffer):
         """
         left_buff = UploadBuffer(upload_buffer.start_offset)
         buff_start = upload_buffer.start_offset

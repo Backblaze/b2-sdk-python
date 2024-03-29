@@ -45,7 +45,7 @@ class AbstractAction(metaclass=ABCMeta):
         Main action routine.
 
         :param bucket: a Bucket object
-        :type bucket: b2sdk.bucket.Bucket
+        :type bucket: b2sdk._internal.bucket.Bucket
         :param reporter: a place to report errors
         :param dry_run: if True, perform a dry run
         :type dry_run: bool
