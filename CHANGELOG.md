@@ -9,6 +9,31 @@ upcoming release can be found in [changelog.d](changelog.d).
 
 <!-- towncrier release notes start -->
 
+## [2.0.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v2.0.0) - 2024-04-02
+
+
+### Removed
+
+- Remove `tqdm` dependency. Now `tqdm` has to be explicitly installed to use `TqdmProgressListener` class.
+- Remove `[doc]` extras dependency group - moved to dev dependencies.
+- Remove unnecessary `packaging` package dependency. It's functionality was never explicitly exposed.
+
+### Changed
+
+- Move non-apiver packages (e.g. packages other than `b2sdk.v1`, `b2sdk.v2`, ...) to `b2sdk._internal` to further discourage use of non-public internals.
+  If you accidentally used non-public internals, most likely only thing you will need to do, is import from `b2sdk.v2` instead of `b2sdk`.
+- Move logging setup and `UrllibWarningFilter` class from `b2sdk.__init__.py` to `b2sdk._v3` (and thus `b2sdk.v2` & `b2sdk.v1`).
+  This will allow us to remove/change it in new apiver releases without the need to change the major semver version.
+
+### Added
+
+- Add `SqliteAccountInfo.get_user_account_info_path` to public API.
+
+### Infrastructure
+
+- Update to [GitHub Actions using Node 20](https://github.blog/changelog/2023-09-22-github-actions-transitioning-from-node-16-to-node-20/).
+
+
 ## [1.33.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v1.33.0) - 2024-03-15
 
 
