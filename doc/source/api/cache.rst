@@ -1,5 +1,5 @@
 Cache
-===============================================
+=====
 
 **b2sdk** caches the mapping between bucket name and bucket
 id, so that the user of the library does not need to maintain

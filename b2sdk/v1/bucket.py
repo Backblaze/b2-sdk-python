@@ -16,8 +16,8 @@ from .download_dest import AbstractDownloadDestination
 from .file_metadata import FileMetadata
 from .file_version import FileVersionInfo, FileVersionInfoFactory, file_version_info_from_download_version
 from b2sdk import v2
-from b2sdk.utils import validate_b2_file_name
-from ..raw_api import LifecycleRule
+from b2sdk._internal.utils import validate_b2_file_name
+from b2sdk._internal.raw_api import LifecycleRule
 
 
 # Overridden to retain the obsolete copy_file and start_large_file methods

@@ -18,7 +18,7 @@ from .exception import BucketIdNotFound
 from .file_version import FileVersionFactory
 
 if typing.TYPE_CHECKING:
-    from b2sdk.utils import Sha1HexDigest
+    from b2sdk._internal.utils import Sha1HexDigest
 
 
 # Overridden to raise old style BucketIdNotFound exception

@@ -34,4 +34,3 @@ File locks
 .. autoclass:: b2sdk.v2.NO_RETENTION_FILE_SETTING()
 
 .. autoclass:: b2sdk.v2.UNKNOWN_FILE_RETENTION_SETTING()
-

@@ -20,8 +20,8 @@ from unittest import mock
 
 import pytest
 
+from b2sdk._internal.utils import Sha1HexDigest
 from b2sdk._internal.utils.filesystem import _IS_WINDOWS
-from b2sdk.utils import Sha1HexDigest
 from b2sdk.v2 import *
 
 from .base import IntegrationTestBase

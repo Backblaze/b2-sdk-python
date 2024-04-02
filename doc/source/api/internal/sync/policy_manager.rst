@@ -1,7 +1,7 @@
-:mod:`b2sdk.sync.policy_manager`
-==================================================
+:mod:`b2sdk._internal.sync.policy_manager`
+==========================================
 
-.. automodule:: b2sdk.sync.policy_manager
+.. automodule:: b2sdk._internal.sync.policy_manager
     :members:
     :undoc-members:
     :show-inheritance:

@@ -13,4 +13,3 @@ B2 Utility functions
 .. autoclass:: b2sdk.v2.TempDir()
    :inherited-members:
    :special-members: __enter__, __exit__
-

@@ -1,5 +1,5 @@
 Data classes
-===============================================
+============
 
 .. autoclass:: b2sdk.v2.FileVersion
    :inherited-members:

@@ -33,7 +33,7 @@ from apiver_deps_exception import (
     interpret_b2_error,
 )
 
-from b2sdk.exception import ResourceNotFound
+from b2sdk._internal.exception import ResourceNotFound
 
 
 class TestB2Error:

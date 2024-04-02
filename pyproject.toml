@@ -9,9 +9,7 @@ dependencies = [
     "importlib-metadata>=3.3.0; python_version < '3.8'",
     "logfury<2.0.0,>=1.0.1",
     "requests<3.0.0,>=2.9.1",
-    "tqdm<5.0.0,>=4.5.0",
     "typing-extensions>=4.7.1; python_version < '3.12'",
-    "packaging>=21.0",
 ]
 requires-python = ">=3.7"
 readme = "README.md"
@@ -29,19 +27,6 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
-]
-
-[project.optional-dependencies]
-# doc group should be moved to dev dependencies when we release
-# a new major version.
-doc = [
-    "sadisplay>=0.4.9",
-    "sphinx>=5.3.0, <6",
-    "sphinx-autobuild>=2021.3.14",
-    "sphinx-rtd-theme>=2.0.0",
-    "sphinx-autodoc-typehints>=1.23.0",
-    "sphinxcontrib-plantuml>=0.27",
-    "tornado>=6.3.3; python_version>='3.8'",
 ]
 
 [project.urls]
@@ -104,6 +89,7 @@ target-version = "py37"
 
 [tool.ruff.per-file-ignores]
 "__init__.py" = ["I", "F401"]
+"b2sdk/_v3/__init__.py" = ["E402"]
 "b2sdk/v*/**" = ["I", "F403", "F405"]
 "b2sdk/_v*/**" = ["I", "F403", "F405"]
 "test/**" = ["D", "F403", "F405"]
@@ -180,7 +166,17 @@ test = [
     "pytest-lazy-fixture==0.6.3",
     "pytest-xdist==2.5.0",
     "pytest-timeout==2.1.0",
+    "tqdm<5.0.0,>=4.5.0",
 ]
 release = [
     "towncrier==23.11.0; python_version>='3.8'",
+]
+doc = [
+    "sadisplay>=0.4.9",
+    "sphinx>=5.3.0, <6",
+    "sphinx-autobuild>=2021.3.14",
+    "sphinx-rtd-theme>=2.0.0",
+    "sphinx-autodoc-typehints>=1.23.0",
+    "sphinxcontrib-plantuml>=0.27",
+    "tornado>=6.3.3; python_version>='3.8'",
 ]

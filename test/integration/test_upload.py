@@ -11,9 +11,9 @@ from __future__ import annotations
 
 import io
 
-from b2sdk.b2http import B2Http
-from b2sdk.encryption.setting import EncryptionKey, EncryptionSetting
-from b2sdk.encryption.types import EncryptionAlgorithm, EncryptionMode
+from b2sdk._internal.b2http import B2Http
+from b2sdk._internal.encryption.setting import EncryptionKey, EncryptionSetting
+from b2sdk._internal.encryption.types import EncryptionAlgorithm, EncryptionMode
 from b2sdk.v2 import B2RawHTTPApi
 
 from .base import IntegrationTestBase

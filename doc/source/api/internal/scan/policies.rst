@@ -1,7 +1,7 @@
-:mod:`b2sdk.scan.policies`
-================================================
+:mod:`b2sdk._internal.scan.policies`
+====================================
 
-.. automodule:: b2sdk.scan.policies
+.. automodule:: b2sdk._internal.scan.policies
     :members:
     :undoc-members:
     :show-inheritance:

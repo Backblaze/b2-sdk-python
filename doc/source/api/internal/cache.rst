@@ -1,7 +1,7 @@
-:mod:`b2sdk.cache`
-===========================
+:mod:`b2sdk._internal.cache`
+============================
 
-.. automodule:: b2sdk.cache
+.. automodule:: b2sdk._internal.cache
     :members:
     :undoc-members:
     :show-inheritance:

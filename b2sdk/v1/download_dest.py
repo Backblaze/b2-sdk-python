@@ -14,9 +14,9 @@ import os
 from abc import abstractmethod
 from contextlib import contextmanager
 
-from b2sdk.stream.progress import WritingStreamWithProgress
+from b2sdk._internal.stream.progress import WritingStreamWithProgress
 
-from ..utils import B2TraceMetaAbstract, limit_trace_arguments, set_file_mtime
+from b2sdk._internal.utils import B2TraceMetaAbstract, limit_trace_arguments, set_file_mtime
 
 
 class AbstractDownloadDestination(metaclass=B2TraceMetaAbstract):

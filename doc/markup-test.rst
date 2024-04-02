@@ -89,10 +89,10 @@ Public interface consists of *public* members of the following modules:
 * b2sdk.sync.exception
 
 and some of their dependencies:
-* b2sdk.account_info.InMemoryAccountInfo
-* b2sdk.account_info.SqliteAccountInfo
+* b2sdk._internal.account_info.InMemoryAccountInfo
+* b2sdk._internal.account_info.SqliteAccountInfo
 * b2sdk.transferer
-* b2sdk.utils
+* b2sdk._internal.utils
 
 Those will not change in a backwards-incompatible way between non-major versions. In other words, if you pin your dependencies to `>=x.0.0;<x+1.0.0`, everything should be ok.
 In other words, if you pin your dependencies to
