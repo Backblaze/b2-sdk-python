@@ -26,6 +26,7 @@ logger = logging.getLogger(__name__)
 class SimpleDownloader(AbstractDownloader):
 
     REQUIRES_SEEKING = False
+    SUPPORTS_DECODE_CONTENT = True
 
     def _download(
         self,
@@ -39,12 +40,12 @@ class SimpleDownloader(AbstractDownloader):
         chunk_size = self._get_chunk_size(actual_size)
 
         digest = self._get_hasher()
-
-        bytes_read = 0
+        decoded_bytes_read = 0
         for data in response.iter_content(chunk_size=chunk_size):
             file.write(data)
             digest.update(data)
-            bytes_read += len(data)
+            decoded_bytes_read += len(data)
+        bytes_read = response.raw.tell()
 
         assert actual_size >= 1  # code below does `actual_size - 1`, but it should never reach that part with an empty file
 
@@ -62,8 +63,8 @@ class SimpleDownloader(AbstractDownloader):
             # original response is not closed at this point yet, as another layer is responsible for closing it, so a new socket might be allocated,
             # but this is a very rare case and so it is not worth the optimization
             logger.debug(
-                're-download attempts remaining: %i, bytes read already: %i. Getting range %s now.',
-                retries_left, bytes_read, new_range
+                're-download attempts remaining: %i, bytes read: %i (decoded: %i). Getting range %s now.',
+                retries_left, bytes_read, decoded_bytes_read, new_range
             )
             with session.download_file_from_url(
                 response.request.url,
@@ -75,7 +76,8 @@ class SimpleDownloader(AbstractDownloader):
                 ):
                     file.write(data)
                     digest.update(data)
-                    bytes_read += len(data)
+                    decoded_bytes_read += len(data)
+                bytes_read += followup_response.raw.tell()
             retries_left -= 1
         return bytes_read, digest.hexdigest()
 

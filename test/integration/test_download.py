@@ -48,15 +48,14 @@ class TestDownload(IntegrationTestBase):
                 ]
             ):
 
-                # let's check that small file downloads fail with these settings
-                zero = bucket.upload_bytes(b'0', 'a_single_zero')
-                with pytest.raises(ValueError) as exc_info:
-                    with io.BytesIO() as io_:
-                        bucket.download_file_by_name('a_single_zero').save(io_)
-                assert exc_info.value.args == ('no strategy suitable for download was found!',)
+                # let's check that small file downloads do not fail with these settings
+                small_file_version = bucket.upload_bytes(b'0', 'a_single_char')
+                with io.BytesIO() as io_:
+                    bucket.download_file_by_name('a_single_char').save(io_)
+                    assert io_.getvalue() == b'0'
 
                 f, sha1 = self._file_helper(bucket)
-                if zero._type() != 'large':
+                if small_file_version._type() != 'large':
                     # if we are here, that's not the production server!
                     assert f.download_version.content_sha1_verified  # large files don't have sha1, lets not check
 
@@ -98,37 +97,27 @@ class TestDownload(IntegrationTestBase):
             pprint(f.download_version._get_args_for_clone())
             assert not f.download_version.content_sha1_verified
 
-    def test_gzip(self):
-        bucket = self.create_bucket()
-        with tempfile.TemporaryDirectory() as temp_dir:
-            temp_dir = pathlib.Path(temp_dir)
-            source_file = temp_dir / 'compressed_file.gz'
-            downloaded_uncompressed_file = temp_dir / 'downloaded_uncompressed_file'
-            downloaded_compressed_file = temp_dir / 'downloaded_compressed_file'
 
-            data_to_write = b"I'm about to be compressed and sent to the cloud, yay!\n" * 100  # too short files failed somehow
-            with gzip.open(source_file, 'wb') as gzip_file:
-                gzip_file.write(data_to_write)
-            file_version = bucket.upload_local_file(
-                str(source_file), 'gzipped_file', file_info={'b2-content-encoding': 'gzip'}
-            )
-            self.b2_api.download_file_by_id(file_id=file_version.id_).save_to(
-                str(downloaded_compressed_file)
-            )
-            with open(downloaded_compressed_file, 'rb') as dcf:
-                downloaded_data = dcf.read()
-                with open(source_file, 'rb') as sf:
-                    source_data = sf.read()
-                    assert downloaded_data == source_data
+@pytest.mark.parametrize("size_multiplier", [1, 100])
+def test_gzip(b2_auth_data, bucket, tmp_path, b2_api, size_multiplier):
+    """Test downloading gzipped files of varius sizes with and without content-encoding."""
+    source_file = tmp_path / 'compressed_file.gz'
+    downloaded_uncompressed_file = tmp_path / 'downloaded_uncompressed_file'
+    downloaded_compressed_file = tmp_path / 'downloaded_compressed_file'
 
-            decompressing_api, _ = authorize(
-                self.b2_auth_data, B2HttpApiConfig(decode_content=True)
-            )
-            decompressing_api.download_file_by_id(file_id=file_version.id_).save_to(
-                str(downloaded_uncompressed_file)
-            )
-            with open(downloaded_uncompressed_file, 'rb') as duf:
-                assert duf.read() == data_to_write
+    data_to_write = b"I'm about to be compressed and sent to the cloud, yay!\n" * size_multiplier
+    source_file.write_bytes(gzip.compress(data_to_write))
+    file_version = bucket.upload_local_file(
+        str(source_file), 'gzipped_file', file_info={'b2-content-encoding': 'gzip'}
+    )
+    b2_api.download_file_by_id(file_id=file_version.id_).save_to(str(downloaded_compressed_file))
+    assert downloaded_compressed_file.read_bytes() == source_file.read_bytes()
+
+    decompressing_api, _ = authorize(b2_auth_data, B2HttpApiConfig(decode_content=True))
+    decompressing_api.download_file_by_id(file_id=file_version.id_).save_to(
+        str(downloaded_uncompressed_file)
+    )
+    assert downloaded_uncompressed_file.read_bytes() == data_to_write
 
 
 @pytest.fixture

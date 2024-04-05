@@ -41,8 +41,18 @@ class EmptyHasher:
 
 
 class AbstractDownloader(metaclass=B2TraceMetaAbstract):
+    """
+    Abstract class for downloaders.
+
+    :var REQUIRES_SEEKING: if True, the downloader requires the ability to seek in the file object.
+    :var SUPPORTS_DECODE_CONTENT: if True, the downloader supports decoded HTTP streams.
+        In practice, this means that the downloader can handle HTTP responses which already
+        have the content decoded per Content-Encoding and, more likely than not, of a different
+        length than requested.
+    """
 
     REQUIRES_SEEKING = True
+    SUPPORTS_DECODE_CONTENT = True
     DEFAULT_THREAD_POOL_CLASS = staticmethod(ThreadPoolExecutor)
     DEFAULT_ALIGN_FACTOR = 4096
 
@@ -103,6 +113,8 @@ class AbstractDownloader(metaclass=B2TraceMetaAbstract):
         """
         if self.REQUIRES_SEEKING and not allow_seeking:
             return False
+        if not self.SUPPORTS_DECODE_CONTENT and download_version.content_encoding and download_version.api.api_config.decode_content:
+            return False
         return True
 
     @abstractmethod
@@ -113,8 +125,16 @@ class AbstractDownloader(metaclass=B2TraceMetaAbstract):
         download_version: DownloadVersion,
         session: B2Session,
         encryption: EncryptionSetting | None = None,
-    ):
+    ) -> tuple[int, str]:
         """
-        @returns (bytes_read, actual_sha1)
+        Download target to a file-like object.
+
+        :param file: file-like object to write to
+        :param response: requests.Response of b2_download_url_by_* endpoint with the target object
+        :param download_version: DownloadVersion of an object being downloaded
+        :param session: B2Session to be used for downloading
+        :param encryption: optional Encryption setting
+        :return: (bytes_read, actual_sha1)
+            please note bytes_read may be different from bytes written to a file object if decode_content=True
         """
         pass
