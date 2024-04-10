@@ -581,11 +581,12 @@ def raw_api_test_helper(raw_api, should_cleanup_old_buckets):
         'isEnabled': False,
         'name': 'test-notification-rule',
         'objectNamePrefix': 'test/object/prefix/',
-        'targetConfiguration': {
-            'targetType': 'webhook',
-            'url': 'https://example.com/webhook',
-            'hmacSha256SigningSecret': 'a' * 32,
-        },
+        'targetConfiguration':
+            {
+                'targetType': 'webhook',
+                'url': 'https://example.com/webhook',
+                'hmacSha256SigningSecret': 'a' * 32,
+            },
     }
 
     notification_rules_response_list = raw_api.set_bucket_notification_rules(
@@ -602,8 +603,7 @@ def raw_api_test_helper(raw_api, should_cleanup_old_buckets):
             'targetConfiguration':
                 {
                     **notification_rule['targetConfiguration'],
-                    'customHeaders':
-                        None,
+                    'customHeaders': None,
                     'hmacSha256SigningSecret': 'a' * 32,
                 }
         }

@@ -59,7 +59,7 @@ from b2sdk._internal.account_info.upload_url_pool import UrlPoolAccountInfo
 # version & version utils
 
 from b2sdk.version import VERSION, USER_AGENT
-from b2sdk._internal.version_utils import rename_argument, rename_function
+from b2sdk._internal.version_utils import rename_argument, rename_function, FeaturePreviewWarning
 
 # utils
 
