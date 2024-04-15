@@ -9,6 +9,24 @@ upcoming release can be found in [changelog.d](changelog.d).
 
 <!-- towncrier release notes start -->
 
+## [2.1.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v2.1.0) - 2024-04-15
+
+
+### Changed
+
+- Use ParallelDownloader for small files instead of SimpleDownloader to avoid blocking on I/O.
+
+### Fixed
+
+- Fix `decode_content=True` causing an error when downloading tiny and large files.
+- Prevent errors due to the use of "seekable" download strategies for seekable, but not readable files.
+
+### Added
+
+- Add set&get Event Notification rules methods to Bucket API as part of Event Notifications feature Private Preview.
+  See https://www.backblaze.com/blog/announcing-event-notifications/ for details.
+
+
 ## [2.0.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v2.0.0) - 2024-04-02
 
 
