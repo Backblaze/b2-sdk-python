@@ -3242,3 +3242,42 @@ class TestEmptyListVersions(TestListVersions):
 
 class TestEmptyLs(TestLs):
     RAW_SIMULATOR_CLASS = EmptyListSimulator
+
+
+def test_bucket_notification_rules(bucket, b2api_simulator):
+    assert bucket.get_notification_rules() == []
+
+    notification_rule = {
+        "eventTypes": ["b2:ObjectCreated:*"],
+        "isEnabled": True,
+        "name": "test-rule",
+        "objectNamePrefix": "",
+        "targetConfiguration":
+            {
+                "customHeaders": [],
+                "targetType": "webhook",
+                "url": "https://example.com/webhook",
+            }
+    }
+
+    set_notification_rules = bucket.set_notification_rules([notification_rule])
+    assert set_notification_rules == bucket.get_notification_rules()
+    assert set_notification_rules == [
+        {
+            **notification_rule, "isSuspended": False,
+            "suspensionReason": ""
+        }
+    ]
+
+    b2api_simulator.bucket_id_to_bucket[bucket.id_].simulate_notification_rule_suspension(
+        notification_rule["name"], "simulated suspension"
+    )
+    assert bucket.get_notification_rules() == [
+        {
+            **notification_rule, "isSuspended": True,
+            "suspensionReason": "simulated suspension"
+        }
+    ]
+
+    assert bucket.set_notification_rules([]) == []
+    assert bucket.get_notification_rules() == []

@@ -194,3 +194,13 @@ class rename_function(AbstractDeprecator):
 class rename_method(rename_function):
     WHAT = 'method'
     ALTERNATIVE_DECORATOR = 'discourage_method'
+
+
+class FeaturePreviewWarning(FutureWarning):
+    """
+    Feature Preview Warning
+
+    Marks a feature, that is in "Feature Preview" state.
+    Such features are not yet fully stable and are subject to change or even outright removal.
+    Do not rely on them in production code.
+    """

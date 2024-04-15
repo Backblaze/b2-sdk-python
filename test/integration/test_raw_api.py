@@ -16,6 +16,8 @@ import re
 import sys
 import time
 import traceback
+from test.helpers import type_validator_factory
+from typing import List
 
 import pytest
 
@@ -33,13 +35,18 @@ from b2sdk._internal.file_lock import (
     RetentionMode,
     RetentionPeriod,
 )
-from b2sdk._internal.raw_api import ALL_CAPABILITIES, REALM_URLS, B2RawHTTPApi
+from b2sdk._internal.raw_api import (
+    ALL_CAPABILITIES,
+    REALM_URLS,
+    B2RawHTTPApi,
+    NotificationRuleResponse,
+)
 from b2sdk._internal.replication.setting import ReplicationConfiguration, ReplicationRule
 from b2sdk._internal.replication.types import ReplicationStatus
 from b2sdk._internal.utils import hex_sha1_of_stream
 
 
-# TODO: rewrite to separate test cases
+# TODO: rewrite to separate test cases after introduction of reusable bucket
 def test_raw_api(dont_cleanup_old_buckets):
     """
     Exercise the code in B2RawHTTPApi by making each call once, just
@@ -567,6 +574,44 @@ def raw_api_test_helper(raw_api, should_cleanup_old_buckets):
     with pytest.raises(Unauthorized):
         raw_api.delete_file_version(api_url, account_auth_token, file_id, file_name)
     raw_api.delete_file_version(api_url, account_auth_token, file_id, file_name, True)
+
+    print('b2_get_bucket_notification_rules & b2_set_bucket_notification_rules')
+    notification_rule = {
+        'eventTypes': ['b2:ObjectCreated:Copy'],
+        'isEnabled': False,
+        'name': 'test-notification-rule',
+        'objectNamePrefix': 'test/object/prefix/',
+        'targetConfiguration':
+            {
+                'targetType': 'webhook',
+                'url': 'https://example.com/webhook',
+                'hmacSha256SigningSecret': 'a' * 32,
+            },
+    }
+
+    notification_rules_response_list = raw_api.set_bucket_notification_rules(
+        api_url, account_auth_token, bucket_id, [notification_rule]
+    )
+    notification_rule_response_list_validate = type_validator_factory(
+        List[NotificationRuleResponse]
+    )
+    notification_rule_response_list_validate(notification_rules_response_list)
+    expected_notification_rule_response_list = [
+        {
+            **notification_rule, 'isSuspended': False,
+            'suspensionReason': '',
+            'targetConfiguration':
+                {
+                    **notification_rule['targetConfiguration'],
+                    'customHeaders': None,
+                    'hmacSha256SigningSecret': 'a' * 32,
+                }
+        }
+    ]
+    assert notification_rules_response_list == expected_notification_rule_response_list
+
+    assert raw_api.set_bucket_notification_rules(api_url, account_auth_token, bucket_id, []) == []
+    assert raw_api.get_bucket_notification_rules(api_url, account_auth_token, bucket_id) == []
 
     # Clean up this test.
     _clean_and_delete_bucket(raw_api, api_url, account_auth_token, account_id, bucket_id)

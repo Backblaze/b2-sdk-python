@@ -152,3 +152,38 @@ def apiver(request):
 def apiver_int(apiver):
     """Get apiver as an int, e.g. `2`."""
     return int(apiver[1:])
+
+
+@pytest.fixture
+def b2api():
+    from apiver_deps import (
+        B2Api,
+        B2HttpApiConfig,
+        RawSimulator,
+        StubAccountInfo,
+    )
+
+    account_info = StubAccountInfo()
+    api = B2Api(
+        account_info,
+        api_config=B2HttpApiConfig(_raw_api_class=RawSimulator),
+    )
+
+    simulator = api.session.raw_api
+    account_id, master_key = simulator.create_account()
+    api.authorize_account(
+        application_key_id=account_id,
+        application_key=master_key,
+        realm='production',
+    )
+    return api
+
+
+@pytest.fixture
+def b2api_simulator(b2api):
+    return b2api.session.raw_api
+
+
+@pytest.fixture
+def bucket(b2api):
+    return b2api.create_bucket('test-bucket', 'allPublic')

@@ -18,6 +18,7 @@ import re
 import threading
 import time
 from contextlib import contextmanager, suppress
+from typing import Iterable
 
 from requests.structures import CaseInsensitiveDict
 
@@ -40,6 +41,7 @@ from .exception import (
     MissingPart,
     NonExistentBucket,
     PartSha1Mismatch,
+    ResourceNotFound,
     SourceReplicationConflict,
     SSECKeyError,
     Unauthorized,
@@ -54,7 +56,14 @@ from .file_lock import (
 )
 from .file_version import UNVERIFIED_CHECKSUM_PREFIX
 from .http_constants import FILE_INFO_HEADER_PREFIX, HEX_DIGITS_AT_END
-from .raw_api import ALL_CAPABILITIES, AbstractRawApi, LifecycleRule, MetadataDirectiveMode
+from .raw_api import (
+    ALL_CAPABILITIES,
+    AbstractRawApi,
+    LifecycleRule,
+    MetadataDirectiveMode,
+    NotificationRule,
+    NotificationRuleResponse,
+)
 from .replication.setting import ReplicationConfiguration
 from .replication.types import ReplicationStatus
 from .stream.hashing import StreamWithHash
@@ -542,6 +551,7 @@ class BucketSimulator:
         self.bucket_info = bucket_info or {}
         self.cors_rules = cors_rules or []
         self.lifecycle_rules = lifecycle_rules or []
+        self._notification_rules = []
         self.options_set = options_set or set()
         self.revision = 1
         self.upload_url_counter = iter(range(200))
@@ -1160,6 +1170,44 @@ class BucketSimulator:
     def _next_file_id(self):
         return str(next(self.file_id_counter))
 
+    def get_notification_rules(self) -> list[NotificationRule]:
+        return self._notification_rules
+
+    def set_notification_rules(self,
+                               rules: Iterable[NotificationRule]) -> list[NotificationRuleResponse]:
+        old_rules_by_name = {rule["name"]: rule for rule in self._notification_rules}
+        new_rules: list[NotificationRuleResponse] = []
+        for rule in rules:
+            for field in ("isSuspended", "suspensionReason"):
+                rule.pop(field, None)
+            old_rule = old_rules_by_name.get(rule["name"], {"targetConfiguration": {}})
+            new_rule = {
+                **{
+                    "isSuspended": False,
+                    "suspensionReason": "",
+                },
+                **old_rule,
+                **rule,
+                "targetConfiguration":
+                    {
+                        **old_rule.get("targetConfiguration", {}),
+                        **rule.get("targetConfiguration", {}),
+                    },
+            }
+            new_rules.append(new_rule)
+        self._notification_rules = new_rules
+        return self._notification_rules
+
+    def simulate_notification_rule_suspension(
+        self, rule_name: str, reason: str, is_suspended: bool | None = None
+    ) -> None:
+        for rule in self._notification_rules:
+            if rule["name"] == rule_name:
+                rule["isSuspended"] = bool(reason) if is_suspended is None else is_suspended
+                rule["suspensionReason"] = reason
+                return
+        raise ResourceNotFound(f"Rule {rule_name} not found")
+
 
 class RawSimulator(AbstractRawApi):
     """
@@ -1235,6 +1283,8 @@ class RawSimulator(AbstractRawApi):
 
     def create_account(self):
         """
+        Simulate creating an account.
+
         Return (accountId, masterApplicationKey) for a newly created account.
         """
         # Pick the IDs for the account and the key
@@ -1973,3 +2023,21 @@ class RawSimulator(AbstractRawApi):
         if bucket_name not in self.bucket_name_to_bucket:
             raise NonExistentBucket(bucket_name)
         return self.bucket_name_to_bucket[bucket_name]
+
+    def set_bucket_notification_rules(
+        self, api_url: str, account_auth_token: str, bucket_id: str,
+        rules: Iterable[NotificationRule]
+    ):
+        bucket = self._get_bucket_by_id(bucket_id)
+        self._assert_account_auth(
+            api_url, account_auth_token, bucket.account_id, 'writeBucketNotifications'
+        )
+        return bucket.set_notification_rules(rules)
+
+    def get_bucket_notification_rules(self, api_url: str, account_auth_token: str,
+                                      bucket_id: str) -> list[NotificationRule]:
+        bucket = self._get_bucket_by_id(bucket_id)
+        self._assert_account_auth(
+            api_url, account_auth_token, bucket.account_id, 'readBucketNotifications'
+        )
+        return bucket.get_notification_rules()
