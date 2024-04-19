@@ -123,7 +123,7 @@ class NotificationTargetConfiguration(TypedDict):
     targetType: Literal['webhook']
     url: str
     customHeaders: NotRequired[list[NameValueDict] | None]
-    hmacSha256SigningSecret: NotRequired[str]
+    hmacSha256SigningSecret: NotRequired[str | None]
 
 
 EVENT_TYPE = Literal[
