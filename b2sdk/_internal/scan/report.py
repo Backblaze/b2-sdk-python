@@ -54,11 +54,12 @@ class ProgressReport:
         Perform a clean-up.
         """
         with self.lock:
-            if not self.no_progress:
-                self._print_line('', False)
-            self.closed = True
-            for warning in self.warnings:
-                self._print_line(warning, True)
+            if not self.closed:
+                if not self.no_progress:
+                    self._print_line('', False)
+                for warning in self.warnings:
+                    self._print_line(warning, True)
+                self.closed = True
 
     def __enter__(self):
         return self
