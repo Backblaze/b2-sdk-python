@@ -22,7 +22,7 @@ from b2sdk._internal.utils import fix_windows_path_limit
 class TestFolderTraversal:
     def test_flat_folder(self, tmp_path):
 
-        # Create a directory structure below with initial scannig point at tmp_path/dir:
+        # Create a directory structure below with initial scanning point at tmp_path/dir:
         # tmp_path
         # └── dir
         #     ├── file1.txt
@@ -47,7 +47,7 @@ class TestFolderTraversal:
 
     def test_folder_with_subfolders(self, tmp_path):
 
-        # Create a directory structure below with initial scannig point at tmp_path:
+        # Create a directory structure below with initial scanning point at tmp_path:
         # tmp_path
         # ├── dir1
         # │   ├── file1.txt
@@ -83,7 +83,7 @@ class TestFolderTraversal:
     )
     def test_folder_with_symlink_to_file(self, tmp_path):
 
-        # Create a directory structure below with initial scannig point at tmp_path:
+        # Create a directory structure below with initial scanning point at tmp_path:
         # tmp_path
         # ├── dir
         # │   └── file.txt
@@ -114,7 +114,7 @@ class TestFolderTraversal:
     @pytest.mark.timeout(5)
     def test_folder_with_circular_symlink(self, tmp_path):
 
-        # Create a directory structure below with initial scannig point at tmp_path:
+        # Create a directory structure below with initial scanning point at tmp_path:
         # tmp_path
         # ├── dir
         # │   └── file.txt
@@ -142,7 +142,7 @@ class TestFolderTraversal:
     @pytest.mark.timeout(5)
     def test_folder_with_symlink_to_parent(self, tmp_path):
 
-        # Create a directory structure below with the scannig point at tmp_path/parent/child/:
+        # Create a directory structure below with the scanning point at tmp_path/parent/child/:
         #   tmp_path
         #   ├── parent
         #   │   ├── child
