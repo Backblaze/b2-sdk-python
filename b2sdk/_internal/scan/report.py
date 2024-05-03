@@ -48,6 +48,7 @@ class ProgressReport:
         self._last_update_time = 0
         self._update_progress()
         self.warnings = []
+        self.errors_encountered = False
 
     def close(self):
         """
@@ -67,6 +68,14 @@ class ProgressReport:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
 
+    def has_errors_or_warnings(self) -> bool:
+        """
+        Check if there are any errors or warnings.
+
+        :return: True if there are any errors or warnings
+        """
+        return self.errors_encountered or bool(self.warnings)
+
     def error(self, message: str) -> None:
         """
         Print an error, gracefully interleaving it with a progress bar.
@@ -74,6 +83,7 @@ class ProgressReport:
         :param message: an error message
         """
         self.print_completion(message)
+        self.errors_encountered = True
 
     def print_completion(self, message: str) -> None:
         """
