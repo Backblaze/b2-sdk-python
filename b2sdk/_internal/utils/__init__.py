@@ -230,7 +230,10 @@ def validate_b2_file_name(name):
     """
     if not isinstance(name, str):
         raise ValueError('file name must be a string, not bytes')
-    name_utf8 = name.encode('utf-8')
+    try:
+        name_utf8 = name.encode('utf-8')
+    except UnicodeEncodeError:
+        raise ValueError('file name must be valid Unicode, check locale')
     if len(name_utf8) < 1:
         raise ValueError('file name too short (0 utf-8 bytes)')
     if 1000 < len(name_utf8):

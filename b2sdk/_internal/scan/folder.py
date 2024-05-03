@@ -18,7 +18,7 @@ from abc import ABCMeta, abstractmethod
 from pathlib import Path
 from typing import Iterator
 
-from ..utils import fix_windows_path_limit, get_file_mtime, is_file_readable
+from ..utils import fix_windows_path_limit, get_file_mtime, is_file_readable, validate_b2_file_name
 from .exception import (
     EmptyDirectory,
     EnvironmentEncodingError,
@@ -251,6 +251,13 @@ class LocalFolder(AbstractFolder):
 
             local_path = local_dir / name
             relative_file_path = join_b2_path(relative_dir_path, name)
+
+            try:
+                validate_b2_file_name(name)
+            except ValueError as e:
+                if reporter is not None:
+                    reporter.invalid_filename(str(local_path), str(e))
+                continue
 
             # Skip broken symlinks or other inaccessible files
             if not is_file_readable(str(local_path), reporter):
