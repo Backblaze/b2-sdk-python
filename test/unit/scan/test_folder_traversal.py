@@ -52,20 +52,21 @@ class TestFolderTraversal:
         platform.system() == 'Windows',
         reason="Windows doesn't allow / or \\ in filenames",
     )
-    def test_invalid_filename(self, tmp_path):
+    def test_invalid_name(self, tmp_path):
 
         # Create a directory structure below with initial scanning point at tmp_path/dir:
         # tmp_path
         # └── dir
         #     ├── file1.txt
-        #     ├── file2.txt
+        #     ├── subdir
+        #     │   └── file2.txt
         #     ├── file\bad.txt
         #     └── file[DEL]bad.txt
 
-        (tmp_path / "dir").mkdir(parents=True)
+        (tmp_path / "dir" / "subdir").mkdir(parents=True)
 
         (tmp_path / "dir" / "file1.txt").write_text("content1")
-        (tmp_path / "dir" / "file2.txt").write_text("content2")
+        (tmp_path / "dir" / "subdir" / "file2.txt").write_text("content2")
         (tmp_path / "dir" / "file\\bad.txt").write_text("bad1")
         (tmp_path / "dir" / "file\x7fbad.txt").write_text("bad2")
 
@@ -75,18 +76,16 @@ class TestFolderTraversal:
         absolute_paths = [path.absolute_path for path in list(local_paths)]
 
         assert reporter.has_errors_or_warnings()
-        assert len(reporter.warnings) == 2
-        assert reporter.warnings[
-            0
-        ] == f"WARNING: {tmp_path}/dir/file\\bad.txt has an invalid filename (file names must not contain '\\'). Skipping."
-        assert reporter.warnings[
-            1
-        ] == f"WARNING: {tmp_path}/dir/file\x7fbad.txt has an invalid filename (file names must not contain DEL). Skipping."
+        assert isinstance(reporter.warnings, list)
+        assert sorted(reporter.warnings) == [
+            f"WARNING: '{tmp_path}/dir/file\\\\bad.txt' path contains invalid name (file names must not contain '\\'). Skipping.",
+            f"WARNING: '{tmp_path}/dir/file\\x7fbad.txt' path contains invalid name (file names must not contain DEL). Skipping.",
+        ]
         reporter.close()
 
         assert absolute_paths == [
             fix_windows_path_limit(str(tmp_path / "dir" / "file1.txt")),
-            fix_windows_path_limit(str(tmp_path / "dir" / "file2.txt")),
+            fix_windows_path_limit(str(tmp_path / "dir" / "subdir" / "file2.txt")),
         ]
 
     @pytest.mark.skipif(
@@ -99,14 +98,17 @@ class TestFolderTraversal:
         # tmp_path
         # └── dir
         #     ├── file1.txt
-        #     └── b"\xed\xa0\x80.txt" (invalid utf-8 filename)
+        #     └── b'\xbf\xf3\xb3w.txt' (invalid utf-8 filename)
 
         (tmp_path / "dir").mkdir(parents=True)
         (tmp_path / "dir" / "file1.txt").write_text("content1")
 
-        invalid_utf8_path = os.path.join(bytes(tmp_path), b"dir", b"\xed\xa0\x80.txt")
-        with open(invalid_utf8_path, "wb") as f:
-            f.write(b"content2")
+        try:
+            invalid_utf8_path = os.path.join(bytes(tmp_path), b"dir", 'żółw.txt'.encode("cp1250"))
+            with open(invalid_utf8_path, "wb") as f:
+                f.write(b"content2")
+        except OSError:
+            pytest.skip("Cannot create invalid UTF-8 filename on this platform")
 
         reporter = ProgressReport(sys.stdout, False)
         folder = LocalFolder(str(tmp_path / "dir"))
@@ -114,10 +116,9 @@ class TestFolderTraversal:
         absolute_paths = [path.absolute_path for path in list(local_paths)]
 
         assert reporter.has_errors_or_warnings()
-        assert len(reporter.warnings) == 1
-        assert reporter.warnings[
-            0
-        ] == f"WARNING: {tmp_path}/dir/\udced\udca0\udc80.txt has an invalid filename (file name must be valid Unicode, check locale). Skipping."
+        assert reporter.warnings == [
+            f"WARNING: '{tmp_path}/dir/\xbf\xf3\xb3w.txt' path contains invalid name (file name must be valid Unicode, check locale). Skipping."
+        ]
         reporter.close()
 
         assert absolute_paths == [
@@ -148,10 +149,9 @@ class TestFolderTraversal:
         absolute_paths = [path.absolute_path for path in list(local_paths)]
 
         assert reporter.has_errors_or_warnings()
-        assert len(reporter.warnings) == 1
-        assert reporter.warnings[
-            0
-        ] == f"WARNING: {tmp_path}/dir/dir\\bad has an invalid filename (file names must not contain '\\'). Skipping."
+        assert reporter.warnings == [
+            f"WARNING: '{tmp_path}/dir/dir\\\\bad' path contains invalid name (file names must not contain '\\'). Skipping."
+        ]
         reporter.close()
 
         assert absolute_paths == [

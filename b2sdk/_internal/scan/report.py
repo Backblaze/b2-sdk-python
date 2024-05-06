@@ -202,13 +202,13 @@ class ProgressReport:
             f'WARNING: {path} is a circular symlink, which was already visited. Skipping.'
         )
 
-    def invalid_filename(self, path: str, error: str) -> None:
+    def invalid_name(self, path: str, error: str) -> None:
         """
         Add an invalid filename error message to the list of warnings.
 
         :param path: file path
         """
-        self.warnings.append(f'WARNING: {path} has an invalid filename ({error}). Skipping.')
+        self.warnings.append(f'WARNING: {path!r} path contains invalid name ({error}). Skipping.')
 
 
 def sample_report_run():
