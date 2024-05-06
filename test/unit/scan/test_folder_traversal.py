@@ -88,10 +88,6 @@ class TestFolderTraversal:
             fix_windows_path_limit(str(tmp_path / "dir" / "subdir" / "file2.txt")),
         ]
 
-    @pytest.mark.skipif(
-        platform.system() in ('Windows', 'Darwin'),
-        reason="Windows and macOS have Unicode filesystems",
-    )
     def test_invalid_unicode_filename(self, tmp_path):
 
         # Create a directory structure below with initial scanning point at tmp_path/dir:
