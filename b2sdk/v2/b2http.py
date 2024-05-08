@@ -17,7 +17,7 @@ from .exception import BucketIdNotFound
 # Overridden to retain old-style BadRequest exception in case of a bad bucket id
 class B2Http(v3.B2Http):
     @classmethod
-    def _translate_error(cls, fcn, post_params=None):
+    def _translate_errors(cls, fcn, post_params=None):
         try:
             return super()._translate_errors(fcn, post_params)
         except v3BucketIdNotFound as e:
