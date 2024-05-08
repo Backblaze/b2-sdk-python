@@ -7,7 +7,13 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
-def test_bucket_notification_rules(bucket):
+import pytest
+
+
+def test_bucket_notification_rules(bucket, b2_api):
+    if 'writeBucketNotifications' not in b2_api.account_info.get_allowed()['capabilities']:
+        pytest.skip('Test account does not have writeBucketNotifications capability')
+
     assert bucket.set_notification_rules([]) == []
     assert bucket.get_notification_rules() == []
 
