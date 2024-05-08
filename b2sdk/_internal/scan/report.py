@@ -16,6 +16,7 @@ from dataclasses import dataclass
 from io import TextIOWrapper
 
 from ..utils import format_and_scale_number
+from ..utils.escape import escape_control_chars
 
 logger = logging.getLogger(__name__)
 
@@ -178,7 +179,9 @@ class ProgressReport:
 
         :param path: file path
         """
-        self.warnings.append(f'WARNING: {path} could not be accessed (broken symlink?)')
+        self.warnings.append(
+            f'WARNING: {escape_control_chars(path)} could not be accessed (broken symlink?)'
+        )
 
     def local_permission_error(self, path: str) -> None:
         """
@@ -186,7 +189,9 @@ class ProgressReport:
 
         :param path: file path
         """
-        self.warnings.append(f'WARNING: {path} could not be accessed (no permissions to read?)')
+        self.warnings.append(
+            f'WARNING: {escape_control_chars(path)} could not be accessed (no permissions to read?)'
+        )
 
     def symlink_skipped(self, path: str) -> None:
         pass
@@ -198,7 +203,7 @@ class ProgressReport:
         :param path: file path
         """
         self.warnings.append(
-            f'WARNING: {path} is a circular symlink, which was already visited. Skipping.'
+            f'WARNING: {escape_control_chars(path)} is a circular symlink, which was already visited. Skipping.'
         )
 
     def invalid_name(self, path: str, error: str) -> None:
@@ -207,7 +212,9 @@ class ProgressReport:
 
         :param path: file path
         """
-        self.warnings.append(f'WARNING: {path!r} path contains invalid name ({error}). Skipping.')
+        self.warnings.append(
+            f'WARNING: {escape_control_chars(path)} path contains invalid name ({error}). Skipping.'
+        )
 
 
 def sample_report_run():

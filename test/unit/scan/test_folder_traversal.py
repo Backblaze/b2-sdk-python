@@ -78,7 +78,7 @@ class TestFolderTraversal:
         assert reporter.has_errors_or_warnings()
         assert isinstance(reporter.warnings, list)
         assert sorted(reporter.warnings) == [
-            f"WARNING: '{tmp_path}/dir/file\\\\bad.txt' path contains invalid name (file names must not contain '\\'). Skipping.",
+            f"WARNING: '{tmp_path}/dir/file\\bad.txt' path contains invalid name (file names must not contain '\\'). Skipping.",
             f"WARNING: '{tmp_path}/dir/file\\x7fbad.txt' path contains invalid name (file names must not contain DEL). Skipping.",
         ]
         reporter.close()
@@ -146,7 +146,7 @@ class TestFolderTraversal:
 
         assert reporter.has_errors_or_warnings()
         assert reporter.warnings == [
-            f"WARNING: '{tmp_path}/dir/dir\\\\bad' path contains invalid name (file names must not contain '\\'). Skipping."
+            f"WARNING: '{tmp_path}/dir/dir\\bad' path contains invalid name (file names must not contain '\\'). Skipping."
         ]
         reporter.close()
 
