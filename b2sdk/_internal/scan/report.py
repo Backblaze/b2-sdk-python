@@ -16,6 +16,7 @@ from dataclasses import dataclass
 from io import TextIOWrapper
 
 from ..utils import format_and_scale_number
+from ..utils.escape import escape_control_chars
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +49,7 @@ class ProgressReport:
         self._last_update_time = 0
         self._update_progress()
         self.warnings = []
+        self.errors_encountered = False
 
     def close(self):
         """
@@ -66,6 +68,14 @@ class ProgressReport:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
 
+    def has_errors_or_warnings(self) -> bool:
+        """
+        Check if there are any errors or warnings.
+
+        :return: True if there are any errors or warnings
+        """
+        return self.errors_encountered or bool(self.warnings)
+
     def error(self, message: str) -> None:
         """
         Print an error, gracefully interleaving it with a progress bar.
@@ -73,6 +83,7 @@ class ProgressReport:
         :param message: an error message
         """
         self.print_completion(message)
+        self.errors_encountered = True
 
     def print_completion(self, message: str) -> None:
         """
@@ -168,7 +179,9 @@ class ProgressReport:
 
         :param path: file path
         """
-        self.warnings.append(f'WARNING: {path} could not be accessed (broken symlink?)')
+        self.warnings.append(
+            f'WARNING: {escape_control_chars(path)} could not be accessed (broken symlink?)'
+        )
 
     def local_permission_error(self, path: str) -> None:
         """
@@ -176,7 +189,9 @@ class ProgressReport:
 
         :param path: file path
         """
-        self.warnings.append(f'WARNING: {path} could not be accessed (no permissions to read?)')
+        self.warnings.append(
+            f'WARNING: {escape_control_chars(path)} could not be accessed (no permissions to read?)'
+        )
 
     def symlink_skipped(self, path: str) -> None:
         pass
@@ -188,7 +203,17 @@ class ProgressReport:
         :param path: file path
         """
         self.warnings.append(
-            f'WARNING: {path} is a circular symlink, which was already visited. Skipping.'
+            f'WARNING: {escape_control_chars(path)} is a circular symlink, which was already visited. Skipping.'
+        )
+
+    def invalid_name(self, path: str, error: str) -> None:
+        """
+        Add an invalid filename error message to the list of warnings.
+
+        :param path: file path
+        """
+        self.warnings.append(
+            f'WARNING: {escape_control_chars(path)} path contains invalid name ({error}). Skipping.'
         )
 
 

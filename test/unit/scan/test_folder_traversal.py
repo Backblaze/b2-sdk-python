@@ -9,20 +9,25 @@
 ######################################################################
 from __future__ import annotations
 
+import codecs
+import os
 import platform
+import re
+import sys
 from unittest.mock import MagicMock
 
 import pytest
 
 from b2sdk._internal.scan.folder import LocalFolder
 from b2sdk._internal.scan.policies import ScanPoliciesManager
+from b2sdk._internal.scan.report import ProgressReport
 from b2sdk._internal.utils import fix_windows_path_limit
 
 
 class TestFolderTraversal:
     def test_flat_folder(self, tmp_path):
 
-        # Create a directory structure below with initial scannig point at tmp_path/dir:
+        # Create a directory structure below with initial scanning point at tmp_path/dir:
         # tmp_path
         # └── dir
         #     ├── file1.txt
@@ -45,9 +50,128 @@ class TestFolderTraversal:
             fix_windows_path_limit(str(tmp_path / "dir" / "file3.txt")),
         ]
 
+    @pytest.mark.skipif(
+        platform.system() == 'Windows',
+        reason="Windows doesn't allow / or \\ in filenames",
+    )
+    def test_invalid_name(self, tmp_path):
+
+        # Create a directory structure below with initial scanning point at tmp_path/dir:
+        # tmp_path
+        # └── dir
+        #     ├── file1.txt
+        #     ├── subdir
+        #     │   └── file2.txt
+        #     ├── file\bad.txt
+        #     └── file[DEL]bad.txt
+
+        (tmp_path / "dir" / "subdir").mkdir(parents=True)
+
+        (tmp_path / "dir" / "file1.txt").write_text("content1")
+        (tmp_path / "dir" / "subdir" / "file2.txt").write_text("content2")
+        (tmp_path / "dir" / "file\\bad.txt").write_text("bad1")
+        (tmp_path / "dir" / "file\x7fbad.txt").write_text("bad2")
+
+        reporter = ProgressReport(sys.stdout, False)
+        folder = LocalFolder(str(tmp_path / "dir"))
+        local_paths = folder.all_files(reporter=reporter)
+        absolute_paths = [path.absolute_path for path in list(local_paths)]
+
+        assert reporter.has_errors_or_warnings()
+        assert isinstance(reporter.warnings, list)
+        assert sorted(reporter.warnings) == [
+            f"WARNING: '{tmp_path}/dir/file\\bad.txt' path contains invalid name (file names must not contain '\\'). Skipping.",
+            f"WARNING: '{tmp_path}/dir/file\\x7fbad.txt' path contains invalid name (file names must not contain DEL). Skipping.",
+        ]
+        reporter.close()
+
+        assert absolute_paths == [
+            fix_windows_path_limit(str(tmp_path / "dir" / "file1.txt")),
+            fix_windows_path_limit(str(tmp_path / "dir" / "subdir" / "file2.txt")),
+        ]
+
+    @pytest.mark.skipif(
+        platform.system() == 'Windows' and platform.python_implementation() == 'PyPy',
+        reason=
+        "PyPy on Windows force-decodes non-UTF-8 filenames, which makes it impossible to test this case"
+    )
+    def test_invalid_unicode_filename(self, tmp_path):
+        # Create a directory structure below with initial scanning point at tmp_path/dir:
+        # tmp_path
+        # └── dir
+        #     ├── file1.txt
+        #     └── XXX (invalid utf-8 filename)
+
+        (tmp_path / "dir").mkdir(parents=True)
+        (tmp_path / "dir" / "file1.txt").write_text("content1")
+
+        foreign_encoding = "euc_jp"
+        # test sanity check
+        assert codecs.lookup(foreign_encoding).name != codecs.lookup(
+            sys.getfilesystemencoding()
+        ).name
+
+        invalid_utf8_path = os.path.join(bytes(tmp_path), b"dir", 'てすと'.encode(foreign_encoding))
+        try:
+            with open(invalid_utf8_path, "wb") as f:
+                f.write(b"content2")
+        except (OSError, UnicodeDecodeError):
+            pytest.skip("Cannot create invalid UTF-8 filename on this platform")
+
+        reporter = ProgressReport(sys.stdout, False)
+        folder = LocalFolder(str(tmp_path / "dir"))
+        local_paths = folder.all_files(reporter=reporter)
+        absolute_paths = [path.absolute_path for path in list(local_paths)]
+        assert absolute_paths == [
+            fix_windows_path_limit(str(tmp_path / "dir" / "file1.txt")),
+        ]
+
+        assert reporter.has_errors_or_warnings()
+        assert re.match(
+            r"WARNING: '.+/dir/.+' path contains invalid name "
+            r"\(file name must be valid Unicode, check locale\)\. Skipping\.",
+            reporter.warnings[0],
+        )
+        assert len(reporter.warnings) == 1
+
+        reporter.close()
+
+    @pytest.mark.skipif(
+        platform.system() == 'Windows',
+        reason="Windows doesn't allow / or \\ in filenames",
+    )
+    def test_invalid_directory_name(self, tmp_path):
+
+        # Create a directory structure below with initial scanning point at tmp_path/dir:
+        # tmp_path
+        # └── dir
+        #     ├── file1.txt
+        #     └── dir\bad
+        #         └── file2.txt
+
+        (tmp_path / "dir").mkdir(parents=True)
+        (tmp_path / "dir" / "file1.txt").write_text("content1")
+        (tmp_path / "dir" / "dir\\bad").mkdir(parents=True)
+        (tmp_path / "dir" / "dir\\bad" / "file2.txt").write_text("content2")
+
+        reporter = ProgressReport(sys.stdout, False)
+        folder = LocalFolder(str(tmp_path / "dir"))
+        local_paths = folder.all_files(reporter=reporter)
+        absolute_paths = [path.absolute_path for path in list(local_paths)]
+
+        assert reporter.has_errors_or_warnings()
+        assert reporter.warnings == [
+            f"WARNING: '{tmp_path}/dir/dir\\bad' path contains invalid name (file names must not contain '\\'). Skipping."
+        ]
+        reporter.close()
+
+        assert absolute_paths == [
+            fix_windows_path_limit(str(tmp_path / "dir" / "file1.txt")),
+        ]
+
     def test_folder_with_subfolders(self, tmp_path):
 
-        # Create a directory structure below with initial scannig point at tmp_path:
+        # Create a directory structure below with initial scanning point at tmp_path:
         # tmp_path
         # ├── dir1
         # │   ├── file1.txt
@@ -83,7 +207,7 @@ class TestFolderTraversal:
     )
     def test_folder_with_symlink_to_file(self, tmp_path):
 
-        # Create a directory structure below with initial scannig point at tmp_path:
+        # Create a directory structure below with initial scanning point at tmp_path:
         # tmp_path
         # ├── dir
         # │   └── file.txt
@@ -114,7 +238,7 @@ class TestFolderTraversal:
     @pytest.mark.timeout(5)
     def test_folder_with_circular_symlink(self, tmp_path):
 
-        # Create a directory structure below with initial scannig point at tmp_path:
+        # Create a directory structure below with initial scanning point at tmp_path:
         # tmp_path
         # ├── dir
         # │   └── file.txt
@@ -142,7 +266,7 @@ class TestFolderTraversal:
     @pytest.mark.timeout(5)
     def test_folder_with_symlink_to_parent(self, tmp_path):
 
-        # Create a directory structure below with the scannig point at tmp_path/parent/child/:
+        # Create a directory structure below with the scanning point at tmp_path/parent/child/:
         #   tmp_path
         #   ├── parent
         #   │   ├── child
