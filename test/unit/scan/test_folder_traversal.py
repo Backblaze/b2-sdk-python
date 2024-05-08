@@ -9,8 +9,10 @@
 ######################################################################
 from __future__ import annotations
 
+import codecs
 import os
 import platform
+import re
 import sys
 from unittest.mock import MagicMock
 
@@ -88,38 +90,51 @@ class TestFolderTraversal:
             fix_windows_path_limit(str(tmp_path / "dir" / "subdir" / "file2.txt")),
         ]
 
+    @pytest.mark.skipif(
+        platform.system() == 'Windows' and platform.python_implementation() == 'PyPy',
+        reason=
+        "PyPy on Windows force-decodes non-UTF-8 filenames, which makes it impossible to test this case"
+    )
     def test_invalid_unicode_filename(self, tmp_path):
-
         # Create a directory structure below with initial scanning point at tmp_path/dir:
         # tmp_path
         # └── dir
         #     ├── file1.txt
-        #     └── b'\xbf\xf3\xb3w.txt' (invalid utf-8 filename)
+        #     └── XXX (invalid utf-8 filename)
 
         (tmp_path / "dir").mkdir(parents=True)
         (tmp_path / "dir" / "file1.txt").write_text("content1")
 
+        foreign_encoding = "euc_jp"
+        # test sanity check
+        assert codecs.lookup(foreign_encoding).name != codecs.lookup(
+            sys.getfilesystemencoding()
+        ).name
+
+        invalid_utf8_path = os.path.join(bytes(tmp_path), b"dir", 'てすと'.encode(foreign_encoding))
         try:
-            invalid_utf8_path = os.path.join(bytes(tmp_path), b"dir", 'żółw.txt'.encode("cp1250"))
             with open(invalid_utf8_path, "wb") as f:
                 f.write(b"content2")
-        except OSError:
+        except (OSError, UnicodeDecodeError):
             pytest.skip("Cannot create invalid UTF-8 filename on this platform")
 
         reporter = ProgressReport(sys.stdout, False)
         folder = LocalFolder(str(tmp_path / "dir"))
         local_paths = folder.all_files(reporter=reporter)
         absolute_paths = [path.absolute_path for path in list(local_paths)]
-
-        assert reporter.has_errors_or_warnings()
-        assert reporter.warnings == [
-            f"WARNING: '{tmp_path}/dir/\xbf\xf3\xb3w.txt' path contains invalid name (file name must be valid Unicode, check locale). Skipping."
-        ]
-        reporter.close()
-
         assert absolute_paths == [
             fix_windows_path_limit(str(tmp_path / "dir" / "file1.txt")),
         ]
+
+        assert reporter.has_errors_or_warnings()
+        assert re.match(
+            r"WARNING: '.+/dir/.+' path contains invalid name "
+            r"\(file name must be valid Unicode, check locale\)\. Skipping\.",
+            reporter.warnings[0],
+        )
+        assert len(reporter.warnings) == 1
+
+        reporter.close()
 
     @pytest.mark.skipif(
         platform.system() == 'Windows',
