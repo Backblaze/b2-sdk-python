@@ -9,6 +9,19 @@ upcoming release can be found in [changelog.d](changelog.d).
 
 <!-- towncrier release notes start -->
 
+## [2.2.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v2.2.0) - 2024-05-08
+
+### Added
+
+- Add `has_errors_or_warnings` method to `ProgressReport` class.
+
+### Fixed
+
+- Ensure `b2sdk.v2.b2http` emits `b2sdk.v2.BucketIdNotFound` exception instead of `b2sdk._v3.BucketIdNotFound`. ([#437](https://github.com/Backblaze/b2-sdk-python/issues/437))
+- Ensure `unprintable_to_hex` and `unprintable_to_hex` return empty string (instead of `None`) if empty string was supplied as argument.
+- Skip files with invalid filenames when scanning directories (for `sync`, ...) instead of raising an exception.
+
+
 ## [2.1.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v2.1.0) - 2024-04-15
 
 

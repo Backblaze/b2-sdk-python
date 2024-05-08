@@ -1,1 +1,0 @@
-Report and skip invalid filenames found when scanning directories (for `sync`, ...).
