@@ -583,6 +583,25 @@ def raw_api_test_helper(raw_api, should_cleanup_old_buckets):
     raw_api.delete_file_version(api_url, account_auth_token, file_id, file_name, True)
 
     print('b2_get_bucket_notification_rules & b2_set_bucket_notification_rules')
+    try:
+        _subtest_bucket_notification_rules(
+            raw_api, auth_dict, api_url, account_auth_token, bucket_id
+        )
+    except pytest.skip.Exception as e:
+        print(e)
+
+    # Clean up this test.
+    _clean_and_delete_bucket(raw_api, api_url, account_auth_token, account_id, bucket_id)
+
+    if should_cleanup_old_buckets:
+        # Clean up from old tests. Empty and delete any buckets more than an hour old.
+        _cleanup_old_buckets(raw_api, auth_dict, bucket_list_dict)
+
+
+def _subtest_bucket_notification_rules(raw_api, auth_dict, api_url, account_auth_token, bucket_id):
+    if 'writeBucketNotifications' not in auth_dict['allowed']['capabilities']:
+        pytest.skip('Test account does not have writeBucketNotifications capability')
+
     notification_rule = {
         'eventTypes': ['b2:ObjectCreated:Copy'],
         'isEnabled': False,
@@ -619,13 +638,6 @@ def raw_api_test_helper(raw_api, should_cleanup_old_buckets):
 
     assert raw_api.set_bucket_notification_rules(api_url, account_auth_token, bucket_id, []) == []
     assert raw_api.get_bucket_notification_rules(api_url, account_auth_token, bucket_id) == []
-
-    # Clean up this test.
-    _clean_and_delete_bucket(raw_api, api_url, account_auth_token, account_id, bucket_id)
-
-    if should_cleanup_old_buckets:
-        # Clean up from old tests. Empty and delete any buckets more than an hour old.
-        _cleanup_old_buckets(raw_api, auth_dict, bucket_list_dict)
 
 
 def cleanup_old_buckets():
