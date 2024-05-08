@@ -38,24 +38,24 @@ from b2sdk._internal.b2http import setlocale
 from ..test_base import TestBase
 
 
-class TestTranslateErrors(TestBase):
+class TestTranslateErrors:
     def test_ok(self):
         response = MagicMock()
         response.status_code = 200
         actual = B2Http._translate_errors(lambda: response)
-        self.assertIs(response, actual)
+        assert response == actual
 
     def test_partial_content(self):
         response = MagicMock()
         response.status_code = 206
         actual = B2Http._translate_errors(lambda: response)
-        self.assertIs(response, actual)
+        assert response == actual
 
     def test_b2_error(self):
         response = MagicMock()
         response.status_code = 503
         response.content = b'{"status": 503, "code": "server_busy", "message": "busy"}'
-        with self.assertRaises(ServiceError):
+        with pytest.raises(ServiceError):
             B2Http._translate_errors(lambda: response)
 
     def test_broken_pipe(self):
@@ -66,7 +66,7 @@ class TestTranslateErrors(TestBase):
                 )
             )
 
-        with self.assertRaises(BrokenPipe):
+        with pytest.raises(BrokenPipe):
             B2Http._translate_errors(fcn)
 
     def test_unknown_host(self):
@@ -77,14 +77,14 @@ class TestTranslateErrors(TestBase):
                 )
             )
 
-        with self.assertRaises(UnknownHost):
+        with pytest.raises(UnknownHost):
             B2Http._translate_errors(fcn)
 
     def test_connection_error(self):
         def fcn():
             raise requests.ConnectionError('a message')
 
-        with self.assertRaises(B2ConnectionError):
+        with pytest.raises(B2ConnectionError):
             B2Http._translate_errors(fcn)
 
     def test_connection_reset(self):
@@ -94,14 +94,14 @@ class TestTranslateErrors(TestBase):
         def fcn():
             raise SysCallError('(104, ECONNRESET)')
 
-        with self.assertRaises(ConnectionReset):
+        with pytest.raises(ConnectionReset):
             B2Http._translate_errors(fcn)
 
     def test_unknown_error(self):
         def fcn():
             raise Exception('a message')
 
-        with self.assertRaises(UnknownError):
+        with pytest.raises(UnknownError):
             B2Http._translate_errors(fcn)
 
     def test_too_many_requests(self):
@@ -109,7 +109,7 @@ class TestTranslateErrors(TestBase):
         response.status_code = 429
         response.headers = {'retry-after': 1}
         response.content = b'{"status": 429, "code": "Too Many requests", "message": "retry after some time"}'
-        with self.assertRaises(TooManyRequests):
+        with pytest.raises(TooManyRequests):
             B2Http._translate_errors(lambda: response)
 
     def test_invalid_json(self):
@@ -129,7 +129,7 @@ class TestTranslateErrors(TestBase):
         response.content = b'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
         response.url = 'https://s3.us-west-000.backblazeb2.com'
 
-        with self.assertRaises(PotentialS3EndpointPassedAsRealm):
+        with pytest.raises(PotentialS3EndpointPassedAsRealm):
             B2Http._translate_errors(lambda: response)
 
 
