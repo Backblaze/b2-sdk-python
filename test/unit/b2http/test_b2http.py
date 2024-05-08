@@ -132,6 +132,16 @@ class TestTranslateErrors:
         with pytest.raises(PotentialS3EndpointPassedAsRealm):
             B2Http._translate_errors(lambda: response)
 
+    @pytest.mark.apiver(to_ver=2)
+    def test_bucket_id_not_found(self):
+        from b2sdk.v2.exception import BucketIdNotFound, v3BucketIdNotFound
+
+        def fcn():
+            raise v3BucketIdNotFound('bucket_id')
+
+        with pytest.raises(BucketIdNotFound):
+            B2Http._translate_errors(fcn)
+
 
 def test_b2_error__nginx_html():
     """
