@@ -8,6 +8,8 @@
 #
 ######################################################################
 
+from __future__ import annotations
+
 import re
 import shlex
 
@@ -15,44 +17,40 @@ import shlex
 UNPRINTABLE_PATTERN = re.compile(r'[\x00-\x08\x0e-\x1f\x7f-\x9f]')
 
 
-def unprintable_to_hex(s):
+def unprintable_to_hex(s: str) -> str:
     """
     Replace unprintable chars in string with a hex representation.
 
-    :param string: an arbitrary string, possibly with unprintable characters.
+    :param s: an arbitrary string, possibly with unprintable characters.
     :return: the string, with unprintable characters changed to hex (e.g., "\x07")
-
     """
 
     def hexify(match):
-        return fr'\x{ord(match.group()):02x}'
+        return rf"\x{ord(match.group()):02x}"
 
     if s:
         return UNPRINTABLE_PATTERN.sub(hexify, s)
-    return None
+    return s
 
 
-def escape_control_chars(s):
+def escape_control_chars(s: str) -> str:
     """
     Replace unprintable chars in string with a hex representation AND shell quotes the string.
 
-    :param string: an arbitrary string, possibly with unprintable characters.
+    :param s: an arbitrary string, possibly with unprintable characters.
     :return: the string, with unprintable characters changed to hex (e.g., "\x07")
-
     """
     if s:
         return shlex.quote(unprintable_to_hex(s))
-    return None
+    return s
 
 
-def substitute_control_chars(s):
+def substitute_control_chars(s: str) -> tuple[str, bool]:
     """
     Replace unprintable chars in string with � unicode char
 
-    :param string: an arbitrary string, possibly with unprintable characters.
+    :param s: an arbitrary string, possibly with unprintable characters.
     :return: tuple of the string with � replacements made and boolean indicated if chars were replaced
-
     """
-    match_result = UNPRINTABLE_PATTERN.search(s)
-    s = UNPRINTABLE_PATTERN.sub('�', s)
-    return (s, match_result is not None)
+    new_value = UNPRINTABLE_PATTERN.sub("�", s)
+    return new_value, new_value != s
