@@ -9,6 +9,14 @@ upcoming release can be found in [changelog.d](changelog.d).
 
 <!-- towncrier release notes start -->
 
+## [2.2.1](https://github.com/Backblaze/b2-sdk-python/releases/tag/v2.2.1) - 2024-05-09
+
+
+### Fixed
+
+- Fix `__str__` of `b2sdk.v2.BucketIdNotFound` to return full error message and not just missing bucket ID value.
+
+
 ## [2.2.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v2.2.0) - 2024-05-08
 
 ### Added
