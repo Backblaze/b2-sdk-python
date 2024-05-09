@@ -23,4 +23,4 @@ class BucketIdNotFound(v3BucketIdNotFound, BadRequest):
         self.code = 'bad_bucket_id'
 
     def __str__(self):
-        return super(BadRequest, self).__str__()
+        return BadRequest.__str__(self)

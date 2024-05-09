@@ -139,8 +139,10 @@ class TestTranslateErrors:
         def fcn():
             raise v3BucketIdNotFound('bucket_id')
 
-        with pytest.raises(BucketIdNotFound):
+        with pytest.raises(BucketIdNotFound) as exc_info:
             B2Http._translate_errors(fcn)
+
+        assert str(exc_info.value) == 'Bucket with id=bucket_id not found (bad_bucket_id)'
 
 
 def test_b2_error__nginx_html():
