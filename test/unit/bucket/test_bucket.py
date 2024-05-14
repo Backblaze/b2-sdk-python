@@ -234,6 +234,65 @@ def bucket_ls(bucket, *args, show_versions=False, **kwargs):
     return bucket.ls(*args, **ls_all_versions_kwarg, **kwargs)
 
 
+@pytest.fixture
+def exact_filename_match_ls_setup(bucket):
+    data = b'hello world'
+    filename1 = 'hello.txt'
+    hidden_file = filename1 + 'postfix'
+    filename3 = filename1 + 'postfix3'
+    files = [
+        bucket.upload_bytes(data, filename1),
+        bucket.upload_bytes(data, hidden_file),
+        bucket.upload_bytes(data, filename3),
+    ]
+    bucket.hide_file(hidden_file)
+    return files
+
+
+@pytest.mark.apiver(from_ver=2, to_ver=2)
+def test_bucket_ls__pre_v3_does_not_match_exact_filename(bucket, exact_filename_match_ls_setup):
+    assert not list(bucket.ls(exact_filename_match_ls_setup[0].file_name))
+
+
+@pytest.mark.apiver(from_ver=2)
+def test_bucket_ls__matches_exact_filename(bucket, exact_filename_match_ls_setup, apiver_int):
+    assert len(list(bucket.ls())) == 2
+    assert len(list(bucket.ls(latest_only=False))) == 4
+
+    kwargs = {}
+    if apiver_int < 3:
+        kwargs['folder_to_list_can_be_a_file'] = True
+
+    assert [
+        fv.file_name for fv, _ in bucket.ls(exact_filename_match_ls_setup[0].file_name, **kwargs)
+    ] == ['hello.txt']
+
+    # hidden file should not be returned unless latest_only is False
+    assert len(list(bucket.ls(exact_filename_match_ls_setup[1].file_name, **kwargs))) == 0
+    assert len(
+        list(bucket.ls(exact_filename_match_ls_setup[1].file_name, **kwargs, latest_only=False))
+    ) == 2
+
+
+@pytest.mark.apiver(from_ver=2)
+def test_bucket_ls__matches_exact_filename__wildcard(
+    bucket, exact_filename_match_ls_setup, apiver_int
+):
+    kwargs = {'with_wildcard': True, 'recursive': True}
+    if apiver_int < 3:
+        kwargs['folder_to_list_can_be_a_file'] = True
+
+    assert [
+        fv.file_name for fv, _ in bucket.ls(exact_filename_match_ls_setup[0].file_name, **kwargs)
+    ] == ['hello.txt']
+
+    # hidden file should not be returned unless latest_only is False
+    assert len(list(bucket.ls(exact_filename_match_ls_setup[1].file_name, **kwargs))) == 0
+    assert len(
+        list(bucket.ls(exact_filename_match_ls_setup[1].file_name, **kwargs, latest_only=False))
+    ) == 2
+
+
 class TestCaseWithBucket(TestBase):
     RAW_SIMULATOR_CLASS = RawSimulator
     CACHE_CLASS = DummyCache
