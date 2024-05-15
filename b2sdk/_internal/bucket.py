@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import datetime as dt
 import fnmatch
+import itertools
 import logging
 import pathlib
 from contextlib import suppress
@@ -334,7 +335,7 @@ class Bucket(metaclass=B2TraceMeta):
 
     def list_file_versions(
         self, file_name: str, fetch_count: int | None = LIST_FILE_NAMES_MAX_LIMIT
-    ):
+    ) -> Iterable[FileVersion]:
         """
         Lists all of the versions for a single file.
 
@@ -366,13 +367,13 @@ class Bucket(metaclass=B2TraceMeta):
 
     def ls(
         self,
-        folder_to_list: str = '',
+        path: str = '',
         latest_only: bool = True,
         recursive: bool = False,
         fetch_count: int | None = LIST_FILE_NAMES_MAX_LIMIT,
         with_wildcard: bool = False,
         filters: Sequence[Filter] = (),
-    ):
+    ) -> Iterable[tuple[FileVersion, str]]:
         """
         Pretend that folders exist and yields the information about the files in a folder.
 
@@ -384,8 +385,10 @@ class Bucket(metaclass=B2TraceMeta):
         When the `recursive` flag is set, lists all of the files in the given
         folder, and all of its sub-folders.
 
-        :param folder_to_list: the name of the folder to list; must not start with "/".
-                               Empty string means top-level folder
+        :param path: Path to list.
+                     To reduce the number of API calls, if path points to a folder, it should end with "/".
+                     Must not start with "/".
+                     Empty string means top-level folder.
         :param latest_only: when ``False`` returns info about all versions of a file,
                             when ``True``, just returns info about the most recent versions
         :param recursive: if ``True``, list folders recursively
@@ -404,6 +407,20 @@ class Bucket(metaclass=B2TraceMeta):
         if with_wildcard and not recursive:
             raise ValueError('with_wildcard requires recursive to be turned on as well')
 
+        # check if path points to an object instead of a folder
+        if path and not with_wildcard and not path.endswith('/'):
+            file_versions = self.list_file_versions(path, 1 if latest_only else fetch_count)
+            if latest_only:
+                file_versions = itertools.islice(file_versions, 1)
+            path_pointed_to_file = False
+            for file_version in file_versions:
+                path_pointed_to_file = True
+                if not latest_only or file_version.action == 'upload':
+                    yield file_version, None
+            if path_pointed_to_file:
+                return
+
+        folder_to_list = path
         # Every file returned must have a name that starts with the
         # folder name and a "/".
         prefix = folder_to_list
