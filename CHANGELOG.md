@@ -9,6 +9,15 @@ upcoming release can be found in [changelog.d](changelog.d).
 
 <!-- towncrier release notes start -->
 
+## [2.3.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v2.3.0) - 2024-05-15
+
+
+### Added
+
+- Add `folder_to_list_can_be_a_file` parameter to `b2sdk.v2.Bucket.ls`, that if set to `True` will allow listing a file versions if path is an exact match.
+  This parameter won't be included in `b2sdk.v3.Bucket.ls` and unless supplied `path` ends with `/`, the possibility of path pointing to file will be considered first.
+
+
 ## [2.2.1](https://github.com/Backblaze/b2-sdk-python/releases/tag/v2.2.1) - 2024-05-09
 
 
