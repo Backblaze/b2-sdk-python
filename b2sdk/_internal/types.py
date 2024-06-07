@@ -12,6 +12,7 @@ Types compatibility layer.
 
 We use this module to support pydantic-less installs, as well as native typing module us on newer python versions.
 """
+import sys
 
 try:
     from typing_extensions import Annotated, NotRequired, TypedDict
@@ -30,6 +31,9 @@ try:
 
     if getattr(pydantic, "__version__", "") < "2":
         raise ImportError
+
+    if sys.version_info < (3, 10):  # https://github.com/pydantic/pydantic/issues/7873
+        import eval_type_backport  # noqa
 except ImportError:
     pydantic = None
 
