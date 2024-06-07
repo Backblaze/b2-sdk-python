@@ -40,6 +40,7 @@ from .exception import (
 from .file_lock import BucketRetentionSetting, FileRetentionSetting, LegalHold
 from .http_constants import FILE_INFO_HEADER_PREFIX
 from .replication.setting import ReplicationConfiguration
+from .types import NotRequired, PositiveInt, TypedDict
 from .utils import b2_url_encode
 from .utils.docs import ensure_b2sdk_doc_urls
 
@@ -103,8 +104,9 @@ class LifecycleRule(TypedDict):
     .. _B2 Cloud Storage Lifecycle Rules: https://www.backblaze.com/docs/cloud-storage-lifecycle-rules
     """
     fileNamePrefix: str
-    daysFromHidingToDeleting: NotRequired[int | None]
-    daysFromUploadingToHiding: NotRequired[int | None]
+    daysFromHidingToDeleting: NotRequired[PositiveInt | None]
+    daysFromUploadingToHiding: NotRequired[PositiveInt | None]
+    daysFromStartingToCancelingUnfinishedLargeFiles: NotRequired[PositiveInt | None]
 
 
 class NameValueDict(TypedDict):

@@ -14,10 +14,7 @@ import inspect
 import io
 from unittest.mock import patch
 
-try:
-    import pydantic
-except ImportError:
-    pydantic = None
+from b2sdk._internal.types import pydantic
 
 
 @contextlib.contextmanager

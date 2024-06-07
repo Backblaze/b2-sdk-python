@@ -40,3 +40,21 @@ def test_bucket_notification_rules(bucket, b2_api):
         }
     ]
     assert bucket.set_notification_rules([]) == []
+
+
+def test_bucket_update__lifecycle_rules(bucket, b2_api):
+    lifecycle_rule = {
+        "daysFromHidingToDeleting": 1,
+        "daysFromUploadingToHiding": 1,
+        "daysFromStartingToCancelingUnfinishedLargeFiles": 1,
+        "fileNamePrefix": "",
+    }
+
+    old_rules_list = bucket.lifecycle_rules
+
+    updated_bucket = bucket.update(lifecycle_rules=[lifecycle_rule])
+    assert updated_bucket.lifecycle_rules == [lifecycle_rule]
+    assert bucket.lifecycle_rules is old_rules_list
+
+    updated_bucket = bucket.update(lifecycle_rules=[])
+    assert updated_bucket.lifecycle_rules == []
