@@ -19,10 +19,12 @@ from apiver_deps_exception import (
     CapExceeded,
     Conflict,
     DuplicateBucketName,
+    EmailNotVerified,
     FileAlreadyHidden,
     FileNotPresent,
     InvalidAuthToken,
     MissingPart,
+    NoPaymentHistory,
     PartSha1Mismatch,
     ServiceError,
     StorageCapExceeded,
@@ -175,3 +177,14 @@ class TestInterpretError:
         actual_exception = interpret_b2_error(status, code, message, response_headers, post_params)
         assert isinstance(actual_exception, expected_class)
         return actual_exception
+
+    @pytest.mark.parametrize(
+        "status, code, expected_exception_cls", [
+            (401, "email_not_verified", EmailNotVerified),
+            (401, "no_payment_history", NoPaymentHistory),
+        ]
+    )
+    def test_simple_error_handlers(self, status, code, expected_exception_cls):
+        error = interpret_b2_error(status, code, "", {})
+        assert isinstance(error, expected_exception_cls)
+        assert error.code == code

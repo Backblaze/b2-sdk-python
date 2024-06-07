@@ -343,6 +343,11 @@ class EmailNotVerified(Unauthorized):
         return False
 
 
+class NoPaymentHistory(Unauthorized):
+    def should_retry_upload(self):
+        return False
+
+
 class InvalidAuthToken(Unauthorized):
     """
     Specific type of Unauthorized that means the auth token is invalid.
@@ -613,6 +618,10 @@ _error_handlers: dict[tuple[int, str | None], typing.Callable] = {
         lambda code, message, **_: EventTypesEmptyError(message, code),
     (400, "event_type_invalid"):
         _event_type_invalid_error,
+    (401, "email_not_verified"):
+        lambda code, message, **_: EmailNotVerified(message, code),
+    (401, "no_payment_history"):
+        lambda code, message, **_: NoPaymentHistory(message, code),
 }
 
 
@@ -705,8 +714,6 @@ def interpret_b2_error(
         return BadRequest(message, code)
     elif status == 401 and code in ("bad_auth_token", "expired_auth_token"):
         return InvalidAuthToken(message, code)
-    elif status == 401 and code == 'email_not_verified':
-        return EmailNotVerified(message, code)
     elif status == 401:
         return Unauthorized(message, code)
     elif status == 403 and code == "storage_cap_exceeded":
