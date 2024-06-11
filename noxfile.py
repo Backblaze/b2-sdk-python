@@ -25,7 +25,7 @@ os.environ.update({"PDM_IGNORE_SAVED_PYTHON": "1"})
 CI = os.environ.get('CI') is not None
 NOX_PYTHONS = os.environ.get('NOX_PYTHONS')
 _NOX_EXTRAS = os.environ.get('NOX_EXTRAS')
-NOX_EXTRAS = [[], ['full']] if _NOX_EXTRAS is None else list(filter(None, [_NOX_EXTRAS.split(',')]))
+NOX_EXTRAS = [[]] if _NOX_EXTRAS is None else list(filter(None, [_NOX_EXTRAS.split(',')]))
 
 PYTHON_VERSIONS = [
     'pypy3.9',

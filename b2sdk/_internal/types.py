@@ -14,6 +14,8 @@ We use this module to support pydantic-less installs, as well as native typing m
 """
 import sys
 
+from annotated_types import Ge
+
 try:
     from typing_extensions import Annotated, NotRequired, TypedDict
 except ImportError:
@@ -37,7 +39,4 @@ try:
 except ImportError:
     pydantic = None
 
-if pydantic:
-    PositiveInt = Annotated[int, pydantic.Field(gte=0)]
-else:
-    PositiveInt = int
+PositiveInt = Annotated[int, Ge(0)]

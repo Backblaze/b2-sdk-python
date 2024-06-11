@@ -2,10 +2,10 @@
 # It is not intended for manual editing.
 
 [metadata]
-groups = ["default", "doc", "format", "full", "lint", "release", "test"]
+groups = ["default", "doc", "format", "lint", "release", "test"]
 strategy = ["cross_platform", "inherit_metadata"]
 lock_version = "4.4.1"
-content_hash = "sha256:c1d38d22f013a909fd6a3bd62cf871c6c3db8e4f1ccf68585f71a08b45e83bad"
+content_hash = "sha256:55a756ba803efb2577e9990692b874473779c14231d658ca48e9bb7b56fab153"
 
 [[package]]
 name = "alabaster"
@@ -23,8 +23,7 @@ name = "annotated-types"
 version = "0.5.0"
 requires_python = ">=3.7"
 summary = "Reusable constraint types to use with typing.Annotated"
-groups = ["full"]
-marker = "python_version >= \"3.8\" and platform_python_implementation != \"PyPy\""
+groups = ["default", "test"]
 dependencies = [
     "typing-extensions>=4.0.0; python_version < \"3.9\"",
 ]
@@ -367,7 +366,7 @@ name = "eval-type-backport"
 version = "0.1.3"
 requires_python = ">=3.7"
 summary = "Like `typing._eval_type`, but lets older Python versions use newer typing features."
-groups = ["full"]
+groups = ["test"]
 marker = "python_version < \"3.10\""
 files = [
     {file = "eval_type_backport-0.1.3-py3-none-any.whl", hash = "sha256:519d2a993b3da286df9f90e17f503f66435106ad870cf26620c5720e2158ddf2"},
@@ -691,7 +690,7 @@ name = "pydantic"
 version = "2.7.3"
 requires_python = ">=3.8"
 summary = "Data validation using Python type hints"
-groups = ["full"]
+groups = ["test"]
 marker = "python_version >= \"3.8\" and platform_python_implementation != \"PyPy\""
 dependencies = [
     "annotated-types>=0.4.0",
@@ -708,7 +707,7 @@ name = "pydantic-core"
 version = "2.18.4"
 requires_python = ">=3.8"
 summary = "Core functionality for Pydantic validation and serialization"
-groups = ["full"]
+groups = ["test"]
 marker = "python_version >= \"3.8\" and platform_python_implementation != \"PyPy\""
 dependencies = [
     "typing-extensions!=4.7.0,>=4.6.0",
@@ -1338,7 +1337,7 @@ name = "typing-extensions"
 version = "4.7.1"
 requires_python = ">=3.7"
 summary = "Backported and Experimental Type Hints for Python 3.7+"
-groups = ["default", "doc", "full", "lint", "test"]
+groups = ["default", "doc", "lint", "test"]
 files = [
     {file = "typing_extensions-4.7.1-py3-none-any.whl", hash = "sha256:440d5dd3af93b060174bf433bccd69b0babc3b15b1a8dca43789fd7f61514b36"},
     {file = "typing_extensions-4.7.1.tar.gz", hash = "sha256:b75ddc264f0ba5615db7ba217daeb99701ad295353c45f9e95963337ceeeffb2"},
