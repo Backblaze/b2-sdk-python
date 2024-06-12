@@ -232,7 +232,7 @@ class LocalFolder(AbstractFolder):
         for local_path in sorted(local_dir.iterdir()):
             name = local_path.name
             relative_file_path = join_b2_path(relative_dir_path, name)
-            
+
             if policies_manager.exclude_all_symlinks and local_path.is_symlink():
                 if reporter is not None:
                     reporter.symlink_skipped(str(local_path))
@@ -249,7 +249,8 @@ class LocalFolder(AbstractFolder):
                     continue  # Skip excluded directories
                 # Recurse into directories
                 yield from self._walk_relative_paths(
-                    local_path, relative_file_path, reporter, policies_manager, visited_symlinks)
+                    local_path, relative_file_path, reporter, policies_manager, visited_symlinks
+                )
             else:
                 try:
                     file_mod_time = get_file_mtime(str(local_path))
