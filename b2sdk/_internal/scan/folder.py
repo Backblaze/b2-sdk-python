@@ -244,6 +244,32 @@ class LocalFolder(AbstractFolder):
         for local_path in local_dir.iterdir():
             name = local_path.name
             relative_file_path = join_b2_path(relative_dir_path, name)
+            
+            if policies_manager.exclude_all_symlinks and local_path.is_symlink():
+                if reporter is not None:
+                    reporter.symlink_skipped(str(local_path))
+                continue
+
+            if local_path.is_dir():
+                if policies_manager.should_exclude_local_directory(str(relative_file_path)):
+                    continue
+            else:
+                try:
+                    file_mod_time = get_file_mtime(str(local_path))
+                    file_size = local_path.stat().st_size
+                except OSError:
+                    # Skip broken symlinks or other inaccessible files
+                    file_mod_time = 0
+                    file_size = 0
+                
+                local_scan_path = LocalPath(
+                    absolute_path=str(local_path.absolute()),
+                    relative_path=str(relative_file_path),
+                    mod_time=file_mod_time,
+                    size=file_size,
+                )
+                if policies_manager.should_exclude_local_path(local_scan_path):
+                    continue
 
             try:
                 validate_b2_file_name(name)
@@ -256,15 +282,9 @@ class LocalFolder(AbstractFolder):
             if not is_file_readable(str(local_path), reporter):
                 continue
 
-            if policies_manager.exclude_all_symlinks and local_path.is_symlink():
-                if reporter is not None:
-                    reporter.symlink_skipped(str(local_path))
-                continue
 
             if local_path.is_dir():
                 name += '/'
-                if policies_manager.should_exclude_local_directory(str(relative_file_path)):
-                    continue
 
             # remove the leading './' from the relative path to ensure backward compatibility
             relative_file_path_str = str(relative_file_path)
@@ -298,9 +318,6 @@ class LocalFolder(AbstractFolder):
                         mod_time=file_mod_time,
                         size=file_size,
                     )
-
-                    if policies_manager.should_exclude_local_path(local_scan_path):
-                        continue
 
                     yield local_scan_path
 
