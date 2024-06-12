@@ -244,7 +244,7 @@ class LocalFolder(AbstractFolder):
         for local_path in local_dir.iterdir():
             name = local_path.name
             relative_file_path = join_b2_path(relative_dir_path, name)
-            
+
             if policies_manager.exclude_all_symlinks and local_path.is_symlink():
                 if reporter is not None:
                     reporter.symlink_skipped(str(local_path))
@@ -261,7 +261,7 @@ class LocalFolder(AbstractFolder):
                     # Skip broken symlinks or other inaccessible files
                     file_mod_time = 0
                     file_size = 0
-                
+
                 local_scan_path = LocalPath(
                     absolute_path=str(local_path.absolute()),
                     relative_path=str(relative_file_path),
@@ -281,7 +281,6 @@ class LocalFolder(AbstractFolder):
             # Skip broken symlinks or other inaccessible files
             if not is_file_readable(str(local_path), reporter):
                 continue
-
 
             if local_path.is_dir():
                 name += '/'
