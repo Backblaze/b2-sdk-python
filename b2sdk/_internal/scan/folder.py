@@ -229,7 +229,7 @@ class LocalFolder(AbstractFolder):
                 return  # Skip if symlink already visited
             visited_symlinks.add(inode_number)
 
-        for local_path in sorted(local_dir.iterdir(), key=lambda x: x.name):
+        for local_path in sorted(local_dir.iterdir()):
             name = local_path.name
             relative_file_path = join_b2_path(relative_dir_path, name)
             
