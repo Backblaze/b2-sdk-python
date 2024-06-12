@@ -259,8 +259,8 @@ class LocalFolder(AbstractFolder):
                     file_size = local_path.stat().st_size
                 except OSError:
                     # Skip broken symlinks or other inaccessible files
-                    file_mod_time = 0
-                    file_size = 0
+                    file_mod_time = -1
+                    file_size = -1
 
                 local_scan_path = LocalPath(
                     absolute_path=str(local_path.absolute()),
