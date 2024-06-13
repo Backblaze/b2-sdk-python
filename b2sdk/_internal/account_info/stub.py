@@ -77,10 +77,10 @@ class StubAccountInfo(AbstractAccountInfo):
         return None
 
     def list_bucket_names_ids(self) -> list[tuple[str, str]]:
-        return list((bucket.bucket_name, bucket.bucket_id) for bucket in self.buckets.values())
+        return list((bucket.bucket_name, bucket.id_) for bucket in self.buckets.values())
 
     def save_bucket(self, bucket):
-        self.buckets[bucket.bucket_id] = bucket
+        self.buckets[bucket.id_] = bucket
 
     def remove_bucket_name(self, bucket_name):
         pass
