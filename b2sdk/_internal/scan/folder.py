@@ -269,9 +269,6 @@ class LocalFolder(AbstractFolder):
                 if is_file_readable(str(local_path), reporter):
                     yield local_scan_path
 
-                else:
-                    continue  # Skip inaccessible files
-
     @classmethod
     def _handle_non_unicode_file_name(cls, name):
         """
