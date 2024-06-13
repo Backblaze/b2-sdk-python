@@ -252,26 +252,6 @@ def validate_b2_file_name(name):
         raise ValueError("file names segments (between '/') can be at most 250 utf-8 bytes")
 
 
-def is_file_readable(local_path, reporter=None):
-    """
-    Check if the local file has read permissions.
-
-    :param local_path: a file path
-    :type local_path: str
-    :param reporter: reporter object to put errors on
-    :rtype: bool
-    """
-    if not os.path.exists(local_path):
-        if reporter is not None:
-            reporter.local_access_error(local_path)
-        return False
-    elif not os.access(local_path, os.R_OK):
-        if reporter is not None:
-            reporter.local_permission_error(local_path)
-        return False
-    return True
-
-
 def get_file_mtime(local_path):
     """
     Get modification time of a file in milliseconds.

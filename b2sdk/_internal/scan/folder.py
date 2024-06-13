@@ -18,7 +18,7 @@ from abc import ABCMeta, abstractmethod
 from pathlib import Path
 from typing import Iterator
 
-from ..utils import fix_windows_path_limit, get_file_mtime, is_file_readable, validate_b2_file_name
+from ..utils import fix_windows_path_limit, get_file_mtime, validate_b2_file_name
 from .exception import (
     EmptyDirectory,
     EnvironmentEncodingError,
@@ -256,7 +256,10 @@ class LocalFolder(AbstractFolder):
                     file_mod_time = get_file_mtime(str(local_path))
                     file_size = local_path.stat().st_size
                 except OSError:
-                    file_mod_time, file_size = -1, -1
+                    if reporter is not None:
+                        reporter.local_access_error(str(local_path))
+                        continue
+
                 local_scan_path = LocalPath(
                     absolute_path=self.make_full_path(str(relative_file_path)),
                     relative_path=str(relative_file_path),
@@ -266,8 +269,12 @@ class LocalFolder(AbstractFolder):
                 if policies_manager.should_exclude_local_path(local_scan_path):
                     continue  # Skip excluded files
 
-                if is_file_readable(str(local_path), reporter):
-                    yield local_scan_path
+                if not os.access(local_path, os.R_OK):
+                    if reporter is not None:
+                        reporter.local_permission_error(str(local_path))
+                        continue
+
+                yield local_scan_path
 
     @classmethod
     def _handle_non_unicode_file_name(cls, name):
