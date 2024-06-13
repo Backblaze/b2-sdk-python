@@ -678,15 +678,21 @@ class TestFolderTraversal:
         reporter.close()
 
     def test_excluded_folder_without_permissions(self, tmp_path):
-        """Test that a excluded directory without permissions is not processed and no warning is issued."""
+        """Test that a excluded directory/file without permissions is not processed and no warning is issued."""
         excluded_dir = tmp_path / "excluded_dir"
         excluded_dir.mkdir()
         (excluded_dir / "file.txt").touch()
+        
+        included_dir = tmp_path / "included_dir"
+        included_dir.mkdir()
+        (included_dir / "excluded_file.txt").touch()
+        (included_dir / "included_file.txt").touch()
 
         # Modify directory permissions to simulate lack of access
+        (included_dir / "excluded_file.txt").chmod(0o000)
         excluded_dir.chmod(0o000)
 
-        scan_policy = ScanPoliciesManager(exclude_dir_regexes=[r"excluded_dir$"])
+        scan_policy = ScanPoliciesManager(exclude_dir_regexes=[r"excluded_dir$"], exclude_file_regexes=[r"excluded_file.txt"])
         reporter = ProgressReport(sys.stdout, False)
 
         folder = LocalFolder(str(tmp_path))
@@ -694,16 +700,15 @@ class TestFolderTraversal:
         absolute_paths = [path.absolute_path for path in local_paths]
 
         # Restore directory permissions to clean up
+        (included_dir / "excluded_file.txt").chmod(0o755)
         excluded_dir.chmod(0o755)
 
-        # Check that no files from the excluded directory are processed
-        assert not any(
-            "excluded_dir" in path for path in absolute_paths
-        ), "Files from the excluded directory were processed"
+        # Check that only included_dir/included_file.txt was return
+        assert absolute_paths == [f"{tmp_path}/included_dir/included_file.txt"]
 
-        # Check that no access warnings are issued for the excluded directory
-        assert not reporter.warnings == [
-            f"WARNING: {tmp_path}/excluded_dir could not be accessed (no permissions to read?)"
-        ], "Access warning was issued for the excluded directory"
-
+        # Check that no access warnings are issued for the excluded directory/file
+        assert not any(re.match(
+            r"WARNING: '.+excluded_.+' could not be accessed (no permissions to read?)",
+            warning,
+            ) for warning in reporter.warnings), "Access warning was issued for the excluded directory/file"
         reporter.close()
