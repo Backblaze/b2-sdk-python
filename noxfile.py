@@ -24,6 +24,8 @@ os.environ.update({"PDM_IGNORE_SAVED_PYTHON": "1"})
 
 CI = os.environ.get('CI') is not None
 NOX_PYTHONS = os.environ.get('NOX_PYTHONS')
+_NOX_EXTRAS = os.environ.get('NOX_EXTRAS')
+NOX_EXTRAS = [[]] if _NOX_EXTRAS is None else list(filter(None, [_NOX_EXTRAS.split(',')]))
 
 PYTHON_VERSIONS = [
     'pypy3.9',
@@ -77,7 +79,7 @@ def skip_coverage(python_version: str | None) -> bool:
 @nox.session(name='format', python=PYTHON_DEFAULT_VERSION)
 def format_(session):
     """Lint the code and apply fixes in-place whenever possible."""
-    pdm_install(session, 'format')
+    pdm_install(session, 'lint')
     # TODO: incremental mode for yapf
     session.run('yapf', '--in-place', '--parallel', '--recursive', *PY_PATHS)
     session.run('ruff', 'check', '--fix', *PY_PATHS)
@@ -95,7 +97,7 @@ def format_(session):
 def lint(session):
     """Run linters in readonly mode."""
     # We need to install 'doc' group because liccheck needs to inspect it.
-    pdm_install(session, 'doc', 'lint')
+    pdm_install(session, 'doc', 'lint', 'full')
     session.run('yapf', '--diff', '--parallel', '--recursive', *PY_PATHS)
     session.run('ruff', 'check', *PY_PATHS)
     # session.run(
@@ -115,9 +117,10 @@ def lint(session):
 
 
 @nox.session(python=PYTHON_VERSIONS)
-def unit(session):
+@nox.parametrize("extras", NOX_EXTRAS)
+def unit(session, extras):
     """Run unit tests."""
-    pdm_install(session, 'test')
+    pdm_install(session, 'test', *extras)
     args = ['--doctest-modules', '-n', 'auto']
     if not skip_coverage(session.python):
         args += ['--cov=b2sdk', '--cov-branch', '--cov-report=xml']
@@ -134,9 +137,10 @@ def unit(session):
 
 
 @nox.session(python=PYTHON_VERSIONS)
-def integration(session):
+@nox.parametrize("extras", NOX_EXTRAS)
+def integration(session, extras):
     """Run integration tests."""
-    pdm_install(session, 'test')
+    pdm_install(session, 'test', *extras)
     session.run('pytest', '-s', *session.posargs, 'test/integration')
 
 
