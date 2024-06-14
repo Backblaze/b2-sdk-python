@@ -655,16 +655,19 @@ class TestFolderTraversal:
             fix_windows_path_limit(str(d1_dir / "file1.txt")),
         ]
 
-    def test_excluded_folder_no_access_check(self, tmp_path):
-        """Test that a directory is not checked for access if it is excluded."""
+    def test_excluded_no_access_check(self, tmp_path):
+        """Test that a directory/file is not checked for access if it is excluded."""
         # Create directories and files
-        excluded_dir = tmp_path / "excluded_no_access"
+        excluded_dir = tmp_path / "excluded_dir"
         excluded_dir.mkdir()
-        excluded_file = excluded_dir / "should_not_access.txt"
+        excluded_file = excluded_dir / "excluded_file.txt"
         excluded_file.touch()
+        included_dir = tmp_path / "included_dir"
+        included_dir.mkdir()
+        (included_dir / "excluded_file.txt").touch()
 
         # Setup exclusion regex that matches the directory name
-        scan_policy = ScanPoliciesManager(exclude_dir_regexes=[r"excluded_no_access$"])
+        scan_policy = ScanPoliciesManager(exclude_dir_regexes=[r"excluded_dir$"], exclude_file_regexes=[r'.*excluded_file.txt'])
         reporter = ProgressReport(sys.stdout, False)
 
         # Patch os.access to monitor if it is called on the excluded file
@@ -692,7 +695,7 @@ class TestFolderTraversal:
         (included_dir / "excluded_file.txt").chmod(0o000)
         excluded_dir.chmod(0o000)
 
-        scan_policy = ScanPoliciesManager(exclude_dir_regexes=[r"excluded_dir$"], exclude_file_regexes=[r"excluded_file.txt"])
+        scan_policy = ScanPoliciesManager(exclude_dir_regexes=[r"excluded_dir$"], exclude_file_regexes=[r'.*excluded_file.txt'])
         reporter = ProgressReport(sys.stdout, False)
 
         folder = LocalFolder(str(tmp_path))
@@ -702,13 +705,14 @@ class TestFolderTraversal:
         # Restore directory permissions to clean up
         (included_dir / "excluded_file.txt").chmod(0o755)
         excluded_dir.chmod(0o755)
-
+        print(reporter.warnings)
         # Check that only included_dir/included_file.txt was return
         assert absolute_paths == [f"{tmp_path}/included_dir/included_file.txt"]
 
         # Check that no access warnings are issued for the excluded directory/file
         assert not any(re.match(
-            r"WARNING: '.+excluded_.+' could not be accessed (no permissions to read?)",
+            r"WARNING: .*excluded_.* could not be accessed \(no permissions to read\?\)",
             warning,
             ) for warning in reporter.warnings), "Access warning was issued for the excluded directory/file"
+
         reporter.close()
