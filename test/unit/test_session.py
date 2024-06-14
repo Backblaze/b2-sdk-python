@@ -11,6 +11,8 @@ from __future__ import annotations
 
 from unittest import mock
 
+from apiver_deps import AuthInfoCache, B2Session, DummyCache, InMemoryAccountInfo
+
 from .account_info.fixtures import *  # noqa
 from .fixtures import *  # noqa
 
@@ -71,3 +73,16 @@ class TestAuthorizeAccount:
         self.b2_session.authorize_account('dev', '123', '456')
 
         assert self.b2_session.cache.clear.called is True
+
+
+def test_session__with_in_memory_account_info(apiver_int):
+    memory_info = InMemoryAccountInfo()
+    b2_session = B2Session(account_info=memory_info,)
+
+    assert b2_session.account_info is memory_info
+
+    if apiver_int < 3:
+        assert isinstance(b2_session.cache, DummyCache)
+    else:
+        assert isinstance(b2_session.cache, AuthInfoCache)
+        assert b2_session.cache.info is memory_info
