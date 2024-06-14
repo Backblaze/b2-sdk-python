@@ -252,6 +252,8 @@ class LocalFolder(AbstractFolder):
                     local_path, relative_file_path, reporter, policies_manager, visited_symlinks
                 )
             else:
+                if policies_manager.should_exclude_relative_path(relative_file_path):
+                    continue  # Skip excluded files
                 try:
                     file_mod_time = get_file_mtime(str(local_path))
                     file_size = local_path.stat().st_size
