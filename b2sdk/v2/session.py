@@ -13,11 +13,25 @@ from b2sdk import _v3 as v3
 from .b2http import B2Http
 
 from ._compat import _file_infos_rename
+from .._internal import api_config as _api_config
+from .._internal import cache as _cache
+from .._internal.account_info import abstract as _abstract
 
 
 # Override to use legacy B2Http
 class B2Session(v3.B2Session):
     B2HTTP_CLASS = staticmethod(B2Http)
+
+    def __init__(
+        self,
+        account_info: _abstract.AbstractAccountInfo | None = None,
+        cache: _cache.AbstractCache | None = None,
+        api_config: _api_config.B2HttpApiConfig = _api_config.DEFAULT_HTTP_API_CONFIG
+    ):
+        if account_info is not None and cache is None:
+            # preserve legacy behavior https://github.com/Backblaze/b2-sdk-python/issues/497#issuecomment-2147461352
+            cache = _cache.DummyCache()
+        super().__init__(account_info, cache, api_config)
 
     @_file_infos_rename
     def upload_file(

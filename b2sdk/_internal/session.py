@@ -73,10 +73,11 @@ class B2Session:
         self.raw_api = api_config.raw_api_class(self.B2HTTP_CLASS(api_config))
         if account_info is None:
             account_info = self.SQLITE_ACCOUNT_INFO_CLASS()
-            if cache is None:
-                cache = AuthInfoCache(account_info)
         if cache is None:
-            cache = DummyCache()
+            if account_info:
+                cache = AuthInfoCache(account_info)
+            else:
+                cache = DummyCache()
 
         self.account_info = account_info
         self.cache = cache
