@@ -666,8 +666,10 @@ class TestFolderTraversal:
         included_dir.mkdir()
         (included_dir / "excluded_file.txt").touch()
 
-        # Setup exclusion regex that matches the directory name
-        scan_policy = ScanPoliciesManager(exclude_dir_regexes=[r"excluded_dir$"], exclude_file_regexes=[r'.*excluded_file.txt'])
+        # Setup exclusion regex that matches the excluded directory/file name
+        scan_policy = ScanPoliciesManager(
+            exclude_dir_regexes=[r"excluded_dir$"], exclude_file_regexes=[r'.*excluded_file.txt']
+        )
         reporter = ProgressReport(sys.stdout, False)
 
         # Patch os.access to monitor if it is called on the excluded file
@@ -675,17 +677,17 @@ class TestFolderTraversal:
             folder = LocalFolder(str(tmp_path))
             list(folder.all_files(reporter=reporter, policies_manager=scan_policy))
 
-            # Verify os.access was not called for the excluded file
+            # Verify os.access was not called for the excluded directory/file
             mocked_access.assert_not_called()
 
         reporter.close()
 
-    def test_excluded_folder_without_permissions(self, tmp_path):
+    def test_excluded_without_permissions(self, tmp_path):
         """Test that a excluded directory/file without permissions is not processed and no warning is issued."""
         excluded_dir = tmp_path / "excluded_dir"
         excluded_dir.mkdir()
         (excluded_dir / "file.txt").touch()
-        
+
         included_dir = tmp_path / "included_dir"
         included_dir.mkdir()
         (included_dir / "excluded_file.txt").touch()
@@ -695,7 +697,9 @@ class TestFolderTraversal:
         (included_dir / "excluded_file.txt").chmod(0o000)
         excluded_dir.chmod(0o000)
 
-        scan_policy = ScanPoliciesManager(exclude_dir_regexes=[r"excluded_dir$"], exclude_file_regexes=[r'.*excluded_file.txt'])
+        scan_policy = ScanPoliciesManager(
+            exclude_dir_regexes=[r"excluded_dir$"], exclude_file_regexes=[r'.*excluded_file.txt']
+        )
         reporter = ProgressReport(sys.stdout, False)
 
         folder = LocalFolder(str(tmp_path))
@@ -710,9 +714,11 @@ class TestFolderTraversal:
         assert absolute_paths == [f"{tmp_path}/included_dir/included_file.txt"]
 
         # Check that no access warnings are issued for the excluded directory/file
-        assert not any(re.match(
-            r"WARNING: .*excluded_.* could not be accessed \(no permissions to read\?\)",
-            warning,
-            ) for warning in reporter.warnings), "Access warning was issued for the excluded directory/file"
+        assert not any(
+            re.match(
+                r"WARNING: .*excluded_.* could not be accessed \(no permissions to read\?\)",
+                warning,
+            ) for warning in reporter.warnings
+        ), "Access warning was issued for the excluded directory/file"
 
         reporter.close()
