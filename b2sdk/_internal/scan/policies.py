@@ -184,7 +184,7 @@ class ScanPoliciesManager:
                 exclude_uploaded_before, exclude_uploaded_after
             )
 
-    def _should_exclude_relative_path(self, relative_path: str):
+    def should_exclude_relative_path(self, relative_path: str):
         if self._include_file_set.matches(relative_path):
             return False
         return self._exclude_file_set.matches(relative_path)
@@ -197,7 +197,7 @@ class ScanPoliciesManager:
         """
         if local_path.mod_time not in self._include_mod_time_range:
             return True
-        return self._should_exclude_relative_path(local_path.relative_path)
+        return self.should_exclude_relative_path(local_path.relative_path)
 
     def should_exclude_b2_file_version(self, file_version: FileVersion, relative_path: str):
         """
@@ -209,7 +209,7 @@ class ScanPoliciesManager:
             return True
         if file_version.mod_time_millis not in self._include_mod_time_range:
             return True
-        return self._should_exclude_relative_path(relative_path)
+        return self.should_exclude_relative_path(relative_path)
 
     def should_exclude_b2_directory(self, dir_path: str):
         """

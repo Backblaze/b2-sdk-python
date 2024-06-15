@@ -14,7 +14,7 @@ import os
 import platform
 import re
 import sys
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -654,3 +654,71 @@ class TestFolderTraversal:
         assert absolute_paths == [
             fix_windows_path_limit(str(d1_dir / "file1.txt")),
         ]
+
+    def test_excluded_no_access_check(self, tmp_path):
+        """Test that a directory/file is not checked for access if it is excluded."""
+        # Create directories and files
+        excluded_dir = tmp_path / "excluded_dir"
+        excluded_dir.mkdir()
+        excluded_file = excluded_dir / "excluded_file.txt"
+        excluded_file.touch()
+        included_dir = tmp_path / "included_dir"
+        included_dir.mkdir()
+        (included_dir / "excluded_file.txt").touch()
+
+        # Setup exclusion regex that matches the excluded directory/file name
+        scan_policy = ScanPoliciesManager(
+            exclude_dir_regexes=[r"excluded_dir$"], exclude_file_regexes=[r'.*excluded_file.txt']
+        )
+        reporter = ProgressReport(sys.stdout, False)
+
+        # Patch os.access to monitor if it is called on the excluded file
+        with patch('os.access', MagicMock(return_value=True)) as mocked_access:
+            folder = LocalFolder(str(tmp_path))
+            list(folder.all_files(reporter=reporter, policies_manager=scan_policy))
+
+            # Verify os.access was not called for the excluded directory/file
+            mocked_access.assert_not_called()
+
+        reporter.close()
+
+    def test_excluded_without_permissions(self, tmp_path):
+        """Test that a excluded directory/file without permissions is not processed and no warning is issued."""
+        excluded_dir = tmp_path / "excluded_dir"
+        excluded_dir.mkdir()
+        (excluded_dir / "file.txt").touch()
+
+        included_dir = tmp_path / "included_dir"
+        included_dir.mkdir()
+        (included_dir / "excluded_file.txt").touch()
+        (included_dir / "included_file.txt").touch()
+
+        # Modify directory permissions to simulate lack of access
+        (included_dir / "excluded_file.txt").chmod(0o000)
+        excluded_dir.chmod(0o000)
+
+        scan_policy = ScanPoliciesManager(
+            exclude_dir_regexes=[r"excluded_dir$"], exclude_file_regexes=[r'.*excluded_file.txt']
+        )
+        reporter = ProgressReport(sys.stdout, False)
+
+        folder = LocalFolder(str(tmp_path))
+        local_paths = folder.all_files(reporter=reporter, policies_manager=scan_policy)
+        absolute_paths = [path.absolute_path for path in local_paths]
+
+        # Restore directory permissions to clean up
+        (included_dir / "excluded_file.txt").chmod(0o755)
+        excluded_dir.chmod(0o755)
+
+        # Check that only included_dir/included_file.txt was return
+        assert any('included_file.txt' in path for path in absolute_paths)
+
+        # Check that no access warnings are issued for the excluded directory/file
+        assert not any(
+            re.match(
+                r"WARNING: .*excluded_.* could not be accessed \(no permissions to read\?\)",
+                warning,
+            ) for warning in reporter.warnings
+        ), "Access warning was issued for the excluded directory/file"
+
+        reporter.close()

@@ -18,7 +18,7 @@ from abc import ABCMeta, abstractmethod
 from pathlib import Path
 from typing import Iterator
 
-from ..utils import fix_windows_path_limit, get_file_mtime, is_file_readable, validate_b2_file_name
+from ..utils import fix_windows_path_limit, get_file_mtime, validate_b2_file_name
 from .exception import (
     EmptyDirectory,
     EnvironmentEncodingError,
@@ -219,32 +219,24 @@ class LocalFolder(AbstractFolder):
         #    a0.txt
         #
         # This is because in Unicode '.' comes before '/', which comes before '0'.
-        names = []  # list of (name, local_path, relative_file_path)
-
         visited_symlinks = visited_symlinks or set()
 
         if local_dir.is_symlink():
-            real_path = local_dir.resolve()
-            inode_number = real_path.stat().st_ino
-
-            visited_symlinks_count = len(visited_symlinks)
-
-            # Add symlink to visited_symlinks to prevent infinite symlink loops
-            visited_symlinks.add(inode_number)
-
-            # Check if set size has changed, if not, symlink has already been visited
-            if len(visited_symlinks) == visited_symlinks_count:
-                # Infinite symlink loop detected, report warning and skip symlink
-                if reporter is not None:
+            inode_number = local_dir.resolve().stat().st_ino
+            if inode_number in visited_symlinks:
+                if reporter:
                     reporter.circular_symlink_skipped(str(local_dir))
-                return
-
+                return  # Skip if symlink already visited
             visited_symlinks.add(inode_number)
 
-        for local_path in local_dir.iterdir():
+        for local_path in sorted(local_dir.iterdir()):
             name = local_path.name
             relative_file_path = join_b2_path(relative_dir_path, name)
 
+            if policies_manager.exclude_all_symlinks and local_path.is_symlink():
+                if reporter is not None:
+                    reporter.symlink_skipped(str(local_path))
+                continue
             try:
                 validate_b2_file_name(name)
             except ValueError as e:
@@ -252,57 +244,39 @@ class LocalFolder(AbstractFolder):
                     reporter.invalid_name(str(local_path), str(e))
                 continue
 
-            # Skip broken symlinks or other inaccessible files
-            if not is_file_readable(str(local_path), reporter):
-                continue
-
-            if policies_manager.exclude_all_symlinks and local_path.is_symlink():
-                if reporter is not None:
-                    reporter.symlink_skipped(str(local_path))
-                continue
-
             if local_path.is_dir():
-                name += '/'
                 if policies_manager.should_exclude_local_directory(str(relative_file_path)):
-                    continue
-
-            # remove the leading './' from the relative path to ensure backward compatibility
-            relative_file_path_str = str(relative_file_path)
-            if relative_file_path_str.startswith("./"):
-                relative_file_path_str = relative_file_path_str[2:]
-            names.append((name, local_path, relative_file_path_str))
-
-        # Yield all of the answers.
-        #
-        # Sorting the list of triples puts them in the right order because 'name',
-        # the sort key, is the first thing in the triple.
-        for (name, local_path, relative_file_path) in sorted(names):
-            if name.endswith('/'):
+                    continue  # Skip excluded directories
+                # Recurse into directories
                 yield from self._walk_relative_paths(
-                    local_path,
-                    relative_file_path,
-                    reporter,
-                    policies_manager,
-                    visited_symlinks,
+                    local_path, relative_file_path, reporter, policies_manager, visited_symlinks
                 )
             else:
-                # Check that the file still exists and is accessible, since it can take a long time
-                # to iterate through large folders
-                if is_file_readable(str(local_path), reporter):
+                if policies_manager.should_exclude_relative_path(relative_file_path):
+                    continue  # Skip excluded files
+                try:
                     file_mod_time = get_file_mtime(str(local_path))
                     file_size = local_path.stat().st_size
-
-                    local_scan_path = LocalPath(
-                        absolute_path=self.make_full_path(str(relative_file_path)),
-                        relative_path=str(relative_file_path),
-                        mod_time=file_mod_time,
-                        size=file_size,
-                    )
-
-                    if policies_manager.should_exclude_local_path(local_scan_path):
+                except OSError:
+                    if reporter is not None:
+                        reporter.local_access_error(str(local_path))
                         continue
 
-                    yield local_scan_path
+                local_scan_path = LocalPath(
+                    absolute_path=self.make_full_path(str(relative_file_path)),
+                    relative_path=str(relative_file_path),
+                    mod_time=file_mod_time,
+                    size=file_size
+                )
+                if policies_manager.should_exclude_local_path(local_scan_path):
+                    continue  # Skip excluded files
+
+                if not os.access(local_path, os.R_OK):
+                    if reporter is not None:
+                        reporter.local_permission_error(str(local_path))
+                        continue
+
+                yield local_scan_path
 
     @classmethod
     def _handle_non_unicode_file_name(cls, name):

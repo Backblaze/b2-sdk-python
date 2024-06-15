@@ -134,6 +134,9 @@ class ScanPoliciesManagerWrapper(v2.ScanPoliciesManager):
     def __repr__(self):
         return f"{self.__class__.__name__}({self.scan_policies_manager})"
 
+    def should_exclude_relative_path(self, relative_path: str):
+        self.scan_policies_manager.should_exclude_file(relative_path)
+
     def should_exclude_local_path(self, local_path: v2.LocalSyncPath):
         if self.scan_policies_manager.should_exclude_file_version(
             _translate_local_path_to_file(local_path).latest_version()
