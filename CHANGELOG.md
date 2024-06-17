@@ -9,6 +9,28 @@ upcoming release can be found in [changelog.d](changelog.d).
 
 <!-- towncrier release notes start -->
 
+## [2.4.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v2.4.0) - 2024-06-17
+
+
+### Changed
+
+- In `b2sdk.v3` the `B2Api` will always create `cache` from `AccountInfo` object, unless `cache` is provided explicitly.
+  The current stable `b2sdk.v2` remains unchanged, i.e. `DummyCache` is created by default if `account_info` was provided, but not `cache`.
+  Documentation for `b2sdk.v2` was updated with the new recommended usage, e.g. `B2Api(info, cache=AuthInfoCache(info))`, to achieve the same behavior as `b2sdk.v3`. ([#497](https://github.com/Backblaze/b2-sdk-python/issues/497))
+
+### Fixed
+
+- Move scan filters before a read on filesystem access attempt. This will prevent unnecessary warnings and IO operations on paths that are not relevant to the operation. ([#456](https://github.com/Backblaze/b2-sdk-python/issues/456))
+- Fix bucket caching erroring out when using `StubAccountInfo`.
+
+### Added
+
+- Add `annotated_types` dependency for type annotations that include basic value validation.
+- Add `daysFromStartingToCancelingUnfinishedLargeFiles` option to `lifecycle_rules` type annotation.
+- Add non-retryable `NoPaymentHistory` exception.
+  API returns this exception when action (e.g. bucket creation or replication rules) is not allowed due to lack of payment history.
+
+
 ## [2.3.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v2.3.0) - 2024-05-15
 
 
