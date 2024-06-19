@@ -9,6 +9,15 @@ upcoming release can be found in [changelog.d](changelog.d).
 
 <!-- towncrier release notes start -->
 
+## [2.4.1](https://github.com/Backblaze/b2-sdk-python/releases/tag/v2.4.1) - 2024-06-19
+
+
+### Fixed
+
+- Fix `LocalFolder` regression (introduced in 2.4.0) which caused `LocalFolder` to not list files by path lexicographical order.
+  This is also a fix for `synchronizer` re-uploading files on every run in some cases. ([#502](https://github.com/Backblaze/b2-sdk-python/issues/502))
+
+
 ## [2.4.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v2.4.0) - 2024-06-17
 
 
