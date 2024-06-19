@@ -66,10 +66,10 @@ class TestFolder(TestSync):
 
     NAMES = [
         '.dot_file',
+        'hello.',
         os.path.join('hello', 'a', '1'),
         os.path.join('hello', 'a', '2'),
         os.path.join('hello', 'b'),
-        'hello.',
         'hello0',
         os.path.join('inner', 'a.bin'),
         os.path.join('inner', 'a.txt'),
@@ -106,10 +106,10 @@ class TestFolder(TestSync):
     def test_exclusions(self):
         expected_list = [
             '.dot_file',
+            'hello.',
             'hello/a/1',
             'hello/a/2',
             'hello/b',
-            'hello.',
             'hello0',
             'inner/a.txt',
             'inner/b.txt',
@@ -129,10 +129,10 @@ class TestFolder(TestSync):
     def test_exclusions_inclusions(self):
         expected_list = [
             '.dot_file',
+            'hello.',
             'hello/a/1',
             'hello/a/2',
             'hello/b',
-            'hello.',
             'hello0',
             'inner/a.bin',
             'inner/a.txt',
@@ -151,8 +151,8 @@ class TestFolder(TestSync):
     def test_exclude_matches_prefix(self):
         expected_list = [
             '.dot_file',
-            'hello/b',
             'hello.',
+            'hello/b',
             'hello0',
             'inner/b.bin',
             'inner/b.txt',
@@ -204,10 +204,10 @@ class TestFolder(TestSync):
     def test_exclusion_with_exact_match(self):
         expected_list = [
             '.dot_file',
+            'hello.',
             'hello/a/1',
             'hello/a/2',
             'hello/b',
-            'hello.',
             'inner/a.bin',
             'inner/a.txt',
             'inner/b.bin',

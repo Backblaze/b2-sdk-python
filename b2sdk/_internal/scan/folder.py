@@ -63,7 +63,7 @@ class AbstractFolder(metaclass=ABCMeta):
                   policies_manager=DEFAULT_SCAN_MANAGER) -> Iterator[AbstractPath]:
         """
         Return an iterator over all of the files in the folder, in
-        the order that B2 uses.
+        the order that B2 uses (lexicographic by object path).
 
         It also performs filtering using policies manager.
 
@@ -138,11 +138,18 @@ class LocalFolder(AbstractFolder):
         """
         Yield all files.
 
+        Yield a File object for each of the files anywhere under this folder, in the
+        order they would appear in B2, unless the path is excluded by policies manager.
+
         :param reporter: a place to report errors
         :param policies_manager: a policy manager object, default is DEFAULT_SCAN_MANAGER
+        :return: an iterator over all files in the folder in the order they would appear in B2
         """
         root_path = Path(self.root)
-        yield from self._walk_relative_paths(root_path, Path(''), reporter, policies_manager)
+
+        local_paths = self._walk_relative_paths(root_path, Path(''), reporter, policies_manager)
+        # Crucial to return the "correct" order of the files
+        yield from sorted(local_paths, key=lambda lp: lp.relative_path)
 
     def make_full_path(self, file_name):
         """
@@ -196,8 +203,8 @@ class LocalFolder(AbstractFolder):
         visited_symlinks: set[int] | None = None,
     ):
         """
-        Yield a File object for each of the files anywhere under this folder, in the
-        order they would appear in B2, unless the path is excluded by policies manager.
+        Yield a File object for each of the files anywhere under this folder,
+        unless the path is excluded by policies manager.
 
         :param local_dir: the path to the local directory that we are currently inspecting
         :param relative_dir_path: the path of this dir relative to the scan point, or Path('') if at scan point

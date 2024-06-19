@@ -969,6 +969,28 @@ class TestSynchronizer:
             # Order of indices: call index, pick arguments, pick first argument, first element of the first argument.
             assert isinstance(bucket.mock_calls[0][1][0][0], CopySource)
 
+    def test_sync_lexicographical_order(self, synchronizer_factory):
+        """
+        Test sync is successful when dir tree order is different from absolute path lexicographical order
+
+        Regression test for #502
+        """
+        synchronizer = synchronizer_factory()
+
+        files = [('a/foo', [100], 10), ('a b/bar', [100], 10)]
+        src = self.folder_factory('local', *files)
+        dst = self.folder_factory('b2')
+
+        self.assert_folder_sync_actions(
+            synchronizer, src, dst, [
+                'b2_upload(/dir/a b/bar, folder/a b/bar, 100)',
+                'b2_upload(/dir/a/foo, folder/a/foo, 100)'
+            ]
+        )
+
+        dst_with_files = self.folder_factory('b2', *files)
+        self.assert_folder_sync_actions(synchronizer, src, dst_with_files, [])
+
 
 class TstEncryptionSettingsProvider(AbstractSyncEncryptionSettingsProvider):
     def __init__(self, source_encryption_setting, destination_encryption_setting):
