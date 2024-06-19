@@ -29,7 +29,7 @@ class FakeB2Folder(B2Folder):
         super().__init__('test-bucket', 'folder', mock.MagicMock())
 
     def get_file_versions(self):
-        yield from iter(self.file_versions)
+        yield from sorted(self.file_versions, key=lambda x: x.file_name)
 
     def _file_versions(self, name, mod_times, size=10):
         """
@@ -70,7 +70,7 @@ class FakeLocalFolder(LocalFolder):
         self.local_paths = [self._local_path(*test_file) for test_file in test_files]
 
     def all_files(self, reporter, policies_manager=DEFAULT_SCAN_MANAGER):
-        for single_path in self.local_paths:
+        for single_path in sorted(self.local_paths, key=lambda x: x.relative_path):
             if single_path.relative_path.endswith('/'):
                 if policies_manager.should_exclude_b2_directory(single_path.relative_path):
                     continue

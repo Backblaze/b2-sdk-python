@@ -12,6 +12,7 @@ from __future__ import annotations
 import http
 import http.client
 import os
+import secrets
 from test.integration import get_b2_auth_data
 from test.integration.bucket_cleaner import BucketCleaner
 from test.integration.helpers import (
@@ -93,3 +94,9 @@ def bucket(b2_api, bucket_name_prefix, bucket_cleaner):
     )
     yield bucket
     bucket_cleaner.cleanup_bucket(bucket)
+
+
+@pytest.fixture
+def b2_subfolder(bucket, request):
+    subfolder_name = f"{request.node.name}_{secrets.token_urlsafe(4)}"
+    return f"b2://{bucket.name}/{subfolder_name}"
