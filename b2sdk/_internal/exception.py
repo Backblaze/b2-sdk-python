@@ -271,8 +271,8 @@ class FileDeleted(B2SimpleError):
     prefix = 'File deleted'
 
 
-class UnknownFileVersionAction(B2SimpleError):
-    prefix = 'Unknown file version action'
+class UnexpectedFileVersionAction(B2SimpleError):
+    prefix = 'Unexpected file version action'
 
 
 class FileNameNotAllowed(NotAllowedByAppKeyError):

@@ -27,7 +27,7 @@ from .exception import (
     FileNotPresent,
     FileOrBucketNotFound,
     UnexpectedCloudBehaviour,
-    UnknownFileVersionAction,
+    UnexpectedFileVersionAction,
     UnrecognizedBucketType,
 )
 from .file_lock import (
@@ -37,7 +37,7 @@ from .file_lock import (
     FileRetentionSetting,
     LegalHold,
 )
-from .file_version import DownloadVersion, FileVersion
+from .file_version import DownloadVersion, FileIdAndName, FileVersion
 from .filter import Filter, FilterMatcher
 from .http_constants import LIST_FILE_NAMES_MAX_LIMIT
 from .progress import AbstractProgressListener, DoNothingProgressListener
@@ -1354,14 +1354,9 @@ class Bucket(metaclass=B2TraceMeta):
         response = self.api.session.hide_file(self.id_, file_name)
         return self.api.file_version_factory.from_api_response(response)
 
-    def unhide_file(self, file_name: str, bypass_governance: bool = False):
+    def unhide_file(self, file_name: str, bypass_governance: bool = False) -> FileIdAndName:
         """
         Unhide a file by deleting the "hide marker".
-
-        :param str file_name: a file name
-        :param bypass_governance: Must be set to true if deleting a file version protected by Object Lock governance
-                                  mode retention settings (unless its retention period expired)
-        :rtype: b2sdk.v2.FileIdAndName
         """
 
         # get the latest file version
@@ -1376,7 +1371,7 @@ class Bucket(metaclass=B2TraceMeta):
         elif action == "delete":
             raise FileDeleted(file_name)
         elif action != "hide":
-            raise UnknownFileVersionAction(action)
+            raise UnexpectedFileVersionAction(action)
 
         return self.delete_file_version(latest_file_version.id_, file_name, bypass_governance)
 
