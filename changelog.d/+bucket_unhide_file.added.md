@@ -1,1 +1,1 @@
-Add unhide_file method to Bucket
+Add unhide_file method to Bucket.
