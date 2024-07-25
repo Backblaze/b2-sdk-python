@@ -263,6 +263,18 @@ class FileAlreadyHidden(B2SimpleError):
     pass
 
 
+class FileNotHidden(B2SimpleError):
+    prefix = 'File not hidden'
+
+
+class FileDeleted(B2SimpleError):
+    prefix = 'File deleted'
+
+
+class UnknownFileVersionAction(B2SimpleError):
+    prefix = 'Unknown file version action'
+
+
 class FileNameNotAllowed(NotAllowedByAppKeyError):
     pass
 

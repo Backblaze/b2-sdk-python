@@ -22,9 +22,12 @@ from .encryption.types import EncryptionMode
 from .exception import (
     BucketIdNotFound,
     CopySourceTooBig,
+    FileDeleted,
+    FileNotHidden,
     FileNotPresent,
     FileOrBucketNotFound,
     UnexpectedCloudBehaviour,
+    UnknownFileVersionAction,
     UnrecognizedBucketType,
 )
 from .file_lock import (
@@ -1350,6 +1353,32 @@ class Bucket(metaclass=B2TraceMeta):
         """
         response = self.api.session.hide_file(self.id_, file_name)
         return self.api.file_version_factory.from_api_response(response)
+
+    def unhide_file(self, file_name: str, bypass_governance: bool = False):
+        """
+        Unhide a file by deleting the "hide marker".
+
+        :param str file_name: a file name
+        :param bypass_governance: Must be set to true if deleting a file version protected by Object Lock governance
+                                  mode retention settings (unless its retention period expired)
+        :rtype: b2sdk.v2.FileIdAndName
+        """
+
+        # get the latest file version
+        file_versions = self.list_file_versions(file_name=file_name, fetch_count=1)
+        latest_file_version = next(file_versions, None)
+        if latest_file_version is None:
+            raise FileNotPresent(bucket_name=self.name, file_id_or_name=file_name)
+
+        action = latest_file_version.action
+        if action == "upload":
+            raise FileNotHidden(file_name)
+        elif action == "delete":
+            raise FileDeleted(file_name)
+        elif action != "hide":
+            raise UnknownFileVersionAction(action)
+
+        return self.delete_file_version(latest_file_version.id_, file_name, bypass_governance)
 
     def copy(
         self,
