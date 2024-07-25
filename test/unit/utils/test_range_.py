@@ -41,8 +41,8 @@ def test_range_size(apiver_module):
 
 def test_range_subrange(apiver_module):
     r = apiver_module.Range(1, 10)
-    sub_r = r.subrange(2, 5)
-    assert sub_r == apiver_module.Range(3, 6)
+    assert r.subrange(0, 9) == apiver_module.Range(1, 10)
+    assert r.subrange(2, 5) == apiver_module.Range(3, 6)
 
 
 def test_range_subrange_invalid(apiver_module):
