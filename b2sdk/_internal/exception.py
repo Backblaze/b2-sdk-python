@@ -272,7 +272,7 @@ class FileDeleted(B2SimpleError):
 
 
 class UnexpectedFileVersionAction(B2SimpleError):
-    prefix = 'Unexpected file version action'
+    prefix = 'Unexpected file version action return by the server'
 
 
 class FileNameNotAllowed(NotAllowedByAppKeyError):
