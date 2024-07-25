@@ -22,9 +22,12 @@ from .encryption.types import EncryptionMode
 from .exception import (
     BucketIdNotFound,
     CopySourceTooBig,
+    FileDeleted,
+    FileNotHidden,
     FileNotPresent,
     FileOrBucketNotFound,
     UnexpectedCloudBehaviour,
+    UnexpectedFileVersionAction,
     UnrecognizedBucketType,
 )
 from .file_lock import (
@@ -34,7 +37,7 @@ from .file_lock import (
     FileRetentionSetting,
     LegalHold,
 )
-from .file_version import DownloadVersion, FileVersion
+from .file_version import DownloadVersion, FileIdAndName, FileVersion
 from .filter import Filter, FilterMatcher
 from .http_constants import LIST_FILE_NAMES_MAX_LIMIT
 from .progress import AbstractProgressListener, DoNothingProgressListener
@@ -1350,6 +1353,27 @@ class Bucket(metaclass=B2TraceMeta):
         """
         response = self.api.session.hide_file(self.id_, file_name)
         return self.api.file_version_factory.from_api_response(response)
+
+    def unhide_file(self, file_name: str, bypass_governance: bool = False) -> FileIdAndName:
+        """
+        Unhide a file by deleting the "hide marker".
+        """
+
+        # get the latest file version
+        file_versions = self.list_file_versions(file_name=file_name, fetch_count=1)
+        latest_file_version = next(file_versions, None)
+        if latest_file_version is None:
+            raise FileNotPresent(bucket_name=self.name, file_id_or_name=file_name)
+
+        action = latest_file_version.action
+        if action == "upload":
+            raise FileNotHidden(file_name)
+        elif action == "delete":
+            raise FileDeleted(file_name)
+        elif action != "hide":
+            raise UnexpectedFileVersionAction(action)
+
+        return self.delete_file_version(latest_file_version.id_, file_name, bypass_governance)
 
     def copy(
         self,
