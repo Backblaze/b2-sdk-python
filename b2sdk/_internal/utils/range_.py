@@ -10,6 +10,11 @@
 from __future__ import annotations
 
 import dataclasses
+import re
+
+_RANGE_HEADER_RE = re.compile(
+    r'^(?:bytes[ =])?(?P<start>\d+)-(?P<end>\d+)(?:/(?:(?P<complete_length>\d+)|\*))?$'
+)
 
 
 @dataclasses.dataclass(eq=True, order=True)
@@ -23,7 +28,9 @@ class Range:
     end: int
 
     def __post_init__(self):
-        assert 0 <= self.start <= self.end
+        assert 0 <= self.start <= self.end or (
+            self.start == 1 and self.end == 0
+        ), f'Invalid range: {self}'
 
     @classmethod
     def from_header(cls, raw_range_header: str) -> Range:
@@ -32,10 +39,23 @@ class Range:
 
         raw_range_header example: 'bytes=0-11'
         """
-        offsets = tuple(
-            int(i) for i in raw_range_header.replace('bytes', '').strip('= ').split('-')
-        )
-        return cls(*offsets)
+        return cls.from_header_with_size(raw_range_header)[0]
+
+    @classmethod
+    def from_header_with_size(cls, raw_range_header: str) -> tuple[Range, int | None]:
+        """
+        Factory method which returns an object constructed from Range http header.
+
+        raw_range_header example: 'bytes=0-11'
+        """
+        match = _RANGE_HEADER_RE.match(raw_range_header)
+        if not match:
+            raise ValueError(f'Invalid range header: {raw_range_header}')
+        start = int(match.group('start'))
+        end = int(match.group('end'))
+        complete_length = match.group('complete_length')
+        complete_length = int(complete_length) if complete_length else None
+        return cls(start, end), complete_length
 
     def size(self) -> int:
         return self.end - self.start + 1
@@ -56,3 +76,6 @@ class Range:
 
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}({self.start}, {self.end})'
+
+
+EMPTY_RANGE = Range(1, 0)

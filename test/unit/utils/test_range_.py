@@ -34,6 +34,20 @@ def test_range_from_header(apiver_module):
     assert r.end == 11
 
 
+@pytest.mark.parametrize(
+    "raw_range_header, start, end, total_length", [
+        ("bytes 0-11", 0, 11, None),
+        ("bytes 1-11/*", 1, 11, None),
+        ("bytes 10-110/200", 10, 110, 200),
+    ]
+)
+def test_range_from_header_with_size(apiver_module, raw_range_header, start, end, total_length):
+    r, length = apiver_module.Range.from_header_with_size(raw_range_header)
+    assert r.start == start
+    assert r.end == end
+    assert length == total_length
+
+
 def test_range_size(apiver_module):
     r = apiver_module.Range(0, 10)
     assert r.size() == 11
