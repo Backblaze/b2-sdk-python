@@ -17,7 +17,7 @@ _RANGE_HEADER_RE = re.compile(
 )
 
 
-@dataclasses.dataclass(eq=True, order=True)
+@dataclasses.dataclass(eq=True, order=True, frozen=True)
 class Range:
     """
     HTTP ranges use an *inclusive* index at the end.
