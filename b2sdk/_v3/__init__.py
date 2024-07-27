@@ -98,7 +98,7 @@ from b2sdk._internal.file_version import FileVersionFactory
 from b2sdk._internal.large_file.part import Part
 from b2sdk._internal.large_file.unfinished_large_file import UnfinishedLargeFile
 from b2sdk._internal.large_file.services import LargeFileServices
-from b2sdk._internal.utils.range_ import Range
+from b2sdk._internal.utils.range_ import Range, EMPTY_RANGE
 
 # file lock
 

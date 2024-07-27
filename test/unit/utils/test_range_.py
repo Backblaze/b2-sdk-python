@@ -73,3 +73,8 @@ def test_range_as_tuple(apiver_module):
 def test_range_repr(apiver_module):
     r = apiver_module.Range(0, 10)
     assert repr(r) == "Range(0, 10)"
+
+
+def test_empty_range(apiver_module):
+    r = apiver_module.EMPTY_RANGE
+    assert r.size() == 0
