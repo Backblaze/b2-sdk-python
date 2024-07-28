@@ -8,10 +8,3 @@
 #
 ######################################################################
 from __future__ import annotations
-
-import pytest
-
-
-@pytest.fixture
-def file_info():
-    return {'key': 'value'}
