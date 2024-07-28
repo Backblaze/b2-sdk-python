@@ -15,7 +15,7 @@ from b2sdk._internal.encryption.setting import EncryptionSetting
 from b2sdk._internal.exception import (
     InvalidRange,
 )
-from b2sdk._internal.progress import DoNothingProgressListener
+from b2sdk._internal.progress import AbstractProgressListener, DoNothingProgressListener
 from b2sdk._internal.utils import B2TraceMetaAbstract
 
 from ...utils.thread_pool import ThreadPoolMixin
@@ -78,12 +78,14 @@ class DownloadManager(TransferManager, ThreadPoolMixin, metaclass=B2TraceMetaAbs
 
     def download_file_from_url(
         self,
-        url,
-        progress_listener=None,
-        range_=None,
+        url: str,
+        progress_listener: AbstractProgressListener | None = None,
+        range_: tuple[int, int] | None = None,
         encryption: EncryptionSetting | None = None,
     ) -> DownloadedFile:
         """
+        Download file by URL.
+
         :param url: url from which the file should be downloaded
         :param progress_listener: where to notify about downloading progress
         :param range_: 2-element tuple containing data of http Range header
