@@ -11,6 +11,7 @@ env:
 
 jobs:
   lint:
+    timeout-minutes: 30
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -35,6 +36,7 @@ jobs:
       - name: Changelog validation
         run: nox -vs towncrier_check
   build:
+    timeout-minutes: 30
     needs: lint
     runs-on: ubuntu-latest
     steps:
@@ -51,6 +53,7 @@ jobs:
       - name: Build the distribution
         run: nox -vs build
   cleanup_buckets:
+    timeout-minutes: 30
     needs: lint
     env:
       B2_TEST_APPLICATION_KEY: ${{ secrets.B2_TEST_APPLICATION_KEY }}
@@ -74,6 +77,7 @@ jobs:
         if: ${{ env.B2_TEST_APPLICATION_KEY != '' && env.B2_TEST_APPLICATION_KEY_ID != '' }}  # TODO: skip this whole job instead
         run: nox -vs cleanup_old_buckets
   test:
+    timeout-minutes: 90
     needs: cleanup_buckets
     env:
       B2_TEST_APPLICATION_KEY: ${{ secrets.B2_TEST_APPLICATION_KEY }}
@@ -126,6 +130,7 @@ jobs:
         if: ${{ env.B2_TEST_APPLICATION_KEY != '' && env.B2_TEST_APPLICATION_KEY_ID != '' }}
         run: nox -vs integration -- --dont-cleanup-old-buckets -v
   doc:
+    timeout-minutes: 30
     needs: build
     runs-on: ubuntu-latest
     steps:
