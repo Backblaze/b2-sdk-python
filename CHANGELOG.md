@@ -9,6 +9,27 @@ upcoming release can be found in [changelog.d](changelog.d).
 
 <!-- towncrier release notes start -->
 
+## [2.5.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v2.5.0) - 2024-07-30
+
+
+### Fixed
+
+- Fix TruncatedOutput when downloading files (fixes [B2_Command_Line_Tool#554](https://github.com/Backblaze/B2_Command_Line_Tool/issues/554)).
+- Ensure `FileSimulator.as_download_headers` returns `dict[str, str]` mapping.
+
+### Added
+
+- Add `unhide_file` method to Bucket class.
+
+### Doc
+
+- Improve `download_file_from_url` methods type hints.
+
+### Infrastructure
+
+- Limit max CI (Github Actions) duration to 90 minutes.
+
+
 ## [2.4.1](https://github.com/Backblaze/b2-sdk-python/releases/tag/v2.4.1) - 2024-06-19
 
 
