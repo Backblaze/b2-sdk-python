@@ -188,7 +188,12 @@ class B2Session:
             self.raw_api.delete_file_version, file_id, file_name, bypass_governance
         )
 
-    def download_file_from_url(self, url, range_=None, encryption: EncryptionSetting | None = None):
+    def download_file_from_url(
+        self,
+        url: str,
+        range_: tuple[int, int] | None = None,
+        encryption: EncryptionSetting | None = None,
+    ):
         return self._wrap_token(
             self.raw_api.download_file_from_url,
             TokenType.API_TOKEN_ONLY,

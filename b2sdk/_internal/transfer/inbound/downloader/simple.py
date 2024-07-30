@@ -36,16 +36,20 @@ class SimpleDownloader(AbstractDownloader):
         session: B2Session,
         encryption: EncryptionSetting | None = None,
     ):
+        digest = self._get_hasher()
         actual_size = self._get_remote_range(response, download_version).size()
+        if actual_size == 0:
+            response.close()
+            return 0, digest.hexdigest()
         chunk_size = self._get_chunk_size(actual_size)
 
-        digest = self._get_hasher()
         decoded_bytes_read = 0
         for data in response.iter_content(chunk_size=chunk_size):
             file.write(data)
             digest.update(data)
             decoded_bytes_read += len(data)
         bytes_read = response.raw.tell()
+        response.close()
 
         assert actual_size >= 1  # code below does `actual_size - 1`, but it should never reach that part with an empty file
 

@@ -10,15 +10,18 @@
 from __future__ import annotations
 
 import logging
+import platform
 import queue
 import threading
 from concurrent import futures
 from io import IOBase
 from time import perf_counter_ns
 
+from requests import RequestException
 from requests.models import Response
 
 from b2sdk._internal.encryption.setting import EncryptionSetting
+from b2sdk._internal.exception import B2Error, TruncatedOutput
 from b2sdk._internal.file_version import DownloadVersion
 from b2sdk._internal.session import B2Session
 from b2sdk._internal.utils.range_ import Range
@@ -89,6 +92,11 @@ class ParallelDownloader(AbstractDownloader):
         Download a file from given url using parallel download sessions and stores it in the given download_destination.
         """
         remote_range = self._get_remote_range(response, download_version)
+        hasher = self._get_hasher()
+        if remote_range.size() == 0:
+            response.close()
+            return 0, hasher.hexdigest()
+
         actual_size = remote_range.size()
         start_file_position = file.tell()
         parts_to_download = list(
@@ -100,9 +108,6 @@ class ParallelDownloader(AbstractDownloader):
         )
 
         first_part = parts_to_download[0]
-
-        hasher = self._get_hasher()
-
         with WriterThread(file, max_queue_depth=len(parts_to_download) * 2) as writer:
             self._get_parts(
                 response,
@@ -169,7 +174,7 @@ class ParallelDownloader(AbstractDownloader):
             chunk_size,
             encryption=encryption,
         )
-        streams = [stream]
+        streams = {stream}
 
         for part in parts_to_download:
             stream = self._thread_pool.submit(
@@ -181,9 +186,30 @@ class ParallelDownloader(AbstractDownloader):
                 chunk_size,
                 encryption=encryption,
             )
-            streams.append(stream)
+            streams.add(stream)
+
+            # free-up resources & check for early failures
+            try:
+                streams_futures = futures.wait(
+                    streams, timeout=0, return_when=futures.FIRST_COMPLETED
+                )
+            except futures.TimeoutError:
+                pass
+            else:
+                try:
+                    for stream in streams_futures.done:
+                        stream.result()
+                except Exception:
+                    if platform.python_implementation() == "PyPy":
+                        # Await all threads to avoid PyPy hanging bug.
+                        # https://github.com/pypy/pypy/issues/4994#issuecomment-2258962665
+                        futures.wait(streams_futures.not_done)
+                    raise
+                streams = streams_futures.not_done
 
         futures.wait(streams)
+        for stream in streams:
+            stream.result()
 
 
 class WriterThread(threading.Thread):
@@ -244,6 +270,9 @@ class WriterThread(threading.Thread):
         self.start()
         return self
 
+    def queue_write(self, offset: int, data: bytes) -> None:
+        self.queue.put((False, offset, data))
+
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.queue.put((True, None, None))
         self.join()
@@ -255,7 +284,7 @@ def download_first_part(
     hasher,
     session: B2Session,
     writer: WriterThread,
-    first_part: PartToDownload,
+    part_to_download: PartToDownload,
     chunk_size: int,
     encryption: EncryptionSetting | None = None,
 ) -> None:
@@ -264,7 +293,7 @@ def download_first_part(
     :param hasher: hasher object to feed to as the stream is written
     :param session: B2 API session
     :param writer: thread responsible for writing downloaded data
-    :param first_part: definition of the part to be downloaded
+    :param part_to_download: definition of the part to be downloaded
     :param chunk_size: size (in bytes) of read data chunks
     :param encryption: encryption mode, algorithm and key
     """
@@ -281,86 +310,121 @@ def download_first_part(
     # than storage speed, but end users have different issues with network and storage.
     # Basic tools to figure out where the time is being spent is a must for long-term
     # maintainability.
-
-    writer_queue_put = writer.queue.put
+    writer_queue_put = writer.queue_write
     hasher_update = hasher.update
-    first_offset = first_part.local_range.start
-    last_offset = first_part.local_range.end + 1
-    actual_part_size = first_part.local_range.size()
-    starting_cloud_range = first_part.cloud_range
+    local_range_start = part_to_download.local_range.start
+    actual_part_size = part_to_download.local_range.size()
+    starting_cloud_range = part_to_download.cloud_range
 
     bytes_read = 0
-    stop = False
+    url = response.request.url
+    max_attempts = 15  # this is hardcoded because we are going to replace the entire retry interface soon, so we'll avoid deprecation here and keep it private
+    attempt = 0
 
-    stats_collector = StatsCollector(response.url, f'{first_offset}:{last_offset}', 'hash')
+    stats_collector = StatsCollector(
+        response.url, f'{local_range_start}:{part_to_download.local_range.end}', 'hash'
+    )
     stats_collector_read = stats_collector.read
     stats_collector_other = stats_collector.other
     stats_collector_write = stats_collector.write
 
     with stats_collector.total:
+        attempt += 1
+        logger.debug(
+            'download part %s %s attempt: %i, bytes read already: %i',
+            url,
+            part_to_download,
+            attempt,
+            bytes_read,
+        )
         response_iterator = response.iter_content(chunk_size=chunk_size)
 
-        while True:
+        part_not_completed = True
+        while part_not_completed:
             with stats_collector_read:
                 try:
                     data = next(response_iterator)
                 except StopIteration:
                     break
+                except RequestException:
+                    if attempt < max_attempts:
+                        break
+                    else:
+                        raise
 
-            if first_offset + bytes_read + len(data) >= last_offset:
-                to_write = data[:last_offset - bytes_read]
-                stop = True
+            predicted_bytes_read = bytes_read + len(data)
+            if predicted_bytes_read > actual_part_size:
+                to_write = data[:actual_part_size - bytes_read]
+                part_not_completed = False
             else:
                 to_write = data
 
             with stats_collector_write:
-                writer_queue_put((False, first_offset + bytes_read, to_write))
+                writer_queue_put(local_range_start + bytes_read, to_write)
 
             with stats_collector_other:
                 hasher_update(to_write)
 
             bytes_read += len(to_write)
-            if stop:
-                break
 
         # since we got everything we need from original response, close the socket and free the buffer
         # to avoid a timeout exception during hashing and other trouble
         response.close()
-
-        url = response.request.url
-        tries_left = 5 - 1  # this is hardcoded because we are going to replace the entire retry interface soon, so we'll avoid deprecation here and keep it private
-        while tries_left and bytes_read < actual_part_size:
-            cloud_range = starting_cloud_range.subrange(
-                bytes_read, actual_part_size - 1
-            )  # first attempt was for the whole file, but retries are bound correctly
+        while attempt < max_attempts and bytes_read < actual_part_size:
+            attempt += 1
+            cloud_range = starting_cloud_range.subrange(bytes_read, actual_part_size - 1)
             logger.debug(
-                'download attempts remaining: %i, bytes read already: %i. Getting range %s now.',
-                tries_left, bytes_read, cloud_range
+                'download part %s %s attempt: %i, bytes read already: %i. Getting range %s now.',
+                url, part_to_download, attempt, bytes_read, cloud_range
             )
-            with session.download_file_from_url(
-                url,
-                cloud_range.as_tuple(),
-                encryption=encryption,
-            ) as response:
-                response_iterator = response.iter_content(chunk_size=chunk_size)
+            try:
+                with session.download_file_from_url(
+                    url,
+                    cloud_range.as_tuple(),
+                    encryption=encryption,
+                ) as response:
+                    response_iterator = response.iter_content(chunk_size=chunk_size)
 
-                while True:
-                    with stats_collector_read:
-                        try:
-                            to_write = next(response_iterator)
-                        except StopIteration:
-                            break
+                    while True:
+                        with stats_collector_read:
+                            try:
+                                to_write = next(response_iterator)
+                            except StopIteration:
+                                break
 
-                    with stats_collector_write:
-                        writer_queue_put((False, first_offset + bytes_read, to_write))
+                        with stats_collector_write:
+                            writer_queue_put(local_range_start + bytes_read, to_write)
 
-                    with stats_collector_other:
-                        hasher_update(to_write)
+                        with stats_collector_other:
+                            hasher_update(to_write)
 
-                    bytes_read += len(to_write)
-            tries_left -= 1
+                        bytes_read += len(to_write)
+            except (B2Error, RequestException) as e:
+                should_retry = e.should_retry_http() if isinstance(e, B2Error) else True
+                if should_retry and attempt < max_attempts:
+                    logger.debug(
+                        'Download of %s %s attempt %d failed with %s, retrying', url,
+                        part_to_download, attempt, e
+                    )
+                else:
+                    raise
 
     stats_collector.report()
+
+    if bytes_read != actual_part_size:
+        logger.error(
+            "Failed to download %s %s; Downloaded %d/%d after %d attempts", url, part_to_download,
+            bytes_read, actual_part_size, attempt
+        )
+        raise TruncatedOutput(
+            bytes_read=bytes_read,
+            file_size=actual_part_size,
+        )
+    else:
+        logger.debug(
+            "Successfully downloaded %s %s; Downloaded %d/%d after %d attempts", url,
+            part_to_download, bytes_read, actual_part_size, attempt
+        )
 
 
 def download_non_first_part(
@@ -379,46 +443,75 @@ def download_non_first_part(
     :param chunk_size: size (in bytes) of read data chunks
     :param encryption: encryption mode, algorithm and key
     """
-    writer_queue_put = writer.queue.put
-    start_range = part_to_download.local_range.start
+    writer_queue_put = writer.queue_write
+    local_range_start = part_to_download.local_range.start
     actual_part_size = part_to_download.local_range.size()
-    bytes_read = 0
-
     starting_cloud_range = part_to_download.cloud_range
 
-    retries_left = 5  # this is hardcoded because we are going to replace the entire retry interface soon, so we'll avoid deprecation here and keep it private
-    while retries_left and bytes_read < actual_part_size:
+    bytes_read = 0
+    max_attempts = 15  # this is hardcoded because we are going to replace the entire retry interface soon, so we'll avoid deprecation here and keep it private
+    attempt = 0
+
+    stats_collector = StatsCollector(
+        url, f'{local_range_start}:{part_to_download.local_range.end}', 'none'
+    )
+    stats_collector_read = stats_collector.read
+    stats_collector_write = stats_collector.write
+
+    while attempt < max_attempts and bytes_read < actual_part_size:
+        attempt += 1
         cloud_range = starting_cloud_range.subrange(bytes_read, actual_part_size - 1)
         logger.debug(
-            'download attempts remaining: %i, bytes read already: %i. Getting range %s now.',
-            retries_left, bytes_read, cloud_range
+            'download part %s %s attempt: %i, bytes read already: %i. Getting range %s now.', url,
+            part_to_download, attempt, bytes_read, cloud_range
         )
-        stats_collector = StatsCollector(url, f'{cloud_range.start}:{cloud_range.end}', 'none')
-        stats_collector_read = stats_collector.read
-        stats_collector_write = stats_collector.write
 
         with stats_collector.total:
-            with session.download_file_from_url(
-                url,
-                cloud_range.as_tuple(),
-                encryption=encryption,
-            ) as response:
-                response_iterator = response.iter_content(chunk_size=chunk_size)
+            try:
+                with session.download_file_from_url(
+                    url,
+                    cloud_range.as_tuple(),
+                    encryption=encryption,
+                ) as response:
+                    response_iterator = response.iter_content(chunk_size=chunk_size)
 
-                while True:
-                    with stats_collector_read:
-                        try:
-                            to_write = next(response_iterator)
-                        except StopIteration:
-                            break
+                    while True:
+                        with stats_collector_read:
+                            try:
+                                to_write = next(response_iterator)
+                            except StopIteration:
+                                break
 
-                    with stats_collector_write:
-                        writer_queue_put((False, start_range + bytes_read, to_write))
+                        with stats_collector_write:
+                            writer_queue_put(local_range_start + bytes_read, to_write)
 
-                    bytes_read += len(to_write)
-            retries_left -= 1
+                        bytes_read += len(to_write)
+            except (B2Error, RequestException) as e:
+                should_retry = e.should_retry_http() if isinstance(e, B2Error) else True
+                if should_retry and attempt < max_attempts:
+                    logger.debug(
+                        'Download of %s %s attempt %d failed with %s, retrying', url,
+                        part_to_download, attempt, e
+                    )
+                else:
+                    raise
 
-        stats_collector.report()
+    stats_collector.report()
+
+    if bytes_read != actual_part_size:
+        logger.error(
+            "Failed to download %s %s; Downloaded %d/%d after %d attempts", url, part_to_download,
+            bytes_read, actual_part_size, attempt
+        )
+        raise TruncatedOutput(
+            bytes_read=bytes_read,
+            file_size=actual_part_size,
+        )
+    else:
+        logger.debug(
+            "Successfully downloaded %s %s; Downloaded %d/%d after %d attempts", url,
+            part_to_download, bytes_read, actual_part_size, attempt
+        )
 
 
 class PartToDownload:
@@ -440,6 +533,7 @@ def gen_parts(cloud_range, local_range, part_count):
     Generate a sequence of PartToDownload to download a large file as
     a collection of parts.
     """
+    # We don't support DECODE_CONTENT here, hence cloud&local ranges have to be the same
     assert cloud_range.size() == local_range.size(), (cloud_range.size(), local_range.size())
     assert 0 < part_count <= cloud_range.size()
     offset = 0

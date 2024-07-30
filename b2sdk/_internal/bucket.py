@@ -555,7 +555,7 @@ class Bucket(metaclass=B2TraceMeta):
         self,
         data_bytes,
         file_name,
-        content_type=None,
+        content_type: str | None = None,
         file_info: dict | None = None,
         progress_listener=None,
         encryption: EncryptionSetting | None = None,
@@ -568,7 +568,7 @@ class Bucket(metaclass=B2TraceMeta):
         content_disposition: str | None = None,
         content_encoding: str | None = None,
         content_language: str | None = None,
-    ):
+    ) -> FileVersion:
         """
         Upload bytes in memory to a B2 file.
 
@@ -867,7 +867,7 @@ class Bucket(metaclass=B2TraceMeta):
         self,
         upload_source,
         file_name,
-        content_type=None,
+        content_type: str | None = None,
         file_info=None,
         min_part_size: int | None = None,
         progress_listener=None,
@@ -945,7 +945,7 @@ class Bucket(metaclass=B2TraceMeta):
         self,
         write_intents,
         file_name,
-        content_type=None,
+        content_type: str | None = None,
         file_info=None,
         progress_listener=None,
         recommended_upload_part_size=None,
@@ -1124,7 +1124,7 @@ class Bucket(metaclass=B2TraceMeta):
         emerger_method,
         write_intents_iterable,
         file_name,
-        content_type=None,
+        content_type: str | None = None,
         file_info=None,
         progress_listener=None,
         recommended_upload_part_size=None,

@@ -229,7 +229,9 @@ class FileSimulator:
         """
         return (self.name, self.file_id)
 
-    def as_download_headers(self, account_auth_token_or_none, range_=None):
+    def as_download_headers(
+        self, account_auth_token_or_none: str | None = None, range_: tuple[int, int] | None = None
+    ) -> dict[str, str]:
         if self.data_bytes is None:
             content_length = 0
         elif range_ is not None:
@@ -241,10 +243,10 @@ class FileSimulator:
             content_length = len(self.data_bytes)
         headers = CaseInsensitiveDict(
             {
-                'content-length': content_length,
+                'content-length': str(content_length),
                 'content-type': self.content_type,
                 'x-bz-content-sha1': self.content_sha1,
-                'x-bz-upload-timestamp': self.upload_timestamp,
+                'x-bz-upload-timestamp': str(self.upload_timestamp),
                 'x-bz-file-id': self.file_id,
                 'x-bz-file-name': b2_url_encode(self.name),
             }
@@ -513,6 +515,12 @@ class FakeResponse:
 
     def close(self):
         pass
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        self.close()
 
 
 class BucketSimulator:
@@ -1494,10 +1502,10 @@ class RawSimulator(AbstractRawApi):
 
     def download_file_from_url(
         self,
-        account_auth_token_or_none,
-        url,
-        range_=None,
-        encryption: EncryptionSetting | None = None
+        account_auth_token_or_none: str | None,
+        url: str,
+        range_: tuple[int, int] | None = None,
+        encryption: EncryptionSetting | None = None,
     ):
         # TODO: check auth token if bucket is not public
         matcher = self.DOWNLOAD_URL_MATCHER.match(url)

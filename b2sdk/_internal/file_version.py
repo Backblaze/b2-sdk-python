@@ -21,7 +21,7 @@ from .progress import AbstractProgressListener
 from .replication.types import ReplicationStatus
 from .utils import Sha1HexDigest, b2_url_decode
 from .utils.http_date import parse_http_date
-from .utils.range_ import Range
+from .utils.range_ import EMPTY_RANGE, Range
 
 if TYPE_CHECKING:
     from .api import B2Api
@@ -423,8 +423,8 @@ class DownloadVersion(BaseFileVersion):
         content_disposition: str | None,
         content_length: int,
         content_language: str | None,
-        expires,
-        cache_control,
+        expires: str | None,
+        cache_control: str | None,
         content_encoding: str | None,
         file_retention: FileRetentionSetting = NO_RETENTION_FILE_SETTING,
         legal_hold: LegalHold = LegalHold.UNSET,
@@ -589,11 +589,9 @@ class DownloadVersionFactory:
         self.api = api
 
     @classmethod
-    def range_and_size_from_header(cls, header):
-        raw_range, raw_size = header.split('/')
-        range_ = Range.from_header(raw_range)
-        size = int(raw_size)
-
+    def range_and_size_from_header(cls, header: str) -> tuple[Range, int]:
+        range_, size = Range.from_header_with_size(header)
+        assert size is not None, 'Total length was expected in Content-Range header'
         return range_, size
 
     @classmethod
@@ -609,12 +607,13 @@ class DownloadVersionFactory:
     def from_response_headers(self, headers):
         file_info = self.file_info_from_headers(headers)
 
-        if 'Content-Range' in headers:
-            range_, size = self.range_and_size_from_header(headers['Content-Range'])
+        content_range_header_value = headers.get('Content-Range')
+        if content_range_header_value:
+            range_, size = self.range_and_size_from_header(content_range_header_value)
             content_length = int(headers['Content-Length'])
         else:
             size = content_length = int(headers['Content-Length'])
-            range_ = Range(0, max(size - 1, 0))
+            range_ = Range(0, size - 1) if size else EMPTY_RANGE
 
         return DownloadVersion(
             api=self.api,

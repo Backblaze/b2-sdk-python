@@ -187,3 +187,8 @@ def b2api_simulator(b2api):
 @pytest.fixture
 def bucket(b2api):
     return b2api.create_bucket('test-bucket', 'allPublic')
+
+
+@pytest.fixture
+def file_info():
+    return {'key': 'value'}

@@ -258,9 +258,9 @@ class AbstractRawApi(metaclass=ABCMeta):
     @abstractmethod
     def download_file_from_url(
         self,
-        account_auth_token_or_none,
-        url,
-        range_=None,
+        account_auth_token_or_none: str | None,
+        url: str,
+        range_: tuple[int, int] | None = None,
         encryption: EncryptionSetting | None = None,
     ):
         pass
@@ -645,17 +645,17 @@ class B2RawHTTPApi(AbstractRawApi):
 
     def download_file_from_url(
         self,
-        account_auth_token_or_none,
-        url,
-        range_=None,
+        account_auth_token_or_none: str | None,
+        url: str,
+        range_: tuple[int, int] | None = None,
         encryption: EncryptionSetting | None = None,
     ):
         """
         Issue a streaming request for download of a file, potentially authorized.
 
-        :param str account_auth_token_or_none: an optional account auth token to pass in
-        :param str url: the full URL to download from
-        :param tuple range: two-element tuple for http Range header
+        :param account_auth_token_or_none: an optional account auth token to pass in
+        :param url: the full URL to download from
+        :param range_: two-element tuple for http Range header
         :param b2sdk.v2.EncryptionSetting encryption: encryption settings for downloading
         :return: b2_http response
         """
