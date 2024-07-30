@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import logging
+import platform
 import queue
 import threading
 from concurrent import futures
@@ -195,8 +196,15 @@ class ParallelDownloader(AbstractDownloader):
             except futures.TimeoutError:
                 pass
             else:
-                for stream in streams_futures.done:
-                    stream.result()
+                try:
+                    for stream in streams_futures.done:
+                        stream.result()
+                except Exception:
+                    if platform.python_implementation() == "PyPy":
+                        # Await all threads to avoid PyPy hanging bug.
+                        # https://github.com/pypy/pypy/issues/4994#issuecomment-2258962665
+                        futures.wait(streams_futures.not_done)
+                    raise
                 streams = streams_futures.not_done
 
         futures.wait(streams)
