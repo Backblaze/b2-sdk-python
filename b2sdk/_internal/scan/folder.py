@@ -236,7 +236,14 @@ class LocalFolder(AbstractFolder):
                 return  # Skip if symlink already visited
             visited_symlinks.add(inode_number)
 
-        for local_path in sorted(local_dir.iterdir()):
+        try:
+            dir_children = sorted(local_dir.iterdir())
+        except PermissionError:  # `chmod -r dir` can trigger this
+            if reporter is not None:
+                reporter.local_permission_error(str(local_dir))
+            return
+
+        for local_path in dir_children:
             name = local_path.name
             relative_file_path = join_b2_path(relative_dir_path, name)
 
@@ -251,7 +258,14 @@ class LocalFolder(AbstractFolder):
                     reporter.invalid_name(str(local_path), str(e))
                 continue
 
-            if local_path.is_dir():
+            try:
+                is_dir = local_path.is_dir()
+            except PermissionError:  # `chmod -x dir` can trigger this
+                if reporter is not None:
+                    reporter.local_permission_error(str(local_path))
+                continue
+
+            if is_dir:
                 if policies_manager.should_exclude_local_directory(str(relative_file_path)):
                     continue  # Skip excluded directories
                 # Recurse into directories

@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import os
+import shutil
 import sys
 from glob import glob
 from pathlib import Path
@@ -192,3 +193,28 @@ def bucket(b2api):
 @pytest.fixture
 def file_info():
     return {'key': 'value'}
+
+
+@pytest.fixture
+def tmp_path_permission_cleanup(tmp_path):
+    """
+    Ensure tmp_path is delete-able after the test.
+
+    Important for the tests that mess with filesystem permissions.
+    """
+    yield
+
+    try:
+        shutil.rmtree(tmp_path)
+    except OSError:
+        tmp_path.chmod(0o700)
+        for root, dirs, files in tmp_path.walk(top_down=True):
+            for name in dirs:
+                (root / name).chmod(0o700)
+            for name in files:
+                (root / name).chmod(0o600)
+                (root / name).unlink()
+        for root, dirs, files in tmp_path.walk(top_down=False):
+            for name in dirs:
+                (root / name).rmdir()
+        tmp_path.rmdir()
