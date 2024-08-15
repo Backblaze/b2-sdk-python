@@ -208,13 +208,17 @@ def tmp_path_permission_cleanup(tmp_path):
         shutil.rmtree(tmp_path)
     except OSError:
         tmp_path.chmod(0o700)
-        for root, dirs, files in tmp_path.walk(top_down=True):
+
+        for root, dirs, files in os.walk(tmp_path, topdown=True):
             for name in dirs:
-                (root / name).chmod(0o700)
+                (Path(root) / name).chmod(0o700)
             for name in files:
-                (root / name).chmod(0o600)
-                (root / name).unlink()
-        for root, dirs, files in tmp_path.walk(top_down=False):
+                file_path = Path(root) / name
+                file_path.chmod(0o600)
+                file_path.unlink()
+
+        for root, dirs, files in os.walk(tmp_path, topdown=False):
             for name in dirs:
-                (root / name).rmdir()
+                (Path(root) / name).rmdir()
+
         tmp_path.rmdir()
