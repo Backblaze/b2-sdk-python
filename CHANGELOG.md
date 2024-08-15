@@ -9,6 +9,15 @@ upcoming release can be found in [changelog.d](changelog.d).
 
 <!-- towncrier release notes start -->
 
+## [2.5.1](https://github.com/Backblaze/b2-sdk-python/releases/tag/v2.5.1) - 2024-08-15
+
+
+### Fixed
+
+- Fix LocalFolder.all_files(..) erroring out if one of the non-excluded directories is not readable by the user running the scan.
+  Warning is added to ProgressReport instead as other file access errors are.
+
+
 ## [2.5.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v2.5.0) - 2024-07-30
 
 
