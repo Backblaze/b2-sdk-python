@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import logging
+import re
 import threading
 import time
 from dataclasses import dataclass
@@ -19,6 +20,21 @@ from ..utils import format_and_scale_number
 from ..utils.escape import escape_control_chars
 
 logger = logging.getLogger(__name__)
+
+_REMOVE_EXTENDED_PATH_PREFIX = re.compile(r'\\\\\?\\')
+
+
+def _safe_path_print(path: str) -> str:
+    """
+    Print a path, escaping control characters if necessary.
+
+    Windows extended path prefix is removed from the path before printing for better readability.
+    Since Windows 10 the prefix is not needed.
+
+    :param path: a path to print
+    :return: a path that can be printed
+    """
+    return escape_control_chars(_REMOVE_EXTENDED_PATH_PREFIX.sub('', path))
 
 
 @dataclass
@@ -180,7 +196,7 @@ class ProgressReport:
         :param path: file path
         """
         self.warnings.append(
-            f'WARNING: {escape_control_chars(path)} could not be accessed (broken symlink?)'
+            f'WARNING: {_safe_path_print(path)} could not be accessed (broken symlink?)'
         )
 
     def local_permission_error(self, path: str) -> None:
@@ -190,7 +206,7 @@ class ProgressReport:
         :param path: file path
         """
         self.warnings.append(
-            f'WARNING: {escape_control_chars(path)} could not be accessed (no permissions to read?)'
+            f'WARNING: {_safe_path_print(path)} could not be accessed (no permissions to read?)'
         )
 
     def symlink_skipped(self, path: str) -> None:
@@ -203,7 +219,7 @@ class ProgressReport:
         :param path: file path
         """
         self.warnings.append(
-            f'WARNING: {escape_control_chars(path)} is a circular symlink, which was already visited. Skipping.'
+            f'WARNING: {_safe_path_print(path)} is a circular symlink, which was already visited. Skipping.'
         )
 
     def invalid_name(self, path: str, error: str) -> None:
@@ -213,7 +229,7 @@ class ProgressReport:
         :param path: file path
         """
         self.warnings.append(
-            f'WARNING: {escape_control_chars(path)} path contains invalid name ({error}). Skipping.'
+            f'WARNING: {_safe_path_print(path)} path contains invalid name ({error}). Skipping.'
         )
 
 

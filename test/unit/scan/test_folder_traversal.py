@@ -11,8 +11,10 @@ from __future__ import annotations
 
 import codecs
 import os
+import pathlib
 import platform
 import re
+import shlex
 import sys
 from unittest.mock import MagicMock, patch
 
@@ -682,23 +684,89 @@ class TestFolderTraversal:
 
         reporter.close()
 
-    def test_excluded_without_permissions(self, tmp_path):
-        """Test that a excluded directory/file without permissions is not processed and no warning is issued."""
-        excluded_dir = tmp_path / "excluded_dir"
-        excluded_dir.mkdir()
-        (excluded_dir / "file.txt").touch()
+    @pytest.mark.skipif(
+        platform.system() == 'Windows',
+        reason="Unix-only filesystem permissions are tested",
+    )
+    def test_dir_without_exec_permission(self, tmp_path, fs_perm_tool):
+        """Test that a excluded directory/file without permissions emits warnings."""
+        no_perm_dir = tmp_path / "no_perm_dir"
+        no_perm_dir.mkdir()
+        (no_perm_dir / "file.txt").touch()
+        (no_perm_dir / "file2.txt").touch()
+        # chmod -x no_perm_dir
+        no_perm_dir.chmod(0o600)
+
+        scan_policy = ScanPoliciesManager()
+        reporter = ProgressReport(sys.stdout, False)
+
+        folder = LocalFolder(str(tmp_path))
+        local_paths = folder.all_files(reporter=reporter, policies_manager=scan_policy)
+        absolute_paths = [path.absolute_path for path in local_paths]
+        assert not absolute_paths
+
+        # Check that no access warnings are issued for the excluded directory/file
+        assert set(reporter.warnings) == {
+            f'WARNING: {tmp_path/"no_perm_dir/file.txt"} could not be accessed (no permissions to read?)',
+            f'WARNING: {tmp_path/"no_perm_dir/file2.txt"} could not be accessed (no permissions to read?)',
+        }
+
+        reporter.close()
+
+    def test_without_permissions(self, tmp_path, fs_perm_tool):
+        """Test that a excluded directory/file without permissions emits warnings."""
+        no_perm_dir = tmp_path / "no_perm_dir"
+        no_perm_dir.mkdir()
+        (no_perm_dir / "file.txt").touch()
 
         included_dir = tmp_path / "included_dir"
         included_dir.mkdir()
-        (included_dir / "excluded_file.txt").touch()
+        (included_dir / "no_perm_file.txt").touch()
         (included_dir / "included_file.txt").touch()
 
         # Modify directory permissions to simulate lack of access
-        (included_dir / "excluded_file.txt").chmod(0o000)
-        excluded_dir.chmod(0o000)
+        fs_perm_tool.deny_access(included_dir / "no_perm_file.txt")
+        fs_perm_tool.deny_access(no_perm_dir)
+
+        scan_policy = ScanPoliciesManager()
+        reporter = ProgressReport(sys.stdout, False)
+
+        folder = LocalFolder(str(tmp_path))
+        local_paths = folder.all_files(reporter=reporter, policies_manager=scan_policy)
+        absolute_paths = [pathlib.Path(path.absolute_path) for path in local_paths]
+
+        # Check that only included_dir/included_file.txt was return
+        assert {path.name for path in absolute_paths} == {"included_file.txt"}
+
+        def s(p):
+            # shlex.quote works differently depending if its on windows or unix
+            return shlex.quote(str(p))
+
+        # Check that no access warnings are issued for the excluded directory/file
+        assert set(reporter.warnings) == {
+            f'WARNING: {s(tmp_path / "no_perm_dir")} could not be accessed (no permissions to read?)',
+            f'WARNING: {s(tmp_path / "included_dir/no_perm_file.txt")} could not be accessed (no permissions to read?)'
+        }
+
+        reporter.close()
+
+    def test_excluded_without_permissions(self, tmp_path, fs_perm_tool):
+        """Test that a excluded directory/file without permissions is not processed and no warning is issued."""
+        no_perm_dir = tmp_path / "no_perm_dir"
+        no_perm_dir.mkdir()
+        (no_perm_dir / "file.txt").touch()
+
+        included_dir = tmp_path / "included_dir"
+        included_dir.mkdir()
+        (included_dir / "no_perm_file.txt").touch()
+        (included_dir / "included_file.txt").touch()
+
+        # Modify directory permissions to simulate lack of access
+        fs_perm_tool.deny_access(included_dir / "no_perm_file.txt")
+        fs_perm_tool.deny_access(no_perm_dir)
 
         scan_policy = ScanPoliciesManager(
-            exclude_dir_regexes=[r"excluded_dir$"], exclude_file_regexes=[r'.*excluded_file.txt']
+            exclude_dir_regexes=[r"no_perm_dir$"], exclude_file_regexes=[r'.*no_perm_file.txt']
         )
         reporter = ProgressReport(sys.stdout, False)
 
@@ -706,19 +774,10 @@ class TestFolderTraversal:
         local_paths = folder.all_files(reporter=reporter, policies_manager=scan_policy)
         absolute_paths = [path.absolute_path for path in local_paths]
 
-        # Restore directory permissions to clean up
-        (included_dir / "excluded_file.txt").chmod(0o755)
-        excluded_dir.chmod(0o755)
-
         # Check that only included_dir/included_file.txt was return
         assert any('included_file.txt' in path for path in absolute_paths)
 
         # Check that no access warnings are issued for the excluded directory/file
-        assert not any(
-            re.match(
-                r"WARNING: .*excluded_.* could not be accessed \(no permissions to read\?\)",
-                warning,
-            ) for warning in reporter.warnings
-        ), "Access warning was issued for the excluded directory/file"
+        assert not reporter.warnings
 
         reporter.close()
