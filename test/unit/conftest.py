@@ -15,6 +15,13 @@ import sys
 from glob import glob
 from pathlib import Path
 
+try:
+    import ntsecuritycon
+    import win32api
+    import win32security
+except ImportError:
+    ntsecuritycon = win32api = win32security = None
+
 import pytest
 
 pytest.register_assert_rewrite('test.unit')
@@ -195,26 +202,84 @@ def file_info():
     return {'key': 'value'}
 
 
+class PermTool:
+    def allow_access(self, path):
+        pass
+
+    def deny_access(self, path):
+        pass
+
+
+class UnixPermTool(PermTool):
+    def allow_access(self, path):
+        path.chmod(0o700)
+
+    def deny_access(self, path):
+        path.chmod(0o000)
+
+
+class WindowsPermTool(PermTool):
+    def __init__(self):
+        self.user_sid = win32security.GetTokenInformation(
+            win32security.OpenProcessToken(win32api.GetCurrentProcess(), win32security.TOKEN_QUERY),
+            win32security.TokenUser
+        )[0]
+
+    def allow_access(self, path):
+        dacl = win32security.ACL()
+        dacl.AddAccessAllowedAce(
+            win32security.ACL_REVISION, ntsecuritycon.FILE_ALL_ACCESS, self.user_sid
+        )
+
+        security_desc = win32security.GetFileSecurity(
+            str(path), win32security.DACL_SECURITY_INFORMATION
+        )
+        security_desc.SetSecurityDescriptorDacl(1, dacl, 0)
+        win32security.SetFileSecurity(
+            str(path), win32security.DACL_SECURITY_INFORMATION, security_desc
+        )
+
+    def deny_access(self, path):
+        dacl = win32security.ACL()
+        dacl.AddAccessDeniedAce(
+            win32security.ACL_REVISION, ntsecuritycon.FILE_ALL_ACCESS, self.user_sid
+        )
+
+        security_desc = win32security.GetFileSecurity(
+            str(path), win32security.DACL_SECURITY_INFORMATION
+        )
+        security_desc.SetSecurityDescriptorDacl(1, dacl, 0)
+        win32security.SetFileSecurity(
+            str(path), win32security.DACL_SECURITY_INFORMATION, security_desc
+        )
+
+
 @pytest.fixture
-def tmp_path_permission_cleanup(tmp_path):
+def fs_perm_tool(tmp_path):
     """
     Ensure tmp_path is delete-able after the test.
 
     Important for the tests that mess with filesystem permissions.
     """
-    yield
+    if os.name == 'nt':
+        if win32api is None:
+            pytest.skip('pywin32 is required to run this test')
+        perm_tool = WindowsPermTool()
+    else:
+        perm_tool = UnixPermTool()
+    yield perm_tool
 
     try:
         shutil.rmtree(tmp_path)
     except OSError:
-        tmp_path.chmod(0o700)
+        perm_tool.allow_access(tmp_path)
 
         for root, dirs, files in os.walk(tmp_path, topdown=True):
             for name in dirs:
-                (Path(root) / name).chmod(0o700)
+                perm_tool.allow_access(Path(root) / name)
             for name in files:
                 file_path = Path(root) / name
-                file_path.chmod(0o600)
+                perm_tool.allow_access(file_path)
                 file_path.unlink()
 
         for root, dirs, files in os.walk(tmp_path, topdown=False):

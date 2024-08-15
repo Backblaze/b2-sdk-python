@@ -108,6 +108,20 @@ def join_b2_path(relative_dir_path: str | Path, file_name: str):
         return relative_dir_path + '/' + file_name
 
 
+if sys.platform == 'win32':
+
+    def _file_read_access(path):
+        try:
+            with open(path, 'rb', buffering=0):
+                return True
+        except PermissionError:
+            return False
+else:
+
+    def _file_read_access(path):
+        return os.access(path, os.R_OK)
+
+
 class LocalFolder(AbstractFolder):
     """
     Folder interface to a directory on the local machine.
@@ -261,7 +275,9 @@ class LocalFolder(AbstractFolder):
             try:
                 is_dir = local_path.is_dir()
             except PermissionError:  # `chmod -x dir` can trigger this
-                if reporter is not None:
+                if reporter is not None and not policies_manager.should_exclude_local_directory(
+                    str(relative_file_path)
+                ):
                     reporter.local_permission_error(str(local_path))
                 continue
 
@@ -292,7 +308,7 @@ class LocalFolder(AbstractFolder):
                 if policies_manager.should_exclude_local_path(local_scan_path):
                     continue  # Skip excluded files
 
-                if not os.access(local_path, os.R_OK):
+                if not _file_read_access(local_path):
                     if reporter is not None:
                         reporter.local_permission_error(str(local_path))
                         continue
