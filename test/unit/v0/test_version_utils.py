@@ -30,7 +30,7 @@ class TestRenameArgument(TestBase):
             assert easy(5) == 5
             assert easy(bbb=5) == 5
             assert easy.__name__ == 'easy'
-            assert easy.__doc__ == ' easy docstring '
+            assert easy.__doc__.strip() == 'easy docstring'
             assert len(w) == 0
 
         with warnings.catch_warnings(record=True) as w:

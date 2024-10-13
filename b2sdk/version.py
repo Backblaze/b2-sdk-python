@@ -9,12 +9,8 @@
 ######################################################################
 from __future__ import annotations
 
+from importlib.metadata import version as _version
 from sys import version_info as _version_info
-
-try:
-    from importlib.metadata import version as _version
-except ModuleNotFoundError:  # python 3.7
-    from importlib_metadata import version as _version
 
 __all__ = [
     "VERSION",
