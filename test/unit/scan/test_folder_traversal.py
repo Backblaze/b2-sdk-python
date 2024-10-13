@@ -93,9 +93,12 @@ class TestFolderTraversal:
         ]
 
     @pytest.mark.skipif(
-        platform.system() == 'Windows' and platform.python_implementation() == 'PyPy',
-        reason=
-        "PyPy on Windows force-decodes non-UTF-8 filenames, which makes it impossible to test this case"
+        platform.system() == 'Windows' and
+        (platform.python_implementation() == 'PyPy' or sys.version_info >= (3, 13)),
+        reason=(
+            "PyPy on Windows force-decodes non-UTF-8 filenames, which makes it impossible to test this case. "
+            "Python 3.13 does so similarly on Windows."
+        )
     )
     def test_invalid_unicode_filename(self, tmp_path):
         # Create a directory structure below with initial scanning point at tmp_path/dir:
