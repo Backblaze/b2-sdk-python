@@ -13,7 +13,7 @@ from dataclasses import dataclass
 
 import pytest
 from apiver_deps import AuthInfoCache, DummyCache, InMemoryAccountInfo, InMemoryCache
-from pytest_lazyfixture import lazy_fixture
+from pytest_lazy_fixtures import lf
 
 
 @pytest.fixture
@@ -31,10 +31,7 @@ def auth_info_cache():
     return AuthInfoCache(InMemoryAccountInfo())
 
 
-@pytest.fixture(
-    scope="class", params=[lazy_fixture('in_memory_cache'),
-                           lazy_fixture('auth_info_cache')]
-)
+@pytest.fixture(scope="function", params=[lf('in_memory_cache'), lf('auth_info_cache')])
 def cache(request):
     return request.param
 
