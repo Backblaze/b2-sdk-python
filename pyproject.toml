@@ -139,7 +139,7 @@ name = "Infrastructure"
 showcontent = true
 
 [tool.pdm]
-package-type = "library"
+distribution = true
 
 [tool.pdm.build]
 includes = ["b2sdk"]
