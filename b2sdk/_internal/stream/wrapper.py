@@ -54,6 +54,10 @@ class StreamWrapper(io.IOBase):
         """
         self.stream.flush()
 
+    @property
+    def closed(self):
+        return self.stream.closed
+
     def readable(self):
         return self.stream.readable()
 
