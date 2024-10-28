@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import pytest
 from apiver_deps import InMemoryAccountInfo, SqliteAccountInfo
+from pytest_lazy_fixtures import lf
 
 
 @pytest.fixture
@@ -82,22 +83,18 @@ def sqlite_account_info(sqlite_account_info_factory):
     return sqlite_account_info_factory()
 
 
-@pytest.fixture(
-    params=[
-        pytest.lazy_fixture('in_memory_account_info_factory'),
-        pytest.lazy_fixture('sqlite_account_info_factory'),
-    ]
-)
+@pytest.fixture(params=[
+    lf('in_memory_account_info_factory'),
+    lf('sqlite_account_info_factory'),
+])
 def account_info_factory(request):
     return request.param
 
 
-@pytest.fixture(
-    params=[
-        pytest.lazy_fixture('in_memory_account_info'),
-        pytest.lazy_fixture('sqlite_account_info'),
-    ]
-)
+@pytest.fixture(params=[
+    lf('in_memory_account_info'),
+    lf('sqlite_account_info'),
+])
 def account_info(request):
     return request.param
 
