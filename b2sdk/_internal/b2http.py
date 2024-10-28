@@ -145,15 +145,20 @@ class ClockSkewHook(HttpCallback):
         # Convert the server time to a datetime object
         try:
             with setlocale("C"):
+                # "%Z" always creates naive datetimes, even though the timezone
+                # is specified. https://github.com/python/cpython/issues/76678
+                # Anyway, thankfully, HTTP/1.1 spec requires the string
+                # to always say "GMT", and provide UTC time.
+                # https://datatracker.ietf.org/doc/html/rfc2616#section-3.3.1
                 server_time = datetime.datetime.strptime(
-                    server_date_str, '%a, %d %b %Y %H:%M:%S %Z'
-                )
+                    server_date_str, '%a, %d %b %Y %H:%M:%S GMT'
+                ).replace(tzinfo=datetime.timezone.utc)
         except ValueError:
             logger.exception('server returned date in an inappropriate format')
             raise BadDateFormat(server_date_str)
 
         # Get the local time
-        local_time = datetime.datetime.utcnow()
+        local_time = datetime.datetime.now(datetime.timezone.utc)
 
         # Check the difference.
         max_allowed = 10 * 60  # ten minutes, in seconds

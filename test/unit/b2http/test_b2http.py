@@ -402,14 +402,14 @@ class TestClockSkewHook(TestBase):
             ClockSkewHook().post_request('POST', 'http://example.com', {}, response)
 
     def test_no_skew(self):
-        now = datetime.datetime.utcnow()
+        now = datetime.datetime.now(datetime.timezone.utc)
         now_str = now.strftime('%a, %d %b %Y %H:%M:%S GMT')
         response = MagicMock()
         response.headers = {'Date': now_str}
         ClockSkewHook().post_request('POST', 'http://example.com', {}, response)
 
     def test_positive_skew(self):
-        now = datetime.datetime.utcnow() + datetime.timedelta(minutes=11)
+        now = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=11)
         now_str = now.strftime('%a, %d %b %Y %H:%M:%S GMT')
         response = MagicMock()
         response.headers = {'Date': now_str}
@@ -417,7 +417,7 @@ class TestClockSkewHook(TestBase):
             ClockSkewHook().post_request('POST', 'http://example.com', {}, response)
 
     def test_negative_skew(self):
-        now = datetime.datetime.utcnow() + datetime.timedelta(minutes=-11)
+        now = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=-11)
         now_str = now.strftime('%a, %d %b %Y %H:%M:%S GMT')
         response = MagicMock()
         response.headers = {'Date': now_str}
