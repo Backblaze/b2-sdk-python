@@ -9,6 +9,30 @@ upcoming release can be found in [changelog.d](changelog.d).
 
 <!-- towncrier release notes start -->
 
+## [2.6.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v2.6.0) - 2024-10-28
+
+
+### Removed
+
+- Remove Python 3.7 support in new releases.
+  Under Python 3.7 `pip` will keep resolving the latest version of the package that supports active interpreter.
+  Python 3.8 is now the minimum supported version, [until it reaches EOL in October 2024](https://devguide.python.org/versions/).
+  We encourage use of the latest stable Python release.
+
+### Fixed
+
+- Fixed datetime.utcnow() deprecation warnings under Python 3.12.
+
+### Added
+
+- Declare official support for Python 3.13 in b2sdk.
+  Test b2sdk against Python 3.13 in CI.
+
+### Infrastructure
+
+- Upgraded to pytest 8 (#484).
+
+
 ## [2.5.1](https://github.com/Backblaze/b2-sdk-python/releases/tag/v2.5.1) - 2024-08-15
 
 
