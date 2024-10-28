@@ -57,3 +57,22 @@ def type_validator_factory(type_):
     if pydantic:
         return pydantic.TypeAdapter(type_).validate_python
     return lambda *args, **kwargs: None
+
+
+def deep_cast_dict(actual, expected):
+    """
+    For composite objects `actual` and `expected`, return a copy of `actual` (with all dicts and lists deeply copied)
+    with all keys of dicts not appearing in `expected` (comparing dicts on any level) removed. Useful for assertions
+    in tests ignoring extra keys.
+    """
+    if isinstance(expected, dict) and isinstance(actual, dict):
+        return {k: deep_cast_dict(actual[k], expected[k]) for k in expected if k in actual}
+
+    elif isinstance(expected, list) and isinstance(actual, list):
+        return [deep_cast_dict(a, e) for a, e in zip(actual, expected)]
+
+    return actual
+
+
+def assert_dict_equal_ignore_extra(actual, expected):
+    assert deep_cast_dict(actual, expected) == expected

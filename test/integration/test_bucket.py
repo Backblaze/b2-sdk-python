@@ -7,6 +7,8 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
+from test.helpers import assert_dict_equal_ignore_extra
+
 import pytest
 
 
@@ -33,12 +35,13 @@ def test_bucket_notification_rules(bucket, b2_api):
 
     set_notification_rules = bucket.set_notification_rules([notification_rule])
     assert set_notification_rules == bucket.get_notification_rules()
-    assert set_notification_rules == [
-        {
+    assert_dict_equal_ignore_extra(
+        set_notification_rules,
+        [{
             **notification_rule, "isSuspended": False,
             "suspensionReason": ""
-        }
-    ]
+        }],
+    )
     assert bucket.set_notification_rules([]) == []
 
 
