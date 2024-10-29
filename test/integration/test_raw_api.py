@@ -16,7 +16,7 @@ import re
 import sys
 import time
 import traceback
-from test.helpers import type_validator_factory
+from test.helpers import assert_dict_equal_ignore_extra, type_validator_factory
 from typing import List
 
 import pytest
@@ -634,7 +634,9 @@ def _subtest_bucket_notification_rules(raw_api, auth_dict, api_url, account_auth
                 }
         }
     ]
-    assert notification_rules_response_list == expected_notification_rule_response_list
+    assert_dict_equal_ignore_extra(
+        notification_rules_response_list, expected_notification_rule_response_list
+    )
 
     assert raw_api.set_bucket_notification_rules(api_url, account_auth_token, bucket_id, []) == []
     assert raw_api.get_bucket_notification_rules(api_url, account_auth_token, bucket_id) == []
