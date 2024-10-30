@@ -64,13 +64,12 @@ def pytest_report_header(config):
 
 
 @pytest.hookimpl(tryfirst=True)
-def pytest_ignore_collect(path, config):
+def pytest_ignore_collect(collection_path, config):
     """Ignore all tests from subfolders for different apiver."""
-    path = str(path)
     ver = config.getoption('--api')
     other_versions = [v for v in API_VERSIONS if v != ver]
     for other_version in other_versions:
-        if other_version + os.sep in path:
+        if other_version in collection_path.parts:
             return True
     return False
 
