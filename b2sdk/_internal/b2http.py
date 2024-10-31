@@ -551,6 +551,8 @@ class B2Http:
                         # an upload request for cause, so we use a 400 Bad Request
                         # code.
                         raise BrokenPipe()
+                elif isinstance(e2, TimeoutError):
+                    raise B2RequestTimeout(str(e0))
             raise B2ConnectionError(str(e0))
 
         except requests.Timeout as e:
