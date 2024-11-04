@@ -10,8 +10,6 @@
 from __future__ import annotations
 
 import base64
-import functools
-import warnings
 from abc import ABCMeta, abstractmethod
 from enum import Enum, unique
 from logging import getLogger
@@ -19,7 +17,6 @@ from typing import Any, Iterable
 
 from .utils.escape import unprintable_to_hex
 from .utils.typing import JSON
-from .version_utils import FeaturePreviewWarning
 
 try:
     from typing_extensions import Literal, NotRequired, TypedDict
@@ -160,21 +157,6 @@ class NotificationRuleResponse(_NotificationRule):
     isSuspended: bool
 
 
-def _bucket_notification_rule_feature_preview_warning(func):
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        warnings.warn(
-            "Event Notifications feature is in \"Private Preview\" state and may change without notice. "
-            "See https://www.backblaze.com/blog/announcing-event-notifications/ for details.",
-            FeaturePreviewWarning,
-            stacklevel=2,
-        )
-        return func(*args, **kwargs)
-
-    return wrapper
-
-
-@_bucket_notification_rule_feature_preview_warning
 def notification_rule_response_to_request(rule: NotificationRuleResponse) -> NotificationRule:
     """
     Convert NotificationRuleResponse to NotificationRule.
@@ -1183,7 +1165,6 @@ class B2RawHTTPApi(AbstractRawApi):
         except AccessDenied:
             raise SSECKeyError()
 
-    @_bucket_notification_rule_feature_preview_warning
     def set_bucket_notification_rules(
         self, api_url: str, account_auth_token: str, bucket_id: str, rules: list[NotificationRule]
     ) -> list[NotificationRuleResponse]:
@@ -1197,7 +1178,6 @@ class B2RawHTTPApi(AbstractRawApi):
             },
         )["eventNotificationRules"]
 
-    @_bucket_notification_rule_feature_preview_warning
     def get_bucket_notification_rules(self, api_url: str, account_auth_token: str,
                                       bucket_id: str) -> list[NotificationRuleResponse]:
         return self._get_json(
