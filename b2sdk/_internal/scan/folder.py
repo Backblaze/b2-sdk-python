@@ -114,7 +114,7 @@ if sys.platform == 'win32':
         try:
             with open(path, 'rb', buffering=0):
                 return True
-        except PermissionError:
+        except (FileNotFoundError, PermissionError):
             return False
 else:
 
