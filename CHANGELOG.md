@@ -9,6 +9,24 @@ upcoming release can be found in [changelog.d](changelog.d).
 
 <!-- towncrier release notes start -->
 
+## [2.7.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v2.7.0) - 2024-12-12
+
+
+### Changed
+
+- Make Event Notifications generally available. ([#518](https://github.com/Backblaze/b2-sdk-python/issues/518))
+- Switch a pytest hook from path to collection_path.
+
+### Fixed
+
+- Add upload token reset after upload timeout.
+- Fix file/directory permission handling for Windows during the B2 sync.
+
+### Infrastructure
+
+- Fix event notification tests when introducing new keys in API outputs.
+
+
 ## [2.6.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v2.6.0) - 2024-10-28
 
 
