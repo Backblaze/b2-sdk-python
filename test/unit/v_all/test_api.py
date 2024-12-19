@@ -164,4 +164,4 @@ class TestApi(TestBase):
 
         download_url = self.api.get_download_url_for_fileid('file-id')
 
-        assert download_url == 'http://download.example.com/b2api/v2/b2_download_file_by_id?fileId=file-id'
+        assert download_url == 'http://download.example.com/b2api/v3/b2_download_file_by_id?fileId=file-id'
