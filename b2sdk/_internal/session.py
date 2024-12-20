@@ -459,7 +459,7 @@ class B2Session:
         callback = self._token_callbacks[token_type]
         partial_callback = partial(callback, raw_api_method, *args, **kwargs)
 
-        return self._reauthorization_loop(partial_callback)
+        return self._execute_with_auth_retry(partial_callback)
 
     def _api_token_callback(self, raw_api_method, *args, **kwargs):
         api_url = self.account_info.get_api_url()
@@ -470,20 +470,21 @@ class B2Session:
         account_auth_token = self.account_info.get_account_auth_token()
         return raw_api_method(account_auth_token, *args, **kwargs)
 
-    def _reauthorization_loop(self, callback):
-        auth_failure_encountered = False
-        while 1:
-            try:
-                return callback()
-            except InvalidAuthToken:
-                if not auth_failure_encountered:
-                    auth_failure_encountered = True
-                    reauthorization_success = self.authorize_automatically()
-                    if reauthorization_success:
-                        continue
-                raise
-            except Unauthorized as e:
-                raise self._add_app_key_info_to_unauthorized(e)
+    def _execute_with_auth_retry(self, callback, first_attempt: bool = True):
+        try:
+            return callback()
+        except InvalidAuthToken:
+            if first_attempt and self.authorize_automatically():
+                return self._execute_with_auth_retry(callback, first_attempt=False)
+            raise
+        except Unauthorized as exc:
+            # When performing HEAD requests, the api can return an empty response
+            # with a 401 status code, which may or may not be related to expired
+            # token, thus we also try to re-authorize if explicit `unauthorized`
+            # code is missing
+            if not exc.code and first_attempt and self.authorize_automatically():
+                return self._execute_with_auth_retry(callback, first_attempt=False)
+            raise self._add_app_key_info_to_unauthorized(exc)
 
     def _add_app_key_info_to_unauthorized(self, unauthorized):
         """
