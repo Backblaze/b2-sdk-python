@@ -81,9 +81,8 @@ def skip_coverage(python_version: str | None) -> bool:
 def format_(session):
     """Lint the code and apply fixes in-place whenever possible."""
     pdm_install(session, 'lint')
-    # TODO: incremental mode for yapf
-    session.run('yapf', '--in-place', '--parallel', '--recursive', *PY_PATHS)
     session.run('ruff', 'check', '--fix', *PY_PATHS)
+    session.run('ruff', 'format', *PY_PATHS)
     # session.run(
     #     'docformatter',
     #     '--in-place',
@@ -99,8 +98,8 @@ def lint(session):
     """Run linters in readonly mode."""
     # We need to install 'doc' group because liccheck needs to inspect it.
     pdm_install(session, 'doc', 'lint', 'full')
-    session.run('yapf', '--diff', '--parallel', '--recursive', *PY_PATHS)
     session.run('ruff', 'check', *PY_PATHS)
+    session.run('ruff', 'format', *PY_PATHS)
     # session.run(
     #     'docformatter',
     #     '--check',

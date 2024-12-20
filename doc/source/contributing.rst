@@ -12,7 +12,7 @@ We encourage outside contributors to perform changes on our codebase. Many such 
 * maintain a set of integration tests (run with a production cloud)
 * maintain development automation tools using `nox <https://github.com/theacodes/nox>`_ that can easily:
 
-   * format the code using `yapf <https://github.com/google/yapf>`_
+   * format the code using `ruff <https://github.com/astral-sh/ruff>`_
    * runs linters to find subtle/potential issues with maintainability
    * run the test suite on multiple Python versions using `pytest <https://github.com/pytest-dev/pytest>`_
 
