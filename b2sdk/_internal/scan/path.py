@@ -29,9 +29,7 @@ class AbstractPath(ABC):
         """Is the path visible/not deleted on it's storage"""
 
     def __repr__(self):
-        return '{}({}, {}, {})'.format(
-            self.__class__.__name__, repr(self.relative_path), repr(self.mod_time), repr(self.size)
-        )
+        return f'{self.__class__.__name__}({repr(self.relative_path)}, {repr(self.mod_time)}, {repr(self.size)})'
 
 
 class LocalPath(AbstractPath):
@@ -46,9 +44,10 @@ class LocalPath(AbstractPath):
 
     def __eq__(self, other):
         return (
-            self.absolute_path == other.absolute_path and
-            self.relative_path == other.relative_path and self.mod_time == other.mod_time and
-            self.size == other.size
+            self.absolute_path == other.absolute_path
+            and self.relative_path == other.relative_path
+            and self.mod_time == other.mod_time
+            and self.size == other.size
         )
 
 
@@ -75,15 +74,17 @@ class B2Path(AbstractPath):
 
     def __repr__(self):
         return '{}({}, [{}])'.format(
-            self.__class__.__name__, self.relative_path, ', '.join(
+            self.__class__.__name__,
+            self.relative_path,
+            ', '.join(
                 f'({repr(fv.id_)}, {repr(fv.mod_time_millis)}, {repr(fv.action)})'
                 for fv in self.all_versions
-            )
+            ),
         )
 
     def __eq__(self, other):
         return (
-            self.relative_path == other.relative_path and
-            self.selected_version == other.selected_version and
-            self.all_versions == other.all_versions
+            self.relative_path == other.relative_path
+            and self.selected_version == other.selected_version
+            and self.all_versions == other.all_versions
         )

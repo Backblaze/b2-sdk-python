@@ -28,7 +28,6 @@ from b2sdk._internal.utils import fix_windows_path_limit
 
 class TestFolderTraversal:
     def test_flat_folder(self, tmp_path):
-
         # Create a directory structure below with initial scanning point at tmp_path/dir:
         # tmp_path
         # └── dir
@@ -36,20 +35,20 @@ class TestFolderTraversal:
         #     ├── file2.txt
         #     └── file3.txt
 
-        (tmp_path / "dir").mkdir(parents=True)
+        (tmp_path / 'dir').mkdir(parents=True)
 
-        (tmp_path / "dir" / "file1.txt").write_text("content1")
-        (tmp_path / "dir" / "file2.txt").write_text("content2")
-        (tmp_path / "dir" / "file3.txt").write_text("content3")
+        (tmp_path / 'dir' / 'file1.txt').write_text('content1')
+        (tmp_path / 'dir' / 'file2.txt').write_text('content2')
+        (tmp_path / 'dir' / 'file3.txt').write_text('content3')
 
-        folder = LocalFolder(str(tmp_path / "dir"))
+        folder = LocalFolder(str(tmp_path / 'dir'))
         local_paths = folder.all_files(reporter=MagicMock())
         absolute_paths = [path.absolute_path for path in list(local_paths)]
 
         assert absolute_paths == [
-            fix_windows_path_limit(str(tmp_path / "dir" / "file1.txt")),
-            fix_windows_path_limit(str(tmp_path / "dir" / "file2.txt")),
-            fix_windows_path_limit(str(tmp_path / "dir" / "file3.txt")),
+            fix_windows_path_limit(str(tmp_path / 'dir' / 'file1.txt')),
+            fix_windows_path_limit(str(tmp_path / 'dir' / 'file2.txt')),
+            fix_windows_path_limit(str(tmp_path / 'dir' / 'file3.txt')),
         ]
 
     @pytest.mark.skipif(
@@ -57,7 +56,6 @@ class TestFolderTraversal:
         reason="Windows doesn't allow / or \\ in filenames",
     )
     def test_invalid_name(self, tmp_path):
-
         # Create a directory structure below with initial scanning point at tmp_path/dir:
         # tmp_path
         # └── dir
@@ -67,15 +65,15 @@ class TestFolderTraversal:
         #     ├── file\bad.txt
         #     └── file[DEL]bad.txt
 
-        (tmp_path / "dir" / "subdir").mkdir(parents=True)
+        (tmp_path / 'dir' / 'subdir').mkdir(parents=True)
 
-        (tmp_path / "dir" / "file1.txt").write_text("content1")
-        (tmp_path / "dir" / "subdir" / "file2.txt").write_text("content2")
-        (tmp_path / "dir" / "file\\bad.txt").write_text("bad1")
-        (tmp_path / "dir" / "file\x7fbad.txt").write_text("bad2")
+        (tmp_path / 'dir' / 'file1.txt').write_text('content1')
+        (tmp_path / 'dir' / 'subdir' / 'file2.txt').write_text('content2')
+        (tmp_path / 'dir' / 'file\\bad.txt').write_text('bad1')
+        (tmp_path / 'dir' / 'file\x7fbad.txt').write_text('bad2')
 
         reporter = ProgressReport(sys.stdout, False)
-        folder = LocalFolder(str(tmp_path / "dir"))
+        folder = LocalFolder(str(tmp_path / 'dir'))
         local_paths = folder.all_files(reporter=reporter)
         absolute_paths = [path.absolute_path for path in list(local_paths)]
 
@@ -88,17 +86,17 @@ class TestFolderTraversal:
         reporter.close()
 
         assert absolute_paths == [
-            fix_windows_path_limit(str(tmp_path / "dir" / "file1.txt")),
-            fix_windows_path_limit(str(tmp_path / "dir" / "subdir" / "file2.txt")),
+            fix_windows_path_limit(str(tmp_path / 'dir' / 'file1.txt')),
+            fix_windows_path_limit(str(tmp_path / 'dir' / 'subdir' / 'file2.txt')),
         ]
 
     @pytest.mark.skipif(
-        platform.system() == 'Windows' and
-        (platform.python_implementation() == 'PyPy' or sys.version_info >= (3, 13)),
+        platform.system() == 'Windows'
+        and (platform.python_implementation() == 'PyPy' or sys.version_info >= (3, 13)),
         reason=(
-            "PyPy on Windows force-decodes non-UTF-8 filenames, which makes it impossible to test this case. "
-            "Python 3.13 does so similarly on Windows."
-        )
+            'PyPy on Windows force-decodes non-UTF-8 filenames, which makes it impossible to test this case. '
+            'Python 3.13 does so similarly on Windows.'
+        ),
     )
     def test_invalid_unicode_filename(self, tmp_path):
         # Create a directory structure below with initial scanning point at tmp_path/dir:
@@ -107,34 +105,34 @@ class TestFolderTraversal:
         #     ├── file1.txt
         #     └── XXX (invalid utf-8 filename)
 
-        (tmp_path / "dir").mkdir(parents=True)
-        (tmp_path / "dir" / "file1.txt").write_text("content1")
+        (tmp_path / 'dir').mkdir(parents=True)
+        (tmp_path / 'dir' / 'file1.txt').write_text('content1')
 
-        foreign_encoding = "euc_jp"
+        foreign_encoding = 'euc_jp'
         # test sanity check
-        assert codecs.lookup(foreign_encoding).name != codecs.lookup(
-            sys.getfilesystemencoding()
-        ).name
+        assert (
+            codecs.lookup(foreign_encoding).name != codecs.lookup(sys.getfilesystemencoding()).name
+        )
 
-        invalid_utf8_path = os.path.join(bytes(tmp_path), b"dir", 'てすと'.encode(foreign_encoding))
+        invalid_utf8_path = os.path.join(bytes(tmp_path), b'dir', 'てすと'.encode(foreign_encoding))
         try:
-            with open(invalid_utf8_path, "wb") as f:
-                f.write(b"content2")
+            with open(invalid_utf8_path, 'wb') as f:
+                f.write(b'content2')
         except (OSError, UnicodeDecodeError):
-            pytest.skip("Cannot create invalid UTF-8 filename on this platform")
+            pytest.skip('Cannot create invalid UTF-8 filename on this platform')
 
         reporter = ProgressReport(sys.stdout, False)
-        folder = LocalFolder(str(tmp_path / "dir"))
+        folder = LocalFolder(str(tmp_path / 'dir'))
         local_paths = folder.all_files(reporter=reporter)
         absolute_paths = [path.absolute_path for path in list(local_paths)]
         assert absolute_paths == [
-            fix_windows_path_limit(str(tmp_path / "dir" / "file1.txt")),
+            fix_windows_path_limit(str(tmp_path / 'dir' / 'file1.txt')),
         ]
 
         assert reporter.has_errors_or_warnings()
         assert re.match(
             r"WARNING: '.+/dir/.+' path contains invalid name "
-            r"\(file name must be valid Unicode, check locale\)\. Skipping\.",
+            r'\(file name must be valid Unicode, check locale\)\. Skipping\.',
             reporter.warnings[0],
         )
         assert len(reporter.warnings) == 1
@@ -146,7 +144,6 @@ class TestFolderTraversal:
         reason="Windows doesn't allow / or \\ in filenames",
     )
     def test_invalid_directory_name(self, tmp_path):
-
         # Create a directory structure below with initial scanning point at tmp_path/dir:
         # tmp_path
         # └── dir
@@ -154,13 +151,13 @@ class TestFolderTraversal:
         #     └── dir\bad
         #         └── file2.txt
 
-        (tmp_path / "dir").mkdir(parents=True)
-        (tmp_path / "dir" / "file1.txt").write_text("content1")
-        (tmp_path / "dir" / "dir\\bad").mkdir(parents=True)
-        (tmp_path / "dir" / "dir\\bad" / "file2.txt").write_text("content2")
+        (tmp_path / 'dir').mkdir(parents=True)
+        (tmp_path / 'dir' / 'file1.txt').write_text('content1')
+        (tmp_path / 'dir' / 'dir\\bad').mkdir(parents=True)
+        (tmp_path / 'dir' / 'dir\\bad' / 'file2.txt').write_text('content2')
 
         reporter = ProgressReport(sys.stdout, False)
-        folder = LocalFolder(str(tmp_path / "dir"))
+        folder = LocalFolder(str(tmp_path / 'dir'))
         local_paths = folder.all_files(reporter=reporter)
         absolute_paths = [path.absolute_path for path in list(local_paths)]
 
@@ -171,11 +168,10 @@ class TestFolderTraversal:
         reporter.close()
 
         assert absolute_paths == [
-            fix_windows_path_limit(str(tmp_path / "dir" / "file1.txt")),
+            fix_windows_path_limit(str(tmp_path / 'dir' / 'file1.txt')),
         ]
 
     def test_folder_with_subfolders(self, tmp_path):
-
         # Create a directory structure below with initial scanning point at tmp_path:
         # tmp_path
         # ├── dir1
@@ -185,45 +181,44 @@ class TestFolderTraversal:
         #     ├── file3.txt
         #     └── file4.txt
 
-        d1 = tmp_path / "dir1"
+        d1 = tmp_path / 'dir1'
         d1.mkdir()
-        (d1 / "file1.txt").write_text("content1")
-        (d1 / "file2.txt").write_text("content2")
+        (d1 / 'file1.txt').write_text('content1')
+        (d1 / 'file2.txt').write_text('content2')
 
-        d2 = tmp_path / "dir2"
+        d2 = tmp_path / 'dir2'
         d2.mkdir()
-        (d2 / "file3.txt").write_text("content3")
-        (d2 / "file4.txt").write_text("content4")
+        (d2 / 'file3.txt').write_text('content3')
+        (d2 / 'file4.txt').write_text('content4')
 
         folder = LocalFolder(str(tmp_path))
         local_paths = folder.all_files(reporter=MagicMock())
         absolute_paths = [path.absolute_path for path in list(local_paths)]
 
         assert absolute_paths == [
-            fix_windows_path_limit(str(d1 / "file1.txt")),
-            fix_windows_path_limit(str(d1 / "file2.txt")),
-            fix_windows_path_limit(str(d2 / "file3.txt")),
-            fix_windows_path_limit(str(d2 / "file4.txt")),
+            fix_windows_path_limit(str(d1 / 'file1.txt')),
+            fix_windows_path_limit(str(d1 / 'file2.txt')),
+            fix_windows_path_limit(str(d2 / 'file3.txt')),
+            fix_windows_path_limit(str(d2 / 'file4.txt')),
         ]
 
     @pytest.mark.skipif(
         platform.system() == 'Windows' and platform.python_implementation() == 'PyPy',
-        reason="Symlinks not supported on PyPy/Windows",
+        reason='Symlinks not supported on PyPy/Windows',
     )
     def test_folder_with_symlink_to_file(self, tmp_path):
-
         # Create a directory structure below with initial scanning point at tmp_path:
         # tmp_path
         # ├── dir
         # │   └── file.txt
         # └── symlink_file.txt -> dir/file.txt
 
-        (tmp_path / "dir").mkdir()
+        (tmp_path / 'dir').mkdir()
 
-        file = tmp_path / "dir" / "file.txt"
-        file.write_text("content")
+        file = tmp_path / 'dir' / 'file.txt'
+        file.write_text('content')
 
-        symlink_file = tmp_path / "symlink_file.txt"
+        symlink_file = tmp_path / 'symlink_file.txt'
         symlink_file.symlink_to(file)
 
         folder = LocalFolder(str(tmp_path))
@@ -233,26 +228,25 @@ class TestFolderTraversal:
 
         assert absolute_paths == [
             fix_windows_path_limit(str(file)),
-            fix_windows_path_limit(str(symlink_file))
+            fix_windows_path_limit(str(symlink_file)),
         ]
 
     @pytest.mark.skipif(
         platform.system() == 'Windows' and platform.python_implementation() == 'PyPy',
-        reason="Symlinks not supported on PyPy/Windows",
+        reason='Symlinks not supported on PyPy/Windows',
     )
     @pytest.mark.timeout(5)
     def test_folder_with_circular_symlink(self, tmp_path):
-
         # Create a directory structure below with initial scanning point at tmp_path:
         # tmp_path
         # ├── dir
         # │   └── file.txt
         # └── symlink_dir -> dir
 
-        (tmp_path / "dir").mkdir()
-        (tmp_path / "dir" / "file1.txt").write_text("content1")
-        symlink_dir = tmp_path / "dir" / "symlink_dir"
-        symlink_dir.symlink_to(tmp_path / "dir", target_is_directory=True)
+        (tmp_path / 'dir').mkdir()
+        (tmp_path / 'dir' / 'file1.txt').write_text('content1')
+        symlink_dir = tmp_path / 'dir' / 'symlink_dir'
+        symlink_dir.symlink_to(tmp_path / 'dir', target_is_directory=True)
 
         folder = LocalFolder(str(tmp_path))
 
@@ -260,17 +254,16 @@ class TestFolderTraversal:
         absolute_paths = [path.absolute_path for path in list(local_paths)]
 
         assert absolute_paths == [
-            fix_windows_path_limit(str(tmp_path / "dir" / "file1.txt")),
-            fix_windows_path_limit(str(tmp_path / "dir" / "symlink_dir" / "file1.txt")),
+            fix_windows_path_limit(str(tmp_path / 'dir' / 'file1.txt')),
+            fix_windows_path_limit(str(tmp_path / 'dir' / 'symlink_dir' / 'file1.txt')),
         ]
 
     @pytest.mark.skipif(
         platform.system() == 'Windows' and platform.python_implementation() == 'PyPy',
-        reason="Symlinks not supported on PyPy/Windows",
+        reason='Symlinks not supported on PyPy/Windows',
     )
     @pytest.mark.timeout(5)
     def test_folder_with_symlink_to_parent(self, tmp_path):
-
         # Create a directory structure below with the scanning point at tmp_path/parent/child/:
         #   tmp_path
         #   ├── parent
@@ -283,40 +276,62 @@ class TestFolderTraversal:
         #   ├── file1.txt
         #   └── file2.txt
 
-        (tmp_path / "parent" / "child" / "grandchild").mkdir(parents=True)
-        (tmp_path / "file1.txt").write_text("content1")
-        (tmp_path / "file2.txt").write_text("content2")
-        (tmp_path / "parent" / "file3.txt").write_text("content3")
-        (tmp_path / "parent" / "child" / "file4.txt").write_text("content4")
-        (tmp_path / "parent" / "child" / "grandchild" / "file5.txt").write_text("content5")
-        symlink_dir = tmp_path / "parent" / "child" / "grandchild" / "symlink_dir"
-        symlink_dir.symlink_to(tmp_path / "parent", target_is_directory=True)
+        (tmp_path / 'parent' / 'child' / 'grandchild').mkdir(parents=True)
+        (tmp_path / 'file1.txt').write_text('content1')
+        (tmp_path / 'file2.txt').write_text('content2')
+        (tmp_path / 'parent' / 'file3.txt').write_text('content3')
+        (tmp_path / 'parent' / 'child' / 'file4.txt').write_text('content4')
+        (tmp_path / 'parent' / 'child' / 'grandchild' / 'file5.txt').write_text('content5')
+        symlink_dir = tmp_path / 'parent' / 'child' / 'grandchild' / 'symlink_dir'
+        symlink_dir.symlink_to(tmp_path / 'parent', target_is_directory=True)
 
-        folder = LocalFolder(str(tmp_path / "parent" / "child"))
+        folder = LocalFolder(str(tmp_path / 'parent' / 'child'))
 
         local_paths = folder.all_files(reporter=MagicMock())
         absolute_paths = [path.absolute_path for path in list(local_paths)]
 
         assert absolute_paths == [
-            fix_windows_path_limit(str(tmp_path / "parent" / "child" / "file4.txt")),
-            fix_windows_path_limit(str(tmp_path / "parent" / "child" / "grandchild" / "file5.txt")),
-            fix_windows_path_limit(str(tmp_path / "parent" / "child" / "grandchild" / "symlink_dir" / "child" / "file4.txt")),
-            fix_windows_path_limit(str(tmp_path / "parent" / "child" / "grandchild" / "symlink_dir" / "child" / "grandchild" / "file5.txt")),
-            fix_windows_path_limit(str(tmp_path / "parent" / "child" / "grandchild" / "symlink_dir" / "file3.txt")),
-        ]  # yapf: disable
+            fix_windows_path_limit(str(tmp_path / 'parent' / 'child' / 'file4.txt')),
+            fix_windows_path_limit(str(tmp_path / 'parent' / 'child' / 'grandchild' / 'file5.txt')),
+            fix_windows_path_limit(
+                str(
+                    tmp_path
+                    / 'parent'
+                    / 'child'
+                    / 'grandchild'
+                    / 'symlink_dir'
+                    / 'child'
+                    / 'file4.txt'
+                )
+            ),
+            fix_windows_path_limit(
+                str(
+                    tmp_path
+                    / 'parent'
+                    / 'child'
+                    / 'grandchild'
+                    / 'symlink_dir'
+                    / 'child'
+                    / 'grandchild'
+                    / 'file5.txt'
+                )
+            ),
+            fix_windows_path_limit(
+                str(tmp_path / 'parent' / 'child' / 'grandchild' / 'symlink_dir' / 'file3.txt')
+            ),
+        ]
 
     @pytest.mark.skipif(
         platform.system() == 'Windows' and platform.python_implementation() == 'PyPy',
-        reason="Symlinks not supported on PyPy/Windows",
+        reason='Symlinks not supported on PyPy/Windows',
     )
     @pytest.mark.timeout(5)
     def test_root_short_loop(self, tmp_path):
-
         # Create a symlink to the tmp_path directory itself
         # tmp_path
         # └── tmp_path_symlink -> tmp_path
 
-        tmp_path_symlink = tmp_path / "tmp_path_symlink"
+        tmp_path_symlink = tmp_path / 'tmp_path_symlink'
         tmp_path_symlink.symlink_to(tmp_path, target_is_directory=True)
 
         folder = LocalFolder(str(tmp_path_symlink))
@@ -328,37 +343,35 @@ class TestFolderTraversal:
 
     @pytest.mark.skipif(
         platform.system() == 'Windows' and platform.python_implementation() == 'PyPy',
-        reason="Symlinks not supported on PyPy/Windows",
+        reason='Symlinks not supported on PyPy/Windows',
     )
     @pytest.mark.timeout(5)
     def test_root_parent_loop(self, tmp_path):
-
         # Create a symlink that points to the parent of the initial scanning point
         # tmp_path
         # └── start
         #     ├── file.txt
         #     └── symlink -> tmp_path
 
-        (tmp_path / "start").mkdir()
-        (tmp_path / "start" / "file.txt").write_text("content")
-        (tmp_path / "start" / "symlink").symlink_to(tmp_path, target_is_directory=True)
+        (tmp_path / 'start').mkdir()
+        (tmp_path / 'start' / 'file.txt').write_text('content')
+        (tmp_path / 'start' / 'symlink').symlink_to(tmp_path, target_is_directory=True)
 
-        folder = LocalFolder(str(tmp_path / "start"))
+        folder = LocalFolder(str(tmp_path / 'start'))
 
         local_paths = folder.all_files(reporter=MagicMock())
         absolute_paths = [path.absolute_path for path in list(local_paths)]
 
         assert absolute_paths == [
-            fix_windows_path_limit(str(tmp_path / "start" / "file.txt")),
-            fix_windows_path_limit(str(tmp_path / "start" / "symlink" / "start" / "file.txt")),
+            fix_windows_path_limit(str(tmp_path / 'start' / 'file.txt')),
+            fix_windows_path_limit(str(tmp_path / 'start' / 'symlink' / 'start' / 'file.txt')),
         ]
 
     @pytest.mark.skipif(
         platform.system() == 'Windows' and platform.python_implementation() == 'PyPy',
-        reason="Symlinks not supported on PyPy/Windows",
+        reason='Symlinks not supported on PyPy/Windows',
     )
     def test_symlink_that_points_deeper(self, tmp_path):
-
         # Create a directory structure with a symlink that points to a deeper directory
         # tmp_path
         # ├── a
@@ -374,16 +387,16 @@ class TestFolderTraversal:
         # │   └── f.txt
         # └── symlink -> b/d/e
 
-        (tmp_path / "a").mkdir()
-        (tmp_path / "a" / "a.txt").write_text("a")
-        (tmp_path / "b" / "c").mkdir(parents=True)
-        (tmp_path / "b" / "c" / "c.txt").write_text("c")
-        (tmp_path / "b" / "d" / "e").mkdir(parents=True)
-        (tmp_path / "b" / "d" / "d.txt").write_text("d")
-        (tmp_path / "b" / "d" / "e" / "e.txt").write_text("e")
-        (tmp_path / "f").mkdir()
-        (tmp_path / "f" / "f.txt").write_text("f")
-        (tmp_path / "symlink").symlink_to(tmp_path / "b" / "d" / "e", target_is_directory=True)
+        (tmp_path / 'a').mkdir()
+        (tmp_path / 'a' / 'a.txt').write_text('a')
+        (tmp_path / 'b' / 'c').mkdir(parents=True)
+        (tmp_path / 'b' / 'c' / 'c.txt').write_text('c')
+        (tmp_path / 'b' / 'd' / 'e').mkdir(parents=True)
+        (tmp_path / 'b' / 'd' / 'd.txt').write_text('d')
+        (tmp_path / 'b' / 'd' / 'e' / 'e.txt').write_text('e')
+        (tmp_path / 'f').mkdir()
+        (tmp_path / 'f' / 'f.txt').write_text('f')
+        (tmp_path / 'symlink').symlink_to(tmp_path / 'b' / 'd' / 'e', target_is_directory=True)
 
         folder = LocalFolder(str(tmp_path))
 
@@ -391,20 +404,19 @@ class TestFolderTraversal:
         absolute_paths = [path.absolute_path for path in list(local_paths)]
 
         assert absolute_paths == [
-            fix_windows_path_limit(str(tmp_path / "a" / "a.txt")),
-            fix_windows_path_limit(str(tmp_path / "b" / "c" / "c.txt")),
-            fix_windows_path_limit(str(tmp_path / "b" / "d" / "d.txt")),
-            fix_windows_path_limit(str(tmp_path / "b" / "d" / "e" / "e.txt")),
-            fix_windows_path_limit(str(tmp_path / "f" / "f.txt")),
-            fix_windows_path_limit(str(tmp_path / "symlink" / "e.txt")),
+            fix_windows_path_limit(str(tmp_path / 'a' / 'a.txt')),
+            fix_windows_path_limit(str(tmp_path / 'b' / 'c' / 'c.txt')),
+            fix_windows_path_limit(str(tmp_path / 'b' / 'd' / 'd.txt')),
+            fix_windows_path_limit(str(tmp_path / 'b' / 'd' / 'e' / 'e.txt')),
+            fix_windows_path_limit(str(tmp_path / 'f' / 'f.txt')),
+            fix_windows_path_limit(str(tmp_path / 'symlink' / 'e.txt')),
         ]
 
     @pytest.mark.skipif(
         platform.system() == 'Windows' and platform.python_implementation() == 'PyPy',
-        reason="Symlinks not supported on PyPy/Windows"
+        reason='Symlinks not supported on PyPy/Windows',
     )
     def test_symlink_that_points_up(self, tmp_path):
-
         # Create a directory structure with a symlink that points to a upper directory
         # tmp_path
         # ├── a
@@ -418,14 +430,16 @@ class TestFolderTraversal:
         #             ├── symlink -> ../../a
         #             └── e.txt
 
-        (tmp_path / "a").mkdir()
-        (tmp_path / "a" / "a.txt").write_text("a")
-        (tmp_path / "b" / "c").mkdir(parents=True)
-        (tmp_path / "b" / "c" / "c.txt").write_text("c")
-        (tmp_path / "b" / "d" / "e").mkdir(parents=True)
-        (tmp_path / "b" / "d" / "d.txt").write_text("d")
-        (tmp_path / "b" / "d" / "e" / "e.txt").write_text("e")
-        (tmp_path / "b" / "d" / "e" / "symlink").symlink_to(tmp_path / "a", target_is_directory=True) # yapf: disable
+        (tmp_path / 'a').mkdir()
+        (tmp_path / 'a' / 'a.txt').write_text('a')
+        (tmp_path / 'b' / 'c').mkdir(parents=True)
+        (tmp_path / 'b' / 'c' / 'c.txt').write_text('c')
+        (tmp_path / 'b' / 'd' / 'e').mkdir(parents=True)
+        (tmp_path / 'b' / 'd' / 'd.txt').write_text('d')
+        (tmp_path / 'b' / 'd' / 'e' / 'e.txt').write_text('e')
+        (tmp_path / 'b' / 'd' / 'e' / 'symlink').symlink_to(
+            tmp_path / 'a', target_is_directory=True
+        )
 
         folder = LocalFolder(str(tmp_path))
 
@@ -433,20 +447,19 @@ class TestFolderTraversal:
         absolute_paths = [path.absolute_path for path in list(local_paths)]
 
         assert absolute_paths == [
-            fix_windows_path_limit(str(tmp_path / "a" / "a.txt")),
-            fix_windows_path_limit(str(tmp_path / "b" / "c" / "c.txt")),
-            fix_windows_path_limit(str(tmp_path / "b" / "d" / "d.txt")),
-            fix_windows_path_limit(str(tmp_path / "b" / "d" / "e" / "e.txt")),
-            fix_windows_path_limit(str(tmp_path / "b" / "d" / "e" / "symlink" / "a.txt")),
+            fix_windows_path_limit(str(tmp_path / 'a' / 'a.txt')),
+            fix_windows_path_limit(str(tmp_path / 'b' / 'c' / 'c.txt')),
+            fix_windows_path_limit(str(tmp_path / 'b' / 'd' / 'd.txt')),
+            fix_windows_path_limit(str(tmp_path / 'b' / 'd' / 'e' / 'e.txt')),
+            fix_windows_path_limit(str(tmp_path / 'b' / 'd' / 'e' / 'symlink' / 'a.txt')),
         ]
 
     @pytest.mark.skipif(
         platform.system() == 'Windows' and platform.python_implementation() == 'PyPy',
-        reason="Symlinks not supported on PyPy/Windows"
+        reason='Symlinks not supported on PyPy/Windows',
     )
     @pytest.mark.timeout(5)
     def test_elaborate_infinite_loop(self, tmp_path):
-
         # Create a directory structure with an elaborate infinite loop of symlinks
         # tmp_path
         # ├── a
@@ -458,14 +471,14 @@ class TestFolderTraversal:
         # └── f
         #     └── f.txt
 
-        (tmp_path / "a").mkdir()
-        (tmp_path / "a" / "a.txt").write_text("a")
-        (tmp_path / "b").symlink_to("c")
-        (tmp_path / "c").symlink_to("d")
-        (tmp_path / "d").symlink_to("e")
-        (tmp_path / "e").symlink_to("b")
-        (tmp_path / "f").mkdir()
-        (tmp_path / "f" / "f.txt").write_text("f")
+        (tmp_path / 'a').mkdir()
+        (tmp_path / 'a' / 'a.txt').write_text('a')
+        (tmp_path / 'b').symlink_to('c')
+        (tmp_path / 'c').symlink_to('d')
+        (tmp_path / 'd').symlink_to('e')
+        (tmp_path / 'e').symlink_to('b')
+        (tmp_path / 'f').mkdir()
+        (tmp_path / 'f' / 'f.txt').write_text('f')
 
         folder = LocalFolder(str(tmp_path))
 
@@ -473,16 +486,15 @@ class TestFolderTraversal:
         absolute_paths = [path.absolute_path for path in list(local_paths)]
 
         assert absolute_paths == [
-            fix_windows_path_limit(str(tmp_path / "a" / "a.txt")),
-            fix_windows_path_limit(str(tmp_path / "f" / "f.txt")),
+            fix_windows_path_limit(str(tmp_path / 'a' / 'a.txt')),
+            fix_windows_path_limit(str(tmp_path / 'f' / 'f.txt')),
         ]
 
     @pytest.mark.skipif(
         platform.system() == 'Windows' and platform.python_implementation() == 'PyPy',
-        reason="Symlinks not supported on PyPy/Windows",
+        reason='Symlinks not supported on PyPy/Windows',
     )
     def test_valid_symlink_pattern_where_the_link_goes_down_and_up(self, tmp_path):
-
         # tmp_path
         # ├── a
         # │   └── a.txt
@@ -496,17 +508,17 @@ class TestFolderTraversal:
         # └── f
         #     └── f.txt
 
-        (tmp_path / "a").mkdir()
-        (tmp_path / "a" / "a.txt").write_text("a")
-        (tmp_path / "b").symlink_to(tmp_path / "c" / "d", target_is_directory=True) # yapf: disable
-        (tmp_path / "c").mkdir()
-        (tmp_path / "c" / "d").mkdir()
-        (tmp_path / "c" / "d" / "b.txt").write_text("b")
-        (tmp_path / "d").symlink_to(tmp_path / "e", target_is_directory=True)
-        (tmp_path / "e").mkdir()
-        (tmp_path / "e" / "e.txt").write_text("e")
-        (tmp_path / "f").mkdir()
-        (tmp_path / "f" / "f.txt").write_text("f")
+        (tmp_path / 'a').mkdir()
+        (tmp_path / 'a' / 'a.txt').write_text('a')
+        (tmp_path / 'b').symlink_to(tmp_path / 'c' / 'd', target_is_directory=True)
+        (tmp_path / 'c').mkdir()
+        (tmp_path / 'c' / 'd').mkdir()
+        (tmp_path / 'c' / 'd' / 'b.txt').write_text('b')
+        (tmp_path / 'd').symlink_to(tmp_path / 'e', target_is_directory=True)
+        (tmp_path / 'e').mkdir()
+        (tmp_path / 'e' / 'e.txt').write_text('e')
+        (tmp_path / 'f').mkdir()
+        (tmp_path / 'f' / 'f.txt').write_text('f')
 
         folder = LocalFolder(str(tmp_path))
 
@@ -514,20 +526,19 @@ class TestFolderTraversal:
         absolute_paths = [path.absolute_path for path in list(local_paths)]
 
         assert absolute_paths == [
-            fix_windows_path_limit(str(tmp_path / "a" / "a.txt")),
-            fix_windows_path_limit(str(tmp_path / "b" / "b.txt")),
-            fix_windows_path_limit(str(tmp_path / "c" / "d" / "b.txt")),
-            fix_windows_path_limit(str(tmp_path / "d" / "e.txt")),
-            fix_windows_path_limit(str(tmp_path / "e" / "e.txt")),
-            fix_windows_path_limit(str(tmp_path / "f" / "f.txt")),
+            fix_windows_path_limit(str(tmp_path / 'a' / 'a.txt')),
+            fix_windows_path_limit(str(tmp_path / 'b' / 'b.txt')),
+            fix_windows_path_limit(str(tmp_path / 'c' / 'd' / 'b.txt')),
+            fix_windows_path_limit(str(tmp_path / 'd' / 'e.txt')),
+            fix_windows_path_limit(str(tmp_path / 'e' / 'e.txt')),
+            fix_windows_path_limit(str(tmp_path / 'f' / 'f.txt')),
         ]
 
     @pytest.mark.skipif(
         platform.system() == 'Windows' and platform.python_implementation() == 'PyPy',
-        reason="Symlinks not supported on PyPy/Windows",
+        reason='Symlinks not supported on PyPy/Windows',
     )
     def test_valid_symlink_pattern_where_the_link_goes_up_and_down(self, tmp_path):
-
         # Create a directory structure with a valid symlink pattern where the link goes up and down
         # tmp_path
         # ├── a
@@ -540,15 +551,15 @@ class TestFolderTraversal:
         # │           └── f.txt
         # └── t.txt
 
-        (tmp_path / "a").mkdir()
-        (tmp_path / "a" / "a.txt").write_text("a")
-        (tmp_path / "b").mkdir()
-        (tmp_path / "b" / "c").symlink_to(tmp_path / "d", target_is_directory=True)
-        (tmp_path / "d").mkdir()
-        (tmp_path / "d" / "e").mkdir()
-        (tmp_path / "d" / "e" / "f").mkdir()
-        (tmp_path / "d" / "e" / "f" / "f.txt").write_text("f")
-        (tmp_path / "t.txt").write_text("t")
+        (tmp_path / 'a').mkdir()
+        (tmp_path / 'a' / 'a.txt').write_text('a')
+        (tmp_path / 'b').mkdir()
+        (tmp_path / 'b' / 'c').symlink_to(tmp_path / 'd', target_is_directory=True)
+        (tmp_path / 'd').mkdir()
+        (tmp_path / 'd' / 'e').mkdir()
+        (tmp_path / 'd' / 'e' / 'f').mkdir()
+        (tmp_path / 'd' / 'e' / 'f' / 'f.txt').write_text('f')
+        (tmp_path / 't.txt').write_text('t')
 
         folder = LocalFolder(str(tmp_path))
 
@@ -556,19 +567,18 @@ class TestFolderTraversal:
         absolute_paths = [path.absolute_path for path in list(local_paths)]
 
         assert absolute_paths == [
-            fix_windows_path_limit(str(tmp_path / "a" / "a.txt")),
-            fix_windows_path_limit(str(tmp_path / "b" / "c" / "e" / "f" / "f.txt")),
-            fix_windows_path_limit(str(tmp_path / "d" / "e" / "f" / "f.txt")),
-            fix_windows_path_limit(str(tmp_path / "t.txt")),
+            fix_windows_path_limit(str(tmp_path / 'a' / 'a.txt')),
+            fix_windows_path_limit(str(tmp_path / 'b' / 'c' / 'e' / 'f' / 'f.txt')),
+            fix_windows_path_limit(str(tmp_path / 'd' / 'e' / 'f' / 'f.txt')),
+            fix_windows_path_limit(str(tmp_path / 't.txt')),
         ]
 
     @pytest.mark.skipif(
         platform.system() == 'Windows' and platform.python_implementation() == 'PyPy',
-        reason="Symlinks not supported on PyPy/Windows",
+        reason='Symlinks not supported on PyPy/Windows',
     )
     @pytest.mark.timeout(5)
     def test_loop_that_goes_down_and_up(self, tmp_path):
-
         # Create a directory structure with a loop that goes down and up
         # tmp_path
         # ├── a
@@ -580,14 +590,14 @@ class TestFolderTraversal:
         # └── f
         #     └── f.txt
 
-        (tmp_path / "a").mkdir()
-        (tmp_path / "a" / "a.txt").write_text("a")
-        (tmp_path / "b").symlink_to(tmp_path / "c" / "d", target_is_directory=True)
-        (tmp_path / "c").mkdir()
-        (tmp_path / "c" / "d").symlink_to(tmp_path / "e", target_is_directory=True)
-        (tmp_path / "e").symlink_to("b")
-        (tmp_path / "f").mkdir()
-        (tmp_path / "f" / "f.txt").write_text("f")
+        (tmp_path / 'a').mkdir()
+        (tmp_path / 'a' / 'a.txt').write_text('a')
+        (tmp_path / 'b').symlink_to(tmp_path / 'c' / 'd', target_is_directory=True)
+        (tmp_path / 'c').mkdir()
+        (tmp_path / 'c' / 'd').symlink_to(tmp_path / 'e', target_is_directory=True)
+        (tmp_path / 'e').symlink_to('b')
+        (tmp_path / 'f').mkdir()
+        (tmp_path / 'f' / 'f.txt').write_text('f')
 
         folder = LocalFolder(str(tmp_path))
 
@@ -595,17 +605,16 @@ class TestFolderTraversal:
         absolute_paths = [path.absolute_path for path in list(local_paths)]
 
         assert absolute_paths == [
-            fix_windows_path_limit(str(tmp_path / "a" / "a.txt")),
-            fix_windows_path_limit(str(tmp_path / "f" / "f.txt")),
+            fix_windows_path_limit(str(tmp_path / 'a' / 'a.txt')),
+            fix_windows_path_limit(str(tmp_path / 'f' / 'f.txt')),
         ]
 
     @pytest.mark.skipif(
         platform.system() == 'Windows' and platform.python_implementation() == 'PyPy',
-        reason="Symlinks not supported on PyPy/Windows"
+        reason='Symlinks not supported on PyPy/Windows',
     )
     @pytest.mark.timeout(5)
     def test_loop_that_goes_up_and_down(self, tmp_path):
-
         # Create a directory structure with a loop that goes up and down
         # tmp_path
         # ├── a
@@ -618,15 +627,15 @@ class TestFolderTraversal:
         # └── g
         #     └── g.txt
 
-        (tmp_path / "a").mkdir()
-        (tmp_path / "a" / "a.txt").write_text("a")
-        (tmp_path / "b").mkdir()
-        (tmp_path / "b" / "c").symlink_to(tmp_path / "d", target_is_directory=True)
-        (tmp_path / "d").mkdir()
-        (tmp_path / "d" / "e").mkdir()
-        (tmp_path / "d" / "e" / "f").symlink_to(tmp_path / "b" / "c", target_is_directory=True)
-        (tmp_path / "g").mkdir()
-        (tmp_path / "g" / "g.txt").write_text("g")
+        (tmp_path / 'a').mkdir()
+        (tmp_path / 'a' / 'a.txt').write_text('a')
+        (tmp_path / 'b').mkdir()
+        (tmp_path / 'b' / 'c').symlink_to(tmp_path / 'd', target_is_directory=True)
+        (tmp_path / 'd').mkdir()
+        (tmp_path / 'd' / 'e').mkdir()
+        (tmp_path / 'd' / 'e' / 'f').symlink_to(tmp_path / 'b' / 'c', target_is_directory=True)
+        (tmp_path / 'g').mkdir()
+        (tmp_path / 'g' / 'g.txt').write_text('g')
 
         folder = LocalFolder(str(tmp_path))
 
@@ -634,46 +643,46 @@ class TestFolderTraversal:
         absolute_paths = [path.absolute_path for path in list(local_paths)]
 
         assert absolute_paths == [
-            fix_windows_path_limit(str(tmp_path / "a" / "a.txt")),
-            fix_windows_path_limit(str(tmp_path / "g" / "g.txt")),
+            fix_windows_path_limit(str(tmp_path / 'a' / 'a.txt')),
+            fix_windows_path_limit(str(tmp_path / 'g' / 'g.txt')),
         ]
 
     def test_folder_all_files__dir_excluded_by_regex(self, tmp_path):
         """
         bar$ regex should exclude bar directory and all files inside it
         """
-        d1_dir = tmp_path / "d1"
+        d1_dir = tmp_path / 'd1'
         d1_dir.mkdir()
-        (d1_dir / "file1.txt").touch()
+        (d1_dir / 'file1.txt').touch()
 
-        bar_dir = tmp_path / "bar"
+        bar_dir = tmp_path / 'bar'
         bar_dir.mkdir()
-        (bar_dir / "file2.txt").touch()
+        (bar_dir / 'file2.txt').touch()
 
-        scan_policy = ScanPoliciesManager(exclude_dir_regexes=["bar$"])
+        scan_policy = ScanPoliciesManager(exclude_dir_regexes=['bar$'])
 
         folder = LocalFolder(tmp_path)
         local_paths = folder.all_files(reporter=None, policies_manager=scan_policy)
         absolute_paths = [path.absolute_path for path in local_paths]
 
         assert absolute_paths == [
-            fix_windows_path_limit(str(d1_dir / "file1.txt")),
+            fix_windows_path_limit(str(d1_dir / 'file1.txt')),
         ]
 
     def test_excluded_no_access_check(self, tmp_path):
         """Test that a directory/file is not checked for access if it is excluded."""
         # Create directories and files
-        excluded_dir = tmp_path / "excluded_dir"
+        excluded_dir = tmp_path / 'excluded_dir'
         excluded_dir.mkdir()
-        excluded_file = excluded_dir / "excluded_file.txt"
+        excluded_file = excluded_dir / 'excluded_file.txt'
         excluded_file.touch()
-        included_dir = tmp_path / "included_dir"
+        included_dir = tmp_path / 'included_dir'
         included_dir.mkdir()
-        (included_dir / "excluded_file.txt").touch()
+        (included_dir / 'excluded_file.txt').touch()
 
         # Setup exclusion regex that matches the excluded directory/file name
         scan_policy = ScanPoliciesManager(
-            exclude_dir_regexes=[r"excluded_dir$"], exclude_file_regexes=[r'.*excluded_file.txt']
+            exclude_dir_regexes=[r'excluded_dir$'], exclude_file_regexes=[r'.*excluded_file.txt']
         )
         reporter = ProgressReport(sys.stdout, False)
 
@@ -689,14 +698,14 @@ class TestFolderTraversal:
 
     @pytest.mark.skipif(
         platform.system() == 'Windows',
-        reason="Unix-only filesystem permissions are tested",
+        reason='Unix-only filesystem permissions are tested',
     )
     def test_dir_without_exec_permission(self, tmp_path, fs_perm_tool):
         """Test that a excluded directory/file without permissions emits warnings."""
-        no_perm_dir = tmp_path / "no_perm_dir"
+        no_perm_dir = tmp_path / 'no_perm_dir'
         no_perm_dir.mkdir()
-        (no_perm_dir / "file.txt").touch()
-        (no_perm_dir / "file2.txt").touch()
+        (no_perm_dir / 'file.txt').touch()
+        (no_perm_dir / 'file2.txt').touch()
         # chmod -x no_perm_dir
         no_perm_dir.chmod(0o600)
 
@@ -718,17 +727,17 @@ class TestFolderTraversal:
 
     def test_without_permissions(self, tmp_path, fs_perm_tool):
         """Test that a excluded directory/file without permissions emits warnings."""
-        no_perm_dir = tmp_path / "no_perm_dir"
+        no_perm_dir = tmp_path / 'no_perm_dir'
         no_perm_dir.mkdir()
-        (no_perm_dir / "file.txt").touch()
+        (no_perm_dir / 'file.txt').touch()
 
-        included_dir = tmp_path / "included_dir"
+        included_dir = tmp_path / 'included_dir'
         included_dir.mkdir()
-        (included_dir / "no_perm_file.txt").touch()
-        (included_dir / "included_file.txt").touch()
+        (included_dir / 'no_perm_file.txt').touch()
+        (included_dir / 'included_file.txt').touch()
 
         # Modify directory permissions to simulate lack of access
-        fs_perm_tool.deny_access(included_dir / "no_perm_file.txt")
+        fs_perm_tool.deny_access(included_dir / 'no_perm_file.txt')
         fs_perm_tool.deny_access(no_perm_dir)
 
         scan_policy = ScanPoliciesManager()
@@ -739,7 +748,7 @@ class TestFolderTraversal:
         absolute_paths = [pathlib.Path(path.absolute_path) for path in local_paths]
 
         # Check that only included_dir/included_file.txt was return
-        assert {path.name for path in absolute_paths} == {"included_file.txt"}
+        assert {path.name for path in absolute_paths} == {'included_file.txt'}
 
         def s(p):
             # shlex.quote works differently depending if its on windows or unix
@@ -748,28 +757,28 @@ class TestFolderTraversal:
         # Check that no access warnings are issued for the excluded directory/file
         assert set(reporter.warnings) == {
             f'WARNING: {s(tmp_path / "no_perm_dir")} could not be accessed (no permissions to read?)',
-            f'WARNING: {s(tmp_path / "included_dir/no_perm_file.txt")} could not be accessed (no permissions to read?)'
+            f'WARNING: {s(tmp_path / "included_dir/no_perm_file.txt")} could not be accessed (no permissions to read?)',
         }
 
         reporter.close()
 
     def test_excluded_without_permissions(self, tmp_path, fs_perm_tool):
         """Test that a excluded directory/file without permissions is not processed and no warning is issued."""
-        no_perm_dir = tmp_path / "no_perm_dir"
+        no_perm_dir = tmp_path / 'no_perm_dir'
         no_perm_dir.mkdir()
-        (no_perm_dir / "file.txt").touch()
+        (no_perm_dir / 'file.txt').touch()
 
-        included_dir = tmp_path / "included_dir"
+        included_dir = tmp_path / 'included_dir'
         included_dir.mkdir()
-        (included_dir / "no_perm_file.txt").touch()
-        (included_dir / "included_file.txt").touch()
+        (included_dir / 'no_perm_file.txt').touch()
+        (included_dir / 'included_file.txt').touch()
 
         # Modify directory permissions to simulate lack of access
-        fs_perm_tool.deny_access(included_dir / "no_perm_file.txt")
+        fs_perm_tool.deny_access(included_dir / 'no_perm_file.txt')
         fs_perm_tool.deny_access(no_perm_dir)
 
         scan_policy = ScanPoliciesManager(
-            exclude_dir_regexes=[r"no_perm_dir$"], exclude_file_regexes=[r'.*no_perm_file.txt']
+            exclude_dir_regexes=[r'no_perm_dir$'], exclude_file_regexes=[r'.*no_perm_file.txt']
         )
         reporter = ProgressReport(sys.stdout, False)
 

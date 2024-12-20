@@ -218,14 +218,7 @@ class DestFileNewer(B2Error):
         self.source_prefix = source_prefix
 
     def __str__(self):
-        return 'source file is older than destination: {}{} with a time of {} cannot be synced to {}{} with a time of {}, unless a valid newer_file_mode is provided'.format(
-            self.source_prefix,
-            self.source_path.relative_path,
-            self.source_path.mod_time,
-            self.dest_prefix,
-            self.dest_path.relative_path,
-            self.dest_path.mod_time,
-        )
+        return f'source file is older than destination: {self.source_prefix}{self.source_path.relative_path} with a time of {self.source_path.mod_time} cannot be synced to {self.dest_prefix}{self.dest_path.relative_path} with a time of {self.dest_path.mod_time}, unless a valid newer_file_mode is provided'
 
     def should_retry_http(self):
         return True
@@ -281,7 +274,7 @@ class FileNameNotAllowed(NotAllowedByAppKeyError):
 
 class FileNotPresent(FileOrBucketNotFound):
     def __str__(self):  # overridden to retain message across prev versions
-        return "File not present%s" % (': ' + self.file_id_or_name if self.file_id_or_name else "")
+        return 'File not present%s' % (': ' + self.file_id_or_name if self.file_id_or_name else '')
 
 
 class UnusableFileName(B2SimpleError):
@@ -291,6 +284,7 @@ class UnusableFileName(B2SimpleError):
     Could possibly use InvalidUploadSource, but this is intended for the filename on the
     server, which could differ.  https://www.backblaze.com/b2/docs/files.html.
     """
+
     pass
 
 
@@ -309,11 +303,14 @@ class InvalidRange(B2Error):
         self.range_ = range_
 
     def __str__(self):
-        return 'A range of %d-%d was requested (size of %d), but cloud could only serve %d of that' % (
-            self.range_[0],
-            self.range_[1],
-            self.range_[1] - self.range_[0] + 1,
-            self.content_length,
+        return (
+            'A range of %d-%d was requested (size of %d), but cloud could only serve %d of that'
+            % (
+                self.range_[0],
+                self.range_[1],
+                self.range_[1] - self.range_[0] + 1,
+                self.content_length,
+            )
         )
 
 
@@ -385,7 +382,7 @@ class RestrictedBucketMissing(RestrictedBucket):
         super().__init__('')
 
     def __str__(self):
-        return 'Application key is restricted to a bucket that doesn\'t exist'
+        return "Application key is restricted to a bucket that doesn't exist"
 
 
 class MaxFileSizeExceeded(B2Error):
@@ -415,7 +412,7 @@ class MissingPart(B2SimpleError):
 
 class NonExistentBucket(FileOrBucketNotFound):
     def __str__(self):  # overridden to retain message across prev versions
-        return "No such bucket%s" % (': ' + self.bucket_name if self.bucket_name else "")
+        return 'No such bucket%s' % (': ' + self.bucket_name if self.bucket_name else '')
 
 
 class FileSha1Mismatch(B2SimpleError):
@@ -496,7 +493,7 @@ class UnrecognizedBucketType(B2Error):
 
 class UnsatisfiableRange(B2Error):
     def __str__(self):
-        return "The range in the request is outside the size of the file"
+        return 'The range in the request is outside the size of the file'
 
 
 class UploadTokenUsedConcurrently(B2Error):
@@ -505,23 +502,25 @@ class UploadTokenUsedConcurrently(B2Error):
         self.token = token
 
     def __str__(self):
-        return f"More than one concurrent upload using auth token {self.token}"
+        return f'More than one concurrent upload using auth token {self.token}'
 
 
 class AccessDenied(B2Error):
     def __str__(self):
-        return "This call with these parameters is not allowed for this auth token"
+        return 'This call with these parameters is not allowed for this auth token'
 
 
 class SSECKeyError(AccessDenied):
     def __str__(self):
-        return "Wrong or no SSE-C key provided when reading a file."
+        return 'Wrong or no SSE-C key provided when reading a file.'
 
 
 class RetentionWriteError(AccessDenied):
     def __str__(self):
-        return "Auth token not authorized to write retention or file already in 'compliance' mode or " \
-               "bypassGovernance=true parameter missing"
+        return (
+            "Auth token not authorized to write retention or file already in 'compliance' mode or "
+            'bypassGovernance=true parameter missing'
+        )
 
 
 class WrongEncryptionModeForBucketDefault(InvalidUserInput):
@@ -530,7 +529,7 @@ class WrongEncryptionModeForBucketDefault(InvalidUserInput):
         self.encryption_mode = encryption_mode
 
     def __str__(self):
-        return f"{self.encryption_mode} cannot be used as default for a bucket."
+        return f'{self.encryption_mode} cannot be used as default for a bucket.'
 
 
 class CopyArgumentsMismatch(InvalidUserInput):
@@ -539,17 +538,17 @@ class CopyArgumentsMismatch(InvalidUserInput):
 
 class DisablingFileLockNotSupported(B2Error):
     def __str__(self):
-        return "Disabling file lock is not supported"
+        return 'Disabling file lock is not supported'
 
 
 class SourceReplicationConflict(B2Error):
     def __str__(self):
-        return "Operation not supported for buckets with source replication"
+        return 'Operation not supported for buckets with source replication'
 
 
 class EnablingFileLockOnRestrictedBucket(B2Error):
     def __str__(self):
-        return "Turning on file lock for a restricted bucket is not allowed"
+        return 'Turning on file lock for a restricted bucket is not allowed'
 
 
 class InvalidJsonResponse(B2SimpleError):
@@ -557,7 +556,7 @@ class InvalidJsonResponse(B2SimpleError):
 
     def __init__(self, content: bytes):
         self.content = content
-        message = self.content[:self.UP_TO_BYTES_COUNT].decode('utf-8', errors='replace')
+        message = self.content[: self.UP_TO_BYTES_COUNT].decode('utf-8', errors='replace')
         if len(self.content) > self.UP_TO_BYTES_COUNT:
             message += '...'
 
@@ -617,23 +616,19 @@ def _event_type_invalid_error(code: str, message: str, **_) -> B2Error:
 
     valid_types = sorted(typing.get_args(EVENT_TYPE))
     return EventTypeInvalidError(
-        f"Event Type error: {message!r}. Valid types: {sorted(valid_types)!r}", code
+        f'Event Type error: {message!r}. Valid types: {sorted(valid_types)!r}', code
     )
 
 
 _error_handlers: dict[tuple[int, str | None], typing.Callable] = {
-    (400, "event_type_categories"):
-        lambda code, message, **_: EventTypeCategoriesError(message, code),
-    (400, "event_type_overlap"):
-        lambda code, message, **_: EventTypeOverlapError(message, code),
-    (400, "event_types_empty"):
-        lambda code, message, **_: EventTypesEmptyError(message, code),
-    (400, "event_type_invalid"):
-        _event_type_invalid_error,
-    (401, "email_not_verified"):
-        lambda code, message, **_: EmailNotVerified(message, code),
-    (401, "no_payment_history"):
-        lambda code, message, **_: NoPaymentHistory(message, code),
+    (400, 'event_type_categories'): lambda code, message, **_: EventTypeCategoriesError(
+        message, code
+    ),
+    (400, 'event_type_overlap'): lambda code, message, **_: EventTypeOverlapError(message, code),
+    (400, 'event_types_empty'): lambda code, message, **_: EventTypesEmptyError(message, code),
+    (400, 'event_type_invalid'): _event_type_invalid_error,
+    (401, 'email_not_verified'): lambda code, message, **_: EmailNotVerified(message, code),
+    (401, 'no_payment_history'): lambda code, message, **_: NoPaymentHistory(message, code),
 }
 
 
@@ -643,7 +638,7 @@ def interpret_b2_error(
     code: str | None,
     message: str | None,
     response_headers: dict[str, Any],
-    post_params: dict[str, Any] | None = None
+    post_params: dict[str, Any] | None = None,
 ) -> B2Error:
     post_params = post_params or {}
 
@@ -654,18 +649,17 @@ def interpret_b2_error(
             code=code,
             message=message,
             response_headers=response_headers,
-            post_params=post_params
+            post_params=post_params,
         )
         if error:
             return error
 
-    if status == 400 and code == "already_hidden":
+    if status == 400 and code == 'already_hidden':
         return FileAlreadyHidden(post_params.get('fileName'))
     elif status == 400 and code == 'bad_json':
         return BadJson(message)
-    elif (
-        (status == 400 and code in ("no_such_file", "file_not_present")) or
-        (status == 404 and code == "not_found")
+    elif (status == 400 and code in ('no_such_file', 'file_not_present')) or (
+        status == 404 and code == 'not_found'
     ):
         # hide_file returns 400 and "no_such_file"
         # delete_file_version returns 400 and "file_not_present"
@@ -680,22 +674,22 @@ def interpret_b2_error(
         # We should ideally only reach that case on programming error or outdated
         # sdk versions, but to prevent user confusion we omit the message param
         return ResourceNotFound()
-    elif status == 400 and code == "duplicate_bucket_name":
+    elif status == 400 and code == 'duplicate_bucket_name':
         return DuplicateBucketName(post_params.get('bucketName'))
-    elif status == 400 and code == "missing_part":
+    elif status == 400 and code == 'missing_part':
         return MissingPart(post_params.get('fileId'))
-    elif status == 400 and code == "part_sha1_mismatch":
+    elif status == 400 and code == 'part_sha1_mismatch':
         return PartSha1Mismatch(post_params.get('fileId'))
-    elif status == 400 and code == "bad_bucket_id":
+    elif status == 400 and code == 'bad_bucket_id':
         return BucketIdNotFound(post_params.get('bucketId'))
-    elif status == 400 and code == "auth_token_limit":
+    elif status == 400 and code == 'auth_token_limit':
         matcher = UPLOAD_TOKEN_USED_CONCURRENTLY_ERROR_MESSAGE_RE.match(message)
-        assert matcher is not None, f"unexpected error message: {message}"
+        assert matcher is not None, f'unexpected error message: {message}'
         token = matcher.group('token')
         return UploadTokenUsedConcurrently(token)
-    elif status == 400 and code == "source_too_large":
+    elif status == 400 and code == 'source_too_large':
         matcher = COPY_SOURCE_TOO_BIG_ERROR_MESSAGE_RE.match(message)
-        assert matcher is not None, f"unexpected error message: {message}"
+        assert matcher is not None, f'unexpected error message: {message}'
         size = int(matcher.group('size'))
         return CopySourceTooBig(message, code, size)
     elif status == 400 and code == 'file_lock_conflict':
@@ -705,13 +699,18 @@ def interpret_b2_error(
     elif status == 400 and code == 'restricted_bucket_conflict':
         return EnablingFileLockOnRestrictedBucket()
     elif status == 400 and code == 'bad_request':
-
         # it's "bad_request" on 2022-09-14, but will become 'disabling_file_lock_not_allowed'  # TODO: cleanup after 2022-09-22
-        if message == 'fileLockEnabled value of false is not allowed when bucket is already file lock enabled.':
+        if (
+            message
+            == 'fileLockEnabled value of false is not allowed when bucket is already file lock enabled.'
+        ):
             return DisablingFileLockNotSupported()
 
         # it's "bad_request" on 2022-09-14, but will become 'source_replication_conflict'  # TODO: cleanup after 2022-09-22
-        if message == 'Turning on file lock for an existing bucket having source replication configuration is not allowed.':
+        if (
+            message
+            == 'Turning on file lock for an existing bucket having source replication configuration is not allowed.'
+        ):
             return SourceReplicationConflict()
 
         # it's "bad_request" on 2022-09-14, but will become 'restricted_bucket_conflict'  # TODO: cleanup after 2022-09-22
@@ -721,22 +720,22 @@ def interpret_b2_error(
         return BadRequest(message, code)
     elif status == 400:
         warnings.warn(
-            f"bad request exception with an unknown `code`. message={message}, code={code}"
+            f'bad request exception with an unknown `code`. message={message}, code={code}'
         )
         return BadRequest(message, code)
-    elif status == 401 and code in ("bad_auth_token", "expired_auth_token"):
+    elif status == 401 and code in ('bad_auth_token', 'expired_auth_token'):
         return InvalidAuthToken(message, code)
     elif status == 401:
         return Unauthorized(message, code)
-    elif status == 403 and code == "storage_cap_exceeded":
+    elif status == 403 and code == 'storage_cap_exceeded':
         return StorageCapExceeded()
-    elif status == 403 and code == "transaction_cap_exceeded":
+    elif status == 403 and code == 'transaction_cap_exceeded':
         return TransactionCapExceeded()
-    elif status == 403 and code == "access_denied":
+    elif status == 403 and code == 'access_denied':
         return AccessDenied()
     elif status == 409:
         return Conflict()
-    elif status == 416 and code == "range_not_satisfiable":
+    elif status == 416 and code == 'range_not_satisfiable':
         return UnsatisfiableRange()
     elif status == 429:
         return TooManyRequests(retry_after_seconds=response_headers.get('retry-after'))

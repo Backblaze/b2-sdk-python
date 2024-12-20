@@ -60,6 +60,7 @@ class TestReplication(TestBase):
         )
 
         from pprint import pprint
+
         pprint([k.as_dict() for k in self.api.list_keys()])
 
         keymap = {k.key_name: k for k in self.api.list_keys()}

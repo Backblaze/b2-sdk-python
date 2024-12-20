@@ -39,6 +39,7 @@ class ParallelDownloader(AbstractDownloader):
     Each part is downloaded by its own thread, while all writes are done by additional dedicated thread.
     This can increase performance even for a small file, as fetching & writing can be done in parallel.
     """
+
     # situations to consider:
     #
     # local file start                                         local file end
@@ -151,7 +152,7 @@ class ParallelDownloader(AbstractDownloader):
             if not data:
                 break
             if current_offset + len(data) >= last_offset:
-                to_hash = data[:last_offset - current_offset]
+                to_hash = data[: last_offset - current_offset]
                 stop = True
             else:
                 to_hash = data
@@ -161,8 +162,15 @@ class ParallelDownloader(AbstractDownloader):
                 break
 
     def _get_parts(
-        self, response, session, writer, hasher, first_part, parts_to_download, chunk_size,
-        encryption
+        self,
+        response,
+        session,
+        writer,
+        hasher,
+        first_part,
+        parts_to_download,
+        chunk_size,
+        encryption,
     ):
         stream = self._thread_pool.submit(
             download_first_part,
@@ -200,7 +208,7 @@ class ParallelDownloader(AbstractDownloader):
                     for stream in streams_futures.done:
                         stream.result()
                 except Exception:
-                    if platform.python_implementation() == "PyPy":
+                    if platform.python_implementation() == 'PyPy':
                         # Await all threads to avoid PyPy hanging bug.
                         # https://github.com/pypy/pypy/issues/4994#issuecomment-2258962665
                         futures.wait(streams_futures.not_done)
@@ -354,7 +362,7 @@ def download_first_part(
 
             predicted_bytes_read = bytes_read + len(data)
             if predicted_bytes_read > actual_part_size:
-                to_write = data[:actual_part_size - bytes_read]
+                to_write = data[: actual_part_size - bytes_read]
                 part_not_completed = False
             else:
                 to_write = data
@@ -375,7 +383,11 @@ def download_first_part(
             cloud_range = starting_cloud_range.subrange(bytes_read, actual_part_size - 1)
             logger.debug(
                 'download part %s %s attempt: %i, bytes read already: %i. Getting range %s now.',
-                url, part_to_download, attempt, bytes_read, cloud_range
+                url,
+                part_to_download,
+                attempt,
+                bytes_read,
+                cloud_range,
             )
             try:
                 with session.download_file_from_url(
@@ -403,8 +415,11 @@ def download_first_part(
                 should_retry = e.should_retry_http() if isinstance(e, B2Error) else True
                 if should_retry and attempt < max_attempts:
                     logger.debug(
-                        'Download of %s %s attempt %d failed with %s, retrying', url,
-                        part_to_download, attempt, e
+                        'Download of %s %s attempt %d failed with %s, retrying',
+                        url,
+                        part_to_download,
+                        attempt,
+                        e,
                     )
                 else:
                     raise
@@ -413,8 +428,12 @@ def download_first_part(
 
     if bytes_read != actual_part_size:
         logger.error(
-            "Failed to download %s %s; Downloaded %d/%d after %d attempts", url, part_to_download,
-            bytes_read, actual_part_size, attempt
+            'Failed to download %s %s; Downloaded %d/%d after %d attempts',
+            url,
+            part_to_download,
+            bytes_read,
+            actual_part_size,
+            attempt,
         )
         raise TruncatedOutput(
             bytes_read=bytes_read,
@@ -422,8 +441,12 @@ def download_first_part(
         )
     else:
         logger.debug(
-            "Successfully downloaded %s %s; Downloaded %d/%d after %d attempts", url,
-            part_to_download, bytes_read, actual_part_size, attempt
+            'Successfully downloaded %s %s; Downloaded %d/%d after %d attempts',
+            url,
+            part_to_download,
+            bytes_read,
+            actual_part_size,
+            attempt,
         )
 
 
@@ -462,8 +485,12 @@ def download_non_first_part(
         attempt += 1
         cloud_range = starting_cloud_range.subrange(bytes_read, actual_part_size - 1)
         logger.debug(
-            'download part %s %s attempt: %i, bytes read already: %i. Getting range %s now.', url,
-            part_to_download, attempt, bytes_read, cloud_range
+            'download part %s %s attempt: %i, bytes read already: %i. Getting range %s now.',
+            url,
+            part_to_download,
+            attempt,
+            bytes_read,
+            cloud_range,
         )
 
         with stats_collector.total:
@@ -490,8 +517,11 @@ def download_non_first_part(
                 should_retry = e.should_retry_http() if isinstance(e, B2Error) else True
                 if should_retry and attempt < max_attempts:
                     logger.debug(
-                        'Download of %s %s attempt %d failed with %s, retrying', url,
-                        part_to_download, attempt, e
+                        'Download of %s %s attempt %d failed with %s, retrying',
+                        url,
+                        part_to_download,
+                        attempt,
+                        e,
                     )
                 else:
                     raise
@@ -500,8 +530,12 @@ def download_non_first_part(
 
     if bytes_read != actual_part_size:
         logger.error(
-            "Failed to download %s %s; Downloaded %d/%d after %d attempts", url, part_to_download,
-            bytes_read, actual_part_size, attempt
+            'Failed to download %s %s; Downloaded %d/%d after %d attempts',
+            url,
+            part_to_download,
+            bytes_read,
+            actual_part_size,
+            attempt,
         )
         raise TruncatedOutput(
             bytes_read=bytes_read,
@@ -509,8 +543,12 @@ def download_non_first_part(
         )
     else:
         logger.debug(
-            "Successfully downloaded %s %s; Downloaded %d/%d after %d attempts", url,
-            part_to_download, bytes_read, actual_part_size, attempt
+            'Successfully downloaded %s %s; Downloaded %d/%d after %d attempts',
+            url,
+            part_to_download,
+            bytes_read,
+            actual_part_size,
+            attempt,
         )
 
 

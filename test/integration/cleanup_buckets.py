@@ -17,5 +17,6 @@ from .test_raw_api import cleanup_old_buckets
 
 if __name__ == '__main__':
     cleanup_old_buckets()
-    BucketCleaner(dont_cleanup_old_buckets=False,
-                  b2_api=authorize(get_b2_auth_data())[0]).cleanup_buckets()
+    BucketCleaner(
+        dont_cleanup_old_buckets=False, b2_api=authorize(get_b2_auth_data())[0]
+    ).cleanup_buckets()

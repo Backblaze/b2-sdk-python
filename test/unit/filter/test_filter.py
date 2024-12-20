@@ -16,25 +16,23 @@ from b2sdk._internal.filter import FilterMatcher
 
 
 @pytest.mark.parametrize(
-    ("filters", "expr", "expected"),
+    ('filters', 'expr', 'expected'),
     (
-        ([], "a", True),
-        ([Filter.exclude("*")], "something", False),
-        ([Filter.include("a-*")], "a-", True),
-        ([Filter.include("a-*")], "b-", False),
-        ([Filter.exclude("*.txt")], "a.txt", False),
-        ([Filter.exclude("*.txt")], "a.csv", True),
-        ([Filter.exclude("*"), Filter.include("*.[ct]sv")], "a.csv", True),
-        ([Filter.exclude("*"), Filter.include("*.[ct]sv")], "a.tsv", True),
-        ([Filter.exclude("*"), Filter.include("*.[ct]sv")], "a.ksv", False),
+        ([], 'a', True),
+        ([Filter.exclude('*')], 'something', False),
+        ([Filter.include('a-*')], 'a-', True),
+        ([Filter.include('a-*')], 'b-', False),
+        ([Filter.exclude('*.txt')], 'a.txt', False),
+        ([Filter.exclude('*.txt')], 'a.csv', True),
+        ([Filter.exclude('*'), Filter.include('*.[ct]sv')], 'a.csv', True),
+        ([Filter.exclude('*'), Filter.include('*.[ct]sv')], 'a.tsv', True),
+        ([Filter.exclude('*'), Filter.include('*.[ct]sv')], 'a.ksv', False),
         (
-            [Filter.exclude("*"),
-             Filter.include("*.[ct]sv"),
-             Filter.exclude("a.csv")], "a.csv", False
+            [Filter.exclude('*'), Filter.include('*.[ct]sv'), Filter.exclude('a.csv')],
+            'a.csv',
+            False,
         ),
-        ([Filter.exclude("*"),
-          Filter.include("*.[ct]sv"),
-          Filter.exclude("a.csv")], "b.csv", True),
+        ([Filter.exclude('*'), Filter.include('*.[ct]sv'), Filter.exclude('a.csv')], 'b.csv', True),
     ),
 )
 def test_filter_matcher(filters, expr, expected):

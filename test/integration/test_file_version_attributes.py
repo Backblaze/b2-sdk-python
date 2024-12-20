@@ -32,8 +32,8 @@ class TestFileVersionAttributes(IntegrationTestBase):
             'content_language': 'en',
         }
         kwargs = {
-            **expected_attributes, 'expires':
-                dt.datetime(2105, 10, 21, 7, 28, tzinfo=dt.timezone.utc)
+            **expected_attributes,
+            'expires': dt.datetime(2105, 10, 21, 7, 28, tzinfo=dt.timezone.utc),
         }
 
         file_version = bucket.upload_bytes(b'0', 'file', **kwargs)
@@ -49,12 +49,8 @@ class TestFileVersionAttributes(IntegrationTestBase):
             file_version.id_,
             'file_copy',
             content_type='text/plain',
-            **{
-                **kwargs, 'content_language': 'de'
-            }
+            **{**kwargs, 'content_language': 'de'},
         )
         self._assert_object_has_attributes(
-            copied_version, {
-                **expected_attributes, 'content_language': 'de'
-            }
+            copied_version, {**expected_attributes, 'content_language': 'de'}
         )

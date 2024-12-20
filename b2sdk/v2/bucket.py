@@ -26,7 +26,6 @@ if typing.TYPE_CHECKING:
 
 # Overridden to raise old style BucketIdNotFound exception
 class Bucket(v3.Bucket):
-
     FILE_VERSION_FACTORY_CLASS = staticmethod(FileVersionFactory)
 
     def get_fresh_state(self) -> Bucket:
@@ -50,7 +49,7 @@ class Bucket(v3.Bucket):
         custom_upload_timestamp: int | None = None,
         cache_control: str | None = None,
         *args,
-        **kwargs
+        **kwargs,
     ):
         return super().upload_bytes(
             data_bytes,
@@ -85,7 +84,7 @@ class Bucket(v3.Bucket):
         custom_upload_timestamp: int | None = None,
         cache_control: str | None = None,
         *args,
-        **kwargs
+        **kwargs,
     ):
         return super().upload_local_file(
             local_file,
@@ -114,7 +113,7 @@ class Bucket(v3.Bucket):
         with_wildcard: bool = False,
         filters: typing.Sequence[Filter] = (),
         folder_to_list_can_be_a_file: bool = False,
-        **kwargs
+        **kwargs,
     ) -> typing.Iterable[tuple[FileVersion, str]]:
         """
         Pretend that folders exist and yields the information about the files in a folder.
@@ -148,9 +147,12 @@ class Bucket(v3.Bucket):
         .. note::
             In case of `recursive=True`, folder_name is not returned.
         """
-        if not folder_to_list_can_be_a_file and folder_to_list and not folder_to_list.endswith(
-            '/'
-        ) and not with_wildcard:
+        if (
+            not folder_to_list_can_be_a_file
+            and folder_to_list
+            and not folder_to_list.endswith('/')
+            and not with_wildcard
+        ):
             folder_to_list += '/'
         yield from super().ls(
             path=folder_to_list,
@@ -159,7 +161,7 @@ class Bucket(v3.Bucket):
             fetch_count=fetch_count,
             with_wildcard=with_wildcard,
             filters=filters,
-            **kwargs
+            **kwargs,
         )
 
 

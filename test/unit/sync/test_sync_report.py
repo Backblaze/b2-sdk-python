@@ -21,7 +21,8 @@ class TestSyncReport:
         stdout.write = MagicMock(
             side_effect=[
                 UnicodeEncodeError('codec', 'foo', 100, 105, 'artificial UnicodeEncodeError')
-            ] + list(range(25))
+            ]
+            + list(range(25))
         )
         sync_report = SyncReport(stdout, False)
         sync_report.print_completion('transferred: 123.txt')

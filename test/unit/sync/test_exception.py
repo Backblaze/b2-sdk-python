@@ -24,10 +24,13 @@ class TestSyncExceptions:
         try:
             raise EnvironmentEncodingError('fred', 'george')
         except EnvironmentEncodingError as e:
-            assert str(e) == """file name fred cannot be decoded with system encoding (george).
+            assert (
+                str(e)
+                == """file name fred cannot be decoded with system encoding (george).
 We think this is an environment error which you should workaround by
 setting your system encoding properly, for example like this:
-export LANG=en_US.UTF-8""", str(e)
+export LANG=en_US.UTF-8"""
+            ), str(e)
 
     def test_invalid_argument(self):
         try:

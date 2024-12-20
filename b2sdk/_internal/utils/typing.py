@@ -16,4 +16,4 @@ try:
 except ImportError:
     from typing import TypeAlias
 
-JSON: TypeAlias = Union[Dict[str, "JSON"], List["JSON"], str, int, float, bool, None]
+JSON: TypeAlias = Union[Dict[str, 'JSON'], List['JSON'], str, int, float, bool, None]

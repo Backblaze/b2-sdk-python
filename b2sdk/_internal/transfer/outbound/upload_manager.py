@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 if TYPE_CHECKING:
     from b2sdk._internal.transfer.outbound.upload_source import AbstractUploadSource
 
-    _TypeUploadSource = TypeVar("_TypeUploadSource", bound=AbstractUploadSource)
+    _TypeUploadSource = TypeVar('_TypeUploadSource', bound=AbstractUploadSource)
 
 
 class UploadManager(TransferManager, ThreadPoolMixin):
@@ -231,8 +231,9 @@ class UploadManager(TransferManager, ThreadPoolMixin):
                     )
                     if content_sha1 == HEX_DIGITS_AT_END:
                         content_sha1 = input_stream.hash
-                    assert content_sha1 == 'do_not_verify' or content_sha1 == response[
-                        'contentSha1'], '{} != {}'.format(content_sha1, response['contentSha1'])
+                    assert (
+                        content_sha1 == 'do_not_verify' or content_sha1 == response['contentSha1']
+                    ), '{} != {}'.format(content_sha1, response['contentSha1'])
                     return self.services.api.file_version_factory.from_api_response(response)
 
             except B2Error as e:

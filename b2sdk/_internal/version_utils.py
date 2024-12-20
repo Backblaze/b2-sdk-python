@@ -43,8 +43,8 @@ class _Version:
 
     @classmethod
     def _parse_version(cls, version: str) -> tuple[int, ...]:
-        if "!" in version:  # strip PEP 440 epoch
-            version = version.split("!", 1)[1]
+        if '!' in version:  # strip PEP 440 epoch
+            version = version.split('!', 1)[1]
         return tuple(map(int, re.findall(r'\d+', version)))
 
 
@@ -79,13 +79,9 @@ class AbstractVersionDecorator(metaclass=ABCMeta):
         The actual implementation of decorator. Needs self.source to be set before it's called.
         """
         if self.cutoff_version and self.changed_version:
-            assert self.changed_version < self.cutoff_version, '{} decorator is set to start renaming {} {!r} starting at version {} and finishing in {}. It needs to start at a lower version and finish at a higher version.'.format(
-                self.__class__.__name__,
-                self.WHAT,
-                self.source,
-                self.changed_version,
-                self.cutoff_version,
-            )
+            assert (
+                self.changed_version < self.cutoff_version
+            ), f'{self.__class__.__name__} decorator is set to start renaming {self.WHAT} {self.source!r} starting at version {self.changed_version} and finishing in {self.cutoff_version}. It needs to start at a lower version and finish at a higher version.'
 
 
 class AbstractDeprecator(AbstractVersionDecorator):
@@ -109,6 +105,7 @@ class rename_argument(AbstractDeprecator):
     5
     >>>
     """
+
     WHAT = 'argument'
     ALTERNATIVE_DECORATOR = 'discourage_argument'
 
@@ -127,9 +124,9 @@ class rename_argument(AbstractDeprecator):
         @wraps(func)
         def wrapper(*args, **kwargs):
             if self.source in kwargs:
-                assert self.target not in kwargs, 'both argument names were provided: {!r} (deprecated) and {!r} (new)'.format(
-                    self.source, self.target
-                )
+                assert (
+                    self.target not in kwargs
+                ), f'both argument names were provided: {self.source!r} (deprecated) and {self.target!r} (new)'
                 kwargs[self.target] = kwargs[self.source]
                 del kwargs[self.source]
                 info = f'{self.source!r} is a deprecated argument for {func.__name__!r} function/method - it was renamed to {self.target!r}'
@@ -139,7 +136,7 @@ class rename_argument(AbstractDeprecator):
                     info += f'. Support for the old name is going to be dropped in {self.cutoff_version}'
 
                 warnings.warn(
-                    f"{info}.",
+                    f'{info}.',
                     DeprecationWarning,
                 )
             return func(*args, **kwargs)
@@ -162,6 +159,7 @@ class rename_function(AbstractDeprecator):
     >>>
 
     """
+
     WHAT = 'function'
     ALTERNATIVE_DECORATOR = 'discourage_function'
 
@@ -177,13 +175,7 @@ class rename_function(AbstractDeprecator):
         @wraps(func)
         def wrapper(*args, **kwargs):
             warnings.warn(
-                '{!r} is deprecated since version {} - it was moved to {!r}, please switch to use that. The proxy for the old name is going to be removed in {}.'
-                .format(
-                    func.__name__,
-                    self.changed_version,
-                    self.target,
-                    self.cutoff_version,
-                ),
+                f'{func.__name__!r} is deprecated since version {self.changed_version} - it was moved to {self.target!r}, please switch to use that. The proxy for the old name is going to be removed in {self.cutoff_version}.',
                 DeprecationWarning,
             )
             return func(*args, **kwargs)

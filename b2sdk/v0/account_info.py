@@ -14,7 +14,7 @@ from b2sdk import v1
 
 
 class OldAccountInfoMethods:
-    """ this class contains proxy methods for deprecated signatures renamed for consistency in mid-2019 """
+    """this class contains proxy methods for deprecated signatures renamed for consistency in mid-2019"""
 
     def get_account_id_or_app_key_id(self):
         """

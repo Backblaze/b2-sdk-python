@@ -78,38 +78,33 @@ class TestSynchronizer:
 
     @pytest.mark.apiver(to_ver=0)
     @pytest.mark.parametrize(
-        'args', [
-            {
-                'newer_file_mode': IllegalEnum.ILLEGAL
-            },
-            {
-                'keep_days_or_delete': IllegalEnum.ILLEGAL
-            },
+        'args',
+        [
+            {'newer_file_mode': IllegalEnum.ILLEGAL},
+            {'keep_days_or_delete': IllegalEnum.ILLEGAL},
         ],
         ids=[
             'newer_file_mode',
             'keep_days_or_delete',
-        ]
+        ],
     )
     def test_illegal_args_up_to_v0(self, synchronizer_factory, apiver, args):
         from apiver_deps_exception import CommandError
+
         with pytest.raises(CommandError):
             synchronizer_factory(**args)
 
     @pytest.mark.apiver(from_ver=1)
     @pytest.mark.parametrize(
-        'args', [
-            {
-                'newer_file_mode': IllegalEnum.ILLEGAL
-            },
-            {
-                'keep_days_or_delete': IllegalEnum.ILLEGAL
-            },
+        'args',
+        [
+            {'newer_file_mode': IllegalEnum.ILLEGAL},
+            {'keep_days_or_delete': IllegalEnum.ILLEGAL},
         ],
         ids=[
             'newer_file_mode',
             'keep_days_or_delete',
-        ]
+        ],
     )
     def test_illegal_args_up_v1_and_up(self, synchronizer_factory, apiver, args):
         with pytest.raises(InvalidArgument):
@@ -239,7 +234,7 @@ class TestSynchronizer:
         dst = self.b2_folder_factory(('a.txt', [100, 200]))
         expected = [
             'b2_delete(folder/a.txt, id_a_100, )',
-            'b2_delete(folder/a.txt, id_a_200, (old version))'
+            'b2_delete(folder/a.txt, id_a_200, (old version))',
         ]
         self.assert_folder_sync_actions(synchronizer, src, dst, expected)
 
@@ -257,7 +252,8 @@ class TestSynchronizer:
         src = self.folder_factory(src_type)
         dst = self.b2_folder_factory(('a.txt', [TODAY, TODAY - 2 * DAY, TODAY - 4 * DAY]))
         expected = [
-            'b2_hide(folder/a.txt)', 'b2_delete(folder/a.txt, id_a_8294400000, (old version))'
+            'b2_hide(folder/a.txt)',
+            'b2_delete(folder/a.txt, id_a_8294400000, (old version))',
         ]
         self.assert_folder_sync_actions(synchronizer, src, dst, expected)
 
@@ -275,7 +271,8 @@ class TestSynchronizer:
         src = self.folder_factory(src_type)
         dst = self.b2_folder_factory(('a.txt', [TODAY - 1 * DAY, TODAY - 3 * DAY, TODAY - 5 * DAY]))
         expected = [
-            'b2_hide(folder/a.txt)', 'b2_delete(folder/a.txt, id_a_8208000000, (old version))'
+            'b2_hide(folder/a.txt)',
+            'b2_delete(folder/a.txt, id_a_8208000000, (old version))',
         ]
         self.assert_folder_sync_actions(synchronizer, src, dst, expected)
 
@@ -366,7 +363,7 @@ class TestSynchronizer:
         expected = [
             'b2_delete(folder/a.txt, id_a_8467200000, (hide marker))',
             'b2_delete(folder/a.txt, id_a_8294400000, (old version))',
-            'b2_delete(folder/a.txt, id_a_8121600000, (old version))'
+            'b2_delete(folder/a.txt, id_a_8121600000, (old version))',
         ]
         self.assert_folder_sync_actions(synchronizer, src, dst, expected)
 
@@ -387,7 +384,7 @@ class TestSynchronizer:
         dst = self.b2_folder_factory(('a.txt', [-TODAY + 2 * DAY, TODAY - 4 * DAY]))
         expected = [
             'b2_delete(folder/a.txt, id_a_8467200000, (hide marker))',
-            'b2_delete(folder/a.txt, id_a_8294400000, (old version))'
+            'b2_delete(folder/a.txt, id_a_8294400000, (old version))',
         ]
         self.assert_folder_sync_actions(synchronizer, src, dst, expected)
 
@@ -405,7 +402,7 @@ class TestSynchronizer:
         expected = [
             'b2_delete(folder/a.txt, id_a_8640000000, (hide marker))',
             'b2_delete(folder/a.txt, id_a_8467200000, (old version))',
-            'b2_delete(folder/a.txt, id_a_8294400000, (old version))'
+            'b2_delete(folder/a.txt, id_a_8294400000, (old version))',
         ]
         self.assert_folder_sync_actions(synchronizer, src, dst, expected)
 
@@ -500,16 +497,18 @@ class TestSynchronizer:
         'src_type,expected',
         [
             (
-                'local', [
+                'local',
+                [
                     'b2_upload(/dir/a.txt, folder/a.txt, 8640000000)',
                     'b2_delete(folder/a.txt, id_a_8208000000, (old version))',
-                ]
+                ],
             ),
             (
-                'b2', [
+                'b2',
+                [
                     'b2_copy(folder/a.txt, id_a_8640000000, folder/a.txt, 8640000000)',
                     'b2_delete(folder/a.txt, id_a_8208000000, (old version))',
-                ]
+                ],
             ),
         ],
     )
@@ -525,18 +524,20 @@ class TestSynchronizer:
         'src_type,expected',
         [
             (
-                'local', [
+                'local',
+                [
                     'b2_upload(/dir/a.txt, folder/a.txt, 8640000000)',
                     'b2_delete(folder/a.txt, id_a_8553600000, (old version))',
                     'b2_delete(folder/a.txt, id_a_8380800000, (old version))',
-                ]
+                ],
             ),
             (
-                'b2', [
+                'b2',
+                [
                     'b2_copy(folder/a.txt, id_a_8640000000, folder/a.txt, 8640000000)',
                     'b2_delete(folder/a.txt, id_a_8553600000, (old version))',
                     'b2_delete(folder/a.txt, id_a_8380800000, (old version))',
-                ]
+                ],
             ),
         ],
     )
@@ -563,12 +564,12 @@ class TestSynchronizer:
             self.assert_folder_sync_actions(synchronizer, src, dst, expected)
         messages = defaultdict(
             lambda: 'source file is older than destination: %s://a.txt with a time of 100 '
-                    'cannot be synced to %s://a.txt with a time of 200, '
-                    'unless a valid newer_file_mode is provided',
+            'cannot be synced to %s://a.txt with a time of 200, '
+            'unless a valid newer_file_mode is provided',
             v0='source file is older than destination: %s://a.txt with a time of 100 '
-               'cannot be synced to %s://a.txt with a time of 200, '
-               'unless --skipNewer or --replaceNewer is provided'
-        )  # yapf: disable
+            'cannot be synced to %s://a.txt with a time of 200, '
+            'unless --skipNewer or --replaceNewer is provided',
+        )
 
         assert str(excinfo.value) == messages[apiver] % (src_type, dst_type)
 
@@ -604,16 +605,18 @@ class TestSynchronizer:
         'src_type,expected',
         [
             (
-                'local', [
+                'local',
+                [
                     'b2_upload(/dir/a.txt, folder/a.txt, 100)',
                     'b2_delete(folder/a.txt, id_a_200, (old version))',
-                ]
+                ],
             ),
             (
-                'b2', [
+                'b2',
+                [
                     'b2_copy(folder/a.txt, id_a_100, folder/a.txt, 100)',
                     'b2_delete(folder/a.txt, id_a_200, (old version))',
-                ]
+                ],
             ),
         ],
     )
@@ -687,17 +690,21 @@ class TestSynchronizer:
         'src_type,dst_type,expected',
         [
             (
-                'local', 'b2', [
+                'local',
+                'b2',
+                [
                     'b2_upload(/dir/a.txt, folder/a.txt, 200)',
-                    'b2_delete(folder/a.txt, id_a_100, (old version))'
-                ]
+                    'b2_delete(folder/a.txt, id_a_100, (old version))',
+                ],
             ),
             ('b2', 'local', ['b2_download(folder/a.txt, id_a_200, /dir/a.txt, 200)']),
             (
-                'b2', 'b2', [
+                'b2',
+                'b2',
+                [
                     'b2_copy(folder/a.txt, id_a_200, folder/a.txt, 200)',
-                    'b2_delete(folder/a.txt, id_a_100, (old version))'
-                ]
+                    'b2_delete(folder/a.txt, id_a_100, (old version))',
+                ],
             ),
         ],
     )
@@ -706,7 +713,7 @@ class TestSynchronizer:
     ):
         synchronizer = synchronizer_factory(
             compare_version_mode=CompareVersionMode.SIZE,
-            keep_days_or_delete=KeepOrDeleteMode.DELETE
+            keep_days_or_delete=KeepOrDeleteMode.DELETE,
         )
         src = self.folder_factory(src_type, ('a.txt', [200], 11))
         dst = self.folder_factory(dst_type, ('a.txt', [100], 10))
@@ -731,7 +738,7 @@ class TestSynchronizer:
                     local,
                     TODAY,
                     self.reporter,
-                    encryption_settings_provider=provider
+                    encryption_settings_provider=provider,
                 )
             )
         )
@@ -751,10 +758,12 @@ class TestSynchronizer:
             file_version_kwarg = 'file_version'
 
         provider.get_setting_for_download.assert_has_calls(
-            [mock.call(
-                bucket=bucket,
-                **{file_version_kwarg: mock.ANY},
-            )]
+            [
+                mock.call(
+                    bucket=bucket,
+                    **{file_version_kwarg: mock.ANY},
+                )
+            ]
         )
 
     # FIXME: rewrite this test to not use mock.call checks when all of Synchronizers tests are rewritten to test_bucket
@@ -776,7 +785,7 @@ class TestSynchronizer:
                     remote,
                     TODAY,
                     self.reporter,
-                    encryption_settings_provider=provider
+                    encryption_settings_provider=provider,
                 )
             )
         )
@@ -802,7 +811,7 @@ class TestSynchronizer:
                 bucket=bucket,
                 b2_file_name='folder/directory/a.txt',
                 file_info={'src_last_modified_millis': '100'},
-                length=10
+                length=10,
             )
         ]
 
@@ -826,7 +835,7 @@ class TestSynchronizer:
                     dst,
                     TODAY,
                     self.reporter,
-                    encryption_settings_provider=provider
+                    encryption_settings_provider=provider,
                 )
             )
         )
@@ -841,7 +850,7 @@ class TestSynchronizer:
                 source_file_info={'in_b2': 'yes'},
                 progress_listener=mock.ANY,
                 source_encryption=source_encryption,
-                destination_encryption=destination_encryption
+                destination_encryption=destination_encryption,
             )
         ]
 
@@ -891,20 +900,25 @@ class TestSynchronizer:
     # style - i.e. with simulated api and fake files returned from methods.
     @pytest.mark.apiver(from_ver=2)
     @pytest.mark.parametrize(
-        "local_size,remote_size,local_sha1,local_partial_sha1,remote_sha1,should_be_incremental",
+        'local_size,remote_size,local_sha1,local_partial_sha1,remote_sha1,should_be_incremental',
         [
-            (2000, 1000, "ff" * 20, "aa" * 20, "aa" * 20, True),  # incremental upload possible
-            (2000, 999, "ff" * 20, "aa" * 20, "aa" * 20, False),  # uploaded part too small
-            (2000, 1000, "ff" * 20, "aa" * 20, None, False),  # remote sha unknown
-            (2000, 1000, "ff" * 20, "aa" * 20, "bb" * 20, False),  # remote sha mismatch
-            (2000, 3000, "ff" * 20, "aa" * 20, "bb" * 20, False),  # remote file bigger
-        ]
+            (2000, 1000, 'ff' * 20, 'aa' * 20, 'aa' * 20, True),  # incremental upload possible
+            (2000, 999, 'ff' * 20, 'aa' * 20, 'aa' * 20, False),  # uploaded part too small
+            (2000, 1000, 'ff' * 20, 'aa' * 20, None, False),  # remote sha unknown
+            (2000, 1000, 'ff' * 20, 'aa' * 20, 'bb' * 20, False),  # remote sha mismatch
+            (2000, 3000, 'ff' * 20, 'aa' * 20, 'bb' * 20, False),  # remote file bigger
+        ],
     )
     def test_incremental_upload(
-        self, synchronizer_factory, local_size, remote_size, local_sha1, local_partial_sha1,
-        remote_sha1, should_be_incremental
+        self,
+        synchronizer_factory,
+        local_size,
+        remote_size,
+        local_sha1,
+        local_partial_sha1,
+        remote_sha1,
+        should_be_incremental,
     ):
-
         synchronizer = synchronizer_factory(
             upload_mode=UploadMode.INCREMENTAL, absolute_minimum_part_size=1000
         )
@@ -982,10 +996,13 @@ class TestSynchronizer:
         dst = self.folder_factory('b2')
 
         self.assert_folder_sync_actions(
-            synchronizer, src, dst, [
+            synchronizer,
+            src,
+            dst,
+            [
                 'b2_upload(/dir/a b/bar, folder/a b/bar, 100)',
-                'b2_upload(/dir/a/foo, folder/a/foo, 100)'
-            ]
+                'b2_upload(/dir/a/foo, folder/a/foo, 100)',
+            ],
         )
 
         dst_with_files = self.folder_factory('b2', *files)

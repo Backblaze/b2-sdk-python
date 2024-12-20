@@ -60,8 +60,9 @@ class FakeB2Folder(B2Folder):
                 content_type='text/plain',
                 content_sha1='content_sha1',
                 **mandatory_kwargs,
-            ) for mod_time in mod_times
-        ]  # yapf disable
+            )
+            for mod_time in mod_times
+        ]
 
 
 class FakeLocalFolder(LocalFolder):

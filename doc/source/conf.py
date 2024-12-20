@@ -22,15 +22,14 @@ from __future__ import annotations
 #
 # All configuration values have a default; values that are commented out
 # serve to show the default.
-
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-
 import datetime
 import os
 import sys
+
 sys.path.append(os.path.abspath('../..'))
 
 from b2sdk.version import VERSION  # noqa: E402
@@ -71,10 +70,10 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'b2-sdk-python'
+project = 'b2-sdk-python'
 
-year = datetime.date.today().strftime("%Y")
-author = u'Backblaze'
+year = datetime.date.today().strftime('%Y')
+author = 'Backblaze'
 copyright = f'{year}, {author}'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -107,12 +106,12 @@ todo_include_todos = os.environ.get('B2_SPHINX_TODO', False) and True
 # -- Options for HTML output ----------------------------------------------
 
 html_context = {
-    "display_github": True,  # Add 'Edit on Github' link instead of 'View page source'
-    "github_user": "Backblaze",
-    "github_repo": project,
-    "github_version": "master",
-    "conf_py_path": "/doc/source/",
-    "source_suffix": source_suffix,
+    'display_github': True,  # Add 'Edit on Github' link instead of 'View page source'
+    'github_user': 'Backblaze',
+    'github_repo': project,
+    'github_version': 'master',
+    'conf_py_path': '/doc/source/',
+    'source_suffix': source_suffix,
 }
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
@@ -134,14 +133,14 @@ autodoc_default_options = {
     'exclude-members': '__weakref__, _abc_cache, _abc_negative_cache, _abc_negative_cache_version, _abc_registry, _abc_impl',
     'members': True,
     'undoc-members': True,
-}  # yapf: disable
+}
 
 always_document_param_types = True
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-#html_static_path = ['_static']
+# html_static_path = ['_static']
 
 # Custom sidebar templates, must be a dictionary that maps document names
 # to template names.
@@ -149,14 +148,13 @@ always_document_param_types = True
 # This is required for the alabaster theme
 # refs: http://alabaster.readthedocs.io/en/latest/installation.html#sidebars
 html_sidebars = {
-    '**':
-        [
-            'about.html',
-            'navigation.html',
-            'relations.html',  # needs 'show_related': True theme option to display
-            'searchbox.html',
-            'donate.html',
-        ]
+    '**': [
+        'about.html',
+        'navigation.html',
+        'relations.html',  # needs 'show_related': True theme option to display
+        'searchbox.html',
+        'donate.html',
+    ]
 }
 
 # -- Options for HTMLHelp output ------------------------------------------
@@ -170,15 +168,12 @@ latex_elements = {
     # The paper size ('letterpaper' or 'a4paper').
     #
     # 'papersize': 'letterpaper',
-
     # The font size ('10pt', '11pt' or '12pt').
     #
     # 'pointsize': '10pt',
-
     # Additional stuff for the LaTeX preamble.
     #
     # 'preamble': '',
-
     # Latex figure (float) alignment
     #
     # 'figure_align': 'htbp',
@@ -188,14 +183,14 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'B2_Python_SDK.tex', u'B2\\_Python\\_SDK', u'Backblaze', 'manual'),
+    (master_doc, 'B2_Python_SDK.tex', 'B2\\_Python\\_SDK', 'Backblaze', 'manual'),
 ]
 
 # -- Options for manual page output ---------------------------------------
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [(master_doc, 'b2_python_sdk', u'B2 Python SDK Documentation', [author], 1)]
+man_pages = [(master_doc, 'b2_python_sdk', 'B2 Python SDK Documentation', [author], 1)]
 
 # -- Options for Texinfo output -------------------------------------------
 
@@ -204,8 +199,13 @@ man_pages = [(master_doc, 'b2_python_sdk', u'B2 Python SDK Documentation', [auth
 #  dir menu entry, description, category)
 texinfo_documents = [
     (
-        master_doc, 'B2_Python_SDK', u'B2 Python SDK Documentation', author, 'B2_Python_SDK',
-        'Backblaze Python SDK', 'Miscellaneous'
+        master_doc,
+        'B2_Python_SDK',
+        'B2 Python SDK Documentation',
+        author,
+        'B2_Python_SDK',
+        'Backblaze Python SDK',
+        'Miscellaneous',
     ),
 ]
 

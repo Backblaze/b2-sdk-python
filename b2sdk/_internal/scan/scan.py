@@ -86,6 +86,7 @@ class AbstractScanReport(metaclass=ABCMeta):
     """
     Aggregation of valuable information about files after scanning.
     """
+
     SCAN_RESULT_CLASS: ClassVar[type] = AbstractScanResult
 
     @abstractmethod
@@ -99,6 +100,7 @@ class CountAndSampleScanReport(AbstractScanReport):
     Scan report which groups and counts files by their `AbstractScanResult` and
     also stores first and last seen examples of such files.
     """
+
     counter_by_status: Counter = field(default_factory=Counter)
     samples_by_status_first: dict[AbstractScanResult, tuple[FileVersion, ...]] = field(
         default_factory=dict

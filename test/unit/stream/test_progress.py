@@ -14,12 +14,12 @@ from apiver_deps import ReadingStreamWithProgress
 
 
 def test_reading_stream_with_progress(tmp_path):
-    stream = io.BytesIO(b"1234567890")
+    stream = io.BytesIO(b'1234567890')
     progress_listener = Mock()
     with ReadingStreamWithProgress(stream, progress_listener=progress_listener) as wrapped_stream:
-        assert wrapped_stream.read(1) == b"1"
-        assert wrapped_stream.read(2) == b"23"
-        assert wrapped_stream.read(3) == b"456"
+        assert wrapped_stream.read(1) == b'1'
+        assert wrapped_stream.read(2) == b'23'
+        assert wrapped_stream.read(3) == b'456'
 
         assert progress_listener.bytes_completed.call_count == 3
         assert wrapped_stream.bytes_completed == 6
@@ -28,7 +28,7 @@ def test_reading_stream_with_progress(tmp_path):
 
 
 def test_reading_stream_with_progress__not_closing_wrapped_stream(tmp_path):
-    stream = io.BytesIO(b"1234567890")
+    stream = io.BytesIO(b'1234567890')
     progress_listener = Mock()
     with ReadingStreamWithProgress(stream, progress_listener=progress_listener) as wrapped_stream:
         assert wrapped_stream.read()
@@ -44,7 +44,7 @@ def test_reading_stream_with_progress__closed_proxy(tmp_path):
     'Exception ignored in: <b2sdk._internal.stream.progress.ReadingStreamWithProgress object at 0x748cf40d5180>'
     messages.
     """
-    stream = io.BytesIO(b"1234567890")
+    stream = io.BytesIO(b'1234567890')
     progress_listener = Mock()
     wrapped_stream = ReadingStreamWithProgress(stream, progress_listener=progress_listener)
 

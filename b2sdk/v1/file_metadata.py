@@ -16,6 +16,7 @@ class FileMetadata:
     """
     Hold information about a file which is being downloaded.
     """
+
     UNVERIFIED_CHECKSUM_PREFIX = 'unverified:'
 
     def __init__(
@@ -47,7 +48,7 @@ class FileMetadata:
     @classmethod
     def _decode_content_sha1(cls, content_sha1):
         if content_sha1.startswith(cls.UNVERIFIED_CHECKSUM_PREFIX):
-            return content_sha1[len(cls.UNVERIFIED_CHECKSUM_PREFIX):], False
+            return content_sha1[len(cls.UNVERIFIED_CHECKSUM_PREFIX) :], False
         return content_sha1, True
 
     @classmethod

@@ -16,4 +16,5 @@ class UnboundStreamBufferTimeout(B2SimpleError):
     """
     Raised when there is no space for a new buffer for a certain amount of time.
     """
+
     pass

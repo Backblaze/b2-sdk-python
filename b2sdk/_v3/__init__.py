@@ -12,12 +12,12 @@ from __future__ import annotations
 # Set default logging handler to avoid "No handler found" warnings.
 import logging as _logging
 
-_logging.getLogger("b2sdk").addHandler(_logging.NullHandler())
+_logging.getLogger('b2sdk').addHandler(_logging.NullHandler())
 
 
 class UrllibWarningFilter:
     def filter(self, record):
-        return record.msg != "Connection pool is full, discarding connection: %s"
+        return record.msg != 'Connection pool is full, discarding connection: %s'
 
 
 _logging.getLogger('urllib3.connectionpool').addFilter(UrllibWarningFilter())
@@ -138,7 +138,11 @@ from b2sdk._internal.raw_api import AbstractRawApi
 from b2sdk._internal.raw_api import B2RawHTTPApi
 from b2sdk._internal.raw_api import MetadataDirectiveMode
 from b2sdk._internal.raw_api import LifecycleRule
-from b2sdk._internal.raw_api import NotificationRule, NotificationRuleResponse, notification_rule_response_to_request
+from b2sdk._internal.raw_api import (
+    NotificationRule,
+    NotificationRuleResponse,
+    notification_rule_response_to_request,
+)
 
 # stream
 
@@ -211,7 +215,9 @@ from b2sdk._internal.sync.sync import UploadMode
 from b2sdk._internal.sync.encryption_provider import AbstractSyncEncryptionSettingsProvider
 from b2sdk._internal.sync.encryption_provider import BasicSyncEncryptionSettingsProvider
 from b2sdk._internal.sync.encryption_provider import ServerDefaultSyncEncryptionSettingsProvider
-from b2sdk._internal.sync.encryption_provider import SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER
+from b2sdk._internal.sync.encryption_provider import (
+    SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER,
+)
 
 # scan
 
@@ -271,7 +277,11 @@ from b2sdk._internal.http_constants import (
 )
 from b2sdk._internal.session import B2Session
 from b2sdk._internal.utils.thread_pool import ThreadPoolMixin
-from b2sdk._internal.utils.escape import unprintable_to_hex, escape_control_chars, substitute_control_chars
+from b2sdk._internal.utils.escape import (
+    unprintable_to_hex,
+    escape_control_chars,
+    substitute_control_chars,
+)
 
 # filter
 from b2sdk._internal.filter import FilterType, Filter

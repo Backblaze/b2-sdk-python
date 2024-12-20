@@ -63,20 +63,14 @@ class TestServices:
                 DummyB,
             ],
         ],
-    )  # yapf: disable
+    )
     def test_api_initialization(self, kwargs, _raw_api_class):
         self.account_info = InMemoryAccountInfo()
         self.cache = InMemoryCache()
 
         api_config = B2HttpApiConfig(_raw_api_class=_raw_api_class)
 
-        self.api = B2Api(
-            self.account_info,
-            self.cache,
-            api_config=api_config,
-
-            **kwargs
-        )  # yapf: disable
+        self.api = B2Api(self.account_info, self.cache, api_config=api_config, **kwargs)
 
         assert self.api.account_info is self.account_info
         assert self.api.api_config is api_config
@@ -164,4 +158,7 @@ class TestApi(TestBase):
 
         download_url = self.api.get_download_url_for_fileid('file-id')
 
-        assert download_url == 'http://download.example.com/b2api/v2/b2_download_file_by_id?fileId=file-id'
+        assert (
+            download_url
+            == 'http://download.example.com/b2api/v2/b2_download_file_by_id?fileId=file-id'
+        )
