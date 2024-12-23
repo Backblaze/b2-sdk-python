@@ -57,7 +57,7 @@ class AbstractAction(metaclass=ABCMeta):
             self.do_report(bucket, reporter)
         except Exception as e:
             logger.exception('an exception occurred in a sync action')
-            reporter.error(str(self) + ": " + repr(e) + ' ' + str(e))
+            reporter.error(str(self) + ': ' + repr(e) + ' ' + str(e))
             raise  # Re-throw so we can identify failed actions
 
     @abstractmethod
@@ -123,12 +123,12 @@ class B2UploadAction(AbstractAction):
 
     @functools.cached_property
     def _upload_source(self) -> UploadSourceLocalFile:
-        """ Upload source if the file was to be uploaded in full """
+        """Upload source if the file was to be uploaded in full"""
         # NOTE: We're caching this to ensure that sha1 is not recalculated.
         return UploadSourceLocalFile(self.local_full_path)
 
     def get_all_sources(self) -> list[OutboundTransferSource]:
-        """ Get list of sources required to complete this upload """
+        """Get list of sources required to complete this upload"""
         return [self._upload_source]
 
     def do_action(self, bucket: Bucket, reporter: ProgressReport) -> None:
@@ -205,8 +205,12 @@ class B2IncrementalUploadAction(B2UploadAction):
         :param absolute_minimum_part_size: minimum file part size for large files
         """
         super().__init__(
-            local_full_path, relative_name, b2_file_name, mod_time_millis, size,
-            encryption_settings_provider
+            local_full_path,
+            relative_name,
+            b2_file_name,
+            mod_time_millis,
+            size,
+            encryption_settings_provider,
         )
         self.file_version = file_version
         self.absolute_minimum_part_size = absolute_minimum_part_size
@@ -339,11 +343,11 @@ class B2DownloadAction(AbstractAction):
         reporter.print_completion('dnload ' + self.source_path.relative_path)
 
     def __str__(self) -> str:
-        return (
-            'b2_download(%s, %s, %s, %d)' % (
-                self.b2_file_name, self.source_path.selected_version.id_, self.local_full_path,
-                self.source_path.mod_time
-            )
+        return 'b2_download(%s, %s, %s, %d)' % (
+            self.b2_file_name,
+            self.source_path.selected_version.id_,
+            self.local_full_path,
+            self.source_path.mod_time,
         )
 
 
@@ -429,11 +433,11 @@ class B2CopyAction(AbstractAction):
         reporter.print_completion('copy ' + self.source_path.relative_path)
 
     def __str__(self) -> str:
-        return (
-            'b2_copy(%s, %s, %s, %d)' % (
-                self.b2_file_name, self.source_path.selected_version.id_, self.dest_b2_file_name,
-                self.source_path.mod_time
-            )
+        return 'b2_copy(%s, %s, %s, %d)' % (
+            self.b2_file_name,
+            self.source_path.selected_version.id_,
+            self.dest_b2_file_name,
+            self.source_path.mod_time,
         )
 
 
@@ -475,7 +479,7 @@ class B2DeleteAction(AbstractAction):
         :param reporter: a place to report errors
         """
         reporter.update_transfer(1, 0)
-        reporter.print_completion(f"delete {escape_control_chars(self.relative_name)} {self.note}")
+        reporter.print_completion(f'delete {escape_control_chars(self.relative_name)} {self.note}')
 
     def __str__(self) -> str:
         return f'b2_delete({self.b2_file_name}, {self.file_id}, {self.note})'

@@ -78,7 +78,7 @@ class TestUnboundWriteIntentGenerator(TestBase):
             io.BytesIO(data),
             buffer_size_bytes=buffer_and_read_size,
             read_size=buffer_and_read_size,
-            **self.kwargs
+            **self.kwargs,
         )
         return generator.iterator()
 
@@ -124,7 +124,7 @@ class TestUnboundWriteIntentGenerator(TestBase):
         for write_intent in self._get_iterator(read_size, data):
             read_data = self._read_write_intent(write_intent, full_read_size=read_size)
             offset = write_intent.destination_offset
-            expected_data = data[offset:offset + read_size]
+            expected_data = data[offset : offset + read_size]
             self.assertEqual(expected_data, read_data)
 
     def test_single_buffer_delivered(self):

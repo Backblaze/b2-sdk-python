@@ -26,7 +26,7 @@ def unprintable_to_hex(s: str) -> str:
     """
 
     def hexify(match):
-        return rf"\x{ord(match.group()):02x}"
+        return rf'\x{ord(match.group()):02x}'
 
     if s:
         return UNPRINTABLE_PATTERN.sub(hexify, s)
@@ -52,5 +52,5 @@ def substitute_control_chars(s: str) -> tuple[str, bool]:
     :param s: an arbitrary string, possibly with unprintable characters.
     :return: tuple of the string with � replacements made and boolean indicated if chars were replaced
     """
-    new_value = UNPRINTABLE_PATTERN.sub("�", s)
+    new_value = UNPRINTABLE_PATTERN.sub('�', s)
     return new_value, new_value != s

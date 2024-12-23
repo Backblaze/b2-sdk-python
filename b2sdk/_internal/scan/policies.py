@@ -152,7 +152,7 @@ class ScanPoliciesManager:
         if include_file_regexes and not exclude_file_regexes:
             raise InvalidArgument(
                 'include_file_regexes',
-                'cannot be used without exclude_file_regexes at the same time'
+                'cannot be used without exclude_file_regexes at the same time',
             )
 
         with check_invalid_argument(

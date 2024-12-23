@@ -39,8 +39,10 @@ def synchronizer_factory():
     ):
         kwargs = {}
         if apiver_deps.V < 2:
-            assert upload_mode == UploadMode.FULL, "upload_mode not supported in apiver < 2"
-            assert absolute_minimum_part_size is None, "absolute_minimum_part_size not supported in apiver < 2"
+            assert upload_mode == UploadMode.FULL, 'upload_mode not supported in apiver < 2'
+            assert (
+                absolute_minimum_part_size is None
+            ), 'absolute_minimum_part_size not supported in apiver < 2'
         else:
             kwargs = dict(
                 upload_mode=upload_mode,
@@ -58,7 +60,7 @@ def synchronizer_factory():
             compare_version_mode=compare_version_mode,
             compare_threshold=compare_threshold,
             sync_policy_manager=sync_policy_manager,
-            **kwargs
+            **kwargs,
         )
 
     return get_synchronizer

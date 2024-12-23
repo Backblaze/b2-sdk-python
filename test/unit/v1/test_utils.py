@@ -20,216 +20,52 @@ from .deps import (
 
 # These are from the B2 Docs (https://www.backblaze.com/b2/docs/string_encoding.html)
 ENCODING_TEST_CASES = [
-    {
-        'fullyEncoded': '%20',
-        'minimallyEncoded': '+',
-        'string': ' '
-    },
-    {
-        'fullyEncoded': '%21',
-        'minimallyEncoded': '!',
-        'string': '!'
-    },
-    {
-        'fullyEncoded': '%22',
-        'minimallyEncoded': '%22',
-        'string': '"'
-    },
-    {
-        'fullyEncoded': '%23',
-        'minimallyEncoded': '%23',
-        'string': '#'
-    },
-    {
-        'fullyEncoded': '%24',
-        'minimallyEncoded': '$',
-        'string': '$'
-    },
-    {
-        'fullyEncoded': '%25',
-        'minimallyEncoded': '%25',
-        'string': '%'
-    },
-    {
-        'fullyEncoded': '%26',
-        'minimallyEncoded': '%26',
-        'string': '&'
-    },
-    {
-        'fullyEncoded': '%27',
-        'minimallyEncoded': "'",
-        'string': "'"
-    },
-    {
-        'fullyEncoded': '%28',
-        'minimallyEncoded': '(',
-        'string': '('
-    },
-    {
-        'fullyEncoded': '%29',
-        'minimallyEncoded': ')',
-        'string': ')'
-    },
-    {
-        'fullyEncoded': '%2A',
-        'minimallyEncoded': '*',
-        'string': '*'
-    },
-    {
-        'fullyEncoded': '%2B',
-        'minimallyEncoded': '%2B',
-        'string': '+'
-    },
-    {
-        'fullyEncoded': '%2C',
-        'minimallyEncoded': '%2C',
-        'string': ','
-    },
-    {
-        'fullyEncoded': '%2D',
-        'minimallyEncoded': '-',
-        'string': '-'
-    },
-    {
-        'fullyEncoded': '%2E',
-        'minimallyEncoded': '.',
-        'string': '.'
-    },
-    {
-        'fullyEncoded': '/',
-        'minimallyEncoded': '/',
-        'string': '/'
-    },
-    {
-        'fullyEncoded': '%30',
-        'minimallyEncoded': '0',
-        'string': '0'
-    },
-    {
-        'fullyEncoded': '%39',
-        'minimallyEncoded': '9',
-        'string': '9'
-    },
-    {
-        'fullyEncoded': '%3A',
-        'minimallyEncoded': ':',
-        'string': ':'
-    },
-    {
-        'fullyEncoded': '%3B',
-        'minimallyEncoded': ';',
-        'string': ';'
-    },
-    {
-        'fullyEncoded': '%3C',
-        'minimallyEncoded': '%3C',
-        'string': '<'
-    },
-    {
-        'fullyEncoded': '%3D',
-        'minimallyEncoded': '=',
-        'string': '='
-    },
-    {
-        'fullyEncoded': '%3E',
-        'minimallyEncoded': '%3E',
-        'string': '>'
-    },
-    {
-        'fullyEncoded': '%3F',
-        'minimallyEncoded': '%3F',
-        'string': '?'
-    },
-    {
-        'fullyEncoded': '%40',
-        'minimallyEncoded': '@',
-        'string': '@'
-    },
-    {
-        'fullyEncoded': '%41',
-        'minimallyEncoded': 'A',
-        'string': 'A'
-    },
-    {
-        'fullyEncoded': '%5A',
-        'minimallyEncoded': 'Z',
-        'string': 'Z'
-    },
-    {
-        'fullyEncoded': '%5B',
-        'minimallyEncoded': '%5B',
-        'string': '['
-    },
-    {
-        'fullyEncoded': '%5C',
-        'minimallyEncoded': '%5C',
-        'string': '\\'
-    },
-    {
-        'fullyEncoded': '%5D',
-        'minimallyEncoded': '%5D',
-        'string': ']'
-    },
-    {
-        'fullyEncoded': '%5E',
-        'minimallyEncoded': '%5E',
-        'string': '^'
-    },
-    {
-        'fullyEncoded': '%5F',
-        'minimallyEncoded': '_',
-        'string': '_'
-    },
-    {
-        'fullyEncoded': '%60',
-        'minimallyEncoded': '%60',
-        'string': '`'
-    },
-    {
-        'fullyEncoded': '%61',
-        'minimallyEncoded': 'a',
-        'string': 'a'
-    },
-    {
-        'fullyEncoded': '%7A',
-        'minimallyEncoded': 'z',
-        'string': 'z'
-    },
-    {
-        'fullyEncoded': '%7B',
-        'minimallyEncoded': '%7B',
-        'string': '{'
-    },
-    {
-        'fullyEncoded': '%7C',
-        'minimallyEncoded': '%7C',
-        'string': '|'
-    },
-    {
-        'fullyEncoded': '%7D',
-        'minimallyEncoded': '%7D',
-        'string': '}'
-    },
-    {
-        'fullyEncoded': '%7E',
-        'minimallyEncoded': '~',
-        'string': '~'
-    },
-    {
-        'fullyEncoded': '%7F',
-        'minimallyEncoded': '%7F',
-        'string': '\u007f'
-    },
+    {'fullyEncoded': '%20', 'minimallyEncoded': '+', 'string': ' '},
+    {'fullyEncoded': '%21', 'minimallyEncoded': '!', 'string': '!'},
+    {'fullyEncoded': '%22', 'minimallyEncoded': '%22', 'string': '"'},
+    {'fullyEncoded': '%23', 'minimallyEncoded': '%23', 'string': '#'},
+    {'fullyEncoded': '%24', 'minimallyEncoded': '$', 'string': '$'},
+    {'fullyEncoded': '%25', 'minimallyEncoded': '%25', 'string': '%'},
+    {'fullyEncoded': '%26', 'minimallyEncoded': '%26', 'string': '&'},
+    {'fullyEncoded': '%27', 'minimallyEncoded': "'", 'string': "'"},
+    {'fullyEncoded': '%28', 'minimallyEncoded': '(', 'string': '('},
+    {'fullyEncoded': '%29', 'minimallyEncoded': ')', 'string': ')'},
+    {'fullyEncoded': '%2A', 'minimallyEncoded': '*', 'string': '*'},
+    {'fullyEncoded': '%2B', 'minimallyEncoded': '%2B', 'string': '+'},
+    {'fullyEncoded': '%2C', 'minimallyEncoded': '%2C', 'string': ','},
+    {'fullyEncoded': '%2D', 'minimallyEncoded': '-', 'string': '-'},
+    {'fullyEncoded': '%2E', 'minimallyEncoded': '.', 'string': '.'},
+    {'fullyEncoded': '/', 'minimallyEncoded': '/', 'string': '/'},
+    {'fullyEncoded': '%30', 'minimallyEncoded': '0', 'string': '0'},
+    {'fullyEncoded': '%39', 'minimallyEncoded': '9', 'string': '9'},
+    {'fullyEncoded': '%3A', 'minimallyEncoded': ':', 'string': ':'},
+    {'fullyEncoded': '%3B', 'minimallyEncoded': ';', 'string': ';'},
+    {'fullyEncoded': '%3C', 'minimallyEncoded': '%3C', 'string': '<'},
+    {'fullyEncoded': '%3D', 'minimallyEncoded': '=', 'string': '='},
+    {'fullyEncoded': '%3E', 'minimallyEncoded': '%3E', 'string': '>'},
+    {'fullyEncoded': '%3F', 'minimallyEncoded': '%3F', 'string': '?'},
+    {'fullyEncoded': '%40', 'minimallyEncoded': '@', 'string': '@'},
+    {'fullyEncoded': '%41', 'minimallyEncoded': 'A', 'string': 'A'},
+    {'fullyEncoded': '%5A', 'minimallyEncoded': 'Z', 'string': 'Z'},
+    {'fullyEncoded': '%5B', 'minimallyEncoded': '%5B', 'string': '['},
+    {'fullyEncoded': '%5C', 'minimallyEncoded': '%5C', 'string': '\\'},
+    {'fullyEncoded': '%5D', 'minimallyEncoded': '%5D', 'string': ']'},
+    {'fullyEncoded': '%5E', 'minimallyEncoded': '%5E', 'string': '^'},
+    {'fullyEncoded': '%5F', 'minimallyEncoded': '_', 'string': '_'},
+    {'fullyEncoded': '%60', 'minimallyEncoded': '%60', 'string': '`'},
+    {'fullyEncoded': '%61', 'minimallyEncoded': 'a', 'string': 'a'},
+    {'fullyEncoded': '%7A', 'minimallyEncoded': 'z', 'string': 'z'},
+    {'fullyEncoded': '%7B', 'minimallyEncoded': '%7B', 'string': '{'},
+    {'fullyEncoded': '%7C', 'minimallyEncoded': '%7C', 'string': '|'},
+    {'fullyEncoded': '%7D', 'minimallyEncoded': '%7D', 'string': '}'},
+    {'fullyEncoded': '%7E', 'minimallyEncoded': '~', 'string': '~'},
+    {'fullyEncoded': '%7F', 'minimallyEncoded': '%7F', 'string': '\u007f'},
     {
         'fullyEncoded': '%E8%87%AA%E7%94%B1',
         'minimallyEncoded': '%E8%87%AA%E7%94%B1',
-        'string': '\u81ea\u7531'
+        'string': '\u81ea\u7531',
     },
-    {
-        'fullyEncoded': '%F0%90%90%80',
-        'minimallyEncoded': '%F0%90%90%80',
-        'string': '\U00010400'
-    },
+    {'fullyEncoded': '%F0%90%90%80', 'minimallyEncoded': '%F0%90%90%80', 'string': '\U00010400'},
 ]
 
 

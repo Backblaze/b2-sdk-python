@@ -100,8 +100,9 @@ class Emerger(metaclass=B2TraceMetaAbstract):
         all_write_intents = write_intents_iterable
         if check_first_intent_for_sha1:
             write_intents_iterator = iter(all_write_intents)
-            large_file_sha1_intents_for_check, all_write_intents = \
-                iterator_peek(write_intents_iterator, 2)
+            large_file_sha1_intents_for_check, all_write_intents = iterator_peek(
+                write_intents_iterator, 2
+            )
 
         emerge_plan = emerge_function(planner, all_write_intents)
 

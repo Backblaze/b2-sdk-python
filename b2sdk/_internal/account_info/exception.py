@@ -18,6 +18,7 @@ class AccountInfoError(B2Error, metaclass=ABCMeta):
     """
     Base class for all account info errors.
     """
+
     pass
 
 
@@ -35,8 +36,10 @@ class CorruptAccountInfo(AccountInfoError):
         self.file_name = file_name
 
     def __str__(self):
-        return f'Account info file ({self.file_name}) appears corrupted. ' \
-               f'Try removing and then re-authorizing the account.'
+        return (
+            f'Account info file ({self.file_name}) appears corrupted. '
+            f'Try removing and then re-authorizing the account.'
+        )
 
 
 class MissingAccountData(AccountInfoError):

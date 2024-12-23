@@ -9,25 +9,24 @@
 ######################################################################
 from __future__ import annotations
 
+import pytest
+
+from b2sdk.v2 import B2Api, current_time_millis
+from b2sdk.v2.exception import DuplicateBucketName
 from test.integration.bucket_cleaner import BucketCleaner
 from test.integration.helpers import (
     BUCKET_CREATED_AT_MILLIS,
     random_bucket_name,
 )
 
-import pytest
 
-from b2sdk.v2 import B2Api, current_time_millis
-from b2sdk.v2.exception import DuplicateBucketName
-
-
-@pytest.mark.usefixtures("cls_setup")
+@pytest.mark.usefixtures('cls_setup')
 class IntegrationTestBase:
     b2_api: B2Api
     this_run_bucket_name_prefix: str
     bucket_cleaner: BucketCleaner
 
-    @pytest.fixture(autouse=True, scope="class")
+    @pytest.fixture(autouse=True, scope='class')
     def cls_setup(self, request, b2_api, b2_auth_data, bucket_name_prefix, bucket_cleaner):
         cls = request.cls
         cls.b2_auth_data = b2_auth_data
@@ -60,7 +59,7 @@ class IntegrationTestBase:
             bucket = self.b2_api.create_bucket(
                 bucket_name,
                 'allPublic',
-                bucket_info={BUCKET_CREATED_AT_MILLIS: str(current_time_millis())}
+                bucket_info={BUCKET_CREATED_AT_MILLIS: str(current_time_millis())},
             )
         except DuplicateBucketName:
             self._duplicated_bucket_name_debug_info(bucket_name)

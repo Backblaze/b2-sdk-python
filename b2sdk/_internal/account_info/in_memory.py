@@ -60,8 +60,18 @@ class InMemoryAccountInfo(UrlPoolAccountInfo):
         self._s3_api_url = None
 
     def _set_auth_data(
-        self, account_id, auth_token, api_url, download_url, recommended_part_size,
-        absolute_minimum_part_size, application_key, realm, s3_api_url, allowed, application_key_id
+        self,
+        account_id,
+        auth_token,
+        api_url,
+        download_url,
+        recommended_part_size,
+        absolute_minimum_part_size,
+        application_key,
+        realm,
+        s3_api_url,
+        allowed,
+        application_key_id,
     ):
         self._account_id = account_id
         self._application_key_id = application_key_id

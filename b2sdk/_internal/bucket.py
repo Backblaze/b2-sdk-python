@@ -122,8 +122,10 @@ class Bucket(metaclass=B2TraceMeta):
         if value is not None:
             if name in file_info and file_info[name] != value:
                 logger.warning(
-                    'Overwriting file info key %s with value %s (previous value %s)', name, value,
-                    file_info[name]
+                    'Overwriting file info key %s with value %s (previous value %s)',
+                    name,
+                    value,
+                    file_info[name],
                 )
             file_info[name] = value
 
@@ -228,7 +230,7 @@ class Bucket(metaclass=B2TraceMeta):
                 default_retention=default_retention,
                 replication=replication,
                 is_file_lock_enabled=is_file_lock_enabled,
-            )
+            ),
         )
 
     def cancel_large_file(self, file_id):
@@ -348,7 +350,7 @@ class Bucket(metaclass=B2TraceMeta):
         """
         if fetch_count is not None and fetch_count <= 0:
             # fetch_count equal to 0 means "use API default", which we don't want to support here
-            raise ValueError("unsupported fetch_count value")
+            raise ValueError('unsupported fetch_count value')
         start_file_name = file_name
         start_file_id = None
         session = self.api.session
@@ -449,7 +451,7 @@ class Bucket(metaclass=B2TraceMeta):
 
                 # +1 to include the starter character.  Using posix path to
                 # ensure consistent behaviour on Windows (e.g. case sensitivity).
-                path = pathlib.PurePosixPath(folder_to_list[:starter_index + 1])
+                path = pathlib.PurePosixPath(folder_to_list[: starter_index + 1])
                 parent_path = str(path.parent)
                 # Path considers dot to be the empty path.
                 # There's no shorter path than that.
@@ -495,7 +497,7 @@ class Bucket(metaclass=B2TraceMeta):
                 if not filter_matcher.match(file_version.file_name):
                     continue
 
-                after_prefix = file_version.file_name[len(prefix):]
+                after_prefix = file_version.file_name[len(prefix) :]
                 # In case of wildcards, we don't care about folders at all, and it's recursive by default.
                 if '/' not in after_prefix or recursive:
                     # This is not a folder, so we'll print it out and
@@ -684,7 +686,7 @@ class Bucket(metaclass=B2TraceMeta):
 
                 sources = upload_source.get_incremental_sources(
                     existing_file_info,
-                    self.api.session.account_info.get_absolute_minimum_part_size()
+                    self.api.session.account_info.get_absolute_minimum_part_size(),
                 )
 
                 if len(sources) > 1 and not large_file_sha1:
@@ -1140,7 +1142,7 @@ class Bucket(metaclass=B2TraceMeta):
         content_disposition: str | None = None,
         content_encoding: str | None = None,
         content_language: str | None = None,
-        **kwargs
+        **kwargs,
     ):
         validate_b2_file_name(file_name)
         progress_listener = progress_listener or DoNothingProgressListener()
@@ -1168,7 +1170,7 @@ class Bucket(metaclass=B2TraceMeta):
             min_part_size=min_part_size,
             max_part_size=max_part_size,
             large_file_sha1=large_file_sha1,
-            **kwargs
+            **kwargs,
         )
 
     def concatenate(
@@ -1338,11 +1340,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param str filename: a file name
         :rtype: str
         """
-        return "{}/file/{}/{}".format(
-            self.api.account_info.get_download_url(),
-            b2_url_encode(self.name),
-            b2_url_encode(filename),
-        )
+        return f'{self.api.account_info.get_download_url()}/file/{b2_url_encode(self.name)}/{b2_url_encode(filename)}'
 
     def hide_file(self, file_name):
         """
@@ -1366,11 +1364,11 @@ class Bucket(metaclass=B2TraceMeta):
             raise FileNotPresent(bucket_name=self.name, file_id_or_name=file_name)
 
         action = latest_file_version.action
-        if action == "upload":
+        if action == 'upload':
             raise FileNotHidden(file_name)
-        elif action == "delete":
+        elif action == 'delete':
             raise FileDeleted(file_name)
-        elif action != "hide":
+        elif action != 'hide':
             raise UnexpectedFileVersionAction(action)
 
         return self.delete_file_version(latest_file_version.id_, file_name, bypass_governance)
@@ -1539,8 +1537,9 @@ class Bucket(metaclass=B2TraceMeta):
         """
         return self.api.session.get_bucket_notification_rules(self.id_)
 
-    def set_notification_rules(self,
-                               rules: Iterable[NotificationRule]) -> list[NotificationRuleResponse]:
+    def set_notification_rules(
+        self, rules: Iterable[NotificationRule]
+    ) -> list[NotificationRuleResponse]:
         """
         Set notification rules for this bucket.
         """
@@ -1551,6 +1550,7 @@ class BucketFactory:
     """
     This is a factory for creating bucket objects from different kind of objects.
     """
+
     BUCKET_CLASS = staticmethod(Bucket)
 
     @classmethod

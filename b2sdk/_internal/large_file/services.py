@@ -17,7 +17,6 @@ from b2sdk._internal.large_file.unfinished_large_file import UnfinishedLargeFile
 
 
 class LargeFileServices:
-
     UNFINISHED_LARGE_FILE_CLASS = staticmethod(UnfinishedLargeFile)
 
     def __init__(self, services):

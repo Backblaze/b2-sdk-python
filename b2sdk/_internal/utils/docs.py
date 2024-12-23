@@ -49,7 +49,7 @@ def _extract_restructedtext_links(docstring: str) -> dict[str, str]:
     for line in docstring.splitlines():
         line = line.strip()
         if line.startswith(_rest_link_prefix):
-            name, url = line[len(_rest_link_prefix):].split(': ', 1)
+            name, url = line[len(_rest_link_prefix) :].split(': ', 1)
             if name and url:
                 links[name] = url
     return links

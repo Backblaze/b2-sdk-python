@@ -12,6 +12,7 @@ Types compatibility layer.
 
 We use this module to support pydantic-less installs, as well as native typing module us on newer python versions.
 """
+
 import sys
 
 from annotated_types import Ge
@@ -22,16 +23,16 @@ except ImportError:
     from typing import Annotated, NotRequired, TypedDict
 
 __all__ = [  # prevents linter from removing "unused imports" which we want to export
-    "NotRequired",
-    "PositiveInt",
-    "TypedDict",
-    "pydantic",
+    'NotRequired',
+    'PositiveInt',
+    'TypedDict',
+    'pydantic',
 ]
 
 try:
     import pydantic
 
-    if getattr(pydantic, "__version__", "") < "2":
+    if getattr(pydantic, '__version__', '') < '2':
         raise ImportError
 
     if sys.version_info < (3, 10):  # https://github.com/pydantic/pydantic/issues/7873

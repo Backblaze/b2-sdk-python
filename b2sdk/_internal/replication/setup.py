@@ -32,13 +32,15 @@ logger = logging.getLogger(__name__)
 
 
 class ReplicationSetupHelper(metaclass=B2TraceMeta):
-    """ class with various methods that help with setting up repliction """
+    """class with various methods that help with setting up repliction"""
+
     PRIORITY_OFFSET: ClassVar[int] = 5  #: how far to to put the new rule from the existing rules
-    DEFAULT_PRIORITY: ClassVar[
-        int
-    ] = ReplicationRule.DEFAULT_PRIORITY  #: what priority to set if there are no preexisting rules
-    MAX_PRIORITY: ClassVar[
-        int] = ReplicationRule.MAX_PRIORITY  #: maximum allowed priority of a replication rule
+    DEFAULT_PRIORITY: ClassVar[int] = (
+        ReplicationRule.DEFAULT_PRIORITY
+    )  #: what priority to set if there are no preexisting rules
+    MAX_PRIORITY: ClassVar[int] = (
+        ReplicationRule.MAX_PRIORITY
+    )  #: maximum allowed priority of a replication rule
     DEFAULT_SOURCE_CAPABILITIES: ClassVar[tuple[str, ...]] = (
         'readFiles',
         'readFileLegalHolds',
@@ -60,7 +62,6 @@ class ReplicationSetupHelper(metaclass=B2TraceMeta):
         prefix: str | None = None,
         include_existing_files: bool = False,
     ) -> tuple[Bucket, Bucket]:
-
         # setup source key
         source_key = self._get_source_key(
             source_bucket,
@@ -94,12 +95,17 @@ class ReplicationSetupHelper(metaclass=B2TraceMeta):
     ) -> Bucket:
         api: B2Api = destination_bucket.api
 
-        # yapf: disable
-        source_configuration = destination_bucket.replication.get_source_configuration_as_dict(
-        ) if destination_bucket.replication else {}
+        source_configuration = (
+            destination_bucket.replication.get_source_configuration_as_dict()
+            if destination_bucket.replication
+            else {}
+        )
 
-        destination_configuration = destination_bucket.replication.get_destination_configuration_as_dict(
-        ) if destination_bucket.replication else {'source_to_destination_key_mapping': {}}
+        destination_configuration = (
+            destination_bucket.replication.get_destination_configuration_as_dict()
+            if destination_bucket.replication
+            else {'source_to_destination_key_mapping': {}}
+        )
 
         keys_to_purge, destination_key = self._get_destination_key(
             api,
@@ -107,12 +113,14 @@ class ReplicationSetupHelper(metaclass=B2TraceMeta):
         )
         # note: no clean up of keys_to_purge is actually done
 
-        destination_configuration['source_to_destination_key_mapping'][source_key_id] = destination_key.id_
+        destination_configuration['source_to_destination_key_mapping'][source_key_id] = (
+            destination_key.id_
+        )
         new_replication_configuration = ReplicationConfiguration(
             **source_configuration,
             **destination_configuration,
         )
-        # yapf: enable
+
         return destination_bucket.update(
             if_revision_is=destination_bucket.revision,
             replication=new_replication_configuration,
@@ -126,7 +134,9 @@ class ReplicationSetupHelper(metaclass=B2TraceMeta):
     ):
         keys_to_purge = []
         if destination_bucket.replication is not None:
-            current_destination_key_ids = destination_bucket.replication.source_to_destination_key_mapping.values()  # yapf: disable
+            current_destination_key_ids = (
+                destination_bucket.replication.source_to_destination_key_mapping.values()
+            )
         else:
             current_destination_key_ids = []
         key = None
@@ -138,20 +148,21 @@ class ReplicationSetupHelper(metaclass=B2TraceMeta):
             if current_destination_key is None:
                 logger.debug(
                     'zombie key found in replication destination_configuration.source_to_destination_key_mapping: %s',
-                    current_destination_key_id
+                    current_destination_key_id,
                 )
                 keys_to_purge.append(current_destination_key_id)
                 continue
-            if current_destination_key.has_capabilities(
-                cls.DEFAULT_DESTINATION_CAPABILITIES
-            ) and not current_destination_key.name_prefix:
+            if (
+                current_destination_key.has_capabilities(cls.DEFAULT_DESTINATION_CAPABILITIES)
+                and not current_destination_key.name_prefix
+            ):
                 logger.debug('matching destination key found: %s', current_destination_key_id)
                 key = current_destination_key
                 # not breaking here since we want to fill the purge list
             else:
                 logger.info('non-matching destination key found: %s', current_destination_key)
         if not key:
-            logger.debug("no matching key found, making a new one")
+            logger.debug('no matching key found, making a new one')
             key = cls._create_destination_key(
                 name=destination_bucket.name[:91] + '-replidst',
                 bucket=destination_bucket,
@@ -170,11 +181,12 @@ class ReplicationSetupHelper(metaclass=B2TraceMeta):
         include_existing_files: bool = False,
     ) -> Bucket:
         if prefix is None:
-            prefix = ""
+            prefix = ''
 
         if source_bucket.replication:
             current_source_rules = source_bucket.replication.rules
-            destination_configuration = source_bucket.replication.get_destination_configuration_as_dict(
+            destination_configuration = (
+                source_bucket.replication.get_destination_configuration_as_dict()
             )
         else:
             current_source_rules = []

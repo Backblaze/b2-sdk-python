@@ -83,18 +83,22 @@ def sqlite_account_info(sqlite_account_info_factory):
     return sqlite_account_info_factory()
 
 
-@pytest.fixture(params=[
-    lf('in_memory_account_info_factory'),
-    lf('sqlite_account_info_factory'),
-])
+@pytest.fixture(
+    params=[
+        lf('in_memory_account_info_factory'),
+        lf('sqlite_account_info_factory'),
+    ]
+)
 def account_info_factory(request):
     return request.param
 
 
-@pytest.fixture(params=[
-    lf('in_memory_account_info'),
-    lf('sqlite_account_info'),
-])
+@pytest.fixture(
+    params=[
+        lf('in_memory_account_info'),
+        lf('sqlite_account_info'),
+    ]
+)
 def account_info(request):
     return request.param
 

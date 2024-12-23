@@ -45,9 +45,8 @@ class TestDownload(IntegrationTestBase):
                         max_chunk_size=download_manager.MAX_CHUNK_SIZE,
                         thread_pool=download_manager._thread_pool,
                     )
-                ]
+                ],
             ):
-
                 # let's check that small file downloads do not fail with these settings
                 small_file_version = bucket.upload_bytes(b'0', 'a_single_char')
                 with io.BytesIO() as io_:
@@ -57,14 +56,17 @@ class TestDownload(IntegrationTestBase):
                 f, sha1 = self._file_helper(bucket)
                 if small_file_version._type() != 'large':
                     # if we are here, that's not the production server!
-                    assert f.download_version.content_sha1_verified  # large files don't have sha1, lets not check
+                    assert (
+                        f.download_version.content_sha1_verified
+                    )  # large files don't have sha1, lets not check
 
                 file_info = f.download_version.file_info
                 assert LARGE_FILE_SHA1 in file_info
                 assert file_info[LARGE_FILE_SHA1] == sha1
 
-    def _file_helper(self, bucket, sha1_sum=None,
-                     bytes_to_write: int | None = None) -> tuple[DownloadVersion, Sha1HexDigest]:
+    def _file_helper(
+        self, bucket, sha1_sum=None, bytes_to_write: int | None = None
+    ) -> tuple[DownloadVersion, Sha1HexDigest]:
         bytes_to_write = bytes_to_write or int(self.info.get_absolute_minimum_part_size()) * 2 + 1
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_dir = pathlib.Path(temp_dir)
@@ -98,7 +100,7 @@ class TestDownload(IntegrationTestBase):
             assert not f.download_version.content_sha1_verified
 
 
-@pytest.mark.parametrize("size_multiplier", [1, 100])
+@pytest.mark.parametrize('size_multiplier', [1, 100])
 def test_gzip(b2_auth_data, bucket, tmp_path, b2_api, size_multiplier):
     """Test downloading gzipped files of varius sizes with and without content-encoding."""
     source_file = tmp_path / 'compressed_file.gz'
@@ -159,12 +161,12 @@ def binary_cap(request):
     For Windows we need capsys as capfd fails, while on any other (i.e. POSIX systems) we need capfd.
     This is sadly tied directly to how .save_to() is implemented, as Windows required special handling.
     """
-    cap = request.getfixturevalue("capsysbinary" if _IS_WINDOWS else "capfdbinary")
+    cap = request.getfixturevalue('capsysbinary' if _IS_WINDOWS else 'capfdbinary')
     yield cap
 
 
 def test_download_to_stdout(bucket, source_file, uploaded_source_file_version, binary_cap):
-    output_file = "CON" if _IS_WINDOWS else "/dev/stdout"
+    output_file = 'CON' if _IS_WINDOWS else '/dev/stdout'
 
     bucket.download_file_by_id(file_id=uploaded_source_file_version.id_).save_to(output_file)
 

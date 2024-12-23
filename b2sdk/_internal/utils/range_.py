@@ -22,6 +22,7 @@ class Range:
     """
     HTTP ranges use an *inclusive* index at the end.
     """
+
     __slots__ = ['start', 'end']
 
     start: int

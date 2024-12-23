@@ -22,8 +22,7 @@ from b2sdk._internal.utils import B2TraceMetaAbstract
 
 
 class DynamicThreadPoolExecutorProtocol(Protocol):
-    def submit(self, fn: Callable, *args, **kwargs) -> Future:
-        ...
+    def submit(self, fn: Callable, *args, **kwargs) -> Future: ...
 
     def set_size(self, max_workers: int) -> None:
         """Set the size of the thread pool."""
@@ -94,7 +93,8 @@ class ThreadPoolMixin(metaclass=B2TraceMetaAbstract):
         """
         self._thread_pool = (
             thread_pool
-            if thread_pool is not None else self.DEFAULT_THREAD_POOL_CLASS(max_workers=max_workers)
+            if thread_pool is not None
+            else self.DEFAULT_THREAD_POOL_CLASS(max_workers=max_workers)
         )
         self._max_workers = max_workers
         super().__init__(**kwargs)

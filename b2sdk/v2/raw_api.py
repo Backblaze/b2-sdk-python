@@ -32,7 +32,7 @@ class _OldRawAPI:
         custom_upload_timestamp: int | None = None,
         cache_control: str | None = None,
         *args,
-        **kwargs
+        **kwargs,
     ) -> dict:
         if cache_control is not None:
             file_info['b2-cache-control'] = cache_control
@@ -71,7 +71,7 @@ class _OldRawAPI:
         custom_upload_timestamp: int | None = None,
         cache_control: str | None = None,
         *args,
-        **kwargs
+        **kwargs,
     ):
         if cache_control is not None:
             file_info['b2-cache-control'] = cache_control

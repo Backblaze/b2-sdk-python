@@ -10,5 +10,6 @@
 from __future__ import annotations
 
 import b2sdk.version  # noqa: E402
+
 __version__ = b2sdk.version.VERSION
 assert __version__  # PEP-0396

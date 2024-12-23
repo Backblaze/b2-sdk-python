@@ -19,7 +19,6 @@ from ..sync.folder import B2Folder
 
 @dataclass
 class ReplicationMonitor(v2.ReplicationMonitor):
-
     # when passing in v1 Bucket objects to ReplicationMonitor,
     # the latter should use v1 B2Folder to correctly use
     # v1 Bucket's interface

@@ -13,7 +13,7 @@ from b2sdk._internal.utils import Sha1HexDigest
 
 
 class WriteIntent:
-    """ Wrapper for outbound source that defines destination offset. """
+    """Wrapper for outbound source that defines destination offset."""
 
     def __init__(self, outbound_source, destination_offset=0):
         """
@@ -33,7 +33,7 @@ class WriteIntent:
 
     @property
     def length(self):
-        """ Length of the write intent.
+        """Length of the write intent.
 
         :rtype: int
         """
@@ -41,21 +41,21 @@ class WriteIntent:
 
     @property
     def destination_end_offset(self):
-        """ Offset of source end in destination file.
+        """Offset of source end in destination file.
 
         :rtype: int
         """
         return self.destination_offset + self.length
 
     def is_copy(self):
-        """ States if outbound source is remote source and requires copying.
+        """States if outbound source is remote source and requires copying.
 
         :rtype: bool
         """
         return self.outbound_source.is_copy()
 
     def is_upload(self):
-        """ States if outbound source is local source and requires uploading.
+        """States if outbound source is local source and requires uploading.
 
         :rtype: bool
         """
@@ -76,7 +76,7 @@ class WriteIntent:
 
     @classmethod
     def wrap_sources_iterator(cls, outbound_sources_iterator):
-        """ Helper that wraps outbound sources iterator with write intents.
+        """Helper that wraps outbound sources iterator with write intents.
 
         Can be used in cases similar to concatenate to automatically compute destination offsets
 

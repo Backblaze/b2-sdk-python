@@ -44,7 +44,8 @@ class ReplicationRule:
 
         if not (self.MIN_PRIORITY <= self.priority <= self.MAX_PRIORITY):
             raise ValueError(
-                'priority should be within [%d, %d] interval' % (
+                'priority should be within [%d, %d] interval'
+                % (
                     self.MIN_PRIORITY,
                     self.MAX_PRIORITY,
                 )
@@ -84,6 +85,7 @@ class ReplicationConfiguration:
     """
     Hold information about bucket replication configuration
     """
+
     # configuration as source:
     rules: list[ReplicationRule] = field(default_factory=list)
     source_key_id: str | None = None
@@ -92,13 +94,13 @@ class ReplicationConfiguration:
 
     def __post_init__(self):
         if self.rules and not self.source_key_id:
-            raise ValueError("source_key_id must not be empty")
+            raise ValueError('source_key_id must not be empty')
 
         for source, destination in self.source_to_destination_key_mapping.items():
             if not source or not destination:
                 raise ValueError(
-                    f"source_to_destination_key_mapping must not contain \
-                     empty keys or values: ({source}, {destination})"
+                    f'source_to_destination_key_mapping must not contain \
+                     empty keys or values: ({source}, {destination})'
                 )
 
     @property
@@ -159,15 +161,17 @@ class ReplicationConfiguration:
         """
 
         result = {
-            'asReplicationSource':
-                {
-                    "replicationRules": [rule.as_dict() for rule in self.rules],
-                    "sourceApplicationKeyId": self.source_key_id,
-                } if self.is_source else None,
-            'asReplicationDestination':
-                {
-                    'sourceToDestinationKeyMapping': self.source_to_destination_key_mapping,
-                } if self.is_destination else None,
+            'asReplicationSource': {
+                'replicationRules': [rule.as_dict() for rule in self.rules],
+                'sourceApplicationKeyId': self.source_key_id,
+            }
+            if self.is_source
+            else None,
+            'asReplicationDestination': {
+                'sourceToDestinationKeyMapping': self.source_to_destination_key_mapping,
+            }
+            if self.is_destination
+            else None,
         }
 
         return result

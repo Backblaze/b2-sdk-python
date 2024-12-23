@@ -42,7 +42,7 @@ class TestRawAPIFilenames(TestBase):
 
         :param filename: unicode (or str) that follows the rules
         """
-        print(f"Filename \"{filename}\" should be OK")
+        print(f'Filename "{filename}" should be OK')
         self.assertTrue(self.raw_api.check_b2_filename(filename) is None)
 
     def _should_raise(self, filename, exception_message):
@@ -51,9 +51,7 @@ class TestRawAPIFilenames(TestBase):
         :param filename: unicode (or str) that doesn't follow the rules
         :param exception_message: regexp that matches the exception's detailed message
         """
-        print(
-            f"Filename \"{filename}\" should raise UnusableFileName(\".*{exception_message}.*\")."
-        )
+        print(f'Filename "{filename}" should raise UnusableFileName(".*{exception_message}.*").')
         with self.assertRaisesRegex(UnusableFileName, exception_message):
             self.raw_api.check_b2_filename(filename)
 
@@ -68,7 +66,7 @@ class TestRawAPIFilenames(TestBase):
         - File names cannot start with "/", end with "/", or contain "//".
         - Maximum of 250 bytes of UTF-8 in each segment (part between slashes) of a file name.
         """
-        print("test b2 filename rules")
+        print('test b2 filename rules')
 
         # Examples from doc:
         self._should_be_ok('Kitten Videos')
@@ -79,28 +77,28 @@ class TestRawAPIFilenames(TestBase):
         s_1024 = 4 * (250 * 'x' + '/') + 20 * 'y'
         self._should_be_ok(s_1024)
         # 1025 is too long.
-        self._should_raise(s_1024 + 'x', "too long")
+        self._should_raise(s_1024 + 'x', 'too long')
         # 1024 bytes with two byte characters should also work.
         s_1024_two_byte = 4 * (125 * TWO_BYTE_UNICHR + '/') + 20 * 'y'
         self._should_be_ok(s_1024_two_byte)
         # But 1025 bytes is too long.
-        self._should_raise(s_1024_two_byte + 'x', "too long")
+        self._should_raise(s_1024_two_byte + 'x', 'too long')
 
         # Names with unicode values < 32, and DEL aren't allowed.
-        self._should_raise('hey' + CHAR_UNDER_32, "contains code.*less than 32")
+        self._should_raise('hey' + CHAR_UNDER_32, 'contains code.*less than 32')
         # Unicode in the filename shouldn't break the exception message.
-        self._should_raise(TWO_BYTE_UNICHR + CHAR_UNDER_32, "contains code.*less than 32")
-        self._should_raise(DEL_CHAR, "DEL.*not allowed")
+        self._should_raise(TWO_BYTE_UNICHR + CHAR_UNDER_32, 'contains code.*less than 32')
+        self._should_raise(DEL_CHAR, 'DEL.*not allowed')
 
         # Names can't start or end with '/' or contain '//'
-        self._should_raise('/hey', "not start.*/")
-        self._should_raise('hey/', "not .*end.*/")
-        self._should_raise('not//allowed', "contain.*//")
+        self._should_raise('/hey', 'not start.*/')
+        self._should_raise('hey/', 'not .*end.*/')
+        self._should_raise('not//allowed', 'contain.*//')
 
         # Reject segments longer than 250 bytes
-        self._should_raise('foo/' + 251 * 'x', "segment too long")
+        self._should_raise('foo/' + 251 * 'x', 'segment too long')
         # So a segment of 125 two-byte chars plus one should also fail.
-        self._should_raise('foo/' + 125 * TWO_BYTE_UNICHR + 'x', "segment too long")
+        self._should_raise('foo/' + 125 * TWO_BYTE_UNICHR + 'x', 'segment too long')
 
 
 class BucketTestBase:
@@ -123,13 +121,15 @@ class TestUpdateBucket(BucketTestBase):
             self.raw_api.update_bucket('test', 'account_auth_token', 'account_id', 'bucket_id')
 
     @pytest.mark.parametrize(
-        'bucket_type,bucket_info,default_retention', (
+        'bucket_type,bucket_info,default_retention',
+        (
             (None, {}, None),
             (
-                'allPublic', None,
-                BucketRetentionSetting(RetentionMode.COMPLIANCE, RetentionPeriod(years=1))
+                'allPublic',
+                None,
+                BucketRetentionSetting(RetentionMode.COMPLIANCE, RetentionPeriod(years=1)),
             ),
-        )
+        ),
     )
     def test_assertion_not_raises(self, bucket_type, bucket_info, default_retention):
         self.raw_api.update_bucket(
@@ -143,14 +143,17 @@ class TestUpdateBucket(BucketTestBase):
         )
 
     @pytest.mark.parametrize(
-        'encryption_setting,', (
+        'encryption_setting,',
+        (
             EncryptionSetting(
                 mode=EncryptionMode.SSE_C,
                 algorithm=EncryptionAlgorithm.AES256,
-                key=EncryptionKey(b'key', 'key-id')
+                key=EncryptionKey(b'key', 'key-id'),
             ),
-            EncryptionSetting(mode=EncryptionMode.UNKNOWN,),
-        )
+            EncryptionSetting(
+                mode=EncryptionMode.UNKNOWN,
+            ),
+        ),
     )
     def test_update_bucket_wrong_encryption(self, encryption_setting):
         with pytest.raises(WrongEncryptionModeForBucketDefault):
@@ -168,17 +171,19 @@ class TestCreateBucket(BucketTestBase):
     """Test creating bucket."""
 
     @pytest.mark.parametrize(
-        'encryption_setting,', (
+        'encryption_setting,',
+        (
             EncryptionSetting(
                 mode=EncryptionMode.SSE_C,
                 algorithm=EncryptionAlgorithm.AES256,
-                key=EncryptionKey(b'key', 'key-id')
+                key=EncryptionKey(b'key', 'key-id'),
             ),
-            EncryptionSetting(mode=EncryptionMode.UNKNOWN,),
-        )
+            EncryptionSetting(
+                mode=EncryptionMode.UNKNOWN,
+            ),
+        ),
     )
     def test_create_bucket_wrong_encryption(self, encryption_setting):
-
         with pytest.raises(WrongEncryptionModeForBucketDefault):
             self.raw_api.create_bucket(
                 'test',

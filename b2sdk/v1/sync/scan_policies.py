@@ -65,7 +65,7 @@ class ScanPoliciesManager(v2.ScanPoliciesManager):
         if include_file_regexes and not exclude_file_regexes:
             raise v2_exception.InvalidArgument(
                 'include_file_regexes',
-                'cannot be used without exclude_file_regexes at the same time'
+                'cannot be used without exclude_file_regexes at the same time',
             )
 
         self._exclude_dir_set = v2.RegexSet(exclude_dir_regexes)
@@ -132,7 +132,7 @@ class ScanPoliciesManagerWrapper(v2.ScanPoliciesManager):
         self.exclude_all_symlinks = scan_policies_manager.exclude_all_symlinks
 
     def __repr__(self):
-        return f"{self.__class__.__name__}({self.scan_policies_manager})"
+        return f'{self.__class__.__name__}({self.scan_policies_manager})'
 
     def should_exclude_relative_path(self, relative_path: str):
         self.scan_policies_manager.should_exclude_file(relative_path)

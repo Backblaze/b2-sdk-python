@@ -34,15 +34,16 @@ def test_b2sdk_doc_urls__no_urls_error():
 
 
 @pytest.mark.parametrize(
-    'type_,expected', [
+    'type_,expected',
+    [
         (AbstractRawApi, {}),
         (
-            LifecycleRule, {
-                'B2 Cloud Storage Lifecycle Rules':
-                    'https://www.backblaze.com/docs/cloud-storage-lifecycle-rules',
-            }
+            LifecycleRule,
+            {
+                'B2 Cloud Storage Lifecycle Rules': 'https://www.backblaze.com/docs/cloud-storage-lifecycle-rules',
+            },
         ),
-    ]
+    ],
 )
 def test_get_b2sdk_doc_urls(type_, expected):
     assert get_b2sdk_doc_urls(type_) == expected

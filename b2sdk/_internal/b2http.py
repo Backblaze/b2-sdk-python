@@ -61,7 +61,7 @@ def _print_exception(e, indent=''):
     """
     print(indent + 'EXCEPTION', repr(e))
     print(indent + 'CLASS', type(e))
-    for (i, a) in enumerate(e.args):
+    for i, a in enumerate(e.args):
         print(indent + 'ARG %d: %s' % (i, repr(a)))
         if isinstance(a, Exception):
             _print_exception(a, indent + '        ')
@@ -144,7 +144,7 @@ class ClockSkewHook(HttpCallback):
 
         # Convert the server time to a datetime object
         try:
-            with setlocale("C"):
+            with setlocale('C'):
                 # "%Z" always creates naive datetimes, even though the timezone
                 # is specified. https://github.com/python/cpython/issues/76678
                 # Anyway, thankfully, HTTP/1.1 spec requires the string
@@ -314,13 +314,11 @@ class B2Http:
         response = self.request(
             method,
             url,
-            headers={
-                **headers, 'Accept': 'application/json'
-            },
+            headers={**headers, 'Accept': 'application/json'},
             data=data,
             try_count=try_count,
             params=params,
-            _timeout=_timeout
+            _timeout=_timeout,
         )
 
         # Decode the JSON that came back.  If we've gotten this far,
@@ -518,7 +516,9 @@ class B2Http:
                 except (TypeError, ValueError) as exc:
                     logger.warning(
                         'Inconsistent status codes returned by the server %r != %r; parsing exception: %r',
-                        error.get('status'), response.status_code, exc
+                        error.get('status'),
+                        response.status_code,
+                        exc,
                     )
                     status = response.status_code
 

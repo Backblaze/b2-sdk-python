@@ -30,18 +30,16 @@ class EncryptionMode(Enum):
     """Encryption mode."""
 
     UNKNOWN = None  #: unknown encryption mode (sdk doesn't know or used key has no rights to know)
-    NONE = "none"  #: no encryption (plaintext)
+    NONE = 'none'  #: no encryption (plaintext)
     SSE_B2 = 'SSE-B2'  #: server-side encryption with key maintained by B2
     SSE_C = 'SSE-C'  #: server-side encryption with key provided by the client
 
-    #CLIENT = 'CLIENT'  #: client-side encryption
+    # CLIENT = 'CLIENT'  #: client-side encryption
 
     def can_be_set_as_bucket_default(self):
         return self in BUCKET_DEFAULT_ENCRYPTION_MODES
 
 
-ENCRYPTION_MODES_WITH_MANDATORY_ALGORITHM = frozenset(
-    (EncryptionMode.SSE_B2, EncryptionMode.SSE_C)
-)  # yapf: off
-ENCRYPTION_MODES_WITH_MANDATORY_KEY = frozenset((EncryptionMode.SSE_C,))  # yapf: off
+ENCRYPTION_MODES_WITH_MANDATORY_ALGORITHM = frozenset((EncryptionMode.SSE_B2, EncryptionMode.SSE_C))
+ENCRYPTION_MODES_WITH_MANDATORY_KEY = frozenset((EncryptionMode.SSE_C,))
 BUCKET_DEFAULT_ENCRYPTION_MODES = frozenset((EncryptionMode.NONE, EncryptionMode.SSE_B2))

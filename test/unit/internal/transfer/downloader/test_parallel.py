@@ -19,9 +19,9 @@ from requests import RequestException
 def mock_download_response_factory(apiver_module, bucket, file_size: int = 0):
     hasher = hashlib.sha1()
 
-    dummy_data = b"dummy"
+    dummy_data = b'dummy'
     file_content = (dummy_data * (file_size // len(dummy_data) + 1))[:file_size]
-    file_version = bucket.upload_bytes(file_content, f"dummy_file_{file_size}.txt")
+    file_version = bucket.upload_bytes(file_content, f'dummy_file_{file_size}.txt')
     hasher.update(file_content)
 
     url = bucket.api.session.get_download_url_by_name(bucket.name, file_version.file_name)
@@ -64,8 +64,8 @@ def test_download_empty_file(apiver_module, b2api, bucket, downloader, output_fi
     )
 
     assert bytes_written == file_size
-    assert hash_hex == "da39a3ee5e6b4b0d3255bfef95601890afd80709"
-    assert output_file.getvalue() == b""
+    assert hash_hex == 'da39a3ee5e6b4b0d3255bfef95601890afd80709'
+    assert output_file.getvalue() == b''
     mock_response.close.assert_called_once()
 
 
@@ -81,8 +81,8 @@ def test_download_file(apiver_module, b2api, bucket, downloader, output_file):
     )
 
     assert bytes_written == file_size
-    assert hash_hex == "7804df8c623573ccfc1993e04981006e5bc30383"
-    assert output_file.getvalue() == b"dummy" * 20
+    assert hash_hex == '7804df8c623573ccfc1993e04981006e5bc30383'
+    assert output_file.getvalue() == b'dummy' * 20
     mock_response.close.assert_called_once()
 
 
@@ -98,8 +98,8 @@ def test_download_file__data_stream_error__in_first_response(
     )
 
     def iter_content(chunk_size=1, decode_unicode=False):
-        yield b"DUMMY"
-        raise RequestException("stream error")
+        yield b'DUMMY'
+        raise RequestException('stream error')
         yield  # noqa
 
     mock_response.iter_content = iter_content
@@ -109,7 +109,7 @@ def test_download_file__data_stream_error__in_first_response(
     )
 
     assert bytes_written == file_size
-    assert output_file.getvalue() == b"DUMMY" + b"dummy" * 19
+    assert output_file.getvalue() == b'DUMMY' + b'dummy' * 19
 
 
 def test_download_file__data_stream_error__persistent_errors(
@@ -122,8 +122,8 @@ def test_download_file__data_stream_error__persistent_errors(
 
     # Ensure that follow-up requests also return errors
     def iter_content(chunk_size=1, decode_unicode=False):
-        yield b"d"
-        raise RequestException("stream error")
+        yield b'd'
+        raise RequestException('stream error')
 
     mock_response.iter_content = iter_content
 
@@ -145,7 +145,7 @@ def test_download_file__data_stream_error__multiple_errors_recovery(
 
     def first_iter_content(chunk_size=1, decode_unicode=False):
         yield mock_response.raw.read(1)
-        raise RequestException("stream error")
+        raise RequestException('stream error')
 
     mock_response.iter_content = first_iter_content
 
@@ -156,7 +156,7 @@ def test_download_file__data_stream_error__multiple_errors_recovery(
 
         def iter_content(chunk_size=1, decode_unicode=False):
             yield response.raw.read(1).upper()
-            raise RequestException("stream error")
+            raise RequestException('stream error')
 
         response.iter_content = iter_content
         return response
@@ -168,4 +168,4 @@ def test_download_file__data_stream_error__multiple_errors_recovery(
     )
 
     assert bytes_written == file_size
-    assert output_file.getvalue() == b"dUMMY" + b"DUMMY" * 19
+    assert output_file.getvalue() == b'dUMMY' + b'DUMMY' * 19

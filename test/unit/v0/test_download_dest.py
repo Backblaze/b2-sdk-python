@@ -25,7 +25,7 @@ class TestDownloadDestLocalFile(TestBase):
     expected_result = 'hello world'
 
     def _make_dest(self, temp_dir):
-        file_path = os.path.join(temp_dir, "test.txt")
+        file_path = os.path.join(temp_dir, 'test.txt')
         return DownloadDestLocalFile(file_path), file_path
 
     def test_write_and_set_mod_time(self):
@@ -36,7 +36,7 @@ class TestDownloadDestLocalFile(TestBase):
         with tempfile.TemporaryDirectory() as temp_dir:
             download_dest, file_path = self._make_dest(temp_dir)
             with download_dest.make_file_context(
-                "file_id", "file_name", 100, "content_type", "sha1", {}, mod_time
+                'file_id', 'file_name', 100, 'content_type', 'sha1', {}, mod_time
             ) as f:
                 f.write(b'hello world')
             with open(file_path, 'rb') as f:
@@ -51,7 +51,7 @@ class TestDownloadDestLocalFile(TestBase):
             download_dest, file_path = self._make_dest(temp_dir)
             try:
                 with download_dest.make_file_context(
-                    "file_id", "file_name", 100, "content_type", "sha1", {}, 1500222333000
+                    'file_id', 'file_name', 100, 'content_type', 'sha1', {}, 1500222333000
                 ) as f:
                     f.write(b'hello world')
                     raise Exception('test error')
@@ -64,7 +64,7 @@ class TestPreSeekedDownloadDest(TestDownloadDestLocalFile):
     expected_result = '123hello world567890'
 
     def _make_dest(self, temp_dir):
-        file_path = os.path.join(temp_dir, "test.txt")
+        file_path = os.path.join(temp_dir, 'test.txt')
         with open(file_path, 'wb') as f:
             f.write(b'12345678901234567890')
         return PreSeekedDownloadDest(local_file_path=file_path, seek_target=3), file_path
@@ -77,12 +77,12 @@ class TestDownloadDestProgressWrapper(TestBase):
         """
         mod_time = 1500222333000
         with tempfile.TemporaryDirectory() as temp_dir:
-            file_path = os.path.join(temp_dir, "test.txt")
+            file_path = os.path.join(temp_dir, 'test.txt')
             download_local_file = DownloadDestLocalFile(file_path)
             progress_listener = ProgressListenerForTest()
             download_dest = DownloadDestProgressWrapper(download_local_file, progress_listener)
             with download_dest.make_file_context(
-                "file_id", "file_name", 100, "content_type", "sha1", {}, mod_time
+                'file_id', 'file_name', 100, 'content_type', 'sha1', {}, mod_time
             ) as f:
                 f.write(b'hello world\n')
             with open(file_path, 'rb') as f:

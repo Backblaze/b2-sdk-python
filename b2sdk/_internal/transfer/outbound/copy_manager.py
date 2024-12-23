@@ -110,7 +110,10 @@ class CopyManager(TransferManager, ThreadPoolMixin):
                         (``None`` if unknown)
         """
         # b2_copy_part doesn't need SSE-B2. Large file encryption is decided on b2_start_large_file.
-        if destination_encryption is not None and destination_encryption.mode == EncryptionMode.SSE_B2:
+        if (
+            destination_encryption is not None
+            and destination_encryption.mode == EncryptionMode.SSE_B2
+        ):
             destination_encryption = None
 
         # Check if this part was uploaded before
@@ -215,12 +218,18 @@ class CopyManager(TransferManager, ThreadPoolMixin):
         source_key_id = None
         destination_key_id = None
 
-        if destination_server_side_encryption is not None and destination_server_side_encryption.key is not None and \
-                destination_server_side_encryption.key.key_id is not None:
+        if (
+            destination_server_side_encryption is not None
+            and destination_server_side_encryption.key is not None
+            and destination_server_side_encryption.key.key_id is not None
+        ):
             destination_key_id = destination_server_side_encryption.key.key_id
 
-        if source_server_side_encryption is not None and source_server_side_encryption.key is not None and \
-                source_server_side_encryption.key.key_id is not None:
+        if (
+            source_server_side_encryption is not None
+            and source_server_side_encryption.key is not None
+            and source_server_side_encryption.key.key_id is not None
+        ):
             source_key_id = source_server_side_encryption.key.key_id
 
         if source_key_id == destination_key_id:
@@ -228,11 +237,9 @@ class CopyManager(TransferManager, ThreadPoolMixin):
 
         if source_file_info is None or source_content_type is None:
             raise SSECKeyIdMismatchInCopy(
-                'attempting to copy file using {} without providing source_file_info '
-                'and source_content_type for differing sse_c_key_ids: source="{}", '
-                'destination="{}"'.format(
-                    MetadataDirectiveMode.COPY, source_key_id, destination_key_id
-                )
+                f'attempting to copy file using {MetadataDirectiveMode.COPY} without providing source_file_info '
+                f'and source_content_type for differing sse_c_key_ids: source="{source_key_id}", '
+                f'destination="{destination_key_id}"'
             )
 
         destination_file_info = source_file_info.copy()

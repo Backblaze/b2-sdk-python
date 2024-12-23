@@ -28,6 +28,7 @@ logger = logging.getLogger(__name__)
 
 class _UnknownKeyId(enum.Enum):
     """The purpose of this enum is to provide a sentinel that can be used with type annotations."""
+
     unknown_key_id = 0
 
 
@@ -44,6 +45,7 @@ class EncryptionKey:
     in encrypted file's fileInfo, or UNKNOWN_KEY_ID when that information is missing.
     The secret may be None, if encryption metadata is read from the server.
     """
+
     SECRET_REPR = '******'
 
     def __init__(self, secret: bytes | None, key_id: str | None | _UnknownKeyId):
@@ -117,7 +119,9 @@ class EncryptionSetting:
     def __eq__(self, other):
         if other is None:
             raise ValueError('cannot compare a known encryption setting to an unknown one')
-        return self.mode == other.mode and self.algorithm == other.algorithm and self.key == other.key
+        return (
+            self.mode == other.mode and self.algorithm == other.algorithm and self.key == other.key
+        )
 
     def serialize_to_json_for_request(self):
         if self.key and self.key.secret is None:
@@ -206,13 +210,12 @@ class EncryptionSetting:
             raise ValueError('Cannot add an unknown key id to file info')
         if file_info is None:
             file_info = {}
-        if file_info.get(SSE_C_KEY_ID_FILE_INFO_KEY_NAME) is not None and file_info[
-            SSE_C_KEY_ID_FILE_INFO_KEY_NAME] != self.key.key_id:
+        if (
+            file_info.get(SSE_C_KEY_ID_FILE_INFO_KEY_NAME) is not None
+            and file_info[SSE_C_KEY_ID_FILE_INFO_KEY_NAME] != self.key.key_id
+        ):
             raise ValueError(
-                'Ambiguous key id set: "{}" in file_info and "{}" in {}'.format(
-                    file_info[SSE_C_KEY_ID_FILE_INFO_KEY_NAME], self.key.key_id,
-                    self.__class__.__name__
-                )
+                f'Ambiguous key id set: "{file_info[SSE_C_KEY_ID_FILE_INFO_KEY_NAME]}" in file_info and "{self.key.key_id}" in {self.__class__.__name__}'
             )
         file_info[SSE_C_KEY_ID_FILE_INFO_KEY_NAME] = self.key.key_id
         return file_info
@@ -351,7 +354,9 @@ class EncryptionSettingFactory:
         return EncryptionSetting(EncryptionMode.NONE)
 
 
-SSE_NONE = EncryptionSetting(mode=EncryptionMode.NONE,)
+SSE_NONE = EncryptionSetting(
+    mode=EncryptionMode.NONE,
+)
 """
 Commonly used "no encryption" setting
 """

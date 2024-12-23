@@ -93,13 +93,7 @@ class FileVersion:
         self.size = size
 
     def __repr__(self):
-        return '{}({}, {}, {}, {})'.format(
-            self.__class__.__name__,
-            repr(self.id_),
-            repr(self.name),
-            repr(self.mod_time),
-            repr(self.action),
-        )
+        return f'{self.__class__.__name__}({repr(self.id_)}, {repr(self.name)}, {repr(self.mod_time)}, {repr(self.action)})'
 
 
 class B2FileVersion(FileVersion):

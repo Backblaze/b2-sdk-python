@@ -49,7 +49,7 @@ class CopySource(OrigCopySource):
 
 
 def part(source_or_def_list, *offset_len):
-    """ Helper for building emerge parts from outbound sources defs. Makes planner tests easier to read.
+    """Helper for building emerge parts from outbound sources defs. Makes planner tests easier to read.
 
     Possible "def" structures:
 
@@ -112,8 +112,6 @@ class TestEmergePlanner(TestBase):
             max_part_size=self.max_size,
         )
 
-    # yapf: disable
-
     def test_part_sizes(self):
         self.assertGreater(self.min_size, 0)
         self.assertGreaterEqual(self.recommended_size, self.min_size)
@@ -173,8 +171,7 @@ class TestEmergePlanner(TestBase):
         source = CopySource(5 * self.max_size)
 
         self.verify_emerge_plan_for_write_intents(
-            [WriteIntent(source)],
-            self.split_source_to_part_defs(source, [self.max_size] * 5)
+            [WriteIntent(source)], self.split_source_to_part_defs(source, [self.max_size] * 5)
         )
 
     def test_single_multipart_copy_remainder(self):
@@ -184,9 +181,8 @@ class TestEmergePlanner(TestBase):
         expected_part_count = 7
         base_part_size = int(source.get_content_length() / expected_part_count)
         size_remainder = source.get_content_length() % expected_part_count
-        expected_part_sizes = (
-            [base_part_size + 1] * size_remainder +
-            [base_part_size] * (expected_part_count - size_remainder)
+        expected_part_sizes = [base_part_size + 1] * size_remainder + [base_part_size] * (
+            expected_part_count - size_remainder
         )
 
         self.verify_emerge_plan_for_write_intents(
@@ -229,11 +225,13 @@ class TestEmergePlanner(TestBase):
         self.verify_emerge_plan_for_write_intents(
             write_intents,
             [
-                part([
-                    source_small_copy,
-                    (source_copy, 0, MEGABYTE),
-                ]),
-                part(source_copy, MEGABYTE, self.recommended_size - MEGABYTE)
+                part(
+                    [
+                        source_small_copy,
+                        (source_copy, 0, MEGABYTE),
+                    ]
+                ),
+                part(source_copy, MEGABYTE, self.recommended_size - MEGABYTE),
             ],
         )
 
@@ -241,17 +239,21 @@ class TestEmergePlanner(TestBase):
         source_upload = UploadSource(self.recommended_size)
         source_small_copy = CopySource(self.min_size - 1)
         source_copy = CopySource(self.recommended_size)
-        write_intents = WriteIntent.wrap_sources_iterator([source_upload, source_small_copy, source_copy])
+        write_intents = WriteIntent.wrap_sources_iterator(
+            [source_upload, source_small_copy, source_copy]
+        )
 
         self.verify_emerge_plan_for_write_intents(
             write_intents,
             [
-                part([
-                    source_upload,
-                    source_small_copy,
-                ]),
+                part(
+                    [
+                        source_upload,
+                        source_small_copy,
+                    ]
+                ),
                 part(source_copy),
-            ]
+            ],
         )
 
     def test_upload_small_copy_x2_then_copy(self):
@@ -267,10 +269,12 @@ class TestEmergePlanner(TestBase):
             write_intents,
             [
                 part(source_upload),
-                part([
-                    source_small_copy1,
-                    source_small_copy2,
-                ]),
+                part(
+                    [
+                        source_small_copy1,
+                        source_small_copy2,
+                    ]
+                ),
                 part(source_copy),
             ],
         )
@@ -280,30 +284,33 @@ class TestEmergePlanner(TestBase):
 
         unit_part_size = int(self.recommended_size / 8)
         uneven_part_size = 3 * unit_part_size
-        sources = [
-            UploadSource(uneven_part_size)
-            for i in range(8)
-        ]
+        sources = [UploadSource(uneven_part_size) for i in range(8)]
 
         self.verify_emerge_plan_for_write_intents(
             WriteIntent.wrap_sources_iterator(sources),
             [
-                part([
-                    sources[0],
-                    sources[1],
-                    (sources[2], 0, 2 * unit_part_size),
-                ]),
-                part([
-                    (sources[2], 2 * unit_part_size, unit_part_size),
-                    sources[3],
-                    sources[4],
-                    (sources[5], 0, unit_part_size),
-                ]),
-                part([
-                    (sources[5], unit_part_size, 2 * unit_part_size),
-                    sources[6],
-                    sources[7],
-                ]),
+                part(
+                    [
+                        sources[0],
+                        sources[1],
+                        (sources[2], 0, 2 * unit_part_size),
+                    ]
+                ),
+                part(
+                    [
+                        (sources[2], 2 * unit_part_size, unit_part_size),
+                        sources[3],
+                        sources[4],
+                        (sources[5], 0, unit_part_size),
+                    ]
+                ),
+                part(
+                    [
+                        (sources[5], unit_part_size, 2 * unit_part_size),
+                        sources[6],
+                        sources[7],
+                    ]
+                ),
             ],
         )
 
@@ -317,17 +324,21 @@ class TestEmergePlanner(TestBase):
         write_intents = WriteIntent.wrap_sources_iterator(
             [source_small_upload, source_copy, source_upload]
         )
-        small_parts_len = source_small_upload.get_content_length() + source_copy.get_content_length()
+        small_parts_len = (
+            source_small_upload.get_content_length() + source_copy.get_content_length()
+        )
         source_upload_split_offset = self.recommended_size - small_parts_len
 
         self.verify_emerge_plan_for_write_intents(
             write_intents,
             [
-                part([
-                    source_small_upload,
-                    source_copy,
-                    (source_upload, 0, source_upload_split_offset),
-                ]),
+                part(
+                    [
+                        source_small_upload,
+                        source_copy,
+                        (source_upload, 0, source_upload_split_offset),
+                    ]
+                ),
                 part(source_upload, source_upload_split_offset, small_parts_len),
             ],
         )
@@ -342,8 +353,8 @@ class TestEmergePlanner(TestBase):
 
         self.verify_emerge_plan_for_write_intents(
             write_intents,
-            [part(source1, 0, self.recommended_size)] +
-            self.split_source_to_part_defs(source2, [self.recommended_size] * 2),
+            [part(source1, 0, self.recommended_size)]
+            + self.split_source_to_part_defs(source2, [self.recommended_size] * 2),
         )
 
     def test_local_stairs_overlap(self):
@@ -358,8 +369,7 @@ class TestEmergePlanner(TestBase):
         shift = int(self.recommended_size / 4)
         sources = [UploadSource(self.recommended_size) for i in range(4)]
         write_intents = [
-            WriteIntent(source, destination_offset=i * shift)
-            for i, source in enumerate(sources)
+            WriteIntent(source, destination_offset=i * shift) for i, source in enumerate(sources)
         ]
 
         three_quarters = int(3 * self.recommended_size / 4)
@@ -371,10 +381,7 @@ class TestEmergePlanner(TestBase):
         self.verify_emerge_plan_for_write_intents(
             write_intents,
             [
-                part([
-                    (sources[0], 0, three_quarters),
-                    (sources[-1], 0, shift)
-                ]),
+                part([(sources[0], 0, three_quarters), (sources[-1], 0, shift)]),
                 part(sources[-1], shift, three_quarters),
             ],
         )
@@ -467,9 +474,15 @@ class TestEmergePlanner(TestBase):
             write_intents,
             [
                 part(source_copy1, 0, copy_size),
-                part([
-                    (source_copy2, 2 * MEGABYTE, self.min_size - 2 * MEGABYTE),  # this means: download and then upload
-                ]),
+                part(
+                    [
+                        (
+                            source_copy2,
+                            2 * MEGABYTE,
+                            self.min_size - 2 * MEGABYTE,
+                        ),  # this means: download and then upload
+                    ]
+                ),
             ],
         )
 
@@ -497,9 +510,15 @@ class TestEmergePlanner(TestBase):
             [
                 part(source_copy1, 0, self.min_size),
                 part(source_copy2, MEGABYTE, self.min_size),
-                part([
-                    (source_copy3, 2 * MEGABYTE, copy_overlap_offset),  # this means: download and then upload
-                ]),
+                part(
+                    [
+                        (
+                            source_copy3,
+                            2 * MEGABYTE,
+                            copy_overlap_offset,
+                        ),  # this means: download and then upload
+                    ]
+                ),
             ],
         )
 
@@ -575,11 +594,10 @@ class TestEmergePlanner(TestBase):
             WriteIntent(source_copy2, destination_offset=self.recommended_size + 3 * MEGABYTE),
         ]
 
-        hole_msg = ('Cannot emerge file with holes. '
-                    'Found hole range: ({}, {})'.format(
-                        write_intents[2].destination_end_offset,
-                        write_intents[1].destination_offset,
-                    ))
+        hole_msg = (
+            'Cannot emerge file with holes. '
+            f'Found hole range: ({write_intents[2].destination_end_offset}, {write_intents[1].destination_offset})'
+        )
         with self.assertRaises(ValueError, hole_msg):
             self.planner.get_emerge_plan(write_intents)
 
@@ -589,8 +607,6 @@ class TestEmergePlanner(TestBase):
             [WriteIntent(source_upload)],
             [part(source_upload)],
         )
-
-    # yapf: enable
 
     def verify_emerge_plan_for_write_intents(self, write_intents, expected_part_defs):
         emerge_plan = self.planner.get_emerge_plan(write_intents)
@@ -651,20 +667,21 @@ def test_emerge_planner_from_account_info(account_info):
 @pytest.mark.parametrize(
     'min_part_size, recommended_upload_part_size, max_part_size, expected',
     [
-        (100 * MEGABYTE, None, None, {
-            'min_part_size': 100 * MEGABYTE
-        }),
+        (100 * MEGABYTE, None, None, {'min_part_size': 100 * MEGABYTE}),
         (
-            GIGABYTE, GIGABYTE, None, {
-                'min_part_size': GIGABYTE,
-                'recommended_upload_part_size': GIGABYTE
-            }
+            GIGABYTE,
+            GIGABYTE,
+            None,
+            {'min_part_size': GIGABYTE, 'recommended_upload_part_size': GIGABYTE},
         ),
         (
-            None, None, DEFAULT_RECOMMENDED_UPLOAD_PART_SIZE // 2, {
+            None,
+            None,
+            DEFAULT_RECOMMENDED_UPLOAD_PART_SIZE // 2,
+            {
                 'recommended_upload_part_size': DEFAULT_RECOMMENDED_UPLOAD_PART_SIZE // 2,
-                'max_part_size': DEFAULT_RECOMMENDED_UPLOAD_PART_SIZE // 2
-            }
+                'max_part_size': DEFAULT_RECOMMENDED_UPLOAD_PART_SIZE // 2,
+            },
         ),
     ],
 )
@@ -675,7 +692,7 @@ def test_emerge_planner_from_account_info__with_explicitly_set_params(
         account_info=account_info,
         min_part_size=min_part_size,
         recommended_upload_part_size=recommended_upload_part_size,
-        max_part_size=max_part_size
+        max_part_size=max_part_size,
     )
     assert planner.min_part_size == expected.get('min_part_size', DEFAULT_MIN_PART_SIZE)
     assert planner.recommended_upload_part_size == expected.get(

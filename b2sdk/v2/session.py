@@ -26,7 +26,7 @@ class B2Session(v3.B2Session):
         self,
         account_info: _abstract.AbstractAccountInfo | None = None,
         cache: _cache.AbstractCache | None = None,
-        api_config: _api_config.B2HttpApiConfig = _api_config.DEFAULT_HTTP_API_CONFIG
+        api_config: _api_config.B2HttpApiConfig = _api_config.DEFAULT_HTTP_API_CONFIG,
     ):
         if account_info is not None and cache is None:
             # preserve legacy behavior https://github.com/Backblaze/b2-sdk-python/issues/497#issuecomment-2147461352
@@ -49,7 +49,7 @@ class B2Session(v3.B2Session):
         custom_upload_timestamp: int | None = None,
         cache_control: str | None = None,
         *args,
-        **kwargs
+        **kwargs,
     ):
         if cache_control is not None:
             file_info['b2-cache-control'] = cache_control

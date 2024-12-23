@@ -18,9 +18,12 @@ from b2sdk._internal.utils.escape import (
 
 @pytest.mark.parametrize(
     (
-        "input_", "expected_unprintable_to_hex", "expected_escape_control_chars",
-        "expected_substitute_control_chars"
-    ), [
+        'input_',
+        'expected_unprintable_to_hex',
+        'expected_escape_control_chars',
+        'expected_substitute_control_chars',
+    ),
+    [
         ('', '', '', ('', False)),
         (' abc-z', ' abc-z', "' abc-z'", (' abc-z', False)),
         ('a\x7fb', 'a\\x7fb', "'a\\x7fb'", ('a�b', True)),
@@ -28,14 +31,18 @@ from b2sdk._internal.utils.escape import (
         ('a\x7fb\nc', 'a\\x7fb\nc', "'a\\x7fb\nc'", ('a�b\nc', True)),
         ('\x9bT\x9bEtest', '\\x9bT\\x9bEtest', "'\\x9bT\\x9bEtest'", ('�T�Etest', True)),
         (
-            '\x1b[32mC\x1b[33mC\x1b[34mI', '\\x1b[32mC\\x1b[33mC\\x1b[34mI',
-            "'\\x1b[32mC\\x1b[33mC\\x1b[34mI'", ('�[32mC�[33mC�[34mI', True)
+            '\x1b[32mC\x1b[33mC\x1b[34mI',
+            '\\x1b[32mC\\x1b[33mC\\x1b[34mI',
+            "'\\x1b[32mC\\x1b[33mC\\x1b[34mI'",
+            ('�[32mC�[33mC�[34mI', True),
         ),
-    ]
+    ],
 )
 def test_unprintable_to_hex(
-    input_, expected_unprintable_to_hex, expected_escape_control_chars,
-    expected_substitute_control_chars
+    input_,
+    expected_unprintable_to_hex,
+    expected_escape_control_chars,
+    expected_substitute_control_chars,
 ):
     assert unprintable_to_hex(input_) == expected_unprintable_to_hex
     assert escape_control_chars(input_) == expected_escape_control_chars

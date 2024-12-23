@@ -31,7 +31,7 @@ def auth_info_cache():
     return AuthInfoCache(InMemoryAccountInfo())
 
 
-@pytest.fixture(scope="function", params=[lf('in_memory_cache'), lf('auth_info_cache')])
+@pytest.fixture(scope='function', params=[lf('in_memory_cache'), lf('auth_info_cache')])
 def cache(request):
     return request.param
 

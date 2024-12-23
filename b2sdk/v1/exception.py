@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 from b2sdk.v2.exception import *  # noqa
+
 v2DestFileNewer = DestFileNewer
 
 
@@ -38,11 +39,4 @@ class DestFileNewer(v2DestFileNewer):
         self.source_prefix = source_prefix
 
     def __str__(self):
-        return 'source file is older than destination: {}{} with a time of {} cannot be synced to {}{} with a time of {}, unless a valid newer_file_mode is provided'.format(
-            self.source_prefix,
-            self.source_file.name,
-            self.source_file.latest_version().mod_time,
-            self.dest_prefix,
-            self.dest_file.name,
-            self.dest_file.latest_version().mod_time,
-        )
+        return f'source file is older than destination: {self.source_prefix}{self.source_file.name} with a time of {self.source_file.latest_version().mod_time} cannot be synced to {self.dest_prefix}{self.dest_file.name} with a time of {self.dest_file.latest_version().mod_time}, unless a valid newer_file_mode is provided'

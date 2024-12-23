@@ -39,9 +39,10 @@ class TokenType(Enum):
 
 class B2Session:
     """
-        A facade that supplies the correct api_url and account_auth_token
-        to methods of underlying raw_api and reauthorizes if necessary.
+    A facade that supplies the correct api_url and account_auth_token
+    to methods of underlying raw_api and reauthorizes if necessary.
     """
+
     SQLITE_ACCOUNT_INFO_CLASS = staticmethod(SqliteAccountInfo)
     B2HTTP_CLASS = staticmethod(B2Http)
 
@@ -49,7 +50,7 @@ class B2Session:
         self,
         account_info: AbstractAccountInfo | None = None,
         cache: AbstractCache | None = None,
-        api_config: B2HttpApiConfig = DEFAULT_HTTP_API_CONFIG
+        api_config: B2HttpApiConfig = DEFAULT_HTTP_API_CONFIG,
     ):
         """
         Initialize Session using given account info.
@@ -207,8 +208,10 @@ class B2Session:
 
     def get_download_authorization(self, bucket_id, file_name_prefix, valid_duration_in_seconds):
         return self._wrap_default_token(
-            self.raw_api.get_download_authorization, bucket_id, file_name_prefix,
-            valid_duration_in_seconds
+            self.raw_api.get_download_authorization,
+            bucket_id,
+            file_name_prefix,
+            valid_duration_in_seconds,
         )
 
     def get_file_info_by_id(self, file_id: str) -> dict[str, Any]:

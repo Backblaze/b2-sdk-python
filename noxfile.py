@@ -20,38 +20,42 @@ import nox
 UPSTREAM_REPO_URL = 'git@github.com:Backblaze/b2-sdk-python.git'
 
 # Required for PDM to use nox's virtualenvs
-os.environ.update({"PDM_IGNORE_SAVED_PYTHON": "1"})
+os.environ.update({'PDM_IGNORE_SAVED_PYTHON': '1'})
 
 CI = os.environ.get('CI') is not None
 NOX_PYTHONS = os.environ.get('NOX_PYTHONS')
 _NOX_EXTRAS = os.environ.get('NOX_EXTRAS')
 NOX_EXTRAS = [[]] if _NOX_EXTRAS is None else list(filter(None, [_NOX_EXTRAS.split(',')]))
 
-PYTHON_VERSIONS = [
-    'pypy3.9',
-    'pypy3.10',
-    '3.7',
-    '3.8',
-    '3.9',
-    '3.10',
-    '3.11',
-    '3.12',
-    '3.13',
-] if NOX_PYTHONS is None else NOX_PYTHONS.split(',')
+PYTHON_VERSIONS = (
+    [
+        'pypy3.9',
+        'pypy3.10',
+        '3.7',
+        '3.8',
+        '3.9',
+        '3.10',
+        '3.11',
+        '3.12',
+        '3.13',
+    ]
+    if NOX_PYTHONS is None
+    else NOX_PYTHONS.split(',')
+)
 
 
 def _detect_python_nox_id() -> str:
     major, minor, *_ = platform.python_version_tuple()
-    python_nox_id = f"{major}.{minor}"
+    python_nox_id = f'{major}.{minor}'
     if platform.python_implementation() == 'PyPy':
-        python_nox_id = f"pypy{python_nox_id}"
+        python_nox_id = f'pypy{python_nox_id}'
     return python_nox_id
 
 
 if CI and not NOX_PYTHONS:
     # this is done to allow it to work even if `nox -p` was passed to nox
     PYTHON_VERSIONS = [_detect_python_nox_id()]
-    print(f"CI job mode; using provided interpreter only; PYTHON_VERSIONS={PYTHON_VERSIONS!r}")
+    print(f'CI job mode; using provided interpreter only; PYTHON_VERSIONS={PYTHON_VERSIONS!r}')
 
 PYTHON_DEFAULT_VERSION = PYTHON_VERSIONS[-2] if len(PYTHON_VERSIONS) > 1 else PYTHON_VERSIONS[0]
 
@@ -81,9 +85,8 @@ def skip_coverage(python_version: str | None) -> bool:
 def format_(session):
     """Lint the code and apply fixes in-place whenever possible."""
     pdm_install(session, 'lint')
-    # TODO: incremental mode for yapf
-    session.run('yapf', '--in-place', '--parallel', '--recursive', *PY_PATHS)
     session.run('ruff', 'check', '--fix', *PY_PATHS)
+    session.run('ruff', 'format', *PY_PATHS)
     # session.run(
     #     'docformatter',
     #     '--in-place',
@@ -99,8 +102,8 @@ def lint(session):
     """Run linters in readonly mode."""
     # We need to install 'doc' group because liccheck needs to inspect it.
     pdm_install(session, 'doc', 'lint', 'full')
-    session.run('yapf', '--diff', '--parallel', '--recursive', *PY_PATHS)
     session.run('ruff', 'check', *PY_PATHS)
+    session.run('ruff', 'format', *PY_PATHS)
     # session.run(
     #     'docformatter',
     #     '--check',
@@ -118,7 +121,7 @@ def lint(session):
 
 
 @nox.session(python=PYTHON_VERSIONS)
-@nox.parametrize("extras", NOX_EXTRAS)
+@nox.parametrize('extras', NOX_EXTRAS)
 def unit(session, extras):
     """Run unit tests."""
     pdm_install(session, 'test', *extras)
@@ -138,7 +141,7 @@ def unit(session, extras):
 
 
 @nox.session(python=PYTHON_VERSIONS)
-@nox.parametrize("extras", NOX_EXTRAS)
+@nox.parametrize('extras', NOX_EXTRAS)
 def integration(session, extras):
     """Run integration tests."""
     pdm_install(session, 'test', *extras)
@@ -200,7 +203,14 @@ def doc(session):
         session.notify('doc_cover')
     else:
         sphinx_args[-2:-2] = [
-            '-E', '--open-browser', '--watch', '../b2sdk', '--ignore', '*.pyc', '--ignore', '*~'
+            '-E',
+            '--open-browser',
+            '--watch',
+            '../b2sdk',
+            '--ignore',
+            '*.pyc',
+            '--ignore',
+            '*~',
         ]
         session.run('sphinx-autobuild', *sphinx_args)
 
@@ -258,12 +268,14 @@ def make_release_commit(session):
     )
 
 
-def load_allowed_change_types(project_toml: pathlib.Path = pathlib.Path('./pyproject.toml')
-                             ) -> set[str]:
+def load_allowed_change_types(
+    project_toml: pathlib.Path = pathlib.Path('./pyproject.toml'),
+) -> set[str]:
     """
     Load the list of allowed change types from the pyproject.toml file.
     """
     import tomllib
+
     configuration = tomllib.loads(project_toml.read_text())
     return set(entry['directory'] for entry in configuration['tool']['towncrier']['type'])
 
@@ -280,7 +292,7 @@ def is_changelog_filename_valid(filename: str, allowed_change_types: set[str]) -
         description, change_type, extension = filename.rsplit('.', maxsplit=2)
     except ValueError:
         # Not enough values to unpack.
-        return False, "Doesn't follow the \"<description>.<change_type>.md\" pattern."
+        return False, 'Doesn\'t follow the "<description>.<change_type>.md" pattern.'
 
     # Check whether the filename ends with .md.
     if extension != wanted_extension:

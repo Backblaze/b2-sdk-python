@@ -33,7 +33,7 @@ def fake_b2_raw_api_responses():
             'recommendedPartSize': 100000000,
             's3ApiUrl': 'https://s3.us-west-000.backblazeb2.xyz:8180',
         }
-    }  # yapf: disable
+    }
 
 
 @pytest.fixture

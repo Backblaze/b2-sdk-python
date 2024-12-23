@@ -34,23 +34,26 @@ class TestMakeB2KeepDaysActions(TestBase):
     def test_old_hide_causes_delete(self):
         # A hide marker that is old gets deleted, as do the things after it.
         self.check_one_answer(
-            True, [(1, -5, 'upload'), (2, -10, 'hide'), (3, -20, 'upload')],
-            ['b2_delete(folder/a, 2, (hide marker))', 'b2_delete(folder/a, 3, (old version))']
+            True,
+            [(1, -5, 'upload'), (2, -10, 'hide'), (3, -20, 'upload')],
+            ['b2_delete(folder/a, 2, (hide marker))', 'b2_delete(folder/a, 3, (old version))'],
         )
 
     def test_old_upload_causes_delete(self):
         # An upload that is old stays if there is a source file, but things
         # behind it go away.
         self.check_one_answer(
-            True, [(1, -5, 'upload'), (2, -10, 'upload'), (3, -20, 'upload')],
-            ['b2_delete(folder/a, 3, (old version))']
+            True,
+            [(1, -5, 'upload'), (2, -10, 'upload'), (3, -20, 'upload')],
+            ['b2_delete(folder/a, 3, (old version))'],
         )
 
     def test_out_of_order_dates(self):
         # The one at date -3 will get deleted because the one before it is old.
         self.check_one_answer(
-            True, [(1, -5, 'upload'), (2, -10, 'upload'), (3, -3, 'upload')],
-            ['b2_delete(folder/a, 3, (old version))']
+            True,
+            [(1, -5, 'upload'), (2, -10, 'upload'), (3, -3, 'upload')],
+            ['b2_delete(folder/a, 3, (old version))'],
         )
 
     def check_one_answer(self, has_source, id_relative_date_action_list, expected_actions):
@@ -65,11 +68,14 @@ class TestMakeB2KeepDaysActions(TestBase):
                 file_info={},
                 content_type='text/plain',
                 content_sha1='content_sha1',
-            ) for (id_, relative_date, action) in id_relative_date_action_list
+            )
+            for (id_, relative_date, action) in id_relative_date_action_list
         ]
-        dest_file = B2SyncPath(
-            'a', selected_version=dest_file_versions[0], all_versions=dest_file_versions
-        ) if dest_file_versions else None
+        dest_file = (
+            B2SyncPath('a', selected_version=dest_file_versions[0], all_versions=dest_file_versions)
+            if dest_file_versions
+            else None
+        )
         bucket = MagicMock()
         api = MagicMock()
         api.get_bucket_by_name.return_value = bucket

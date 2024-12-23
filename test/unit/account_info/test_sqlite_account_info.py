@@ -60,7 +60,7 @@ class TestDatabseMigrations:
 
         with new_account_info._get_connection() as conn:
             sizes = conn.execute(
-                "SELECT recommended_part_size, absolute_minimum_part_size from account"
+                'SELECT recommended_part_size, absolute_minimum_part_size from account'
             ).fetchone()
         assert (100, 5000000) == sizes
 
@@ -71,7 +71,7 @@ class TestSqliteAccountProfileFileLocation:
         monkeypatch.setenv(
             'HOME', str(tmpdir)
         )  # this affects .expanduser() and protects the real HOME folder
-        monkeypatch.setenv("USERPROFILE", str(tmpdir))  # same as HOME, but for Windows
+        monkeypatch.setenv('USERPROFILE', str(tmpdir))  # same as HOME, but for Windows
         monkeypatch.delenv(B2_ACCOUNT_INFO_ENV_VAR, raising=False)
         monkeypatch.delenv(XDG_CONFIG_HOME_ENV_VAR, raising=False)
 

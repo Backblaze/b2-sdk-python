@@ -23,7 +23,13 @@ from itertools import chain
 from typing import Any, Iterator, NewType, TypeVar
 from urllib.parse import quote, unquote_plus
 
-from logfury.v1 import DefaultTraceAbstractMeta, DefaultTraceMeta, limit_trace_arguments, disable_trace, trace_call
+from logfury.v1 import (
+    DefaultTraceAbstractMeta,
+    DefaultTraceMeta,
+    limit_trace_arguments,
+    disable_trace,
+    trace_call,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -142,6 +148,7 @@ class IncrementalHexDigester:
     """
     Calculates digest of a stream or parts of it.
     """
+
     stream: ReadOnlyStream
     digest: 'hashlib._Hash' = field(  # noqa (_Hash is a dynamic object)
         default_factory=hashlib.sha1
@@ -247,7 +254,7 @@ def validate_b2_file_name(name):
     if '//' in name:
         raise ValueError("file names must not contain '//'")
     if chr(127) in name:
-        raise ValueError("file names must not contain DEL")
+        raise ValueError('file names must not contain DEL')
     if any(250 < len(segment) for segment in name_utf8.split(b'/')):
         raise ValueError("file names segments (between '/') can be at most 250 utf-8 bytes")
 
@@ -273,8 +280,10 @@ def is_special_file(path: str | pathlib.Path) -> bool:
     """
     path_str = str(path)
     return (
-        path == os.devnull or path_str.startswith('/dev/') or
-        platform.system() == 'Windows' and path_str.upper() in ('CON', 'NUL')
+        path == os.devnull
+        or path_str.startswith('/dev/')
+        or platform.system() == 'Windows'
+        and path_str.upper() in ('CON', 'NUL')
     )
 
 
@@ -430,6 +439,7 @@ class B2TraceMeta(DefaultTraceMeta):
     """
     Trace all public method calls, except for ones with names that begin with `get_`.
     """
+
     pass
 
 
@@ -438,6 +448,7 @@ class B2TraceMetaAbstract(DefaultTraceAbstractMeta):
     Default class for tracers, to be set as
     a metaclass for abstract base classes.
     """
+
     pass
 
 
@@ -458,6 +469,7 @@ class ConcurrentUsedAuthTokenGuard:
     def __enter__(self):
         if not self.lock.acquire(False):
             from b2sdk._internal.exception import UploadTokenUsedConcurrently
+
             raise UploadTokenUsedConcurrently(self.token)
 
     def __exit__(self, exc_type, exc_val, exc_tb):

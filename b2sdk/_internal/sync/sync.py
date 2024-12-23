@@ -49,7 +49,8 @@ def count_files(local_folder, reporter, policies_manager):
 
 @unique
 class KeepOrDeleteMode(Enum):
-    """ Mode of dealing with old versions of files on the destination """
+    """Mode of dealing with old versions of files on the destination"""
+
     DELETE = 301  #: delete the old version as soon as the new one has been uploaded
     KEEP_BEFORE_DELETE = 302  #: keep the old versions of the file for a configurable number of days before deleting them, always keeping the newest version
     NO_DELETE = 303  #: keep old versions of the file, do not delete anything
@@ -118,7 +119,9 @@ class Synchronizer:
         self.compare_threshold = compare_threshold or 0
         self.dry_run = dry_run
         self.allow_empty_source = allow_empty_source
-        self.policies_manager = policies_manager  # actually it should be called scan_policies_manager
+        self.policies_manager = (
+            policies_manager  # actually it should be called scan_policies_manager
+        )
         self.sync_policy_manager = sync_policy_manager
         self.max_workers = max_workers
         self.upload_mode = upload_mode
@@ -141,7 +144,10 @@ class Synchronizer:
                 'must be one of :%s' % KeepOrDeleteMode.__members__,
             )
 
-        if self.keep_days_or_delete == KeepOrDeleteMode.KEEP_BEFORE_DELETE and self.keep_days is None:
+        if (
+            self.keep_days_or_delete == KeepOrDeleteMode.KEEP_BEFORE_DELETE
+            and self.keep_days is None
+        ):
             raise InvalidArgument(
                 'keep_days',
                 'is required when keep_days_or_delete is %s' % KeepOrDeleteMode.KEEP_BEFORE_DELETE,
@@ -159,8 +165,7 @@ class Synchronizer:
         dest_folder: AbstractFolder,
         now_millis: int,
         reporter: SyncReport | None,
-        encryption_settings_provider:
-        AbstractSyncEncryptionSettingsProvider = SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER,
+        encryption_settings_provider: AbstractSyncEncryptionSettingsProvider = SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER,
     ):
         """
         Syncs two folders.  Always ensures that every file in the
@@ -234,8 +239,7 @@ class Synchronizer:
         now_millis: int,
         reporter: SyncReport,
         policies_manager: ScanPoliciesManager = DEFAULT_SCAN_MANAGER,
-        encryption_settings_provider:
-        AbstractSyncEncryptionSettingsProvider = SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER,
+        encryption_settings_provider: AbstractSyncEncryptionSettingsProvider = SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER,
     ):
         """
         Yield a sequence of actions that will sync the destination
@@ -248,8 +252,10 @@ class Synchronizer:
         :param policies_manager: object which decides which files to process
         :param encryption_settings_provider: encryption setting provider
         """
-        if self.keep_days_or_delete == KeepOrDeleteMode.KEEP_BEFORE_DELETE and dest_folder.folder_type(
-        ) == 'local':
+        if (
+            self.keep_days_or_delete == KeepOrDeleteMode.KEEP_BEFORE_DELETE
+            and dest_folder.folder_type() == 'local'
+        ):
             raise InvalidArgument('keep_days_or_delete', 'cannot be used for local files')
 
         source_type = source_folder.folder_type()
@@ -306,8 +312,7 @@ class Synchronizer:
         source_folder: AbstractFolder,
         dest_folder: AbstractFolder,
         now_millis: int,
-        encryption_settings_provider:
-        AbstractSyncEncryptionSettingsProvider = SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER,
+        encryption_settings_provider: AbstractSyncEncryptionSettingsProvider = SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER,
     ):
         """
         Yields the sequence of actions needed to sync the two files

@@ -17,7 +17,11 @@ from b2sdk._internal.api import Services
 from .account_info import AbstractAccountInfo
 from .bucket import Bucket, BucketFactory, download_file_and_return_info_dict
 from .cache import AbstractCache
-from .file_version import FileVersionInfo, FileVersionInfoFactory, file_version_info_from_id_and_name
+from .file_version import (
+    FileVersionInfo,
+    FileVersionInfoFactory,
+    file_version_info_from_id_and_name,
+)
 from .session import B2Session
 
 
@@ -114,8 +118,7 @@ class B2Api(v2.B2Api):
         progress_listener: v2.AbstractProgressListener | None = None,
         range_: tuple[int, int] | None = None,
         encryption: v2.EncryptionSetting | None = None,
-    ) -> dict:
-        ...
+    ) -> dict: ...
 
     @overload
     def download_file_by_id(
@@ -124,8 +127,7 @@ class B2Api(v2.B2Api):
         progress_listener: v2.AbstractProgressListener | None = None,
         range_: tuple[int, int] | None = None,
         encryption: v2.EncryptionSetting | None = None,
-    ) -> v2.DownloadedFile:
-        ...
+    ) -> v2.DownloadedFile: ...
 
     def download_file_by_id(
         self,
@@ -184,7 +186,7 @@ class B2Api(v2.B2Api):
         return self.session.list_keys(
             account_id,
             max_key_count=self.DEFAULT_LIST_KEY_COUNT,
-            start_application_key_id=start_application_key_id
+            start_application_key_id=start_application_key_id,
         )
 
     def create_key(
@@ -195,13 +197,17 @@ class B2Api(v2.B2Api):
         bucket_id: str | None = None,
         name_prefix: str | None = None,
     ):
-        return super().create_key(
-            capabilities=capabilities,
-            key_name=key_name,
-            valid_duration_seconds=valid_duration_seconds,
-            bucket_id=bucket_id,
-            name_prefix=name_prefix,
-        ).as_dict()
+        return (
+            super()
+            .create_key(
+                capabilities=capabilities,
+                key_name=key_name,
+                valid_duration_seconds=valid_duration_seconds,
+                bucket_id=bucket_id,
+                name_prefix=name_prefix,
+            )
+            .as_dict()
+        )
 
     def delete_key(self, application_key_id):
         return super().delete_key_by_id(application_key_id).as_dict()

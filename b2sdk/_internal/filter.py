@@ -16,8 +16,8 @@ from typing import Sequence
 
 
 class FilterType(Enum):
-    INCLUDE = "include"
-    EXCLUDE = "exclude"
+    INCLUDE = 'include'
+    EXCLUDE = 'exclude'
 
 
 @dataclass
@@ -51,7 +51,7 @@ class FilterMatcher:
 
     def __init__(self, filters: Sequence[Filter]):
         if filters and all(filter_.type == FilterType.INCLUDE for filter_ in filters):
-            filters = [Filter(type=FilterType.EXCLUDE, pattern="*"), *filters]
+            filters = [Filter(type=FilterType.EXCLUDE, pattern='*'), *filters]
 
         self.filters = filters
 

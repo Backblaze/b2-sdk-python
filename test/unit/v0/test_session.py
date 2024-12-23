@@ -84,6 +84,6 @@ class TestB2Session(TestBase):
         self.raw_api.get_file_info_by_id.side_effect = Unauthorized('no_go', 'code')
         with self.assertRaisesRegex(
             Unauthorized,
-            r"no_go for application key with capabilities 'readFiles', restricted to bucket 'my-bucket', restricted to files that start with 'prefix/' \(code\)"
+            r"no_go for application key with capabilities 'readFiles', restricted to bucket 'my-bucket', restricted to files that start with 'prefix/' \(code\)",
         ):
             self.session.get_file_info_by_id(None)

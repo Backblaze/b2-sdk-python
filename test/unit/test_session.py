@@ -39,7 +39,7 @@ class TestAuthorizeAccount:
                     allowed=mock.ANY,
                     application_key_id='123',
                 ),
-                marks=pytest.mark.apiver(from_ver=2)
+                marks=pytest.mark.apiver(from_ver=2),
             ),
             pytest.param(
                 dict(
@@ -54,7 +54,7 @@ class TestAuthorizeAccount:
                     allowed=mock.ANY,
                     application_key_id='123',
                 ),
-                marks=pytest.mark.apiver(to_ver=1)
+                marks=pytest.mark.apiver(to_ver=1),
             ),
         ],
     )
@@ -77,7 +77,9 @@ class TestAuthorizeAccount:
 
 def test_session__with_in_memory_account_info(apiver_int):
     memory_info = InMemoryAccountInfo()
-    b2_session = B2Session(account_info=memory_info,)
+    b2_session = B2Session(
+        account_info=memory_info,
+    )
 
     assert b2_session.account_info is memory_info
 

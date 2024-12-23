@@ -14,7 +14,11 @@ from typing import overload
 
 from .download_dest import AbstractDownloadDestination
 from .file_metadata import FileMetadata
-from .file_version import FileVersionInfo, FileVersionInfoFactory, file_version_info_from_download_version
+from .file_version import (
+    FileVersionInfo,
+    FileVersionInfoFactory,
+    file_version_info_from_download_version,
+)
 from b2sdk import v2
 from b2sdk._internal.utils import validate_b2_file_name
 from b2sdk._internal.raw_api import LifecycleRule
@@ -156,8 +160,7 @@ class Bucket(v2.Bucket):
         progress_listener: v2.AbstractProgressListener | None = None,
         range_: tuple[int, int] | None = None,
         encryption: v2.EncryptionSetting | None = None,
-    ) -> dict:
-        ...
+    ) -> dict: ...
 
     @overload
     def download_file_by_id(
@@ -166,8 +169,7 @@ class Bucket(v2.Bucket):
         progress_listener: v2.AbstractProgressListener | None = None,
         range_: tuple[int, int] | None = None,
         encryption: v2.EncryptionSetting | None = None,
-    ) -> v2.DownloadedFile:
-        ...
+    ) -> v2.DownloadedFile: ...
 
     def download_file_by_id(
         self,
@@ -222,7 +224,7 @@ class Bucket(v2.Bucket):
         default_server_side_encryption: v2.EncryptionSetting | None = None,
         default_retention: v2.BucketRetentionSetting | None = None,
         is_file_lock_enabled: bool | None = None,
-        **kwargs
+        **kwargs,
     ):
         """
         Update various bucket parameters.
@@ -241,7 +243,9 @@ class Bucket(v2.Bucket):
         with suppress(KeyError):
             del kwargs['replication']
         self.replication = None
-        assert not kwargs  # after we get rid of everything we don't support in this apiver, this should be empty
+        assert (
+            not kwargs
+        )  # after we get rid of everything we don't support in this apiver, this should be empty
 
         account_id = self.api.account_info.get_account_id()
         return self.api.session.update_bucket(
@@ -263,7 +267,7 @@ class Bucket(v2.Bucket):
         show_versions: bool = False,
         recursive: bool = False,
         fetch_count: int | None = 10000,
-        **kwargs
+        **kwargs,
     ):
         """
         Pretend that folders exist and yields the information about the files in a folder.
@@ -292,8 +296,9 @@ class Bucket(v2.Bucket):
 
 
 def download_file_and_return_info_dict(
-    downloaded_file: v2.DownloadedFile, download_dest: AbstractDownloadDestination,
-    range_: tuple[int, int] | None
+    downloaded_file: v2.DownloadedFile,
+    download_dest: AbstractDownloadDestination,
+    range_: tuple[int, int] | None,
 ):
     with download_dest.make_file_context(
         file_id=downloaded_file.download_version.id_,

@@ -17,7 +17,6 @@ from .raw_api import AbstractRawApi, B2RawHTTPApi
 
 
 class B2HttpApiConfig:
-
     DEFAULT_RAW_API_CLASS = B2RawHTTPApi
 
     def __init__(
@@ -26,7 +25,7 @@ class B2HttpApiConfig:
         install_clock_skew_hook: bool = True,
         user_agent_append: str | None = None,
         _raw_api_class: type[AbstractRawApi] | None = None,
-        decode_content: bool = False
+        decode_content: bool = False,
     ):
         """
         A structure with params to be passed to low level API.

@@ -48,7 +48,7 @@ class DownloadManager(TransferManager, ThreadPoolMixin, metaclass=B2TraceMetaAbs
         write_buffer_size: int | None = None,
         check_hash: bool = True,
         max_download_streams_per_file: int | None = None,
-        **kwargs
+        **kwargs,
     ):
         """
         Initialize the DownloadManager using the given services object.

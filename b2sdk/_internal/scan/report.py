@@ -137,8 +137,8 @@ class ProgressReport:
         message = ' count: %d/%d   %s' % (
             self.count,
             self.total_count,
-            format_and_scale_number(rate, '/s')
-        )  # yapf: disable
+            format_and_scale_number(rate, '/s'),
+        )
 
         self._print_line(message, False)
 
@@ -238,6 +238,7 @@ def sample_report_run():
     Generate a sample report.
     """
     import sys
+
     report = ProgressReport(sys.stdout, False)
 
     for i in range(20):
