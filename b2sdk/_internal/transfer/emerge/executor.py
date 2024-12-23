@@ -389,6 +389,7 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
                 continue
 
             finished_parts = {}
+            conflict_detected = False
 
             for part in self.services.large_file.list_parts(file_.file_id):
 
@@ -401,7 +402,7 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
                         'Rejecting %s: part %s not found in emerge parts, giving up.',
                         file_.file_id, part.part_number
                     )
-                    finished_parts = None
+                    conflict_detected = True
                     break
 
                 # Compare part sizes
@@ -409,25 +410,25 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
                     logger.debug(
                         'Rejecting %s: part %s size mismatch', file_.file_id, part.part_number
                     )
-                    continue  # part size doesn't match - so we reupload
+                    conflict_detected = True
+                    break  # part size doesn't match - so we reupload
 
                 # Compare part hashes
                 if emerge_part.is_hashable() and emerge_part.get_sha1() != part.content_sha1:
                     logger.debug(
                         'Rejecting %s: part %s sha1 mismatch', file_.file_id, part.part_number
                     )
-                    continue  # part.sha1 doesn't match - so we reupload
+                    conflict_detected = True
+                    break  # part.sha1 doesn't match - so we reupload
 
                 finished_parts[part.part_number] = part
 
-            if finished_parts is None:
+            if conflict_detected:
                 continue
 
             finished_parts_len = len(finished_parts)
 
-            if finished_parts and (
-                best_match_file is None or finished_parts_len > best_match_parts_len
-            ):
+            if best_match_file is None or finished_parts_len > best_match_parts_len:
                 best_match_file = file_
                 best_match_parts = finished_parts
                 best_match_parts_len = finished_parts_len

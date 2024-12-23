@@ -880,7 +880,7 @@ class TestUpload(TestCaseWithBucket):
         large_file_id = self._start_large_file('file1')
         progress_listener = StubProgressListener()
         file_info = self.bucket.upload_bytes(data, 'file1', progress_listener=progress_listener)
-        self.assertNotEqual(large_file_id, file_info.id_)  # it's not a match if there are no parts
+        self.assertEqual(large_file_id, file_info.id_)
         self._check_file_contents('file1', data)
         self.assertTrue(progress_listener.is_valid())
 
