@@ -24,7 +24,7 @@ class B2Session(v2.B2Session):
         account_info=None,
         cache=None,
         raw_api: v2.B2RawHTTPApi = None,
-        api_config: v2.B2HttpApiConfig | None = None
+        api_config: v2.B2HttpApiConfig | None = None,
     ):
         if raw_api is not None and api_config is not None:
             raise InvalidArgument(
@@ -66,5 +66,5 @@ class B2Session(v2.B2Session):
             realm=realm,
             s3_api_url=response['s3ApiUrl'],
             allowed=allowed,
-            application_key_id=application_key_id
+            application_key_id=application_key_id,
         )

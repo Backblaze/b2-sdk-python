@@ -170,15 +170,19 @@ class DownloadedFile:
         self.check_hash = check_hash
 
     def _validate_download(self, bytes_read, actual_sha1):
-        if self.download_version.content_encoding is not None and self.download_version.api.api_config.decode_content:
+        if (
+            self.download_version.content_encoding is not None
+            and self.download_version.api.api_config.decode_content
+        ):
             return
         if self.range_ is None:
             if bytes_read != self.download_version.content_length:
                 raise TruncatedOutput(bytes_read, self.download_version.content_length)
 
             if (
-                self.check_hash and self.download_version.content_sha1 != 'none' and
-                actual_sha1 != self.download_version.content_sha1
+                self.check_hash
+                and self.download_version.content_sha1 != 'none'
+                and actual_sha1 != self.download_version.content_sha1
             ):
                 raise ChecksumMismatch(
                     checksum_type='sha1',
@@ -257,7 +261,8 @@ class DownloadedFile:
 
             if is_stdout and _IS_WINDOWS:
                 if self.write_buffer_size and self.write_buffer_size not in (
-                    -1, io.DEFAULT_BUFFER_SIZE
+                    -1,
+                    io.DEFAULT_BUFFER_SIZE,
                 ):
                     logger.warning(
                         'Unable to set arbitrary write_buffer_size for stdout on Windows'

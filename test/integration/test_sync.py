@@ -25,13 +25,13 @@ from b2sdk.v2 import (
 
 @pytest.fixture
 def local_folder_with_files(tmp_path):
-    folder = tmp_path / "test"
+    folder = tmp_path / 'test'
     folder.mkdir()
-    (folder / "a").mkdir()
-    (folder / "a" / "foo").write_bytes(b"foo")
+    (folder / 'a').mkdir()
+    (folder / 'a' / 'foo').write_bytes(b'foo')
     # space in the name is important as it influences lexicographical sorting used by B2
-    (folder / "a b").mkdir()
-    (folder / "a b" / "bar").write_bytes(b"bar")
+    (folder / 'a b').mkdir()
+    (folder / 'a b' / 'bar').write_bytes(b'bar')
     return folder
 
 

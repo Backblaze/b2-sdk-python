@@ -35,7 +35,8 @@ logger = logging.getLogger(__name__)
 
 @unique
 class UploadMode(Enum):
-    """ Mode of file uploads """
+    """Mode of file uploads"""
+
     FULL = auto()  #: always upload the whole file
     INCREMENTAL = auto()  #: use incremental uploads when possible
 
@@ -90,8 +91,9 @@ class UploadSourceBytes(AbstractUploadSource):
     def __repr__(self) -> str:
         return '<{classname} data={data} id={id}>'.format(
             classname=self.__class__.__name__,
-            data=str(self.data_bytes[:20]) +
-            '...' if len(self.data_bytes) > 20 else self.data_bytes,
+            data=str(self.data_bytes[:20]) + '...'
+            if len(self.data_bytes) > 20
+            else self.data_bytes,
             id=id(self),
         )
 
@@ -134,14 +136,8 @@ class UploadSourceLocalFileBase(AbstractUploadSource):
 
     def __repr__(self) -> str:
         return (
-            '<{classname} local_path={local_path} content_length={content_length} '
-            'content_sha1={content_sha1} id={id}>'
-        ).format(
-            classname=self.__class__.__name__,
-            local_path=self.local_path,
-            content_length=self.content_length,
-            content_sha1=self.content_sha1,
-            id=id(self),
+            f'<{self.__class__.__name__} local_path={self.local_path} content_length={self.content_length} '
+            f'content_sha1={self.content_sha1} id={id(self)}>'
         )
 
     def get_content_length(self) -> int:
@@ -215,7 +211,7 @@ class UploadSourceLocalFile(UploadSourceLocalFileBase):
 
         if not file_version:
             logger.debug(
-                "Fallback to full upload for %s -- no matching file on server", self.local_path
+                'Fallback to full upload for %s -- no matching file on server', self.local_path
             )
             return [self]
 
@@ -223,15 +219,16 @@ class UploadSourceLocalFile(UploadSourceLocalFileBase):
         if file_version.size < min_part_size:
             # existing file size below minimal large file part size
             logger.debug(
-                "Fallback to full upload for %s -- remote file is smaller than %i bytes",
-                self.local_path, min_part_size
+                'Fallback to full upload for %s -- remote file is smaller than %i bytes',
+                self.local_path,
+                min_part_size,
             )
             return [self]
 
         if self.get_content_length() < file_version.size:
             logger.debug(
-                "Fallback to full upload for %s -- local file is smaller than remote",
-                self.local_path
+                'Fallback to full upload for %s -- local file is smaller than remote',
+                self.local_path,
             )
             return [self]
 
@@ -239,8 +236,8 @@ class UploadSourceLocalFile(UploadSourceLocalFileBase):
 
         if not content_sha1:
             logger.debug(
-                "Fallback to full upload for %s -- remote file content SHA1 unknown",
-                self.local_path
+                'Fallback to full upload for %s -- remote file content SHA1 unknown',
+                self.local_path,
             )
             return [self]
 
@@ -251,14 +248,14 @@ class UploadSourceLocalFile(UploadSourceLocalFileBase):
             hex_digest = digester.update_from_stream(file_version.size)
             if hex_digest != content_sha1:
                 logger.debug(
-                    "Fallback to full upload for %s -- content in common range differs",
+                    'Fallback to full upload for %s -- content in common range differs',
                     self.local_path,
                 )
                 # Calculate SHA1 of the remainder of the file and set it.
                 self.content_sha1 = digester.update_from_stream()
                 return [self]
 
-        logger.debug("Incremental upload of %s is possible.", self.local_path)
+        logger.debug('Incremental upload of %s is possible.', self.local_path)
 
         if file_version.server_side_encryption and file_version.server_side_encryption.is_unknown():
             source_encryption = None
@@ -301,14 +298,8 @@ class UploadSourceStream(AbstractUploadSource):
 
     def __repr__(self) -> str:
         return (
-            '<{classname} stream_opener={stream_opener} content_length={content_length} '
-            'content_sha1={content_sha1} id={id}>'
-        ).format(
-            classname=self.__class__.__name__,
-            stream_opener=repr(self.stream_opener),
-            content_length=self._content_length,
-            content_sha1=self._content_sha1,
-            id=id(self),
+            f'<{self.__class__.__name__} stream_opener={repr(self.stream_opener)} content_length={self._content_length} '
+            f'content_sha1={self._content_sha1} id={id(self)}>'
         )
 
     def get_content_length(self) -> int:
@@ -360,15 +351,8 @@ class UploadSourceStreamRange(UploadSourceStream):
 
     def __repr__(self) -> str:
         return (
-            '<{classname} stream_opener={stream_opener} offset={offset} '
-            'content_length={content_length} content_sha1={content_sha1} id={id}>'
-        ).format(
-            classname=self.__class__.__name__,
-            stream_opener=repr(self.stream_opener),
-            offset=self._offset,
-            content_length=self._content_length,
-            content_sha1=self._content_sha1,
-            id=id(self),
+            f'<{self.__class__.__name__} stream_opener={repr(self.stream_opener)} offset={self._offset} '
+            f'content_length={self._content_length} content_sha1={self._content_sha1} id={id(self)}>'
         )
 
     def open(self):

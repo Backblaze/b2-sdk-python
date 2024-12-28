@@ -15,22 +15,13 @@ from b2sdk import _v3 as v3
 class _OldAbstractDeprecatorMixin:
     def __call__(self, *args, **kwargs):
         if self.cutoff_version:
-            assert self.current_version < self.cutoff_version, '{} decorator is still used in version {} when old {} name {!r} was scheduled to be dropped in {}. It is time to remove the mapping.'.format(
-                self.__class__.__name__,
-                self.current_version,
-                self.WHAT,
-                self.source,
-                self.cutoff_version,
-            )
+            assert (
+                self.current_version < self.cutoff_version
+            ), f'{self.__class__.__name__} decorator is still used in version {self.current_version} when old {self.WHAT} name {self.source!r} was scheduled to be dropped in {self.cutoff_version}. It is time to remove the mapping.'
         ret = super().__call__(*args, **kwargs)
-        assert self.changed_version <= self.current_version, '{} decorator indicates that the replacement of {} {!r} should take place in the future version {}, while the current version is {}. It looks like should be _discouraged_ at this point and not _deprecated_ yet. Consider using {!r} decorator instead.'.format(
-            self.__class__.__name__,
-            self.WHAT,
-            self.source,
-            self.changed_version,
-            self.cutoff_version,
-            self.ALTERNATIVE_DECORATOR,
-        )
+        assert (
+            self.changed_version <= self.current_version
+        ), f'{self.__class__.__name__} decorator indicates that the replacement of {self.WHAT} {self.source!r} should take place in the future version {self.changed_version}, while the current version is {self.cutoff_version}. It looks like should be _discouraged_ at this point and not _deprecated_ yet. Consider using {self.ALTERNATIVE_DECORATOR!r} decorator instead.'
         return ret
 
 

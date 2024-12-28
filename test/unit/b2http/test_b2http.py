@@ -62,7 +62,7 @@ class TestTranslateErrors:
         def fcn():
             raise requests.ConnectionError(
                 requests.packages.urllib3.exceptions.ProtocolError(
-                    "dummy", OSError(20, 'Broken pipe')
+                    'dummy', OSError(20, 'Broken pipe')
                 )
             )
 
@@ -108,7 +108,9 @@ class TestTranslateErrors:
         response = MagicMock()
         response.status_code = 429
         response.headers = {'retry-after': 1}
-        response.content = b'{"status": 429, "code": "Too Many requests", "message": "retry after some time"}'
+        response.content = (
+            b'{"status": 429, "code": "Too Many requests", "message": "retry after some time"}'
+        )
         with pytest.raises(TooManyRequests):
             B2Http._translate_errors(lambda: response)
 
@@ -121,7 +123,7 @@ class TestTranslateErrors:
         with pytest.raises(BadRequest) as exc_info:
             B2Http._translate_errors(lambda: response)
 
-        assert str(exc_info.value) == f"{response.content.decode()} (non_json_response)"
+        assert str(exc_info.value) == f'{response.content.decode()} (non_json_response)'
 
     def test_potential_s3_endpoint_passed_as_realm(self):
         response = MagicMock()
@@ -218,7 +220,8 @@ class TestTranslateAndRetry(TestBase):
             fcn.side_effect = [
                 ServiceError('a'),
                 ServiceError('a'),
-                ServiceError('a'), self.response
+                ServiceError('a'),
+                self.response,
             ]
             with self.assertRaises(ServiceError):
                 B2Http._translate_and_retry(fcn, 3)
@@ -272,14 +275,14 @@ class TestTranslateAndRetry(TestBase):
 
 
 class TestB2Http(TestBase):
-
     URL = 'http://example.com'
     UA_APPEND = None
     HEADERS = dict(my_header='my_value')
     EXPECTED_HEADERS = {'my_header': 'my_value', 'User-Agent': USER_AGENT}
     EXPECTED_JSON_HEADERS = {
-        **EXPECTED_HEADERS, 'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        **EXPECTED_HEADERS,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
     }
     PARAMS = dict(fileSize=100)
     PARAMS_JSON_BYTES = b'{"fileSize": 100}'
@@ -300,7 +303,7 @@ class TestB2Http(TestBase):
                 B2HttpApiConfig(
                     requests.Session,
                     install_clock_skew_hook=False,
-                    user_agent_append=self.UA_APPEND
+                    user_agent_append=self.UA_APPEND,
                 )
             )
 
@@ -350,7 +353,7 @@ class TestB2Http(TestBase):
     def test_head_content(self):
         self.session.request.return_value = self.response
         self.response.status_code = 200
-        self.response.headers = {"color": "blue"}
+        self.response.headers = {'color': 'blue'}
 
         response = self.b2_http.head_content(self.URL, self.HEADERS)
 
@@ -361,11 +364,11 @@ class TestB2Http(TestBase):
 
 
 class TestB2HttpUserAgentAppend(TestB2Http):
-
     UA_APPEND = 'ua_extra_string'
     EXPECTED_HEADERS = {**TestB2Http.EXPECTED_HEADERS, 'User-Agent': f'{USER_AGENT} {UA_APPEND}'}
     EXPECTED_JSON_HEADERS = {
-        **TestB2Http.EXPECTED_JSON_HEADERS, 'User-Agent': EXPECTED_HEADERS['User-Agent']
+        **TestB2Http.EXPECTED_JSON_HEADERS,
+        'User-Agent': EXPECTED_HEADERS['User-Agent'],
     }
 
 

@@ -20,7 +20,6 @@ class TestLazyThreadPool:
         return LazyThreadPool()
 
     def test_submit(self, thread_pool):
-
         future = thread_pool.submit(sum, (1, 2))
         assert isinstance(future, Future)
         assert future.result() == 3

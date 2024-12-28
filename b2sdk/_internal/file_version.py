@@ -36,6 +36,7 @@ class BaseFileVersion:
 
     :ivar size - size of the whole file (for "upload" markers)
     """
+
     __slots__ = [
         'id_',
         'api',
@@ -96,7 +97,7 @@ class BaseFileVersion:
     @classmethod
     def _decode_content_sha1(cls, content_sha1):
         if content_sha1.startswith(UNVERIFIED_CHECKSUM_PREFIX):
-            return content_sha1[len(UNVERIFIED_CHECKSUM_PREFIX):], False
+            return content_sha1[len(UNVERIFIED_CHECKSUM_PREFIX) :], False
         return content_sha1, True
 
     @classmethod
@@ -120,17 +121,19 @@ class BaseFileVersion:
             'file_name': self.file_name,
             'size': self.size,
             'content_type': self.content_type,
-            'content_sha1': self._encode_content_sha1(self.content_sha1, self.content_sha1_verified),
+            'content_sha1': self._encode_content_sha1(
+                self.content_sha1, self.content_sha1_verified
+            ),
             'file_info': self.file_info,
             'upload_timestamp': self.upload_timestamp,
             'server_side_encryption': self.server_side_encryption,
             'file_retention': self.file_retention,
             'legal_hold': self.legal_hold,
             'replication_status': self.replication_status,
-        }  # yapf: disable
+        }
 
     def as_dict(self):
-        """ represents the object as a dict which looks almost exactly like the raw api output for upload/list """
+        """represents the object as a dict which looks almost exactly like the raw api output for upload/list"""
         result = {
             'fileId': self.id_,
             'fileName': self.file_name,
@@ -164,7 +167,7 @@ class BaseFileVersion:
     def __repr__(self):
         return '{}({})'.format(
             self.__class__.__name__,
-            ', '.join(repr(getattr(self, attr)) for attr in self._all_slots())
+            ', '.join(repr(getattr(self, attr)) for attr in self._all_slots()),
         )
 
     def _all_slots(self):
@@ -207,7 +210,7 @@ class BaseFileVersion:
         Get the file's content SHA1 hex digest from the header or, if its absent,
         from the file info.  If both are missing, return None.
         """
-        if self.content_sha1 and self.content_sha1 != "none":
+        if self.content_sha1 and self.content_sha1 != 'none':
             return self.content_sha1
         elif LARGE_FILE_SHA1 in self.file_info:
             return Sha1HexDigest(self.file_info[LARGE_FILE_SHA1])
@@ -398,6 +401,7 @@ class DownloadVersion(BaseFileVersion):
     """
     A structure which represents metadata of an initialized download
     """
+
     __slots__ = [
         'range_',
         'content_disposition',
@@ -536,8 +540,9 @@ class FileVersionFactory:
         into a :py:class:`b2sdk.v2.FileVersion` object.
 
         """
-        assert file_version_dict.get('action') is None or force_action is None, \
-            'action was provided by both info_dict and function argument'
+        assert (
+            file_version_dict.get('action') is None or force_action is None
+        ), 'action was provided by both info_dict and function argument'
         action = file_version_dict.get('action') or force_action
         file_name = file_version_dict['fileName']
         id_ = file_version_dict['fileId']
@@ -557,8 +562,9 @@ class FileVersionFactory:
 
         legal_hold = LegalHold.from_file_version_dict(file_version_dict)
         replication_status_value = file_version_dict.get('replicationStatus')
-        replication_status = replication_status_value and ReplicationStatus[
-            replication_status_value.upper()]
+        replication_status = (
+            replication_status_value and ReplicationStatus[replication_status_value.upper()]
+        )
 
         return self.FILE_VERSION_CLASS(
             self.api,
@@ -654,11 +660,11 @@ class FileIdAndName:
         return cls(response['fileId'], response['fileName'])
 
     def as_dict(self):
-        """ represents the object as a dict which looks almost exactly like the raw api output for delete_file_version """
+        """represents the object as a dict which looks almost exactly like the raw api output for delete_file_version"""
         return {'action': 'delete', 'fileId': self.file_id, 'fileName': self.file_name}
 
     def __eq__(self, other):
-        return (self.file_id == other.file_id and self.file_name == other.file_name)
+        return self.file_id == other.file_id and self.file_name == other.file_name
 
     def __repr__(self):
         return f'{self.__class__.__name__}({repr(self.file_id)}, {repr(self.file_name)})'

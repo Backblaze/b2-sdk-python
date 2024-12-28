@@ -125,7 +125,12 @@ class UnboundWriteIntentGenerator:
         :param queue_timeout_seconds: Iterator will wait at most this many seconds for an empty slot
                                       for a buffer. After that time it's considered an error.
         """
-        assert queue_size >= 1 and read_size > 0 and buffer_size_bytes > 0 and queue_timeout_seconds > 0.0
+        assert (
+            queue_size >= 1
+            and read_size > 0
+            and buffer_size_bytes > 0
+            and queue_timeout_seconds > 0.0
+        )
 
         self.read_only_source = read_only_source
         self.read_size = read_size

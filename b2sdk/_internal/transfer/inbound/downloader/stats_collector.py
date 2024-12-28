@@ -66,8 +66,9 @@ class StatsCollector:
         if self.read.has_any_entry:
             logger.info('download stats | %s | TTFB: %.3f ms', self, self.read.latest_ms)
             logger.info(
-                'download stats | %s | read() without TTFB: %.3f ms', self,
-                (self.read.sum_of_all_entries - self.read.latest_entry) / self.read.TO_MS
+                'download stats | %s | read() without TTFB: %.3f ms',
+                self,
+                (self.read.sum_of_all_entries - self.read.latest_entry) / self.read.TO_MS,
             )
         if self.other.has_any_entry:
             logger.info(
@@ -76,9 +77,11 @@ class StatsCollector:
         if self.write.has_any_entry:
             logger.info('download stats | %s | write() total: %.3f ms', self, self.write.sum_ms)
         if self.total.has_any_entry:
-            basic_operation_time = self.write.sum_of_all_entries \
-                                   + self.other.sum_of_all_entries \
-                                   + self.read.sum_of_all_entries
+            basic_operation_time = (
+                self.write.sum_of_all_entries
+                + self.other.sum_of_all_entries
+                + self.read.sum_of_all_entries
+            )
             overhead = self.total.sum_of_all_entries - basic_operation_time
             logger.info(
                 'download stats | %s | overhead: %.3f ms', self, overhead / self.total.TO_MS

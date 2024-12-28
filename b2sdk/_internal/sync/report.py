@@ -69,16 +69,16 @@ class SyncReport(ProgressReport):
                 self.compare_count,
                 self.transfer_files,
                 format_and_scale_number(self.transfer_bytes, 'B'),
-                format_and_scale_number(rate, 'B/s')
-            )  # yapf: disable
+                format_and_scale_number(rate, 'B/s'),
+            )
         elif not self.compare_done:
             message = ' compare: %d/%d files   updated: %d files   %s   %s' % (
                 self.compare_count,
                 self.total_count,
                 self.transfer_files,
                 format_and_scale_number(self.transfer_bytes, 'B'),
-                format_and_scale_number(rate, 'B/s')
-            )  # yapf: disable
+                format_and_scale_number(rate, 'B/s'),
+            )
         else:
             message = ' compare: %d/%d files   updated: %d/%d files   %s   %s' % (
                 self.compare_count,
@@ -86,8 +86,8 @@ class SyncReport(ProgressReport):
                 self.transfer_files,
                 self.total_transfer_files,
                 format_and_scale_fraction(self.transfer_bytes, self.total_transfer_bytes, 'B'),
-                format_and_scale_number(rate, 'B/s')
-            )  # yapf: disable
+                format_and_scale_number(rate, 'B/s'),
+            )
         self._print_line(message, False)
 
     def update_compare(self, delta):
@@ -176,6 +176,7 @@ def sample_sync_report_run():
     Generate a sample report.
     """
     import sys
+
     sync_report = SyncReport(sys.stdout, False)
 
     for i in range(20):

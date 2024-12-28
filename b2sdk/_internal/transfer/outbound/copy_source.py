@@ -35,17 +35,8 @@ class CopySource(OutboundTransferSource):
 
     def __repr__(self):
         return (
-            '<{classname} file_id={file_id} offset={offset} length={length} id={id}, encryption={encryption},'
-            'source_content_type={source_content_type}>, source_file_info={source_file_info}'
-        ).format(
-            classname=self.__class__.__name__,
-            file_id=self.file_id,
-            offset=self.offset,
-            length=self.length,
-            id=id(self),
-            encryption=self.encryption,
-            source_content_type=self.source_content_type,
-            source_file_info=self.source_file_info,
+            f'<{self.__class__.__name__} file_id={self.file_id} offset={self.offset} length={self.length} id={id(self)}, encryption={self.encryption},'
+            f'source_content_type={self.source_content_type}>, source_file_info={self.source_file_info}'
         )
 
     def get_content_length(self):
@@ -78,7 +69,7 @@ class CopySource(OutboundTransferSource):
             range_length,
             encryption=self.encryption,
             source_file_info=self.source_file_info,
-            source_content_type=self.source_content_type
+            source_content_type=self.source_content_type,
         )
 
     def get_content_sha1(self):

@@ -50,13 +50,8 @@ class UploadEmergePartDefinition(BaseEmergePartDefinition):
 
     def __repr__(self):
         return (
-            '<{classname} upload_source={upload_source} relative_offset={relative_offset} '
-            'length={length}>'
-        ).format(
-            classname=self.__class__.__name__,
-            upload_source=repr(self.upload_source),
-            relative_offset=self.relative_offset,
-            length=self.length,
+            f'<{self.__class__.__name__} upload_source={repr(self.upload_source)} relative_offset={self.relative_offset} '
+            f'length={self.length}>'
         )
 
     def get_length(self):
@@ -144,13 +139,8 @@ class CopyEmergePartDefinition(BaseEmergePartDefinition):
 
     def __repr__(self):
         return (
-            '<{classname} copy_source={copy_source} relative_offset={relative_offset} '
-            'length={length}>'
-        ).format(
-            classname=self.__class__.__name__,
-            copy_source=repr(self.copy_source),
-            relative_offset=self.relative_offset,
-            length=self.length,
+            f'<{self.__class__.__name__} copy_source={repr(self.copy_source)} relative_offset={self.relative_offset} '
+            f'length={self.length}>'
         )
 
     def get_length(self):

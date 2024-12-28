@@ -29,17 +29,18 @@ def test_range_initialization_invalid(apiver_module):
 
 
 def test_range_from_header(apiver_module):
-    r = apiver_module.Range.from_header("bytes=0-11")
+    r = apiver_module.Range.from_header('bytes=0-11')
     assert r.start == 0
     assert r.end == 11
 
 
 @pytest.mark.parametrize(
-    "raw_range_header, start, end, total_length", [
-        ("bytes 0-11", 0, 11, None),
-        ("bytes 1-11/*", 1, 11, None),
-        ("bytes 10-110/200", 10, 110, 200),
-    ]
+    'raw_range_header, start, end, total_length',
+    [
+        ('bytes 0-11', 0, 11, None),
+        ('bytes 1-11/*', 1, 11, None),
+        ('bytes 10-110/200', 10, 110, 200),
+    ],
 )
 def test_range_from_header_with_size(apiver_module, raw_range_header, start, end, total_length):
     r, length = apiver_module.Range.from_header_with_size(raw_range_header)
@@ -72,7 +73,7 @@ def test_range_as_tuple(apiver_module):
 
 def test_range_repr(apiver_module):
     r = apiver_module.Range(0, 10)
-    assert repr(r) == "Range(0, 10)"
+    assert repr(r) == 'Range(0, 10)'
 
 
 def test_empty_range(apiver_module):

@@ -105,7 +105,8 @@ class TestFileVersion:
         cloned = initial_file_version._clone(legal_hold=LegalHold.OFF)
         assert isinstance(cloned, VFileVersion)
         assert cloned.as_dict() == {
-            **initial_file_version.as_dict(), 'legalHold': LegalHold.OFF.value
+            **initial_file_version.as_dict(),
+            'legalHold': LegalHold.OFF.value,
         }
 
         download_version = self.api.download_file_by_id(
@@ -148,8 +149,7 @@ class TestFileVersion:
         locked_file_version = self.bucket.upload_bytes(
             b'nothing',
             'test_file_with_governance',
-            file_retention=FileRetentionSetting(RetentionMode.GOVERNANCE,
-                                                int(time.time()) + 100),
+            file_retention=FileRetentionSetting(RetentionMode.GOVERNANCE, int(time.time()) + 100),
         )
 
         with pytest.raises(AccessDenied):
@@ -175,7 +175,9 @@ class TestFileVersion:
             ),
         )
 
-        assert file_version._get_upload_headers() == """
+        assert (
+            file_version._get_upload_headers()
+            == """
             Authorization: auth_token_0
             Content-Length: 7
             X-Bz-File-Name: test_file
@@ -188,7 +190,12 @@ class TestFileVersion:
             X-Bz-File-Legal-Hold: off
             X-Bz-File-Retention-Mode: None
             X-Bz-File-Retention-Retain-Until-Timestamp: None
-        """.strip().replace(': ', '').replace(' ', '').replace('\n', '').encode('utf8')
+        """.strip()
+            .replace(': ', '')
+            .replace(' ', '')
+            .replace('\n', '')
+            .encode('utf8')
+        )
 
         assert not file_version.has_large_header
 

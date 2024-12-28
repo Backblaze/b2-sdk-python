@@ -40,7 +40,8 @@ logger = logging.getLogger(__name__)
 
 @unique
 class NewerFileSyncMode(Enum):
-    """ Mode of handling files newer on destination than on source """
+    """Mode of handling files newer on destination than on source"""
+
     SKIP = 101  #: skip syncing such file
     REPLACE = 102  #: replace the file on the destination with the (older) file on source
     RAISE_ERROR = 103  #: raise a non-transient error, failing the sync operation
@@ -48,7 +49,8 @@ class NewerFileSyncMode(Enum):
 
 @unique
 class CompareVersionMode(Enum):
-    """ Mode of comparing versions of files to determine what should be synced and what shouldn't """
+    """Mode of comparing versions of files to determine what should be synced and what shouldn't"""
+
     MODTIME = 201  #: use file modification time on source filesystem
     SIZE = 202  #: compare using file size
     NONE = 203  #: compare using file name only
@@ -58,6 +60,7 @@ class AbstractFileSyncPolicy(metaclass=ABCMeta):
     """
     Abstract policy class.
     """
+
     DESTINATION_PREFIX = NotImplemented
     SOURCE_PREFIX = NotImplemented
 
@@ -72,8 +75,7 @@ class AbstractFileSyncPolicy(metaclass=ABCMeta):
         newer_file_mode: NewerFileSyncMode,
         compare_threshold: int,
         compare_version_mode: CompareVersionMode = CompareVersionMode.MODTIME,
-        encryption_settings_provider:
-        AbstractSyncEncryptionSettingsProvider = SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER,
+        encryption_settings_provider: AbstractSyncEncryptionSettingsProvider = SERVER_DEFAULT_SYNC_ENCRYPTION_SETTINGS_PROVIDER,
         upload_mode: UploadMode = UploadMode.FULL,
         absolute_minimum_part_size: int | None = None,
     ):
@@ -242,6 +244,7 @@ class DownPolicy(AbstractFileSyncPolicy):
     """
     File is synced down (from the cloud to disk).
     """
+
     DESTINATION_PREFIX = 'local://'
     SOURCE_PREFIX = 'b2://'
 
@@ -258,6 +261,7 @@ class UpPolicy(AbstractFileSyncPolicy):
     """
     File is synced up (from disk the cloud).
     """
+
     DESTINATION_PREFIX = 'b2://'
     SOURCE_PREFIX = 'local://'
 
@@ -331,7 +335,7 @@ class DownAndDeletePolicy(DownPolicy):
         ):
             yield LocalDeleteAction(
                 self._dest_path.relative_path,
-                self._dest_folder.make_full_path(self._dest_path.relative_path)
+                self._dest_folder.make_full_path(self._dest_path.relative_path),
             )
 
 
@@ -339,6 +343,7 @@ class DownAndKeepDaysPolicy(DownPolicy):
     """
     File is synced down (from the cloud to disk) and the keepDays flag is SET.
     """
+
     pass
 
 
@@ -346,11 +351,11 @@ class CopyPolicy(AbstractFileSyncPolicy):
     """
     File is copied (server-side).
     """
+
     DESTINATION_PREFIX = 'b2://'
     SOURCE_PREFIX = 'b2://'
 
     def _make_transfer_action(self):
-
         return B2CopyAction(
             self._source_folder.make_full_path(self._source_path.relative_path),
             cast(B2Path, self._source_path),

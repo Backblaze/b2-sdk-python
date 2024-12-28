@@ -335,7 +335,7 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
         :param custom_upload_timestamp: The custom timestamp for the upload, if any.
         :param check_file_info_without_large_file_sha1: A flag indicating whether the file information should be checked without the `large_file_sha1`.
         :param eager_mode: A flag indicating whether the first matching file should be returned.
-        
+
         :return: A tuple of the best matching unfinished file and its finished parts. If no match is found, returns `None`.
         """
 
@@ -356,12 +356,13 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
                     file_info_without_large_file_sha1 = self._get_file_info_without_large_file_sha1(
                         file_info
                     )
-                    if file_info_without_large_file_sha1 != self._get_file_info_without_large_file_sha1(
-                        file_.file_info
+                    if (
+                        file_info_without_large_file_sha1
+                        != self._get_file_info_without_large_file_sha1(file_.file_info)
                     ):
                         logger.debug(
                             'Rejecting %s: file info mismatch after dropping `large_file_sha1`',
-                            file_.file_id
+                            file_.file_id,
                         )
                         continue
                 else:
@@ -384,14 +385,16 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
                 logger.debug('Rejecting %s: retention mismatch', file_.file_id)
                 continue
 
-            if custom_upload_timestamp is not None and file_.upload_timestamp != custom_upload_timestamp:
+            if (
+                custom_upload_timestamp is not None
+                and file_.upload_timestamp != custom_upload_timestamp
+            ):
                 logger.debug('Rejecting %s: custom_upload_timestamp mismatch', file_.file_id)
                 continue
 
             finished_parts = {}
 
             for part in self.services.large_file.list_parts(file_.file_id):
-
                 emerge_part = emerge_parts_dict.get(part.part_number)
 
                 if emerge_part is None:
@@ -399,7 +402,8 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
                     # so we can't resume this upload
                     logger.debug(
                         'Rejecting %s: part %s not found in emerge parts, giving up.',
-                        file_.file_id, part.part_number
+                        file_.file_id,
+                        part.part_number,
                     )
                     finished_parts = None
                     break
@@ -451,11 +455,11 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
         """
         Search for a matching unfinished large file by plan_id in the specified bucket.
 
-        This function aims to locate a matching unfinished large file using the plan_id and the supplied parameters. 
-        It's used to resume an interrupted upload, centralizing the shared logic between `_find_unfinished_file_by_plan_id` 
+        This function aims to locate a matching unfinished large file using the plan_id and the supplied parameters.
+        It's used to resume an interrupted upload, centralizing the shared logic between `_find_unfinished_file_by_plan_id`
         and `_match_unfinished_file_if_possible`.
 
-        In case a matching file is found but has inconsistencies (for example, mismatching file info or encryption settings), 
+        In case a matching file is found but has inconsistencies (for example, mismatching file info or encryption settings),
         the function checks if 'plan_id' is in file_info, as this is a prerequisite.
 
         :param bucket_id: The identifier of the bucket where the unfinished file resides.
@@ -466,7 +470,7 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
         :param file_retention: The retention settings for the file, if any.
         :param legal_hold: The legal hold status of the file, if any.
         :param custom_upload_timestamp: The custom timestamp for the upload, if any.
-        
+
         :return: A tuple of the best matching unfinished file and its finished parts. If no match is found, it returns `None`.
         """
         if 'plan_id' not in file_info:
@@ -528,7 +532,7 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
         :param file_retention: The retention settings for the file, if applicable.
         :param legal_hold: The legal hold status of the file, if applicable.
         :param custom_upload_timestamp: The custom timestamp for the upload, if set.
-        
+
         :return: A tuple of the best matching unfinished file and its finished parts. If no match is found, returns `None`.
         """
         logger.debug('Checking for matching unfinished large files for %s...', file_name)
@@ -582,7 +586,7 @@ class SmallFileEmergeExecutionStepFactory(BaseExecutionStepFactory):
             self.emerge_execution,
             stream_opener,
             stream_length=stream_length,
-            stream_sha1=stream_sha1
+            stream_sha1=stream_sha1,
         )
 
 
@@ -669,7 +673,7 @@ class CopyPartExecutionStep(BaseExecutionStep):
         part_number,
         large_file_id,
         large_file_upload_state,
-        finished_parts=None
+        finished_parts=None,
     ):
         super().__init__(emerge_execution)
         self.copy_source_range = copy_source_range
@@ -728,7 +732,7 @@ class UploadPartExecutionStep(BaseExecutionStep):
         large_file_upload_state,
         stream_length=None,
         stream_sha1=None,
-        finished_parts=None
+        finished_parts=None,
     ):
         super().__init__(emerge_execution)
         self.stream_opener = stream_opener

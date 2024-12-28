@@ -26,13 +26,8 @@ class BaseUploadSubpart(metaclass=ABCMeta):
 
     def __repr__(self):
         return (
-            '<{classname} outbound_source={outbound_source} relative_offset={relative_offset} '
-            'length={length}>'
-        ).format(
-            classname=self.__class__.__name__,
-            outbound_source=repr(self.outbound_source),
-            relative_offset=self.relative_offset,
-            length=self.length,
+            f'<{self.__class__.__name__} outbound_source={repr(self.outbound_source)} relative_offset={self.relative_offset} '
+            f'length={self.length}>'
         )
 
     @abstractmethod
