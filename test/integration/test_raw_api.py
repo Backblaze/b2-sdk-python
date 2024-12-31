@@ -119,14 +119,14 @@ def raw_api_test_helper(raw_api, should_cleanup_old_buckets):
         set(ALL_CAPABILITIES)
         - {'readBuckets', 'listAllBucketNames'}
         - preview_feature_caps
-        - set(auth_dict['allowed']['capabilities'])
+        - set(auth_dict['apiInfo']['storageApi']['capabilities'])
     )
     assert not missing_capabilities, f'it appears that the raw_api integration test is being run with a non-full key. Missing capabilities: {missing_capabilities}'
 
     account_id = auth_dict['accountId']
     account_auth_token = auth_dict['authorizationToken']
-    api_url = auth_dict['apiUrl']
-    download_url = auth_dict['downloadUrl']
+    api_url = auth_dict['apiInfo']['storageApi']['apiUrl']
+    download_url = auth_dict['apiInfo']['storageApi']['downloadUrl']
 
     # b2_create_key
     print('b2_create_key')
@@ -599,7 +599,7 @@ def raw_api_test_helper(raw_api, should_cleanup_old_buckets):
 
 
 def _subtest_bucket_notification_rules(raw_api, auth_dict, api_url, account_auth_token, bucket_id):
-    if 'writeBucketNotifications' not in auth_dict['allowed']['capabilities']:
+    if 'writeBucketNotifications' not in auth_dict['apiInfo']['storageApi']['capabilities']:
         pytest.skip('Test account does not have writeBucketNotifications capability')
 
     notification_rule = {
@@ -644,8 +644,11 @@ def _subtest_bucket_notification_rules(raw_api, auth_dict, api_url, account_auth
 def cleanup_old_buckets():
     raw_api = B2RawHTTPApi(B2Http())
     auth_dict = authorize_raw_api(raw_api)
+
     bucket_list_dict = raw_api.list_buckets(
-        auth_dict['apiUrl'], auth_dict['authorizationToken'], auth_dict['accountId']
+        auth_dict['apiInfo']['storageApi']['apiUrl'],
+        auth_dict['authorizationToken'],
+        auth_dict['accountId'],
     )
     _cleanup_old_buckets(raw_api, auth_dict, bucket_list_dict)
 
@@ -658,7 +661,7 @@ def _cleanup_old_buckets(raw_api, auth_dict, bucket_list_dict):
             print('cleaning up old bucket: ' + bucket_name)
             _clean_and_delete_bucket(
                 raw_api,
-                auth_dict['apiUrl'],
+                auth_dict['apiInfo']['storageApi']['apiUrl'],
                 auth_dict['authorizationToken'],
                 auth_dict['accountId'],
                 bucket_id,

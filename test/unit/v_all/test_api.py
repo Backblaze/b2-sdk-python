@@ -160,5 +160,5 @@ class TestApi(TestBase):
 
         assert (
             download_url
-            == 'http://download.example.com/b2api/v2/b2_download_file_by_id?fileId=file-id'
+            == 'http://download.example.com/b2api/v3/b2_download_file_by_id?fileId=file-id'
         )

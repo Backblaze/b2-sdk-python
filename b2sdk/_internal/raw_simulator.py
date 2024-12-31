@@ -1407,12 +1407,21 @@ class RawSimulator(AbstractRawApi):
         return dict(
             accountId=key_sim.account_id,
             authorizationToken=auth_token,
-            apiUrl=self.API_URL,
-            downloadUrl=self.DOWNLOAD_URL,
-            recommendedPartSize=self.MIN_PART_SIZE,
-            absoluteMinimumPartSize=self.MIN_PART_SIZE,
-            allowed=allowed,
-            s3ApiUrl=self.S3_API_URL,
+            apiInfo=dict(
+                groupsApi=dict(),
+                storageApi=dict(
+                    apiUrl=self.API_URL,
+                    downloadUrl=self.DOWNLOAD_URL,
+                    recommendedPartSize=self.MIN_PART_SIZE,
+                    absoluteMinimumPartSize=self.MIN_PART_SIZE,
+                    allowed=allowed,
+                    s3ApiUrl=self.S3_API_URL,
+                    bucketId=allowed['bucketId'],
+                    bucketName=allowed['bucketName'],
+                    capabilities=allowed['capabilities'],
+                    namePrefix=allowed['namePrefix'],
+                ),
+            ),
         )
 
     def cancel_large_file(self, api_url, account_auth_token, file_id):

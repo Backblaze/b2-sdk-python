@@ -79,7 +79,7 @@ ALL_CAPABILITIES = [
 ]
 
 # API version number to use when calling the service
-API_VERSION = 'v2'
+API_VERSION = 'v3'
 
 logger = getLogger(__name__)
 
