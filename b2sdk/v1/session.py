@@ -49,7 +49,16 @@ class B2Session(v2.B2Session):
         realm_url = self.account_info.REALM_URLS.get(realm, realm)
         response = self.raw_api.authorize_account(realm_url, application_key_id, application_key)
         account_id = response['accountId']
-        allowed = response['allowed']
+        storage_api_info = response['apiInfo']['storageApi']
+
+        # `allowed` object has been deprecated in the v3 of the API, but we still
+        # construct it artificially to avoid changes in all the reliant parts.
+        allowed = {
+            'bucketId': storage_api_info['bucketId'],
+            'bucketName': storage_api_info['bucketName'],
+            'capabilities': storage_api_info['capabilities'],
+            'namePrefix': storage_api_info['namePrefix'],
+        }
 
         # Clear the cache if new account has been used
         if not self.account_info.is_same_account(account_id, realm):
@@ -59,12 +68,12 @@ class B2Session(v2.B2Session):
         self.account_info.set_auth_data(
             account_id=account_id,
             auth_token=response['authorizationToken'],
-            api_url=response['apiUrl'],
-            download_url=response['downloadUrl'],
-            minimum_part_size=response['recommendedPartSize'],
+            api_url=storage_api_info['apiUrl'],
+            download_url=storage_api_info['downloadUrl'],
+            minimum_part_size=storage_api_info['recommendedPartSize'],
             application_key=application_key,
             realm=realm,
-            s3_api_url=response['s3ApiUrl'],
+            s3_api_url=storage_api_info['s3ApiUrl'],
             allowed=allowed,
             application_key_id=application_key_id,
         )

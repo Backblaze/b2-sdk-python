@@ -57,7 +57,7 @@ class TestUploadLargeFile(IntegrationTestBase):
 
         auth_dict = authorize_raw_api(raw_api)
         account_auth_token = auth_dict['authorizationToken']
-        api_url = auth_dict['apiUrl']
+        api_url = auth_dict['apiInfo']['storageApi']['apiUrl']
         bucket = self.create_bucket()
 
         large_info = raw_api.start_large_file(

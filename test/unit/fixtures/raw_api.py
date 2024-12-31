@@ -19,19 +19,22 @@ from apiver_deps import ALL_CAPABILITIES, B2RawHTTPApi
 def fake_b2_raw_api_responses():
     return {
         'authorize_account': {
-            'absoluteMinimumPartSize': 5000000,
             'accountId': '6012deadbeef',
-            'allowed': {
-                'bucketId': None,
-                'bucketName': None,
-                'capabilities': copy(ALL_CAPABILITIES),
-                'namePrefix': None,
+            'apiInfo': {
+                'groupsApi': {},
+                'storageApi': {
+                    'bucketId': None,
+                    'bucketName': None,
+                    'capabilities': copy(ALL_CAPABILITIES),
+                    'namePrefix': None,
+                    'downloadUrl': 'https://f000.backblazeb2.xyz:8180',
+                    'absoluteMinimumPartSize': 5000000,
+                    'recommendedPartSize': 100000000,
+                    'apiUrl': 'https://api000.backblazeb2.xyz:8180',
+                    's3ApiUrl': 'https://s3.us-west-000.backblazeb2.xyz:8180',
+                },
             },
-            'apiUrl': 'https://api000.backblazeb2.xyz:8180',
             'authorizationToken': '4_1111111111111111111111111_11111111_111111_1111_1111111111111_1111_11111111=',
-            'downloadUrl': 'https://f000.backblazeb2.xyz:8180',
-            'recommendedPartSize': 100000000,
-            's3ApiUrl': 'https://s3.us-west-000.backblazeb2.xyz:8180',
         }
     }
 
