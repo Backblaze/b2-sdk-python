@@ -9,6 +9,23 @@ upcoming release can be found in [changelog.d](changelog.d).
 
 <!-- towncrier release notes start -->
 
+## [2.8.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v2.8.0) - 2025-01-23
+
+
+### Changed
+
+- Migrate to B2 Native API v3.
+
+### Fixed
+
+- Fix continuation for started large files with no fully finished parts.
+- Perform re-authentication for empty 401 responses returned for `HEAD` requests.
+
+### Infrastructure
+
+- Remove yapf in favor of ruff.
+
+
 ## [2.7.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v2.7.0) - 2024-12-12
 
 
