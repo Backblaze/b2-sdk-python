@@ -99,8 +99,8 @@ class KeySimulator:
         key,
         capabilities,
         expiration_timestamp_or_none,
-        bucket_id_or_none,
-        bucket_name_or_none,
+        bucket_ids_or_none,
+        bucket_names_or_none,
         name_prefix_or_none,
     ):
         self.name = name
@@ -109,14 +109,15 @@ class KeySimulator:
         self.key = key
         self.capabilities = capabilities
         self.expiration_timestamp_or_none = expiration_timestamp_or_none
-        self.bucket_id_or_none = bucket_id_or_none
-        self.bucket_name_or_none = bucket_name_or_none
+        self.bucket_ids_or_none = list(bucket_ids_or_none) if bucket_ids_or_none else []
+        self.bucket_names_or_none = list(bucket_names_or_none) if bucket_names_or_none else []
         self.name_prefix_or_none = name_prefix_or_none
 
     def as_key(self):
         return dict(
             accountId=self.account_id,
-            bucketId=self.bucket_id_or_none,
+            bucketIds=self.bucket_ids_or_none,
+            bucketNames=self.bucket_names_or_none,
             applicationKeyId=self.application_key_id,
             capabilities=self.capabilities,
             expirationTimestamp=self.expiration_timestamp_or_none
@@ -139,9 +140,12 @@ class KeySimulator:
         """
         Return the 'allowed' structure to include in the response from b2_authorize_account.
         """
+        bucketId = self.bucket_ids_or_none[0] if self.bucket_ids_or_none else None
+        bucketName = self.bucket_names_or_none[0] if self.bucket_names_or_none else None
+
         return dict(
-            bucketId=self.bucket_id_or_none,
-            bucketName=self.bucket_name_or_none,
+            bucketId=bucketId,
+            bucketName=bucketName,
             capabilities=self.capabilities,
             namePrefix=self.name_prefix_or_none,
         )
@@ -1371,8 +1375,8 @@ class RawSimulator(AbstractRawApi):
             key=master_key,
             capabilities=ALL_CAPABILITIES,
             expiration_timestamp_or_none=None,
-            bucket_id_or_none=None,
-            bucket_name_or_none=None,
+            bucket_ids_or_none=None,
+            bucket_names_or_none=None,
             name_prefix_or_none=None,
         )
 
@@ -1504,6 +1508,9 @@ class RawSimulator(AbstractRawApi):
             with suppress(NonExistentBucket):
                 bucket_name_or_none = self._get_bucket_by_id(bucket_id).bucket_name
 
+        bucket_ids_or_none = [bucket_id] if bucket_id else None
+        bucket_names_or_none = [bucket_name_or_none] if bucket_name_or_none else None
+
         key_sim = KeySimulator(
             account_id=account_id,
             name=key_name,
@@ -1511,8 +1518,8 @@ class RawSimulator(AbstractRawApi):
             key=app_key,
             capabilities=capabilities,
             expiration_timestamp_or_none=expiration_timestamp_or_none,
-            bucket_id_or_none=bucket_id,
-            bucket_name_or_none=bucket_name_or_none,
+            bucket_ids_or_none=bucket_ids_or_none,
+            bucket_names_or_none=bucket_names_or_none,
             name_prefix_or_none=name_prefix,
         )
         self.key_id_to_key[application_key_id] = key_sim
@@ -2100,7 +2107,7 @@ class RawSimulator(AbstractRawApi):
             raise InvalidAuthToken('auth token expired', 'auth_token_expired')
         if capability not in key_sim.capabilities:
             raise Unauthorized('', 'unauthorized')
-        if key_sim.bucket_id_or_none is not None and key_sim.bucket_id_or_none != bucket_id:
+        if key_sim.bucket_ids_or_none and bucket_id not in key_sim.bucket_ids_or_none:
             raise Unauthorized('', 'unauthorized')
         if key_sim.name_prefix_or_none is not None:
             if file_name is not None and not file_name.startswith(key_sim.name_prefix_or_none):

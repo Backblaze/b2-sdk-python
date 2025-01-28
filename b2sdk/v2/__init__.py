@@ -27,6 +27,16 @@ from .session import B2Session
 from .sync import B2SyncPath
 from .transfer import DownloadManager, UploadManager
 
+# replication
+
+from .replication.setup import ReplicationSetupHelper
+
+# data classes
+
+from .application_key import ApplicationKey
+from .application_key import BaseApplicationKey
+from .application_key import FullApplicationKey
+
 # utils
 
 from .version_utils import rename_argument, rename_function
@@ -36,6 +46,7 @@ from .utils import TempDir
 
 from .raw_simulator import BucketSimulator
 from .raw_simulator import RawSimulator
+from .raw_simulator import KeySimulator
 
 # raw_api
 

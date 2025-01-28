@@ -542,7 +542,7 @@ class TestApi:
         delete_result = self.api.delete_key_by_id(create_result['applicationKeyId'])
         self.assertDeleteAndCreateResult(create_result, delete_result.as_dict())
 
-    @pytest.mark.apiver(from_ver=2)
+    @pytest.mark.apiver(2)
     def test_create_and_delete_key_v2(self):
         self._authorize_account()
         bucket = self.api.create_bucket('bucket', 'allPrivate')

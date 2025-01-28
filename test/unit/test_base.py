@@ -14,9 +14,7 @@ import unittest
 from contextlib import contextmanager
 
 import apiver_deps
-from apiver_deps import B2Api
-
-from b2sdk.v2 import FullApplicationKey
+from apiver_deps import B2Api, FullApplicationKey
 
 
 class TestBase(unittest.TestCase):
@@ -51,13 +49,15 @@ def create_key(
     name_prefix: str | None = None,
 ) -> FullApplicationKey:
     """apiver-agnostic B2Api.create_key"""
-    result = api.create_key(
+    kwargs = dict(
         capabilities=capabilities,
         key_name=key_name,
         valid_duration_seconds=valid_duration_seconds,
         bucket_id=bucket_id,
         name_prefix=name_prefix,
     )
+
+    result = api.create_key(**kwargs)
     if apiver_deps.V <= 1:
         return FullApplicationKey.from_create_response(result)
     return result

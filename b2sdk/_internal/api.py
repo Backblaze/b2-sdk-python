@@ -141,6 +141,8 @@ class B2Api(metaclass=B2TraceMeta):
     FILE_VERSION_FACTORY_CLASS = staticmethod(FileVersionFactory)
     DOWNLOAD_VERSION_FACTORY_CLASS = staticmethod(DownloadVersionFactory)
     SERVICES_CLASS = staticmethod(Services)
+    APPLICATION_KEY_CLASS = ApplicationKey
+    FULL_APPLICATION_KEY_CLASS = FullApplicationKey
     DEFAULT_LIST_KEY_COUNT = 1000
 
     def __init__(
@@ -538,7 +540,7 @@ class B2Api(metaclass=B2TraceMeta):
         assert set(response['capabilities']) == set(capabilities)
         assert response['keyName'] == key_name
 
-        return FullApplicationKey.from_create_response(response)
+        return self.FULL_APPLICATION_KEY_CLASS.from_create_response(response)
 
     def delete_key(self, application_key: BaseApplicationKey):
         """
@@ -557,7 +559,7 @@ class B2Api(metaclass=B2TraceMeta):
         """
 
         response = self.session.delete_key(application_key_id=application_key_id)
-        return ApplicationKey.from_api_response(response)
+        return self.APPLICATION_KEY_CLASS.from_api_response(response)
 
     def list_keys(
         self, start_application_key_id: str | None = None
@@ -576,7 +578,7 @@ class B2Api(metaclass=B2TraceMeta):
                 start_application_key_id=start_application_key_id,
             )
             for entry in response['keys']:
-                yield ApplicationKey.from_api_response(entry)
+                yield self.APPLICATION_KEY_CLASS.from_api_response(entry)
 
             next_application_key_id = response['nextApplicationKeyId']
             if next_application_key_id is None:
@@ -598,6 +600,8 @@ class B2Api(metaclass=B2TraceMeta):
             # thus manually check that we retrieved the right key
             if key.id_ == key_id:
                 return key
+
+        return None
 
     # other
     def get_file_info(self, file_id: str) -> FileVersion:

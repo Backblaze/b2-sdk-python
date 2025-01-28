@@ -8,6 +8,7 @@
 #
 ######################################################################
 from __future__ import annotations
+from typing import Generator
 
 from b2sdk import _v3 as v3
 from b2sdk._v3.exception import BucketIdNotFound as v3BucketIdNotFound
@@ -17,6 +18,7 @@ from .session import B2Session
 from .transfer import DownloadManager, UploadManager
 from .file_version import FileVersionFactory
 from .large_file import LargeFileServices
+from .application_key import FullApplicationKey, ApplicationKey, BaseApplicationKey
 
 
 class Services(v3.Services):
@@ -35,6 +37,8 @@ class B2Api(v3.B2Api):
     BUCKET_FACTORY_CLASS = staticmethod(BucketFactory)
     SERVICES_CLASS = staticmethod(Services)
     FILE_VERSION_FACTORY_CLASS = staticmethod(FileVersionFactory)
+    APPLICATION_KEY_CLASS = ApplicationKey  # type: ignore
+    FULL_APPLICATION_KEY_CLASS = FullApplicationKey  # type: ignore
 
     # Legacy init in case something depends on max_workers defaults = 10
     def __init__(self, *args, **kwargs):
@@ -56,3 +60,41 @@ class B2Api(v3.B2Api):
             application_key=application_key,
             realm=realm,
         )
+
+    def create_key(  # type: ignore
+        self,
+        capabilities: list[str],
+        key_name: str,
+        valid_duration_seconds: int | None = None,
+        bucket_id: str | None = None,
+        name_prefix: str | None = None,
+    ) -> FullApplicationKey:
+        account_id = self.account_info.get_account_id()
+
+        response = self.session.create_key(
+            account_id,
+            capabilities=capabilities,
+            key_name=key_name,
+            valid_duration_seconds=valid_duration_seconds,
+            bucket_id=bucket_id,
+            name_prefix=name_prefix,
+        )
+
+        assert set(response['capabilities']) == set(capabilities)
+        assert response['keyName'] == key_name
+
+        return self.FULL_APPLICATION_KEY_CLASS.from_create_response(response)
+
+    def delete_key(self, application_key: BaseApplicationKey):  # type: ignore
+        return super().delete_key(application_key)  # type: ignore
+
+    def delete_key_by_id(self, application_key_id: str) -> ApplicationKey:  # type: ignore
+        return super().delete_key_by_id(application_key_id)  # type: ignore
+
+    def list_keys(  # type: ignore
+        self, start_application_key_id: str | None = None
+    ) -> Generator[ApplicationKey, None, None]:
+        return super().list_keys(start_application_key_id)  # type: ignore
+
+    def get_key(self, key_id: str) -> ApplicationKey | None:  # type: ignore
+        return super().get_key(key_id)  # type: ignore
