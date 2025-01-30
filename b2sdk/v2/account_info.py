@@ -8,7 +8,11 @@
 #
 ######################################################################
 from __future__ import annotations
+
+import json
+
 from b2sdk import _v3
+from .exception import MissingAccountData
 
 
 class _OldAllowedMixin:
@@ -44,7 +48,48 @@ class InMemoryAccountInfo(_OldAllowedMixin, _v3.InMemoryAccountInfo):
 
 
 class SqliteAccountInfo(_OldAllowedMixin, _v3.SqliteAccountInfo):
-    pass
+    def get_allowed(self):
+        """
+        Return 'allowed' dictionary info.
+        Example:
+
+        .. code-block:: python
+
+            {
+                "bucketId": null,
+                "bucketName": null,
+                "capabilities": [
+                    "listKeys",
+                    "writeKeys"
+                ],
+                "namePrefix": null
+            }
+
+        The 'allowed' column was not in the original schema, so it may be NULL.
+
+        :rtype: dict
+        """
+        allowed_json = self._get_account_info_or_raise('allowed')
+        if allowed_json is None:
+            return self.DEFAULT_ALLOWED
+
+        allowed = json.loads(allowed_json)
+
+        # convert a multi-bucket key to a single bucket
+
+        if 'bucketIds' in allowed:
+            bucket_ids = allowed.pop('bucketIds')
+            if bucket_ids and len(bucket_ids) > 1:
+                raise MissingAccountData(
+                    'Multi-bucket keys cannot be used with the current sdk version'
+                )
+
+            allowed['bucketId'] = bucket_ids[0] if bucket_ids else None
+
+            bucket_names = allowed.pop('bucketNames')
+            allowed['bucketName'] = bucket_names[0] if bucket_names else None
+
+        return allowed
 
 
 class StubAccountInfo(_OldAllowedMixin, _v3.StubAccountInfo):

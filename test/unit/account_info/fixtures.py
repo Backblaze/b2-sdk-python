@@ -13,6 +13,9 @@ import pytest
 from apiver_deps import InMemoryAccountInfo, SqliteAccountInfo
 from pytest_lazy_fixtures import lf
 
+from b2sdk._v3 import SqliteAccountInfo as V3SqliteAccountInfo
+from b2sdk.v2 import SqliteAccountInfo as V2SqliteAccountInfo
+
 
 @pytest.fixture
 def account_info_default_data_schema_0():
@@ -74,6 +77,26 @@ def sqlite_account_info_factory(tmpdir):
         else:
             last_upgrade_to_run = None
         return SqliteAccountInfo(file_name, last_upgrade_to_run)
+
+    return get_account_info
+
+
+@pytest.fixture
+def v2_sqlite_account_info_factory(tmpdir):
+    def get_account_info(file_name=None):
+        if file_name is None:
+            file_name = str(tmpdir.join('b2_account_info'))
+        return V2SqliteAccountInfo(file_name, last_upgrade_to_run=4)
+
+    return get_account_info
+
+
+@pytest.fixture
+def v3_sqlite_account_info_factory(tmpdir):
+    def get_account_info(file_name=None):
+        if file_name is None:
+            file_name = str(tmpdir.join('b2_account_info'))
+        return V3SqliteAccountInfo(file_name)
 
     return get_account_info
 
