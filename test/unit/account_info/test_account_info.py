@@ -184,7 +184,24 @@ class AccountInfoBase(metaclass=ABCMeta):
             with pytest.raises(MissingAccountData):
                 account_info.get_absolute_minimum_part_size()
 
-    def test_set_auth_data_compatibility(self, account_info_default_data):
+    @pytest.fixture
+    def allowed(self, apiver):
+        if apiver in ['v0', 'v1', 'v2']:
+            return dict(
+                capabilities=['readFiles'],
+                namePrefix=None,
+                bucketId=None,
+                bucketName=None,
+            )
+
+        return dict(
+            capabilities=['readFiles'],
+            namePrefix=None,
+            bucketIds=None,
+            bucketNames=None,
+        )
+
+    def test_set_auth_data_compatibility(self, account_info_default_data, allowed):
         account_info = self._make_info()
 
         # The original set_auth_data
@@ -193,19 +210,13 @@ class AccountInfoBase(metaclass=ABCMeta):
         assert AbstractAccountInfo.DEFAULT_ALLOWED == actual, 'default allowed'
 
         # allowed was added later
-        allowed = dict(
-            bucketId=None,
-            bucketName=None,
-            capabilities=['readFiles'],
-            namePrefix=None,
-        )
         account_info.set_auth_data(
             **{
                 **account_info_default_data,
                 'allowed': allowed,
             }
         )
-        assert allowed == account_info.get_allowed()
+        assert account_info.get_allowed() == allowed
 
     def test_clear_bucket_upload_data(self):
         account_info = self._make_info()

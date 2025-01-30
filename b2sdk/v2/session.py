@@ -81,3 +81,11 @@ class B2Session(v3.B2Session):
             *args,
             **kwargs,
         )
+
+    def _construct_allowed_dict(self, storage_api_info):
+        return {
+            'bucketId': storage_api_info['bucketId'],
+            'bucketName': storage_api_info['bucketName'],
+            'capabilities': storage_api_info['capabilities'],
+            'namePrefix': storage_api_info['namePrefix'],
+        }

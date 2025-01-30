@@ -386,7 +386,6 @@ class TestApi:
         assert [b.name for b in self.api.list_buckets(bucket_name=bucket1.name)] == ['bucket1']
 
     @pytest.mark.apiver(from_ver=3)
-    @pytest.mark.xfail(reason='needs new authorize_account flow for multi-bucket keys')
     def test_list_buckets_with_restriction_multi_bucket(self):
         self._authorize_account()
         bucket1 = self.api.create_bucket('bucket1', 'allPrivate')
@@ -414,7 +413,8 @@ class TestApi:
         )
         assert self.api.get_bucket_by_name('bucket1').id_ == bucket1.id_
 
-    def test_list_buckets_with_restriction_and_wrong_name(self):
+    @pytest.mark.apiver(to_ver=2)
+    def test_list_buckets_with_restriction_and_wrong_name_v2(self):
         self._authorize_account()
         bucket1 = self.api.create_bucket('bucket1', 'allPrivate')
         bucket2 = self.api.create_bucket('bucket2', 'allPrivate')
@@ -428,7 +428,28 @@ class TestApi:
             self.api.list_buckets(bucket_name=bucket2.name)
         assert str(excinfo.value) == 'Application key is restricted to bucket: bucket1'
 
-    def test_list_buckets_with_restriction_and_no_name(self):
+    @pytest.mark.apiver(from_ver=3)
+    def test_list_buckets_with_restriction_and_wrong_name_v3(self):
+        self._authorize_account()
+        bucket1 = self.api.create_bucket('bucket1', 'allPrivate')
+        bucket2 = self.api.create_bucket('bucket2', 'allPrivate')
+        bucket3 = self.api.create_bucket('bucket3', 'allPrivate')
+        key = create_key_multibucket(
+            self.api, ['listBuckets'], 'key1', bucket_ids=[bucket1.id_, bucket2.id_]
+        )
+        self.api.authorize_account(
+            application_key_id=key.id_,
+            application_key=key.application_key,
+            realm='production',
+        )
+        with pytest.raises(RestrictedBucket) as excinfo:
+            self.api.list_buckets(bucket_name=bucket3.name)
+        assert (
+            str(excinfo.value) == "Application key is restricted to buckets: ['bucket1', 'bucket2']"
+        )
+
+    @pytest.mark.apiver(to_ver=2)
+    def test_list_buckets_with_restriction_and_no_name_v2(self):
         self._authorize_account()
         bucket1 = self.api.create_bucket('bucket1', 'allPrivate')
         self.api.create_bucket('bucket2', 'allPrivate')
@@ -442,7 +463,28 @@ class TestApi:
             self.api.list_buckets()
         assert str(excinfo.value) == 'Application key is restricted to bucket: bucket1'
 
-    def test_list_buckets_with_restriction_and_wrong_id(self):
+    @pytest.mark.apiver(from_ver=3)
+    def test_list_buckets_with_restriction_and_no_name_v3(self):
+        self._authorize_account()
+        bucket1 = self.api.create_bucket('bucket1', 'allPrivate')
+        bucket2 = self.api.create_bucket('bucket2', 'allPrivate')
+        self.api.create_bucket('bucket3', 'allPrivate')
+        key = create_key_multibucket(
+            self.api, ['listBuckets'], 'key1', bucket_ids=[bucket1.id_, bucket2.id_]
+        )
+        self.api.authorize_account(
+            application_key_id=key.id_,
+            application_key=key.application_key,
+            realm='production',
+        )
+        with pytest.raises(RestrictedBucket) as excinfo:
+            self.api.list_buckets()
+        assert (
+            str(excinfo.value) == "Application key is restricted to buckets: ['bucket1', 'bucket2']"
+        )
+
+    @pytest.mark.apiver(to_ver=2)
+    def test_list_buckets_with_restriction_and_wrong_id_v2(self):
         self._authorize_account()
         bucket1 = self.api.create_bucket('bucket1', 'allPrivate')
         self.api.create_bucket('bucket2', 'allPrivate')
@@ -455,6 +497,27 @@ class TestApi:
         with pytest.raises(RestrictedBucket) as excinfo:
             self.api.list_buckets(bucket_id='not the one bound to the key')
         assert str(excinfo.value) == f'Application key is restricted to bucket: {bucket1.id_}'
+
+    @pytest.mark.apiver(from_ver=3)
+    def test_list_buckets_with_restriction_and_wrong_id_v3(self):
+        self._authorize_account()
+        bucket1 = self.api.create_bucket('bucket1', 'allPrivate')
+        bucket2 = self.api.create_bucket('bucket2', 'allPrivate')
+        self.api.create_bucket('bucket3', 'allPrivate')
+        key = create_key_multibucket(
+            self.api, ['listBuckets'], 'key1', bucket_ids=[bucket1.id_, bucket2.id_]
+        )
+        self.api.authorize_account(
+            application_key_id=key.id_,
+            application_key=key.application_key,
+            realm='production',
+        )
+        with pytest.raises(RestrictedBucket) as excinfo:
+            self.api.list_buckets(bucket_id='not the one bound to the key')
+        assert (
+            str(excinfo.value)
+            == f"Application key is restricted to buckets: ['{bucket1.id_}', '{bucket2.id_}']"
+        )
 
     def _authorize_account(self):
         self.api.authorize_account(

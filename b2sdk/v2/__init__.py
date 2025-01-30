@@ -20,6 +20,10 @@ from b2sdk._internal.utils.escape import (
 )
 
 from .account_info import AbstractAccountInfo
+from .account_info import InMemoryAccountInfo
+from .account_info import SqliteAccountInfo
+from .account_info import StubAccountInfo
+from .account_info import UrlPoolAccountInfo
 from .api import B2Api
 from .b2http import B2Http
 from .bucket import Bucket, BucketFactory

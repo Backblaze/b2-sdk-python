@@ -140,12 +140,9 @@ class KeySimulator:
         """
         Return the 'allowed' structure to include in the response from b2_authorize_account.
         """
-        bucketId = self.bucket_ids_or_none[0] if self.bucket_ids_or_none else None
-        bucketName = self.bucket_names_or_none[0] if self.bucket_names_or_none else None
-
         return dict(
-            bucketId=bucketId,
-            bucketName=bucketName,
+            bucketIds=self.bucket_ids_or_none,
+            bucketName=self.bucket_names_or_none,
             capabilities=self.capabilities,
             namePrefix=self.name_prefix_or_none,
         )
@@ -1402,12 +1399,20 @@ class RawSimulator(AbstractRawApi):
         self.current_token = auth_token
         self.auth_token_counter += 1
         self.auth_token_to_key[auth_token] = key_sim
+
         allowed = key_sim.get_allowed()
-        bucketId = allowed.get('bucketId')
-        if (bucketId is not None) and (bucketId in self.bucket_id_to_bucket):
-            allowed['bucketName'] = self.bucket_id_to_bucket[bucketId].bucket_name
+        bucketIds = allowed.get('bucketIds')
+
+        if bucketIds is not None:
+            allowed['bucketNames'] = []
+            for _id in bucketIds:
+                if _id in self.bucket_id_to_bucket:
+                    allowed['bucketNames'].append(self.bucket_id_to_bucket[_id].bucket_name)
+                else:
+                    allowed['bucketNames'].append(None)
         else:
-            allowed['bucketName'] = None
+            allowed['bucketNames'] = None
+
         return dict(
             accountId=key_sim.account_id,
             authorizationToken=auth_token,
@@ -1420,8 +1425,8 @@ class RawSimulator(AbstractRawApi):
                     absoluteMinimumPartSize=self.MIN_PART_SIZE,
                     allowed=allowed,
                     s3ApiUrl=self.S3_API_URL,
-                    bucketId=allowed['bucketId'],
-                    bucketName=allowed['bucketName'],
+                    bucketIds=allowed['bucketIds'],
+                    bucketNames=allowed['bucketNames'],
                     capabilities=allowed['capabilities'],
                     namePrefix=allowed['namePrefix'],
                 ),

@@ -634,7 +634,7 @@ class B2Api(metaclass=B2TraceMeta):
 
         :raises b2sdk.v2.exception.RestrictedBucket: if the account is not allowed to use this bucket
         """
-        self._check_bucket_restrictions('bucketName', bucket_name)
+        self._check_bucket_restrictions('bucketNames', bucket_name)
 
     def check_bucket_id_restrictions(self, bucket_id: str):
         """
@@ -645,15 +645,14 @@ class B2Api(metaclass=B2TraceMeta):
 
         :raises b2sdk.v2.exception.RestrictedBucket: if the account is not allowed to use this bucket
         """
-        self._check_bucket_restrictions('bucketId', bucket_id)
+        self._check_bucket_restrictions('bucketIds', bucket_id)
 
     def _check_bucket_restrictions(self, key, value):
         allowed = self.account_info.get_allowed()
         allowed_bucket_identifier = allowed[key]
 
-        if allowed_bucket_identifier is not None:
-            if allowed_bucket_identifier != value:
-                raise RestrictedBucket(allowed_bucket_identifier)
+        if allowed_bucket_identifier and value not in allowed_bucket_identifier:
+            raise RestrictedBucket(allowed_bucket_identifier)
 
     def _populate_bucket_cache_from_key(self):
         # If the key is restricted to the bucket, pre-populate the cache with it
@@ -662,15 +661,16 @@ class B2Api(metaclass=B2TraceMeta):
         except MissingAccountData:
             return
 
-        allowed_bucket_id = allowed.get('bucketId')
-        if allowed_bucket_id is None:
+        allowed_bucket_ids = allowed.get('bucketIds')
+        if not allowed_bucket_ids:
             return
 
-        allowed_bucket_name = allowed.get('bucketName')
+        allowed_bucket_names = allowed.get('bucketNames')
 
         # If we have bucketId set we still need to check bucketName. If the bucketName is None,
         # it means that the bucketId belongs to a bucket that was already removed.
-        if allowed_bucket_name is None:
-            raise RestrictedBucketMissing()
+        if None in allowed_bucket_names:
+            raise RestrictedBucketMissing
 
-        self.cache.save_bucket(self.BUCKET_CLASS(self, allowed_bucket_id, name=allowed_bucket_name))
+        for _id, name in zip(allowed_bucket_ids, allowed_bucket_names):
+            self.cache.save_bucket(self.BUCKET_CLASS(self, _id, name=name))

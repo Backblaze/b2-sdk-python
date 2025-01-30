@@ -13,7 +13,12 @@ from typing import Generator
 from b2sdk import _v3 as v3
 from b2sdk._v3.exception import BucketIdNotFound as v3BucketIdNotFound
 from .bucket import Bucket, BucketFactory
-from .exception import BucketIdNotFound
+from .exception import (
+    BucketIdNotFound,
+    RestrictedBucket,
+    RestrictedBucketMissing,
+    MissingAccountData,
+)
 from .session import B2Session
 from .transfer import DownloadManager, UploadManager
 from .file_version import FileVersionFactory
@@ -98,3 +103,37 @@ class B2Api(v3.B2Api):
 
     def get_key(self, key_id: str) -> ApplicationKey | None:  # type: ignore
         return super().get_key(key_id)  # type: ignore
+
+    def check_bucket_name_restrictions(self, bucket_name: str):
+        self._check_bucket_restrictions('bucketName', bucket_name)
+
+    def check_bucket_id_restrictions(self, bucket_id: str):
+        self._check_bucket_restrictions('bucketId', bucket_id)
+
+    def _check_bucket_restrictions(self, key, value):
+        allowed = self.account_info.get_allowed()
+        allowed_bucket_identifier = allowed[key]
+
+        if allowed_bucket_identifier is not None:
+            if allowed_bucket_identifier != value:
+                raise RestrictedBucket(allowed_bucket_identifier)
+
+    def _populate_bucket_cache_from_key(self):
+        # If the key is restricted to the bucket, pre-populate the cache with it
+        try:
+            allowed = self.account_info.get_allowed()
+        except MissingAccountData:
+            return
+
+        allowed_bucket_id = allowed.get('bucketId')
+        if allowed_bucket_id is None:
+            return
+
+        allowed_bucket_name = allowed.get('bucketName')
+
+        # If we have bucketId set we still need to check bucketName. If the bucketName is None,
+        # it means that the bucketId belongs to a bucket that was already removed.
+        if allowed_bucket_name is None:
+            raise RestrictedBucketMissing()
+
+        self.cache.save_bucket(self.BUCKET_CLASS(self, allowed_bucket_id, name=allowed_bucket_name))

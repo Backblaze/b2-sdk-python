@@ -278,3 +278,39 @@ class RawSimulator(v3.RawSimulator):
         if key_sim.name_prefix_or_none is not None:
             if file_name is not None and not file_name.startswith(key_sim.name_prefix_or_none):
                 raise Unauthorized('', 'unauthorized')
+
+    def authorize_account(self, realm_url, application_key_id, application_key):
+        key_sim = self.key_id_to_key.get(application_key_id)
+        if key_sim is None:
+            raise InvalidAuthToken('application key ID not valid', 'unauthorized')
+        if application_key != key_sim.key:
+            raise InvalidAuthToken('secret key is wrong', 'unauthorized')
+        auth_token = 'auth_token_%d' % (self.auth_token_counter,)
+        self.current_token = auth_token
+        self.auth_token_counter += 1
+        self.auth_token_to_key[auth_token] = key_sim
+        allowed = key_sim.get_allowed()
+        bucketId = allowed.get('bucketId')
+        if (bucketId is not None) and (bucketId in self.bucket_id_to_bucket):
+            allowed['bucketName'] = self.bucket_id_to_bucket[bucketId].bucket_name
+        else:
+            allowed['bucketName'] = None
+        return dict(
+            accountId=key_sim.account_id,
+            authorizationToken=auth_token,
+            apiInfo=dict(
+                groupsApi=dict(),
+                storageApi=dict(
+                    apiUrl=self.API_URL,
+                    downloadUrl=self.DOWNLOAD_URL,
+                    recommendedPartSize=self.MIN_PART_SIZE,
+                    absoluteMinimumPartSize=self.MIN_PART_SIZE,
+                    allowed=allowed,
+                    s3ApiUrl=self.S3_API_URL,
+                    bucketId=allowed['bucketId'],
+                    bucketName=allowed['bucketName'],
+                    capabilities=allowed['capabilities'],
+                    namePrefix=allowed['namePrefix'],
+                ),
+            ),
+        )

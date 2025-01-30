@@ -118,14 +118,7 @@ class B2Session:
         account_id = response['accountId']
         storage_api_info = response['apiInfo']['storageApi']
 
-        # `allowed` object has been deprecated in the v3 of the API, but we still
-        # construct it artificially to avoid changes in all the reliant parts.
-        allowed = {
-            'bucketId': storage_api_info['bucketId'],
-            'bucketName': storage_api_info['bucketName'],
-            'capabilities': storage_api_info['capabilities'],
-            'namePrefix': storage_api_info['namePrefix'],
-        }
+        allowed = self._construct_allowed_dict(storage_api_info)
 
         # Clear the cache if new account has been used
         if not self.account_info.is_same_account(account_id, realm):
@@ -145,6 +138,17 @@ class B2Session:
             allowed=allowed,
             application_key_id=application_key_id,
         )
+
+    def _construct_allowed_dict(self, storage_api_info):
+        # `allowed` object has been deprecated in the v3 of the API, but we still
+        # construct it artificially to avoid changes in all the reliant parts.
+
+        return {
+            'bucketIds': storage_api_info['bucketIds'],
+            'bucketNames': storage_api_info['bucketNames'],
+            'capabilities': storage_api_info['capabilities'],
+            'namePrefix': storage_api_info['namePrefix'],
+        }
 
     def cancel_large_file(self, file_id):
         return self._wrap_default_token(self.raw_api.cancel_large_file, file_id)
