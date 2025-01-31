@@ -13,6 +13,8 @@ from abc import abstractmethod
 from b2sdk import _v3 as v3
 from b2sdk.v2._compat import _file_infos_rename
 
+API_VERSION = 'v3'
+
 
 class _OldRawAPI:
     """RawAPI compatibility layer"""
@@ -93,6 +95,9 @@ class _OldRawAPI:
             **kwargs,
         )
 
+    def get_download_url_by_id(self, download_url, file_id):
+        return f'{download_url}/b2api/{API_VERSION}/b2_download_file_by_id?fileId={file_id}'
+
 
 class AbstractRawApi(_OldRawAPI, v3.AbstractRawApi):
     @abstractmethod
@@ -111,6 +116,8 @@ class AbstractRawApi(_OldRawAPI, v3.AbstractRawApi):
 
 
 class B2RawHTTPApi(_OldRawAPI, v3.B2RawHTTPApi):
+    API_VERSION = API_VERSION
+
     def create_key(
         self,
         api_url,

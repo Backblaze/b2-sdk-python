@@ -79,7 +79,7 @@ ALL_CAPABILITIES = [
 ]
 
 # API version number to use when calling the service
-API_VERSION = 'v3'
+API_VERSION = 'v4'
 
 logger = getLogger(__name__)
 
@@ -537,6 +537,8 @@ class B2RawHTTPApi(AbstractRawApi):
     And this class can be tested by exercising each call just once,
     which is relatively quick.
     """
+
+    API_VERSION = API_VERSION
 
     def __init__(self, b2_http):
         self.b2_http = b2_http

@@ -19,6 +19,7 @@ from .exception import (
     RestrictedBucketMissing,
     MissingAccountData,
 )
+from .raw_api import API_VERSION as RAW_API_VERSION
 from .session import B2Session
 from .transfer import DownloadManager, UploadManager
 from .file_version import FileVersionFactory
@@ -44,6 +45,7 @@ class B2Api(v3.B2Api):
     FILE_VERSION_FACTORY_CLASS = staticmethod(FileVersionFactory)
     APPLICATION_KEY_CLASS = ApplicationKey  # type: ignore
     FULL_APPLICATION_KEY_CLASS = FullApplicationKey  # type: ignore
+    API_VERSION = RAW_API_VERSION
 
     # Legacy init in case something depends on max_workers defaults = 10
     def __init__(self, *args, **kwargs):
