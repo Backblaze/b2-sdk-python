@@ -514,7 +514,7 @@ class B2Api(metaclass=B2TraceMeta):
         capabilities: list[str],
         key_name: str,
         valid_duration_seconds: int | None = None,
-        bucket_id: str | None = None,
+        bucket_ids: list[str] | None = None,
         name_prefix: str | None = None,
     ) -> FullApplicationKey:
         """
@@ -533,7 +533,7 @@ class B2Api(metaclass=B2TraceMeta):
             capabilities=capabilities,
             key_name=key_name,
             valid_duration_seconds=valid_duration_seconds,
-            bucket_id=bucket_id,
+            bucket_ids=bucket_ids,
             name_prefix=name_prefix,
         )
 

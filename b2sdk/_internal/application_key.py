@@ -9,8 +9,6 @@
 ######################################################################
 from __future__ import annotations
 
-from typing import Iterable
-
 
 class BaseApplicationKey:
     """Common methods for ApplicationKey and FullApplicationKey."""
@@ -22,7 +20,7 @@ class BaseApplicationKey:
         capabilities: list[str],
         account_id: str,
         expiration_timestamp_millis: int | None = None,
-        bucket_ids: Iterable[str] | None = None,
+        bucket_ids: list[str] | None = None,
         name_prefix: str | None = None,
         options: list[str] | None = None,
     ):
@@ -41,7 +39,7 @@ class BaseApplicationKey:
         self.capabilities = capabilities
         self.account_id = account_id
         self.expiration_timestamp_millis = expiration_timestamp_millis
-        self.bucket_ids = list(bucket_ids) if bucket_ids else []
+        self.bucket_ids = bucket_ids
         self.name_prefix = name_prefix
         self.options = options
 
@@ -109,7 +107,7 @@ class FullApplicationKey(BaseApplicationKey):
         capabilities: list[str],
         account_id: str,
         expiration_timestamp_millis: int | None = None,
-        bucket_ids: Iterable[str] | None = None,
+        bucket_ids: list[str] | None = None,
         name_prefix: str | None = None,
         options: list[str] | None = None,
     ):

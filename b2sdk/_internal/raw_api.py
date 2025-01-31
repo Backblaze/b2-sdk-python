@@ -253,7 +253,7 @@ class AbstractRawApi(metaclass=ABCMeta):
         capabilities,
         key_name,
         valid_duration_seconds,
-        bucket_id,
+        bucket_ids,
         name_prefix,
     ):
         pass
@@ -619,7 +619,7 @@ class B2RawHTTPApi(AbstractRawApi):
         capabilities,
         key_name,
         valid_duration_seconds,
-        bucket_id,
+        bucket_ids,
         name_prefix,
     ):
         return self._post_json(
@@ -630,7 +630,7 @@ class B2RawHTTPApi(AbstractRawApi):
             capabilities=capabilities,
             keyName=key_name,
             validDurationInSeconds=valid_duration_seconds,
-            bucketId=bucket_id,
+            bucketIds=bucket_ids,
             namePrefix=name_prefix,
         )
 

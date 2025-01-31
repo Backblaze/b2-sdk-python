@@ -53,11 +53,36 @@ def create_key(
         capabilities=capabilities,
         key_name=key_name,
         valid_duration_seconds=valid_duration_seconds,
-        bucket_id=bucket_id,
         name_prefix=name_prefix,
     )
+
+    if apiver_deps.V >= 3:
+        kwargs['bucket_ids'] = [bucket_id] if bucket_id else None
+    else:
+        kwargs['bucket_id'] = bucket_id
 
     result = api.create_key(**kwargs)
     if apiver_deps.V <= 1:
         return FullApplicationKey.from_create_response(result)
     return result
+
+
+def create_key_multibucket(
+    api: B2Api,
+    capabilities: list[str],
+    key_name: str,
+    valid_duration_seconds: int | None = None,
+    bucket_ids: list[str] | None = None,
+    name_prefix: str | None = None,
+) -> FullApplicationKey:
+    """Create a multi-bucket key"""
+    if apiver_deps.V < 3:
+        raise RuntimeError('Multibucket keys are only available in apiver >= 3')
+
+    return api.create_key(
+        capabilities=capabilities,
+        key_name=key_name,
+        valid_duration_seconds=valid_duration_seconds,
+        bucket_ids=bucket_ids,
+        name_prefix=name_prefix,
+    )

@@ -36,7 +36,7 @@ from apiver_deps import (
 )
 from apiver_deps_exception import AccessDenied, FileNotPresent, InvalidArgument, RestrictedBucket
 
-from ..test_base import create_key
+from ..test_base import create_key, create_key_multibucket
 
 if apiver_deps.V <= 1:
     from apiver_deps import FileVersionInfo as VFileVersion
@@ -385,6 +385,24 @@ class TestApi:
         )
         assert [b.name for b in self.api.list_buckets(bucket_name=bucket1.name)] == ['bucket1']
 
+    @pytest.mark.apiver(from_ver=3)
+    @pytest.mark.xfail(reason='needs new authorize_account flow for multi-bucket keys')
+    def test_list_buckets_with_restriction_multi_bucket(self):
+        self._authorize_account()
+        bucket1 = self.api.create_bucket('bucket1', 'allPrivate')
+        bucket2 = self.api.create_bucket('bucket2', 'allPrivate')
+        self.api.create_bucket('bucket3', 'allPrivate')
+        key = create_key_multibucket(
+            self.api, ['listBuckets'], 'key1', bucket_ids=[bucket1.id_, bucket2.id_]
+        )
+        self.api.authorize_account(
+            application_key_id=key.id_,
+            application_key=key.application_key,
+            realm='production',
+        )
+        assert [b.name for b in self.api.list_buckets(bucket_name=bucket1.name)] == ['bucket1']
+        assert [b.name for b in self.api.list_buckets(bucket_name=bucket2.name)] == ['bucket2']
+
     def test_get_bucket_by_name_with_bucket_restriction(self):
         self._authorize_account()
         bucket1 = self.api.create_bucket('bucket1', 'allPrivate')
@@ -580,6 +598,35 @@ class TestApi:
         delete_result = self.api.delete_key_by_id(create_result.id_)
         self.assertDeleteAndCreateResult(create_result, delete_result)
 
+    @pytest.mark.apiver(from_ver=3)
+    def test_create_and_delete_key_v3(self):
+        self._authorize_account()
+        bucket1 = self.api.create_bucket('bucket1', 'allPrivate')
+        bucket2 = self.api.create_bucket('bucket2', 'allPrivate')
+        now = time.time()
+        create_result = self.api.create_key(
+            ['readFiles'],
+            'testkey',
+            valid_duration_seconds=100,
+            bucket_ids=[bucket1.id_, bucket2.id_],
+            name_prefix='name',
+        )
+        assert isinstance(create_result, FullApplicationKey)
+        assert create_result.key_name == 'testkey'
+        assert create_result.capabilities == ['readFiles']
+        assert create_result.account_id == self.account_info.get_account_id()
+        assert (
+            (now + 100 - 10) * 1000
+            < create_result.expiration_timestamp_millis
+            < (now + 100 + 10) * 1000
+        )
+        assert create_result.bucket_ids == [bucket1.id_, bucket2.id_]
+        assert create_result.name_prefix == 'name'
+        # assert create_result.options == ...  TODO
+
+        delete_result = self.api.delete_key(create_result)
+        self.assertDeleteAndCreateResult(create_result, delete_result)
+
     def assertDeleteAndCreateResult(self, create_result, delete_result):
         if apiver_deps.V <= 1:
             create_result.pop('applicationKey')
@@ -593,7 +640,10 @@ class TestApi:
                 delete_result.expiration_timestamp_millis
                 == create_result.expiration_timestamp_millis
             )
-            assert delete_result.bucket_id == create_result.bucket_id
+            if apiver_deps.V < 3:
+                assert delete_result.bucket_id == create_result.bucket_id
+            else:
+                assert delete_result.bucket_ids == create_result.bucket_ids
             assert delete_result.name_prefix == create_result.name_prefix
 
     @pytest.mark.apiver(to_ver=1)

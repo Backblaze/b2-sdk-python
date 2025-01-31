@@ -175,7 +175,7 @@ class B2Session:
         )
 
     def create_key(
-        self, account_id, capabilities, key_name, valid_duration_seconds, bucket_id, name_prefix
+        self, account_id, capabilities, key_name, valid_duration_seconds, bucket_ids, name_prefix
     ):
         return self._wrap_default_token(
             self.raw_api.create_key,
@@ -183,7 +183,7 @@ class B2Session:
             capabilities,
             key_name,
             valid_duration_seconds,
-            bucket_id,
+            bucket_ids,
             name_prefix,
         )
 

@@ -33,6 +33,19 @@ class B2Session(v3.B2Session):
             cache = _cache.DummyCache()
         super().__init__(account_info, cache, api_config)
 
+    def create_key(
+        self, account_id, capabilities, key_name, valid_duration_seconds, bucket_id, name_prefix
+    ):
+        return self._wrap_default_token(
+            self.raw_api.create_key,
+            account_id,
+            capabilities,
+            key_name,
+            valid_duration_seconds,
+            bucket_id,
+            name_prefix,
+        )
+
     @_file_infos_rename
     def upload_file(
         self,

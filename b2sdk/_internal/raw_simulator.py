@@ -17,7 +17,7 @@ import random
 import re
 import threading
 import time
-from contextlib import contextmanager, suppress
+from contextlib import contextmanager
 from typing import Iterable
 
 from requests.structures import CaseInsensitiveDict
@@ -109,8 +109,8 @@ class KeySimulator:
         self.key = key
         self.capabilities = capabilities
         self.expiration_timestamp_or_none = expiration_timestamp_or_none
-        self.bucket_ids_or_none = list(bucket_ids_or_none) if bucket_ids_or_none else []
-        self.bucket_names_or_none = list(bucket_names_or_none) if bucket_names_or_none else []
+        self.bucket_ids_or_none = bucket_ids_or_none
+        self.bucket_names_or_none = bucket_names_or_none
         self.name_prefix_or_none = name_prefix_or_none
 
     def as_key(self):
@@ -1480,7 +1480,7 @@ class RawSimulator(AbstractRawApi):
         capabilities,
         key_name,
         valid_duration_seconds,
-        bucket_id,
+        bucket_ids,
         name_prefix,
     ):
         if not re.match(r'^[A-Za-z0-9-]{1,100}$', key_name):
@@ -1501,15 +1501,16 @@ class RawSimulator(AbstractRawApi):
         self.app_key_counter += 1
         application_key_id = 'appKeyId%d' % (index,)
         app_key = 'appKey%d' % (index,)
-        bucket_name_or_none = None
-        if bucket_id is not None:
+        bucket_names_or_none = None
+        if bucket_ids is not None:
             # It is possible for bucketId to be filled and bucketName to be empty.
             # It can happen when the bucket was deleted.
-            with suppress(NonExistentBucket):
-                bucket_name_or_none = self._get_bucket_by_id(bucket_id).bucket_name
-
-        bucket_ids_or_none = [bucket_id] if bucket_id else None
-        bucket_names_or_none = [bucket_name_or_none] if bucket_name_or_none else None
+            bucket_names_or_none = []
+            for _id in bucket_ids:
+                try:
+                    bucket_names_or_none.append(self._get_bucket_by_id(_id).bucket_name)
+                except NonExistentBucket:
+                    bucket_names_or_none.append(None)
 
         key_sim = KeySimulator(
             account_id=account_id,
@@ -1518,7 +1519,7 @@ class RawSimulator(AbstractRawApi):
             key=app_key,
             capabilities=capabilities,
             expiration_timestamp_or_none=expiration_timestamp_or_none,
-            bucket_ids_or_none=bucket_ids_or_none,
+            bucket_ids_or_none=bucket_ids,
             bucket_names_or_none=bucket_names_or_none,
             name_prefix_or_none=name_prefix,
         )
