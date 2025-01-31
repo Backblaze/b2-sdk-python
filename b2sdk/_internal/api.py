@@ -37,7 +37,8 @@ from .file_version import (
 )
 from .large_file.services import LargeFileServices
 from .progress import AbstractProgressListener
-from .raw_api import API_VERSION, LifecycleRule
+from .raw_api import API_VERSION as RAW_API_VERSION
+from .raw_api import LifecycleRule
 from .replication.setting import ReplicationConfiguration
 from .session import B2Session
 from .transfer import (
@@ -50,21 +51,6 @@ from .transfer.inbound.downloaded_file import DownloadedFile
 from .utils import B2TraceMeta, b2_url_encode, limit_trace_arguments
 
 logger = logging.getLogger(__name__)
-
-
-def url_for_api(info, api_name):
-    """
-    Return URL for an API endpoint.
-
-    :param info: account info
-    :param str api_nam:
-    :rtype: str
-    """
-    if api_name in ['b2_download_file_by_id']:
-        base = info.get_download_url()
-    else:
-        base = info.get_api_url()
-    return f'{base}/b2api/{API_VERSION}/{api_name}'
 
 
 class Services:
@@ -144,6 +130,7 @@ class B2Api(metaclass=B2TraceMeta):
     APPLICATION_KEY_CLASS = ApplicationKey
     FULL_APPLICATION_KEY_CLASS = FullApplicationKey
     DEFAULT_LIST_KEY_COUNT = 1000
+    API_VERSION = RAW_API_VERSION
 
     def __init__(
         self,
@@ -486,6 +473,21 @@ class B2Api(metaclass=B2TraceMeta):
         response = self.session.delete_file_version(file_id, file_name, bypass_governance)
         return FileIdAndName.from_cancel_or_delete_response(response)
 
+    @classmethod
+    def _get_url_for_api(cls, info, api_name) -> str:
+        """
+        Return URL for an API endpoint.
+
+        :param info: account info
+        :param str api_nam:
+        :rtype: str
+        """
+        if api_name in ['b2_download_file_by_id']:
+            base = info.get_download_url()
+        else:
+            base = info.get_api_url()
+        return f'{base}/b2api/{cls.API_VERSION}/{api_name}'
+
     # download
     def get_download_url_for_fileid(self, file_id):
         """
@@ -493,7 +495,7 @@ class B2Api(metaclass=B2TraceMeta):
 
         :param str file_id: a file ID
         """
-        url = url_for_api(self.account_info, 'b2_download_file_by_id')
+        url = self._get_url_for_api(self.account_info, 'b2_download_file_by_id')
         return f'{url}?fileId={file_id}'
 
     def get_download_url_for_file_name(self, bucket_name, file_name):
