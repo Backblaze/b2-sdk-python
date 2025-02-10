@@ -73,9 +73,22 @@ class RetentionPeriod:
 
 
 class FileRetentionSetting:
-    """Represent file retention settings, i.e. whether the file is retained, in which mode and until when"""
+    """
+    Represent file retention settings, i.e. whether the file is retained, in which mode and until when
+
+    :param mode: retention mode
+    :type mode: RetentionMode
+    :param retain_until: retain until timestamp (in milliseconds since :abbr:`epoch (1970-01-01 00:00:00)`)
+    :type retain_until: int
+    """
 
     def __init__(self, mode: RetentionMode, retain_until: int | None = None):
+        """
+        :param mode: retention mode
+        :type mode: RetentionMode
+        :param retain_until: retain until timestamp (in milliseconds since :abbr:`epoch (1970-01-01 00:00:00)`)
+        :type retain_until: int
+        """
         if mode in RETENTION_MODES_REQUIRING_PERIODS and retain_until is None:
             raise ValueError(f'must specify retain_until for retention mode {mode}')
         self.mode = mode
