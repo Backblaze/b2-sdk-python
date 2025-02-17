@@ -9,10 +9,10 @@
 ######################################################################
 from __future__ import annotations
 
-from b2sdk._v3 import *  # noqa
-from b2sdk._v3 import parse_folder as parse_sync_folder
-from b2sdk._v3 import AbstractPath as AbstractSyncPath
-from b2sdk._v3 import LocalPath as LocalSyncPath
+from b2sdk.v3 import *  # noqa
+from b2sdk.v3 import parse_folder as parse_sync_folder
+from b2sdk.v3 import AbstractPath as AbstractSyncPath
+from b2sdk.v3 import LocalPath as LocalSyncPath
 from b2sdk._internal.utils.escape import (
     unprintable_to_hex,
     escape_control_chars,

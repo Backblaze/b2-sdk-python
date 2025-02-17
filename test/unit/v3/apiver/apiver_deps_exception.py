@@ -9,4 +9,4 @@
 ######################################################################
 from __future__ import annotations
 
-from b2sdk._v3.exception import *  # noqa
+from b2sdk.v3.exception import *  # noqa

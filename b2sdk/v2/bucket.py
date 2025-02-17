@@ -11,8 +11,8 @@ from __future__ import annotations
 
 import typing
 
-from b2sdk import _v3 as v3
-from b2sdk._v3.exception import BucketIdNotFound as v3BucketIdNotFound
+from b2sdk import v3
+from b2sdk.v3.exception import BucketIdNotFound as v3BucketIdNotFound
 from b2sdk.v2._compat import _file_infos_rename
 from b2sdk._internal.http_constants import LIST_FILE_NAMES_MAX_LIMIT
 from .exception import BucketIdNotFound

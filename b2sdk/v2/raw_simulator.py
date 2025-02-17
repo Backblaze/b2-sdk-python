@@ -12,7 +12,7 @@ import re
 import time
 from contextlib import suppress
 
-from b2sdk import _v3 as v3
+from b2sdk import v3
 from b2sdk.v2._compat import _file_infos_rename
 
 from b2sdk.v2.exception import BadJson, NonExistentBucket, InvalidAuthToken, Unauthorized

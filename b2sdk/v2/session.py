@@ -9,7 +9,7 @@
 ######################################################################
 from __future__ import annotations
 
-from b2sdk import _v3 as v3
+from b2sdk import v3
 from .b2http import B2Http
 
 from ._compat import _file_infos_rename

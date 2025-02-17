@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import json
 
-from b2sdk import _v3
+from b2sdk import v3
 from .exception import MissingAccountData
 
 
@@ -19,7 +19,7 @@ class _OldAllowedMixin:
     DEFAULT_ALLOWED = dict(
         bucketId=None,
         bucketName=None,
-        capabilities=_v3.ALL_CAPABILITIES,
+        capabilities=v3.ALL_CAPABILITIES,
         namePrefix=None,
     )
 
@@ -34,20 +34,20 @@ class _OldAllowedMixin:
         )
 
 
-class AbstractAccountInfo(_OldAllowedMixin, _v3.AbstractAccountInfo):
+class AbstractAccountInfo(_OldAllowedMixin, v3.AbstractAccountInfo):
     def list_bucket_names_ids(self):
         return []  # Removed @abstractmethod decorator
 
 
-class UrlPoolAccountInfo(_OldAllowedMixin, _v3.UrlPoolAccountInfo):
+class UrlPoolAccountInfo(_OldAllowedMixin, v3.UrlPoolAccountInfo):
     pass
 
 
-class InMemoryAccountInfo(_OldAllowedMixin, _v3.InMemoryAccountInfo):
+class InMemoryAccountInfo(_OldAllowedMixin, v3.InMemoryAccountInfo):
     pass
 
 
-class SqliteAccountInfo(_OldAllowedMixin, _v3.SqliteAccountInfo):
+class SqliteAccountInfo(_OldAllowedMixin, v3.SqliteAccountInfo):
     def get_allowed(self):
         """
         Return 'allowed' dictionary info.
@@ -92,5 +92,5 @@ class SqliteAccountInfo(_OldAllowedMixin, _v3.SqliteAccountInfo):
         return allowed
 
 
-class StubAccountInfo(_OldAllowedMixin, _v3.StubAccountInfo):
+class StubAccountInfo(_OldAllowedMixin, v3.StubAccountInfo):
     pass

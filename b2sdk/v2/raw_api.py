@@ -10,7 +10,7 @@
 from __future__ import annotations
 from abc import abstractmethod
 
-from b2sdk import _v3 as v3
+from b2sdk import v3
 from b2sdk.v2._compat import _file_infos_rename
 
 API_VERSION = 'v3'

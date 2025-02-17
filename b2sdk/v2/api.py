@@ -10,8 +10,8 @@
 from __future__ import annotations
 from typing import Generator
 
-from b2sdk import _v3 as v3
-from b2sdk._v3.exception import BucketIdNotFound as v3BucketIdNotFound
+from b2sdk import v3
+from b2sdk.v3.exception import BucketIdNotFound as v3BucketIdNotFound
 from .bucket import Bucket, BucketFactory
 from .exception import (
     BucketIdNotFound,

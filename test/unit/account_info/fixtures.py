@@ -13,8 +13,8 @@ import pytest
 from apiver_deps import InMemoryAccountInfo, SqliteAccountInfo
 from pytest_lazy_fixtures import lf
 
-from b2sdk._v3 import SqliteAccountInfo as V3SqliteAccountInfo
 from b2sdk.v2 import SqliteAccountInfo as V2SqliteAccountInfo
+from b2sdk.v3 import SqliteAccountInfo as V3SqliteAccountInfo
 
 
 @pytest.fixture

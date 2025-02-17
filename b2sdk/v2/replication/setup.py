@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from b2sdk._internal.replication.setup import *  # noqa
 
-from b2sdk import _v3 as v3
+from b2sdk import v3 as v3
 
 from ..bucket import Bucket
 

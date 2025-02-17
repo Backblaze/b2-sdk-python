@@ -14,7 +14,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from b2sdk import _v3 as v3
+from b2sdk import v3
 from test.helpers import patch_bind_params
 
 
