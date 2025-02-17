@@ -24,8 +24,8 @@ Therefore when setting up **b2sdk** as a dependency, please make sure to match t
 Interface versions
 ******************
 
-You might notice that the import structure provided in the documentation looks a little odd: ``from b2sdk.v2 import ...``.
-The ``.v2`` part is used to keep the interface fluid without risk of breaking applications that use the old signatures.
+You might notice that the import structure provided in the documentation looks a little odd: ``from b2sdk.v3 import ...``.
+The ``.v3`` part is used to keep the interface fluid without risk of breaking applications that use the old signatures.
 With new versions, **b2sdk** will provide functions with signatures matching the old ones, wrapping the new interface in place of the old one. What this means for a developer using **b2sdk**, is that it will just keep working. We have already deleted some legacy functions when moving from ``.v0`` to ``.v1``, providing equivalent wrappers to reduce the migration effort for applications using pre-1.0 versions of **b2sdk** to fixing imports.
 
 It also means that **b2sdk** developers may change the interface in the future and will not need to maintain many branches and backport fixes to keep compatibility of for users of those old branches.
@@ -41,7 +41,7 @@ A :term:`numbered interface<b2sdk interface version>` will not be exactly identi
 Exceptions
 ==========
 
-The exception hierarchy may change in a backwards compatible manner and the developer must anticipate it. For example, if ``b2sdk.v2.ExceptionC`` inherits directly from ``b2sdk.v2.ExceptionA``, it may one day inherit from ``b2sdk.v2.ExceptionB``, which in turn inherits from ``b2sdk.v2.ExceptionA``. Normally this is not a problem if you use ``isinstance()`` and ``super()`` properly, but your code should not call the constructor of a parent class by directly naming it or it might skip the middle class of the hierarchy (``ExceptionB`` in this example).
+The exception hierarchy may change in a backwards compatible manner and the developer must anticipate it. For example, if ``b2sdk.v3.ExceptionC`` inherits directly from ``b2sdk.v3.ExceptionA``, it may one day inherit from ``b2sdk.v3.ExceptionB``, which in turn inherits from ``b2sdk.v3.ExceptionA``. Normally this is not a problem if you use ``isinstance()`` and ``super()`` properly, but your code should not call the constructor of a parent class by directly naming it or it might skip the middle class of the hierarchy (``ExceptionB`` in this example).
 
 Extensions
 ==========
