@@ -274,6 +274,12 @@ class DownloadedFile:
             try:
                 with context as file:
                     return self.save(file, allow_seeking=allow_seeking)
+            except BrokenPipeError as ex:
+                if is_stdout:
+                    # Output was likely piped through a command such as head. Just ignore the error
+                    return
+                else:
+                    raise ex
             finally:
                 if not is_stdout:
                     set_file_mtime(path_, self.download_version.mod_time_millis)
