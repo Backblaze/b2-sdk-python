@@ -176,26 +176,51 @@ class EmergePlanner(object):
                     missing_length = min_part_size - upload_buffer.length
                 else:
                     missing_length = 0
-                if missing_length > 0 and current_len - missing_length < min_part_size:
-                    # current intent is *not* a "small copy", but upload buffer is small
-                    # and current intent is too short with the buffer to reach the minimum part size
-                    # so we append current intent to upload buffer
-                    upload_buffer.append(current_intent, current_end)
-                else:
-                    if missing_length > 0:
-                        # we "borrow" a fragment of current intent to upload buffer
-                        # to fill it to minimum part size
-                        upload_buffer.append(
-                            current_intent, upload_buffer.end_offset + missing_length
-                        )
-                    # completely flush the upload buffer
+                if missing_length > 0 and (current_len - missing_length) >= min_part_size:
+                    # we borrow exact size of missing_length bytes, to fill the buffer
+                    borrow_end = upload_buffer.end_offset + missing_length
+                    upload_buffer.append(current_intent, borrow_end)
+                    # then we flush the upload buffer
                     for upload_buffer_part in self._buff_split(upload_buffer):
                         yield self._get_upload_part(upload_buffer_part)
-                    # split current intent (copy source) to parts and yield
+                    # then we calculate the rest of current intent
+                    remaining_length = current_end - borrow_end
+                    start_offset = borrow_end
+                    # split current intent to the parts as long as
+                    # the remaining part is larger than min_part_size and yield
+                    while remaining_length >= min_part_size:
+                        part_end = start_offset + min_part_size
+                        copy_parts = self._get_copy_parts(
+                            current_intent,
+                            start_offset=start_offset,
+                            end_offset=part_end
+                        )
+                        for part in copy_parts:
+                            yield part
+                        start_offset = part_end
+                        remaining_length = current_end - start_offset
+                    # we add the last part less than min_part_size to the upload buffer
+                    if remaining_length > 0:
+                        upload_buffer = UploadBuffer(start_offset)
+                        upload_buffer.append(current_intent, current_end)
+                        for upload_buffer_part in self._buff_split(upload_buffer):
+                            yield self._get_upload_part(upload_buffer_part)
+                        upload_buffer = UploadBuffer(current_end)
+                    else:
+                        upload_buffer = UploadBuffer(current_end)
+                elif missing_length > 0:
+                        # we "borrow" a fragment of current intent to upload buffer
+                        # to fill it to minimum part size
+                    upload_buffer.append(
+                        current_intent,
+                        current_end
+                    )
+                else:
+                    # if there are no missing bytes then process the copy fragment without spliting
                     copy_parts = self._get_copy_parts(
                         current_intent,
                         start_offset=upload_buffer.end_offset,
-                        end_offset=current_end,
+                        end_offset=current_end
                     )
                     for part in copy_parts:
                         yield part
