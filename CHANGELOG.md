@@ -9,6 +9,18 @@ upcoming release can be found in [changelog.d](changelog.d).
 
 <!-- towncrier release notes start -->
 
+## [2.8.1](https://github.com/Backblaze/b2-sdk-python/releases/tag/v2.8.1) - 2025-04-24
+
+
+### Fixed
+
+- Fix TimeoutError handling in `b2http`.
+
+### Doc
+
+- Document params in FileRetentionSetting class. ([#532](https://github.com/Backblaze/b2-sdk-python/issues/532))
+
+
 ## [2.8.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v2.8.0) - 2025-01-23
 
 
