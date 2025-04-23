@@ -20,6 +20,7 @@ import requests
 from apiver_deps import USER_AGENT, B2Http, B2HttpApiConfig, ClockSkewHook
 from apiver_deps_exception import (
     B2ConnectionError,
+    B2RequestTimeout,
     BadDateFormat,
     BadJson,
     BadRequest,
@@ -78,6 +79,17 @@ class TestTranslateErrors:
             )
 
         with pytest.raises(UnknownHost):
+            B2Http._translate_errors(fcn)
+
+    def test_request_timeout(self):
+        def fcn():
+            raise requests.ConnectionError(
+                requests.packages.urllib3.exceptions.ProtocolError(
+                    'dummy', TimeoutError('The write operation timed out')
+                )
+            )
+
+        with pytest.raises(B2RequestTimeout):
             B2Http._translate_errors(fcn)
 
     def test_connection_error(self):
