@@ -143,12 +143,7 @@ class B2Session:
         # `allowed` object has been deprecated in the v3 of the API, but we still
         # construct it artificially to avoid changes in all the reliant parts.
 
-        return {
-            'bucketIds': storage_api_info['bucketIds'],
-            'bucketNames': storage_api_info['bucketNames'],
-            'capabilities': storage_api_info['capabilities'],
-            'namePrefix': storage_api_info['namePrefix'],
-        }
+        return storage_api_info['allowed']
 
     def cancel_large_file(self, file_id):
         return self._wrap_default_token(self.raw_api.cancel_large_file, file_id)

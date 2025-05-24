@@ -17,9 +17,10 @@ from apiver_deps import ALL_CAPABILITIES, B2RawHTTPApi
 
 @pytest.fixture
 def fake_b2_raw_api_responses(apiver_int):
+    capabilities = copy(ALL_CAPABILITIES)
+    namePrefix = None
+
     storage_api = {
-        'capabilities': copy(ALL_CAPABILITIES),
-        'namePrefix': None,
         'downloadUrl': 'https://f000.backblazeb2.xyz:8180',
         'absoluteMinimumPartSize': 5000000,
         'recommendedPartSize': 100000000,
@@ -30,17 +31,18 @@ def fake_b2_raw_api_responses(apiver_int):
     if apiver_int < 3:
         storage_api.update(
             {
+                'capabilities': capabilities,
+                'namePrefix': namePrefix,
                 'bucketId': None,
                 'bucketName': None,
             }
         )
     else:
-        storage_api.update(
-            {
-                'bucketIds': None,
-                'bucketNames': None,
-            }
-        )
+        storage_api['allowed'] = {
+            'buckets': None,
+            'capabilities': capabilities,
+            'namePrefix': namePrefix,
+        }
 
     return {
         'authorize_account': {

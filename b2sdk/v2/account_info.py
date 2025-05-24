@@ -77,17 +77,15 @@ class SqliteAccountInfo(_OldAllowedMixin, v3.SqliteAccountInfo):
 
         # convert a multi-bucket key to a single bucket
 
-        if 'bucketIds' in allowed:
-            bucket_ids = allowed.pop('bucketIds')
-            if bucket_ids and len(bucket_ids) > 1:
+        if 'buckets' in allowed:
+            buckets = allowed.pop('buckets')
+            if buckets and len(buckets) > 1:
                 raise MissingAccountData(
                     'Multi-bucket keys cannot be used with the current sdk version'
                 )
 
-            allowed['bucketId'] = bucket_ids[0] if bucket_ids else None
-
-            bucket_names = allowed.pop('bucketNames')
-            allowed['bucketName'] = bucket_names[0] if bucket_names else None
+            allowed['bucketId'] = buckets[0]['id'] if buckets else None
+            allowed['bucketName'] = buckets[0]['name'] if buckets else None
 
         return allowed
 

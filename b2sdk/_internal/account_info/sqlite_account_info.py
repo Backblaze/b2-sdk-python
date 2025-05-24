@@ -408,8 +408,10 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
         bucket_id = allowed.pop('bucketId')
         bucket_name = allowed.pop('bucketName')
 
-        allowed['bucketIds'] = [bucket_id] if bucket_id is not None else None
-        allowed['bucketNames'] = [bucket_name] if bucket_name is not None else None
+        if bucket_id is not None:
+            allowed['buckets'] = [{'id': bucket_id, 'name': bucket_name}]
+        else:
+            allowed['buckets'] = None
 
         allowed_text = json.dumps(allowed)
         stmt = f"UPDATE account SET allowed = ('{allowed_text}');"
@@ -590,8 +592,7 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
         .. code-block:: python
 
             {
-                "bucketIds": null,
-                "bucketNames": null,
+                "buckets": null,
                 "capabilities": [
                     "listKeys",
                     "writeKeys"
