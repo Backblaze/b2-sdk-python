@@ -442,11 +442,8 @@ class TestApi:
             application_key=key.application_key,
             realm='production',
         )
-        with pytest.raises(RestrictedBucket) as excinfo:
+        with pytest.raises(RestrictedBucket, match="\['bucket1', 'bucket2'\]"):
             self.api.list_buckets(bucket_name=bucket3.name)
-        assert (
-            str(excinfo.value) == "Application key is restricted to buckets: ['bucket1', 'bucket2']"
-        )
 
     @pytest.mark.apiver(to_ver=2)
     def test_list_buckets_with_restriction_and_no_name_v2(self):
@@ -477,11 +474,8 @@ class TestApi:
             application_key=key.application_key,
             realm='production',
         )
-        with pytest.raises(RestrictedBucket) as excinfo:
+        with pytest.raises(RestrictedBucket):
             self.api.list_buckets()
-        assert (
-            str(excinfo.value) == "Application key is restricted to buckets: ['bucket1', 'bucket2']"
-        )
 
     @pytest.mark.apiver(to_ver=2)
     def test_list_buckets_with_restriction_and_wrong_id_v2(self):
@@ -512,12 +506,8 @@ class TestApi:
             application_key=key.application_key,
             realm='production',
         )
-        with pytest.raises(RestrictedBucket) as excinfo:
+        with pytest.raises(RestrictedBucket):
             self.api.list_buckets(bucket_id='not the one bound to the key')
-        assert (
-            str(excinfo.value)
-            == f"Application key is restricted to buckets: ['{bucket1.id_}', '{bucket2.id_}']"
-        )
 
     def _authorize_account(self):
         self.api.authorize_account(

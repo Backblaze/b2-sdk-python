@@ -89,3 +89,10 @@ class B2Session(v3.B2Session):
             'capabilities': storage_api_info['capabilities'],
             'namePrefix': storage_api_info['namePrefix'],
         }
+
+    def _get_allowed_buckets_message(self, allowed) -> str | None:
+        bucket_name = allowed['bucketName']
+        if bucket_name is None:
+            return None
+
+        return "restricted to bucket '" + bucket_name + "'"

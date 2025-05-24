@@ -106,8 +106,7 @@ class TestDatabseMigrations:
                     namePrefix=None,
                 ),
                 dict(
-                    bucketIds=['123'],
-                    bucketNames=['bucket1'],
+                    buckets=[{'id': '123', 'name': 'bucket1'}],
                     capabilities=['listBuckets', 'readBuckets'],
                     namePrefix=None,
                 ),
@@ -120,8 +119,7 @@ class TestDatabseMigrations:
                     namePrefix=None,
                 ),
                 dict(
-                    bucketIds=None,
-                    bucketNames=None,
+                    buckets=None,
                     capabilities=['listBuckets', 'readBuckets'],
                     namePrefix=None,
                 ),
@@ -153,8 +151,7 @@ class TestDatabseMigrations:
         account_info_default_data,
     ):
         allowed = dict(
-            bucketIds=[1, 2],
-            bucketNames=['bucket1', 'bucket2'],
+            buckets=[{'id': 1, 'name': 'bucket1'}, {'id': 2, 'name': 'bucket2'}],
             capabilities=['listBuckets', 'readBuckets'],
             namePrefix=None,
         )

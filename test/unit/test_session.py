@@ -11,13 +11,15 @@ from __future__ import annotations
 
 from unittest import mock
 
+import pytest
 from apiver_deps import AuthInfoCache, B2Session, DummyCache, InMemoryAccountInfo
+from apiver_deps_exception import Unauthorized
 
 from .account_info.fixtures import *  # noqa
 from .fixtures import *  # noqa
 
 
-class TestAuthorizeAccount:
+class TestB2Session:
     @pytest.fixture(autouse=True)
     def setup(self, b2_session):
         self.b2_session = b2_session
@@ -73,6 +75,50 @@ class TestAuthorizeAccount:
         self.b2_session.authorize_account('dev', '123', '456')
 
         assert self.b2_session.cache.clear.called is True
+
+    @pytest.mark.apiver(from_ver=3)
+    def test_app_key_info_no_info(self):
+        self.b2_session.account_info.get_allowed.return_value = dict(
+            buckets=None,
+            capabilities=ALL_CAPABILITIES,
+            namePrefix=None,
+        )
+        self.b2_session.raw_api.get_file_info_by_id.side_effect = Unauthorized('no_go', 'code')
+        with pytest.raises(
+            Unauthorized, match=r'no_go for application key with no restrictions \(code\)'
+        ):
+            self.b2_session.get_file_info_by_id(None)
+
+    @pytest.mark.apiver(from_ver=3)
+    def test_app_key_info_no_info_no_message(self):
+        self.b2_session.account_info.get_allowed.return_value = dict(
+            buckets=None,
+            capabilities=ALL_CAPABILITIES,
+            namePrefix=None,
+        )
+        self.b2_session.raw_api.get_file_info_by_id.side_effect = Unauthorized('', 'code')
+        with pytest.raises(
+            Unauthorized, match=r'unauthorized for application key with no restrictions \(code\)'
+        ):
+            self.b2_session.get_file_info_by_id(None)
+
+    @pytest.mark.apiver(from_ver=3)
+    def test_app_key_info_all_info(self):
+        self.b2_session.account_info.get_allowed.return_value = dict(
+            buckets=[
+                {'id': '123456', 'name': 'my-bucket'},
+                {'id': '456789', 'name': 'their-bucket'},
+            ],
+            capabilities=['readFiles'],
+            namePrefix='prefix/',
+        )
+        self.b2_session.raw_api.get_file_info_by_id.side_effect = Unauthorized('no_go', 'code')
+
+        with pytest.raises(
+            Unauthorized,
+            match=r"no_go for application key with capabilities 'readFiles', restricted to buckets \['my-bucket', 'their-bucket'\], restricted to files that start with 'prefix/' \(code\)",
+        ):
+            self.b2_session.get_file_info_by_id(None)
 
 
 def test_session__with_in_memory_account_info(apiver_int):

@@ -197,8 +197,7 @@ class AccountInfoBase(metaclass=ABCMeta):
         return dict(
             capabilities=['readFiles'],
             namePrefix=None,
-            bucketIds=None,
-            bucketNames=None,
+            buckets=None,
         )
 
     def test_set_auth_data_compatibility(self, account_info_default_data, allowed):
