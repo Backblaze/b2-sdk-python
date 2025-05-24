@@ -9,6 +9,7 @@
 ######################################################################
 from __future__ import annotations
 
+import apiver_deps
 import pytest
 from apiver_deps import (
     B2Api,
@@ -158,7 +159,9 @@ class TestApi(TestBase):
 
         download_url = self.api.get_download_url_for_fileid('file-id')
 
-        assert (
-            download_url
-            == 'http://download.example.com/b2api/v3/b2_download_file_by_id?fileId=file-id'
-        )
+        if apiver_deps.V >= 3:
+            exp_url = 'http://download.example.com/b2api/v4/b2_download_file_by_id?fileId=file-id'
+        else:
+            exp_url = 'http://download.example.com/b2api/v3/b2_download_file_by_id?fileId=file-id'
+
+        assert download_url == exp_url

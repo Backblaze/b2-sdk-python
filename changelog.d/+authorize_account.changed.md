@@ -1,0 +1,1 @@
+Adapt authorize_account flow to multi-bucket keys.

@@ -9,20 +9,20 @@ Progress reporters
 
    include info about sync progress
 
-.. autoclass:: b2sdk.v2.AbstractProgressListener
+.. autoclass:: b2sdk.v3.AbstractProgressListener
    :inherited-members:
    :members:
 
-.. autoclass:: b2sdk.v2.TqdmProgressListener
+.. autoclass:: b2sdk.v3.TqdmProgressListener
    :no-members:
 
-.. autoclass:: b2sdk.v2.SimpleProgressListener
+.. autoclass:: b2sdk.v3.SimpleProgressListener
    :no-members:
 
-.. autoclass:: b2sdk.v2.DoNothingProgressListener
+.. autoclass:: b2sdk.v3.DoNothingProgressListener
    :no-members:
 
-.. autoclass:: b2sdk.v2.ProgressListenerForTest
+.. autoclass:: b2sdk.v3.ProgressListenerForTest
    :no-members:
 
-.. autofunction:: b2sdk.v2.make_progress_listener
+.. autofunction:: b2sdk.v3.make_progress_listener

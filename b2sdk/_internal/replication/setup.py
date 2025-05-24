@@ -314,7 +314,7 @@ class ReplicationSetupHelper(metaclass=B2TraceMeta):
         return api.create_key(
             capabilities=capabilities,
             key_name=name,
-            bucket_id=bucket.id_,
+            bucket_ids=[bucket.id_],
             name_prefix=prefix,
         )
 

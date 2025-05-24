@@ -13,7 +13,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from b2sdk import _v3 as v3
+from b2sdk import v3
 from b2sdk.v2 import B2Http, B2RawHTTPApi
 from test.helpers import patch_bind_params
 

@@ -280,7 +280,7 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
         """
         )
         # By default, we run all the upgrades
-        last_upgrade_to_run = 4 if last_upgrade_to_run is None else last_upgrade_to_run
+        last_upgrade_to_run = 5 if last_upgrade_to_run is None else last_upgrade_to_run
         # Add the 'allowed' column if it hasn't been yet.
         if 1 <= last_upgrade_to_run:
             self._ensure_update(1, ['ALTER TABLE account ADD COLUMN allowed TEXT;'])
@@ -384,6 +384,40 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
                 ],
             )
 
+        if 5 <= last_upgrade_to_run:
+            self._migrate_allowed_to_multi_bucket()
+
+    def _migrate_allowed_to_multi_bucket(self):
+        """
+        Migrate existing allowed json dict to a new multi-bucket keys format
+        """
+        if self._get_update_count(5) > 0:
+            return
+
+        try:
+            allowed_json = self._get_account_info_or_raise('allowed')
+        except MissingAccountData:
+            allowed_json = None
+
+        if allowed_json is None:
+            self._perform_update(5, [])
+            return
+
+        allowed = json.loads(allowed_json)
+
+        bucket_id = allowed.pop('bucketId')
+        bucket_name = allowed.pop('bucketName')
+
+        if bucket_id is not None:
+            allowed['buckets'] = [{'id': bucket_id, 'name': bucket_name}]
+        else:
+            allowed['buckets'] = None
+
+        allowed_text = json.dumps(allowed)
+        stmt = f"UPDATE account SET allowed = ('{allowed_text}');"
+
+        self._perform_update(5, [stmt])
+
     def _ensure_update(self, update_number, update_commands: list[str]):
         """
         Run the update with the given number if it hasn't been done yet.
@@ -391,19 +425,26 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
         Does the update and stores the number as a single transaction,
         so they will always be in sync.
         """
+        update_count = self._get_update_count(update_number)
+        if update_count > 0:
+            return
+
+        self._perform_update(update_number, update_commands)
+
+    def _get_update_count(self, update_number: int):
         with self._get_connection() as conn:
-            conn.execute('BEGIN')
             cursor = conn.execute(
                 'SELECT COUNT(*) AS count FROM update_done WHERE update_number = ?;',
                 (update_number,),
             )
-            update_count = cursor.fetchone()[0]
-            if update_count == 0:
-                for command in update_commands:
-                    conn.execute(command)
-                conn.execute(
-                    'INSERT INTO update_done (update_number) VALUES (?);', (update_number,)
-                )
+            return cursor.fetchone()[0]
+
+    def _perform_update(self, update_number, update_commands: list[str]):
+        with self._get_connection() as conn:
+            conn.execute('BEGIN')
+            for command in update_commands:
+                conn.execute(command)
+            conn.execute('INSERT INTO update_done (update_number) VALUES (?);', (update_number,))
 
     def clear(self):
         """
@@ -551,8 +592,7 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
         .. code-block:: python
 
             {
-                "bucketId": null,
-                "bucketName": null,
+                "buckets": null,
                 "capabilities": [
                     "listKeys",
                     "writeKeys"
@@ -567,8 +607,8 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
         allowed_json = self._get_account_info_or_raise('allowed')
         if allowed_json is None:
             return self.DEFAULT_ALLOWED
-        else:
-            return json.loads(allowed_json)
+
+        return json.loads(allowed_json)
 
     def get_s3_api_url(self):
         result = self._get_account_info_or_raise('s3_api_url')

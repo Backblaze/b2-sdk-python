@@ -31,8 +31,7 @@ class AbstractAccountInfo(metaclass=B2TraceMetaAbstract):
 
     # The 'allowed' structure to use for old account info that was saved without 'allowed'.
     DEFAULT_ALLOWED = dict(
-        bucketId=None,
-        bucketName=None,
+        buckets=None,
         capabilities=ALL_CAPABILITIES,
         namePrefix=None,
     )
@@ -318,7 +317,7 @@ class AbstractAccountInfo(metaclass=B2TraceMetaAbstract):
         """
         if allowed is None:
             allowed = self.DEFAULT_ALLOWED
-        assert self.allowed_is_valid(allowed)
+        assert self.allowed_is_valid(allowed), allowed
 
         self._set_auth_data(
             account_id,
@@ -337,8 +336,7 @@ class AbstractAccountInfo(metaclass=B2TraceMetaAbstract):
     @classmethod
     def allowed_is_valid(cls, allowed):
         """
-        Make sure that all of the required fields are present, and that
-        bucketId is set if bucketName is.
+        Make sure that all of the required fields are present
 
         If the bucketId is for a bucket that no longer exists, or the
         capabilities do not allow for listBuckets, then we will not have a bucketName.
@@ -346,13 +344,7 @@ class AbstractAccountInfo(metaclass=B2TraceMetaAbstract):
         :param dict allowed: the structure to use for old account info that was saved without 'allowed'
         :rtype: bool
         """
-        return (
-            ('bucketId' in allowed)
-            and ('bucketName' in allowed)
-            and ((allowed['bucketId'] is not None) or (allowed['bucketName'] is None))
-            and ('capabilities' in allowed)
-            and ('namePrefix' in allowed)
-        )
+        return ('buckets' in allowed) and ('capabilities' in allowed) and ('namePrefix' in allowed)
 
     @abstractmethod
     def _set_auth_data(

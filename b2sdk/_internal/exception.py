@@ -369,12 +369,12 @@ class InvalidAuthToken(Unauthorized):
 
 
 class RestrictedBucket(B2Error):
-    def __init__(self, bucket_name):
+    def __init__(self, bucket_names):
         super().__init__()
-        self.bucket_name = bucket_name
+        self.bucket_names = bucket_names
 
     def __str__(self):
-        return 'Application key is restricted to bucket: %s' % self.bucket_name
+        return 'Application key is restricted to buckets: %s' % self.bucket_names
 
 
 class RestrictedBucketMissing(RestrictedBucket):

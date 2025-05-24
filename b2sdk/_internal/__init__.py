@@ -10,5 +10,5 @@
 """
 b2sdk._internal package contains internal modules, and should not be used directly.
 
-Please use chosen apiver package instead, e.g. b2sdk.v2
+Please use chosen apiver package instead, e.g. b2sdk.v3
 """

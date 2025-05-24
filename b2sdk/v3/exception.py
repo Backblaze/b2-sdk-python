@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: b2sdk/_v3/exception.py
+# File: b2sdk/v3/exception.py
 #
 # Copyright 2021 Backblaze Inc. All Rights Reserved.
 #

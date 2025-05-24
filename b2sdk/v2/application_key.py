@@ -1,8 +1,8 @@
 ######################################################################
 #
-# File: b2sdk/_internal/application_key.py
+# File: b2sdk/v2/application_key.py
 #
-# Copyright 2021 Backblaze Inc. All Rights Reserved.
+# Copyright 2025 Backblaze Inc. All Rights Reserved.
 #
 # License https://www.backblaze.com/using_b2_code.html
 #
@@ -20,7 +20,7 @@ class BaseApplicationKey:
         capabilities: list[str],
         account_id: str,
         expiration_timestamp_millis: int | None = None,
-        bucket_ids: list[str] | None = None,
+        bucket_id: str | None = None,
         name_prefix: str | None = None,
         options: list[str] | None = None,
     ):
@@ -39,7 +39,7 @@ class BaseApplicationKey:
         self.capabilities = capabilities
         self.account_id = account_id
         self.expiration_timestamp_millis = expiration_timestamp_millis
-        self.bucket_ids = bucket_ids
+        self.bucket_id = bucket_id
         self.name_prefix = name_prefix
         self.options = options
 
@@ -54,7 +54,7 @@ class BaseApplicationKey:
 
         optional_args = {
             'expiration_timestamp_millis': response.get('expirationTimestamp'),
-            'bucket_ids': response.get('bucketIds'),
+            'bucket_id': response.get('bucketId'),
             'name_prefix': response.get('namePrefix'),
             'options': response.get('options'),
         }
@@ -77,7 +77,7 @@ class BaseApplicationKey:
         }
         optional_keys = {
             'expirationTimestamp': self.expiration_timestamp_millis,
-            'bucketIds': self.bucket_ids,
+            'bucketId': self.bucket_id,
             'namePrefix': self.name_prefix,
             'options': self.options,
         }
@@ -107,7 +107,7 @@ class FullApplicationKey(BaseApplicationKey):
         capabilities: list[str],
         account_id: str,
         expiration_timestamp_millis: int | None = None,
-        bucket_ids: list[str] | None = None,
+        bucket_id: str | None = None,
         name_prefix: str | None = None,
         options: list[str] | None = None,
     ):
@@ -129,7 +129,7 @@ class FullApplicationKey(BaseApplicationKey):
             capabilities=capabilities,
             account_id=account_id,
             expiration_timestamp_millis=expiration_timestamp_millis,
-            bucket_ids=bucket_ids,
+            bucket_id=bucket_id,
             name_prefix=name_prefix,
             options=options,
         )

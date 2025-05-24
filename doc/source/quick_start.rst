@@ -10,7 +10,7 @@ Prepare b2sdk
 
 .. code-block:: python
 
-    >>> from b2sdk.v2 import *
+    >>> from b2sdk.v3 import *
     >>> info = InMemoryAccountInfo()
     >>> b2_api = B2Api(info, cache=AuthInfoCache(info))
     >>> application_key_id = '4a5b6c7d8e9f'
@@ -27,10 +27,10 @@ Synchronization
 
 .. code-block:: python
 
-    >>> from b2sdk.v2 import ScanPoliciesManager
-    >>> from b2sdk.v2 import parse_folder
-    >>> from b2sdk.v2 import Synchronizer
-    >>> from b2sdk.v2 import SyncReport
+    >>> from b2sdk.v3 import ScanPoliciesManager
+    >>> from b2sdk.v3 import parse_folder
+    >>> from b2sdk.v3 import Synchronizer
+    >>> from b2sdk.v3 import SyncReport
     >>> import time
     >>> import sys
 
@@ -81,7 +81,7 @@ unique keys, or key identifiers, across files. This is covered in greater detail
 
 In the example above, Sync will assume `SSE-B2` for all files in `bucket1`, `SSE-C` with the key provided for `bucket2`
 and rely on bucket default for `bucket3`. Should developers need to provide keys per file (and not per bucket), they
-need to implement their own :class:`b2sdk.v2.AbstractSyncEncryptionSettingsProvider`.
+need to implement their own :class:`b2sdk.v3.AbstractSyncEncryptionSettingsProvider`.
 
 **************
 Bucket actions
@@ -109,7 +109,7 @@ Create a bucket
     >>> b2_api.create_bucket(bucket_name, bucket_type)
     Bucket<346501784642eb3e60980d10,example-mybucket-b2-1,allPublic>
 
-You can optionally store bucket info, CORS rules and lifecycle rules with the bucket. See :meth:`b2sdk.v2.B2Api.create_bucket`.
+You can optionally store bucket info, CORS rules and lifecycle rules with the bucket. See :meth:`b2sdk.v3.B2Api.create_bucket`.
 
 
 Delete a bucket
@@ -149,7 +149,7 @@ Update bucket info
                                      'value': {'algorithm': 'AES256', 'mode': 'SSE-B2'}}},
      }
 
-For more information see :meth:`b2sdk.v2.Bucket.update`.
+For more information see :meth:`b2sdk.v3.Bucket.update`.
 
 
 ************
@@ -182,7 +182,7 @@ Upload file
 
 This will work regardless of the size of the file - ``upload_local_file`` automatically uses large file upload API when necessary.
 
-For more information see :meth:`b2sdk.v2.Bucket.upload_local_file`.
+For more information see :meth:`b2sdk.v3.Bucket.upload_local_file`.
 
 Upload file encrypted with SSE-C
 --------------------------------
@@ -215,7 +215,7 @@ By id
 
 .. code-block:: python
 
-    >>> from b2sdk.v2 import DoNothingProgressListener
+    >>> from b2sdk.v3 import DoNothingProgressListener
 
     >>> local_file_path = '/home/user1/b2_example/new2.pdf'
     >>> file_id = '4_z5485a1682662eb3e60980d10_f1195145f42952533_d20190403_m130258_c002_v0001111_t0002'
@@ -303,7 +303,7 @@ The folder_name is returned only for the first file in the folder.
     som2.pdf 1554296578000 None
     some.pdf 1554296579000 None
 
-For more information see :meth:`b2sdk.v2.Bucket.ls`.
+For more information see :meth:`b2sdk.v3.Bucket.ls`.
 
 
 Get file metadata
@@ -379,7 +379,7 @@ If you want to copy just the part of the file, then you can specify the offset a
 Note that content length is required for offset values other than zero.
 
 
-For more information see :meth:`b2sdk.v2.Bucket.copy`.
+For more information see :meth:`b2sdk.v3.Bucket.copy`.
 
 
 Delete file
@@ -412,14 +412,14 @@ Direct file operations
 
 Methods for manipulating object (file) state mentioned in sections above are low level and useful when users have access
 to basic information, like file id and name. Many API methods, however, return python objects representing files
-(:class:`b2sdk.v2.FileVersion` and :class:`b2sdk.v2.DownloadVersion`), that provide high-level access to methods
+(:class:`b2sdk.v3.FileVersion` and :class:`b2sdk.v3.DownloadVersion`), that provide high-level access to methods
 manipulating their state. As a rule, these methods don't change properties of python objects they are called on, but
 return new objects instead.
 
 Obtain file representing objects
 ================================
 
-:class:`b2sdk.v2.FileVersion`
+:class:`b2sdk.v3.FileVersion`
 -----------------------------
 
 By id
@@ -439,7 +439,7 @@ By listing
     >>>     ...
 
 
-:class:`b2sdk.v2.DownloadVersion`
+:class:`b2sdk.v3.DownloadVersion`
 ---------------------------------
 
 By id
@@ -462,7 +462,7 @@ By name
     >>> download_version = downloaded_file.download_version
 
 
-Download (only for :class:`b2sdk.v2.FileVersion`)
+Download (only for :class:`b2sdk.v3.FileVersion`)
 =================================================
 
 .. code-block:: python
