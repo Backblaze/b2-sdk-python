@@ -14,7 +14,7 @@ import time
 
 import pytest
 
-from b2sdk.v2 import (
+from b2sdk.v3 import (
     CompareVersionMode,
     NewerFileSyncMode,
     Synchronizer,
