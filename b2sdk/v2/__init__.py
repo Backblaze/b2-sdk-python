@@ -9,10 +9,10 @@
 ######################################################################
 from __future__ import annotations
 
-from b2sdk._v3 import *  # noqa
-from b2sdk._v3 import parse_folder as parse_sync_folder
-from b2sdk._v3 import AbstractPath as AbstractSyncPath
-from b2sdk._v3 import LocalPath as LocalSyncPath
+from b2sdk.v3 import *  # noqa
+from b2sdk.v3 import parse_folder as parse_sync_folder
+from b2sdk.v3 import AbstractPath as AbstractSyncPath
+from b2sdk.v3 import LocalPath as LocalSyncPath
 from b2sdk._internal.utils.escape import (
     unprintable_to_hex,
     escape_control_chars,
@@ -20,12 +20,26 @@ from b2sdk._internal.utils.escape import (
 )
 
 from .account_info import AbstractAccountInfo
+from .account_info import InMemoryAccountInfo
+from .account_info import SqliteAccountInfo
+from .account_info import StubAccountInfo
+from .account_info import UrlPoolAccountInfo
 from .api import B2Api
 from .b2http import B2Http
 from .bucket import Bucket, BucketFactory
 from .session import B2Session
 from .sync import B2SyncPath
 from .transfer import DownloadManager, UploadManager
+
+# replication
+
+from .replication.setup import ReplicationSetupHelper
+
+# data classes
+
+from .application_key import ApplicationKey
+from .application_key import BaseApplicationKey
+from .application_key import FullApplicationKey
 
 # utils
 
@@ -36,6 +50,7 @@ from .utils import TempDir
 
 from .raw_simulator import BucketSimulator
 from .raw_simulator import RawSimulator
+from .raw_simulator import KeySimulator
 
 # raw_api
 

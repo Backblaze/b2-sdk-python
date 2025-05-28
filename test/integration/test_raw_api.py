@@ -119,7 +119,7 @@ def raw_api_test_helper(raw_api, should_cleanup_old_buckets):
         set(ALL_CAPABILITIES)
         - {'readBuckets', 'listAllBucketNames'}
         - preview_feature_caps
-        - set(auth_dict['apiInfo']['storageApi']['capabilities'])
+        - set(auth_dict['apiInfo']['storageApi']['allowed']['capabilities'])
     )
     assert not missing_capabilities, f'it appears that the raw_api integration test is being run with a non-full key. Missing capabilities: {missing_capabilities}'
 
@@ -599,7 +599,10 @@ def raw_api_test_helper(raw_api, should_cleanup_old_buckets):
 
 
 def _subtest_bucket_notification_rules(raw_api, auth_dict, api_url, account_auth_token, bucket_id):
-    if 'writeBucketNotifications' not in auth_dict['apiInfo']['storageApi']['capabilities']:
+    if (
+        'writeBucketNotifications'
+        not in auth_dict['apiInfo']['storageApi']['allowed']['capabilities']
+    ):
         pytest.skip('Test account does not have writeBucketNotifications capability')
 
     notification_rule = {

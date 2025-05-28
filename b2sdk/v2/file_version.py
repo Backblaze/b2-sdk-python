@@ -15,7 +15,7 @@ from b2sdk.v2 import EncryptionSetting
 from b2sdk.v2 import NO_RETENTION_FILE_SETTING, FileRetentionSetting, LegalHold
 from b2sdk.v2 import ReplicationStatus
 
-from b2sdk import _v3 as v3
+from b2sdk import v3
 
 if TYPE_CHECKING:
     from .api import B2Api

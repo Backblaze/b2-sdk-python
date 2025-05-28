@@ -16,23 +16,40 @@ from apiver_deps import ALL_CAPABILITIES, B2RawHTTPApi
 
 
 @pytest.fixture
-def fake_b2_raw_api_responses():
+def fake_b2_raw_api_responses(apiver_int):
+    capabilities = copy(ALL_CAPABILITIES)
+    namePrefix = None
+
+    storage_api = {
+        'downloadUrl': 'https://f000.backblazeb2.xyz:8180',
+        'absoluteMinimumPartSize': 5000000,
+        'recommendedPartSize': 100000000,
+        'apiUrl': 'https://api000.backblazeb2.xyz:8180',
+        's3ApiUrl': 'https://s3.us-west-000.backblazeb2.xyz:8180',
+    }
+
+    if apiver_int < 3:
+        storage_api.update(
+            {
+                'capabilities': capabilities,
+                'namePrefix': namePrefix,
+                'bucketId': None,
+                'bucketName': None,
+            }
+        )
+    else:
+        storage_api['allowed'] = {
+            'buckets': None,
+            'capabilities': capabilities,
+            'namePrefix': namePrefix,
+        }
+
     return {
         'authorize_account': {
             'accountId': '6012deadbeef',
             'apiInfo': {
                 'groupsApi': {},
-                'storageApi': {
-                    'bucketId': None,
-                    'bucketName': None,
-                    'capabilities': copy(ALL_CAPABILITIES),
-                    'namePrefix': None,
-                    'downloadUrl': 'https://f000.backblazeb2.xyz:8180',
-                    'absoluteMinimumPartSize': 5000000,
-                    'recommendedPartSize': 100000000,
-                    'apiUrl': 'https://api000.backblazeb2.xyz:8180',
-                    's3ApiUrl': 'https://s3.us-west-000.backblazeb2.xyz:8180',
-                },
+                'storageApi': storage_api,
             },
             'authorizationToken': '4_1111111111111111111111111_11111111_111111_1111_1111111111111_1111_11111111=',
         }

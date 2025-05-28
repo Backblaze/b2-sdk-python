@@ -8,9 +8,12 @@
 #
 ######################################################################
 from __future__ import annotations
+from abc import abstractmethod
 
-from b2sdk import _v3 as v3
+from b2sdk import v3
 from b2sdk.v2._compat import _file_infos_rename
+
+API_VERSION = 'v3'
 
 
 class _OldRawAPI:
@@ -92,10 +95,48 @@ class _OldRawAPI:
             **kwargs,
         )
 
+    def get_download_url_by_id(self, download_url, file_id):
+        return f'{download_url}/b2api/{API_VERSION}/b2_download_file_by_id?fileId={file_id}'
+
 
 class AbstractRawApi(_OldRawAPI, v3.AbstractRawApi):
-    pass
+    @abstractmethod
+    def create_key(
+        self,
+        api_url,
+        account_auth_token,
+        account_id,
+        capabilities,
+        key_name,
+        valid_duration_seconds,
+        bucket_id,
+        name_prefix,
+    ):
+        pass
 
 
 class B2RawHTTPApi(_OldRawAPI, v3.B2RawHTTPApi):
-    pass
+    API_VERSION = API_VERSION
+
+    def create_key(
+        self,
+        api_url,
+        account_auth_token,
+        account_id,
+        capabilities,
+        key_name,
+        valid_duration_seconds,
+        bucket_id,
+        name_prefix,
+    ):
+        return self._post_json(
+            api_url,
+            'b2_create_key',
+            account_auth_token,
+            accountId=account_id,
+            capabilities=capabilities,
+            keyName=key_name,
+            validDurationInSeconds=valid_duration_seconds,
+            bucketId=bucket_id,
+            namePrefix=name_prefix,
+        )

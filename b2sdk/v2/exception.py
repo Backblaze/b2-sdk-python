@@ -9,7 +9,7 @@
 ######################################################################
 from __future__ import annotations
 
-from b2sdk._v3.exception import *  # noqa
+from b2sdk.v3.exception import *  # noqa
 
 v3BucketIdNotFound = BucketIdNotFound
 UnSyncableFilename = UnsupportedFilename
@@ -24,3 +24,12 @@ class BucketIdNotFound(v3BucketIdNotFound, BadRequest):
 
     def __str__(self):
         return BadRequest.__str__(self)
+
+
+class RestrictedBucket(B2Error):
+    def __init__(self, bucket_name):
+        super().__init__()
+        self.bucket_name = bucket_name
+
+    def __str__(self):
+        return 'Application key is restricted to bucket: %s' % self.bucket_name

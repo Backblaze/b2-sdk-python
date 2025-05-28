@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import logging
 
-from b2sdk.v2 import (
+from b2sdk.v3 import (
     NO_RETENTION_FILE_SETTING,
     B2Api,
     Bucket,
@@ -19,7 +19,7 @@ from b2sdk.v2 import (
     RetentionMode,
     current_time_millis,
 )
-from b2sdk.v2.exception import BadRequest
+from b2sdk.v3.exception import BadRequest
 
 from .helpers import BUCKET_CREATED_AT_MILLIS, GENERAL_BUCKET_NAME_PREFIX
 

@@ -1,6 +1,6 @@
 Downloaded File
 ===============
 
-.. autoclass:: b2sdk.v2.DownloadedFile
+.. autoclass:: b2sdk.v3.DownloadedFile
 
-.. autoclass:: b2sdk.v2.MtimeUpdatedFile
+.. autoclass:: b2sdk.v3.MtimeUpdatedFile

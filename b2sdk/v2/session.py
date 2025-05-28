@@ -9,7 +9,7 @@
 ######################################################################
 from __future__ import annotations
 
-from b2sdk import _v3 as v3
+from b2sdk import v3
 from .b2http import B2Http
 
 from ._compat import _file_infos_rename
@@ -32,6 +32,19 @@ class B2Session(v3.B2Session):
             # preserve legacy behavior https://github.com/Backblaze/b2-sdk-python/issues/497#issuecomment-2147461352
             cache = _cache.DummyCache()
         super().__init__(account_info, cache, api_config)
+
+    def create_key(
+        self, account_id, capabilities, key_name, valid_duration_seconds, bucket_id, name_prefix
+    ):
+        return self._wrap_default_token(
+            self.raw_api.create_key,
+            account_id,
+            capabilities,
+            key_name,
+            valid_duration_seconds,
+            bucket_id,
+            name_prefix,
+        )
 
     @_file_infos_rename
     def upload_file(
@@ -68,3 +81,18 @@ class B2Session(v3.B2Session):
             *args,
             **kwargs,
         )
+
+    def _construct_allowed_dict(self, storage_api_info):
+        return {
+            'bucketId': storage_api_info['bucketId'],
+            'bucketName': storage_api_info['bucketName'],
+            'capabilities': storage_api_info['capabilities'],
+            'namePrefix': storage_api_info['namePrefix'],
+        }
+
+    def _get_allowed_buckets_message(self, allowed) -> str | None:
+        bucket_name = allowed['bucketName']
+        if bucket_name is None:
+            return None
+
+        return "restricted to bucket '" + bucket_name + "'"

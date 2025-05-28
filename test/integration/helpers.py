@@ -12,7 +12,7 @@ from __future__ import annotations
 import os
 import secrets
 
-from b2sdk.v2 import (
+from b2sdk.v3 import (
     BUCKET_NAME_CHARS_UNIQ,
     BUCKET_NAME_LENGTH_RANGE,
     DEFAULT_HTTP_API_CONFIG,
@@ -43,5 +43,5 @@ def authorize(b2_auth_data, api_config=DEFAULT_HTTP_API_CONFIG):
     info = InMemoryAccountInfo()
     b2_api = B2Api(info, api_config=api_config)
     realm = os.environ.get('B2_TEST_ENVIRONMENT', 'production')
-    b2_api.authorize_account(realm, *b2_auth_data)
+    b2_api.authorize_account(*b2_auth_data, realm=realm)
     return b2_api, info

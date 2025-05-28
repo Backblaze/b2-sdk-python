@@ -118,14 +118,7 @@ class B2Session:
         account_id = response['accountId']
         storage_api_info = response['apiInfo']['storageApi']
 
-        # `allowed` object has been deprecated in the v3 of the API, but we still
-        # construct it artificially to avoid changes in all the reliant parts.
-        allowed = {
-            'bucketId': storage_api_info['bucketId'],
-            'bucketName': storage_api_info['bucketName'],
-            'capabilities': storage_api_info['capabilities'],
-            'namePrefix': storage_api_info['namePrefix'],
-        }
+        allowed = self._construct_allowed_dict(storage_api_info)
 
         # Clear the cache if new account has been used
         if not self.account_info.is_same_account(account_id, realm):
@@ -145,6 +138,12 @@ class B2Session:
             allowed=allowed,
             application_key_id=application_key_id,
         )
+
+    def _construct_allowed_dict(self, storage_api_info):
+        # `allowed` object has been deprecated in the v3 of the API, but we still
+        # construct it artificially to avoid changes in all the reliant parts.
+
+        return storage_api_info['allowed']
 
     def cancel_large_file(self, file_id):
         return self._wrap_default_token(self.raw_api.cancel_large_file, file_id)
@@ -175,7 +174,7 @@ class B2Session:
         )
 
     def create_key(
-        self, account_id, capabilities, key_name, valid_duration_seconds, bucket_id, name_prefix
+        self, account_id, capabilities, key_name, valid_duration_seconds, bucket_ids, name_prefix
     ):
         return self._wrap_default_token(
             self.raw_api.create_key,
@@ -183,7 +182,7 @@ class B2Session:
             capabilities,
             key_name,
             valid_duration_seconds,
-            bucket_id,
+            bucket_ids,
             name_prefix,
         )
 
@@ -506,15 +505,17 @@ class B2Session:
         # What's allowed?
         allowed = self.account_info.get_allowed()
         capabilities = allowed['capabilities']
-        bucket_name = allowed['bucketName']
         name_prefix = allowed['namePrefix']
 
         # Make a list of messages about the application key restrictions
         key_messages = []
         if set(capabilities) != set(ALL_CAPABILITIES):
             key_messages.append("with capabilities '" + ','.join(capabilities) + "'")
-        if bucket_name is not None:
-            key_messages.append("restricted to bucket '" + bucket_name + "'")
+
+        allowed_buckets_msg = self._get_allowed_buckets_message(allowed)
+        if allowed_buckets_msg:
+            key_messages.append(allowed_buckets_msg)
+
         if name_prefix is not None:
             key_messages.append("restricted to files that start with '" + name_prefix + "'")
         if not key_messages:
@@ -525,6 +526,15 @@ class B2Session:
         new_message += ' for application key ' + ', '.join(key_messages)
 
         return Unauthorized(new_message, unauthorized.code)
+
+    def _get_allowed_buckets_message(self, allowed) -> str | None:
+        buckets = allowed['buckets']
+        if not buckets:
+            return None
+
+        bucket_names = [b['name'] for b in buckets]
+
+        return f'restricted to buckets {bucket_names}'
 
     def _get_upload_data(self, bucket_id):
         """

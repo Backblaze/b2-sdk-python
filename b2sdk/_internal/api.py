@@ -37,7 +37,8 @@ from .file_version import (
 )
 from .large_file.services import LargeFileServices
 from .progress import AbstractProgressListener
-from .raw_api import API_VERSION, LifecycleRule
+from .raw_api import API_VERSION as RAW_API_VERSION
+from .raw_api import LifecycleRule
 from .replication.setting import ReplicationConfiguration
 from .session import B2Session
 from .transfer import (
@@ -50,21 +51,6 @@ from .transfer.inbound.downloaded_file import DownloadedFile
 from .utils import B2TraceMeta, b2_url_encode, limit_trace_arguments
 
 logger = logging.getLogger(__name__)
-
-
-def url_for_api(info, api_name):
-    """
-    Return URL for an API endpoint.
-
-    :param info: account info
-    :param str api_nam:
-    :rtype: str
-    """
-    if api_name in ['b2_download_file_by_id']:
-        base = info.get_download_url()
-    else:
-        base = info.get_api_url()
-    return f'{base}/b2api/{API_VERSION}/{api_name}'
 
 
 class Services:
@@ -141,7 +127,10 @@ class B2Api(metaclass=B2TraceMeta):
     FILE_VERSION_FACTORY_CLASS = staticmethod(FileVersionFactory)
     DOWNLOAD_VERSION_FACTORY_CLASS = staticmethod(DownloadVersionFactory)
     SERVICES_CLASS = staticmethod(Services)
+    APPLICATION_KEY_CLASS = ApplicationKey
+    FULL_APPLICATION_KEY_CLASS = FullApplicationKey
     DEFAULT_LIST_KEY_COUNT = 1000
+    API_VERSION = RAW_API_VERSION
 
     def __init__(
         self,
@@ -484,6 +473,21 @@ class B2Api(metaclass=B2TraceMeta):
         response = self.session.delete_file_version(file_id, file_name, bypass_governance)
         return FileIdAndName.from_cancel_or_delete_response(response)
 
+    @classmethod
+    def _get_url_for_api(cls, info, api_name) -> str:
+        """
+        Return URL for an API endpoint.
+
+        :param info: account info
+        :param str api_nam:
+        :rtype: str
+        """
+        if api_name in ['b2_download_file_by_id']:
+            base = info.get_download_url()
+        else:
+            base = info.get_api_url()
+        return f'{base}/b2api/{cls.API_VERSION}/{api_name}'
+
     # download
     def get_download_url_for_fileid(self, file_id):
         """
@@ -491,7 +495,7 @@ class B2Api(metaclass=B2TraceMeta):
 
         :param str file_id: a file ID
         """
-        url = url_for_api(self.account_info, 'b2_download_file_by_id')
+        url = self._get_url_for_api(self.account_info, 'b2_download_file_by_id')
         return f'{url}?fileId={file_id}'
 
     def get_download_url_for_file_name(self, bucket_name, file_name):
@@ -512,7 +516,7 @@ class B2Api(metaclass=B2TraceMeta):
         capabilities: list[str],
         key_name: str,
         valid_duration_seconds: int | None = None,
-        bucket_id: str | None = None,
+        bucket_ids: list[str] | None = None,
         name_prefix: str | None = None,
     ) -> FullApplicationKey:
         """
@@ -531,14 +535,14 @@ class B2Api(metaclass=B2TraceMeta):
             capabilities=capabilities,
             key_name=key_name,
             valid_duration_seconds=valid_duration_seconds,
-            bucket_id=bucket_id,
+            bucket_ids=bucket_ids,
             name_prefix=name_prefix,
         )
 
         assert set(response['capabilities']) == set(capabilities)
         assert response['keyName'] == key_name
 
-        return FullApplicationKey.from_create_response(response)
+        return self.FULL_APPLICATION_KEY_CLASS.from_create_response(response)
 
     def delete_key(self, application_key: BaseApplicationKey):
         """
@@ -557,7 +561,7 @@ class B2Api(metaclass=B2TraceMeta):
         """
 
         response = self.session.delete_key(application_key_id=application_key_id)
-        return ApplicationKey.from_api_response(response)
+        return self.APPLICATION_KEY_CLASS.from_api_response(response)
 
     def list_keys(
         self, start_application_key_id: str | None = None
@@ -576,7 +580,7 @@ class B2Api(metaclass=B2TraceMeta):
                 start_application_key_id=start_application_key_id,
             )
             for entry in response['keys']:
-                yield ApplicationKey.from_api_response(entry)
+                yield self.APPLICATION_KEY_CLASS.from_api_response(entry)
 
             next_application_key_id = response['nextApplicationKeyId']
             if next_application_key_id is None:
@@ -598,6 +602,8 @@ class B2Api(metaclass=B2TraceMeta):
             # thus manually check that we retrieved the right key
             if key.id_ == key_id:
                 return key
+
+        return None
 
     # other
     def get_file_info(self, file_id: str) -> FileVersion:
@@ -630,7 +636,7 @@ class B2Api(metaclass=B2TraceMeta):
 
         :raises b2sdk.v2.exception.RestrictedBucket: if the account is not allowed to use this bucket
         """
-        self._check_bucket_restrictions('bucketName', bucket_name)
+        self._check_bucket_restrictions('name', bucket_name)
 
     def check_bucket_id_restrictions(self, bucket_id: str):
         """
@@ -641,15 +647,21 @@ class B2Api(metaclass=B2TraceMeta):
 
         :raises b2sdk.v2.exception.RestrictedBucket: if the account is not allowed to use this bucket
         """
-        self._check_bucket_restrictions('bucketId', bucket_id)
+        self._check_bucket_restrictions('id', bucket_id)
 
     def _check_bucket_restrictions(self, key, value):
-        allowed = self.account_info.get_allowed()
-        allowed_bucket_identifier = allowed[key]
+        buckets = self.account_info.get_allowed()['buckets']
 
-        if allowed_bucket_identifier is not None:
-            if allowed_bucket_identifier != value:
-                raise RestrictedBucket(allowed_bucket_identifier)
+        if not buckets:
+            return
+
+        for item in buckets:
+            if item[key] == value:
+                return
+
+        msg = str([b['name'] for b in buckets])
+
+        raise RestrictedBucket(msg)
 
     def _populate_bucket_cache_from_key(self):
         # If the key is restricted to the bucket, pre-populate the cache with it
@@ -658,15 +670,16 @@ class B2Api(metaclass=B2TraceMeta):
         except MissingAccountData:
             return
 
-        allowed_bucket_id = allowed.get('bucketId')
-        if allowed_bucket_id is None:
+        allowed_buckets = allowed.get('buckets')
+        if not allowed_buckets:
             return
-
-        allowed_bucket_name = allowed.get('bucketName')
 
         # If we have bucketId set we still need to check bucketName. If the bucketName is None,
         # it means that the bucketId belongs to a bucket that was already removed.
-        if allowed_bucket_name is None:
-            raise RestrictedBucketMissing()
 
-        self.cache.save_bucket(self.BUCKET_CLASS(self, allowed_bucket_id, name=allowed_bucket_name))
+        for item in allowed_buckets:
+            if item['name'] is None:
+                raise RestrictedBucketMissing
+
+        for item in allowed_buckets:
+            self.cache.save_bucket(self.BUCKET_CLASS(self, item['id'], name=item['name']))

@@ -19,6 +19,7 @@ from apiver_deps import (
     AbstractAccountInfo,
     SqliteAccountInfo,
 )
+from apiver_deps_exception import MissingAccountData
 
 from .fixtures import *
 
@@ -63,6 +64,107 @@ class TestDatabseMigrations:
                 'SELECT recommended_part_size, absolute_minimum_part_size from account'
             ).fetchone()
         assert (100, 5000000) == sizes
+
+    @pytest.mark.parametrize(
+        'allowed',
+        [
+            dict(
+                bucketId='123',
+                bucketName='bucket1',
+                capabilities=['listBuckets', 'readBuckets'],
+                namePrefix=None,
+            ),
+            dict(
+                bucketId=None,
+                bucketName=None,
+                capabilities=['listBuckets', 'readBuckets'],
+                namePrefix=None,
+            ),
+        ],
+    )
+    @pytest.mark.apiver(2)
+    def test_migrate_to_5_v2(
+        self, v2_sqlite_account_info_factory, account_info_default_data, allowed
+    ):
+        old_account_info = v2_sqlite_account_info_factory()
+        account_info_default_data.update({'allowed': allowed})
+        old_account_info.set_auth_data(**account_info_default_data)
+        assert old_account_info.get_allowed() == allowed
+
+        new_account_info = self.sqlite_account_info_factory(file_name=old_account_info.filename)
+
+        assert new_account_info.get_allowed() == allowed
+
+    @pytest.mark.parametrize(
+        ('old_allowed', 'exp_allowed'),
+        [
+            (
+                dict(
+                    bucketId='123',
+                    bucketName='bucket1',
+                    capabilities=['listBuckets', 'readBuckets'],
+                    namePrefix=None,
+                ),
+                dict(
+                    buckets=[{'id': '123', 'name': 'bucket1'}],
+                    capabilities=['listBuckets', 'readBuckets'],
+                    namePrefix=None,
+                ),
+            ),
+            (
+                dict(
+                    bucketId=None,
+                    bucketName=None,
+                    capabilities=['listBuckets', 'readBuckets'],
+                    namePrefix=None,
+                ),
+                dict(
+                    buckets=None,
+                    capabilities=['listBuckets', 'readBuckets'],
+                    namePrefix=None,
+                ),
+            ),
+        ],
+    )
+    @pytest.mark.apiver(from_ver=3)
+    def test_migrate_to_5_v3(
+        self,
+        v2_sqlite_account_info_factory,
+        account_info_default_data,
+        old_allowed,
+        exp_allowed,
+    ):
+        old_account_info = v2_sqlite_account_info_factory()
+        account_info_default_data.update({'allowed': old_allowed})
+        old_account_info.set_auth_data(**account_info_default_data)
+        assert old_account_info.get_allowed() == old_allowed
+
+        new_account_info = self.sqlite_account_info_factory(file_name=old_account_info.filename)
+
+        assert new_account_info.get_allowed() == exp_allowed
+
+    @pytest.mark.apiver(2)
+    def test_multi_bucket_key_error_apiver_v2(
+        self,
+        v2_sqlite_account_info_factory,
+        v3_sqlite_account_info_factory,
+        account_info_default_data,
+    ):
+        allowed = dict(
+            buckets=[{'id': 1, 'name': 'bucket1'}, {'id': 2, 'name': 'bucket2'}],
+            capabilities=['listBuckets', 'readBuckets'],
+            namePrefix=None,
+        )
+
+        v3_account_info = v3_sqlite_account_info_factory()
+        account_info_default_data.update({'allowed': allowed})
+        v3_account_info.set_auth_data(**account_info_default_data)
+
+        assert v3_account_info.get_allowed() == allowed
+
+        v2_account_info = v2_sqlite_account_info_factory(file_name=v3_account_info.filename)
+        with pytest.raises(MissingAccountData):
+            v2_account_info.get_allowed()
 
 
 class TestSqliteAccountProfileFileLocation:

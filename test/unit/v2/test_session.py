@@ -12,10 +12,61 @@ from __future__ import annotations
 from unittest.mock import Mock
 
 import pytest
+from apiver_deps_exception import Unauthorized
 
-from b2sdk import _v3 as v3
+from b2sdk import v3
 from b2sdk.v2 import B2Session
 from test.helpers import patch_bind_params
+
+from ..account_info.fixtures import *  # noqa
+from ..fixtures import *
+
+
+class TestSession:
+    @pytest.fixture(autouse=True)
+    def setup(self, b2_session):
+        self.b2_session = b2_session
+
+    def test_app_key_info_no_info(self):
+        self.b2_session.account_info.get_allowed.return_value = dict(
+            bucketId=None,
+            bucketName=None,
+            capabilities=ALL_CAPABILITIES,
+            namePrefix=None,
+        )
+        self.b2_session.raw_api.get_file_info_by_id.side_effect = Unauthorized('no_go', 'code')
+        with pytest.raises(
+            Unauthorized, match=r'no_go for application key with no restrictions \(code\)'
+        ):
+            self.b2_session.get_file_info_by_id(None)
+
+    def test_app_key_info_no_info_no_message(self):
+        self.b2_session.account_info.get_allowed.return_value = dict(
+            bucketId=None,
+            bucketName=None,
+            capabilities=ALL_CAPABILITIES,
+            namePrefix=None,
+        )
+        self.b2_session.raw_api.get_file_info_by_id.side_effect = Unauthorized('', 'code')
+        with pytest.raises(
+            Unauthorized, match=r'unauthorized for application key with no restrictions \(code\)'
+        ):
+            self.b2_session.get_file_info_by_id(None)
+
+    def test_app_key_info_all_info(self):
+        self.b2_session.account_info.get_allowed.return_value = dict(
+            bucketId='123456',
+            bucketName='my-bucket',
+            capabilities=['readFiles'],
+            namePrefix='prefix/',
+        )
+        self.b2_session.raw_api.get_file_info_by_id.side_effect = Unauthorized('no_go', 'code')
+
+        with pytest.raises(
+            Unauthorized,
+            match=r"no_go for application key with capabilities 'readFiles', restricted to bucket 'my-bucket', restricted to files that start with 'prefix/' \(code\)",
+        ):
+            self.b2_session.get_file_info_by_id(None)
 
 
 @pytest.fixture

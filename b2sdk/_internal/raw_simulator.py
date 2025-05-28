@@ -17,7 +17,7 @@ import random
 import re
 import threading
 import time
-from contextlib import contextmanager, suppress
+from contextlib import contextmanager
 from typing import Iterable
 
 from requests.structures import CaseInsensitiveDict
@@ -99,8 +99,7 @@ class KeySimulator:
         key,
         capabilities,
         expiration_timestamp_or_none,
-        bucket_id_or_none,
-        bucket_name_or_none,
+        buckets_or_none,
         name_prefix_or_none,
     ):
         self.name = name
@@ -109,14 +108,19 @@ class KeySimulator:
         self.key = key
         self.capabilities = capabilities
         self.expiration_timestamp_or_none = expiration_timestamp_or_none
-        self.bucket_id_or_none = bucket_id_or_none
-        self.bucket_name_or_none = bucket_name_or_none
+        self.buckets_or_none = buckets_or_none
         self.name_prefix_or_none = name_prefix_or_none
+
+    def _get_bucket_ids(self):
+        if self.buckets_or_none is None:
+            return None
+
+        return [item['id'] for item in self.buckets_or_none]
 
     def as_key(self):
         return dict(
             accountId=self.account_id,
-            bucketId=self.bucket_id_or_none,
+            bucketIds=self._get_bucket_ids(),
             applicationKeyId=self.application_key_id,
             capabilities=self.capabilities,
             expirationTimestamp=self.expiration_timestamp_or_none
@@ -133,6 +137,7 @@ class KeySimulator:
         """
         result = self.as_key()
         result['applicationKey'] = self.key
+
         return result
 
     def get_allowed(self):
@@ -140,8 +145,7 @@ class KeySimulator:
         Return the 'allowed' structure to include in the response from b2_authorize_account.
         """
         return dict(
-            bucketId=self.bucket_id_or_none,
-            bucketName=self.bucket_name_or_none,
+            buckets=self.buckets_or_none,
             capabilities=self.capabilities,
             namePrefix=self.name_prefix_or_none,
         )
@@ -1371,8 +1375,7 @@ class RawSimulator(AbstractRawApi):
             key=master_key,
             capabilities=ALL_CAPABILITIES,
             expiration_timestamp_or_none=None,
-            bucket_id_or_none=None,
-            bucket_name_or_none=None,
+            buckets_or_none=None,
             name_prefix_or_none=None,
         )
 
@@ -1398,12 +1401,9 @@ class RawSimulator(AbstractRawApi):
         self.current_token = auth_token
         self.auth_token_counter += 1
         self.auth_token_to_key[auth_token] = key_sim
+
         allowed = key_sim.get_allowed()
-        bucketId = allowed.get('bucketId')
-        if (bucketId is not None) and (bucketId in self.bucket_id_to_bucket):
-            allowed['bucketName'] = self.bucket_id_to_bucket[bucketId].bucket_name
-        else:
-            allowed['bucketName'] = None
+
         return dict(
             accountId=key_sim.account_id,
             authorizationToken=auth_token,
@@ -1416,8 +1416,6 @@ class RawSimulator(AbstractRawApi):
                     absoluteMinimumPartSize=self.MIN_PART_SIZE,
                     allowed=allowed,
                     s3ApiUrl=self.S3_API_URL,
-                    bucketId=allowed['bucketId'],
-                    bucketName=allowed['bucketName'],
                     capabilities=allowed['capabilities'],
                     namePrefix=allowed['namePrefix'],
                 ),
@@ -1476,7 +1474,7 @@ class RawSimulator(AbstractRawApi):
         capabilities,
         key_name,
         valid_duration_seconds,
-        bucket_id,
+        bucket_ids,
         name_prefix,
     ):
         if not re.match(r'^[A-Za-z0-9-]{1,100}$', key_name):
@@ -1497,12 +1495,18 @@ class RawSimulator(AbstractRawApi):
         self.app_key_counter += 1
         application_key_id = 'appKeyId%d' % (index,)
         app_key = 'appKey%d' % (index,)
-        bucket_name_or_none = None
-        if bucket_id is not None:
+
+        buckets = None
+
+        if bucket_ids is not None:
             # It is possible for bucketId to be filled and bucketName to be empty.
             # It can happen when the bucket was deleted.
-            with suppress(NonExistentBucket):
-                bucket_name_or_none = self._get_bucket_by_id(bucket_id).bucket_name
+            buckets = []
+            for _id in bucket_ids:
+                try:
+                    buckets.append({'id': _id, 'name': self._get_bucket_by_id(_id).bucket_name})
+                except NonExistentBucket:
+                    buckets.append({'id': _id, 'name': None})
 
         key_sim = KeySimulator(
             account_id=account_id,
@@ -1511,8 +1515,7 @@ class RawSimulator(AbstractRawApi):
             key=app_key,
             capabilities=capabilities,
             expiration_timestamp_or_none=expiration_timestamp_or_none,
-            bucket_id_or_none=bucket_id,
-            bucket_name_or_none=bucket_name_or_none,
+            buckets_or_none=buckets,
             name_prefix_or_none=name_prefix,
         )
         self.key_id_to_key[application_key_id] = key_sim
@@ -2100,8 +2103,17 @@ class RawSimulator(AbstractRawApi):
             raise InvalidAuthToken('auth token expired', 'auth_token_expired')
         if capability not in key_sim.capabilities:
             raise Unauthorized('', 'unauthorized')
-        if key_sim.bucket_id_or_none is not None and key_sim.bucket_id_or_none != bucket_id:
-            raise Unauthorized('', 'unauthorized')
+
+        if key_sim.buckets_or_none:
+            found = False
+            for item in key_sim.buckets_or_none:
+                if item['id'] == bucket_id:
+                    found = True
+                    break
+
+            if not found:
+                raise Unauthorized('', 'unauthorized')
+
         if key_sim.name_prefix_or_none is not None:
             if file_name is not None and not file_name.startswith(key_sim.name_prefix_or_none):
                 raise Unauthorized('', 'unauthorized')

@@ -24,18 +24,18 @@ Sync Options
 Following are the important optional arguments that can be provided while initializing `Synchronizer` class.
 
 
-* ``compare_version_mode``: When comparing the source and destination files for finding whether to replace them or not, `compare_version_mode` can be passed to specify the mode of comparison. For possible values see :class:`b2sdk.v2.CompareVersionMode`. Default value is :py:attr:`b2sdk.v2.CompareVersionMode.MODTIME`
+* ``compare_version_mode``: When comparing the source and destination files for finding whether to replace them or not, `compare_version_mode` can be passed to specify the mode of comparison. For possible values see :class:`b2sdk.v3.CompareVersionMode`. Default value is :py:attr:`b2sdk.v3.CompareVersionMode.MODTIME`
 * ``compare_threshold``: It's the minimum size (in bytes)/modification time (in seconds) difference between source and destination files before we assume that it is new and replace.
-* ``newer_file_mode``: To identify whether to skip or replace if source is older. For possible values see :class:`b2sdk.v2.NewerFileSyncMode`. If you don't specify this the sync will raise :class:`b2sdk.v2.exception.DestFileNewer` in case any of the source file is older than destination.
-* ``keep_days_or_delete``: specify policy to keep or delete older files. For possible values see :class:`b2sdk.v2.KeepOrDeleteMode`. Default is `DO_NOTHING`.
-* ``keep_days``: if `keep_days_or_delete` is :py:attr:`b2sdk.v2.KeepOrDeleteMode.KEEP_BEFORE_DELETE` then this specifies for how many days should we keep.
+* ``newer_file_mode``: To identify whether to skip or replace if source is older. For possible values see :class:`b2sdk.v3.NewerFileSyncMode`. If you don't specify this the sync will raise :class:`b2sdk.v3.exception.DestFileNewer` in case any of the source file is older than destination.
+* ``keep_days_or_delete``: specify policy to keep or delete older files. For possible values see :class:`b2sdk.v3.KeepOrDeleteMode`. Default is `DO_NOTHING`.
+* ``keep_days``: if `keep_days_or_delete` is :py:attr:`b2sdk.v3.KeepOrDeleteMode.KEEP_BEFORE_DELETE` then this specifies for how many days should we keep.
 
 .. code-block:: python
 
-    >>> from b2sdk.v2 import ScanPoliciesManager
-    >>> from b2sdk.v2 import parse_folder
-    >>> from b2sdk.v2 import Synchronizer, SyncReport
-    >>> from b2sdk.v2 import KeepOrDeleteMode, CompareVersionMode, NewerFileSyncMode
+    >>> from b2sdk.v3 import ScanPoliciesManager
+    >>> from b2sdk.v3 import parse_folder
+    >>> from b2sdk.v3 import Synchronizer, SyncReport
+    >>> from b2sdk.v3 import KeepOrDeleteMode, CompareVersionMode, NewerFileSyncMode
     >>> import time
     >>> import sys
 
@@ -198,17 +198,17 @@ and :ref:`encryption_provider` for public API.
 Public API classes
 ==================
 
-.. autoclass:: b2sdk.v2.ScanPoliciesManager()
+.. autoclass:: b2sdk.v3.ScanPoliciesManager()
    :inherited-members:
    :special-members: __init__
    :members:
 
-.. autoclass:: b2sdk.v2.Synchronizer()
+.. autoclass:: b2sdk.v3.Synchronizer()
    :inherited-members:
    :special-members: __init__
    :members:
 
-.. autoclass:: b2sdk.v2.SyncReport()
+.. autoclass:: b2sdk.v3.SyncReport()
    :inherited-members:
    :special-members: __init__
    :members:
@@ -220,15 +220,15 @@ Sync Encryption Settings Providers
 ==================================
 
 
-.. autoclass:: b2sdk.v2.AbstractSyncEncryptionSettingsProvider()
+.. autoclass:: b2sdk.v3.AbstractSyncEncryptionSettingsProvider()
    :inherited-members:
    :members:
 
 
-.. autoclass:: b2sdk.v2.ServerDefaultSyncEncryptionSettingsProvider()
+.. autoclass:: b2sdk.v3.ServerDefaultSyncEncryptionSettingsProvider()
    :no-members:
 
 
-.. autoclass:: b2sdk.v2.BasicSyncEncryptionSettingsProvider()
+.. autoclass:: b2sdk.v3.BasicSyncEncryptionSettingsProvider()
    :special-members: __init__
    :no-members:

@@ -20,7 +20,7 @@ Glossary
       Looks like this: ``v1.0.0`` or ``1.0.0`` and makes version numbers meaningful. See :ref:`Pinning versions <semantic_versioning>` for more details.
 
     b2sdk interface version
-      Looks like this: ``v2`` or ``b2sdk.v2`` and makes maintaining backward compatibility much easier. See :ref:`interface versions <interface_versions>` for more details.
+      Looks like this: ``v3`` or ``b2sdk.v3`` and makes maintaining backward compatibility much easier. See :ref:`interface versions <interface_versions>` for more details.
 
     master application key
       This is the first key you have access to, it is available on the B2 web application. This key has all capabilities, access to all :term:`buckets<bucket>`, and has no file prefix restrictions or expiration. The :term:`application key ID` of the master application key is equal to :term:`account ID`.
