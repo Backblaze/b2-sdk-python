@@ -1,1 +1,0 @@
-Release apiver v3 interface. `from b2sdk.v3 import ...` is now the recommended import, but previous versions are still supported.

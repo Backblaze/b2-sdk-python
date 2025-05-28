@@ -9,6 +9,23 @@ upcoming release can be found in [changelog.d](changelog.d).
 
 <!-- towncrier release notes start -->
 
+## [2.9.1](https://github.com/Backblaze/b2-sdk-python/releases/tag/v2.9.1) - 2025-05-28
+
+
+### Changed
+
+- Adapt authorize_account flow to multi-bucket keys.
+- Migrate to b2 native api v4.
+- Move url_for_api func to an internal classmethod in B2Api class.
+- Release apiver v3 interface. `from b2sdk.v3 import ...` is now the recommended import, but previous versions are still supported.
+- Update application key classes to support multiple bucket ids.
+- Update create_key flow to multi-bucket keys.
+
+### Infrastructure
+
+- Migrate integration tests to apiver v3.
+
+
 ## [2.8.1](https://github.com/Backblaze/b2-sdk-python/releases/tag/v2.8.1) - 2025-04-24
 
 
