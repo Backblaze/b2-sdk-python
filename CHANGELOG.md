@@ -9,6 +9,14 @@ upcoming release can be found in [changelog.d](changelog.d).
 
 <!-- towncrier release notes start -->
 
+## [2.9.3](https://github.com/Backblaze/b2-sdk-python/releases/tag/v2.9.3) - 2025-05-29
+
+
+### Fixed
+
+- Fix `B2HttpApiConfig` and `Services` references in exposed `v2` API.
+
+
 ## [2.9.2](https://github.com/Backblaze/b2-sdk-python/releases/tag/v2.9.2) - 2025-05-29
 
 
