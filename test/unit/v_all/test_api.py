@@ -14,6 +14,7 @@ import pytest
 from apiver_deps import (
     B2Api,
     B2HttpApiConfig,
+    B2Session,
     Bucket,
     EncryptionMode,
     EncryptionSetting,
@@ -72,6 +73,8 @@ class TestServices:
         api_config = B2HttpApiConfig(_raw_api_class=_raw_api_class)
 
         self.api = B2Api(self.account_info, self.cache, api_config=api_config, **kwargs)
+
+        assert isinstance(self.api.session, B2Session)  # ensure correct apiver session is used
 
         assert self.api.account_info is self.account_info
         assert self.api.api_config is api_config

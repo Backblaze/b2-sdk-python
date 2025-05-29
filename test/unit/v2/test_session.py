@@ -15,7 +15,7 @@ import pytest
 from apiver_deps_exception import Unauthorized
 
 from b2sdk import v3
-from b2sdk.v2 import B2Session
+from b2sdk.v2 import B2Http, B2RawHTTPApi, B2Session
 from test.helpers import patch_bind_params
 
 from ..account_info.fixtures import *  # noqa
@@ -72,6 +72,18 @@ class TestSession:
 @pytest.fixture
 def dummy_session():
     return B2Session()
+
+
+def test_session__default_classes_v2():
+    session = B2Session()
+
+    assert isinstance(session.raw_api, B2RawHTTPApi), 'Expected v2.B2RawHTTPApi, got %s' % type(
+        session.raw_api
+    )
+
+    assert isinstance(session.raw_api.b2_http, B2Http), 'Expected v2.B2Http, got %s' % type(
+        session.raw_api.b2_http
+    )
 
 
 def test_session__upload_file__supports_file_infos(dummy_session, file_info):
