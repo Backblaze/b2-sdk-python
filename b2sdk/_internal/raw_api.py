@@ -553,7 +553,7 @@ class B2RawHTTPApi(AbstractRawApi):
         :param args: the rest of the parameters are passed to b2
         :return: the decoded JSON response
         """
-        url = f'{base_url}/b2api/{API_VERSION}/{endpoint}'
+        url = f'{base_url}/b2api/{self.API_VERSION}/{endpoint}'
         headers = {'Authorization': auth}
         return self.b2_http.post_json_return_json(url, headers, params)
 

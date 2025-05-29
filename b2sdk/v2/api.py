@@ -25,6 +25,8 @@ from .transfer import DownloadManager, UploadManager
 from .file_version import FileVersionFactory
 from .large_file import LargeFileServices
 from .application_key import FullApplicationKey, ApplicationKey, BaseApplicationKey
+from .account_info import AbstractAccountInfo
+from .api_config import DEFAULT_HTTP_API_CONFIG, B2HttpApiConfig
 
 
 class Services(v3.Services):
@@ -48,10 +50,29 @@ class B2Api(v3.B2Api):
     API_VERSION = RAW_API_VERSION
 
     # Legacy init in case something depends on max_workers defaults = 10
-    def __init__(self, *args, **kwargs):
-        kwargs.setdefault('max_upload_workers', 10)
-        kwargs.setdefault('max_copy_workers', 10)
-        super().__init__(*args, **kwargs)
+    def __init__(
+        self,
+        account_info: AbstractAccountInfo | None = None,
+        cache: v3.AbstractCache | None = None,
+        max_upload_workers: int | None = 10,
+        max_copy_workers: int | None = 10,
+        api_config: B2HttpApiConfig = DEFAULT_HTTP_API_CONFIG,
+        max_download_workers: int | None = None,
+        save_to_buffer_size: int | None = None,
+        check_download_hash: bool = True,
+        max_download_streams_per_file: int | None = None,
+    ):
+        super().__init__(
+            account_info=account_info,
+            cache=cache,
+            max_upload_workers=max_upload_workers,
+            max_copy_workers=max_copy_workers,
+            api_config=api_config,
+            max_download_workers=max_download_workers,
+            save_to_buffer_size=save_to_buffer_size,
+            check_download_hash=check_download_hash,
+            max_download_streams_per_file=max_download_streams_per_file,
+        )
 
     def get_bucket_by_id(self, bucket_id: str) -> v3.Bucket:
         try:
