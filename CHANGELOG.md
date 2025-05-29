@@ -9,6 +9,14 @@ upcoming release can be found in [changelog.d](changelog.d).
 
 <!-- towncrier release notes start -->
 
+## [2.9.2](https://github.com/Backblaze/b2-sdk-python/releases/tag/v2.9.2) - 2025-05-29
+
+
+### Fixed
+
+- Fix incorrect reliance on v3 abstractions in apiver v2. ([#540](https://github.com/Backblaze/b2-sdk-python/issues/540))
+
+
 ## [2.9.1](https://github.com/Backblaze/b2-sdk-python/releases/tag/v2.9.1) - 2025-05-28
 
 
