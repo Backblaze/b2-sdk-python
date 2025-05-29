@@ -1,0 +1,1 @@
+Fix `B2HttpApiConfig` and `Services` references in exposed `v2` API.
