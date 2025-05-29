@@ -24,8 +24,9 @@ from .account_info import InMemoryAccountInfo
 from .account_info import SqliteAccountInfo
 from .account_info import StubAccountInfo
 from .account_info import UrlPoolAccountInfo
-from .api import B2Api
+from .api import B2Api, Services
 from .b2http import B2Http
+from .api_config import B2HttpApiConfig, DEFAULT_HTTP_API_CONFIG
 from .bucket import Bucket, BucketFactory
 from .session import B2Session
 from .sync import B2SyncPath
