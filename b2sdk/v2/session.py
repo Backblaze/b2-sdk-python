@@ -12,14 +12,16 @@ from __future__ import annotations
 from b2sdk import v3
 from .b2http import B2Http
 
+from .account_info import SqliteAccountInfo
 from ._compat import _file_infos_rename
-from .._internal import api_config as _api_config
+from . import api_config as _api_config
 from .._internal import cache as _cache
 from .._internal.account_info import abstract as _abstract
 
 
 # Override to use legacy B2Http
 class B2Session(v3.B2Session):
+    SQLITE_ACCOUNT_INFO_CLASS = staticmethod(SqliteAccountInfo)
     B2HTTP_CLASS = staticmethod(B2Http)
 
     def __init__(
@@ -31,6 +33,7 @@ class B2Session(v3.B2Session):
         if account_info is not None and cache is None:
             # preserve legacy behavior https://github.com/Backblaze/b2-sdk-python/issues/497#issuecomment-2147461352
             cache = _cache.DummyCache()
+
         super().__init__(account_info, cache, api_config)
 
     def create_key(
