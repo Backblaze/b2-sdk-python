@@ -180,11 +180,11 @@ class LocalFolder(AbstractFolder):
         # Generate the full path to the file
         full_path = os.path.normpath(os.path.join(self.root, file_name))
 
-        # Get the common prefix between the new full_path and self.root
-        common_prefix = os.path.commonprefix([full_path, self.root])
+        # Get the common path between the new full_path and self.root
+        common_path = os.path.commonpath([full_path, self.root])
 
         # Ensure the new full_path is inside the self.root directory
-        if common_prefix != self.root:
+        if common_path != self.root:
             raise UnsupportedFilename('illegal file name', full_path)
 
         return full_path
