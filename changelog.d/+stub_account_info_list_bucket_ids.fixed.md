@@ -1,0 +1,1 @@
+Fix broken `StubAccountInfo.list_bucket_names_ids()`.
