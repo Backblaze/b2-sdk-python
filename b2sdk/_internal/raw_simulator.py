@@ -1404,6 +1404,14 @@ class RawSimulator(AbstractRawApi):
 
         allowed = key_sim.get_allowed()
 
+        buckets = allowed.get('buckets')
+        if buckets:
+            for item in buckets:
+                try:
+                    item['name'] = self.bucket_id_to_bucket[item['id']].bucket_name
+                except KeyError:
+                    item['name'] = None
+
         return dict(
             accountId=key_sim.account_id,
             authorizationToken=auth_token,
