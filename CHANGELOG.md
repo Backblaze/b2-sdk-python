@@ -9,6 +9,16 @@ upcoming release can be found in [changelog.d](changelog.d).
 
 <!-- towncrier release notes start -->
 
+## [2.9.4](https://github.com/Backblaze/b2-sdk-python/releases/tag/v2.9.4) - 2025-06-11
+
+
+### Fixed
+
+- Fix broken `StubAccountInfo.list_bucket_names_ids()`.
+- Fix bucket name mapping in `RawSimulator.authorize_account()`.
+- Fix incorrect path check in `LocalFolder.make_full_path`.
+
+
 ## [2.9.3](https://github.com/Backblaze/b2-sdk-python/releases/tag/v2.9.3) - 2025-05-29
 
 
