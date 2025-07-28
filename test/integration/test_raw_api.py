@@ -168,7 +168,7 @@ def raw_api_test_helper(raw_api, should_cleanup_old_buckets):
         account_auth_token,
         account_id,
         bucket_name,
-        'allPublic',
+        'allPrivate',
         is_file_lock_enabled=True,
     )
     bucket_id = bucket_dict['bucketId']
@@ -208,7 +208,7 @@ def raw_api_test_helper(raw_api, should_cleanup_old_buckets):
             account_auth_token,
             account_id,
             replication_source_bucket_name,
-            'allPublic',
+            'allPrivate',
             is_file_lock_enabled=True,
             replication=ReplicationConfiguration(
                 rules=[

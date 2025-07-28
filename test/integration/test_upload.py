@@ -16,7 +16,7 @@ from b2sdk._internal.encryption.setting import EncryptionKey, EncryptionSetting
 from b2sdk._internal.encryption.types import EncryptionAlgorithm, EncryptionMode
 from b2sdk.v2 import B2RawHTTPApi
 
-from .base import IntegrationTestBase
+from b2sdk._internal.testing.helpers.base import IntegrationTestBase
 from .test_raw_api import authorize_raw_api
 
 

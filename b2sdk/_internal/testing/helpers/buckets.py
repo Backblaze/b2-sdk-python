@@ -9,15 +9,11 @@
 ######################################################################
 from __future__ import annotations
 
-import os
 import secrets
 
 from b2sdk.v3 import (
     BUCKET_NAME_CHARS_UNIQ,
     BUCKET_NAME_LENGTH_RANGE,
-    DEFAULT_HTTP_API_CONFIG,
-    B2Api,
-    InMemoryAccountInfo,
 )
 
 GENERAL_BUCKET_NAME_PREFIX = 'sdktst'
@@ -37,11 +33,3 @@ def get_bucket_name_prefix(rnd_len: int = 8) -> str:
 
 def random_bucket_name(prefix: str = GENERAL_BUCKET_NAME_PREFIX) -> str:
     return prefix + _bucket_name_prefix_part(BUCKET_NAME_LENGTH - len(prefix))
-
-
-def authorize(b2_auth_data, api_config=DEFAULT_HTTP_API_CONFIG):
-    info = InMemoryAccountInfo()
-    b2_api = B2Api(info, api_config=api_config)
-    realm = os.environ.get('B2_TEST_ENVIRONMENT', 'production')
-    b2_api.authorize_account(*b2_auth_data, realm=realm)
-    return b2_api, info

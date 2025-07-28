@@ -13,8 +13,8 @@ import pytest
 
 from b2sdk.v2 import B2Api, current_time_millis
 from b2sdk.v2.exception import DuplicateBucketName
-from test.integration.bucket_cleaner import BucketCleaner
-from test.integration.helpers import (
+from b2sdk._internal.testing.helpers.bucket_cleaner import BucketCleaner
+from b2sdk._internal.testing.helpers.buckets import (
     BUCKET_CREATED_AT_MILLIS,
     random_bucket_name,
 )
@@ -58,7 +58,7 @@ class IntegrationTestBase:
         try:
             bucket = self.b2_api.create_bucket(
                 bucket_name,
-                'allPublic',
+                'allPrivate',
                 bucket_info={BUCKET_CREATED_AT_MILLIS: str(current_time_millis())},
             )
         except DuplicateBucketName:

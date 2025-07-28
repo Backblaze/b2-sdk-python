@@ -20,8 +20,8 @@ from b2sdk.v3 import (
     current_time_millis,
 )
 from b2sdk.v3.exception import BadRequest
+from b2sdk._internal.testing.helpers.buckets import BUCKET_CREATED_AT_MILLIS, GENERAL_BUCKET_NAME_PREFIX
 
-from .helpers import BUCKET_CREATED_AT_MILLIS, GENERAL_BUCKET_NAME_PREFIX
 
 ONE_HOUR_MILLIS = 60 * 60 * 1000
 
