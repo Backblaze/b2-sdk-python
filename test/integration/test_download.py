@@ -23,8 +23,7 @@ import pytest
 from b2sdk._internal.utils import Sha1HexDigest
 from b2sdk._internal.utils.filesystem import _IS_WINDOWS
 from b2sdk.v3 import *
-from b2sdk._internal.testing.helpers.base import IntegrationTestBase
-from b2sdk._internal.testing.helpers.api import authorize
+from b2sdk.v3.testing import IntegrationTestBase, authorize
 
 
 class TestDownload(IntegrationTestBase):

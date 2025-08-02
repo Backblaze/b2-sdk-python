@@ -23,13 +23,13 @@ BUCKET_CREATED_AT_MILLIS = 'created_at_millis'
 RNG = secrets.SystemRandom()
 
 
-def _bucket_name_prefix_part(length: int) -> str:
-    return ''.join(RNG.choice(BUCKET_NAME_CHARS_UNIQ) for _ in range(length))
+def random_token(length: int, chars: str = BUCKET_NAME_CHARS_UNIQ) -> str:
+    return ''.join(RNG.choice(chars) for _ in range(length))
 
 
 def get_bucket_name_prefix(rnd_len: int = 8) -> str:
-    return GENERAL_BUCKET_NAME_PREFIX + _bucket_name_prefix_part(rnd_len)
+    return GENERAL_BUCKET_NAME_PREFIX + random_token(rnd_len)
 
 
 def random_bucket_name(prefix: str = GENERAL_BUCKET_NAME_PREFIX) -> str:
-    return prefix + _bucket_name_prefix_part(BUCKET_NAME_LENGTH - len(prefix))
+    return prefix + random_token(BUCKET_NAME_LENGTH - len(prefix))

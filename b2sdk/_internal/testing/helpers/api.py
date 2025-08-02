@@ -31,6 +31,7 @@ def get_b2_auth_data():
 
 def authorize(b2_auth_data, api_config=DEFAULT_HTTP_API_CONFIG):
     info = InMemoryAccountInfo()
+    # TODO ME: Cache?
     b2_api = B2Api(info, api_config=api_config)
     realm = os.environ.get('B2_TEST_ENVIRONMENT', 'production')
     b2_api.authorize_account(*b2_auth_data, realm=realm)

@@ -13,7 +13,7 @@ import pytest
 
 from b2sdk.v2 import B2Api, current_time_millis
 from b2sdk.v2.exception import DuplicateBucketName
-from b2sdk._internal.testing.helpers.bucket_cleaner import BucketCleaner
+from b2sdk._internal.testing.helpers.bucket_manager import BucketManager
 from b2sdk._internal.testing.helpers.buckets import (
     BUCKET_CREATED_AT_MILLIS,
     random_bucket_name,
@@ -24,14 +24,14 @@ from b2sdk._internal.testing.helpers.buckets import (
 class IntegrationTestBase:
     b2_api: B2Api
     this_run_bucket_name_prefix: str
-    bucket_cleaner: BucketCleaner
+    bucket_manager: BucketManager
 
     @pytest.fixture(autouse=True, scope='class')
-    def cls_setup(self, request, b2_api, b2_auth_data, bucket_name_prefix, bucket_cleaner):
+    def cls_setup(self, request, b2_api, b2_auth_data, bucket_name_prefix, bucket_manager):
         cls = request.cls
         cls.b2_auth_data = b2_auth_data
         cls.this_run_bucket_name_prefix = bucket_name_prefix
-        cls.bucket_cleaner = bucket_cleaner
+        cls.bucket_manager = bucket_manager
         cls.b2_api = b2_api
         cls.info = b2_api.account_info
 
@@ -40,7 +40,7 @@ class IntegrationTestBase:
         self.buckets_created = []
         yield
         for bucket in self.buckets_created:
-            self.bucket_cleaner.cleanup_bucket(bucket)
+            self.bucket_manager.clean_bucket(bucket)
 
     def generate_bucket_name(self):
         return random_bucket_name(self.this_run_bucket_name_prefix)

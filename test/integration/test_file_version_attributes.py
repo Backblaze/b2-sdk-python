@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import datetime as dt
 
-from b2sdk._internal.testing.helpers.base import IntegrationTestBase
+from b2sdk.v3.testing import IntegrationTestBase
 
 
 class TestFileVersionAttributes(IntegrationTestBase):

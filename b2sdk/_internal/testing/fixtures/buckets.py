@@ -13,11 +13,12 @@ import secrets
 import pytest
 
 from b2sdk._internal.utils import current_time_millis
-from b2sdk._internal.testing.helpers.bucket_cleaner import BucketCleaner
+from b2sdk._internal.testing.helpers.bucket_manager import BucketManager
 from b2sdk._internal.testing.helpers.buckets import (
     BUCKET_CREATED_AT_MILLIS,
     get_bucket_name_prefix,
     random_bucket_name,
+    GENERAL_BUCKET_NAME_PREFIX,
 )
 
 
@@ -41,18 +42,24 @@ def bucket_name_prefix():
 
 
 @pytest.fixture(scope='session')
-def bucket_cleaner(bucket_name_prefix, dont_cleanup_old_buckets, _b2_api):
-    cleaner = BucketCleaner(
+def general_bucket_name_prefix():
+    return GENERAL_BUCKET_NAME_PREFIX
+
+
+@pytest.fixture(scope='session')
+def bucket_manager(bucket_name_prefix, general_bucket_name_prefix, dont_cleanup_old_buckets, _b2_api):
+    cleaner = BucketManager(
         dont_cleanup_old_buckets,
         _b2_api,
         current_run_prefix=bucket_name_prefix,
+        general_prefix=general_bucket_name_prefix
     )
     yield cleaner
-    cleaner.cleanup_buckets()
+    cleaner.clean_buckets()
 
 
 @pytest.fixture
-def bucket(b2_api, bucket_name_prefix, bucket_cleaner):
+def bucket(b2_api, bucket_name_prefix, bucket_manager):
     bucket = b2_api.create_bucket(
         random_bucket_name(bucket_name_prefix),
         'allPrivate',
@@ -62,7 +69,7 @@ def bucket(b2_api, bucket_name_prefix, bucket_cleaner):
         },
     )
     yield bucket
-    bucket_cleaner.cleanup_bucket(bucket)
+    bucket_manager.clean_bucket(bucket)
 
 
 @pytest.fixture

@@ -40,5 +40,5 @@ def _b2_api(b2_auth_data):
 
 
 @pytest.fixture(scope='session')
-def b2_api(_b2_api, bucket_cleaner):
+def b2_api(_b2_api, bucket_manager):
     return _b2_api
