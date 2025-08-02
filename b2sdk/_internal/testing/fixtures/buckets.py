@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: test/integration/conftest.py
+# File: b2sdk/_internal/testing/fixtures/buckets.py
 #
 # Copyright 2021 Backblaze Inc. All Rights Reserved.
 #
@@ -8,18 +8,19 @@
 #
 ######################################################################
 from __future__ import annotations
+
 import secrets
 
 import pytest
 
-from b2sdk._internal.utils import current_time_millis
 from b2sdk._internal.testing.helpers.bucket_manager import BucketManager
 from b2sdk._internal.testing.helpers.buckets import (
     BUCKET_CREATED_AT_MILLIS,
+    GENERAL_BUCKET_NAME_PREFIX,
     get_bucket_name_prefix,
     random_bucket_name,
-    GENERAL_BUCKET_NAME_PREFIX,
 )
+from b2sdk._internal.utils import current_time_millis
 
 
 def pytest_addoption(parser):
@@ -47,15 +48,17 @@ def general_bucket_name_prefix():
 
 
 @pytest.fixture(scope='session')
-def bucket_manager(bucket_name_prefix, general_bucket_name_prefix, dont_cleanup_old_buckets, _b2_api):
-    cleaner = BucketManager(
+def bucket_manager(
+    bucket_name_prefix, general_bucket_name_prefix, dont_cleanup_old_buckets, _b2_api
+):
+    manager = BucketManager(
         dont_cleanup_old_buckets,
         _b2_api,
         current_run_prefix=bucket_name_prefix,
-        general_prefix=general_bucket_name_prefix
+        general_prefix=general_bucket_name_prefix,
     )
-    yield cleaner
-    cleaner.clean_buckets()
+    yield manager
+    manager.clean_buckets()
 
 
 @pytest.fixture

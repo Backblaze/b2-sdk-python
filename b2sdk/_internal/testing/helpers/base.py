@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: test/integration/base.py
+# File: b2sdk/_internal/testing/helpers/base.py
 #
 # Copyright 2022 Backblaze Inc. All Rights Reserved.
 #
@@ -11,13 +11,13 @@ from __future__ import annotations
 
 import pytest
 
-from b2sdk.v2 import B2Api, current_time_millis
-from b2sdk.v2.exception import DuplicateBucketName
 from b2sdk._internal.testing.helpers.bucket_manager import BucketManager
 from b2sdk._internal.testing.helpers.buckets import (
     BUCKET_CREATED_AT_MILLIS,
     random_bucket_name,
 )
+from b2sdk.v2 import B2Api, current_time_millis
+from b2sdk.v2.exception import DuplicateBucketName
 
 
 @pytest.mark.usefixtures('cls_setup')

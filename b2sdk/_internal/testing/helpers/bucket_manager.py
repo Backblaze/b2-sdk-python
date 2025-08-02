@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: test/integration/bucket_manager.py
+# File: b2sdk/_internal/testing/helpers/bucket_manager.py
 #
 # Copyright 2022 Backblaze Inc. All Rights Reserved.
 #
@@ -13,13 +13,18 @@ import logging
 import platform
 from collections.abc import Iterable
 from datetime import datetime, timedelta
-
 from itertools import chain
 from typing import Any
 
 import tenacity
 
-from b2sdk._internal.exception import BucketIdNotFound, TooManyRequests, FileNotPresent
+from b2sdk._internal.exception import BucketIdNotFound, FileNotPresent, TooManyRequests
+from b2sdk._internal.testing.helpers.buckets import (
+    BUCKET_CREATED_AT_MILLIS,
+    BUCKET_NAME_LENGTH,
+    GENERAL_BUCKET_NAME_PREFIX,
+    random_token,
+)
 from b2sdk.v3 import (
     NO_RETENTION_FILE_SETTING,
     B2Api,
@@ -29,9 +34,6 @@ from b2sdk.v3 import (
     current_time_millis,
 )
 from b2sdk.v3.exception import BadRequest
-from b2sdk._internal.testing.helpers.buckets import BUCKET_CREATED_AT_MILLIS, GENERAL_BUCKET_NAME_PREFIX, random_token, \
-    BUCKET_NAME_LENGTH
-
 
 NODE_DESCRIPTION = f'{platform.node()}: {platform.platform()}'
 ONE_HOUR_MILLIS = 60 * 60 * 1000
@@ -45,8 +47,8 @@ class BucketManager:
         self,
         dont_cleanup_old_buckets: bool,
         b2_api: B2Api,
-        current_run_prefix: str,
-        general_prefix: str = GENERAL_BUCKET_NAME_PREFIX
+        current_run_prefix: str = '',
+        general_prefix: str = GENERAL_BUCKET_NAME_PREFIX,
     ):
         self.current_run_prefix = current_run_prefix
         self.general_prefix = general_prefix
@@ -77,7 +79,7 @@ class BucketManager:
         )
 
     def _should_remove_bucket(self, bucket: Bucket) -> tuple[bool, str]:
-        if bucket.name.startswith(self.current_run_prefix):
+        if self.current_run_prefix and bucket.name.startswith(self.current_run_prefix):
             return True, 'it is a bucket for this very run'
         if self.dont_cleanup_old_buckets:
             return False, 'old buckets ought not to be cleaned'

@@ -9,14 +9,12 @@
 ######################################################################
 from __future__ import annotations
 
-from test.integration.helpers import authorize
+from b2sdk.v3.testing import BucketManager, authorize, get_b2_auth_data, get_realm
 
-from b2sdk._internal.testing.helpers.api import get_b2_auth_data
-from b2sdk._internal.testing.helpers.bucket_manager import BucketManager
-# from .test_raw_api import cleanup_old_buckets
+from .test_raw_api import cleanup_old_buckets
 
 if __name__ == '__main__':
-    # cleanup_old_buckets()
+    cleanup_old_buckets()
     BucketManager(
-        dont_cleanup_old_buckets=False, b2_api=authorize(get_b2_auth_data())[0]
+        dont_cleanup_old_buckets=False, b2_api=authorize(get_b2_auth_data(), get_realm())[0]
     ).clean_buckets()

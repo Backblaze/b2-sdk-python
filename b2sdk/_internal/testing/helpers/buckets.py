@@ -1,6 +1,6 @@
 ######################################################################
 #
-# File: test/integration/helpers.py
+# File: b2sdk/_internal/testing/helpers/buckets.py
 #
 # Copyright 2022 Backblaze Inc. All Rights Reserved.
 #
