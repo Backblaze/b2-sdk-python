@@ -11,11 +11,9 @@ from __future__ import annotations
 
 import os
 
-from b2sdk.v3 import (
-    DEFAULT_HTTP_API_CONFIG,
-    B2Api,
-    InMemoryAccountInfo,
-)
+from b2sdk._internal.account_info.in_memory import InMemoryAccountInfo
+from b2sdk._internal.api import B2Api
+from b2sdk._internal.api_config import DEFAULT_HTTP_API_CONFIG
 
 
 def get_realm() -> str:

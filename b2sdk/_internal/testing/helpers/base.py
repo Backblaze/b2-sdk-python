@@ -12,11 +12,7 @@ from __future__ import annotations
 import pytest
 
 from b2sdk._internal.testing.helpers.bucket_manager import BucketManager
-from b2sdk._internal.testing.helpers.buckets import (
-    BUCKET_CREATED_AT_MILLIS,
-    random_bucket_name,
-)
-from b2sdk.v2 import B2Api, current_time_millis
+from b2sdk.v2 import B2Api
 from b2sdk.v2.exception import DuplicateBucketName
 
 
@@ -42,9 +38,6 @@ class IntegrationTestBase:
         for bucket in self.buckets_created:
             self.bucket_manager.clean_bucket(bucket)
 
-    def generate_bucket_name(self):
-        return random_bucket_name(self.this_run_bucket_name_prefix)
-
     def write_zeros(self, file, number):
         line = b'0' * 1000 + b'\n'
         line_len = len(line)
@@ -54,13 +47,9 @@ class IntegrationTestBase:
             written += line_len
 
     def create_bucket(self):
-        bucket_name = self.generate_bucket_name()
+        bucket_name = self.bucket_manager.new_bucket_name()
         try:
-            bucket = self.b2_api.create_bucket(
-                bucket_name,
-                'allPrivate',
-                bucket_info={BUCKET_CREATED_AT_MILLIS: str(current_time_millis())},
-            )
+            bucket = self.bucket_manager.create_bucket(name=bucket_name)
         except DuplicateBucketName:
             self._duplicated_bucket_name_debug_info(bucket_name)
             raise

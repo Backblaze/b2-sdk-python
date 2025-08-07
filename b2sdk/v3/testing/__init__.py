@@ -20,7 +20,6 @@ from b2sdk._internal.testing.helpers.buckets import (
     RNG,
     random_token,
     get_bucket_name_prefix,
-    random_bucket_name,
 )
 from b2sdk._internal.testing.helpers.bucket_manager import (
     NODE_DESCRIPTION,

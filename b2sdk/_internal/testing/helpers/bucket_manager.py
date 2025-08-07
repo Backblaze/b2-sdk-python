@@ -18,22 +18,17 @@ from typing import Any
 
 import tenacity
 
-from b2sdk._internal.exception import BucketIdNotFound, FileNotPresent, TooManyRequests
+from b2sdk._internal.api import B2Api
+from b2sdk._internal.bucket import Bucket
+from b2sdk._internal.exception import BadRequest, BucketIdNotFound, FileNotPresent, TooManyRequests
+from b2sdk._internal.file_lock import NO_RETENTION_FILE_SETTING, LegalHold, RetentionMode
 from b2sdk._internal.testing.helpers.buckets import (
     BUCKET_CREATED_AT_MILLIS,
     BUCKET_NAME_LENGTH,
     GENERAL_BUCKET_NAME_PREFIX,
     random_token,
 )
-from b2sdk.v3 import (
-    NO_RETENTION_FILE_SETTING,
-    B2Api,
-    Bucket,
-    LegalHold,
-    RetentionMode,
-    current_time_millis,
-)
-from b2sdk.v3.exception import BadRequest
+from b2sdk._internal.utils import current_time_millis
 
 NODE_DESCRIPTION = f'{platform.node()}: {platform.platform()}'
 ONE_HOUR_MILLIS = 60 * 60 * 1000
@@ -70,7 +65,7 @@ class BucketManager:
         }
 
     def create_bucket(self, bucket_type: str = 'allPublic', **kwargs) -> Bucket:
-        bucket_name = self.new_bucket_name()
+        bucket_name = kwargs.pop('name', self.new_bucket_name())
         return self.b2_api.create_bucket(
             bucket_name,
             bucket_type=bucket_type,

@@ -11,10 +11,7 @@ from __future__ import annotations
 
 import secrets
 
-from b2sdk.v3 import (
-    BUCKET_NAME_CHARS_UNIQ,
-    BUCKET_NAME_LENGTH_RANGE,
-)
+from b2sdk._internal.http_constants import BUCKET_NAME_CHARS_UNIQ, BUCKET_NAME_LENGTH_RANGE
 
 GENERAL_BUCKET_NAME_PREFIX = 'sdktst'
 BUCKET_NAME_LENGTH = BUCKET_NAME_LENGTH_RANGE[1]
@@ -29,7 +26,3 @@ def random_token(length: int, chars: str = BUCKET_NAME_CHARS_UNIQ) -> str:
 
 def get_bucket_name_prefix(rnd_len: int = 8) -> str:
     return GENERAL_BUCKET_NAME_PREFIX + random_token(rnd_len)
-
-
-def random_bucket_name(prefix: str = GENERAL_BUCKET_NAME_PREFIX) -> str:
-    return prefix + random_token(BUCKET_NAME_LENGTH - len(prefix))

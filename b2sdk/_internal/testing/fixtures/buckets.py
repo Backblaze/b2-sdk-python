@@ -15,12 +15,9 @@ import pytest
 
 from b2sdk._internal.testing.helpers.bucket_manager import BucketManager
 from b2sdk._internal.testing.helpers.buckets import (
-    BUCKET_CREATED_AT_MILLIS,
     GENERAL_BUCKET_NAME_PREFIX,
     get_bucket_name_prefix,
-    random_bucket_name,
 )
-from b2sdk._internal.utils import current_time_millis
 
 
 def pytest_addoption(parser):
@@ -62,15 +59,8 @@ def bucket_manager(
 
 
 @pytest.fixture
-def bucket(b2_api, bucket_name_prefix, bucket_manager):
-    bucket = b2_api.create_bucket(
-        random_bucket_name(bucket_name_prefix),
-        'allPrivate',
-        bucket_info={
-            'created_by': 'b2-sdk integration test',
-            BUCKET_CREATED_AT_MILLIS: str(current_time_millis()),
-        },
-    )
+def bucket(bucket_name_prefix, bucket_manager):
+    bucket = bucket_manager.create_bucket()
     yield bucket
     bucket_manager.clean_bucket(bucket)
 
