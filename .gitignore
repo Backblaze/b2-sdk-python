@@ -14,3 +14,4 @@ venv
 .vscode
 .pdm-build/
 .pdm-python
+.env

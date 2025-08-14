@@ -23,9 +23,7 @@ import pytest
 from b2sdk._internal.utils import Sha1HexDigest
 from b2sdk._internal.utils.filesystem import _IS_WINDOWS
 from b2sdk.v3 import *
-
-from .base import IntegrationTestBase
-from .helpers import authorize
+from b2sdk.v3.testing import IntegrationTestBase, authorize
 
 
 class TestDownload(IntegrationTestBase):
@@ -101,7 +99,7 @@ class TestDownload(IntegrationTestBase):
 
 
 @pytest.mark.parametrize('size_multiplier', [1, 100])
-def test_gzip(b2_auth_data, bucket, tmp_path, b2_api, size_multiplier):
+def test_gzip(b2_auth_data, bucket, tmp_path, b2_api, size_multiplier, realm):
     """Test downloading gzipped files of varius sizes with and without content-encoding."""
     source_file = tmp_path / 'compressed_file.gz'
     downloaded_uncompressed_file = tmp_path / 'downloaded_uncompressed_file'
@@ -115,7 +113,7 @@ def test_gzip(b2_auth_data, bucket, tmp_path, b2_api, size_multiplier):
     b2_api.download_file_by_id(file_id=file_version.id_).save_to(str(downloaded_compressed_file))
     assert downloaded_compressed_file.read_bytes() == source_file.read_bytes()
 
-    decompressing_api, _ = authorize(b2_auth_data, B2HttpApiConfig(decode_content=True))
+    decompressing_api, _ = authorize(b2_auth_data, realm, B2HttpApiConfig(decode_content=True))
     decompressing_api.download_file_by_id(file_id=file_version.id_).save_to(
         str(downloaded_uncompressed_file)
     )
