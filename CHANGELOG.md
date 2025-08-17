@@ -9,6 +9,18 @@ upcoming release can be found in [changelog.d](changelog.d).
 
 <!-- towncrier release notes start -->
 
+## [2.10.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v2.10.0) - 2025-08-18
+
+
+### Removed
+
+- Drop Python 3.8 support.
+
+### Changed
+
+- Improved test helpers and fixtures and moved them to the public API.
+
+
 ## [2.9.4](https://github.com/Backblaze/b2-sdk-python/releases/tag/v2.9.4) - 2025-06-11
 
 
