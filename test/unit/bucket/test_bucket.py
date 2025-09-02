@@ -654,6 +654,14 @@ class TestLs(TestCaseWithBucket):
         expected = [('hello.txt', 11, 'upload', None)]
         self.assertBucketContents(expected, '', show_versions=True)
 
+    def test_unhidden_file_version(self):
+        data = b'hello world'
+        self.bucket.upload_bytes(data, 'hello.txt')
+        file_version = self.bucket.hide_file('hello.txt')
+        self.bucket.unhide_file_version(file_version)
+        expected = [('hello.txt', 11, 'upload', None)]
+        self.assertBucketContents(expected, '', show_versions=True)
+
     def test_delete_file_version(self):
         data = b'hello world'
 

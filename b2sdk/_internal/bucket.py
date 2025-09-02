@@ -1363,15 +1363,24 @@ class Bucket(metaclass=B2TraceMeta):
         if latest_file_version is None:
             raise FileNotPresent(bucket_name=self.name, file_id_or_name=file_name)
 
-        action = latest_file_version.action
+        return self.unhide_file_version(latest_file_version, bypass_governance=bypass_governance)
+
+    def unhide_file_version(
+        self, file_version: FileVersion, bypass_governance: bool = False
+    ) -> FileIdAndName:
+        """
+        Deletes the file version if it corresponds to the "hide marker", raises error otherwise
+        """
+
+        action = file_version.action
         if action == 'upload':
-            raise FileNotHidden(file_name)
+            raise FileNotHidden(file_version.file_name)
         elif action == 'delete':
-            raise FileDeleted(file_name)
+            raise FileDeleted(file_version.file_name)
         elif action != 'hide':
             raise UnexpectedFileVersionAction(action)
 
-        return self.delete_file_version(latest_file_version.id_, file_name, bypass_governance)
+        return self.delete_file_version(file_version.id_, file_version.file_name, bypass_governance)
 
     def copy(
         self,

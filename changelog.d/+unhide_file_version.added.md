@@ -1,0 +1,1 @@
+Add `unhide_file_version` method to the `Bucket` class extracting relevant logic from `unhide_file`.
