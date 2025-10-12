@@ -7,7 +7,8 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
-""" generates a dot file with SqliteAccountInfo database structure """
+"""generates a dot file with SqliteAccountInfo database structure"""
+
 from __future__ import annotations
 
 import tempfile

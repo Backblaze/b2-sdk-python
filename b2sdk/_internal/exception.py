@@ -434,6 +434,23 @@ class ServiceError(TransientErrorMixin, B2Error):
     """
 
 
+class ServiceErrorDuringUpload(ServiceError):
+    """
+    A :py:class:`b2sdk.v3.exception.ServiceError` that occurred during an upload operation.
+
+    This exception disables HTTP-level retries to force the error to propagate
+    back to the upload manager, which will clear cached upload tokens and request
+    fresh ones. This is necessary because 5xx errors may indicate the upload URL
+    is no longer valid (typically '503 Service Unavailable').
+
+    Similar to :py:class:`b2sdk.v3.exception.B2RequestTimeoutDuringUpload`, this ensures upload token refresh
+    happens when the server is experiencing issues.
+    """
+
+    def should_retry_http(self):
+        return False
+
+
 class CapExceeded(B2Error):
     def __str__(self):
         return 'Cap exceeded.'

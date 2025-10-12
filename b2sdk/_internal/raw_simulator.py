@@ -624,6 +624,9 @@ class BucketSimulator:
             # fortunately BucketSimulator makes it easy to retrieve the true account_auth_token
             # from an upload url
             real_auth_token = account_auth_token.split('/')[-1]
+            # Strip the _upload_<id> suffix if present to get the base account auth token
+            if '_upload_' in real_auth_token:
+                real_auth_token = real_auth_token.split('_upload_')[0]
             key = self.api.auth_token_to_key[real_auth_token]
         capabilities = key.get_allowed()['capabilities']
         return capability in capabilities
@@ -773,10 +776,13 @@ class BucketSimulator:
 
     def get_upload_url(self, account_auth_token):
         upload_id = next(self.upload_url_counter)
+        # Generate a unique upload authorization token by appending upload_id to account token
+        # This ensures each upload URL has a different auth token, matching real B2 API behavior
+        unique_upload_token = '%s_upload_%d' % (account_auth_token, upload_id)
         upload_url = 'https://upload.example.com/%s/%d/%s' % (
             self.bucket_id,
             upload_id,
-            account_auth_token,
+            unique_upload_token,
         )
         return dict(bucketId=self.bucket_id, uploadUrl=upload_url, authorizationToken=upload_url)
 

@@ -42,6 +42,8 @@ from .exception import (
     ClockSkew,
     ConnectionReset,
     PotentialS3EndpointPassedAsRealm,
+    ServiceError,
+    ServiceErrorDuringUpload,
     UnknownError,
     UnknownHost,
     interpret_b2_error,
@@ -363,6 +365,11 @@ class B2Http:
             # this forces a token refresh, which is necessary if request is still alive
             # on the server but has terminated for some reason on the client. See #79
             raise B2RequestTimeoutDuringUpload()
+        except ServiceError as e:
+            # Convert ServiceError to ServiceErrorDuringUpload for upload operations.
+            # This disables HTTP-level retries and forces the upload manager to clear
+            # cached upload tokens and request fresh ones.
+            raise ServiceErrorDuringUpload(str(e))
 
     def post_json_return_json(self, url, headers, params, try_count: int = TRY_COUNT_OTHER):
         """
