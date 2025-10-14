@@ -18,11 +18,8 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-import pytest
-
 from b2sdk._internal.exception import ServiceError
-from b2sdk.v3 import RawSimulator
-from b2sdk.v3 import B2Api, B2HttpApiConfig, DummyCache, StubAccountInfo
+from b2sdk.v3 import B2Api, B2HttpApiConfig, DummyCache, RawSimulator, StubAccountInfo
 
 from .test_base import TestBase
 
