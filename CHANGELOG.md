@@ -9,6 +9,14 @@ upcoming release can be found in [changelog.d](changelog.d).
 
 <!-- towncrier release notes start -->
 
+## [2.10.1](https://github.com/Backblaze/b2-sdk-python/releases/tag/v2.10.1) - 2025-10-26
+
+
+### Changed
+
+- Improve seed generation for containers' names in tests.
+
+
 ## [2.10.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v2.10.0) - 2025-08-18
 
 
