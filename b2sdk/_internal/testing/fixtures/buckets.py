@@ -35,13 +35,13 @@ def dont_cleanup_old_buckets(request):
 
 
 @pytest.fixture(scope='session')
-def bucket_name_prefix():
-    return get_bucket_name_prefix(8)
+def general_bucket_name_prefix():
+    return GENERAL_BUCKET_NAME_PREFIX
 
 
 @pytest.fixture(scope='session')
-def general_bucket_name_prefix():
-    return GENERAL_BUCKET_NAME_PREFIX
+def bucket_name_prefix(general_bucket_name_prefix):
+    return get_bucket_name_prefix(8, general_bucket_name_prefix)
 
 
 @pytest.fixture(scope='session')

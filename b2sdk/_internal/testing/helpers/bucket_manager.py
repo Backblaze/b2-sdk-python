@@ -10,7 +10,6 @@
 from __future__ import annotations
 
 import logging
-import platform
 from collections.abc import Iterable
 from datetime import datetime, timedelta
 from itertools import chain
@@ -26,11 +25,11 @@ from b2sdk._internal.testing.helpers.buckets import (
     BUCKET_CREATED_AT_MILLIS,
     BUCKET_NAME_LENGTH,
     GENERAL_BUCKET_NAME_PREFIX,
-    random_token,
+    NODE_DESCRIPTION,
+    bucket_name_part,
 )
 from b2sdk._internal.utils import current_time_millis
 
-NODE_DESCRIPTION = f'{platform.node()}: {platform.platform()}'
 ONE_HOUR_MILLIS = 60 * 60 * 1000
 BUCKET_CLEANUP_PERIOD_MILLIS = timedelta(hours=3).total_seconds() * 1000
 
@@ -52,7 +51,7 @@ class BucketManager:
         self.bucket_name_log: list[str] = []
 
     def new_bucket_name(self) -> str:
-        bucket_name = self.current_run_prefix + random_token(
+        bucket_name = self.current_run_prefix + bucket_name_part(
             BUCKET_NAME_LENGTH - len(self.current_run_prefix)
         )
         self.bucket_name_log.append(bucket_name)
