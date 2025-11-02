@@ -9,4 +9,4 @@
 ######################################################################
 
 
-pytest_plugins = ["b2sdk.v3.testing"]
+pytest_plugins = ['b2sdk.v3.testing']
