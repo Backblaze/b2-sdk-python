@@ -173,6 +173,7 @@ test = [
     "eval_type_backport>=0.1.3,<1; python_version<'3.10'",  # used with pydantic
     "pydantic>=2.0.1",
     "pywin32>=306; sys_platform == \"win32\" and platform_python_implementation!='PyPy'",
+    "responses",
 ]
 release = [
     "towncrier==23.11.0; python_version>='3.8'",
