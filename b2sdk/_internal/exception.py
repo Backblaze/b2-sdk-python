@@ -452,7 +452,11 @@ class TransactionCapExceeded(CapExceeded):
 class TooManyRequests(B2Error):
     def __init__(self, retry_after_seconds=None):
         super().__init__()
-        self.retry_after_seconds = retry_after_seconds
+
+        try:
+            self.retry_after_seconds = int(retry_after_seconds)
+        except (TypeError, ValueError):
+            self.retry_after_seconds = None
 
     def __str__(self):
         return 'Too many requests'
