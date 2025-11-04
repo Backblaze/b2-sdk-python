@@ -344,7 +344,6 @@ class TestTranslateAndRetry:
 
         assert mock_time.mock_calls == [call(1.0), call(1.5)]
 
-    @pytest.mark.xfail(reason='no int conversion in the retry-after header parsing logic')
     @responses.activate
     def test_too_many_requests_works_after_sleep(self, b2_http: B2Http, mock_time: MagicMock):
         _mock_error_response(self.URL, status=429, headers={'Retry-After': '2'})
@@ -353,7 +352,6 @@ class TestTranslateAndRetry:
         b2_http.request(responses.GET, self.URL, {})
         mock_time.assert_called_once_with(2)
 
-    @pytest.mark.xfail(reason='no int conversion in the retry-after header parsing logic')
     @responses.activate
     def test_too_many_requests_failed_after_sleep(self, b2_http: B2Http, mock_time: MagicMock):
         _mock_error_response(self.URL, status=429, headers={'Retry-After': '2'})
@@ -363,7 +361,6 @@ class TestTranslateAndRetry:
             b2_http.request(responses.GET, self.URL, {}, try_count=2)
         mock_time.assert_called_once_with(2)
 
-    @pytest.mark.xfail(reason='no int conversion in the retry-after header parsing logic')
     @responses.activate
     def test_too_many_requests_retry_header_combination_one(
         self, b2_http: B2Http, mock_time: MagicMock
@@ -377,7 +374,6 @@ class TestTranslateAndRetry:
         b2_http.request(responses.GET, self.URL, {}, try_count=4)
         assert mock_time.mock_calls == [call(2), call(1.5), call(2)]
 
-    @pytest.mark.xfail(reason='no int conversion in the retry-after header parsing logic')
     @responses.activate
     def test_too_many_requests_retry_header_combination_two(
         self, b2_http: B2Http, mock_time: MagicMock
