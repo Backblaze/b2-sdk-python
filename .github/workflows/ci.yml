@@ -103,8 +103,9 @@ jobs:
             extras: "full"
             os: "ubuntu-latest"
           # Workaround for https://github.com/actions/setup-python/issues/696
-          - os: "macos-13"
+          - os: "macos-14-large"
             python-version: 3.9
+    if: ${{ !(endsWith(matrix.os, '-large') || endsWith(matrix.os, '-xlarge')) || !vars.SKIP_LARGE_RUNNERS }}
     steps:
       - uses: actions/checkout@v4
         with:
