@@ -9,6 +9,20 @@ upcoming release can be found in [changelog.d](changelog.d).
 
 <!-- towncrier release notes start -->
 
+## [2.10.2](https://github.com/Backblaze/b2-sdk-python/releases/tag/v2.10.2) - 2025-12-16
+
+
+### Fixed
+
+- Fix type error in retrying behavior for 429 status with Retry-After header value set.
+
+### Infrastructure
+
+- Improve debugging in integration tests bucket manager.
+- Redesign `b2http` unit tests utilizing sentry `responses` library for mocking out the `requests` package.
+- Update CI to not use deprecated `macos-13` runner.
+
+
 ## [2.10.1](https://github.com/Backblaze/b2-sdk-python/releases/tag/v2.10.1) - 2025-10-26
 
 
