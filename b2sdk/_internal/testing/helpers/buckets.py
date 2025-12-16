@@ -39,7 +39,7 @@ def get_seed() -> str:
             os.getenv('WORKFLOW_ID', secrets.token_hex(8)),
             NODE_DESCRIPTION,
             str(time.time_ns()),
-            os.getenv('PYTEST_XDIST_WORKER', 'gw0'),
+            os.getenv('PYTEST_XDIST_WORKER', 'master'),
         )
     )
     return sha256(seed.encode()).hexdigest()[:16]

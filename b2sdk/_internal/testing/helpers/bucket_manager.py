@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from collections.abc import Iterable
 from datetime import datetime, timedelta
 from itertools import chain
@@ -19,7 +20,13 @@ import tenacity
 
 from b2sdk._internal.api import B2Api
 from b2sdk._internal.bucket import Bucket
-from b2sdk._internal.exception import BadRequest, BucketIdNotFound, FileNotPresent, TooManyRequests
+from b2sdk._internal.exception import (
+    BadRequest,
+    BucketIdNotFound,
+    DuplicateBucketName,
+    FileNotPresent,
+    TooManyRequests,
+)
 from b2sdk._internal.file_lock import NO_RETENTION_FILE_SETTING, LegalHold, RetentionMode
 from b2sdk._internal.testing.helpers.buckets import (
     BUCKET_CREATED_AT_MILLIS,
@@ -48,14 +55,26 @@ class BucketManager:
         self.general_prefix = general_prefix
         self.dont_cleanup_old_buckets = dont_cleanup_old_buckets
         self.b2_api = b2_api
-        self.bucket_name_log: list[str] = []
+        self.bucket_name_mapping: dict[str, str] = {}
 
     def new_bucket_name(self) -> str:
-        bucket_name = self.current_run_prefix + bucket_name_part(
-            BUCKET_NAME_LENGTH - len(self.current_run_prefix)
+        attempts = 5
+
+        for _ in range(attempts):
+            bucket_name = self.current_run_prefix + bucket_name_part(
+                BUCKET_NAME_LENGTH - len(self.current_run_prefix)
+            )
+            if bucket_name not in self.bucket_name_mapping:
+                return bucket_name
+
+        raise RuntimeError(
+            'Failed to generate a unique bucket name after %d attempts. Last tried name: %s. Existing buckets:\n%s'
+            % (
+                attempts,
+                bucket_name,
+                self.bucket_name_mapping,
+            )
         )
-        self.bucket_name_log.append(bucket_name)
-        return bucket_name
 
     def new_bucket_info(self) -> dict:
         return {
@@ -65,12 +84,25 @@ class BucketManager:
 
     def create_bucket(self, bucket_type: str = 'allPublic', **kwargs) -> Bucket:
         bucket_name = kwargs.pop('name', self.new_bucket_name())
-        return self.b2_api.create_bucket(
-            bucket_name,
-            bucket_type=bucket_type,
-            bucket_info=self.new_bucket_info(),
-            **kwargs,
-        )
+
+        try:
+            bucket = self.b2_api.create_bucket(
+                bucket_name,
+                bucket_type=bucket_type,
+                bucket_info=self.new_bucket_info(),
+                **kwargs,
+            )
+        except DuplicateBucketName:
+            logger.error(
+                'Bucket %s already exists. Currently used buckets:\n%s',
+                bucket_name,
+                self.bucket_name_mapping,
+            )
+            raise
+
+        self.bucket_name_mapping[bucket_name] = os.getenv('PYTEST_CURRENT_TEST', 'unknown test')
+
+        return bucket
 
     def _should_remove_bucket(self, bucket: Bucket) -> tuple[bool, str]:
         if self.current_run_prefix and bucket.name.startswith(self.current_run_prefix):
