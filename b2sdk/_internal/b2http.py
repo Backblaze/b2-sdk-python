@@ -36,12 +36,12 @@ from .exception import (
     B2ConnectionError,
     B2Error,
     B2RequestTimeout,
-    B2RequestTimeoutDuringUpload,
     BadDateFormat,
     BrokenPipe,
     ClockSkew,
     ConnectionReset,
     PotentialS3EndpointPassedAsRealm,
+    ServiceError,
     UnknownError,
     UnknownHost,
     interpret_b2_error,
@@ -281,7 +281,7 @@ class B2Http:
             self._run_post_request_hooks(method, url, request_headers, response)
             return response
 
-        return self._translate_and_retry(do_request, try_count, params)
+        return self._translate_and_retry(do_request, try_count, method, request_headers, params)
 
     def request_content_return_json(
         self,
@@ -355,14 +355,9 @@ class B2Http:
         :param data: a file-like object to send
         :return: a dict that is the decoded JSON
         """
-        try:
-            return self.request_content_return_json(
-                'POST', url, headers, data, try_count, post_params, _timeout=_timeout
-            )
-        except B2RequestTimeout:
-            # this forces a token refresh, which is necessary if request is still alive
-            # on the server but has terminated for some reason on the client. See #79
-            raise B2RequestTimeoutDuringUpload()
+        return self.request_content_return_json(
+            'POST', url, headers, data, try_count, post_params, _timeout=_timeout
+        )
 
     def post_json_return_json(self, url, headers, params, try_count: int = TRY_COUNT_OTHER):
         """
@@ -579,7 +574,12 @@ class B2Http:
 
     @classmethod
     def _translate_and_retry(
-        cls, fcn: Callable, try_count: int, post_params: dict[str, Any] | None = None
+        cls,
+        fcn: Callable,
+        try_count: int,
+        method: str,
+        headers: dict[str, Any],
+        post_params: dict[str, Any] | None = None,
     ):
         """
         Try calling fcn try_count times, retrying only if
@@ -598,6 +598,15 @@ class B2Http:
             except B2Error as e:
                 if not e.should_retry_http():
                     raise
+                if (
+                    method == 'POST'
+                    and 'X-Bz-Content-Sha1' in headers
+                    and isinstance(e, (ServiceError, B2RequestTimeout))
+                ):
+                    # This is an upload operation, so we avoid http-level retries
+                    # here to force an upload token refresh
+                    raise
+
                 logger.debug(str(e), exc_info=True)
                 if e.retry_after_seconds is not None:
                     sleep_duration = e.retry_after_seconds

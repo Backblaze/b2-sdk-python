@@ -387,6 +387,37 @@ class TestTranslateAndRetry:
         b2_http.request(responses.GET, self.URL, {}, try_count=4)
         assert mock_time.mock_calls == [call(1.0), call(5), call(2.25)]
 
+    @responses.activate
+    def test_service_error_during_upload_no_retries(self, b2_http: B2Http, mock_time: MagicMock):
+        _mock_error_response(self.URL, method=responses.POST, status=503)
+        responses.post(self.URL)
+
+        headers = {'X-Bz-Content-Sha1': '1234'}
+
+        with pytest.raises(ServiceError):
+            b2_http.request(responses.POST, self.URL, headers)
+
+        mock_time.assert_not_called()
+
+    @responses.activate
+    def test_request_timeout_during_upload_no_retries(self, b2_http: B2Http, mock_time: MagicMock):
+        responses.post(
+            self.URL,
+            body=requests.ConnectionError(
+                requests.packages.urllib3.exceptions.ProtocolError(
+                    'dummy', TimeoutError('The write operation timed out')
+                )
+            ),
+        )
+        responses.post(self.URL)
+
+        headers = {'X-Bz-Content-Sha1': '1234'}
+
+        with pytest.raises(B2RequestTimeout):
+            b2_http.request(responses.POST, self.URL, headers)
+
+        mock_time.assert_not_called()
+
 
 class TestB2Http:
     URL = 'http://example.com'
