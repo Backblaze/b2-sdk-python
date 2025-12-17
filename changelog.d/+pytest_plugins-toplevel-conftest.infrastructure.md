@@ -1,0 +1,1 @@
+Move pytest_plugins to top-level conftest (fix for newer pytest).

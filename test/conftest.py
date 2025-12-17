@@ -11,6 +11,8 @@ import concurrent.futures
 
 import pytest
 
+pytest_plugins = ['b2sdk.v3.testing']
+
 
 @pytest.fixture
 def bg_executor():
