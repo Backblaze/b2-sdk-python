@@ -149,6 +149,11 @@ def pytest_runtest_setup(item):
                 pytest.skip('test requires apiver to be in range: [%d, %d]' % (from_ver, to_ver))
 
 
+@pytest.fixture(scope='session', autouse=True)
+def auto_change_account_info_dir(change_account_info_dir):
+    pass
+
+
 @pytest.fixture(scope='session')
 def apiver(request):
     """Get apiver as a v-prefixed string, e.g. "v2"."""
