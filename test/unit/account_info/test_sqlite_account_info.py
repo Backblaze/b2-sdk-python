@@ -9,6 +9,7 @@
 ######################################################################
 from __future__ import annotations
 
+import json
 import os
 
 import pytest
@@ -32,7 +33,7 @@ class TestDatabseMigrations:
 
     def test_upgrade_1_default_allowed(self):
         """The 'allowed' field should be the default for upgraded databases."""
-        old_account_info = self.sqlite_account_info_factory(schema_0=True)
+        old_account_info = self.sqlite_account_info_factory(last_upgrade_to_run=0)
         old_account_info.set_auth_data_with_schema_0_for_test(**self.account_info_default_data)
         new_account_info = self.sqlite_account_info_factory(file_name=old_account_info.filename)
 
@@ -40,7 +41,7 @@ class TestDatabseMigrations:
 
     def test_upgrade_2_default_app_key(self):
         """The 'application_key_id' field should default to the account ID."""
-        old_account_info = self.sqlite_account_info_factory(schema_0=True)
+        old_account_info = self.sqlite_account_info_factory(last_upgrade_to_run=0)
         old_account_info.set_auth_data_with_schema_0_for_test(**self.account_info_default_data)
         new_account_info = self.sqlite_account_info_factory(file_name=old_account_info.filename)
 
@@ -48,14 +49,14 @@ class TestDatabseMigrations:
 
     def test_upgrade_3_default_s3_api_url(self):
         """The 's3_api_url' field should be set."""
-        old_account_info = self.sqlite_account_info_factory(schema_0=True)
+        old_account_info = self.sqlite_account_info_factory(last_upgrade_to_run=0)
         old_account_info.set_auth_data_with_schema_0_for_test(**self.account_info_default_data)
         new_account_info = self.sqlite_account_info_factory(file_name=old_account_info.filename)
 
         assert '' == new_account_info.get_s3_api_url()
 
     def test_migrate_to_4(self):
-        old_account_info = self.sqlite_account_info_factory(schema_0=True)
+        old_account_info = self.sqlite_account_info_factory(last_upgrade_to_run=0)
         old_account_info.set_auth_data_with_schema_0_for_test(**self.account_info_default_data)
         new_account_info = self.sqlite_account_info_factory(file_name=old_account_info.filename)
 
@@ -82,18 +83,47 @@ class TestDatabseMigrations:
             ),
         ],
     )
-    @pytest.mark.apiver(2)
-    def test_migrate_to_5_v2(
-        self, v2_sqlite_account_info_factory, account_info_default_data, allowed
+    @pytest.mark.apiver(to_ver=2)
+    @pytest.mark.parametrize(
+        ('start_version', 'end_version'),
+        [
+            (4, 5),
+            (5, 6),
+        ],
+    )
+    def test_migrate_to_5_prior_to_v3(
+        self,
+        sqlite_account_info_factory,
+        account_info_default_data: dict,
+        allowed: dict,
+        start_version: int,
+        end_version: int,
     ):
-        old_account_info = v2_sqlite_account_info_factory()
-        account_info_default_data.update({'allowed': allowed})
+        old_account_info = sqlite_account_info_factory(last_upgrade_to_run=start_version)
         old_account_info.set_auth_data(**account_info_default_data)
+
+        allowed_text = json.dumps(allowed)
+        with old_account_info._get_connection() as conn:
+            conn.execute(f"UPDATE account SET allowed = ('{allowed_text}');")
+
+        assert old_account_info._get_update_count(start_version) == 1
+        assert old_account_info._get_update_count(end_version) == 0
+
         assert old_account_info.get_allowed() == allowed
 
-        new_account_info = self.sqlite_account_info_factory(file_name=old_account_info.filename)
+        new_account_info = self.sqlite_account_info_factory(
+            file_name=old_account_info.filename, last_upgrade_to_run=end_version
+        )
 
+        assert new_account_info._get_update_count(end_version) == 1
         assert new_account_info.get_allowed() == allowed
+
+        with new_account_info._get_connection() as conn:
+            new_allowed = json.loads(conn.execute('SELECT allowed FROM account;').fetchone()[0])
+
+        assert 'buckets' in new_allowed
+        assert 'bucketId' not in new_allowed
+        assert 'bucketName' not in new_allowed
 
     @pytest.mark.parametrize(
         ('old_allowed', 'exp_allowed'),
@@ -126,22 +156,40 @@ class TestDatabseMigrations:
             ),
         ],
     )
+    @pytest.mark.parametrize(
+        ('start_version', 'end_version'),
+        [
+            (4, 5),
+            (5, 6),
+        ],
+    )
     @pytest.mark.apiver(from_ver=3)
     def test_migrate_to_5_v3(
         self,
-        v2_sqlite_account_info_factory,
-        account_info_default_data,
-        old_allowed,
-        exp_allowed,
+        sqlite_account_info_factory,
+        account_info_default_data: dict,
+        old_allowed: dict,
+        exp_allowed: dict,
+        start_version: int,
+        end_version: int,
     ):
-        old_account_info = v2_sqlite_account_info_factory()
-        account_info_default_data.update({'allowed': old_allowed})
+        old_account_info = sqlite_account_info_factory(last_upgrade_to_run=start_version)
         old_account_info.set_auth_data(**account_info_default_data)
-        assert old_account_info.get_allowed() == old_allowed
 
-        new_account_info = self.sqlite_account_info_factory(file_name=old_account_info.filename)
+        allowed_text = json.dumps(old_allowed)
+        with old_account_info._get_connection() as conn:
+            conn.execute(f"UPDATE account SET allowed = ('{allowed_text}');")
+
+        assert old_account_info.get_allowed() == old_allowed
+        assert old_account_info._get_update_count(start_version) == 1
+        assert old_account_info._get_update_count(end_version) == 0
+
+        new_account_info = self.sqlite_account_info_factory(
+            file_name=old_account_info.filename, last_upgrade_to_run=end_version
+        )
 
         assert new_account_info.get_allowed() == exp_allowed
+        assert new_account_info._get_update_count(end_version) == 1
 
     @pytest.mark.apiver(2)
     def test_multi_bucket_key_error_apiver_v2(

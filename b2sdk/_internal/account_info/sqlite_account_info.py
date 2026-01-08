@@ -280,7 +280,7 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
         """
         )
         # By default, we run all the upgrades
-        last_upgrade_to_run = 5 if last_upgrade_to_run is None else last_upgrade_to_run
+        last_upgrade_to_run = 6 if last_upgrade_to_run is None else last_upgrade_to_run
         # Add the 'allowed' column if it hasn't been yet.
         if 1 <= last_upgrade_to_run:
             self._ensure_update(1, ['ALTER TABLE account ADD COLUMN allowed TEXT;'])
@@ -385,13 +385,17 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
             )
 
         if 5 <= last_upgrade_to_run:
-            self._migrate_allowed_to_multi_bucket()
+            self._migrate_allowed_to_multi_bucket(version=5)
 
-    def _migrate_allowed_to_multi_bucket(self):
+        # There were reported cases of users with db schema upgraded to version 5 and still containing old single-bucket style allowed dict. This was possible because users of sdk apiver <= v2 still received old-styled allowed dicts (from v3 remote API) and there was no proper transformation mechanism when setting the auth data. The bug has now been addressed, but we need an additional migration to address aforementioned cases.
+        if 6 <= last_upgrade_to_run:
+            self._migrate_allowed_to_multi_bucket(version=6)
+
+    def _migrate_allowed_to_multi_bucket(self, *, version: int):
         """
         Migrate existing allowed json dict to a new multi-bucket keys format
         """
-        if self._get_update_count(5) > 0:
+        if self._get_update_count(version) > 0:
             return
 
         try:
@@ -400,10 +404,14 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
             allowed_json = None
 
         if allowed_json is None:
-            self._perform_update(5, [])
+            self._perform_update(version, [])
             return
 
         allowed = json.loads(allowed_json)
+
+        if 'buckets' in allowed:
+            self._perform_update(version, [])
+            return
 
         bucket_id = allowed.pop('bucketId')
         bucket_name = allowed.pop('bucketName')
@@ -416,7 +424,7 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
         allowed_text = json.dumps(allowed)
         stmt = f"UPDATE account SET allowed = ('{allowed_text}');"
 
-        self._perform_update(5, [stmt])
+        self._perform_update(version, [stmt])
 
     def _ensure_update(self, update_number, update_commands: list[str]):
         """
@@ -469,7 +477,6 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
         allowed,
         application_key_id,
     ):
-        assert self.allowed_is_valid(allowed)
         with self._get_connection() as conn:
             conn.execute('DELETE FROM account;')
             conn.execute('DELETE FROM bucket;')
