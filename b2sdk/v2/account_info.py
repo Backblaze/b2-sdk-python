@@ -9,8 +9,8 @@
 ######################################################################
 from __future__ import annotations
 
-import json
 
+from copy import copy
 from b2sdk import v3
 from .exception import MissingAccountData
 
@@ -33,6 +33,65 @@ class _OldAllowedMixin:
             and ('namePrefix' in allowed)
         )
 
+    @classmethod
+    def _convert_allowed_single_to_multi_bucket(cls, allowed):
+        new = copy(allowed)
+
+        bucket_id = new.pop('bucketId')
+        bucket_name = new.pop('bucketName')
+
+        if bucket_id is not None:
+            new['buckets'] = [{'id': bucket_id, 'name': bucket_name}]
+        else:
+            new['buckets'] = None
+
+        return new
+
+    def get_allowed(self):
+        allowed = super().get_allowed()
+
+        if 'buckets' in allowed:
+            buckets = allowed.pop('buckets')
+            if buckets and len(buckets) > 1:
+                raise MissingAccountData(
+                    'Multi-bucket keys cannot be used with the current sdk version'
+                )
+
+            allowed['bucketId'] = buckets[0]['id'] if buckets else None
+            allowed['bucketName'] = buckets[0]['name'] if buckets else None
+
+        return allowed
+
+    def _set_auth_data(
+        self,
+        account_id,
+        auth_token,
+        api_url,
+        download_url,
+        recommended_part_size,
+        absolute_minimum_part_size,
+        application_key,
+        realm,
+        s3_api_url,
+        allowed,
+        application_key_id,
+    ):
+        new_allowed = self._convert_allowed_single_to_multi_bucket(allowed)
+
+        super()._set_auth_data(
+            account_id,
+            auth_token,
+            api_url,
+            download_url,
+            recommended_part_size,
+            absolute_minimum_part_size,
+            application_key,
+            realm,
+            s3_api_url,
+            new_allowed,
+            application_key_id,
+        )
+
 
 class AbstractAccountInfo(_OldAllowedMixin, v3.AbstractAccountInfo):
     def list_bucket_names_ids(self):
@@ -48,46 +107,7 @@ class InMemoryAccountInfo(_OldAllowedMixin, v3.InMemoryAccountInfo):
 
 
 class SqliteAccountInfo(_OldAllowedMixin, v3.SqliteAccountInfo):
-    def get_allowed(self):
-        """
-        Return 'allowed' dictionary info.
-        Example:
-
-        .. code-block:: python
-
-            {
-                "bucketId": null,
-                "bucketName": null,
-                "capabilities": [
-                    "listKeys",
-                    "writeKeys"
-                ],
-                "namePrefix": null
-            }
-
-        The 'allowed' column was not in the original schema, so it may be NULL.
-
-        :rtype: dict
-        """
-        allowed_json = self._get_account_info_or_raise('allowed')
-        if allowed_json is None:
-            return self.DEFAULT_ALLOWED
-
-        allowed = json.loads(allowed_json)
-
-        # convert a multi-bucket key to a single bucket
-
-        if 'buckets' in allowed:
-            buckets = allowed.pop('buckets')
-            if buckets and len(buckets) > 1:
-                raise MissingAccountData(
-                    'Multi-bucket keys cannot be used with the current sdk version'
-                )
-
-            allowed['bucketId'] = buckets[0]['id'] if buckets else None
-            allowed['bucketName'] = buckets[0]['name'] if buckets else None
-
-        return allowed
+    pass
 
 
 class StubAccountInfo(_OldAllowedMixin, v3.StubAccountInfo):

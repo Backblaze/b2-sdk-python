@@ -1,0 +1,1 @@
+Address backwards compatibility issue for sqlite account info caused by the migration of schema to a new multi-bucket format.
