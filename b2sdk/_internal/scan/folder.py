@@ -13,6 +13,7 @@ import logging
 import os
 import platform
 import re
+import stat
 import sys
 from abc import ABCMeta, abstractmethod
 from pathlib import Path
@@ -274,14 +275,19 @@ class LocalFolder(AbstractFolder):
                     reporter.invalid_name(str(local_path), str(e))
                 continue
 
+            # Deliberately don't use Path.is_dir here: for directories
+            # without search permission, Python 3.13 raises PermissionError
+            # while Python 3.14 returns False.
             try:
-                is_dir = local_path.is_dir()
+                is_dir = stat.S_ISDIR(local_path.stat().st_mode)
             except PermissionError:  # `chmod -x dir` can trigger this
                 if reporter is not None and not policies_manager.should_exclude_local_directory(
                     str(relative_file_path)
                 ):
                     reporter.local_permission_error(str(local_path))
                 continue
+            except (OSError, ValueError):
+                is_dir = False
 
             if is_dir:
                 if policies_manager.should_exclude_local_directory(str(relative_file_path)):
