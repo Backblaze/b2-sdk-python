@@ -564,7 +564,7 @@ class B2RawHTTPApi(AbstractRawApi):
 
     def authorize_account(self, realm_url, application_key_id, application_key):
         auth = (
-            f"Basic {base64.b64encode(f'{application_key_id}:{application_key}'.encode()).decode()}"
+            f'Basic {base64.b64encode(f"{application_key_id}:{application_key}".encode()).decode()}'
         )
         return self._post_json(realm_url, 'b2_authorize_account', auth)
 
@@ -1071,7 +1071,12 @@ class B2RawHTTPApi(AbstractRawApi):
             legal_hold=legal_hold,
             custom_upload_timestamp=custom_upload_timestamp,
         )
-        return self.b2_http.post_content_return_json(upload_url, headers, data_stream)
+        return self.b2_http.post_content_return_json(
+            upload_url,
+            headers,
+            data_stream,
+            try_count=1,
+        )
 
     def upload_part(
         self,
@@ -1097,7 +1102,12 @@ class B2RawHTTPApi(AbstractRawApi):
             )
             server_side_encryption.add_to_upload_headers(headers)
 
-        return self.b2_http.post_content_return_json(upload_url, headers, data_stream)
+        return self.b2_http.post_content_return_json(
+            upload_url,
+            headers,
+            data_stream,
+            try_count=1,
+        )
 
     def copy_file(
         self,

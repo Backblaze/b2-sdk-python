@@ -36,7 +36,6 @@ from .exception import (
     B2ConnectionError,
     B2Error,
     B2RequestTimeout,
-    B2RequestTimeoutDuringUpload,
     BadDateFormat,
     BrokenPipe,
     ClockSkew,
@@ -254,7 +253,7 @@ class B2Http:
         :param url: a URL to call
         :param headers: headers to send.
         :param data: raw bytes or a file-like object to send
-        :param try_count: a number of retries
+        :param try_count: a number of attempts
         :param params: a dict that will be converted to query string for GET requests or additional metadata for POST requests
         :param stream: if True, the response will be streamed
         :param _timeout: a timeout for the request in seconds if not default
@@ -355,14 +354,9 @@ class B2Http:
         :param data: a file-like object to send
         :return: a dict that is the decoded JSON
         """
-        try:
-            return self.request_content_return_json(
-                'POST', url, headers, data, try_count, post_params, _timeout=_timeout
-            )
-        except B2RequestTimeout:
-            # this forces a token refresh, which is necessary if request is still alive
-            # on the server but has terminated for some reason on the client. See #79
-            raise B2RequestTimeoutDuringUpload()
+        return self.request_content_return_json(
+            'POST', url, headers, data, try_count, post_params, _timeout=_timeout
+        )
 
     def post_json_return_json(self, url, headers, params, try_count: int = TRY_COUNT_OTHER):
         """
@@ -423,7 +417,7 @@ class B2Http:
 
         :param str url: a URL to call
         :param dict headers: headers to send
-        :param int try_count: a number or retries
+        :param int try_count: a number of attempts
         :return: Context manager that returns an object that supports iter_content()
         """
         response = self.request(
@@ -456,7 +450,7 @@ class B2Http:
 
         :param str url: a URL to call
         :param dict headers: headers to send
-        :param int try_count: a number or retries
+        :param int try_count: a number of attempts
         :return: HTTP response
         """
         return self.request('HEAD', url, headers=headers, try_count=try_count)
@@ -586,9 +580,13 @@ class B2Http:
         the exception is a retryable B2Error.
 
         :param fcn: request function to call
-        :param try_count: a number of retries
+        :param try_count: a number of attempts
         :param post_params: request parameters
         """
+
+        if try_count < 1:
+            raise ValueError('try_count must be >= 1')
+
         # For all but the last try, catch the exception.
         wait_time = 1.0
         max_wait_time = 64
