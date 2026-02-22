@@ -13,8 +13,8 @@ build:
     - graphviz
   jobs:
     post_create_environment:
-      - pip install pdm
-      - pdm export --format requirements --group doc --output requirements-doc.txt
+      - python -m pip install uv==0.8.4
+      - uv export --format requirements-txt --group doc --output-file requirements-doc.txt
 
 # Build documentation in the docs/ directory with Sphinx
 sphinx:

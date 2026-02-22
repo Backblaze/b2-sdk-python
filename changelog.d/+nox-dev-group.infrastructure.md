@@ -1,0 +1,1 @@
+Use a separate nox dependency group for reprocible installs of nox in ci / cd.

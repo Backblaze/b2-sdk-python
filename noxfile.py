@@ -19,9 +19,6 @@ import nox
 
 UPSTREAM_REPO_URL = 'git@github.com:Backblaze/b2-sdk-python.git'
 
-# Required for PDM to use nox's virtualenvs
-os.environ.update({'PDM_IGNORE_SAVED_PYTHON': '1'})
-
 CI = os.environ.get('CI') is not None
 NOX_PYTHONS = os.environ.get('NOX_PYTHONS')
 _NOX_EXTRAS = os.environ.get('NOX_EXTRAS')
@@ -59,20 +56,27 @@ PYTHON_DEFAULT_VERSION = PYTHON_VERSIONS[-2] if len(PYTHON_VERSIONS) > 1 else PY
 
 PY_PATHS = ['b2sdk', 'test', 'noxfile.py']
 
-nox.options.reuse_existing_virtualenvs = True
+nox.options.default_venv_backend = 'uv'
+nox.options.reuse_existing_virtualenvs = False
 nox.options.sessions = [
     'lint',
     'test',
 ]
 
 
-def pdm_install(session: nox.Session, *args: str, dev: bool = True) -> None:
-    # dev dependencies are installed by default
-    prod_args = [] if dev else ['--prod']
-    group_args = []
-    for group in args:
-        group_args.extend(['--group', group])
-    session.run('pdm', 'install', *prod_args, *group_args, external=True)
+def uv_install(
+    session: nox.Session, *, groups: tuple[str, ...] = (), extras: tuple[str, ...] = ()
+) -> None:
+    args = ['sync', '--locked']
+    for group in groups:
+        if group:
+            args.extend(['--group', group])
+    for extra in extras:
+        if extra:
+            args.extend(['--extra', extra])
+    uv_env = getattr(session.virtualenv, 'location', os.getenv('VIRTUAL_ENV'))
+
+    session.run_install('uv', *args, env={'UV_PROJECT_ENVIRONMENT': uv_env})
 
 
 def skip_coverage(python_version: str | None) -> bool:
@@ -82,7 +86,7 @@ def skip_coverage(python_version: str | None) -> bool:
 @nox.session(name='format', python=PYTHON_DEFAULT_VERSION)
 def format_(session):
     """Lint the code and apply fixes in-place whenever possible."""
-    pdm_install(session, 'lint')
+    uv_install(session, groups=('format',))
     session.run('ruff', 'check', '--fix', *PY_PATHS)
     session.run('ruff', 'format', *PY_PATHS)
     # session.run(
@@ -99,7 +103,7 @@ def format_(session):
 def lint(session):
     """Run linters in readonly mode."""
     # We need to install 'doc' group because liccheck needs to inspect it.
-    pdm_install(session, 'doc', 'lint', 'full')
+    uv_install(session, groups=('doc', 'lint'), extras=('full',))
     session.run('ruff', 'check', *PY_PATHS)
     session.run('ruff', 'format', *PY_PATHS)
     # session.run(
@@ -114,15 +118,12 @@ def lint(session):
     session.run('pytest', 'test/static')
     session.run('liccheck', '-s', 'pyproject.toml')
 
-    # Check if the lockfile is up to date
-    session.run('pdm', 'lock', '--check', external=True)
-
 
 @nox.session(python=PYTHON_VERSIONS)
 @nox.parametrize('extras', NOX_EXTRAS)
 def unit(session, extras):
     """Run unit tests."""
-    pdm_install(session, 'test', *extras)
+    uv_install(session, groups=('test',), extras=tuple(extras))
     args = ['--doctest-modules', '-n', 'auto']
     if not skip_coverage(session.python):
         args += ['--cov=b2sdk', '--cov-branch', '--cov-report=xml']
@@ -142,14 +143,14 @@ def unit(session, extras):
 @nox.parametrize('extras', NOX_EXTRAS)
 def integration(session, extras):
     """Run integration tests."""
-    pdm_install(session, 'test', *extras)
+    uv_install(session, groups=('test',), extras=tuple(extras))
     session.run('pytest', '-s', *session.posargs, 'test/integration')
 
 
 @nox.session(python=PYTHON_DEFAULT_VERSION)
 def cleanup_old_buckets(session):
     """Remove buckets from previous test runs."""
-    pdm_install(session, 'test')
+    uv_install(session, groups=('test',))
     session.run('python', '-m', 'test.integration.cleanup_buckets')
 
 
@@ -167,7 +168,7 @@ def test(session):
 @nox.session
 def cover(session):
     """Perform coverage analysis."""
-    pdm_install(session, 'test')
+    uv_install(session, groups=('test',))
     session.run('coverage', 'report', '--fail-under=75', '--show-missing', '--skip-covered')
     session.run('coverage', 'erase')
 
@@ -175,7 +176,7 @@ def cover(session):
 @nox.session(python=PYTHON_DEFAULT_VERSION)
 def build(session):
     """Build the distribution."""
-    session.run('pdm', 'build', external=True)
+    session.run('uv', 'build', external=True)
 
     # Set outputs for GitHub Actions
     if CI:
@@ -191,7 +192,7 @@ def build(session):
 @nox.session(python=PYTHON_DEFAULT_VERSION)
 def doc(session):
     """Build the documentation."""
-    pdm_install(session, 'doc')
+    uv_install(session, groups=('doc',))
     session.cd('doc')
     sphinx_args = ['-b', 'html', '-T', '-W', 'source', 'build/html']
     session.run('rm', '-rf', 'build', external=True)
@@ -216,7 +217,7 @@ def doc(session):
 @nox.session
 def doc_cover(session):
     """Perform coverage analysis for the documentation."""
-    pdm_install(session, 'doc')
+    uv_install(session, groups=('doc',))
     session.cd('doc')
     sphinx_args = ['-b', 'coverage', '-T', '-W', 'source', 'build/coverage']
     report_file = 'build/coverage/python.txt'
@@ -253,7 +254,7 @@ def make_release_commit(session):
     if current_branch != 'master':
         session.log('WARNING: releasing from a branch different than master')
 
-    pdm_install(session, 'release')
+    uv_install(session, groups=('release',))
     session.run('towncrier', 'build', '--yes', '--version', version)
 
     session.log(
