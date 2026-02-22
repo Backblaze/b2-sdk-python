@@ -1,1 +1,0 @@
-Avoid http-level retries during upload requests.

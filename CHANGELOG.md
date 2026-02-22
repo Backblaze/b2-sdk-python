@@ -9,6 +9,24 @@ upcoming release can be found in [changelog.d](changelog.d).
 
 <!-- towncrier release notes start -->
 
+## [2.10.3](https://github.com/Backblaze/b2-sdk-python/releases/tag/v2.10.3) - 2026-02-23
+
+
+### Fixed
+
+- Address backwards compatibility issue for sqlite account info caused by the migration of schema to a new multi-bucket format.
+- Avoid http-level retries during upload requests.
+- Use `stat.S_ISDIR` check for local folder children scanning instead of `Path.is_dir` to account for an api change in Python 3.14.
+
+### Infrastructure
+
+- Bump pip version.
+- Migrate from pdm to uv.
+- Move pytest_plugins to top-level conftest (fix for newer pytest).
+- Set temporary directory as account info config dir in tests.
+- Use a separate nox dependency group for reprocible installs of nox in ci / cd.
+
+
 ## [2.10.2](https://github.com/Backblaze/b2-sdk-python/releases/tag/v2.10.2) - 2025-12-16
 
 
