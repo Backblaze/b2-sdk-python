@@ -1918,6 +1918,11 @@ class TestUpload(TestCaseWithBucket):
         data = b'hello world'
         self.bucket.upload_bytes(data, 'file1')
 
+    def test_upload_unbound_stream_one_retryable_error(self):
+        self.simulator.set_upload_errors([CanRetry(True)])
+        data = b'hello world'
+        self.bucket.upload_unbound_stream(io.BytesIO(data), 'file1')
+
     def test_upload_timeout(self):
         self.simulator.set_upload_errors([B2RequestTimeoutDuringUpload()])
         data = b'hello world'
