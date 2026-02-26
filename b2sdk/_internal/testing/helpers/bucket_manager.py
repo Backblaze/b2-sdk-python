@@ -82,6 +82,11 @@ class BucketManager:
             'created_by': NODE_DESCRIPTION,
         }
 
+    @tenacity.retry(
+        retry=tenacity.retry_if_exception_type(TooManyRequests),
+        wait=tenacity.wait_exponential(),
+        stop=tenacity.stop_after_attempt(8),
+    )
     def create_bucket(self, bucket_type: str = 'allPublic', **kwargs) -> Bucket:
         bucket_name = kwargs.pop('name', self.new_bucket_name())
 
