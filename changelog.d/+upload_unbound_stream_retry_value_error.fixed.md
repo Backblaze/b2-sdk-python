@@ -1,0 +1,1 @@
+Fixed a retry bug in `upload_unbound_stream()` small-file uploads where a retryable upload error could cause a one-shot buffered stream to be reopened after it was closed, raising `ValueError: I/O operation on closed file`.
