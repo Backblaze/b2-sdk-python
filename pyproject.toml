@@ -95,6 +95,9 @@ source = "vcs"
 [tool.hatch.build.targets.wheel]
 packages = ["b2sdk"]
 
+[tool.hatch.build.targets.sdist]
+include = ["b2sdk"]
+
 [tool.liccheck]
 authorized_licenses = [
     "bsd",
