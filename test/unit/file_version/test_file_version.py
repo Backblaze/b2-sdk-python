@@ -117,6 +117,14 @@ class TestFileVersion:
         assert isinstance(cloned, DownloadVersion)
         assert cloned.as_dict() == {**download_version.as_dict(), 'legalHold': LegalHold.OFF.value}
 
+    def test_clone_file_version_with_unknown_sha1(self):
+        cloned = self.file_version._clone(content_sha1=None)
+
+        assert isinstance(cloned, VFileVersion)
+        assert cloned.content_sha1 is None
+        assert cloned.content_sha1_verified is True
+        assert 'contentSha1' not in cloned.as_dict()
+
     def test_update_legal_hold(self):
         new_file_version = self.file_version.update_legal_hold(LegalHold.ON)
         assert isinstance(new_file_version, VFileVersion)
