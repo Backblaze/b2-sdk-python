@@ -1,1 +1,0 @@
-Add exponential retries for bucket creation in `testing.helpers.BucketManager`.

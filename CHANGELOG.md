@@ -9,6 +9,19 @@ upcoming release can be found in [changelog.d](changelog.d).
 
 <!-- towncrier release notes start -->
 
+## [2.10.4](https://github.com/Backblaze/b2-sdk-python/releases/tag/v2.10.4) - 2026-03-03
+
+
+### Fixed
+
+- Fixed a retry bug in `upload_unbound_stream()` small-file uploads where a retryable upload error could cause a one-shot buffered stream to be reopened after it was closed, raising `ValueError: I/O operation on closed file`.
+
+### Infrastructure
+
+- Add exponential retries for bucket creation in `testing.helpers.BucketManager`.
+- Fix redudant files in the sdist after migrating from `pdm` to `uv`.
+
+
 ## [2.10.3](https://github.com/Backblaze/b2-sdk-python/releases/tag/v2.10.3) - 2026-02-23
 
 
