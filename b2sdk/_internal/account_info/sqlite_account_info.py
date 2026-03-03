@@ -17,6 +17,7 @@ import sqlite3
 import stat
 import sys
 import threading
+from contextlib import contextmanager
 
 from .exception import CorruptAccountInfo, MissingAccountData
 from .upload_url_pool import UrlPoolAccountInfo
@@ -152,7 +153,7 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
 
         # If we can connect to the database, and do anything, then all is good.
         try:
-            with self._connect() as conn:
+            with self._temp_connection() as conn:
                 self._create_tables(conn, last_upgrade_to_run)
                 return
         except sqlite3.DatabaseError:
@@ -178,7 +179,7 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
                 # create a database
                 self._create_database(last_upgrade_to_run)
                 # add the data from the JSON file
-                with self._connect() as conn:
+                with self._temp_connection() as conn:
                     self._create_tables(conn, last_upgrade_to_run)
                     insert_statement = """
                         INSERT INTO account
@@ -213,6 +214,24 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
 
     def _connect(self):
         return sqlite3.connect(self.filename, isolation_level='EXCLUSIVE')
+
+    @contextmanager
+    def _temp_connection(self):
+        """A one-off sqlite connection for setup purposes, that is not cached in thread_local."""
+        conn = self._connect()
+        try:
+            with conn:
+                yield conn
+        finally:
+            conn.close()
+
+    def close(self):
+        connection = getattr(self.thread_local, 'connection', None)
+        if connection is None:
+            return
+
+        connection.close()
+        del self.thread_local.connection
 
     def _create_database(self, last_upgrade_to_run):
         """
