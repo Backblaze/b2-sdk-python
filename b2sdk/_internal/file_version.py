@@ -95,13 +95,19 @@ class BaseFileVersion:
             self.mod_time_millis = self.upload_timestamp
 
     @classmethod
-    def _decode_content_sha1(cls, content_sha1):
+    def _decode_content_sha1(cls, content_sha1: str | None) -> tuple[str | None, bool]:
+        if content_sha1 is None:
+            return None, True
         if content_sha1.startswith(UNVERIFIED_CHECKSUM_PREFIX):
             return content_sha1[len(UNVERIFIED_CHECKSUM_PREFIX) :], False
         return content_sha1, True
 
     @classmethod
-    def _encode_content_sha1(cls, content_sha1, content_sha1_verified):
+    def _encode_content_sha1(
+        cls, content_sha1: str | None, content_sha1_verified: bool
+    ) -> str | None:
+        if content_sha1 is None:
+            return None
         if not content_sha1_verified:
             return f'{UNVERIFIED_CHECKSUM_PREFIX}{content_sha1}'
         return content_sha1
