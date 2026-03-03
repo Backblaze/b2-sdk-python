@@ -13,8 +13,7 @@ import pytest
 from apiver_deps import InMemoryAccountInfo, SqliteAccountInfo
 from pytest_lazy_fixtures import lf
 
-from b2sdk.v2 import SqliteAccountInfo as V2SqliteAccountInfo
-from b2sdk.v3 import SqliteAccountInfo as V3SqliteAccountInfo
+_USE_TMPDIR = object()
 
 
 @pytest.fixture
@@ -69,32 +68,22 @@ def in_memory_account_info(in_memory_account_info_factory):
 
 @pytest.fixture
 def sqlite_account_info_factory(tmpdir):
-    def get_account_info(file_name=None, last_upgrade_to_run: int | None = None):
-        if file_name is None:
+    created_account_infos = []
+
+    def get_account_info(
+        file_name=_USE_TMPDIR, *, account_info_class=SqliteAccountInfo, **account_info_kwargs
+    ):
+        if file_name is _USE_TMPDIR:
             file_name = str(tmpdir.join('b2_account_info'))
-        return SqliteAccountInfo(file_name, last_upgrade_to_run)
 
-    return get_account_info
+        account_info = account_info_class(file_name=file_name, **account_info_kwargs)
+        created_account_infos.append(account_info)
+        return account_info
 
+    yield get_account_info
 
-@pytest.fixture
-def v2_sqlite_account_info_factory(tmpdir):
-    def get_account_info(file_name=None):
-        if file_name is None:
-            file_name = str(tmpdir.join('b2_account_info'))
-        return V2SqliteAccountInfo(file_name, last_upgrade_to_run=4)
-
-    return get_account_info
-
-
-@pytest.fixture
-def v3_sqlite_account_info_factory(tmpdir):
-    def get_account_info(file_name=None):
-        if file_name is None:
-            file_name = str(tmpdir.join('b2_account_info'))
-        return V3SqliteAccountInfo(file_name)
-
-    return get_account_info
+    for account_info in created_account_infos:
+        account_info.close()
 
 
 @pytest.fixture

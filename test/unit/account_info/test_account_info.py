@@ -349,7 +349,8 @@ class TestSqliteAccountInfo(AccountInfoBase):
     PERSISTENCE = True
 
     @pytest.fixture(autouse=True)
-    def setUp(self, request):
+    def setUp(self, request, sqlite_account_info_factory):
+        self.sqlite_account_info_factory = sqlite_account_info_factory
         self.db_path = tempfile.NamedTemporaryFile(
             prefix=f'tmp_b2_tests_{request.node.name}__', delete=True
         ).name
@@ -378,9 +379,7 @@ class TestSqliteAccountInfo(AccountInfoBase):
         """
         Test that a new database won't be readable by just any user
         """
-        SqliteAccountInfo(
-            file_name=self.db_path,
-        )
+        self.sqlite_account_info_factory(file_name=self.db_path)
         mode = os.stat(self.db_path).st_mode
         assert stat.filemode(mode) == '-rw-------'
 
@@ -428,7 +427,7 @@ class TestSqliteAccountInfo(AccountInfoBase):
         """
         # Override HOME to ensure hermetic tests
         with mock.patch('os.environ', env or {'HOME': self.test_home}):
-            return SqliteAccountInfo(
+            return self.sqlite_account_info_factory(
                 file_name=self.db_path if not env else None,
                 last_upgrade_to_run=last_upgrade_to_run,
             )
