@@ -33,6 +33,7 @@ PYTHON_VERSIONS = (
         '3.11',
         '3.12',
         '3.13',
+        '3.14',
     ]
     if NOX_PYTHONS is None
     else NOX_PYTHONS.split(',')
@@ -52,7 +53,14 @@ if CI and not NOX_PYTHONS:
     PYTHON_VERSIONS = [_detect_python_nox_id()]
     print(f'CI job mode; using provided interpreter only; PYTHON_VERSIONS={PYTHON_VERSIONS!r}')
 
-PYTHON_DEFAULT_VERSION = PYTHON_VERSIONS[-2] if len(PYTHON_VERSIONS) > 1 else PYTHON_VERSIONS[0]
+PYTHON_DEFAULT_VERSION = next(
+    (
+        version
+        for version in reversed(PYTHON_VERSIONS)
+        if not version.lower().startswith('pypy')
+    ),
+    PYTHON_VERSIONS[-1],
+)
 
 PY_PATHS = ['b2sdk', 'test', 'noxfile.py']
 
