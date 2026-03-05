@@ -22,6 +22,9 @@ from apiver_deps import (
 )
 from apiver_deps_exception import MissingAccountData
 
+from b2sdk.v2 import SqliteAccountInfo as V2SqliteAccountInfo
+from b2sdk.v3 import SqliteAccountInfo as V3SqliteAccountInfo
+
 from .fixtures import *
 
 
@@ -194,8 +197,7 @@ class TestDatabseMigrations:
     @pytest.mark.apiver(2)
     def test_multi_bucket_key_error_apiver_v2(
         self,
-        v2_sqlite_account_info_factory,
-        v3_sqlite_account_info_factory,
+        sqlite_account_info_factory,
         account_info_default_data,
     ):
         allowed = dict(
@@ -204,13 +206,17 @@ class TestDatabseMigrations:
             namePrefix=None,
         )
 
-        v3_account_info = v3_sqlite_account_info_factory()
+        v3_account_info = sqlite_account_info_factory(account_info_class=V3SqliteAccountInfo)
         account_info_default_data.update({'allowed': allowed})
         v3_account_info.set_auth_data(**account_info_default_data)
 
         assert v3_account_info.get_allowed() == allowed
 
-        v2_account_info = v2_sqlite_account_info_factory(file_name=v3_account_info.filename)
+        v2_account_info = sqlite_account_info_factory(
+            file_name=v3_account_info.filename,
+            account_info_class=V2SqliteAccountInfo,
+            last_upgrade_to_run=4,
+        )
         with pytest.raises(MissingAccountData):
             v2_account_info.get_allowed()
 

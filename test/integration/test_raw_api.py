@@ -15,7 +15,6 @@ import random
 import re
 import sys
 import time
-import traceback
 from typing import List
 
 import pytest
@@ -70,12 +69,8 @@ def test_raw_api(dont_cleanup_old_buckets):
 
     print()
 
-    try:
-        raw_api = B2RawHTTPApi(B2Http())
-        raw_api_test_helper(raw_api, not dont_cleanup_old_buckets)
-    except Exception:
-        traceback.print_exc(file=sys.stdout)
-        pytest.fail('test_raw_api failed')
+    raw_api = B2RawHTTPApi(B2Http())
+    raw_api_test_helper(raw_api, not dont_cleanup_old_buckets)
 
 
 def authorize_raw_api(raw_api):
