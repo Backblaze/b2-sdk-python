@@ -54,11 +54,7 @@ if CI and not NOX_PYTHONS:
     print(f'CI job mode; using provided interpreter only; PYTHON_VERSIONS={PYTHON_VERSIONS!r}')
 
 PYTHON_DEFAULT_VERSION = next(
-    (
-        version
-        for version in reversed(PYTHON_VERSIONS)
-        if not version.lower().startswith('pypy')
-    ),
+    (version for version in reversed(PYTHON_VERSIONS) if not version.lower().startswith('pypy')),
     PYTHON_VERSIONS[-1],
 )
 
@@ -233,8 +229,8 @@ def doc_cover(session):
     session.run('cat', report_file, external=True)
 
     with open('build/coverage/python.txt') as fd:
-        # If there is no undocumented files, the report should have only 2 lines (header)
-        if sum(1 for _ in fd) != 2:
+        # If there is no undocumented files, the report should have only 3 lines (header)
+        if sum(1 for _ in fd) != 3:
             session.error('sphinx coverage has failed')
 
 
