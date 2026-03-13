@@ -61,7 +61,7 @@ PYTHON_DEFAULT_VERSION = next(
 PY_PATHS = ['b2sdk', 'test', 'noxfile.py']
 
 nox.options.default_venv_backend = 'uv'
-nox.options.reuse_existing_virtualenvs = False
+nox.options.reuse_existing_virtualenvs = True
 nox.options.sessions = [
     'lint',
     'test',
