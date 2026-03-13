@@ -5,7 +5,7 @@ on:
     tags: ['v*']  # push events to matching v*, i.e. v1.0, v20.15.10
 
 env:
-  PYTHON_DEFAULT_VERSION: "3.12"
+  PYTHON_DEFAULT_VERSION: "3.14"
   UV_VERSION: "0.8.24"
 
 jobs:
