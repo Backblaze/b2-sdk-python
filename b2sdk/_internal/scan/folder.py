@@ -11,8 +11,6 @@ from __future__ import annotations
 
 import logging
 import os
-import platform
-import re
 import stat
 import sys
 from abc import ABCMeta, abstractmethod
@@ -20,6 +18,7 @@ from pathlib import Path
 from typing import Iterator
 
 from ..utils import fix_windows_path_limit, get_file_mtime, validate_b2_file_name
+from ..utils.filesystem import validate_b2_file_name_as_path
 from .exception import (
     EmptyDirectory,
     EnvironmentEncodingError,
@@ -30,21 +29,6 @@ from .exception import (
 from .path import AbstractPath, B2Path, LocalPath
 from .policies import DEFAULT_SCAN_MANAGER, ScanPoliciesManager
 from .report import ProgressReport
-
-DRIVE_MATCHER = re.compile(r'^([A-Za-z]):([/\\])')
-ABSOLUTE_PATH_MATCHER = re.compile(r'^(/)|^(\\)')
-RELATIVE_PATH_MATCHER = re.compile(
-    # "abc" and "xyz" represent anything, including "nothing"
-    r'^(\.\.[/\\])|'  # ../abc or ..\abc
-    + r'^(\.[/\\])|'  # ./abc or .\abc
-    + r'([/\\]\.\.[/\\])|'  # abc/../xyz or abc\..\xyz or abc\../xyz or abc/..\xyz
-    + r'([/\\]\.[/\\])|'  # abc/./xyz or abc\.\xyz or abc\./xyz or abc/.\xyz
-    + r'([/\\]\.\.)$|'  # abc/.. or abc\..
-    + r'([/\\]\.)$|'  # abc/. or abc\.
-    + r'^(\.\.)$|'  # just ".."
-    + r'([/\\][/\\])|'  # abc\/xyz or abc/\xyz or abc//xyz or abc\\xyz
-    + r'^(\.)$'  # just "."
-)
 
 logger = logging.getLogger(__name__)
 
@@ -436,21 +420,10 @@ class B2Folder(AbstractFolder):
             yield file_version
 
     def _validate_file_name(self, file_name):
-        # Do not allow relative paths in file names
-        if RELATIVE_PATH_MATCHER.search(file_name):
-            raise UnsupportedFilename(
-                'scan does not support file names that include relative paths', file_name
-            )
-        # Do not allow absolute paths in file names
-        if ABSOLUTE_PATH_MATCHER.search(file_name):
-            raise UnsupportedFilename(
-                'scan does not support file names with absolute paths', file_name
-            )
-        # On Windows, do not allow drive letters in file names
-        if platform.system() == 'Windows' and DRIVE_MATCHER.search(file_name):
-            raise UnsupportedFilename(
-                'scan does not support file names with drive letters', file_name
-            )
+        try:
+            validate_b2_file_name_as_path(file_name)
+        except ValueError as exc:
+            raise UnsupportedFilename(str(exc), file_name) from exc
 
     def folder_type(self):
         """

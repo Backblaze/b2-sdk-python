@@ -81,6 +81,7 @@ from b2sdk._internal.utils.filesystem import (
     points_to_fifo,
     points_to_stdout,
     STDOUT_FILEPATH,
+    validate_b2_file_name_as_path,
 )
 from b2sdk._internal.utils import trace_call
 from b2sdk._internal.utils.docs import get_b2sdk_doc_urls

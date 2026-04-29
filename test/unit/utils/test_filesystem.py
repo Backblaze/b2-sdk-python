@@ -16,6 +16,7 @@ from apiver_deps import (
     STDOUT_FILEPATH,
     points_to_fifo,
     points_to_stdout,
+    validate_b2_file_name_as_path,
 )
 
 EXPECTED_STDOUT_PATH = pathlib.Path('CON' if platform.system() == 'Windows' else '/dev/stdout')
@@ -51,3 +52,47 @@ class TestPointsToStdout:
     def test_non_existent_stdout_path(self, tmp_path):
         path = tmp_path / 'file.txt'
         assert points_to_stdout(path) is False
+
+
+class TestValidateB2FileNameAsPath:
+    @pytest.mark.parametrize('file_name', ['file.txt', 'dir/file.txt', 'dir\\file.txt'])
+    def test_valid_file_name(self, file_name):
+        validate_b2_file_name_as_path(file_name)
+
+    @pytest.mark.parametrize(
+        ('file_name', 'reason_pattern'),
+        [
+            (
+                '../file.txt',
+                r'relative path',
+            ),
+            (
+                './file.txt',
+                r'relative path',
+            ),
+            (
+                'dir/../file.txt',
+                r'relative path',
+            ),
+            (
+                'dir//file.txt',
+                r'relative path',
+            ),
+            ('/file.txt', r'absolute path'),
+            ('\\file.txt', r'absolute path'),
+        ],
+    )
+    def test_invalid_file_name(self, file_name, reason_pattern):
+        with pytest.raises(ValueError, match=reason_pattern):
+            validate_b2_file_name_as_path(file_name)
+
+    @pytest.mark.skipif(
+        platform.system() != 'Windows',
+        reason='drive letters in paths are only forbidden on Windows',
+    )
+    def test_drive_letter_disallowed_on_windows(self):
+        with pytest.raises(
+            ValueError,
+            match=r'drive letters',
+        ):
+            validate_b2_file_name_as_path(r'C:\file.txt')
