@@ -31,7 +31,8 @@ dependencies = [
 [project.optional-dependencies]
 full = [
     "tqdm<5.0.0,>=4.5.0",
-    "pydantic>=2.0.1",
+    "pydantic>=2.0.1,<2.13; platform_python_implementation == 'PyPy' and python_version < '3.11'",  # newer pydantic versions do not play well with PyPy 3.10
+    "pydantic>=2.0.1; platform_python_implementation != 'PyPy' or python_version >= '3.11'",
 ]
 
 [dependency-groups]
@@ -60,7 +61,8 @@ test = [
     "pytest-watcher>=0.6.3,<1",
     "tenacity>=9.1.4,<10",
     "tqdm<5.0.0,>=4.5.0",
-    "pydantic>=2.13.3,<3",
+    "pydantic>=2.0.1,<2.13; platform_python_implementation == 'PyPy' and python_version < '3.11'",
+    "pydantic>=2.13.3,<3; platform_python_implementation != 'PyPy' or python_version >= '3.11'",
     "pywin32>=311,<312; sys_platform == \"win32\" and platform_python_implementation!='PyPy'",
     "responses>=0.26.0,<1",
 ]
