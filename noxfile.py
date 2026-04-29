@@ -26,9 +26,7 @@ NOX_EXTRAS = [[]] if _NOX_EXTRAS is None else list(filter(None, [_NOX_EXTRAS.spl
 
 PYTHON_VERSIONS = (
     [
-        'pypy3.9',
         'pypy3.10',
-        '3.9',
         '3.10',
         '3.11',
         '3.12',
