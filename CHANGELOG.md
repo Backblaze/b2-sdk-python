@@ -9,6 +9,24 @@ upcoming release can be found in [changelog.d](changelog.d).
 
 <!-- towncrier release notes start -->
 
+## [2.11.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v2.11.0) - 2026-05-01
+
+
+### Fixed
+
+- Handle null case when encoding / decoding `content_sha1` in BaseFileVersion. ([#553](https://github.com/Backblaze/b2-sdk-python/issues/553))
+- Fix `SqliteAccountInfo` to explicitly close temporary sqlite connections used during setup, add a `close()` method for cached connection.
+
+### Added
+
+- Declare official support for Python 3.14 and include it in the CI test matrix.
+- Introduce a reusable validator to ensure remote B2 file names are safe to use as local paths.
+
+### Infrastructure
+
+- Bump tornado dependency from 6.5.4 to 6.5.5.
+
+
 ## [2.10.4](https://github.com/Backblaze/b2-sdk-python/releases/tag/v2.10.4) - 2026-03-03
 
 
