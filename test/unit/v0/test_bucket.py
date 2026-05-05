@@ -743,7 +743,7 @@ class TestCopyFile(TestCaseWithBucket):
                     SSE_C_AES_2_NO_SECRET,
                 ),
             ]:
-                with self.subTest(kwargs=kwargs, length=length, data=data):
+                with self.subTest(kwargs=repr(kwargs), length=length, data=data):
                     file_info = self.bucket.copy(**kwargs, new_file_name='new_file', length=length)
                     self.assertTrue(isinstance(file_info, FileVersionInfo))
                     self.assertEqual(file_info.server_side_encryption, expected_encryption)
