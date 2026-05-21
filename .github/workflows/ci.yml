@@ -139,6 +139,61 @@ jobs:
       - name: Run integration tests
         if: ${{ env.B2_TEST_APPLICATION_KEY != '' && env.B2_TEST_APPLICATION_KEY_ID != '' }}
         run: uv run nox -vs integration -- --dont-cleanup-old-buckets -v
+  cli-compat:
+    timeout-minutes: 90
+    needs: cleanup_buckets
+    env:
+      B2_TEST_APPLICATION_KEY: ${{ secrets.B2_TEST_APPLICATION_KEY }}
+      B2_TEST_APPLICATION_KEY_ID: ${{ secrets.B2_TEST_APPLICATION_KEY_ID }}
+      INSTALL_SDK_FROM: ../b2-sdk-python
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            python-version: "3.10"
+          - os: ubuntu-latest
+            python-version: "3.14"
+          - os: macos-latest
+            python-version: "3.12"
+          - os: windows-latest
+            python-version: "3.12"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          path: b2-sdk-python
+      - uses: actions/checkout@v4
+        with:
+          repository: Backblaze/B2_Command_Line_Tool
+          path: B2_Command_Line_Tool
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+      - name: Install test binary dependencies
+        if: startsWith(matrix.os, 'ubuntu')
+        run: |
+          sudo apt-get -y update
+          sudo apt-get -y install zsh fish
+          sudo chmod -R 755 /usr/share/zsh/vendor-completions /usr/share/zsh
+      - name: Install test binary dependencies (macOS)
+        if: startsWith(matrix.os, 'macos')
+        run: brew install fish
+      - name: Install dependencies
+        run: uv sync --directory ./B2_Command_Line_Tool --locked --group nox
+      - name: Run CLI unit tests
+        run: uv run --directory ./B2_Command_Line_Tool nox -vs unit -p ${{ matrix.python-version }}
+      - name: Run CLI integration tests (without secrets)
+        run: uv run --directory ./B2_Command_Line_Tool nox -vs integration -p ${{ matrix.python-version }} -- -m "not require_secrets"
+      - name: Run CLI integration tests (with secrets)
+        if: ${{ env.B2_TEST_APPLICATION_KEY != '' && env.B2_TEST_APPLICATION_KEY_ID != '' && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.14' }}
+        run: uv run --directory ./B2_Command_Line_Tool nox -vs integration -p ${{ matrix.python-version }} -- -m "require_secrets" --cleanup
   doc:
     timeout-minutes: 30
     needs: build
