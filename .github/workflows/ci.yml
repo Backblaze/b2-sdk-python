@@ -193,7 +193,16 @@ jobs:
         run: uv run --directory ./B2_Command_Line_Tool nox -vs integration -p ${{ matrix.python-version }} -- -m "not require_secrets"
       - name: Run CLI integration tests (with secrets)
         if: ${{ env.B2_TEST_APPLICATION_KEY != '' && env.B2_TEST_APPLICATION_KEY_ID != '' && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.14' }}
-        run: uv run --directory ./B2_Command_Line_Tool nox -vs integration -p ${{ matrix.python-version }} -- -m "require_secrets" --cleanup
+        working-directory: B2_Command_Line_Tool
+        run: |
+          .nox/integration-3-14/bin/python -m pytest \
+            test/integration \
+            -n 1 \
+            --log-level INFO \
+            -W ignore::DeprecationWarning:rst2ansi.visitor: \
+            -m "require_secrets" \
+            --cleanup \
+            --sut .nox/integration-3-14/bin/b2v4
   doc:
     timeout-minutes: 30
     needs: build
