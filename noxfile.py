@@ -197,7 +197,25 @@ def build(session):
 
     session.install(str(sdists[0]))
     session.cd('dist')  # avoid importing from the checkout instead of the built package
-    session.run('python', '-c', 'from b2sdk import v0, v1, v2, v3')
+    session.run(
+        'python',
+        '-c',
+        (
+            'import pathlib; '
+            'from b2sdk import v0, v1, v2, v3; '
+            'repo_root = pathlib.Path.cwd().parent.resolve(); '
+            'source_root = repo_root / "b2sdk"; '
+            "module_files = {'v0': pathlib.Path(v0.__file__).resolve(), "
+            "'v1': pathlib.Path(v1.__file__).resolve(), "
+            "'v2': pathlib.Path(v2.__file__).resolve(), "
+            "'v3': pathlib.Path(v3.__file__).resolve()}; "
+            'print(module_files); '
+            "assert all(not path.is_relative_to(source_root) for path in module_files.values()), "
+            "f'Imported modules from checkout: {module_files!r}'; "
+            "assert all('site-packages' in path.parts for path in module_files.values()), "
+            "f'Imported modules from an unexpected location: {module_files!r}'"
+        ),
+    )
 
 
 @nox.session(python=PYTHON_DEFAULT_VERSION)
