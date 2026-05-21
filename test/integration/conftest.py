@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import pytest
 
-from b2sdk._internal.exception import ServiceError
+from b2sdk._internal.exception import ServiceError, TooManyRequests
 
 RETRYABLE_SERVICE_ERROR_STATUSES = {500, 503}
 INTEGRATION_TEST_RETRY_COUNT = 4
@@ -39,5 +39,12 @@ def pytest_pyfunc_call(pyfuncitem):
                 raise
             print(
                 f'Retrying {pyfuncitem.nodeid} after transient service error {exc._status}:'
+                f' attempt {attempt + 1} of {INTEGRATION_TEST_RETRY_COUNT}'
+            )
+        except TooManyRequests:
+            if attempt >= INTEGRATION_TEST_RETRY_COUNT:
+                raise
+            print(
+                f'Retrying {pyfuncitem.nodeid} after transient too many requests:'
                 f' attempt {attempt + 1} of {INTEGRATION_TEST_RETRY_COUNT}'
             )
