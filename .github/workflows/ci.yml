@@ -35,8 +35,18 @@ jobs:
         run: uv run nox -vs lint
       - name: Validate new changelog entries
         if: (contains(github.event.pull_request.labels.*.name, '-changelog') == false) && (github.event.pull_request.base.ref != '')
-        run: if [ -z "$(git diff --diff-filter=A --name-only origin/${{ github.event.pull_request.base.ref }} changelog.d)" ];
-          then echo no changelog item added; exit 1; fi
+        run: |
+          mapfile -t changed_files < <(git diff --diff-filter=ACMR --name-only origin/${{ github.event.pull_request.base.ref }}...HEAD)
+
+          if [ "${#changed_files[@]}" -eq 1 ] && [ "${changed_files[0]}" = "uv.lock" ]; then
+            echo "Skipping changelog validation for lockfile-only change."
+            exit 0
+          fi
+
+          if [ -z "$(git diff --diff-filter=A --name-only origin/${{ github.event.pull_request.base.ref }}...HEAD -- changelog.d)" ]; then
+            echo "No changelog item added."
+            exit 1
+          fi
       - name: Changelog validation
         run: uv run nox -vs towncrier_check
   build:
