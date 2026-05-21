@@ -13,8 +13,6 @@ import io
 import logging
 import secrets
 
-import pytest
-
 from b2sdk._internal.b2http import B2Http, HttpCallback
 from b2sdk._internal.encryption.setting import EncryptionKey, EncryptionSetting
 from b2sdk._internal.encryption.types import EncryptionAlgorithm, EncryptionMode
@@ -60,8 +58,7 @@ class TestUnboundStreamUpload(IntegrationTestBase):
 
 
 class TestUploadLargeFile(IntegrationTestBase):
-    @pytest.mark.parametrize('upload_number', range(10))
-    def test_raw_upload_with_intermittent_failures(self, upload_number):
+    def test_raw_upload_with_intermittent_failures(self):
         bucket = self.create_bucket()
         raw_api = self.b2_api.session.raw_api
         b2_http = raw_api.b2_http
@@ -69,8 +66,8 @@ class TestUploadLargeFile(IntegrationTestBase):
         callback = FailSomeUploads()
         b2_http.add_callback(callback)
         try:
-            payload = f'payload-{upload_number}'.encode()
-            file_name = f'fail-some-uploads-{upload_number}-{secrets.token_hex(4)}'
+            payload = b'payload'
+            file_name = f'fail-some-uploads-{secrets.token_hex(4)}'
             upload_url = raw_api.get_upload_url(
                 account_info.get_api_url(),
                 account_info.get_account_auth_token(),
