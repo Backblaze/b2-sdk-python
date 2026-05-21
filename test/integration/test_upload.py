@@ -11,10 +11,14 @@ from __future__ import annotations
 
 import io
 import logging
+import secrets
+
+import pytest
 
 from b2sdk._internal.b2http import B2Http, HttpCallback
 from b2sdk._internal.encryption.setting import EncryptionKey, EncryptionSetting
 from b2sdk._internal.encryption.types import EncryptionAlgorithm, EncryptionMode
+from b2sdk._internal.utils import hex_sha1_of_stream
 from b2sdk.v2 import B2RawHTTPApi
 from b2sdk.v3.testing import IntegrationTestBase
 
@@ -56,15 +60,32 @@ class TestUnboundStreamUpload(IntegrationTestBase):
 
 
 class TestUploadLargeFile(IntegrationTestBase):
-    def test_upload_bytes_with_intermittent_failures(self):
+    @pytest.mark.parametrize('upload_number', range(10))
+    def test_raw_upload_with_intermittent_failures(self, upload_number):
         bucket = self.create_bucket()
-        b2_http = self.b2_api.session.raw_api.b2_http
+        raw_api = self.b2_api.session.raw_api
+        b2_http = raw_api.b2_http
+        account_info = self.b2_api.account_info
         callback = FailSomeUploads()
         b2_http.add_callback(callback)
         try:
-            for i in range(10):
-                payload = f'payload-{i}'.encode()
-                bucket.upload_bytes(payload, f'fail-some-uploads-{i}')
+            payload = f'payload-{upload_number}'.encode()
+            file_name = f'fail-some-uploads-{upload_number}-{secrets.token_hex(4)}'
+            upload_url = raw_api.get_upload_url(
+                account_info.get_api_url(),
+                account_info.get_account_auth_token(),
+                bucket.id_,
+            )
+            raw_api.upload_file(
+                upload_url['uploadUrl'],
+                upload_url['authorizationToken'],
+                file_name,
+                len(payload),
+                'text/plain',
+                hex_sha1_of_stream(io.BytesIO(payload), len(payload)),
+                {},
+                io.BytesIO(payload),
+            )
         finally:
             b2_http.callbacks.remove(callback)
 
