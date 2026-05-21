@@ -14,7 +14,7 @@ import pytest
 from b2sdk._internal.exception import ServiceError
 
 RETRYABLE_SERVICE_ERROR_STATUSES = {500, 503}
-INTEGRATION_TEST_RETRY_COUNT = 2
+INTEGRATION_TEST_RETRY_COUNT = 4
 
 
 @pytest.fixture(scope='session', autouse=True)
