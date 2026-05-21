@@ -433,6 +433,15 @@ class ServiceError(TransientErrorMixin, B2Error):
     Used for HTTP status codes 500 through 599.
     """
 
+    def __init__(self, status, code, message):
+        super().__init__()
+        self._status = status
+        self._code = code
+        self._message = message
+
+    def __str__(self):
+        return f'{self._status} {self._code} {self._message}'
+
 
 class CapExceeded(B2Error):
     def __str__(self):
@@ -744,5 +753,5 @@ def interpret_b2_error(
     elif status == 429:
         return TooManyRequests(retry_after_seconds=response_headers.get('retry-after'))
     elif 500 <= status < 600:
-        return ServiceError('%d %s %s' % (status, code, message))
+        return ServiceError(status, code, message)
     return UnknownError('%d %s %s' % (status, code, message))

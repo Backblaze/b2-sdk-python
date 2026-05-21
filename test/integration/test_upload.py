@@ -10,14 +10,24 @@
 from __future__ import annotations
 
 import io
+import logging
 
-from b2sdk._internal.b2http import B2Http
+from b2sdk._internal.b2http import B2Http, HttpCallback
 from b2sdk._internal.encryption.setting import EncryptionKey, EncryptionSetting
 from b2sdk._internal.encryption.types import EncryptionAlgorithm, EncryptionMode
 from b2sdk.v2 import B2RawHTTPApi
 from b2sdk.v3.testing import IntegrationTestBase
 
 from .test_raw_api import authorize_raw_api
+
+logger = logging.getLogger(__name__)
+
+
+class FailSomeUploads(HttpCallback):
+    def pre_request(self, method, url, headers):
+        if method == 'POST' and 'b2_upload_file' in url:
+            headers['X-Bz-Test-Mode'] = 'fail_some_uploads'
+            logger.info('Added X-Bz-Test-Mode=fail_some_uploads header to %s', url)
 
 
 class TestUnboundStreamUpload(IntegrationTestBase):
@@ -46,6 +56,18 @@ class TestUnboundStreamUpload(IntegrationTestBase):
 
 
 class TestUploadLargeFile(IntegrationTestBase):
+    def test_upload_bytes_with_intermittent_failures(self):
+        bucket = self.create_bucket()
+        b2_http = self.b2_api.session.raw_api.b2_http
+        callback = FailSomeUploads()
+        b2_http.add_callback(callback)
+        try:
+            for i in range(10):
+                payload = f'payload-{i}'.encode()
+                bucket.upload_bytes(payload, f'fail-some-uploads-{i}')
+        finally:
+            b2_http.callbacks.remove(callback)
+
     def test_ssec_key_id(self):
         sse_c = EncryptionSetting(
             mode=EncryptionMode.SSE_C,
