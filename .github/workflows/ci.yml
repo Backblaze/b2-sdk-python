@@ -195,14 +195,16 @@ jobs:
         if: ${{ env.B2_TEST_APPLICATION_KEY != '' && env.B2_TEST_APPLICATION_KEY_ID != '' && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.14' }}
         working-directory: B2_Command_Line_Tool
         run: |
-          .nox/integration-3-14/bin/python -m pytest \
+          export VIRTUAL_ENV="$PWD/.nox/integration-3-14"
+          export PATH="$VIRTUAL_ENV/bin:$PATH"
+          python -m pytest \
             test/integration \
             -n 1 \
             --log-level INFO \
             -W ignore::DeprecationWarning:rst2ansi.visitor: \
             -m "require_secrets" \
             --cleanup \
-            --sut .nox/integration-3-14/bin/b2v4
+            --sut "$VIRTUAL_ENV/bin/b2v4"
   doc:
     timeout-minutes: 30
     needs: build
