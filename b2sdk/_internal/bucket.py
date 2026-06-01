@@ -315,16 +315,46 @@ class Bucket(metaclass=B2TraceMeta):
         except FileOrBucketNotFound:
             raise FileNotPresent(bucket_name=self.name, file_id_or_name=file_name)
 
-    def get_download_authorization(self, file_name_prefix, valid_duration_in_seconds):
+    def get_download_authorization(
+        self,
+        file_name_prefix,
+        valid_duration_in_seconds,
+        *,
+        content_disposition: str | None = None,
+        content_language: str | None = None,
+        expires: str | None = None,
+        cache_control: str | None = None,
+        content_encoding: str | None = None,
+        content_type: str | None = None,
+    ):
         """
         Return an authorization token that is valid only for downloading
         files from the given bucket.
 
+        The optional response-header overrides are bound to the generated token.
+        Downloads using the token must provide matching ``b2...`` query parameters.
+        B2 then uses those values for the corresponding HTTP response headers.
+
         :param str file_name_prefix: a file name prefix, only files that match it could be downloaded
         :param int valid_duration_in_seconds: a token is valid only during this amount of seconds
+        :param str,None content_disposition: ``b2ContentDisposition`` /
+            ``Content-Disposition`` override
+        :param str,None content_language: ``b2ContentLanguage`` / ``Content-Language`` override
+        :param str,None expires: ``b2Expires`` / ``Expires`` override
+        :param str,None cache_control: ``b2CacheControl`` / ``Cache-Control`` override
+        :param str,None content_encoding: ``b2ContentEncoding`` / ``Content-Encoding`` override
+        :param str,None content_type: ``b2ContentType`` / ``Content-Type`` override
         """
         response = self.api.session.get_download_authorization(
-            self.id_, file_name_prefix, valid_duration_in_seconds
+            self.id_,
+            file_name_prefix,
+            valid_duration_in_seconds,
+            content_disposition=content_disposition,
+            content_language=content_language,
+            expires=expires,
+            cache_control=cache_control,
+            content_encoding=content_encoding,
+            content_type=content_type,
         )
         return response['authorizationToken']
 
