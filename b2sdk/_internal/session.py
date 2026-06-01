@@ -214,12 +214,30 @@ class B2Session:
     def finish_large_file(self, file_id, part_sha1_array):
         return self._wrap_default_token(self.raw_api.finish_large_file, file_id, part_sha1_array)
 
-    def get_download_authorization(self, bucket_id, file_name_prefix, valid_duration_in_seconds):
+    def get_download_authorization(
+        self,
+        bucket_id,
+        file_name_prefix,
+        valid_duration_in_seconds,
+        *,
+        content_disposition: str | None = None,
+        content_language: str | None = None,
+        expires: str | None = None,
+        cache_control: str | None = None,
+        content_encoding: str | None = None,
+        content_type: str | None = None,
+    ):
         return self._wrap_default_token(
             self.raw_api.get_download_authorization,
             bucket_id,
             file_name_prefix,
             valid_duration_in_seconds,
+            content_disposition=content_disposition,
+            content_language=content_language,
+            expires=expires,
+            cache_control=cache_control,
+            content_encoding=content_encoding,
+            content_type=content_type,
         )
 
     def get_file_info_by_id(self, file_id: str) -> dict[str, Any]:
