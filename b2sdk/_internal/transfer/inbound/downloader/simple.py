@@ -12,6 +12,7 @@ from __future__ import annotations
 import logging
 from io import IOBase
 
+from requests.exceptions import ChunkedEncodingError, ConnectionError, ContentDecodingError
 from requests.models import Response
 
 from b2sdk._internal.encryption.setting import EncryptionSetting
@@ -26,6 +27,7 @@ logger = logging.getLogger(__name__)
 class SimpleDownloader(AbstractDownloader):
     REQUIRES_SEEKING = False
     SUPPORTS_DECODE_CONTENT = True
+    MAX_DOWNLOAD_ATTEMPTS = 5
 
     def _download(
         self,
@@ -41,12 +43,16 @@ class SimpleDownloader(AbstractDownloader):
             response.close()
             return 0, digest.hexdigest()
         chunk_size = self._get_chunk_size(actual_size)
+        should_be_decoded = download_version._should_be_decoded
 
-        decoded_bytes_read = 0
-        for data in response.iter_content(chunk_size=chunk_size):
-            file.write(data)
-            digest.update(data)
-            decoded_bytes_read += len(data)
+        try:
+            for data in response.iter_content(chunk_size=chunk_size):
+                file.write(data)
+                digest.update(data)
+        except (ChunkedEncodingError, ConnectionError, ContentDecodingError) as exc:
+            if should_be_decoded:
+                raise  # cannot resume a partially decoded stream
+            logger.debug('Stream read error during download, will retry if needed: %s', exc)
         bytes_read = response.raw.tell()
         response.close()
 
@@ -58,9 +64,10 @@ class SimpleDownloader(AbstractDownloader):
         # or something and the server closes connection, while neither tcp or http have a problem
         # with the truncated output, so we detect it here and try to continue
 
-        num_tries = 5  # this is hardcoded because we are going to replace the entire retry interface soon, so we'll avoid deprecation here and keep it private
-        retries_left = num_tries - 1
-        while retries_left and bytes_read < download_version.content_length:
+        retries_left = self.MAX_DOWNLOAD_ATTEMPTS - 1
+        while (
+            bytes_read < download_version.content_length and not should_be_decoded and retries_left
+        ):
             new_range = self._get_remote_range(
                 response,
                 download_version,
@@ -68,10 +75,9 @@ class SimpleDownloader(AbstractDownloader):
             # original response is not closed at this point yet, as another layer is responsible for closing it, so a new socket might be allocated,
             # but this is a very rare case and so it is not worth the optimization
             logger.debug(
-                're-download attempts remaining: %i, bytes read: %i (decoded: %i). Getting range %s now.',
+                're-download attempts remaining: %i, bytes read: %i. Getting range %s now.',
                 retries_left,
                 bytes_read,
-                decoded_bytes_read,
                 new_range,
             )
             with session.download_file_from_url(
@@ -79,12 +85,14 @@ class SimpleDownloader(AbstractDownloader):
                 new_range.as_tuple(),
                 encryption=encryption,
             ) as followup_response:
-                for data in followup_response.iter_content(
-                    chunk_size=self._get_chunk_size(actual_size)
-                ):
-                    file.write(data)
-                    digest.update(data)
-                    decoded_bytes_read += len(data)
+                try:
+                    for data in followup_response.iter_content(
+                        chunk_size=self._get_chunk_size(actual_size)
+                    ):
+                        file.write(data)
+                        digest.update(data)
+                except (ChunkedEncodingError, ConnectionError, ContentDecodingError) as exc:
+                    logger.debug('Stream read error during download, will retry if needed: %s', exc)
                 bytes_read += followup_response.raw.tell()
             retries_left -= 1
         return bytes_read, digest.hexdigest()

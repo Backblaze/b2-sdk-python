@@ -471,6 +471,10 @@ class DownloadVersion(BaseFileVersion):
             return None
         return parse_http_date(self.expires)
 
+    @property
+    def _should_be_decoded(self) -> bool:
+        return bool(self.content_encoding and self.api.api_config.decode_content)
+
     def as_dict(self) -> dict:
         result = super().as_dict()
         if self.cache_control is not None:
