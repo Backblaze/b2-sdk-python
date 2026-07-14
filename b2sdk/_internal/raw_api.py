@@ -288,7 +288,19 @@ class AbstractRawApi(metaclass=ABCMeta):
 
     @abstractmethod
     def get_download_authorization(
-        self, api_url, account_auth_token, bucket_id, file_name_prefix, valid_duration_in_seconds
+        self,
+        api_url,
+        account_auth_token,
+        bucket_id,
+        file_name_prefix,
+        valid_duration_in_seconds,
+        *,
+        b2_content_disposition: str | None = None,
+        b2_content_language: str | None = None,
+        b2_expires: str | None = None,
+        b2_cache_control: str | None = None,
+        b2_content_encoding: str | None = None,
+        b2_content_type: str | None = None,
     ):
         pass
 
@@ -709,15 +721,44 @@ class B2RawHTTPApi(AbstractRawApi):
         )
 
     def get_download_authorization(
-        self, api_url, account_auth_token, bucket_id, file_name_prefix, valid_duration_in_seconds
+        self,
+        api_url,
+        account_auth_token,
+        bucket_id,
+        file_name_prefix,
+        valid_duration_in_seconds,
+        *,
+        b2_content_disposition: str | None = None,
+        b2_content_language: str | None = None,
+        b2_expires: str | None = None,
+        b2_cache_control: str | None = None,
+        b2_content_encoding: str | None = None,
+        b2_content_type: str | None = None,
     ):
+        kwargs = {
+            'bucketId': bucket_id,
+            'fileNamePrefix': file_name_prefix,
+            'validDurationInSeconds': valid_duration_in_seconds,
+        }
+
+        if b2_content_disposition is not None:
+            kwargs['b2ContentDisposition'] = b2_content_disposition
+        if b2_content_language is not None:
+            kwargs['b2ContentLanguage'] = b2_content_language
+        if b2_expires is not None:
+            kwargs['b2Expires'] = b2_expires
+        if b2_cache_control is not None:
+            kwargs['b2CacheControl'] = b2_cache_control
+        if b2_content_encoding is not None:
+            kwargs['b2ContentEncoding'] = b2_content_encoding
+        if b2_content_type is not None:
+            kwargs['b2ContentType'] = b2_content_type
+
         return self._post_json(
             api_url,
             'b2_get_download_authorization',
             account_auth_token,
-            bucketId=bucket_id,
-            fileNamePrefix=file_name_prefix,
-            validDurationInSeconds=valid_duration_in_seconds,
+            **kwargs,
         )
 
     def get_file_info_by_id(
