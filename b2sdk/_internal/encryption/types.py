@@ -42,4 +42,4 @@ class EncryptionMode(Enum):
 
 ENCRYPTION_MODES_WITH_MANDATORY_ALGORITHM = frozenset((EncryptionMode.SSE_B2, EncryptionMode.SSE_C))
 ENCRYPTION_MODES_WITH_MANDATORY_KEY = frozenset((EncryptionMode.SSE_C,))
-BUCKET_DEFAULT_ENCRYPTION_MODES = frozenset((EncryptionMode.NONE, EncryptionMode.SSE_B2))
+BUCKET_DEFAULT_ENCRYPTION_MODES = frozenset((EncryptionMode.SSE_B2,))

@@ -33,6 +33,7 @@ from .exception import (
     SSECKeyError,
     UnusableFileName,
     WrongEncryptionModeForBucketDefault,
+    WrongEncryptionSettingForFileWrite,
 )
 from .file_lock import BucketRetentionSetting, FileRetentionSetting, LegalHold
 from .http_constants import FILE_INFO_HEADER_PREFIX
@@ -449,11 +450,6 @@ class AbstractRawApi(metaclass=ABCMeta):
         for k, v in file_info.items():
             headers[FILE_INFO_HEADER_PREFIX + k] = b2_url_encode(v)
         if server_side_encryption is not None:
-            assert server_side_encryption.mode in (
-                EncryptionMode.NONE,
-                EncryptionMode.SSE_B2,
-                EncryptionMode.SSE_C,
-            )
             server_side_encryption.add_to_upload_headers(headers)
 
         if legal_hold is not None:
@@ -870,11 +866,8 @@ class B2RawHTTPApi(AbstractRawApi):
     ):
         kwargs = {}
         if server_side_encryption is not None:
-            assert server_side_encryption.mode in (
-                EncryptionMode.NONE,
-                EncryptionMode.SSE_B2,
-                EncryptionMode.SSE_C,
-            )
+            if not server_side_encryption.can_be_used_for_file_write():
+                raise WrongEncryptionSettingForFileWrite(server_side_encryption)
             kwargs['serverSideEncryption'] = server_side_encryption.serialize_to_json_for_request()
 
             if server_side_encryption.mode == EncryptionMode.SSE_C:
@@ -1057,6 +1050,11 @@ class B2RawHTTPApi(AbstractRawApi):
         :param custom_upload_timestamp: custom upload timestamp for the file
         :return:
         """
+        if (
+            server_side_encryption is not None
+            and not server_side_encryption.can_be_used_for_file_write()
+        ):
+            raise WrongEncryptionSettingForFileWrite(server_side_encryption)
         # Raise UnusableFileName if the file_name doesn't meet the rules.
         self.check_b2_filename(file_name)
         headers = self.get_upload_file_headers(
@@ -1088,6 +1086,11 @@ class B2RawHTTPApi(AbstractRawApi):
         data_stream,
         server_side_encryption: EncryptionSetting | None = None,
     ):
+        if (
+            server_side_encryption is not None
+            and not server_side_encryption.can_be_used_for_file_write()
+        ):
+            raise WrongEncryptionSettingForFileWrite(server_side_encryption)
         headers = {
             'Authorization': upload_auth_token,
             'Content-Length': str(content_length),
@@ -1095,11 +1098,6 @@ class B2RawHTTPApi(AbstractRawApi):
             'X-Bz-Content-Sha1': content_sha1,
         }
         if server_side_encryption is not None:
-            assert server_side_encryption.mode in (
-                EncryptionMode.NONE,
-                EncryptionMode.SSE_B2,
-                EncryptionMode.SSE_C,
-            )
             server_side_encryption.add_to_upload_headers(headers)
 
         return self.b2_http.post_content_return_json(
@@ -1125,6 +1123,11 @@ class B2RawHTTPApi(AbstractRawApi):
         file_retention: FileRetentionSetting | None = None,
         legal_hold: LegalHold | None = None,
     ):
+        if (
+            destination_server_side_encryption is not None
+            and not destination_server_side_encryption.can_be_used_for_file_write()
+        ):
+            raise WrongEncryptionSettingForFileWrite(destination_server_side_encryption)
         kwargs = {}
         if bytes_range is not None:
             range_dict = {}
@@ -1152,11 +1155,6 @@ class B2RawHTTPApi(AbstractRawApi):
         if destination_bucket_id is not None:
             kwargs['destinationBucketId'] = destination_bucket_id
         if destination_server_side_encryption is not None:
-            assert destination_server_side_encryption.mode in (
-                EncryptionMode.NONE,
-                EncryptionMode.SSE_B2,
-                EncryptionMode.SSE_C,
-            )
             kwargs['destinationServerSideEncryption'] = (
                 destination_server_side_encryption.serialize_to_json_for_request()
             )
@@ -1195,17 +1193,17 @@ class B2RawHTTPApi(AbstractRawApi):
         destination_server_side_encryption: EncryptionSetting | None = None,
         source_server_side_encryption: EncryptionSetting | None = None,
     ):
+        if (
+            destination_server_side_encryption is not None
+            and not destination_server_side_encryption.can_be_used_for_file_write()
+        ):
+            raise WrongEncryptionSettingForFileWrite(destination_server_side_encryption)
         kwargs = {}
         if bytes_range is not None:
             range_dict = {}
             _add_range_header(range_dict, bytes_range)
             kwargs['range'] = range_dict['Range']
         if destination_server_side_encryption is not None:
-            assert destination_server_side_encryption.mode in (
-                EncryptionMode.NONE,
-                EncryptionMode.SSE_B2,
-                EncryptionMode.SSE_C,
-            )
             kwargs['destinationServerSideEncryption'] = (
                 destination_server_side_encryption.serialize_to_json_for_request()
             )

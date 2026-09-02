@@ -83,6 +83,7 @@ from b2sdk._internal.exception import (
     UnsatisfiableRange,
     UnusableFileName,
     WrongEncryptionModeForBucketDefault,
+    WrongEncryptionSettingForFileWrite,
     interpret_b2_error,
 )
 from b2sdk._internal.scan.exception import EmptyDirectory
@@ -177,4 +178,5 @@ __all__ = (
     'SSECKeyIdMismatchInCopy',
     'SSECKeyError',
     'WrongEncryptionModeForBucketDefault',
+    'WrongEncryptionSettingForFileWrite',
 )

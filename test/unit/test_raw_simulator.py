@@ -10,12 +10,17 @@
 from __future__ import annotations
 
 import hashlib
+import io
 from unittest.mock import Mock
 
 import pytest
+from apiver_deps import EncryptionMode, EncryptionSetting
+from apiver_deps_exception import WrongEncryptionSettingForFileWrite
 
 from b2sdk import v3
 from test.helpers import patch_bind_params
+
+NO_ENCRYPTION = EncryptionSetting(EncryptionMode.NONE)
 
 
 @pytest.fixture
@@ -127,3 +132,72 @@ def test_raw_simulator__upload_file__supports_file_infos(dummy_raw_simulator, fi
         )
     assert mock_method.get_bound_call_args()['file_info'] == file_info
     assert 'file_infos' not in mock_method.call_args[1]
+
+
+@pytest.mark.parametrize(
+    'write_file',
+    [
+        pytest.param(
+            lambda raw_simulator: raw_simulator.upload_file(
+                'upload-url',
+                'upload-token',
+                'file-name',
+                1,
+                'text/plain',
+                'sha1',
+                {},
+                io.BytesIO(),
+                server_side_encryption=NO_ENCRYPTION,
+            ),
+            id='upload_file',
+        ),
+        pytest.param(
+            lambda raw_simulator: raw_simulator.upload_part(
+                'upload-url',
+                'upload-token',
+                1,
+                1,
+                'sha1',
+                io.BytesIO(),
+                server_side_encryption=NO_ENCRYPTION,
+            ),
+            id='upload_part',
+        ),
+        pytest.param(
+            lambda raw_simulator: raw_simulator.start_large_file(
+                'api-url',
+                'account-token',
+                'bucket-id',
+                'file-name',
+                'text/plain',
+                {},
+                server_side_encryption=NO_ENCRYPTION,
+            ),
+            id='start_large_file',
+        ),
+        pytest.param(
+            lambda raw_simulator: raw_simulator.copy_file(
+                'api-url',
+                'account-token',
+                'source-file-id',
+                'new-file-name',
+                destination_server_side_encryption=NO_ENCRYPTION,
+            ),
+            id='copy_file',
+        ),
+        pytest.param(
+            lambda raw_simulator: raw_simulator.copy_part(
+                'api-url',
+                'account-token',
+                'source-file-id',
+                'large-file-id',
+                1,
+                destination_server_side_encryption=NO_ENCRYPTION,
+            ),
+            id='copy_part',
+        ),
+    ],
+)
+def test_raw_simulator_rejects_no_encryption_for_file_writes(dummy_raw_simulator, write_file):
+    with pytest.raises(WrongEncryptionSettingForFileWrite):
+        write_file(dummy_raw_simulator)

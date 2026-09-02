@@ -153,6 +153,9 @@ class TestUpdateBucket(BucketTestBase):
             EncryptionSetting(
                 mode=EncryptionMode.UNKNOWN,
             ),
+            EncryptionSetting(
+                mode=EncryptionMode.NONE,
+            ),
         ),
     )
     def test_update_bucket_wrong_encryption(self, encryption_setting):
@@ -180,6 +183,9 @@ class TestCreateBucket(BucketTestBase):
             ),
             EncryptionSetting(
                 mode=EncryptionMode.UNKNOWN,
+            ),
+            EncryptionSetting(
+                mode=EncryptionMode.NONE,
             ),
         ),
     )

@@ -22,10 +22,15 @@ import pytest
 from b2sdk._internal.b2http import B2Http
 from b2sdk._internal.encryption.setting import (
     EncryptionAlgorithm,
+    EncryptionKey,
     EncryptionMode,
     EncryptionSetting,
 )
-from b2sdk._internal.exception import DisablingFileLockNotSupported, Unauthorized
+from b2sdk._internal.exception import (
+    DisablingFileLockNotSupported,
+    Unauthorized,
+    WrongEncryptionModeForBucketDefault,
+)
 from b2sdk._internal.file_lock import (
     NO_RETENTION_FILE_SETTING,
     BucketRetentionSetting,
@@ -335,10 +340,9 @@ def raw_api_test_helper(raw_api, should_cleanup_old_buckets):
         mode=EncryptionMode.SSE_B2,
         algorithm=EncryptionAlgorithm.AES256,
     )
-    sse_none = EncryptionSetting(mode=EncryptionMode.NONE)
     for encryption_setting, default_retention in [
         (
-            sse_none,
+            None,
             BucketRetentionSetting(mode=RetentionMode.GOVERNANCE, period=RetentionPeriod(days=1)),
         ),
         (sse_b2_aes, None),
@@ -353,6 +357,25 @@ def raw_api_test_helper(raw_api, should_cleanup_old_buckets):
             default_server_side_encryption=encryption_setting,
             default_retention=default_retention,
         )
+
+    for invalid_encryption_setting in [
+        EncryptionSetting(mode=EncryptionMode.NONE),
+        EncryptionSetting(mode=EncryptionMode.UNKNOWN),
+        EncryptionSetting(
+            mode=EncryptionMode.SSE_C,
+            algorithm=EncryptionAlgorithm.AES256,
+            key=EncryptionKey(secret=b'********************************', key_id='some-id'),
+        ),
+    ]:
+        with pytest.raises(WrongEncryptionModeForBucketDefault):
+            raw_api.update_bucket(
+                api_url,
+                account_auth_token,
+                account_id,
+                bucket_id,
+                'allPublic',
+                default_server_side_encryption=invalid_encryption_setting,
+            )
 
     # b2_list_buckets
     print('b2_list_buckets')
