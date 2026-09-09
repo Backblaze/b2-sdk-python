@@ -1609,10 +1609,10 @@ class FileCreationEncryptionTests:
         large_data = self._make_data(part_size * 3)
 
         def upload_local_file(file_name, **kwargs):
-            with tempfile.NamedTemporaryFile() as local_file:
-                local_file.write(data)
-                local_file.flush()
-                return self.bucket.upload_local_file(local_file.name, file_name, **kwargs)
+            with tempfile.TemporaryDirectory() as d:
+                path = os.path.join(d, 'file1')
+                write_file(path, data)
+                return self.bucket.upload_local_file(path, file_name, **kwargs)
 
         def copy(file_name, source_data=data, **kwargs):
             source = self.bucket.upload_bytes(source_data, f'{file_name}-source')
