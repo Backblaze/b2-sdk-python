@@ -155,6 +155,71 @@ To run tests matching a keyword expression::
 
     $ nox -s unit-3.10 -- -k keyword
 
+Where to put a new test
+=======================
+
+**b2sdk** keeps several numbered interfaces (``b2sdk.v0`` through ``b2sdk.v3``) working at the same
+time, and the unit suite is what holds that promise. ``nox -s unit`` therefore runs ``pytest`` once per
+interface version - ``--api=v3``, then ``v2``, ``v1`` and ``v0`` - so a single shared test is executed
+four times, once against each interface.
+
+Two mechanisms make that work:
+
+* ``pytest`` gains an ``--api`` option, defaulting to the newest version. It puts
+  ``test/unit/<apiver>/apiver`` on ``sys.path``, so a shared test can write
+  ``from apiver_deps import B2Api`` and receive whichever interface is under test. The ``apiver`` and
+  ``apiver_int`` fixtures expose that version as ``"v2"`` or ``2`` respectively.
+* Tests living under a *different* version's directory are not collected. Running with ``--api=v3``
+  skips ``test/unit/v0``, ``v1`` and ``v2`` entirely.
+
+Choose a location accordingly:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 28 22 50
+
+   * - Location
+     - Collected for
+     - Use it for
+   * - ``test/unit/<topic>/``, e.g. ``bucket``, ``api``, ``sync``
+     - every interface version
+     - The default home. Behaviour shared by all interfaces - in practice, anything implemented in
+       ``b2sdk/_internal``. Import through ``apiver_deps``.
+   * - ``test/unit/v0`` … ``test/unit/v3``
+     - only its own version
+     - Behaviour that exists in exactly one interface, such as a legacy constructor argument or an
+       older return type preserved by a compatibility adapter.
+   * - ``test/unit/v_all/``
+     - every interface version
+     - Assertions about the interfaces themselves - that a name is still exported, or that two
+       versions agree.
+   * - ``test/integration/``
+     - not run by ``nox -s unit``
+     - End-to-end behaviour against real B2. Requires credentials, so it cannot gate every PR.
+
+If a shared test applies to only some versions, keep it in the shared directory and mark it rather than
+copying it into each version directory::
+
+    @pytest.mark.apiver(1)          # only v1
+    @pytest.mark.apiver(1, 3)       # only v1 and v3
+    @pytest.mark.apiver(from_ver=2) # v2 and newer
+    @pytest.mark.apiver(to_ver=2)   # v2 and older
+
+``from_ver`` and ``to_ver`` are inclusive, and a single mark may not mix positional and keyword
+arguments. Marks also work on individual ``pytest.param`` entries, which is the usual way to assert that
+an older interface raises a different exception than a newer one. When a module-level ``pytestmark`` and
+a test-level mark disagree, the test is skipped unless *both* conditions allow it. See
+``test/unit/conftest.py`` for the full behaviour.
+
+When you change something in ``b2sdk/_internal``, check that:
+
+#. the regression test sits in a shared directory, so it runs for every interface, and not in a single
+   version directory where it would silently cover only one;
+#. it imports from ``apiver_deps`` rather than a fixed ``b2sdk.vN``;
+#. any interface that deliberately keeps the old behaviour has a test asserting that, placed in that
+   version's directory or marked with ``apiver``;
+#. ``nox -s unit`` passes - a suite that passes only for the newest interface is not enough.
+
 Documentation
 #############
 
