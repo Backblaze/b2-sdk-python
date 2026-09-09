@@ -48,6 +48,7 @@ Documentation index
    tutorial
    quick_start
    server_side_encryption
+   replication
    advanced
    glossary
    api_types
