@@ -35,7 +35,7 @@ When building an application which uses B2 cloud, it is possible to implement an
 - reporting progress of operations to an object of your choice
 - exception hierarchy makes it easy to display informative messages to users
 - interrupted transfers are automatically continued
-- **b2sdk** has been developed for 3 years before it version 1.0.0 was released. It's stable and mature.
+- **b2sdk** had been in development for years before its 1.0.0 release. It's stable and mature.
 
 
 #########################################
