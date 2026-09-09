@@ -14,8 +14,8 @@ In order to make it easier to contribute, core developers of this project:
 * maintain Continuous Integration (by using GitHub Actions) that:
    * runs all sorts of linters
    * checks if the Python distribution can be built
-   * runs all tests on a matrix of 8 versions of Python (including pypy) and 3 operating systems
-     (Linux, Mac OS X and Windows)
+   * runs all tests on a matrix of every supported Python version (CPython and PyPy, see
+     `PYTHON_VERSIONS` in [noxfile.py](noxfile.py)) across Linux, macOS and Windows
    * checks if the documentation can be built properly
 * maintain other Continuous Integration tools (coverage tracker)
 

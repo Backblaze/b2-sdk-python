@@ -20,7 +20,7 @@ We encourage outside contributors to perform changes on our codebase. Many such 
 
    * runs all sorts of linters
    * checks if the Python distribution can be built
-   * runs all tests on a matrix of 8 versions of Python (including pypy) and 3 operating systems (Linux, Mac OS X and Windows)
+   * runs all tests on a matrix of every supported Python version (CPython and PyPy, see ``PYTHON_VERSIONS`` in ``noxfile.py``) across Linux, macOS and Windows
    * checks if the documentation can be built properly
 
 * maintain other Continuous Integration tools (coverage tracker)
@@ -36,9 +36,13 @@ With ``nox``, you can run different sessions (default are ``lint`` and ``test``)
 * ``test`` (``test-3.10``, ``test-3.11``, ``test-3.12``, ``test-3.13``, ``test-3.14``, ``test-pypy3.10``) -> Run test suite.
 * ``cover`` -> Perform coverage analysis.
 * ``build`` -> Build the distribution.
-* ``deploy`` -> Deploy the distribution to the PyPi.
 * ``doc`` -> Build the documentation.
 * ``doc_cover`` -> Perform coverage analysis for the documentation.
+
+Releases are not published from a ``nox`` session. The *Continuous Delivery* GitHub Actions
+workflow (``.github/workflows/cd.yml``) builds the distribution when a version tag is pushed,
+creates a GitHub release, and uploads it to PyPI for non-prerelease versions. The release
+procedure itself is described in ``README.release.md``.
 
 For example::
 
