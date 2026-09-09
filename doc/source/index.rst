@@ -16,26 +16,18 @@ to provide command-line access to the B2 service, but there are many possible ap
 Why use b2sdk?
 #########################################
 
-.. todo::
-   delete doc/source/b2sdk?
+When building an application which uses B2 cloud, it is possible to implement an independent B2 API client, but using **b2sdk** gives you:
 
-.. todo::
-   describe raw_simulator in detail
-
-.. todo::
-   fix list consistency style in "Why use b2sdk?", add links
-
-When building an application which uses B2 cloud, it is possible to implement an independent B2 API client, but using **b2sdk** allows for:
-
-- reuse of code that is already written, with hundreds of unit tests
-- use of **Synchronizer**, a high-performance, parallel rsync-like utility
-- developer-friendly library :ref:`api version policy <semantic_versioning>` which guards your program against incompatible changes
-- `B2 integration checklist <https://www.backblaze.com/b2/docs/integration_checklist.html>`_ is passed automatically
-- **raw_simulator** makes it easy to mock the B2 cloud for unit testing purposes
-- reporting progress of operations to an object of your choice
-- exception hierarchy makes it easy to display informative messages to users
-- interrupted transfers are automatically continued
-- **b2sdk** had been in development for years before its 1.0.0 release. It's stable and mature.
+- code that is already written and covered by hundreds of unit tests
+- :ref:`Synchronizer <sync>`, a high-performance, parallel rsync-like utility
+- :ref:`Replication <replication>` support, for keeping a second bucket up to date automatically
+- a developer-friendly :ref:`api version policy <semantic_versioning>` that guards your program against incompatible changes
+- automatic compliance with the `B2 integration checklist <https://www.backblaze.com/b2/docs/integration_checklist.html>`_
+- :doc:`raw_simulator <api/internal/raw_simulator>`, which mocks the B2 cloud so you can unit test without network access
+- :doc:`progress reporting <api/progress>` to an object of your choice
+- an :doc:`exception hierarchy <api/exception>` that makes it easy to show users informative messages
+- automatic continuation of interrupted transfers
+- a stable and mature codebase, in development for years before its 1.0.0 release
 
 
 #########################################
