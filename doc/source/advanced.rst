@@ -301,8 +301,10 @@ In `local_verification` mode the remote range was artificially split into three 
 .. note::
   `prioritize` is just a planner setting - remote parts are always verified if matching local parts exists.
 
-.. TODO::
-  prioritization should accept enum, not string
+.. todo::
+  Prioritization should accept an enum, not a string. Tracked in
+  `issue #602 <https://github.com/Backblaze/b2-sdk-python/issues/602>`_. Kept here so that anyone
+  editing this section sees it alongside the documented string values.
 
 
 .. _continuation:
