@@ -150,7 +150,7 @@ The assumption here is that the file has been appended to since it was last uplo
     >>> bucket.create_file(input_sources, remote_name, file_info)
     <b2sdk._internal.file_version.FileVersion at 0x7fc8cd560552>
 
-`LocalUploadSource` has the size determined automatically in this case. This is more efficient than :meth:`b2sdk.v3.Bucket.concatenate`, as it can use the overlapping ranges when a remote part is smaller than :term:`absoluteMinimumPartSize` to prevent downloading a range (when concatenating, local source would have destination offset at the end of remote source)
+:class:`b2sdk.v3.UploadSourceLocalFile` has the size determined automatically in this case. This is more efficient than :meth:`b2sdk.v3.Bucket.concatenate`, as it can use the overlapping ranges when a remote part is smaller than :term:`absoluteMinimumPartSize` to prevent downloading a range (when concatenating, local source would have destination offset at the end of remote source)
 
 For more information see :meth:`b2sdk.v3.Bucket.create_file`.
 
@@ -179,7 +179,7 @@ Change the middle of the remote file
     >>> bucket.create_file(input_sources, remote_name, file_info)
     <b2sdk._internal.file_version.FileVersion at 0x7fc8cd560552>
 
-`LocalUploadSource` has the size determined automatically in this case. This is more efficient than :meth:`b2sdk.v3.Bucket.concatenate`, as it can use the overlapping ranges when a remote part is smaller than :term:`absoluteMinimumPartSize` to prevent downloading a range.
+:class:`b2sdk.v3.UploadSourceLocalFile` has the size determined automatically in this case. This is more efficient than :meth:`b2sdk.v3.Bucket.concatenate`, as it can use the overlapping ranges when a remote part is smaller than :term:`absoluteMinimumPartSize` to prevent downloading a range.
 
 For more information see :meth:`b2sdk.v3.Bucket.create_file`.
 
@@ -284,7 +284,7 @@ Here the planner has only used a remote source where remote range was not availa
 
 .. code-block:: python
 
-    >>> planner.create_file(input_sources, remote_name, file_info, prioritize='remote')
+    >>> bucket.create_file(input_sources, remote_name, file_info, prioritize='remote')
     # planner parts: cloud[A, D], local[D, E]
 
 Here the planner has only used a local source where remote range was not available, minimizing uploads.
