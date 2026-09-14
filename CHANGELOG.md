@@ -9,6 +9,25 @@ upcoming release can be found in [changelog.d](changelog.d).
 
 <!-- towncrier release notes start -->
 
+## [2.13.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v2.13.0) - 2026-09-14
+
+
+### Changed
+
+- Follow B2's switch to SSE-B2 as the default server-side encryption: an omitted encryption setting now means the server default (SSE-B2) for both bucket defaults and file writes, and an explicit `none` is rejected before the request is sent, with `WrongEncryptionModeForBucketDefault` for bucket create/update and the new `WrongEncryptionSettingForFileWrite` for uploads and copies. `RawSimulator` applies the same rules.
+
+### Added
+
+- Add `EncryptionSetting.can_be_used_for_file_write()` and the `WrongEncryptionSettingForFileWrite` exception.
+
+### Infrastructure
+
+- Add a build-time smoke test that installs the freshly built source distribution and imports the public API shims.
+- Add a checked-in Read the Docs build configuration so docs builds install the required doc dependencies and system packages.
+- Bump urllib3 from 2.6.3 to 2.7.0.
+- Run B2 CLI unit tests and integration tests in CI against the SDK checkout.
+
+
 ## [2.12.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v2.12.0) - 2026-05-05
 
 
