@@ -34,7 +34,13 @@ from apiver_deps import (
     RawSimulator,
     RetentionMode,
 )
-from apiver_deps_exception import AccessDenied, FileNotPresent, InvalidArgument, RestrictedBucket
+from apiver_deps_exception import (
+    AccessDenied,
+    FileNotPresent,
+    InvalidArgument,
+    RestrictedBucket,
+    WrongEncryptionModeForBucketDefault,
+)
 
 from ..test_base import create_key, create_key_multibucket
 
@@ -105,7 +111,7 @@ class TestApi:
                 'fileName': 'file',
                 'fileRetention': {'isClientAuthorizedToRead': True, 'value': {'mode': None}},
                 'legalHold': {'isClientAuthorizedToRead': True, 'value': None},
-                'serverSideEncryption': {'mode': 'none'},
+                'serverSideEncryption': {'algorithm': 'AES256', 'mode': 'SSE-B2'},
                 'uploadTimestamp': 5000,
             }
         else:
@@ -125,7 +131,7 @@ class TestApi:
             'fileId': '9999',
             'fileName': 'file',
             'fileInfo': {},
-            'serverSideEncryption': {'mode': 'none'},
+            'serverSideEncryption': {'algorithm': 'AES256', 'mode': 'SSE-B2'},
             'legalHold': None,
             'fileRetention': {'mode': None, 'retainUntilTimestamp': None},
             'size': 11,
@@ -227,7 +233,7 @@ class TestApi:
                     'revision': 1,
                     'defaultServerSideEncryption': {
                         'isClientAuthorizedToRead': True,
-                        'value': {'mode': 'none'},
+                        'value': {'algorithm': 'AES256', 'mode': 'SSE-B2'},
                     },
                     'fileLockConfiguration': {
                         'isClientAuthorizedToRead': True,
@@ -276,17 +282,11 @@ class TestApi:
         assert list_buckets(bucket_id='ID-2', use_cache=True) == []
         assert self.api.list_buckets() == []
 
-    def test_buckets_with_encryption(self):
+    def test_bucket_encryption_explicit_and_default(self):
         self._authorize_account()
         sse_b2_aes = EncryptionSetting(
             mode=EncryptionMode.SSE_B2,
             algorithm=EncryptionAlgorithm.AES256,
-        )
-        no_encryption = EncryptionSetting(
-            mode=EncryptionMode.NONE,
-        )
-        unknown_encryption = EncryptionSetting(
-            mode=EncryptionMode.UNKNOWN,
         )
 
         b1 = self.api.create_bucket(
@@ -294,26 +294,53 @@ class TestApi:
             'allPrivate',
             default_server_side_encryption=sse_b2_aes,
         )
-        self._verify_if_bucket_is_encrypted(b1, should_be_encrypted=True)
+        self._assert_bucket_is_sse_b2(b1)
 
         b2 = self.api.create_bucket('bucket2', 'allPrivate')
-        self._verify_if_bucket_is_encrypted(b2, should_be_encrypted=False)
+        self._assert_bucket_is_sse_b2(b2)
 
         # uses list_buckets
-        self._check_if_bucket_is_encrypted('bucket1', should_be_encrypted=True)
-        self._check_if_bucket_is_encrypted('bucket2', should_be_encrypted=False)
+        self._assert_listed_bucket_is_sse_b2('bucket1')
+        self._assert_listed_bucket_is_sse_b2('bucket2')
 
-        # update to set encryption on b2
+        # Explicitly setting SSE-B2 during an update is supported.
         b2.update(default_server_side_encryption=sse_b2_aes)
-        self._check_if_bucket_is_encrypted('bucket1', should_be_encrypted=True)
-        self._check_if_bucket_is_encrypted('bucket2', should_be_encrypted=True)
+        self._assert_listed_bucket_is_sse_b2('bucket2')
 
-        # update to unset encryption again
-        b2.update(default_server_side_encryption=no_encryption)
-        self._check_if_bucket_is_encrypted('bucket1', should_be_encrypted=True)
-        self._check_if_bucket_is_encrypted('bucket2', should_be_encrypted=False)
+    def test_bucket_rejects_plaintext_default(self):
+        self._authorize_account()
+        no_encryption = EncryptionSetting(mode=EncryptionMode.NONE)
 
-        # now check it with no readBucketEncryption permission to see that it's unknown
+        with pytest.raises(WrongEncryptionModeForBucketDefault):
+            self.api.create_bucket(
+                'bucket1',
+                'allPrivate',
+                default_server_side_encryption=no_encryption,
+            )
+
+        bucket = self.api.create_bucket('bucket2', 'allPrivate')
+
+        with pytest.raises(WrongEncryptionModeForBucketDefault):
+            bucket.update(default_server_side_encryption=no_encryption)
+
+        assert [bucket.name for bucket in self.api.list_buckets()] == ['bucket2']
+        self._assert_listed_bucket_is_sse_b2('bucket2')
+
+    def test_bucket_encryption_is_unknown_without_read_permission(self):
+        self._authorize_account()
+        sse_b2_aes = EncryptionSetting(
+            mode=EncryptionMode.SSE_B2,
+            algorithm=EncryptionAlgorithm.AES256,
+        )
+        unknown_encryption = EncryptionSetting(mode=EncryptionMode.UNKNOWN)
+
+        self.api.create_bucket(
+            'bucket1',
+            'allPrivate',
+            default_server_side_encryption=sse_b2_aes,
+        )
+        self.api.create_bucket('bucket2', 'allPrivate')
+
         key = create_key(self.api, ['listBuckets'], 'key1')
         self.api.authorize_account(
             application_key_id=key.id_,
@@ -329,25 +356,16 @@ class TestApi:
 
         assert buckets['bucket2'].default_server_side_encryption == unknown_encryption
 
-    def _check_if_bucket_is_encrypted(self, bucket_name, should_be_encrypted):
+    def _assert_listed_bucket_is_sse_b2(self, bucket_name):
         buckets = {b.name: b for b in self.api.list_buckets()}
         bucket = buckets[bucket_name]
-        return self._verify_if_bucket_is_encrypted(bucket, should_be_encrypted)
+        self._assert_bucket_is_sse_b2(bucket)
 
-    def _verify_if_bucket_is_encrypted(self, bucket, should_be_encrypted):
-        sse_b2_aes = EncryptionSetting(
+    def _assert_bucket_is_sse_b2(self, bucket):
+        assert bucket.default_server_side_encryption == EncryptionSetting(
             mode=EncryptionMode.SSE_B2,
             algorithm=EncryptionAlgorithm.AES256,
         )
-        no_encryption = EncryptionSetting(
-            mode=EncryptionMode.NONE,
-        )
-        if not should_be_encrypted:
-            assert bucket.default_server_side_encryption == no_encryption
-        else:
-            assert bucket.default_server_side_encryption == sse_b2_aes
-            assert bucket.default_server_side_encryption.mode == EncryptionMode.SSE_B2
-            assert bucket.default_server_side_encryption.algorithm == EncryptionAlgorithm.AES256
 
     def test_list_buckets_with_id(self):
         self._authorize_account()

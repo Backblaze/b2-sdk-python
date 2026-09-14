@@ -31,7 +31,7 @@ RETENTION_GOVERNANCE = FileRetentionSetting(RetentionMode.GOVERNANCE, retain_unt
 DEFAULT_REPLICATION_RESULT = dict(
     source_replication_status=None,
     source_has_hide_marker=False,
-    source_encryption_mode=EncryptionMode.NONE,
+    source_encryption_mode=EncryptionMode.SSE_B2,
     source_has_large_metadata=False,
     source_has_file_retention=False,
     source_has_legal_hold=False,
@@ -102,19 +102,7 @@ def test_scan_source(source_bucket, test_file, monitor):
     ]
     report = monitor.scan(scan_destination=False)
 
-    assert report.counter_by_status[ReplicationScanResult(**DEFAULT_REPLICATION_RESULT)] == 2
-
-    assert (
-        report.counter_by_status[
-            ReplicationScanResult(
-                **{
-                    **DEFAULT_REPLICATION_RESULT,
-                    'source_encryption_mode': EncryptionMode.SSE_B2,
-                }
-            )
-        ]
-        == 1
-    )
+    assert report.counter_by_status[ReplicationScanResult(**DEFAULT_REPLICATION_RESULT)] == 3
 
     assert (
         report.counter_by_status[
@@ -183,7 +171,7 @@ def test_scan_source(source_bucket, test_file, monitor):
                 **DEFAULT_REPLICATION_RESULT,
             )
         ][0]
-        == files[1]
+        == files[2]
     )
 
 

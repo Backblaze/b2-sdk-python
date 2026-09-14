@@ -23,7 +23,7 @@ from typing import Iterable
 from requests.structures import CaseInsensitiveDict
 
 from .b2http import ResponseContextManager
-from .encryption.setting import EncryptionMode, EncryptionSetting
+from .encryption.setting import SSE_B2_AES, EncryptionMode, EncryptionSetting
 from .exception import (
     AccessDenied,
     BadJson,
@@ -46,6 +46,8 @@ from .exception import (
     SSECKeyError,
     Unauthorized,
     UnsatisfiableRange,
+    WrongEncryptionModeForBucketDefault,
+    WrongEncryptionSettingForFileWrite,
 )
 from .file_lock import (
     NO_RETENTION_BUCKET_SETTING,
@@ -589,7 +591,7 @@ class BucketSimulator:
         self.file_id_to_file: dict[str, FileSimulator] = dict()
         self.file_name_and_id_to_file: dict[tuple[str, str], FileSimulator] = dict()
         if default_server_side_encryption is None:
-            default_server_side_encryption = EncryptionSetting(mode=EncryptionMode.NONE)
+            default_server_side_encryption = SSE_B2_AES
         self.default_server_side_encryption = default_server_side_encryption
         self.is_file_lock_enabled = is_file_lock_enabled
         self.default_retention = NO_RETENTION_BUCKET_SETTING
@@ -883,7 +885,9 @@ class BucketSimulator:
             )
 
         destination_bucket = self.api.bucket_id_to_bucket.get(destination_bucket_id, self)
-        sse = destination_server_side_encryption or self.default_server_side_encryption
+        sse = (
+            destination_server_side_encryption or destination_bucket.default_server_side_encryption
+        )
         copy_file_sim = self.FILE_SIMULATOR_CLASS(
             self.account_id,
             destination_bucket,
@@ -1450,6 +1454,11 @@ class RawSimulator(AbstractRawApi):
         is_file_lock_enabled: bool | None = None,
         replication: ReplicationConfiguration | None = None,
     ):
+        if (
+            default_server_side_encryption is not None
+            and not default_server_side_encryption.mode.can_be_set_as_bucket_default()
+        ):
+            raise WrongEncryptionModeForBucketDefault(default_server_side_encryption.mode)
         if not re.match(r'^[-a-zA-Z0-9]*$', bucket_name):
             raise BadJson('illegal bucket name: ' + bucket_name)
         self._assert_account_auth(api_url, account_auth_token, account_id, 'writeBuckets')
@@ -1698,6 +1707,11 @@ class RawSimulator(AbstractRawApi):
         file_retention: FileRetentionSetting | None = None,
         legal_hold: LegalHold | None = None,
     ):
+        if (
+            destination_server_side_encryption is not None
+            and not destination_server_side_encryption.can_be_used_for_file_write()
+        ):
+            raise WrongEncryptionSettingForFileWrite(destination_server_side_encryption)
         bucket_id = self.file_id_to_bucket_id[source_file_id]
         bucket = self._get_bucket_by_id(bucket_id)
         self._assert_account_auth(api_url, account_auth_token, bucket.account_id, 'writeFiles')
@@ -1737,6 +1751,11 @@ class RawSimulator(AbstractRawApi):
         destination_server_side_encryption: EncryptionSetting | None = None,
         source_server_side_encryption: EncryptionSetting | None = None,
     ):
+        if (
+            destination_server_side_encryption is not None
+            and not destination_server_side_encryption.can_be_used_for_file_write()
+        ):
+            raise WrongEncryptionSettingForFileWrite(destination_server_side_encryption)
         if (
             destination_server_side_encryption is not None
             and destination_server_side_encryption.mode == EncryptionMode.SSE_B2
@@ -1916,6 +1935,11 @@ class RawSimulator(AbstractRawApi):
         legal_hold: LegalHold | None = None,
         custom_upload_timestamp: int | None = None,
     ):
+        if (
+            server_side_encryption is not None
+            and not server_side_encryption.can_be_used_for_file_write()
+        ):
+            raise WrongEncryptionSettingForFileWrite(server_side_encryption)
         bucket = self._get_bucket_by_id(bucket_id)
         self._assert_account_auth(api_url, account_auth_token, bucket.account_id, 'writeFiles')
         result = bucket.start_large_file(
@@ -1948,6 +1972,11 @@ class RawSimulator(AbstractRawApi):
         replication: ReplicationConfiguration | None = None,
         is_file_lock_enabled: bool | None = None,
     ):
+        if (
+            default_server_side_encryption is not None
+            and not default_server_side_encryption.mode.can_be_set_as_bucket_default()
+        ):
+            raise WrongEncryptionModeForBucketDefault(default_server_side_encryption.mode)
         assert (
             bucket_type
             or bucket_info
@@ -2021,6 +2050,11 @@ class RawSimulator(AbstractRawApi):
         legal_hold: LegalHold | None = None,
         custom_upload_timestamp: int | None = None,
     ):
+        if (
+            server_side_encryption is not None
+            and not server_side_encryption.can_be_used_for_file_write()
+        ):
+            raise WrongEncryptionSettingForFileWrite(server_side_encryption)
         with ConcurrentUsedAuthTokenGuard(
             self.currently_used_auth_tokens[upload_auth_token], upload_auth_token
         ):
@@ -2033,11 +2067,6 @@ class RawSimulator(AbstractRawApi):
             bucket_id, upload_id = url_match.groups()
             bucket = self._get_bucket_by_id(bucket_id)
             if server_side_encryption is not None:
-                assert server_side_encryption.mode in (
-                    EncryptionMode.NONE,
-                    EncryptionMode.SSE_B2,
-                    EncryptionMode.SSE_C,
-                )
                 file_info = server_side_encryption.add_key_id_to_file_info(file_info)
 
             # we don't really need headers further on
@@ -2084,6 +2113,11 @@ class RawSimulator(AbstractRawApi):
         input_stream,
         server_side_encryption: EncryptionSetting | None = None,
     ):
+        if (
+            server_side_encryption is not None
+            and not server_side_encryption.can_be_used_for_file_write()
+        ):
+            raise WrongEncryptionSettingForFileWrite(server_side_encryption)
         with ConcurrentUsedAuthTokenGuard(
             self.currently_used_auth_tokens[upload_auth_token], upload_auth_token
         ):

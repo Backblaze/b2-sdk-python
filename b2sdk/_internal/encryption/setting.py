@@ -128,6 +128,17 @@ class EncryptionSetting:
             raise ValueError('cannot use an unknown key in requests')
         return self.as_dict()
 
+    def can_be_used_for_file_write(self) -> bool:
+        if self.mode == EncryptionMode.SSE_B2:
+            return self.algorithm == EncryptionAlgorithm.AES256 and self.key is None
+        if self.mode == EncryptionMode.SSE_C:
+            return (
+                self.algorithm == EncryptionAlgorithm.AES256
+                and self.key is not None
+                and self.key.secret is not None
+            )
+        return False
+
     def as_dict(self):
         """
         Represent the setting as a dict, for example:

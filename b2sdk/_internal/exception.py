@@ -536,6 +536,15 @@ class WrongEncryptionModeForBucketDefault(InvalidUserInput):
         return f'{self.encryption_mode} cannot be used as default for a bucket.'
 
 
+class WrongEncryptionSettingForFileWrite(InvalidUserInput):
+    def __init__(self, encryption_setting):
+        super().__init__()
+        self.encryption_setting = encryption_setting
+
+    def __str__(self):
+        return f'{self.encryption_setting} cannot be used for file writes.'
+
+
 class CopyArgumentsMismatch(InvalidUserInput):
     pass
 
