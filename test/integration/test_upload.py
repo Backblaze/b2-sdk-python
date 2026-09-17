@@ -10,14 +10,26 @@
 from __future__ import annotations
 
 import io
+import logging
+import secrets
 
-from b2sdk._internal.b2http import B2Http
+from b2sdk._internal.b2http import B2Http, HttpCallback
 from b2sdk._internal.encryption.setting import EncryptionKey, EncryptionSetting
 from b2sdk._internal.encryption.types import EncryptionAlgorithm, EncryptionMode
+from b2sdk._internal.utils import hex_sha1_of_stream
 from b2sdk.v2 import B2RawHTTPApi
 from b2sdk.v3.testing import IntegrationTestBase
 
 from .test_raw_api import authorize_raw_api
+
+logger = logging.getLogger(__name__)
+
+
+class FailSomeUploads(HttpCallback):
+    def pre_request(self, method, url, headers):
+        if method == 'POST' and 'b2_upload_file' in url:
+            headers['X-Bz-Test-Mode'] = 'fail_some_uploads'
+            logger.info('Added X-Bz-Test-Mode=fail_some_uploads header to %s', url)
 
 
 class TestUnboundStreamUpload(IntegrationTestBase):
@@ -46,6 +58,34 @@ class TestUnboundStreamUpload(IntegrationTestBase):
 
 
 class TestUploadLargeFile(IntegrationTestBase):
+    def test_raw_upload_with_intermittent_failures(self):
+        bucket = self.create_bucket()
+        raw_api = self.b2_api.session.raw_api
+        b2_http = raw_api.b2_http
+        account_info = self.b2_api.account_info
+        callback = FailSomeUploads()
+        b2_http.add_callback(callback)
+        try:
+            payload = b'payload'
+            file_name = f'fail-some-uploads-{secrets.token_hex(4)}'
+            upload_url = raw_api.get_upload_url(
+                account_info.get_api_url(),
+                account_info.get_account_auth_token(),
+                bucket.id_,
+            )
+            raw_api.upload_file(
+                upload_url['uploadUrl'],
+                upload_url['authorizationToken'],
+                file_name,
+                len(payload),
+                'text/plain',
+                hex_sha1_of_stream(io.BytesIO(payload), len(payload)),
+                {},
+                io.BytesIO(payload),
+            )
+        finally:
+            b2_http.callbacks.remove(callback)
+
     def test_ssec_key_id(self):
         sse_c = EncryptionSetting(
             mode=EncryptionMode.SSE_C,

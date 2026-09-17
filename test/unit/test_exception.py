@@ -159,6 +159,9 @@ class TestInterpretError:
     def test_service_error(self):
         error = interpret_b2_error(500, 'code', 'message', {})
         assert isinstance(error, ServiceError)
+        assert error._status == 500
+        assert error._code == 'code'
+        assert error._message == 'message'
         assert '500 code message' == str(error)
 
     def test_unknown_error(self):
