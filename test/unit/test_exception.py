@@ -35,7 +35,7 @@ from apiver_deps_exception import (
     interpret_b2_error,
 )
 
-from b2sdk._internal.exception import ResourceNotFound
+from b2sdk._internal.exception import RequestTimeout, ResourceNotFound
 
 
 class TestB2Error:
@@ -160,6 +160,12 @@ class TestInterpretError:
         error = interpret_b2_error(500, 'code', 'message', {})
         assert isinstance(error, ServiceError)
         assert '500 code message' == str(error)
+
+    def test_request_timeout(self):
+        error = interpret_b2_error(408, 'request_timeout', 'request timeout', {})
+        assert isinstance(error, RequestTimeout)
+        assert error.should_retry_upload()
+        assert error.should_retry_http()
 
     def test_unknown_error(self):
         error = interpret_b2_error(499, 'code', 'message', {})
