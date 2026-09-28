@@ -434,6 +434,10 @@ class ServiceError(TransientErrorMixin, B2Error):
     """
 
 
+class RequestTimeout(TransientErrorMixin, B2Error):
+    """Used for HTTP status code 408 (request timeout)."""
+
+
 class CapExceeded(B2Error):
     def __str__(self):
         return 'Cap exceeded.'
@@ -750,6 +754,8 @@ def interpret_b2_error(
         return Conflict()
     elif status == 416 and code == 'range_not_satisfiable':
         return UnsatisfiableRange()
+    elif status == 408:
+        return RequestTimeout('%d %s %s' % (status, code, message))
     elif status == 429:
         return TooManyRequests(retry_after_seconds=response_headers.get('retry-after'))
     elif 500 <= status < 600:
