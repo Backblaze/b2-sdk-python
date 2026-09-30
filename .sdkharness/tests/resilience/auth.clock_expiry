@@ -1,0 +1,179 @@
+#!/usr/bin/env python3
+"""b2-sdk-python x auth.clock_expiry.
+
+Written from the reference check, bin/resilience/b2-sdk-python/upload.retry_503.
+The contract is bin/resilience/README.md; the question is the auth.clock_expiry row of
+bin/resilience/scenarios.tsv.
+
+Fault   clock 86400001 -- POST /clock {advanceMs: 86400001}, after setup, so the
+        account token the one live B2Api session holds is past its 24 h life.
+        Nothing is injected: the 401 is the simulator's own
+Assert  the recovery path, from GET /journal: after the advance, a REAL 401 (fault
+        null), then b2_authorize_account, then a successful b2_list_file_names;
+        and the end state: the listing names exactly the fixture
+
+The expected behaviour is B2's, not the tool's.
+b2_authorize_account: "This authorization token is valid for at most 24 hours."
+https://www.backblaze.com/apidocs/b2-authorize-account
+The Integration Checklist, Error Handling, 401: "When the code is either bad_auth_token
+or expired_auth_token you should call b2_authorize_account again to get a new auth token."
+https://www.backblaze.com/docs/cloud-storage-integration-checklist
+
+`needs: long-lived-session` is met: one B2Api over an InMemoryAccountInfo is
+one session that outlives the virtual advance, and the card records the token
+as "cached in an AccountInfo and auto-refreshed on expiry" (card.md, Auth model:
+b2sdk/_internal/api.py:206, session.py:107, session.py:92).
+
+It exercises b2sdk from this exact repository checkout;
+the API is taken from docs/sdks/b2-sdk-python/card.md.
+"""
+
+import json
+import os
+import sys
+import urllib.request
+import uuid
+
+SLUG = 'b2-sdk-python'
+SCENARIO = 'auth.clock_expiry'
+OBJECT_NAME = 'res/clock_expiry.txt'
+ARM_PATH = '/clock'
+FAULT = {'advanceMs': 86400001}
+
+
+def is_faulted(e):
+    return e['status'] == 401 and e['fault'] is None
+
+
+# The closed reason set, mirrored from bin/resilience/README.md. This
+# scenario's `needs` is `long-lived-session`; the card shows b2sdk meets it,
+# so this check never emits no-client-option.
+REASONS = ('missing-runtime', 'no-client-option')
+
+
+class Amber(Exception):
+    """The question could not be asked. Reason must be in REASONS."""
+
+    def __init__(self, reason: str, detail: str) -> None:
+        assert reason in REASONS, reason
+        self.reason = reason
+        self.detail = detail
+
+
+class Failure(Exception):
+    def __init__(self, step: str, detail: str) -> None:
+        self.step = step
+        self.detail = detail
+
+
+def say(verdict: str) -> None:
+    print(f'RESILIENCE {SLUG} {SCENARIO} @simulator: {verdict}')
+
+
+def note(text: str) -> None:
+    print(f'NOTE {SLUG} {SCENARIO}: {text}')
+
+
+def step(name: str, action):
+    """Run one step; any error is a FAIL naming the step and exception class.
+
+    There is no unreachable/unauthorized amber here: the runner supplies the
+    server and the credential, so either failing is a harness defect.
+    """
+    try:
+        return action()
+    except (Amber, Failure):
+        raise
+    except Exception as error:  # noqa: BLE001 -- only the class name is reported
+        raise Failure(name, type(error).__name__) from error
+
+
+def control(method: str, path: str, body=None):
+    data = None if body is None else json.dumps(body).encode()
+    req = urllib.request.Request(
+        os.environ['RESILIENCE_CONTROL_URL'] + path,
+        data=data,
+        method=method,
+        headers={'content-type': 'application/json'},
+    )
+    with urllib.request.urlopen(req, timeout=10) as resp:
+        return json.load(resp)
+
+
+def journal():
+    return step('journal', lambda: control('GET', '/journal'))['entries']
+
+
+def after(entries, seq, endpoint, status=None):
+    """Entries on `endpoint` later than `seq`, optionally with one status."""
+    return [
+        e
+        for e in entries
+        if e['seq'] > seq
+        and e['endpoint'] == endpoint
+        and (status is None or e['status'] == status)
+    ]
+
+
+def authorized_bucket(**api_kwargs):
+    realm = os.environ['RESILIENCE_SIMULATOR_URL']
+    try:
+        from b2sdk.v3 import B2Api, InMemoryAccountInfo
+    except ImportError as error:
+        raise Amber('missing-runtime', 'b2sdk is not installed') from error
+    api = B2Api(InMemoryAccountInfo(), **api_kwargs)
+    step('authenticate', lambda: api.authorize_account('test-key-id', 'test-key', realm=realm))
+    bucket = step(
+        'create bucket',
+        lambda: api.create_bucket(f'sdkharness-res-{uuid.uuid4().hex[:12]}', 'allPrivate'),
+    )
+    return api, bucket
+
+
+def run() -> None:
+    api, bucket = authorized_bucket()
+    payload = b'sdkharness resilience listing'
+    step('upload fixture', lambda: bucket.upload_bytes(payload, OBJECT_NAME))
+    before = max(e['seq'] for e in journal())
+    step('advance clock', lambda: control('POST', ARM_PATH, FAULT))
+    names = step('list', lambda: [v.file_name for v, _folder in bucket.ls('', recursive=True)])
+    if names != [OBJECT_NAME]:
+        raise Failure('listing', f'listed {len(names)} names, expected exactly the one fixture')
+
+    entries = [e for e in journal() if e['seq'] > before]
+    if any(e['fault'] is not None for e in entries):
+        raise Failure('journal', 'a fault was injected; this scenario must see only real answers')
+    expired = [e for e in entries if is_faulted(e)]
+    if not expired:
+        raise Failure(
+            'journal', 'no real 401 after the 24 h advance; the expired token was never presented'
+        )
+    reauth = after(entries, expired[0]['seq'], 'b2_authorize_account', 200)
+    if not reauth:
+        raise Failure(
+            'recovery path',
+            f"b2_authorize_account was not called again after the real 401 on {expired[0]['endpoint']}",
+        )
+    if not after(entries, reauth[0]['seq'], 'b2_list_file_names', 200):
+        raise Failure('recovery path', 'no successful b2_list_file_names after the reauthorization')
+    note(f"the real 401 came from {expired[0]['endpoint']}")
+
+
+def main() -> int:
+    try:
+        run()
+    except Amber as amber:
+        say(f'COULD-NOT-RUN ({amber.reason} -- {amber.detail})')
+        return 0
+    except Failure as failure:
+        say(f'FAIL ({failure.step} -- {failure.detail})')
+        return 1
+    except Exception as error:  # noqa: BLE001 -- never a silent crash
+        say(f'FAIL (setup -- {type(error).__name__})')
+        return 1
+    say('PASS')
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())

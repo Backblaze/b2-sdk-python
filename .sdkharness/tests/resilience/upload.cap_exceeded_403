@@ -1,0 +1,173 @@
+#!/usr/bin/env python3
+"""b2-sdk-python x upload.cap_exceeded_403.
+
+Written from the reference check, bin/resilience/b2-sdk-python/upload.retry_503.
+The contract is bin/resilience/README.md; the question is the upload.cap_exceeded_403 row of
+bin/resilience/scenarios.tsv.
+
+Fault   fault b2_upload_file 403 cap_exceeded (count 1), armed after setup
+Assert  the end state: the upload RAISES a b2sdk error to the caller; and the
+        recovery path, from GET /journal: exactly one b2_upload_file (the 403),
+        so the tool did not retry
+
+The expected behaviour is B2's, not the tool's.
+b2_upload_file's 403 cap_exceeded: "Usage cap exceeded."
+https://www.backblaze.com/apidocs/b2-upload-file
+The Integration Checklist, Error Handling, 403 cap exceeded: "Quit immediately and
+inform the user they need to log in and review their B2 Caps."
+https://www.backblaze.com/docs/cloud-storage-integration-checklist
+
+It exercises b2sdk from this exact repository checkout;
+the API is taken from docs/sdks/b2-sdk-python/card.md.
+"""
+
+import json
+import os
+import sys
+import urllib.request
+import uuid
+
+SLUG = 'b2-sdk-python'
+SCENARIO = 'upload.cap_exceeded_403'
+OBJECT_NAME = 'res/cap_exceeded.txt'
+ARM_PATH = '/faults'
+FAULT = {'on': 'b2_upload_file', 'status': 403, 'code': 'cap_exceeded', 'count': 1}
+
+
+def is_faulted(e):
+    return e['endpoint'] == 'b2_upload_file' and e['fault'] == 'injected' and e['status'] == 403
+
+
+# The closed reason set, mirrored from bin/resilience/README.md. This
+# scenario's `needs` is `-`, so no-client-option is not available to it.
+REASONS = ('missing-runtime',)
+
+
+class Amber(Exception):
+    """The question could not be asked. Reason must be in REASONS."""
+
+    def __init__(self, reason: str, detail: str) -> None:
+        assert reason in REASONS, reason
+        self.reason = reason
+        self.detail = detail
+
+
+class Failure(Exception):
+    def __init__(self, step: str, detail: str) -> None:
+        self.step = step
+        self.detail = detail
+
+
+def say(verdict: str) -> None:
+    print(f'RESILIENCE {SLUG} {SCENARIO} @simulator: {verdict}')
+
+
+def note(text: str) -> None:
+    print(f'NOTE {SLUG} {SCENARIO}: {text}')
+
+
+def step(name: str, action):
+    """Run one step; any error is a FAIL naming the step and exception class.
+
+    There is no unreachable/unauthorized amber here: the runner supplies the
+    server and the credential, so either failing is a harness defect.
+    """
+    try:
+        return action()
+    except (Amber, Failure):
+        raise
+    except Exception as error:  # noqa: BLE001 -- only the class name is reported
+        raise Failure(name, type(error).__name__) from error
+
+
+def control(method: str, path: str, body=None):
+    data = None if body is None else json.dumps(body).encode()
+    req = urllib.request.Request(
+        os.environ['RESILIENCE_CONTROL_URL'] + path,
+        data=data,
+        method=method,
+        headers={'content-type': 'application/json'},
+    )
+    with urllib.request.urlopen(req, timeout=10) as resp:
+        return json.load(resp)
+
+
+def journal():
+    return step('journal', lambda: control('GET', '/journal'))['entries']
+
+
+def after(entries, seq, endpoint, status=None):
+    """Entries on `endpoint` later than `seq`, optionally with one status."""
+    return [
+        e
+        for e in entries
+        if e['seq'] > seq
+        and e['endpoint'] == endpoint
+        and (status is None or e['status'] == status)
+    ]
+
+
+def authorized_bucket(**api_kwargs):
+    realm = os.environ['RESILIENCE_SIMULATOR_URL']
+    try:
+        from b2sdk.v3 import B2Api, InMemoryAccountInfo
+    except ImportError as error:
+        raise Amber('missing-runtime', 'b2sdk is not installed') from error
+    api = B2Api(InMemoryAccountInfo(), **api_kwargs)
+    step('authenticate', lambda: api.authorize_account('test-key-id', 'test-key', realm=realm))
+    bucket = step(
+        'create bucket',
+        lambda: api.create_bucket(f'sdkharness-res-{uuid.uuid4().hex[:12]}', 'allPrivate'),
+    )
+    return api, bucket
+
+
+def run() -> None:
+    api, bucket = authorized_bucket()
+    from b2sdk.v3.exception import B2Error
+
+    payload = (b'sdkharness resilience ' * 64)[:1024]
+    step('arm fault', lambda: control('POST', ARM_PATH, FAULT))
+    try:
+        bucket.upload_bytes(payload, OBJECT_NAME)
+    except B2Error as error:
+        note(
+            f'the caller received {type(error).__name__}; B2 names the code cap_exceeded, and a '
+            'generic class tells the caller nothing about caps'
+        )
+    except Exception as error:  # noqa: BLE001 -- only the class name is reported
+        raise Failure(
+            'upload', f'raised {type(error).__name__}, which is not a b2sdk B2Error'
+        ) from error
+    else:
+        raise Failure('upload', 'the upload succeeded; the cap_exceeded never reached the caller')
+
+    entries = journal()
+    uploads = [e for e in entries if e['endpoint'] == 'b2_upload_file']
+    if len([e for e in uploads if is_faulted(e)]) != 1:
+        raise Failure('journal', 'the injected 403 on b2_upload_file did not fire exactly once')
+    if len(uploads) != 1:
+        raise Failure(
+            'recovery path',
+            f'{len(uploads)} b2_upload_file calls; cap_exceeded must not be retried',
+        )
+
+
+def main() -> int:
+    try:
+        run()
+    except Amber as amber:
+        say(f'COULD-NOT-RUN ({amber.reason} -- {amber.detail})')
+        return 0
+    except Failure as failure:
+        say(f'FAIL ({failure.step} -- {failure.detail})')
+        return 1
+    except Exception as error:  # noqa: BLE001 -- never a silent crash
+        say(f'FAIL (setup -- {type(error).__name__})')
+        return 1
+    say('PASS')
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())

@@ -1,0 +1,165 @@
+#!/usr/bin/env python3
+"""b2-sdk-python x upload.stall.
+
+Written from the reference check, bin/resilience/b2-sdk-python/upload.retry_503.
+The contract is bin/resilience/README.md; the question is the upload.stall row of
+bin/resilience/scenarios.tsv.
+
+Fault   wire b2_upload_file stall ms=60000 -- NOT ARMED. The scenario needs a client
+        request timeout short enough to beat a 60 s stall (`needs: request-timeout`)
+Assert  nothing: docs/sdks/b2-sdk-python/card.md cites no request-timeout option, so
+        the check reports no-client-option instead of guessing at one
+
+The expected behaviour is B2's, not the tool's.
+The Integration Checklist, Upload Retry Guidelines, lists the failures after which "the
+developer should call b2_get_upload_url or b2_get_upload_part_url and re-attempt the
+upload using the new URL and auth key pair"; among them:
+"The HTTPS connection times out waiting for a response (socket timeout)."
+https://www.backblaze.com/docs/cloud-storage-integration-checklist
+
+It exercises b2sdk from this exact repository checkout;
+the API is taken from docs/sdks/b2-sdk-python/card.md.
+"""
+
+import json
+import os
+import sys
+import urllib.request
+import uuid
+
+SLUG = 'b2-sdk-python'
+SCENARIO = 'upload.stall'
+OBJECT_NAME = 'res/stall.txt'
+ARM_PATH = '/wire-faults'
+FAULT = {'on': 'b2_upload_file', 'kind': 'stall', 'ms': 60000, 'count': 1}
+
+
+def is_faulted(e):
+    return e['endpoint'] == 'b2_upload_file' and e['fault'] == 'stall'
+
+
+# The closed reason set, mirrored from bin/resilience/README.md. This
+# scenario's `needs` is `request-timeout`, so no-client-option is available to it.
+REASONS = ('missing-runtime', 'no-client-option')
+
+
+class Amber(Exception):
+    """The question could not be asked. Reason must be in REASONS."""
+
+    def __init__(self, reason: str, detail: str) -> None:
+        assert reason in REASONS, reason
+        self.reason = reason
+        self.detail = detail
+
+
+class Failure(Exception):
+    def __init__(self, step: str, detail: str) -> None:
+        self.step = step
+        self.detail = detail
+
+
+def say(verdict: str) -> None:
+    print(f'RESILIENCE {SLUG} {SCENARIO} @simulator: {verdict}')
+
+
+def note(text: str) -> None:
+    print(f'NOTE {SLUG} {SCENARIO}: {text}')
+
+
+def step(name: str, action):
+    """Run one step; any error is a FAIL naming the step and exception class.
+
+    There is no unreachable/unauthorized amber here: the runner supplies the
+    server and the credential, so either failing is a harness defect.
+    """
+    try:
+        return action()
+    except (Amber, Failure):
+        raise
+    except Exception as error:  # noqa: BLE001 -- only the class name is reported
+        raise Failure(name, type(error).__name__) from error
+
+
+def control(method: str, path: str, body=None):
+    data = None if body is None else json.dumps(body).encode()
+    req = urllib.request.Request(
+        os.environ['RESILIENCE_CONTROL_URL'] + path,
+        data=data,
+        method=method,
+        headers={'content-type': 'application/json'},
+    )
+    with urllib.request.urlopen(req, timeout=10) as resp:
+        return json.load(resp)
+
+
+def journal():
+    return step('journal', lambda: control('GET', '/journal'))['entries']
+
+
+def after(entries, seq, endpoint, status=None):
+    """Entries on `endpoint` later than `seq`, optionally with one status."""
+    return [
+        e
+        for e in entries
+        if e['seq'] > seq
+        and e['endpoint'] == endpoint
+        and (status is None or e['status'] == status)
+    ]
+
+
+def authorized_bucket(**api_kwargs):
+    realm = os.environ['RESILIENCE_SIMULATOR_URL']
+    try:
+        from b2sdk.v3 import B2Api, InMemoryAccountInfo
+    except ImportError as error:
+        raise Amber('missing-runtime', 'b2sdk is not installed') from error
+    api = B2Api(InMemoryAccountInfo(), **api_kwargs)
+    step('authenticate', lambda: api.authorize_account('test-key-id', 'test-key', realm=realm))
+    bucket = step(
+        'create bucket',
+        lambda: api.create_bucket(f'sdkharness-res-{uuid.uuid4().hex[:12]}', 'allPrivate'),
+    )
+    return api, bucket
+
+
+# What the card was searched for, and why it does not settle the precondition.
+# Only sdk-inspector reads the clone, so this check never looks past the card.
+UNSETTLED = (
+    "docs/sdks/b2-sdk-python/card.md cites no request-timeout option: B2HttpApiConfig's "
+    'cited parameters are http_session_factory and _raw_api_class, and no citation names '
+    'the timeout B2Http passes to requests or a way to shorten it'
+)
+
+
+def run() -> None:
+    try:
+        import b2sdk.v3  # noqa: F401 -- only presence is asked
+    except ImportError as error:
+        raise Amber('missing-runtime', 'b2sdk is not installed') from error
+    note(
+        'unconfirmed, not absent: an http_session_factory returning a Session that forces a '
+        'short timeout MIGHT meet the need, but the card marks session-level behaviour as '
+        'inferred; an sdk-inspector re-inspection asking what timeout b2http.py passes to '
+        'Session.request, and whether it is configurable, would settle it'
+    )
+    raise Amber('no-client-option', UNSETTLED)
+
+
+def main() -> int:
+    try:
+        run()
+    except Amber as amber:
+        say(f'COULD-NOT-RUN ({amber.reason} -- {amber.detail})')
+        return 0
+    except Failure as failure:
+        say(f'FAIL ({failure.step} -- {failure.detail})')
+        return 1
+    except Exception as error:  # noqa: BLE001 -- never a silent crash
+        say(f'FAIL (setup -- {type(error).__name__})')
+        return 1
+    say('PASS')
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())
