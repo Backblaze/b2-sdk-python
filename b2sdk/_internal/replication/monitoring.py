@@ -114,14 +114,14 @@ class ReplicationMonitor:
 
     :param b2sdk.v2.Bucket bucket: replication source bucket
     :param b2sdk.v2.ReplicationRule rule: replication rule to be monitored;
-    should belong to `bucket`'s replication configuration
+        should belong to `bucket`'s replication configuration
     :param b2sdk.v2.B2Api destination_api: B2Api instance for destination
-    bucket; if destination bucket is on the same account as source bucket,
-    omit this parameter and then source bucket's B2Api will be used
+        bucket; if destination bucket is on the same account as source bucket,
+        omit this parameter and then source bucket's B2Api will be used
     :param b2sdk.v2.ProgressReport report: instance of ProgressReport which will report
-    scanning progress, by default to stdout
+        scanning progress, by default to stdout
     :param b2sdk.v2.ScanPoliciesManager scan_policies_manager: a strategy to scan
-    files, so that several files that match some criteria may be omitted
+        files, so that several files that match some criteria may be omitted
     :rtype: b2sdk.v2.ReplicationMonitor
     """
 
