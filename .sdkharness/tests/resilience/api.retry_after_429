@@ -1,0 +1,178 @@
+#!/usr/bin/env python3
+"""b2-sdk-python x api.retry_after_429.
+
+Written from the reference check, bin/resilience/b2-sdk-python/upload.retry_503.
+The contract is bin/resilience/README.md; the question is the api.retry_after_429 row of
+bin/resilience/scenarios.tsv.
+
+Fault   fault b2_list_file_names 429 too_many_requests retryAfter=2 (count 1), armed after setup
+Assert  the end state: the listing names exactly the fixture; the recovery path,
+        from GET /journal: one injected 429, then a successful b2_list_file_names;
+        and timing, a LOWER BOUND only: the whole list call took >= 2.0 s
+        (weak evidence, stated on a NOTE line -- the journal has no timestamps)
+
+The expected behaviour is B2's, not the tool's.
+The Integration Checklist, Error Handling, 429: "the response may also include a
+'Retry-After' header where the value is the number of seconds a developer should wait."
+https://www.backblaze.com/docs/cloud-storage-integration-checklist
+
+It exercises b2sdk from this exact repository checkout;
+the API is taken from docs/sdks/b2-sdk-python/card.md.
+"""
+
+import json
+import os
+import sys
+import time
+import urllib.request
+import uuid
+
+SLUG = 'b2-sdk-python'
+SCENARIO = 'api.retry_after_429'
+OBJECT_NAME = 'res/retry_after_429.txt'
+ARM_PATH = '/faults'
+FAULT = {
+    'on': 'b2_list_file_names',
+    'status': 429,
+    'code': 'too_many_requests',
+    'count': 1,
+    'retryAfter': 2,
+}
+
+
+def is_faulted(e):
+    return e['endpoint'] == 'b2_list_file_names' and e['fault'] == 'injected' and e['status'] == 429
+
+
+FLOOR_S = 2.0
+
+# The closed reason set, mirrored from bin/resilience/README.md. This
+# scenario's `needs` is `-`, so no-client-option is not available to it.
+REASONS = ('missing-runtime',)
+
+
+class Amber(Exception):
+    """The question could not be asked. Reason must be in REASONS."""
+
+    def __init__(self, reason: str, detail: str) -> None:
+        assert reason in REASONS, reason
+        self.reason = reason
+        self.detail = detail
+
+
+class Failure(Exception):
+    def __init__(self, step: str, detail: str) -> None:
+        self.step = step
+        self.detail = detail
+
+
+def say(verdict: str) -> None:
+    print(f'RESILIENCE {SLUG} {SCENARIO} @simulator: {verdict}')
+
+
+def note(text: str) -> None:
+    print(f'NOTE {SLUG} {SCENARIO}: {text}')
+
+
+def step(name: str, action):
+    """Run one step; any error is a FAIL naming the step and exception class.
+
+    There is no unreachable/unauthorized amber here: the runner supplies the
+    server and the credential, so either failing is a harness defect.
+    """
+    try:
+        return action()
+    except (Amber, Failure):
+        raise
+    except Exception as error:  # noqa: BLE001 -- only the class name is reported
+        raise Failure(name, type(error).__name__) from error
+
+
+def control(method: str, path: str, body=None):
+    data = None if body is None else json.dumps(body).encode()
+    req = urllib.request.Request(
+        os.environ['RESILIENCE_CONTROL_URL'] + path,
+        data=data,
+        method=method,
+        headers={'content-type': 'application/json'},
+    )
+    with urllib.request.urlopen(req, timeout=10) as resp:
+        return json.load(resp)
+
+
+def journal():
+    return step('journal', lambda: control('GET', '/journal'))['entries']
+
+
+def after(entries, seq, endpoint, status=None):
+    """Entries on `endpoint` later than `seq`, optionally with one status."""
+    return [
+        e
+        for e in entries
+        if e['seq'] > seq
+        and e['endpoint'] == endpoint
+        and (status is None or e['status'] == status)
+    ]
+
+
+def authorized_bucket(**api_kwargs):
+    realm = os.environ['RESILIENCE_SIMULATOR_URL']
+    try:
+        from b2sdk.v3 import B2Api, InMemoryAccountInfo
+    except ImportError as error:
+        raise Amber('missing-runtime', 'b2sdk is not installed') from error
+    api = B2Api(InMemoryAccountInfo(), **api_kwargs)
+    step('authenticate', lambda: api.authorize_account('test-key-id', 'test-key', realm=realm))
+    bucket = step(
+        'create bucket',
+        lambda: api.create_bucket(f'sdkharness-res-{uuid.uuid4().hex[:12]}', 'allPrivate'),
+    )
+    return api, bucket
+
+
+def run() -> None:
+    api, bucket = authorized_bucket()
+    payload = b'sdkharness resilience listing'
+    step('upload fixture', lambda: bucket.upload_bytes(payload, OBJECT_NAME))
+
+    step('arm fault', lambda: control('POST', ARM_PATH, FAULT))
+    started = time.monotonic()
+    names = step('list', lambda: [v.file_name for v, _folder in bucket.ls('', recursive=True)])
+    if names != [OBJECT_NAME]:
+        raise Failure('listing', f'listed {len(names)} names, expected exactly the one fixture')
+    elapsed = time.monotonic() - started
+
+    entries = journal()
+    faulted = [e for e in entries if is_faulted(e)]
+    if len(faulted) != 1:
+        raise Failure('journal', f'{len(faulted)} injected 429 on b2_list_file_names, expected 1')
+    if not after(entries, faulted[0]['seq'], 'b2_list_file_names', 200):
+        raise Failure('journal', 'no successful b2_list_file_names after the 429')
+    note(
+        f'the whole list call took {elapsed:.2f} s against a floor of {FLOOR_S} s; '
+        'a lower bound on the call, not a measured gap between attempts (the journal has no timestamps)'
+    )
+    if elapsed < FLOOR_S:
+        raise Failure(
+            'recovery path', f'retried after {elapsed:.2f} s, sooner than the 2 s Retry-After'
+        )
+
+
+def main() -> int:
+    try:
+        run()
+    except Amber as amber:
+        say(f'COULD-NOT-RUN ({amber.reason} -- {amber.detail})')
+        return 0
+    except Failure as failure:
+        say(f'FAIL ({failure.step} -- {failure.detail})')
+        return 1
+    except Exception as error:  # noqa: BLE001 -- never a silent crash
+        say(f'FAIL (setup -- {type(error).__name__})')
+        return 1
+    say('PASS')
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())

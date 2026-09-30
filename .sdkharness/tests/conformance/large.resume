@@ -1,0 +1,435 @@
+#!/usr/bin/env python3
+"""b2-sdk-python x large.resume.
+
+Scenario (approved 2026-09-22, one per capability, identical on every tool that
+claims it):
+
+    Setup   a large upload interrupted after at least 1 part completes
+    Action  re-run the same upload
+    Assert  an unfinished large file existed; the rerun REUSES that fileId
+            instead of calling b2_start_large_file again; it uploads fewer
+            parts than the total; the final bytes are correct
+
+    The interruption is injected at the SDK's own raw-API injection point, so
+    the first run fails exactly where a dropped connection would -- after a
+    part has been stored and before the file is finished.
+
+DOCS -- "Any number of large files can be in progress at the same time.
+You can use b2_list_unfinished_large_files to get a list of them. For any
+one unfinished large file, you can use b2_list_parts to get a list of the
+parts that were uploaded so far."
+https://www.backblaze.com/docs/cloud-storage-create-large-files-with-the-native-api
+b2_list_parts: "Lists the parts that have been uploaded for a large file
+that has not completed uploading" https://www.backblaze.com/apidocs/b2-list-parts
+B2 makes reusing the unfinished fileId POSSIBLE; that a rerun reuses it
+instead of calling b2_start_large_file is the capability under test, not a
+B2 promise.
+
+Written from bin/conformance/b2-sdk-python/files.upload, the reference check,
+and bin/conformance/README.md, the contract. It exercises b2sdk from this exact repository
+checkout; the API was taken from
+docs/sdks/b2-sdk-python/card.md and the published b2sdk docs; the assertion now lives with the SDK code it exercises.
+"""
+
+import collections
+import hashlib
+import io
+import os
+import sys
+import tempfile
+import uuid
+
+SLUG = 'b2-sdk-python'
+CAPABILITY = 'large.resume'
+OBJECT_NAME = 'st/resume.bin'
+PARTS_WANTED = 4
+PARTS_BEFORE_INTERRUPT = 1
+
+# The closed reason set, mirrored from bin/conformance/README.md. The runner
+# enforces it; naming one outside this tuple is a FAIL it manufactures.
+REASONS = (
+    'no-realm-option',
+    'unreachable',
+    'unauthorized',
+    'no-credential',
+    'missing-runtime',
+    'not-claimed',
+)
+
+# A requested target maps to a realm or to amber. `simulator` is the harness's
+# own server (bin/simulator/serve.mjs), whose URL the runner exports as
+# CONFORMANCE_SIMULATOR_URL; unset, there is nothing to reach: no-realm-option.
+REALMS = {
+    'staging': 'staging',
+    'production': 'production',
+    'simulator': os.environ.get('CONFORMANCE_SIMULATOR_URL') or None,
+}
+
+# The simulator's fixed test credential, which the runner also injects. At
+# @simulator the check uses it directly, so a real B2_* value can never be
+# sent there.
+SIM_CREDENTIAL = ('test-key-id', 'test-key')
+
+
+def credential(realm):
+    """The (key id, key) pair for a realm: the fixed one at @simulator."""
+    if realm == REALMS['simulator']:
+        return SIM_CREDENTIAL
+    return os.environ.get('B2_APPLICATION_KEY_ID'), os.environ.get('B2_APPLICATION_KEY')
+
+
+class Amber(Exception):
+    """The question could not be asked. Reason must be in REASONS."""
+
+    def __init__(self, reason: str, detail: str) -> None:
+        assert reason in REASONS, reason
+        self.reason = reason
+        self.detail = detail
+
+
+class Failure(Exception):
+    """A golden-path step that did not do what the card claims."""
+
+    def __init__(self, step: str, detail: str) -> None:
+        self.step = step
+        self.detail = detail
+
+
+def say(target: str, verdict: str) -> None:
+    print(f'CONFORMANCE {SLUG} {CAPABILITY} @{target}: {verdict}')
+
+
+def note(text: str) -> None:
+    """Context for the log. NOT a result line.
+
+    The runner reads only the CONFORMANCE line and a PASS carries no detail, so
+    anything qualifying the STRENGTH of the evidence is said here, where it
+    survives in the retained log without being mistaken for a verdict.
+    """
+    print(f'note {SLUG} {CAPABILITY}: {text}')
+
+
+def step(name, action):
+    """Run one golden-path step, converting the environment's own errors.
+
+    A credential NEVER reaches the detail: only the exception class name and,
+    for a classified network/auth error, the class that classified it.
+    """
+    try:
+        return action()
+    except (Amber, Failure):
+        raise
+    except Exception as error:  # noqa: BLE001 -- classified below, never echoed
+        name_of = type(error).__name__
+        if name_of in ('Unauthorized', 'InvalidAuthToken', 'AccessDenied'):
+            raise Amber('unauthorized', f"{name_of} at step '{name}'") from error
+        if name_of in ('gaierror', 'ConnectionError', 'ServiceError', 'B2ConnectionError'):
+            raise Amber('unreachable', f"{name_of} at step '{name}'") from error
+        raise Failure(name, name_of) from error
+
+
+def refused(name, action, expected):
+    """Assert something is REFUSED, and record what refused it.
+
+    `expected` is a tuple of exception class names. A different class -- or no
+    exception at all -- is a Failure, because the refusal IS the claim here.
+    """
+    try:
+        action()
+    except (Amber, Failure):
+        raise
+    except Exception as error:  # noqa: BLE001 -- classified, never echoed
+        name_of = type(error).__name__
+        if name_of in expected:
+            return name_of
+        raise Failure(name, f"refused with {name_of}, expected {'/'.join(expected)}") from error
+    raise Failure(name, 'the call was permitted; the claim under test is that it is refused')
+
+
+def payload_of(size: int) -> bytes:
+    """Deterministic filler of an exact size."""
+    unit = b'sdkharness conformance '
+    return (unit * (size // len(unit) + 1))[:size]
+
+
+def prepare(target):
+    """Realm, credentials and the INSTALLED package -- before any network call."""
+    realm = REALMS.get(target)
+    if realm is None:
+        detail = (
+            'CONFORMANCE_SIMULATOR_URL is unset'
+            if target == 'simulator'
+            else f"b2sdk exposes no '{target}' realm"
+        )
+        raise Amber('no-realm-option', detail)
+
+    if not all(credential(realm)):
+        raise Amber('no-credential', 'B2_APPLICATION_KEY_ID / B2_APPLICATION_KEY unset')
+
+    try:
+        import b2sdk.v3 as b2
+    except ImportError as error:
+        raise Amber('missing-runtime', 'b2sdk is not installed') from error
+
+    return b2, realm
+
+
+def authorize(api, realm):
+    """Authorize against the named realm. Credentials never leave this call."""
+    step(
+        'authenticate',
+        lambda: api.authorize_account(*credential(realm), realm=realm),
+    )
+    return api
+
+
+def connect(target, **api_kwargs):
+    """The common case: one authorized B2Api against the requested realm."""
+    b2, realm = prepare(target)
+    return b2, authorize(b2.B2Api(b2.InMemoryAccountInfo(), **api_kwargs), realm)
+
+
+def new_bucket(api, **kwargs):
+    """An ephemeral bucket, named as the contract requires."""
+    name = f'sdkharness-conf-{uuid.uuid4().hex[:12]}'
+    return step('create bucket', lambda: api.create_bucket(name, 'allPrivate', **kwargs))
+
+
+def _delete_hard(api, bucket, version):
+    """Delete one version, lifting a legal hold or a governance lock if it blocks."""
+    for attempt in (0, 1):
+        try:
+            bucket.delete_file_version(
+                version.id_, version.file_name, bypass_governance=attempt > 0
+            )
+            return
+        except Exception:  # noqa: BLE001 -- cleanup must never mask the verdict
+            if attempt == 0:
+                try:
+                    import b2sdk.v3 as b2
+
+                    api.update_file_legal_hold(version.id_, version.file_name, b2.LegalHold.OFF)
+                except Exception:  # noqa: BLE001
+                    pass
+
+
+def teardown(api, *buckets):
+    """Owns what it created and destroys it, on the error path too."""
+    for bucket in buckets:
+        if bucket is None:
+            continue
+        try:
+            for unfinished in bucket.list_unfinished_large_files():
+                try:
+                    bucket.cancel_large_file(unfinished.file_id)
+                except Exception:  # noqa: BLE001
+                    pass
+        except Exception:  # noqa: BLE001
+            pass
+        try:
+            versions = [v for v, _folder in bucket.ls('', recursive=True, latest_only=False)]
+        except Exception:  # noqa: BLE001
+            versions = []
+        for version in versions:
+            _delete_hard(api, bucket, version)
+        try:
+            api.delete_bucket(bucket)
+        except Exception:  # noqa: BLE001
+            pass
+
+
+def drop_keys(api, key_ids):
+    """Application keys are resources too."""
+    for key_id in key_ids:
+        if not key_id:
+            continue
+        try:
+            api.delete_key_by_id(key_id)
+        except Exception:  # noqa: BLE001
+            pass
+
+
+def counting_raw_api(b2, tally):
+    """A raw API that counts the native calls this scenario is about.
+
+    `B2HttpApiConfig(_raw_api_class=...)` is the SDK's own injection point, so
+    this observes the real transport instead of standing in for it.
+    """
+
+    class Counting(b2.B2RawHTTPApi):
+        def start_large_file(self, *args, **kwargs):
+            tally['start_large_file'] += 1
+            return super().start_large_file(*args, **kwargs)
+
+        def upload_part(self, *args, **kwargs):
+            tally['upload_part'] += 1
+            return super().upload_part(*args, **kwargs)
+
+        def copy_part(self, *args, **kwargs):
+            tally['copy_part'] += 1
+            return super().copy_part(*args, **kwargs)
+
+        def upload_file(self, *args, **kwargs):
+            tally['upload_file'] += 1
+            return super().upload_file(*args, **kwargs)
+
+        def authorize_account(self, *args, **kwargs):
+            tally['authorize_account'] += 1
+            return super().authorize_account(*args, **kwargs)
+
+    return Counting
+
+
+class Interrupted(Exception):
+    """Deliberate. Stands in for a connection dropped mid-large-file."""
+
+
+def interrupting_raw_api(b2, tally, fail_after):
+    class Interrupting(b2.B2RawHTTPApi):
+        def start_large_file(self, *args, **kwargs):
+            tally['start_large_file'] += 1
+            return super().start_large_file(*args, **kwargs)
+
+        def upload_part(self, *args, **kwargs):
+            if tally['upload_part'] >= fail_after:
+                raise Interrupted('deliberate interruption')
+            result = super().upload_part(*args, **kwargs)
+            tally['upload_part'] += 1
+            return result
+
+    return Interrupting
+
+
+def upload_call(b2, bucket, path, part_size):
+    return lambda: bucket.create_file(
+        [b2.WriteIntent(b2.UploadSourceLocalFile(path))],
+        OBJECT_NAME,
+        recommended_upload_part_size=part_size,
+        min_part_size=part_size,
+        max_part_size=part_size,
+    )
+
+
+def run(target: str) -> None:
+    b2, realm = prepare(target)
+    api = authorize(b2.B2Api(b2.InMemoryAccountInfo()), realm)
+
+    part_size = api.account_info.get_absolute_minimum_part_size()
+    payload = payload_of(part_size * PARTS_WANTED)
+    expected_sha1 = hashlib.sha1(payload).hexdigest()
+
+    scratch = tempfile.mkdtemp(prefix='sdkharness-conf-')
+    local = os.path.join(scratch, 'resume.bin')
+    with open(local, 'wb') as handle:
+        handle.write(payload)
+
+    bucket = new_bucket(api)
+    try:
+        # --- run 1: interrupted after PARTS_BEFORE_INTERRUPT parts -------------
+        first_tally = collections.Counter()
+        broken = b2.B2Api(
+            b2.InMemoryAccountInfo(),
+            api_config=b2.B2HttpApiConfig(
+                _raw_api_class=interrupting_raw_api(b2, first_tally, PARTS_BEFORE_INTERRUPT)
+            ),
+            max_upload_workers=1,
+        )
+        authorize(broken, realm)
+        broken_bucket = step('open bucket', lambda: broken.get_bucket_by_name(bucket.name))
+        try:
+            upload_call(b2, broken_bucket, local, part_size)()
+        except Exception as error:  # noqa: BLE001 -- the interruption is the setup
+            if not _caused_by_interruption(error):
+                raise Failure(
+                    'interrupt',
+                    f'the first run failed with {type(error).__name__}, not the injected interruption',
+                )
+        else:
+            raise Failure('interrupt', 'the interrupted upload finished anyway')
+
+        if first_tally['upload_part'] < PARTS_BEFORE_INTERRUPT:
+            raise Failure(
+                'interrupt', 'the first run stored no part at all; there is nothing to resume'
+            )
+
+        unfinished = step(
+            'list unfinished large files',
+            lambda: [u for u in bucket.list_unfinished_large_files() if u.file_name == OBJECT_NAME],
+        )
+        if not unfinished:
+            raise Failure('resume', 'the interrupted upload left no unfinished large file')
+        unfinished_id = unfinished[0].file_id
+
+        # --- run 2: the same upload again --------------------------------------
+        second_tally = collections.Counter()
+        resumed_api = b2.B2Api(
+            b2.InMemoryAccountInfo(),
+            api_config=b2.B2HttpApiConfig(_raw_api_class=counting_raw_api(b2, second_tally)),
+            max_upload_workers=1,
+        )
+        authorize(resumed_api, realm)
+        resumed_bucket = step('open bucket', lambda: resumed_api.get_bucket_by_name(bucket.name))
+        finished = step('re-run the upload', upload_call(b2, resumed_bucket, local, part_size))
+
+        if second_tally['start_large_file'] != 0:
+            raise Failure(
+                'resume',
+                f"the rerun called b2_start_large_file {second_tally['start_large_file']} time(s) instead of resuming",
+            )
+        if finished.id_ != unfinished_id:
+            raise Failure('resume', 'the rerun finished a DIFFERENT fileId than the unfinished one')
+        if second_tally['upload_part'] >= PARTS_WANTED:
+            raise Failure(
+                'resume',
+                f"the rerun uploaded {second_tally['upload_part']} of {PARTS_WANTED} parts; it re-sent everything",
+            )
+
+        sink = io.BytesIO()
+        step('download', lambda: bucket.download_file_by_name(OBJECT_NAME).save(sink))
+        if sink.getvalue() != payload:
+            raise Failure('round trip', "the resumed file's bytes differ from the source")
+        if hashlib.sha1(sink.getvalue()).hexdigest() != expected_sha1:
+            raise Failure('round trip', "the resumed file's sha1 differs from the source")
+
+        note(
+            f"resumed fileId reused; parts {first_tally['upload_part']} + "
+            f"{second_tally['upload_part']} of {PARTS_WANTED}"
+        )
+    finally:
+        teardown(api, bucket)
+        try:
+            os.remove(local)
+            os.rmdir(scratch)
+        except Exception:  # noqa: BLE001
+            pass
+
+
+def _caused_by_interruption(error) -> bool:
+    seen = 0
+    while error is not None and seen < 10:
+        if isinstance(error, Interrupted):
+            return True
+        error = getattr(error, '__cause__', None) or getattr(error, '__context__', None)
+        seen += 1
+    return False
+
+
+def main() -> int:
+    target = os.environ.get('CONFORMANCE_TARGET', 'staging')
+    try:
+        run(target)
+    except Amber as amber:
+        say(target, f'COULD-NOT-RUN ({amber.reason} -- {amber.detail})')
+        return 0
+    except Failure as failure:
+        say(target, f'FAIL ({failure.step} -- {failure.detail})')
+        return 1
+    except Exception as error:  # noqa: BLE001 -- never a silent crash
+        say(target, f'FAIL (setup -- {type(error).__name__})')
+        return 1
+    say(target, 'PASS')
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())

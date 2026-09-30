@@ -1,0 +1,201 @@
+#!/usr/bin/env python3
+"""b2-sdk-python x part.retry_503.
+
+Written from the reference check, bin/resilience/b2-sdk-python/upload.retry_503.
+The contract is bin/resilience/README.md; the question is the part.retry_503 row of
+bin/resilience/scenarios.tsv.
+
+Fault   fault b2_upload_part 503 service_unavailable (count 1), armed after setup, so
+        the first part of a three-part large file gets it (one upload worker)
+Assert  the recovery path, from GET /journal: exactly one injected 503 on
+        b2_upload_part, then b2_get_upload_part_url again, then a successful
+        b2_upload_part on a DIFFERENT uploadUrlId, and b2_finish_large_file; and
+        the end state: the large file downloads with its bytes intact
+
+The expected behaviour is B2's, not the tool's.
+b2_upload_part's 503 service_unavailable: "Call b2_get_upload_part_url again to get a
+new auth token."
+https://www.backblaze.com/apidocs/b2-upload-part
+The Integration Checklist, Upload Retry Guidelines, lists the failures after which "the
+developer should call b2_get_upload_url or b2_get_upload_part_url and re-attempt the
+upload using the new URL and auth key pair"; among them:
+"The HTTP response status is between 500-599, including 503 Service Unavailable."
+https://www.backblaze.com/docs/cloud-storage-integration-checklist
+
+It exercises b2sdk from this exact repository checkout;
+the API is taken from docs/sdks/b2-sdk-python/card.md.
+"""
+
+import io
+import json
+import os
+import sys
+import urllib.request
+import uuid
+
+SLUG = 'b2-sdk-python'
+SCENARIO = 'part.retry_503'
+OBJECT_NAME = 'res/part_retry_503.bin'
+ARM_PATH = '/faults'
+FAULT = {'on': 'b2_upload_part', 'status': 503, 'code': 'service_unavailable', 'count': 1}
+
+
+def is_faulted(e):
+    return e['endpoint'] == 'b2_upload_part' and e['fault'] == 'injected' and e['status'] == 503
+
+
+PARTS = 3
+
+# The closed reason set, mirrored from bin/resilience/README.md. This
+# scenario's `needs` is `-`, so no-client-option is not available to it.
+REASONS = ('missing-runtime',)
+
+
+class Amber(Exception):
+    """The question could not be asked. Reason must be in REASONS."""
+
+    def __init__(self, reason: str, detail: str) -> None:
+        assert reason in REASONS, reason
+        self.reason = reason
+        self.detail = detail
+
+
+class Failure(Exception):
+    def __init__(self, step: str, detail: str) -> None:
+        self.step = step
+        self.detail = detail
+
+
+def say(verdict: str) -> None:
+    print(f'RESILIENCE {SLUG} {SCENARIO} @simulator: {verdict}')
+
+
+def note(text: str) -> None:
+    print(f'NOTE {SLUG} {SCENARIO}: {text}')
+
+
+def step(name: str, action):
+    """Run one step; any error is a FAIL naming the step and exception class.
+
+    There is no unreachable/unauthorized amber here: the runner supplies the
+    server and the credential, so either failing is a harness defect.
+    """
+    try:
+        return action()
+    except (Amber, Failure):
+        raise
+    except Exception as error:  # noqa: BLE001 -- only the class name is reported
+        raise Failure(name, type(error).__name__) from error
+
+
+def control(method: str, path: str, body=None):
+    data = None if body is None else json.dumps(body).encode()
+    req = urllib.request.Request(
+        os.environ['RESILIENCE_CONTROL_URL'] + path,
+        data=data,
+        method=method,
+        headers={'content-type': 'application/json'},
+    )
+    with urllib.request.urlopen(req, timeout=10) as resp:
+        return json.load(resp)
+
+
+def journal():
+    return step('journal', lambda: control('GET', '/journal'))['entries']
+
+
+def after(entries, seq, endpoint, status=None):
+    """Entries on `endpoint` later than `seq`, optionally with one status."""
+    return [
+        e
+        for e in entries
+        if e['seq'] > seq
+        and e['endpoint'] == endpoint
+        and (status is None or e['status'] == status)
+    ]
+
+
+def authorized_bucket(**api_kwargs):
+    realm = os.environ['RESILIENCE_SIMULATOR_URL']
+    try:
+        from b2sdk.v3 import B2Api, InMemoryAccountInfo
+    except ImportError as error:
+        raise Amber('missing-runtime', 'b2sdk is not installed') from error
+    api = B2Api(InMemoryAccountInfo(), **api_kwargs)
+    step('authenticate', lambda: api.authorize_account('test-key-id', 'test-key', realm=realm))
+    bucket = step(
+        'create bucket',
+        lambda: api.create_bucket(f'sdkharness-res-{uuid.uuid4().hex[:12]}', 'allPrivate'),
+    )
+    return api, bucket
+
+
+def run() -> None:
+    # One worker makes the part order, and so the faulted part, deterministic.
+    api, bucket = authorized_bucket(max_upload_workers=1)
+    from b2sdk.v3 import UploadSourceBytes, WriteIntent
+
+    # The SDK's own floor for a part, read from the authorized account (the
+    # simulator reports 5,000 bytes), exactly as conformance large.multipart does.
+    part_size = api.account_info.get_absolute_minimum_part_size()
+    payload = bytes(i % 251 for i in range(part_size * PARTS))
+    step('arm fault', lambda: control('POST', ARM_PATH, FAULT))
+    step(
+        'upload',
+        lambda: bucket.create_file(
+            [WriteIntent(UploadSourceBytes(payload))],
+            OBJECT_NAME,
+            recommended_upload_part_size=part_size,
+            min_part_size=part_size,
+            max_part_size=part_size,
+        ),
+    )
+
+    sink = io.BytesIO()
+    step('download', lambda: bucket.download_file_by_name(OBJECT_NAME).save(sink))
+    if sink.getvalue() != payload:
+        raise Failure('round trip', 'downloaded bytes differ from what was uploaded')
+
+    entries = journal()
+    if not [e for e in entries if e['endpoint'] == 'b2_start_large_file' and e['status'] == 200]:
+        raise Failure(
+            'journal', 'no b2_start_large_file; the upload never took the large-file path'
+        )
+    faulted = [e for e in entries if is_faulted(e)]
+    if len(faulted) != 1:
+        raise Failure('journal', f'{len(faulted)} injected 503s on b2_upload_part, expected 1')
+    seq = faulted[0]['seq']
+    if not after(entries, seq, 'b2_get_upload_part_url', 200):
+        raise Failure('recovery path', 'no b2_get_upload_part_url after the 503')
+    retries = after(entries, seq, 'b2_upload_part', 200)
+    if not retries:
+        raise Failure('journal', 'no successful b2_upload_part after the 503')
+    if retries[0]['uploadUrlId'] in (None, faulted[0]['uploadUrlId']):
+        raise Failure('recovery path', 'the retried part reused the part URL that returned 503')
+    if (
+        len([e for e in entries if e['endpoint'] == 'b2_upload_part' and e['status'] == 200])
+        < PARTS
+    ):
+        raise Failure('journal', f'fewer than {PARTS} successful b2_upload_part calls')
+    if not after(entries, seq, 'b2_finish_large_file', 200):
+        raise Failure('journal', 'the large file was never finished after the retried part')
+
+
+def main() -> int:
+    try:
+        run()
+    except Amber as amber:
+        say(f'COULD-NOT-RUN ({amber.reason} -- {amber.detail})')
+        return 0
+    except Failure as failure:
+        say(f'FAIL ({failure.step} -- {failure.detail})')
+        return 1
+    except Exception as error:  # noqa: BLE001 -- never a silent crash
+        say(f'FAIL (setup -- {type(error).__name__})')
+        return 1
+    say('PASS')
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())

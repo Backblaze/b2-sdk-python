@@ -1,0 +1,354 @@
+#!/usr/bin/env python3
+"""b2-sdk-python x client.auth_persistence.
+
+Scenario (approved 2026-09-22, one per capability, identical on every tool that
+claims it):
+
+    Setup   a scratch account-info path
+    Action  authorize in process 1; run process 2 with NO credentials in its
+            environment but the same account-info path
+    Assert  process 2 makes an authorized call and issues NO
+            b2_authorize_account request
+
+    Two real processes, because that is the claim: the persisted state, not an
+    in-memory object, is what carries the authorization. The child counts
+    b2_authorize_account at the SDK's own raw-API injection point and prints
+    counts only -- never a token, never a key.
+
+NO DOCUMENTED CONTRACT FOUND -- this is SDK-side/ecosystem tooling, not a B2 API contract.
+Persisting account info to disk is the tool's own behaviour; B2 documents no
+cache. The nearest documented fact bounds, but does not promise, the reuse:
+b2_authorize_account's token "is valid for at most 24 hours."
+https://www.backblaze.com/apidocs/b2-authorize-account
+
+Written from bin/conformance/b2-sdk-python/files.upload, the reference check,
+and bin/conformance/README.md, the contract. It exercises b2sdk from this exact repository
+checkout; the API was taken from
+docs/sdks/b2-sdk-python/card.md and the published b2sdk docs; the assertion now lives with the SDK code it exercises.
+"""
+
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+import uuid
+
+SLUG = 'b2-sdk-python'
+CAPABILITY = 'client.auth_persistence'
+
+# The closed reason set, mirrored from bin/conformance/README.md. The runner
+# enforces it; naming one outside this tuple is a FAIL it manufactures.
+REASONS = (
+    'no-realm-option',
+    'unreachable',
+    'unauthorized',
+    'no-credential',
+    'missing-runtime',
+    'not-claimed',
+)
+
+# A requested target maps to a realm or to amber. `simulator` is the harness's
+# own server (bin/simulator/serve.mjs), whose URL the runner exports as
+# CONFORMANCE_SIMULATOR_URL; unset, there is nothing to reach: no-realm-option.
+REALMS = {
+    'staging': 'staging',
+    'production': 'production',
+    'simulator': os.environ.get('CONFORMANCE_SIMULATOR_URL') or None,
+}
+
+# The simulator's fixed test credential, which the runner also injects. At
+# @simulator the check uses it directly, so a real B2_* value can never be
+# sent there.
+SIM_CREDENTIAL = ('test-key-id', 'test-key')
+
+
+def credential(realm):
+    """The (key id, key) pair for a realm: the fixed one at @simulator."""
+    if realm == REALMS['simulator']:
+        return SIM_CREDENTIAL
+    return os.environ.get('B2_APPLICATION_KEY_ID'), os.environ.get('B2_APPLICATION_KEY')
+
+
+class Amber(Exception):
+    """The question could not be asked. Reason must be in REASONS."""
+
+    def __init__(self, reason: str, detail: str) -> None:
+        assert reason in REASONS, reason
+        self.reason = reason
+        self.detail = detail
+
+
+class Failure(Exception):
+    """A golden-path step that did not do what the card claims."""
+
+    def __init__(self, step: str, detail: str) -> None:
+        self.step = step
+        self.detail = detail
+
+
+def say(target: str, verdict: str) -> None:
+    print(f'CONFORMANCE {SLUG} {CAPABILITY} @{target}: {verdict}')
+
+
+def note(text: str) -> None:
+    """Context for the log. NOT a result line.
+
+    The runner reads only the CONFORMANCE line and a PASS carries no detail, so
+    anything qualifying the STRENGTH of the evidence is said here, where it
+    survives in the retained log without being mistaken for a verdict.
+    """
+    print(f'note {SLUG} {CAPABILITY}: {text}')
+
+
+def step(name, action):
+    """Run one golden-path step, converting the environment's own errors.
+
+    A credential NEVER reaches the detail: only the exception class name and,
+    for a classified network/auth error, the class that classified it.
+    """
+    try:
+        return action()
+    except (Amber, Failure):
+        raise
+    except Exception as error:  # noqa: BLE001 -- classified below, never echoed
+        name_of = type(error).__name__
+        if name_of in ('Unauthorized', 'InvalidAuthToken', 'AccessDenied'):
+            raise Amber('unauthorized', f"{name_of} at step '{name}'") from error
+        if name_of in ('gaierror', 'ConnectionError', 'ServiceError', 'B2ConnectionError'):
+            raise Amber('unreachable', f"{name_of} at step '{name}'") from error
+        raise Failure(name, name_of) from error
+
+
+def refused(name, action, expected):
+    """Assert something is REFUSED, and record what refused it.
+
+    `expected` is a tuple of exception class names. A different class -- or no
+    exception at all -- is a Failure, because the refusal IS the claim here.
+    """
+    try:
+        action()
+    except (Amber, Failure):
+        raise
+    except Exception as error:  # noqa: BLE001 -- classified, never echoed
+        name_of = type(error).__name__
+        if name_of in expected:
+            return name_of
+        raise Failure(name, f"refused with {name_of}, expected {'/'.join(expected)}") from error
+    raise Failure(name, 'the call was permitted; the claim under test is that it is refused')
+
+
+def payload_of(size: int) -> bytes:
+    """Deterministic filler of an exact size."""
+    unit = b'sdkharness conformance '
+    return (unit * (size // len(unit) + 1))[:size]
+
+
+def prepare(target):
+    """Realm, credentials and the INSTALLED package -- before any network call."""
+    realm = REALMS.get(target)
+    if realm is None:
+        detail = (
+            'CONFORMANCE_SIMULATOR_URL is unset'
+            if target == 'simulator'
+            else f"b2sdk exposes no '{target}' realm"
+        )
+        raise Amber('no-realm-option', detail)
+
+    if not all(credential(realm)):
+        raise Amber('no-credential', 'B2_APPLICATION_KEY_ID / B2_APPLICATION_KEY unset')
+
+    try:
+        import b2sdk.v3 as b2
+    except ImportError as error:
+        raise Amber('missing-runtime', 'b2sdk is not installed') from error
+
+    return b2, realm
+
+
+def authorize(api, realm):
+    """Authorize against the named realm. Credentials never leave this call."""
+    step(
+        'authenticate',
+        lambda: api.authorize_account(*credential(realm), realm=realm),
+    )
+    return api
+
+
+def connect(target, **api_kwargs):
+    """The common case: one authorized B2Api against the requested realm."""
+    b2, realm = prepare(target)
+    return b2, authorize(b2.B2Api(b2.InMemoryAccountInfo(), **api_kwargs), realm)
+
+
+def new_bucket(api, **kwargs):
+    """An ephemeral bucket, named as the contract requires."""
+    name = f'sdkharness-conf-{uuid.uuid4().hex[:12]}'
+    return step('create bucket', lambda: api.create_bucket(name, 'allPrivate', **kwargs))
+
+
+def _delete_hard(api, bucket, version):
+    """Delete one version, lifting a legal hold or a governance lock if it blocks."""
+    for attempt in (0, 1):
+        try:
+            bucket.delete_file_version(
+                version.id_, version.file_name, bypass_governance=attempt > 0
+            )
+            return
+        except Exception:  # noqa: BLE001 -- cleanup must never mask the verdict
+            if attempt == 0:
+                try:
+                    import b2sdk.v3 as b2
+
+                    api.update_file_legal_hold(version.id_, version.file_name, b2.LegalHold.OFF)
+                except Exception:  # noqa: BLE001
+                    pass
+
+
+def teardown(api, *buckets):
+    """Owns what it created and destroys it, on the error path too."""
+    for bucket in buckets:
+        if bucket is None:
+            continue
+        try:
+            for unfinished in bucket.list_unfinished_large_files():
+                try:
+                    bucket.cancel_large_file(unfinished.file_id)
+                except Exception:  # noqa: BLE001
+                    pass
+        except Exception:  # noqa: BLE001
+            pass
+        try:
+            versions = [v for v, _folder in bucket.ls('', recursive=True, latest_only=False)]
+        except Exception:  # noqa: BLE001
+            versions = []
+        for version in versions:
+            _delete_hard(api, bucket, version)
+        try:
+            api.delete_bucket(bucket)
+        except Exception:  # noqa: BLE001
+            pass
+
+
+def drop_keys(api, key_ids):
+    """Application keys are resources too."""
+    for key_id in key_ids:
+        if not key_id:
+            continue
+        try:
+            api.delete_key_by_id(key_id)
+        except Exception:  # noqa: BLE001
+            pass
+
+
+CHILD = """
+import collections
+import sys
+
+db = sys.argv[1]
+tally = collections.Counter()
+
+try:
+    import b2sdk.v3 as b2
+except Exception as error:
+    print("CHILD error " + type(error).__name__)
+    raise SystemExit(0)
+
+
+class Counting(b2.B2RawHTTPApi):
+    def authorize_account(self, *args, **kwargs):
+        tally["authorize_account"] += 1
+        return super().authorize_account(*args, **kwargs)
+
+
+try:
+    info = b2.SqliteAccountInfo(file_name=db)
+    api = b2.B2Api(info, api_config=b2.B2HttpApiConfig(_raw_api_class=Counting))
+    buckets = api.list_buckets()
+    print("CHILD ok buckets=%d authorize=%d" % (len(buckets), tally["authorize_account"]))
+except Exception as error:
+    print("CHILD error " + type(error).__name__)
+"""
+
+
+def run(target: str) -> None:
+    b2, realm = prepare(target)
+
+    scratch = tempfile.mkdtemp(prefix='sdkharness-conf-')
+    account_info_path = os.path.join(scratch, 'account-info.sqlite')
+    try:
+        api = b2.B2Api(b2.SqliteAccountInfo(file_name=account_info_path))
+        authorize(api, realm)
+        step('an authorized call in process 1', lambda: api.list_buckets())
+
+        # Process 2 gets the account-info path and nothing else.
+        child_env = {k: v for k, v in os.environ.items() if not k.startswith('B2_')}
+        completed = step(
+            'run process 2 with no credentials',
+            lambda: subprocess.run(
+                [sys.executable, '-c', CHILD, account_info_path],
+                env=child_env,
+                capture_output=True,
+                text=True,
+                timeout=300,
+            ),
+        )
+
+        lines = [line for line in completed.stdout.splitlines() if line.startswith('CHILD ')]
+        if not lines:
+            raise Failure(
+                'process 2', f'the second process printed no marker (exit {completed.returncode})'
+            )
+        marker = lines[-1]
+
+        if marker.startswith('CHILD error '):
+            failed_with = marker[len('CHILD error ') :].strip()
+            if failed_with in ('Unauthorized', 'InvalidAuthToken', 'AccessDenied'):
+                raise Amber('unauthorized', f'{failed_with} in process 2')
+            if failed_with in (
+                'gaierror',
+                'ConnectionError',
+                'ServiceError',
+                'B2ConnectionError',
+                'UnknownHost',
+            ):
+                raise Amber('unreachable', f'{failed_with} in process 2')
+            if failed_with in ('ImportError', 'ModuleNotFoundError'):
+                raise Amber('missing-runtime', 'b2sdk is not installed for the second process')
+            raise Failure('process 2', f'the second process failed with {failed_with}')
+
+        fields = dict(part.split('=', 1) for part in marker.split() if '=' in part)
+        if 'authorize' not in fields:
+            raise Failure('process 2', 'the second process reported no authorize count')
+        if int(fields['authorize']) != 0:
+            raise Failure(
+                'persistence',
+                f"process 2 issued {fields['authorize']} b2_authorize_account request(s); the persisted auth was not reused",
+            )
+
+        note(
+            f"process 2 made an authorized call over the persisted account info; {marker.split(' ', 1)[1]}"
+        )
+    finally:
+        shutil.rmtree(scratch, ignore_errors=True)
+
+
+def main() -> int:
+    target = os.environ.get('CONFORMANCE_TARGET', 'staging')
+    try:
+        run(target)
+    except Amber as amber:
+        say(target, f'COULD-NOT-RUN ({amber.reason} -- {amber.detail})')
+        return 0
+    except Failure as failure:
+        say(target, f'FAIL ({failure.step} -- {failure.detail})')
+        return 1
+    except Exception as error:  # noqa: BLE001 -- never a silent crash
+        say(target, f'FAIL (setup -- {type(error).__name__})')
+        return 1
+    say(target, 'PASS')
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())

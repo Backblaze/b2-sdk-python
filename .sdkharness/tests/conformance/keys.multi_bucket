@@ -1,0 +1,329 @@
+#!/usr/bin/env python3
+"""b2-sdk-python x keys.multi_bucket.
+
+Scenario (approved 2026-09-22, one per capability, identical on every tool that
+claims it):
+
+    Setup   three buckets
+    Action  create a key scoped to TWO bucketIds, then authorize with it
+    Assert  the read-back lists both ids; the key reaches both buckets and is
+            refused on the third
+
+DOCS. The expected values are B2's published contract. b2_create_key's
+bucketIds: "When provided, the new key can only access the specified
+buckets", echoed in its response; the v4 API (April 24, 2025) removed the
+singular bucketId for it. v4 b2_authorize_account reports the scope as
+allowed.buckets. A restricted token that asks b2_list_buckets for another
+bucket "will be denied" -- documented as 401 unauthorized.
+https://www.backblaze.com/apidocs/b2-create-key
+https://www.backblaze.com/apidocs/b2-authorize-account
+https://www.backblaze.com/apidocs/b2-list-buckets
+
+Written from bin/conformance/b2-sdk-python/files.upload, the reference check,
+and bin/conformance/README.md, the contract. It exercises b2sdk from this exact repository
+checkout; the API was taken from
+docs/sdks/b2-sdk-python/card.md and the published b2sdk docs; the assertion now lives with the SDK code it exercises.
+"""
+
+import os
+import sys
+import uuid
+
+SLUG = 'b2-sdk-python'
+CAPABILITY = 'keys.multi_bucket'
+CAPABILITIES = ['listBuckets', 'listFiles', 'readFiles']
+
+# The closed reason set, mirrored from bin/conformance/README.md. The runner
+# enforces it; naming one outside this tuple is a FAIL it manufactures.
+REASONS = (
+    'no-realm-option',
+    'unreachable',
+    'unauthorized',
+    'no-credential',
+    'missing-runtime',
+    'not-claimed',
+)
+
+# A requested target maps to a realm or to amber. `simulator` is the harness's
+# own server (bin/simulator/serve.mjs), whose URL the runner exports as
+# CONFORMANCE_SIMULATOR_URL; unset, there is nothing to reach: no-realm-option.
+REALMS = {
+    'staging': 'staging',
+    'production': 'production',
+    'simulator': os.environ.get('CONFORMANCE_SIMULATOR_URL') or None,
+}
+
+# The simulator's fixed test credential, which the runner also injects. At
+# @simulator the check uses it directly, so a real B2_* value can never be
+# sent there.
+SIM_CREDENTIAL = ('test-key-id', 'test-key')
+
+
+def credential(realm):
+    """The (key id, key) pair for a realm: the fixed one at @simulator."""
+    if realm == REALMS['simulator']:
+        return SIM_CREDENTIAL
+    return os.environ.get('B2_APPLICATION_KEY_ID'), os.environ.get('B2_APPLICATION_KEY')
+
+
+class Amber(Exception):
+    """The question could not be asked. Reason must be in REASONS."""
+
+    def __init__(self, reason: str, detail: str) -> None:
+        assert reason in REASONS, reason
+        self.reason = reason
+        self.detail = detail
+
+
+class Failure(Exception):
+    """A golden-path step that did not do what the card claims."""
+
+    def __init__(self, step: str, detail: str) -> None:
+        self.step = step
+        self.detail = detail
+
+
+def say(target: str, verdict: str) -> None:
+    print(f'CONFORMANCE {SLUG} {CAPABILITY} @{target}: {verdict}')
+
+
+def note(text: str) -> None:
+    """Context for the log. NOT a result line.
+
+    The runner reads only the CONFORMANCE line and a PASS carries no detail, so
+    anything qualifying the STRENGTH of the evidence is said here, where it
+    survives in the retained log without being mistaken for a verdict.
+    """
+    print(f'note {SLUG} {CAPABILITY}: {text}')
+
+
+def step(name, action):
+    """Run one golden-path step, converting the environment's own errors.
+
+    A credential NEVER reaches the detail: only the exception class name and,
+    for a classified network/auth error, the class that classified it.
+    """
+    try:
+        return action()
+    except (Amber, Failure):
+        raise
+    except Exception as error:  # noqa: BLE001 -- classified below, never echoed
+        name_of = type(error).__name__
+        if name_of in ('Unauthorized', 'InvalidAuthToken', 'AccessDenied'):
+            raise Amber('unauthorized', f"{name_of} at step '{name}'") from error
+        if name_of in ('gaierror', 'ConnectionError', 'ServiceError', 'B2ConnectionError'):
+            raise Amber('unreachable', f"{name_of} at step '{name}'") from error
+        raise Failure(name, name_of) from error
+
+
+def refused(name, action, expected):
+    """Assert something is REFUSED, and record what refused it.
+
+    `expected` is a tuple of exception class names. A different class -- or no
+    exception at all -- is a Failure, because the refusal IS the claim here.
+    """
+    try:
+        action()
+    except (Amber, Failure):
+        raise
+    except Exception as error:  # noqa: BLE001 -- classified, never echoed
+        name_of = type(error).__name__
+        if name_of in expected:
+            return name_of
+        raise Failure(name, f"refused with {name_of}, expected {'/'.join(expected)}") from error
+    raise Failure(name, 'the call was permitted; the claim under test is that it is refused')
+
+
+def payload_of(size: int) -> bytes:
+    """Deterministic filler of an exact size."""
+    unit = b'sdkharness conformance '
+    return (unit * (size // len(unit) + 1))[:size]
+
+
+def prepare(target):
+    """Realm, credentials and the INSTALLED package -- before any network call."""
+    realm = REALMS.get(target)
+    if realm is None:
+        detail = (
+            'CONFORMANCE_SIMULATOR_URL is unset'
+            if target == 'simulator'
+            else f"b2sdk exposes no '{target}' realm"
+        )
+        raise Amber('no-realm-option', detail)
+
+    if not all(credential(realm)):
+        raise Amber('no-credential', 'B2_APPLICATION_KEY_ID / B2_APPLICATION_KEY unset')
+
+    try:
+        import b2sdk.v3 as b2
+    except ImportError as error:
+        raise Amber('missing-runtime', 'b2sdk is not installed') from error
+
+    return b2, realm
+
+
+def authorize(api, realm):
+    """Authorize against the named realm. Credentials never leave this call."""
+    step(
+        'authenticate',
+        lambda: api.authorize_account(*credential(realm), realm=realm),
+    )
+    return api
+
+
+def connect(target, **api_kwargs):
+    """The common case: one authorized B2Api against the requested realm."""
+    b2, realm = prepare(target)
+    return b2, authorize(b2.B2Api(b2.InMemoryAccountInfo(), **api_kwargs), realm)
+
+
+def new_bucket(api, **kwargs):
+    """An ephemeral bucket, named as the contract requires."""
+    name = f'sdkharness-conf-{uuid.uuid4().hex[:12]}'
+    return step('create bucket', lambda: api.create_bucket(name, 'allPrivate', **kwargs))
+
+
+def _delete_hard(api, bucket, version):
+    """Delete one version, lifting a legal hold or a governance lock if it blocks."""
+    for attempt in (0, 1):
+        try:
+            bucket.delete_file_version(
+                version.id_, version.file_name, bypass_governance=attempt > 0
+            )
+            return
+        except Exception:  # noqa: BLE001 -- cleanup must never mask the verdict
+            if attempt == 0:
+                try:
+                    import b2sdk.v3 as b2
+
+                    api.update_file_legal_hold(version.id_, version.file_name, b2.LegalHold.OFF)
+                except Exception:  # noqa: BLE001
+                    pass
+
+
+def teardown(api, *buckets):
+    """Owns what it created and destroys it, on the error path too."""
+    for bucket in buckets:
+        if bucket is None:
+            continue
+        try:
+            for unfinished in bucket.list_unfinished_large_files():
+                try:
+                    bucket.cancel_large_file(unfinished.file_id)
+                except Exception:  # noqa: BLE001
+                    pass
+        except Exception:  # noqa: BLE001
+            pass
+        try:
+            versions = [v for v, _folder in bucket.ls('', recursive=True, latest_only=False)]
+        except Exception:  # noqa: BLE001
+            versions = []
+        for version in versions:
+            _delete_hard(api, bucket, version)
+        try:
+            api.delete_bucket(bucket)
+        except Exception:  # noqa: BLE001
+            pass
+
+
+def drop_keys(api, key_ids):
+    """Application keys are resources too."""
+    for key_id in key_ids:
+        if not key_id:
+            continue
+        try:
+            api.delete_key_by_id(key_id)
+        except Exception:  # noqa: BLE001
+            pass
+
+
+def bucket_ids_of(key):
+    ids = getattr(key, 'bucket_ids', None)
+    if ids is None:
+        single = getattr(key, 'bucket_id', None)
+        ids = [single] if single else []
+    return sorted(i for i in ids if i)
+
+
+def run(target: str) -> None:
+    b2, realm = prepare(target)
+    api = authorize(b2.B2Api(b2.InMemoryAccountInfo()), realm)
+
+    first = second = third = None
+    key_id = None
+    try:
+        first = new_bucket(api)
+        second = new_bucket(api)
+        third = new_bucket(api)
+
+        created = step(
+            'create a key scoped to two buckets',
+            lambda: api.create_key(
+                capabilities=list(CAPABILITIES),
+                key_name=f'sdkharness-conf-{uuid.uuid4().hex[:8]}',
+                bucket_ids=[first.id_, second.id_],
+            ),
+        )
+        key_id = created.id_
+        secret = created.application_key
+
+        listed = step('read the key back', lambda: [k for k in api.list_keys() if k.id_ == key_id])
+        if len(listed) != 1:
+            raise Failure('read back', f'{len(listed)} keys match the new key id, expected 1')
+        if bucket_ids_of(listed[0]) != sorted([first.id_, second.id_]):
+            raise Failure(
+                'read back',
+                f'the key reports {len(bucket_ids_of(listed[0]))} bucket id(s), expected both',
+            )
+
+        restricted = b2.B2Api(b2.InMemoryAccountInfo())
+        step(
+            'authorize with the restricted key',
+            lambda: restricted.authorize_account(key_id, secret, realm=realm),
+        )
+
+        for bucket in (first, second):
+            reached = step(
+                'list an allowed bucket',
+                lambda bucket=bucket: restricted.list_buckets(bucket_name=bucket.name),
+            )
+            if len(reached) != 1 or reached[0].id_ != bucket.id_:
+                raise Failure(
+                    'scope', 'an allowed bucket was not reachable with the restricted key'
+                )
+
+        refused(
+            'list the third bucket',
+            lambda: restricted.list_buckets(bucket_name=third.name),
+            (
+                'RestrictedBucket',
+                'BucketNotAllowed',
+                'NotAllowedByAppKeyError',
+                'AccessDenied',
+                'Unauthorized',
+            ),
+        )
+    finally:
+        drop_keys(api, [key_id])
+        teardown(api, first, second, third)
+
+
+def main() -> int:
+    target = os.environ.get('CONFORMANCE_TARGET', 'staging')
+    try:
+        run(target)
+    except Amber as amber:
+        say(target, f'COULD-NOT-RUN ({amber.reason} -- {amber.detail})')
+        return 0
+    except Failure as failure:
+        say(target, f'FAIL ({failure.step} -- {failure.detail})')
+        return 1
+    except Exception as error:  # noqa: BLE001 -- never a silent crash
+        say(target, f'FAIL (setup -- {type(error).__name__})')
+        return 1
+    say(target, 'PASS')
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())

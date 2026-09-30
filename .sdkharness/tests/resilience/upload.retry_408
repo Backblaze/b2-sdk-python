@@ -1,0 +1,179 @@
+#!/usr/bin/env python3
+"""b2-sdk-python x upload.retry_408.
+
+Written from the reference check, bin/resilience/b2-sdk-python/upload.retry_503.
+The contract is bin/resilience/README.md; the question is the upload.retry_408 row of
+bin/resilience/scenarios.tsv.
+
+Fault   fault b2_upload_file 408 request_timeout (count 1), armed after setup
+Assert  the recovery path, from GET /journal: exactly one faulted b2_upload_file,
+        then a successful b2_upload_file on a DIFFERENT uploadUrlId; and the
+        end state, through the normal API: the file downloads intact
+
+The expected behaviour is B2's, not the tool's.
+b2_upload_file's 408 request_timeout: "The service timed out reading the uploaded file".
+https://www.backblaze.com/apidocs/b2-upload-file
+The Integration Checklist, Upload Retry Guidelines, lists the failures after which "the
+developer should call b2_get_upload_url or b2_get_upload_part_url and re-attempt the
+upload using the new URL and auth key pair"; among them:
+"The HTTP response status is 408 (Request Timeout)."
+https://www.backblaze.com/docs/cloud-storage-integration-checklist
+
+It exercises b2sdk from this exact repository checkout;
+the API is taken from docs/sdks/b2-sdk-python/card.md.
+"""
+
+import hashlib
+import io
+import json
+import os
+import sys
+import urllib.request
+import uuid
+
+SLUG = 'b2-sdk-python'
+SCENARIO = 'upload.retry_408'
+OBJECT_NAME = 'res/retry_408.txt'
+ARM_PATH = '/faults'
+FAULT = {'on': 'b2_upload_file', 'status': 408, 'code': 'request_timeout', 'count': 1}
+
+
+def is_faulted(e):
+    return e['endpoint'] == 'b2_upload_file' and e['fault'] == 'injected' and e['status'] == 408
+
+
+# The closed reason set, mirrored from bin/resilience/README.md. This
+# scenario's `needs` is `-`, so no-client-option is not available to it.
+REASONS = ('missing-runtime',)
+
+
+class Amber(Exception):
+    """The question could not be asked. Reason must be in REASONS."""
+
+    def __init__(self, reason: str, detail: str) -> None:
+        assert reason in REASONS, reason
+        self.reason = reason
+        self.detail = detail
+
+
+class Failure(Exception):
+    def __init__(self, step: str, detail: str) -> None:
+        self.step = step
+        self.detail = detail
+
+
+def say(verdict: str) -> None:
+    print(f'RESILIENCE {SLUG} {SCENARIO} @simulator: {verdict}')
+
+
+def note(text: str) -> None:
+    print(f'NOTE {SLUG} {SCENARIO}: {text}')
+
+
+def step(name: str, action):
+    """Run one step; any error is a FAIL naming the step and exception class.
+
+    There is no unreachable/unauthorized amber here: the runner supplies the
+    server and the credential, so either failing is a harness defect.
+    """
+    try:
+        return action()
+    except (Amber, Failure):
+        raise
+    except Exception as error:  # noqa: BLE001 -- only the class name is reported
+        raise Failure(name, type(error).__name__) from error
+
+
+def control(method: str, path: str, body=None):
+    data = None if body is None else json.dumps(body).encode()
+    req = urllib.request.Request(
+        os.environ['RESILIENCE_CONTROL_URL'] + path,
+        data=data,
+        method=method,
+        headers={'content-type': 'application/json'},
+    )
+    with urllib.request.urlopen(req, timeout=10) as resp:
+        return json.load(resp)
+
+
+def journal():
+    return step('journal', lambda: control('GET', '/journal'))['entries']
+
+
+def after(entries, seq, endpoint, status=None):
+    """Entries on `endpoint` later than `seq`, optionally with one status."""
+    return [
+        e
+        for e in entries
+        if e['seq'] > seq
+        and e['endpoint'] == endpoint
+        and (status is None or e['status'] == status)
+    ]
+
+
+def authorized_bucket(**api_kwargs):
+    realm = os.environ['RESILIENCE_SIMULATOR_URL']
+    try:
+        from b2sdk.v3 import B2Api, InMemoryAccountInfo
+    except ImportError as error:
+        raise Amber('missing-runtime', 'b2sdk is not installed') from error
+    api = B2Api(InMemoryAccountInfo(), **api_kwargs)
+    step('authenticate', lambda: api.authorize_account('test-key-id', 'test-key', realm=realm))
+    bucket = step(
+        'create bucket',
+        lambda: api.create_bucket(f'sdkharness-res-{uuid.uuid4().hex[:12]}', 'allPrivate'),
+    )
+    return api, bucket
+
+
+def run() -> None:
+    api, bucket = authorized_bucket()
+    payload = (b'sdkharness resilience ' * 64)[:1024]
+    step('arm fault', lambda: control('POST', ARM_PATH, FAULT))
+    try:
+        uploaded = bucket.upload_bytes(payload, OBJECT_NAME)
+    except Exception as error:  # noqa: BLE001 -- only the class name is reported
+        tries = len([e for e in journal() if e['endpoint'] == 'b2_upload_file'])
+        raise Failure(
+            'upload',
+            f'{type(error).__name__} reached the caller after {tries} '
+            'b2_upload_file attempt(s); the upload was not recovered',
+        ) from error
+    if hashlib.sha1(payload).hexdigest() != getattr(uploaded, 'content_sha1', None):
+        raise Failure('upload', 'the returned contentSha1 does not match the bytes sent')
+
+    sink = io.BytesIO()
+    step('download', lambda: bucket.download_file_by_name(OBJECT_NAME).save(sink))
+    if sink.getvalue() != payload:
+        raise Failure('round trip', 'downloaded bytes differ from what was uploaded')
+
+    entries = journal()
+    uploads = [e for e in entries if e['endpoint'] == 'b2_upload_file']
+    faulted = [e for e in uploads if is_faulted(e)]
+    if len(faulted) != 1:
+        raise Failure('journal', f'{len(faulted)} injected 408s on b2_upload_file, expected 1')
+    retries = after(entries, faulted[0]['seq'], 'b2_upload_file', 200)
+    if not retries:
+        raise Failure('journal', 'no successful b2_upload_file after the 408')
+    if retries[0]['uploadUrlId'] in (None, faulted[0]['uploadUrlId']):
+        raise Failure('recovery path', 'the retry reused the upload URL that got the 408')
+
+
+def main() -> int:
+    try:
+        run()
+    except Amber as amber:
+        say(f'COULD-NOT-RUN ({amber.reason} -- {amber.detail})')
+        return 0
+    except Failure as failure:
+        say(f'FAIL ({failure.step} -- {failure.detail})')
+        return 1
+    except Exception as error:  # noqa: BLE001 -- never a silent crash
+        say(f'FAIL (setup -- {type(error).__name__})')
+        return 1
+    say('PASS')
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())
