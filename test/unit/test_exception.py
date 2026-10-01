@@ -147,6 +147,15 @@ class TestInterpretError:
         error = self._check_one(TooManyRequests, 429, '', '', {})
         assert error.retry_after_seconds is None
 
+    def test_service_error_with_retry_after_header(self):
+        retry_after = 200
+        error = self._check_one(ServiceError, 503, '', '', {'retry-after': retry_after})
+        assert error.retry_after_seconds == retry_after
+
+    def test_service_error_without_retry_after_header(self):
+        error = self._check_one(ServiceError, 503, '', '', {})
+        assert error.retry_after_seconds is None
+
     @pytest.mark.apiver(
         from_ver=3
     )  # previous apivers throw this as well, but BucketIdNotFound is a different class in them

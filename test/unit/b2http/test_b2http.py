@@ -333,6 +333,30 @@ class TestTranslateAndRetry:
         mock_time.assert_called_once_with(1.0)
 
     @responses.activate
+    def test_service_error_honors_retry_after(self, b2_http: B2Http, mock_time: MagicMock):
+        _mock_error_response(self.URL, status=503, headers={'Retry-After': '2'})
+        responses.get(self.URL)
+
+        b2_http.request(responses.GET, self.URL, {})
+
+        mock_time.assert_called_once_with(2)
+
+    @responses.activate
+    def test_service_error_ignores_http_date_retry_after(
+        self, b2_http: B2Http, mock_time: MagicMock
+    ):
+        _mock_error_response(
+            self.URL,
+            status=503,
+            headers={'Retry-After': 'Wed, 21 Oct 2015 07:28:00 GMT'},
+        )
+        responses.get(self.URL)
+
+        b2_http.request(responses.GET, self.URL, {})
+
+        mock_time.assert_called_once_with(1.0)
+
+    @responses.activate
     def test_never_works(self, b2_http: B2Http, mock_time: MagicMock):
         _mock_error_response(self.URL, status=503)
         _mock_error_response(self.URL, status=503)
