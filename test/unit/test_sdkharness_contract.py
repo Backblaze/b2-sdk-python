@@ -107,6 +107,7 @@ def test_customer_health_lifecycle():
         'http://127.0.0.1/',
         'http://user@127.0.0.1:8180/',
         'http://127.0.0.1:8180/not-root',
+        'http://[::1]:8180/',
     ],
 )
 def test_rejects_non_loopback_simulator_contract(url):
@@ -132,3 +133,29 @@ def test_failure_result_is_one_credential_safe_record(monkeypatch, capsys):
         'configuration: required simulator input is missing\n'
     )
     assert 'test-key' not in output
+
+
+@pytest.mark.parametrize(
+    'key_id, key',
+    [
+        ('005realkeyid0000000000000', 'K005realapplicationkey00000000000'),
+        ('test-key-id', 'K005realapplicationkey00000000000'),
+        ('005realkeyid0000000000000', 'test-key'),
+    ],
+)
+def test_ambient_real_looking_credentials_never_reach_the_sdk(key_id, key):
+    contract = load_contract()
+    environment = valid_environment()
+    environment['B2_TEST_APPLICATION_KEY_ID'] = key_id
+    environment['B2_TEST_APPLICATION_KEY'] = key
+
+    class ForbiddenApi:
+        def authorize_account(self, *args, **kwargs):  # pragma: no cover - must not run
+            raise AssertionError('a non-simulator credential reached the SDK')
+
+    with pytest.raises(contract.CheckFailure) as raised:
+        contract.run_health(environment, api_factory=lambda: ForbiddenApi())
+    assert raised.value.step == 'configuration'
+    assert raised.value.detail == 'only the fixed simulator credential is accepted'
+    assert 'K005' not in str(raised.value.detail)
+    assert '005real' not in str(raised.value.detail)
