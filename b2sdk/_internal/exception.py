@@ -435,7 +435,11 @@ class ServiceError(TransientErrorMixin, B2Error):
 
 
 class RequestTimeout(TransientErrorMixin, B2Error):
-    """Used for HTTP status code 408 (request timeout)."""
+    """A server HTTP 408 response, raised by :func:`interpret_b2_error` for status 408.
+
+    Unlike :class:`B2RequestTimeout`, this is not a client-side socket or connection timeout
+    raised in ``b2http.py``.
+    """
 
 
 class CapExceeded(B2Error):

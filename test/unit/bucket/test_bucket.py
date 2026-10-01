@@ -43,6 +43,7 @@ from apiver_deps_exception import (
     InvalidRange,
     InvalidUploadSource,
     MaxRetriesExceeded,
+    RequestTimeout,
     RestrictedBucketMissing,
     SourceReplicationConflict,
     SSECKeyError,
@@ -2101,6 +2102,14 @@ class TestUpload(TestCaseWithBucket):
         self.simulator.set_upload_errors([B2RequestTimeoutDuringUpload()])
         data = b'hello world'
         self.bucket.upload_bytes(data, 'file1')
+
+    def test_upload_http_request_timeout(self):
+        self.simulator.set_upload_errors([RequestTimeout('408 request_timeout request timeout')])
+        data = b'hello world'
+
+        self.bucket.upload_bytes(data, 'file1')
+
+        self._check_file_contents('file1', data)
 
     def test_upload_file_one_fatal_error(self):
         self.simulator.set_upload_errors([CanRetry(False)])
