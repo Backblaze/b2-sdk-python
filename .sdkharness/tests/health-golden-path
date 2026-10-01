@@ -13,6 +13,7 @@ from urllib.parse import urlsplit
 
 LEVEL = 'health'
 SCENARIO = 'golden-path'
+SIMULATOR_CREDENTIAL = ('test-key-id', 'test-key')
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 
 
@@ -51,7 +52,7 @@ def validate_environment(environment: Mapping[str, str]) -> tuple[str, str, str,
         raise CheckFailure('configuration', 'invalid simulator URL') from error
     if (
         parsed.scheme != 'http'
-        or parsed.hostname not in {'127.0.0.1', '::1'}
+        or parsed.hostname != '127.0.0.1'
         or port is None
         or parsed.username is not None
         or parsed.password is not None
@@ -66,7 +67,12 @@ def validate_environment(environment: Mapping[str, str]) -> tuple[str, str, str,
     bucket_name = environment.get('B2_BUCKET_NAME', '')
     if not key_id or not application_key or not bucket_name:
         raise CheckFailure('configuration', 'required simulator input is missing')
-    return simulator_url, key_id, application_key, bucket_name
+    # Only the simulator's fixed test credential is ever used. A real key in the
+    # environment is refused before it can reach the SDK (and so a loopback
+    # listener); the supplied values are never echoed.
+    if (key_id, application_key) != SIMULATOR_CREDENTIAL:
+        raise CheckFailure('configuration', 'only the fixed simulator credential is accepted')
+    return simulator_url, SIMULATOR_CREDENTIAL[0], SIMULATOR_CREDENTIAL[1], bucket_name
 
 
 def repository_api_factory():

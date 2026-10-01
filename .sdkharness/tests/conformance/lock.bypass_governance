@@ -29,6 +29,9 @@ import sys
 import time
 import uuid
 
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'lib'))
+from loopback_guard import refusal  # noqa: E402
+
 SLUG = 'b2-sdk-python'
 CAPABILITY = 'lock.bypass_governance'
 OBJECT_NAME = 'st/bypass-governance.txt'
@@ -50,8 +53,6 @@ REASONS = (
 # own server (bin/simulator/serve.mjs), whose URL the runner exports as
 # CONFORMANCE_SIMULATOR_URL; unset, there is nothing to reach: no-realm-option.
 REALMS = {
-    'staging': 'staging',
-    'production': 'production',
     'simulator': os.environ.get('CONFORMANCE_SIMULATOR_URL') or None,
 }
 
@@ -65,7 +66,7 @@ def credential(realm):
     """The (key id, key) pair for a realm: the fixed one at @simulator."""
     if realm == REALMS['simulator']:
         return SIM_CREDENTIAL
-    return os.environ.get('B2_APPLICATION_KEY_ID'), os.environ.get('B2_APPLICATION_KEY')
+    raise AssertionError('conformance checks use only the fixed simulator credential')
 
 
 class Amber(Exception):
@@ -290,7 +291,11 @@ def run(target: str) -> None:
 
 
 def main() -> int:
-    target = os.environ.get('CONFORMANCE_TARGET', 'staging')
+    target = os.environ.get('CONFORMANCE_TARGET', 'simulator')
+    refused = refusal('conformance')
+    if refused:
+        say(target, f'FAIL ({refused})')
+        return 1
     try:
         run(target)
     except Amber as amber:

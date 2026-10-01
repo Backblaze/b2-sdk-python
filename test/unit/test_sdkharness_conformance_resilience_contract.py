@@ -106,3 +106,69 @@ def test_child_environment_scrubs_real_b2_credentials_and_pins_checkout():
     assert child['B2_APPLICATION_KEY'] == 'test-key'
     assert 'B2_OPERATOR_EXTRA' not in child
     assert child['PYTHONPATH'] == str(contract.REPOSITORY_ROOT)
+
+
+LEAF_ROOT = Path(__file__).parents[2] / '.sdkharness' / 'tests'
+LEAVES = sorted(
+    path for level in ('conformance', 'resilience') for path in (LEAF_ROOT / level).iterdir()
+)
+
+
+def run_leaf(path, extra_environment):
+    import os
+    import subprocess
+    import sys
+
+    env = {
+        name: value
+        for name, value in os.environ.items()
+        if not name.startswith(('B2_', 'CONFORMANCE_', 'RESILIENCE_', 'SDKHARNESS_'))
+    }
+    env.update(extra_environment)
+    return subprocess.run(
+        [sys.executable, str(path)],
+        env=env,
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        timeout=60,
+        check=False,
+    )
+
+
+@pytest.mark.parametrize('leaf', LEAVES, ids=lambda path: f'{path.parent.name}/{path.name}')
+def test_leaf_checks_refuse_ambient_staging_runs(leaf):
+    level = leaf.parent.name
+    prefix = level.upper()
+    ambient = {
+        'B2_APPLICATION_KEY_ID': 'real-looking-key-id',
+        'B2_APPLICATION_KEY': 'real-looking-key',
+        f'{prefix}_TARGET': 'staging',
+    }
+    refused = run_leaf(leaf, ambient)
+    assert refused.returncode == 1
+    assert 'FAIL (configuration' in refused.stdout
+    assert 'real-looking' not in refused.stdout + refused.stderr
+
+
+@pytest.mark.parametrize('leaf', LEAVES[:2] + LEAVES[-2:], ids=lambda path: path.name)
+def test_leaf_checks_refuse_missing_or_non_loopback_simulator(leaf):
+    prefix = leaf.parent.name.upper()
+    for url in ('', 'http://192.0.2.10:8180', 'http://localhost:8180', 'https://127.0.0.1:8180'):
+        values = {f'{prefix}_SIMULATOR_URL': url}
+        if prefix == 'RESILIENCE':
+            values['RESILIENCE_CONTROL_URL'] = 'http://127.0.0.1:8181'
+        refused = run_leaf(leaf, values)
+        assert refused.returncode == 1, url
+        assert 'FAIL (configuration' in refused.stdout, url
+
+
+def test_leaf_checks_name_no_external_realm_or_ambient_credentials():
+    for leaf in LEAVES:
+        text = leaf.read_text()
+        assert "'staging'" not in text, leaf.name
+        # client.simulator names a realm only for the in-process RawSimulator (no network)
+        assert leaf.name == 'client.simulator' or "'production'" not in text, leaf.name
+        assert "os.environ.get('B2_APPLICATION_KEY" not in text, leaf.name
+        assert "os.environ['B2_APPLICATION_KEY" not in text, leaf.name
+        assert 'refusal(' in text, leaf.name
