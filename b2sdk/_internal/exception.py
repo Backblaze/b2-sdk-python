@@ -27,6 +27,14 @@ COPY_SOURCE_TOO_BIG_ERROR_MESSAGE_RE = re.compile(r'^Copy source too big: (?P<si
 logger = logging.getLogger(__name__)
 
 
+def _parse_retry_after_seconds(retry_after_seconds):
+    """Return Retry-After delay-seconds, ignoring HTTP-date and invalid forms."""
+    try:
+        return int(retry_after_seconds)
+    except (TypeError, ValueError):
+        return None
+
+
 class B2Error(Exception, metaclass=ABCMeta):
     def __init__(self, *args, **kwargs):
         """
@@ -435,9 +443,7 @@ class ServiceError(TransientErrorMixin, B2Error):
 
     def __init__(self, *args, retry_after_seconds=None):
         super().__init__(*args)
-
-        if retry_after_seconds is not None:
-            self.retry_after_seconds = int(retry_after_seconds)
+        self.retry_after_seconds = _parse_retry_after_seconds(retry_after_seconds)
 
 
 class CapExceeded(B2Error):
@@ -458,11 +464,7 @@ class TransactionCapExceeded(CapExceeded):
 class TooManyRequests(B2Error):
     def __init__(self, retry_after_seconds=None):
         super().__init__()
-
-        if retry_after_seconds is not None:
-            self.retry_after_seconds = int(retry_after_seconds)
-        else:
-            self.retry_after_seconds = None
+        self.retry_after_seconds = _parse_retry_after_seconds(retry_after_seconds)
 
     def __str__(self):
         return 'Too many requests'
