@@ -33,6 +33,9 @@ import os
 import sys
 import uuid
 
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'lib'))
+from loopback_guard import refusal  # noqa: E402
+
 SLUG = 'b2-sdk-python'
 CAPABILITY = 'files.upload'
 OBJECT_NAME = 'st/upload.txt'
@@ -53,8 +56,6 @@ REASONS = (
 # own server (bin/simulator/serve.mjs), whose URL the runner exports as
 # CONFORMANCE_SIMULATOR_URL; unset, there is nothing to reach: no-realm-option.
 REALMS = {
-    'staging': 'staging',
-    'production': 'production',
     'simulator': os.environ.get('CONFORMANCE_SIMULATOR_URL') or None,
 }
 
@@ -114,13 +115,7 @@ def run(target: str) -> None:
         )
         raise Amber('no-realm-option', detail)
 
-    if target == 'simulator':
-        key_id, key = SIM_CREDENTIAL
-    else:
-        key_id = os.environ.get('B2_APPLICATION_KEY_ID')
-        key = os.environ.get('B2_APPLICATION_KEY')
-        if not key_id or not key:
-            raise Amber('no-credential', 'B2_APPLICATION_KEY_ID / B2_APPLICATION_KEY unset')
+    key_id, key = SIM_CREDENTIAL
 
     try:
         from b2sdk.v3 import B2Api, InMemoryAccountInfo
@@ -174,7 +169,11 @@ def run(target: str) -> None:
 
 
 def main() -> int:
-    target = os.environ.get('CONFORMANCE_TARGET', 'staging')
+    target = os.environ.get('CONFORMANCE_TARGET', 'simulator')
+    refused = refusal('conformance')
+    if refused:
+        say(target, f'FAIL ({refused})')
+        return 1
     try:
         run(target)
     except Amber as amber:

@@ -32,6 +32,9 @@ import socket
 import sys
 import uuid
 
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'lib'))
+from loopback_guard import refusal  # noqa: E402
+
 SLUG = 'b2-sdk-python'
 CAPABILITY = 'client.simulator'
 OBJECT_NAME = 'st/simulator.txt'
@@ -48,10 +51,8 @@ REASONS = (
     'not-claimed',
 )
 
-# A requested target this tool cannot reach maps to a realm or to amber.
-# b2sdk ships no B2 fake reachable through a realm NAME, so `simulator` is
-# `no-realm-option` here -- not a failure of the capability.
-REALMS = {'staging': 'staging', 'production': 'production'}
+# This check never uses a realm or a credential: it drives the RawSimulator that
+# ships inside b2sdk, in-process, with the network disabled.
 
 
 class Amber(Exception):
@@ -126,42 +127,6 @@ def payload_of(size: int) -> bytes:
     """Deterministic filler of an exact size."""
     unit = b'sdkharness conformance '
     return (unit * (size // len(unit) + 1))[:size]
-
-
-def prepare(target):
-    """Realm, credentials and the INSTALLED package -- before any network call."""
-    realm = REALMS.get(target)
-    if realm is None:
-        raise Amber('no-realm-option', f"b2sdk exposes no '{target}' realm")
-
-    if not os.environ.get('B2_APPLICATION_KEY_ID') or not os.environ.get('B2_APPLICATION_KEY'):
-        raise Amber('no-credential', 'B2_APPLICATION_KEY_ID / B2_APPLICATION_KEY unset')
-
-    try:
-        import b2sdk.v3 as b2
-    except ImportError as error:
-        raise Amber('missing-runtime', 'b2sdk is not installed') from error
-
-    return b2, realm
-
-
-def authorize(api, realm):
-    """Authorize against the named realm. Credentials never leave this call."""
-    step(
-        'authenticate',
-        lambda: api.authorize_account(
-            os.environ['B2_APPLICATION_KEY_ID'],
-            os.environ['B2_APPLICATION_KEY'],
-            realm=realm,
-        ),
-    )
-    return api
-
-
-def connect(target, **api_kwargs):
-    """The common case: one authorized B2Api against the requested realm."""
-    b2, realm = prepare(target)
-    return b2, authorize(b2.B2Api(b2.InMemoryAccountInfo(), **api_kwargs), realm)
 
 
 def new_bucket(api, **kwargs):
@@ -281,6 +246,10 @@ def run(target: str) -> None:
 
 def main() -> int:
     target = 'simulator'
+    refused = refusal('conformance')
+    if refused:
+        say(target, f'FAIL ({refused})')
+        return 1
     try:
         run(target)
     except Amber as amber:

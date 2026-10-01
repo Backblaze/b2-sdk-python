@@ -30,6 +30,9 @@ import sys
 import urllib.request
 import uuid
 
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'lib'))
+from loopback_guard import refusal  # noqa: E402
+
 SLUG = 'b2-sdk-python'
 SCENARIO = 'upload.get_url_503'
 OBJECT_NAME = 'res/get_url_503.txt'
@@ -153,6 +156,10 @@ def run() -> None:
 
 
 def main() -> int:
+    refused = refusal('resilience')
+    if refused:
+        say(f'FAIL ({refused})')
+        return 1
     try:
         run()
     except Amber as amber:
