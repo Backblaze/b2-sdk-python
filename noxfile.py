@@ -210,7 +210,7 @@ def build(session):
             "'v2': pathlib.Path(v2.__file__).resolve(), "
             "'v3': pathlib.Path(v3.__file__).resolve()}; "
             'print(module_files); '
-            "assert all(not path.is_relative_to(source_root) for path in module_files.values()), "
+            'assert all(not path.is_relative_to(source_root) for path in module_files.values()), '
             "f'Imported modules from checkout: {module_files!r}'; "
             "assert all('site-packages' in path.parts for path in module_files.values()), "
             "f'Imported modules from an unexpected location: {module_files!r}'"
