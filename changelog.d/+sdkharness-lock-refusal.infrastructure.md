@@ -1,0 +1,1 @@
+Repository-owned conformance checks `lock.bypass_governance` and `lock.per_file_retention` accept the 401 `access_denied` that B2 answers for a delete of a governance-locked version without bypass, and still fail if the delete is allowed or refused for an unrelated reason.
