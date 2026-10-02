@@ -20,6 +20,16 @@ and bypassGovernance "Must be specified and set to true if deleting a file
 version protected by Object Lock governance mode retention settings."
 https://www.backblaze.com/apidocs/b2-delete-file-version
 
+401 access_denied is accepted as the refusal. B2's raw-API contract test for this
+exact call (test/integration/test_raw_api.py: `with pytest.raises(Unauthorized):
+raw_api.delete_file_version(...)` on a governance-locked version, then the
+bypassing delete succeeds) passes against real B2 with a 401, and b2sdk raises
+Unauthorized (code access_denied) for it; the simulator's default profile answers
+the same. A refusal for an unrelated reason is still a failure: an
+InvalidAuthToken (bad or expired token), any other Unauthorized code, a 5xx or a
+network error does not count. The exact error code and message are not verified
+against real B2 (UNVERIFIED in the simulator ledger, docs/FIDELITY.md).
+
 Written from bin/conformance/b2-sdk-python/files.upload, the reference check,
 and bin/conformance/README.md, the contract. It exercises b2sdk from this exact repository
 checkout; the API was taken from
@@ -121,11 +131,15 @@ def step(name, action):
         raise Failure(name, name_of) from error
 
 
-def refused(name, action, expected):
+def refused(name, action, expected, *, access_denied_401=False):
     """Assert something is REFUSED, and record what refused it.
 
     `expected` is a tuple of exception class names. A different class -- or no
     exception at all -- is a Failure, because the refusal IS the claim here.
+    With `access_denied_401`, b2sdk's Unauthorized is also accepted, but only
+    when its code is `access_denied` (a 401 about Object Lock, as B2 answers a
+    delete without bypassGovernance); InvalidAuthToken and every other
+    Unauthorized code stay failures.
     """
     try:
         action()
@@ -135,6 +149,12 @@ def refused(name, action, expected):
         name_of = type(error).__name__
         if name_of in expected:
             return name_of
+        if (
+            access_denied_401
+            and name_of == 'Unauthorized'
+            and getattr(error, 'code', None) == 'access_denied'
+        ):
+            return 'Unauthorized(access_denied)'
         raise Failure(name, f"refused with {name_of}, expected {'/'.join(expected)}") from error
     raise Failure(name, 'the call was permitted; the claim under test is that it is refused')
 
@@ -278,6 +298,7 @@ def run(target: str) -> None:
             'delete without bypass',
             lambda: bucket.delete_file_version(uploaded.id_, OBJECT_NAME),
             ('AccessDenied', 'RetentionWriteError', 'Conflict', 'BadRequest'),
+            access_denied_401=True,
         )
     finally:
         teardown(api, bucket)
