@@ -110,8 +110,16 @@ def test_child_environment_scrubs_real_b2_credentials_and_pins_checkout():
 
 LEAF_ROOT = Path(__file__).parents[2] / '.sdkharness' / 'tests'
 LEAVES = sorted(
-    path for level in ('conformance', 'resilience') for path in (LEAF_ROOT / level).iterdir()
+    path
+    for level in ('conformance', 'resilience')
+    for path in (LEAF_ROOT / level).iterdir()
+    if path.is_file() and not path.name.startswith(('__', '.'))
 )
+
+
+def test_leaves_are_regular_files_only():
+    assert LEAVES
+    assert all(path.is_file() and not path.name.startswith('__') for path in LEAVES)
 
 
 def run_leaf(path, extra_environment):
