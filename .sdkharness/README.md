@@ -64,7 +64,10 @@ helper); the checks read the `SDKHARNESS_SIMULATOR_*` names above.
 # conformance (one capability)
 SDKHARNESS_TEST_LEVEL=conformance SDKHARNESS_SCENARIO=files.upload .sdkharness/tests/run-conformance
 
-# resilience (one injected fault; needs the control URL, i.e. serve.mjs --control)
+# resilience (one injected fault; needs the control URL, i.e. serve.mjs --control).
+# Start a FRESH simulator for every scenario: the simulator keeps one request journal
+# with no reset, the leaves count it, and the dispatcher FAILs a simulator that already
+# served requests.
 SDKHARNESS_TEST_LEVEL=resilience SDKHARNESS_SCENARIO=api.backoff_503 .sdkharness/tests/run-resilience
 
 # customer health (needs a bucket in the simulator first)

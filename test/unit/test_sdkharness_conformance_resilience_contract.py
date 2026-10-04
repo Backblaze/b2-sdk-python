@@ -180,3 +180,56 @@ def test_leaf_checks_name_no_external_realm_or_ambient_credentials():
         assert "os.environ.get('B2_APPLICATION_KEY" not in text, leaf.name
         assert "os.environ['B2_APPLICATION_KEY" not in text, leaf.name
         assert 'refusal(' in text, leaf.name
+
+
+class _JournalServer:
+    """A loopback server answering GET /journal with a fixed entry list."""
+
+    def __init__(self, entries):
+        import json
+        import threading
+        from http.server import BaseHTTPRequestHandler, HTTPServer
+
+        body = json.dumps({'entries': entries}).encode()
+
+        class Handler(BaseHTTPRequestHandler):
+            def do_GET(self):
+                self.send_response(200)
+                self.send_header('content-length', str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+
+            def log_message(self, *args):
+                pass
+
+        self.server = HTTPServer(('127.0.0.1', 0), Handler)
+        self.url = f'http://127.0.0.1:{self.server.server_address[1]}'
+        threading.Thread(target=self.server.serve_forever, daemon=True).start()
+
+    def close(self):
+        self.server.shutdown()
+        self.server.server_close()
+
+
+def test_resilience_refuses_a_simulator_that_already_served_requests(capsys):
+    contract = load_contract()
+    server = _JournalServer([{'seq': 1, 'endpoint': 'b2_upload_file', 'status': 200}])
+    try:
+        env = environment('resilience', 'upload.cap_exceeded_403')
+        env['SDKHARNESS_SIMULATOR_CONTROL_URL'] = server.url
+        assert contract.run('resilience', env) == 1
+    finally:
+        server.close()
+    out = capsys.readouterr().out
+    assert 'FAIL' in out and 'already served 1 request(s)' in out
+
+
+def test_fresh_simulator_is_accepted_and_unreadable_journal_is_a_failure():
+    contract = load_contract()
+    server = _JournalServer([])
+    try:
+        contract.require_fresh_simulator(server.url)
+    finally:
+        server.close()
+    with pytest.raises(contract.ContractFailure, match='cannot read the simulator journal'):
+        contract.require_fresh_simulator('http://127.0.0.1:1')
