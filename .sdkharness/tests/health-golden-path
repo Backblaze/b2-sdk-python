@@ -16,6 +16,9 @@ SCENARIO = 'golden-path'
 SIMULATOR_CREDENTIAL = ('test-key-id', 'test-key')
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 
+sys.path.insert(0, str(Path(__file__).resolve().parent / 'lib'))
+from loopback_guard import scrub_proxy_environment  # noqa: E402
+
 
 class CheckFailure(Exception):
     """A failed lifecycle step with a credential-safe reason."""
@@ -144,6 +147,7 @@ def run_health(
 
 
 def main() -> int:
+    scrub_proxy_environment(os.environ)
     try:
         run_health(os.environ)
     except CheckFailure as error:

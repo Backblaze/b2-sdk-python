@@ -18,10 +18,9 @@ rules associated with one or more buckets."
 https://www.backblaze.com/apidocs/b2-update-bucket
 https://www.backblaze.com/docs/cloud-storage-create-a-cloud-replication-rule-with-the-native-api
 
-Written from bin/conformance/b2-sdk-python/files.upload, the reference check,
-and bin/conformance/README.md, the contract. It exercises b2sdk from this exact repository
-checkout; the API was taken from
-docs/sdks/b2-sdk-python/card.md and the published b2sdk docs; the assertion now lives with the SDK code it exercises.
+Written from files.upload in this directory, the reference check. It exercises
+b2sdk from this exact repository checkout; the API usage is taken from the
+published b2sdk documentation.
 """
 
 import os
@@ -29,7 +28,7 @@ import sys
 import uuid
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'lib'))
-from loopback_guard import refusal  # noqa: E402
+from loopback_guard import missing_runtime, refusal  # noqa: E402
 
 SLUG = 'b2-sdk-python'
 CAPABILITY = 'bucket.replication_config'
@@ -48,8 +47,10 @@ SOURCE_CAPABILITIES = [
     'writeBucketReplications',
 ]
 
-# The closed reason set, mirrored from bin/conformance/README.md. The runner
-# enforces it; naming one outside this tuple is a FAIL it manufactures.
+# The closed reason set. `lib/contract.py` only turns `no-realm-option`,
+# `missing-runtime` and `not-claimed` into a SKIP. `unreachable` and
+# `unauthorized` are never reported at the simulator: the runner supplies both
+# the server and the credential, so those are FAIL, not amber.
 REASONS = (
     'no-realm-option',
     'unreachable',
@@ -60,7 +61,7 @@ REASONS = (
 )
 
 # A requested target maps to a realm or to amber. `simulator` is the harness's
-# own server (bin/simulator/serve.mjs), whose URL the runner exports as
+# own loopback server, whose URL the dispatcher exports as
 # CONFORMANCE_SIMULATOR_URL; unset, there is nothing to reach: no-realm-option.
 REALMS = {
     'simulator': os.environ.get('CONFORMANCE_SIMULATOR_URL') or None,
@@ -89,7 +90,7 @@ class Amber(Exception):
 
 
 class Failure(Exception):
-    """A golden-path step that did not do what the card claims."""
+    """A golden-path step that did not do what the capability requires."""
 
     def __init__(self, step: str, detail: str) -> None:
         self.step = step
@@ -113,8 +114,10 @@ def note(text: str) -> None:
 def step(name, action):
     """Run one golden-path step, converting the environment's own errors.
 
-    A credential NEVER reaches the detail: only the exception class name and,
-    for a classified network/auth error, the class that classified it.
+    A credential NEVER reaches the detail: only the exception class name.
+    Every error here is a FAIL: the runner supplies both the simulator and the
+    credential, so an auth error, access denied, connection error or SDK error
+    is a defect, never an amber (COULD-NOT-RUN) result.
     """
     try:
         return action()
@@ -122,10 +125,6 @@ def step(name, action):
         raise
     except Exception as error:  # noqa: BLE001 -- classified below, never echoed
         name_of = type(error).__name__
-        if name_of in ('Unauthorized', 'InvalidAuthToken', 'AccessDenied'):
-            raise Amber('unauthorized', f"{name_of} at step '{name}'") from error
-        if name_of in ('gaierror', 'ConnectionError', 'ServiceError', 'B2ConnectionError'):
-            raise Amber('unreachable', f"{name_of} at step '{name}'") from error
         raise Failure(name, name_of) from error
 
 
@@ -170,6 +169,9 @@ def prepare(target):
     try:
         import b2sdk.v3 as b2
     except ImportError as error:
+        if not missing_runtime(error):
+            # b2sdk is installed but broken: an SDK regression, not a missing runtime
+            raise Failure('import', type(error).__name__) from error
         raise Amber('missing-runtime', 'b2sdk is not installed') from error
 
     return b2, realm
