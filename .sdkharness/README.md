@@ -1,8 +1,7 @@
 # sdkharness contract
 
 This directory exposes version-matched quality checks to the centralized
-[`sdkharness`](https://github.com/backblaze-labs/demand-side-ai/tree/main/sdkharness).
-The repository owns the executable assertions; sdkharness owns the canonical
+`sdkharness`. The repository owns the executable assertions; sdkharness owns the canonical
 scenario, simulator, invocation, evidence, fleet report, and notification.
 
 `tests.tsv` is the machine-readable entry point. Schema 1 has four
@@ -23,7 +22,7 @@ SDK. The individual conformance and resilience check files refuse to run at all
 unless they are given a loopback simulator URL, so run them through the
 dispatchers below, never with real `B2_*` values in the environment. The
 dispatchers also drop `HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY`, `FTP_PROXY`,
-`NO_PROXY` and `REQUEST_METHOD` (any case; `lib/loopback_guard.py`) and then pin
+`NO_PROXY` and `REQUEST_METHOD` (any case; `.sdkharness/tests/lib/loopback_guard.py`) and then pin
 `NO_PROXY`/`no_proxy` to `127.0.0.1`, so a proxy configured on the machine cannot
 change a result.
 
@@ -36,19 +35,17 @@ reporting, and notification.
 
 ## Run one check locally
 
-Nothing here touches B2. You need this repository, Python 3.10+, Node 20+ (for
-the simulator), and read access to the private
-[`backblaze-labs/b2-simulator`](https://github.com/backblaze-labs/b2-simulator)
-repository. The simulator is a separate repository: clone it, or use the
-checkout/version the central harness runs against, and point `B2SIM_DIR` at it.
+Nothing here touches B2. You need this repository, **Python 3.10 or newer**
+(older versions cannot install `b2sdk`), Node 20+ (for the simulator), and a
+checkout of the standalone B2 simulator (available to the team; ask the SDK
+harness owners for access). Set `B2SIM_DIR` to that checkout.
 
 ```bash
 # 1. This checkout, in a virtualenv (the checks import b2sdk from here)
 python -m venv .venv && . .venv/bin/activate && pip install -e .
 
 # 2. A local simulator with the fault-control listener (--control)
-B2SIM_DIR=${B2SIM_DIR:-/tmp/b2-simulator}
-[ -d "$B2SIM_DIR" ] || git clone https://github.com/backblaze-labs/b2-simulator "$B2SIM_DIR"
+export B2SIM_DIR=/path/to/your/simulator/checkout   # contains bin/simulator/serve.mjs
 SIM_OUT=$(mktemp)
 node "$B2SIM_DIR/bin/simulator/serve.mjs" --control > "$SIM_OUT" 2>&1 &    # prints the URLs
 SIM_PID=$!
@@ -80,10 +77,14 @@ SDKHARNESS_TEST_LEVEL=conformance SDKHARNESS_SCENARIO=files.upload .sdkharness/t
 # resilience (one injected fault; needs the control URL, i.e. serve.mjs --control).
 # Start a FRESH simulator for every scenario: the simulator keeps one request journal
 # with no reset, the leaves count it, and the dispatcher FAILs a simulator that already
-# served requests. Repeat step 2 and 3 (after stopping the previous one) before this.
+# served requests.
+kill "$SIM_PID"; rm -f "$SIM_OUT"
+# ...now repeat steps 2 and 3 to start a fresh simulator, then:
 SDKHARNESS_TEST_LEVEL=resilience SDKHARNESS_SCENARIO=api.backoff_503 .sdkharness/tests/run-resilience
 
 # customer health (needs a bucket in the simulator first, so use a fresh simulator again)
+kill "$SIM_PID"; rm -f "$SIM_OUT"
+# ...repeat steps 2 and 3 again, then:
 python - <<'PY'
 import os
 from b2sdk.v3 import B2Api, InMemoryAccountInfo
