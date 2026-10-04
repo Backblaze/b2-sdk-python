@@ -9,6 +9,25 @@ upcoming release can be found in [changelog.d](changelog.d).
 
 <!-- towncrier release notes start -->
 
+## [2.13.1](https://github.com/Backblaze/b2-sdk-python/releases/tag/v2.13.1) - 2026-10-04
+
+### Fixed
+
+- Retry uploads after a B2 request-timeout response (HTTP 408). ([#605](https://github.com/Backblaze/b2-sdk-python/issues/605))
+- Fixed honoring the Retry-After header on 5xx service errors. ([#606](https://github.com/Backblaze/b2-sdk-python/issues/606))
+
+### Infrastructure
+
+- Added a repository-owned sdkharness customer-health contract for version-matched simulator testing. ([#610](https://github.com/Backblaze/b2-sdk-python/issues/610))
+- Moved sdkharness conformance and resilience assertions into this repository so they execute against the exact b2sdk checkout. ([#612](https://github.com/Backblaze/b2-sdk-python/issues/612))
+- Document in the sdkharness README how to run one check against the standalone simulator, and list every proxy variable the leaf checks scrub.
+- Make the sdkharness leaf-check unit tests ignore `__pycache__` and other non-leaf entries.
+- Repository-owned conformance checks `lock.bypass_governance` and `lock.per_file_retention` accept the 401 `access_denied` that B2 answers for a delete of a governance-locked version without bypass, and still fail if the delete is allowed or refused for an unrelated reason.
+- Repository-owned sdkharness conformance and resilience checks now report an authorization error, access denied, a connection error against the simulator, or an SDK `ImportError` as `FAIL` instead of `COULD-NOT-RUN`/`SKIP`, strip proxy environment variables so a stray proxy cannot change a result, and no longer refer to files that exist only in the central harness.
+- Repository-owned sdkharness conformance and resilience leaf checks now refuse to run unless they are given a loopback simulator URL, and always use the fixed simulator credential, so running one directly can no longer reach staging or production with ambient `B2_*` credentials.
+- The repository-owned resilience dispatcher refuses a simulator that has already served requests, instead of letting a leaf count an earlier scenario's journal entries (for example `upload.cap_exceeded_403` reporting extra `b2_upload_file` calls) and report a false SDK failure.
+
+
 ## [2.13.0](https://github.com/Backblaze/b2-sdk-python/releases/tag/v2.13.0) - 2026-09-14
 
 

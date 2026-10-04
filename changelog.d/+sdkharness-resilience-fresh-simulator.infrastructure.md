@@ -1,1 +1,0 @@
-The repository-owned resilience dispatcher refuses a simulator that has already served requests, instead of letting a leaf count an earlier scenario's journal entries (for example `upload.cap_exceeded_403` reporting extra `b2_upload_file` calls) and report a false SDK failure.

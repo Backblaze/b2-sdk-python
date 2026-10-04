@@ -1,1 +1,0 @@
-Repository-owned sdkharness conformance and resilience leaf checks now refuse to run unless they are given a loopback simulator URL, and always use the fixed simulator credential, so running one directly can no longer reach staging or production with ambient `B2_*` credentials.

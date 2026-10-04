@@ -1,1 +1,0 @@
-Repository-owned sdkharness conformance and resilience checks now report an authorization error, access denied, a connection error against the simulator, or an SDK `ImportError` as `FAIL` instead of `COULD-NOT-RUN`/`SKIP`, strip proxy environment variables so a stray proxy cannot change a result, and no longer refer to files that exist only in the central harness.
