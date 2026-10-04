@@ -10,9 +10,17 @@ from collections.abc import Mapping
 from pathlib import Path
 from urllib.parse import urlsplit
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from loopback_guard import scrub_proxy_environment  # noqa: E402
+
 SLUG = 'b2-sdk-python'
 REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
 SCENARIO_ROOT = Path(__file__).resolve().parents[1]
+# The only COULD-NOT-RUN reasons that may become SKIP: the question genuinely
+# could not be asked. At a simulator the harness supplies the server and the
+# credential, so `unreachable`, `unauthorized` and an SDK import error are never
+# legitimate ambers: any other reason is a FAIL (the CLI's SKIP policy).
+SKIP_REASONS = frozenset({'no-realm-option', 'missing-runtime', 'no-client-option', 'not-claimed'})
 SCENARIO_RE = re.compile(r'^[A-Za-z0-9_.-]+$')
 
 
@@ -61,6 +69,7 @@ def validate_environment(level: str, environment: Mapping[str, str]) -> tuple[st
 
 def child_environment(level: str, environment: Mapping[str, str]) -> dict[str, str]:
     child = {name: value for name, value in environment.items() if not name.startswith('B2_')}
+    scrub_proxy_environment(child)
     child['PYTHONPATH'] = str(REPOSITORY_ROOT)
     child['B2_APPLICATION_KEY_ID'] = 'test-key-id'
     child['B2_APPLICATION_KEY'] = 'test-key'
@@ -96,7 +105,10 @@ def translate(level: str, scenario: str, returncode: int, output: str) -> tuple[
     if verdict.startswith('COULD-NOT-RUN (') and verdict.endswith(')'):
         if returncode != 0:
             return 'FAIL', f'contract: SKIP exited {returncode}', 1
-        return 'SKIP', verdict[15:-1], 0
+        reason = verdict[15:-1]
+        if reason.split(' -- ', 1)[0] not in SKIP_REASONS:
+            return 'FAIL', f'contract: {reason}', 1
+        return 'SKIP', reason, 0
     return 'FAIL', 'contract: malformed standing verdict', 1
 
 

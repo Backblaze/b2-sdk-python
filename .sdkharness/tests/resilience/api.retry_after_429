@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """b2-sdk-python x api.retry_after_429.
 
-Written from the reference check, bin/resilience/b2-sdk-python/upload.retry_503.
-The contract is bin/resilience/README.md; the question is the api.retry_after_429 row of
-bin/resilience/scenarios.tsv.
+Written from the reference check, upload.retry_503 in this directory.
+The question is the api.retry_after_429 scenario of the central sdkharness registry.
 
 Fault   fault b2_list_file_names 429 too_many_requests retryAfter=2 (count 1), armed after setup
 Assert  the end state: the listing names exactly the fixture; the recovery path,
@@ -17,7 +16,7 @@ The Integration Checklist, Error Handling, 429: "the response may also include a
 https://www.backblaze.com/docs/cloud-storage-integration-checklist
 
 It exercises b2sdk from this exact repository checkout;
-the API is taken from docs/sdks/b2-sdk-python/card.md.
+the API is taken from the published b2sdk documentation.
 """
 
 import json
@@ -28,7 +27,7 @@ import urllib.request
 import uuid
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'lib'))
-from loopback_guard import refusal  # noqa: E402
+from loopback_guard import missing_runtime, refusal  # noqa: E402
 
 SLUG = 'b2-sdk-python'
 SCENARIO = 'api.retry_after_429'
@@ -49,7 +48,7 @@ def is_faulted(e):
 
 FLOOR_S = 2.0
 
-# The closed reason set, mirrored from bin/resilience/README.md. This
+# The closed reason set, fixed by the sdkharness resilience contract. This
 # scenario's `needs` is `-`, so no-client-option is not available to it.
 REASONS = ('missing-runtime',)
 
@@ -123,6 +122,9 @@ def authorized_bucket(**api_kwargs):
     try:
         from b2sdk.v3 import B2Api, InMemoryAccountInfo
     except ImportError as error:
+        if not missing_runtime(error):
+            # b2sdk is installed but broken: an SDK regression, not a missing runtime
+            raise Failure('import', type(error).__name__) from error
         raise Amber('missing-runtime', 'b2sdk is not installed') from error
     api = B2Api(InMemoryAccountInfo(), **api_kwargs)
     step('authenticate', lambda: api.authorize_account('test-key-id', 'test-key', realm=realm))

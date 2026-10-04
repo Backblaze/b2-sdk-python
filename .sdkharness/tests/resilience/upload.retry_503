@@ -2,9 +2,8 @@
 """THE REFERENCE CHECK -- b2-sdk-python x upload.retry_503.
 
 Every other resilience check is written from this one, the way
-bin/conformance/b2-sdk-python/files.upload is for conformance. The contract is
-bin/resilience/README.md; the question is the upload.retry_503 row of
-bin/resilience/scenarios.tsv.
+conformance/files.upload is for conformance. The question is the upload.retry_503
+scenario of the central sdkharness registry.
 
 Fault   fault b2_upload_file 503 service_unavailable (count 1), armed after
         setup, so the first upload attempt is the one that gets it
@@ -23,7 +22,7 @@ new URL and auth key pair".
 https://www.backblaze.com/docs/cloud-storage-integration-checklist
 
 It exercises b2sdk from this exact repository checkout;
-the API is taken from docs/sdks/b2-sdk-python/card.md.
+the API is taken from the published b2sdk documentation.
 """
 
 import hashlib
@@ -35,14 +34,14 @@ import urllib.request
 import uuid
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'lib'))
-from loopback_guard import refusal  # noqa: E402
+from loopback_guard import missing_runtime, refusal  # noqa: E402
 
 SLUG = 'b2-sdk-python'
 SCENARIO = 'upload.retry_503'
 OBJECT_NAME = 'res/retry_503.txt'
 FAULT = {'on': 'b2_upload_file', 'status': 503, 'code': 'service_unavailable', 'count': 1}
 
-# The closed reason set, mirrored from bin/resilience/README.md. This
+# The closed reason set, fixed by the sdkharness resilience contract. This
 # scenario's `needs` is `-`, so no-client-option is not available to it.
 REASONS = ('missing-runtime',)
 
@@ -97,6 +96,9 @@ def run() -> None:
     try:
         from b2sdk.v3 import B2Api, InMemoryAccountInfo
     except ImportError as error:
+        if not missing_runtime(error):
+            # b2sdk is installed but broken: an SDK regression, not a missing runtime
+            raise Failure('import', type(error).__name__) from error
         raise Amber('missing-runtime', 'b2sdk is not installed') from error
 
     api = B2Api(InMemoryAccountInfo())

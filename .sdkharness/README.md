@@ -21,7 +21,9 @@ only the fixed simulator credential `test-key-id` / `test-key`, and the health
 check refuses any other `B2_TEST_APPLICATION_KEY*` pair before it reaches the
 SDK. The individual conformance and resilience check files refuse to run at all
 unless they are given a loopback simulator URL, so run them through the
-dispatchers below, never with real `B2_*` values in the environment.
+dispatchers below, never with real `B2_*` values in the environment. The
+dispatchers also drop `HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY` (any case) and pin
+`NO_PROXY` to `127.0.0.1`, so a proxy configured on the machine cannot change a result.
 
 Conformance owns 33 capability checks and resilience owns 16 injected-fault
 checks. Their small dispatchers validate the invocation, run the selected
@@ -83,5 +85,12 @@ HEALTHCHECK_REALM_URL=$SDKHARNESS_SIMULATOR_URL B2_TEST_APPLICATION_KEY_ID=test-
 When you are done, stop the simulator with `kill "$SIM_PID"`.
 
 Each prints one `SDKHARNESS_RESULT` line. Scenario ids are in `tests.tsv`.
-A `FAIL` for `api.retry_after_503`, `upload.retry_408` is a known SDK finding, not a setup problem.
-
+`api.retry_after_503` and `upload.retry_408` used to FAIL as known SDK findings;
+both pass now, so there are no standing known findings listed here. `upload.stall`
+reports `SKIP` because b2sdk documents no request-timeout option. A `FAIL` is a
+real SDK or harness defect (or a simulator older than the checks expect), not a
+setup problem. `SKIP` is reserved for a question that genuinely cannot be asked
+(`no-realm-option`, `missing-runtime` when `b2sdk` is not installed at all,
+`no-client-option`, `not-claimed`). An unreachable simulator, an authorization
+error, an access-denied error, a connection error, or an SDK `ImportError` is
+always a `FAIL`.
