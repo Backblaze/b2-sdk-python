@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import subprocess
 import sys
+import urllib.request
 from collections.abc import Mapping
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -112,6 +114,31 @@ def translate(level: str, scenario: str, returncode: int, output: str) -> tuple[
     return 'FAIL', 'contract: malformed standing verdict', 1
 
 
+def require_fresh_simulator(control_url: str) -> None:
+    """Refuse a simulator that already served requests.
+
+    The resilience leaves read the simulator's whole request journal and count
+    its entries (for example every b2_upload_file), and the simulator has no
+    journal reset. Run on a simulator an earlier scenario used, a leaf reads
+    that scenario's requests as its own and reports a bogus SDK verdict
+    (`upload.cap_exceeded_403`: "N b2_upload_file calls"). Start one control
+    simulator per scenario, as the harness runner does.
+    """
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+    try:
+        with opener.open(f'{control_url.rstrip("/")}/journal', timeout=10) as response:
+            entries = json.load(response)['entries']
+    except Exception as error:
+        raise ContractFailure(
+            f'configuration: cannot read the simulator journal ({type(error).__name__})'
+        ) from error
+    if entries:
+        raise ContractFailure(
+            f'configuration: the simulator already served {len(entries)} request(s); '
+            'resilience scenarios need one fresh --control simulator per scenario'
+        )
+
+
 def run(level: str, environment: Mapping[str, str] = os.environ) -> int:
     scenario = environment.get('SDKHARNESS_SCENARIO', 'unknown')
     try:
@@ -119,6 +146,8 @@ def run(level: str, environment: Mapping[str, str] = os.environ) -> int:
         executable = SCENARIO_ROOT / level / scenario
         if not executable.is_file() or not os.access(executable, os.X_OK):
             raise ContractFailure('configuration: scenario executable is unavailable')
+        if level == 'resilience':
+            require_fresh_simulator(environment['SDKHARNESS_SIMULATOR_CONTROL_URL'])
         completed = subprocess.run(
             [str(executable)],
             cwd=REPOSITORY_ROOT,
