@@ -1,8 +1,7 @@
 # sdkharness contract
 
 This directory exposes version-matched quality checks to the centralized
-[`sdkharness`](https://github.com/backblaze-labs/demand-side-ai/tree/main/sdkharness).
-The repository owns the executable assertions; sdkharness owns the canonical
+`sdkharness`. The repository owns the executable assertions; sdkharness owns the canonical
 scenario, simulator, invocation, evidence, fleet report, and notification.
 
 `tests.tsv` is the machine-readable entry point. Schema 1 has four
@@ -22,8 +21,10 @@ check refuses any other `B2_TEST_APPLICATION_KEY*` pair before it reaches the
 SDK. The individual conformance and resilience check files refuse to run at all
 unless they are given a loopback simulator URL, so run them through the
 dispatchers below, never with real `B2_*` values in the environment. The
-dispatchers also drop `HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY` (any case) and pin
-`NO_PROXY` to `127.0.0.1`, so a proxy configured on the machine cannot change a result.
+dispatchers also drop `HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY`, `FTP_PROXY`,
+`NO_PROXY` and `REQUEST_METHOD` (any case; `.sdkharness/tests/lib/loopback_guard.py`) and then pin
+`NO_PROXY`/`no_proxy` to `127.0.0.1`, so a proxy configured on the machine cannot
+change a result.
 
 Conformance owns 33 capability checks and resilience owns 16 injected-fault
 checks. Their small dispatchers validate the invocation, run the selected
@@ -34,33 +35,40 @@ reporting, and notification.
 
 ## Run one check locally
 
-Nothing here touches B2. You need Python 3.10+ and Node 22+ (for the simulator).
+Nothing here touches B2. You need this repository, **Python 3.10 or newer**
+(older versions cannot install `b2sdk`), Node 20+ (for the simulator), and a
+checkout of the standalone B2 simulator (available to the team; ask the SDK
+harness owners for access). Set `B2SIM_DIR` to that checkout.
 
 ```bash
 # 1. This checkout, in a virtualenv (the checks import b2sdk from here)
 python -m venv .venv && . .venv/bin/activate && pip install -e .
 
-# 2. A local simulator (any one of these; it needs access to backblaze-labs/b2-simulator)
-git clone https://github.com/backblaze-labs/b2-simulator /tmp/b2-simulator
-node /tmp/b2-simulator/bin/simulator/serve.mjs --control > /tmp/sim.out 2>&1 &    # prints the URLs
+# 2. A local simulator with the fault-control listener (--control)
+export B2SIM_DIR=/path/to/your/simulator/checkout   # contains bin/simulator/serve.mjs
+SIM_OUT=$(mktemp)
+node "$B2SIM_DIR/bin/simulator/serve.mjs" --control > "$SIM_OUT" 2>&1 &    # prints the URLs
 SIM_PID=$!
-# ...or use the simulator embedded in the harness: sdkharness/bin/simulator/serve.mjs
 
 # 3. Wait until it has printed all three listener lines (http, https, control), then read them
 for _ in $(seq 100); do
-  [ "$(grep -c '^SIMULATOR-' /tmp/sim.out)" -ge 3 ] && break
-  kill -0 "$SIM_PID" 2>/dev/null || { echo 'simulator exited:'; cat /tmp/sim.out; break; }
+  [ "$(grep -c '^SIMULATOR-' "$SIM_OUT")" -ge 3 ] && break
+  kill -0 "$SIM_PID" 2>/dev/null || { echo 'simulator exited:'; cat "$SIM_OUT"; break; }
   sleep 0.1
 done
-export SDKHARNESS_SIMULATOR_URL=$(sed -n 's/^SIMULATOR-LISTENING \(http:.*\)/\1/p' /tmp/sim.out)
-export SDKHARNESS_SIMULATOR_HTTPS_URL=$(sed -n 's/^SIMULATOR-LISTENING \(https:.*\)/\1/p' /tmp/sim.out)
-export SDKHARNESS_SIMULATOR_CONTROL_URL=$(sed -n 's/^SIMULATOR-CONTROL \(.*\)/\1/p' /tmp/sim.out)
-export SDKHARNESS_SIMULATOR_CA=/tmp/b2-simulator/bin/simulator/loopback-cert.pem
+export SDKHARNESS_SIMULATOR_URL=$(sed -n 's/^SIMULATOR-LISTENING \(http:.*\)/\1/p' "$SIM_OUT")
+export SDKHARNESS_SIMULATOR_HTTPS_URL=$(sed -n 's/^SIMULATOR-LISTENING \(https:.*\)/\1/p' "$SIM_OUT")
+export SDKHARNESS_SIMULATOR_CONTROL_URL=$(sed -n 's/^SIMULATOR-CONTROL \(.*\)/\1/p' "$SIM_OUT")
+export SDKHARNESS_SIMULATOR_CA=$B2SIM_DIR/bin/simulator/loopback-cert.pem
 ```
 
 The standalone simulator also exports the same values as `B2SIM_URL`,
 `B2SIM_HTTPS_URL`, `B2SIM_CONTROL_URL` and `B2SIM_CA` (its `bin/lib/simulator.sh`
 helper); the checks read the `SDKHARNESS_SIMULATOR_*` names above.
+
+Then run one scenario through its dispatcher. Each prints one
+`SDKHARNESS_RESULT` line, for example
+`SDKHARNESS_RESULT	conformance	files.upload	PASS	-`.
 
 ```bash
 # conformance (one capability)
@@ -70,9 +78,13 @@ SDKHARNESS_TEST_LEVEL=conformance SDKHARNESS_SCENARIO=files.upload .sdkharness/t
 # Start a FRESH simulator for every scenario: the simulator keeps one request journal
 # with no reset, the leaves count it, and the dispatcher FAILs a simulator that already
 # served requests.
+kill "$SIM_PID"; rm -f "$SIM_OUT"
+# ...now repeat steps 2 and 3 to start a fresh simulator, then:
 SDKHARNESS_TEST_LEVEL=resilience SDKHARNESS_SCENARIO=api.backoff_503 .sdkharness/tests/run-resilience
 
-# customer health (needs a bucket in the simulator first)
+# customer health (needs a bucket in the simulator first, so use a fresh simulator again)
+kill "$SIM_PID"; rm -f "$SIM_OUT"
+# ...repeat steps 2 and 3 again, then:
 python - <<'PY'
 import os
 from b2sdk.v3 import B2Api, InMemoryAccountInfo
@@ -85,9 +97,10 @@ HEALTHCHECK_REALM_URL=$SDKHARNESS_SIMULATOR_URL B2_TEST_APPLICATION_KEY_ID=test-
   .sdkharness/tests/health-golden-path
 ```
 
-When you are done, stop the simulator with `kill "$SIM_PID"`.
+When you are done, stop the simulator you started with `kill "$SIM_PID"` (never
+kill by process name) and remove `"$SIM_OUT"`.
 
-Each prints one `SDKHARNESS_RESULT` line. Scenario ids are in `tests.tsv`.
+Scenario ids are in `tests.tsv`.
 `api.retry_after_503` and `upload.retry_408` used to FAIL as known SDK findings;
 both pass now, so there are no standing known findings listed here. `upload.stall`
 reports `SKIP` because b2sdk documents no request-timeout option. A `FAIL` is a

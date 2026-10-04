@@ -9,6 +9,9 @@
 ######################################################################
 from __future__ import annotations
 
+import json
+import threading
+from http.server import BaseHTTPRequestHandler, HTTPServer
 from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
 
@@ -186,10 +189,6 @@ class _JournalServer:
     """A loopback server answering GET /journal with a fixed entry list."""
 
     def __init__(self, entries):
-        import json
-        import threading
-        from http.server import BaseHTTPRequestHandler, HTTPServer
-
         body = json.dumps({'entries': entries}).encode()
 
         class Handler(BaseHTTPRequestHandler):
