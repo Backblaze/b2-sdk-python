@@ -68,6 +68,7 @@ class B2Api(v2.B2Api):
             raw_api=raw_api,
             api_config=api_config,
         )
+        self.api_config = self.session.api_config
         self.file_version_factory = self.FILE_VERSION_FACTORY_CLASS(self)
         self.download_version_factory = self.DOWNLOAD_VERSION_FACTORY_CLASS(self)
         self.services = Services(
