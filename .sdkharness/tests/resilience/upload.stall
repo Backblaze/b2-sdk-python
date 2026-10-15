@@ -4,10 +4,14 @@
 Written from the reference check, upload.retry_503 in this directory.
 The question is the upload.stall scenario of the central sdkharness registry.
 
-Fault   wire b2_upload_file stall ms=60000 -- NOT ARMED. The scenario needs a client
-        request timeout short enough to beat a 60 s stall (`needs: request-timeout`)
-Assert  nothing: b2sdk documents no request-timeout option, so
-        the check reports no-client-option instead of guessing at one
+Fault   wire b2_upload_file stall ms=60000, armed after setup, so the first upload
+        attempt is the one that stalls. The scenario needs a client request timeout
+        short enough to beat a 60 s stall (`needs: request-timeout`); b2sdk has no
+        timeout option, so the check meets it through B2HttpApiConfig's documented
+        `http_session_factory` (a Session that clamps the read timeout to 5 s)
+Assert  the recovery path, from GET /journal: exactly one stall on b2_upload_file,
+        then a successful b2_upload_file on a DIFFERENT uploadUrlId; and the end
+        state, through the normal API: the file downloads with the bytes that went up
 
 The expected behaviour is B2's, not the tool's.
 The Integration Checklist, Upload Retry Guidelines, lists the failures after which "the
@@ -20,6 +24,8 @@ It exercises b2sdk from this exact repository checkout;
 the API is taken from the published b2sdk documentation.
 """
 
+import hashlib
+import io
 import json
 import os
 import sys
@@ -127,30 +133,62 @@ def authorized_bucket(**api_kwargs):
     return api, bucket
 
 
-# Why this scenario cannot be asked. The published b2sdk documentation names no
-# request-timeout option, so the precondition cannot be settled from outside.
-UNSETTLED = (
-    "b2sdk documents no request-timeout option: B2HttpApiConfig's "
-    'documented parameters are http_session_factory and _raw_api_class, and nothing names '
-    'the timeout B2Http passes to requests or a way to shorten it'
-)
+# The request-timeout precondition (`needs: request-timeout`). b2sdk has no timeout option, but
+# B2HttpApiConfig documents `http_session_factory` (a callable returning a requests.Session), and
+# B2Http (b2sdk/_internal/b2http.py) hands its timeout to that session on every call:
+# `self.session.request(..., timeout=(CONNECTION_TIMEOUT, _timeout or TIMEOUT_FOR_UPLOAD))`. A Session
+# subclass that clamps the read timeout therefore makes a stalled response give up early.
+REQUEST_TIMEOUT_S = 5
+
+
+def short_timeout_session_class():
+    import requests
+
+    class ShortTimeoutSession(requests.Session):
+        def request(self, method, url, **kwargs):
+            timeout = kwargs.get('timeout')
+            connect = timeout[0] if isinstance(timeout, tuple) else timeout
+            kwargs['timeout'] = (connect or REQUEST_TIMEOUT_S, REQUEST_TIMEOUT_S)
+            return super().request(method, url, **kwargs)
+
+    return ShortTimeoutSession
 
 
 def run() -> None:
     try:
-        import b2sdk.v3  # noqa: F401 -- only presence is asked
+        from b2sdk.v3 import B2HttpApiConfig
     except ImportError as error:
         if not missing_runtime(error):
             # b2sdk is installed but broken: an SDK regression, not a missing runtime
             raise Failure('import', type(error).__name__) from error
         raise Amber('missing-runtime', 'b2sdk is not installed') from error
     note(
-        'unconfirmed, not absent: an http_session_factory returning a Session that forces a '
-        'short timeout MIGHT meet the need, but session-level behaviour is not documented; '
-        'reading what timeout b2http.py passes to '
-        'Session.request, and whether it is configurable, would settle it'
+        'request-timeout met through B2HttpApiConfig(http_session_factory=...), a documented '
+        f'parameter: a Session subclass clamps the read timeout to {REQUEST_TIMEOUT_S} s'
     )
-    raise Amber('no-client-option', UNSETTLED)
+    config = B2HttpApiConfig(http_session_factory=short_timeout_session_class())
+    api, bucket = authorized_bucket(api_config=config)
+
+    payload = (b'sdkharness resilience ' * 64)[:1024]
+    step('arm fault', lambda: control('POST', ARM_PATH, FAULT))
+    uploaded = step('upload', lambda: bucket.upload_bytes(payload, OBJECT_NAME))
+    if hashlib.sha1(payload).hexdigest() != getattr(uploaded, 'content_sha1', None):
+        raise Failure('upload', 'the returned contentSha1 does not match the bytes sent')
+
+    sink = io.BytesIO()
+    step('download', lambda: bucket.download_file_by_name(OBJECT_NAME).save(sink))
+    if sink.getvalue() != payload:
+        raise Failure('round trip', 'downloaded bytes differ from what was uploaded')
+
+    entries = journal()
+    stalled = [e for e in entries if is_faulted(e)]
+    if len(stalled) != 1:
+        raise Failure('journal', f'{len(stalled)} stalls on b2_upload_file, expected 1')
+    retries = after(entries, stalled[0]['seq'], 'b2_upload_file', 200)
+    if not retries:
+        raise Failure('journal', 'no successful b2_upload_file after the stall')
+    if retries[0]['uploadUrlId'] in (None, stalled[0]['uploadUrlId']):
+        raise Failure('recovery path', 'the retry reused the upload URL that stalled')
 
 
 def main() -> int:

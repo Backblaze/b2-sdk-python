@@ -103,7 +103,10 @@ kill by process name) and remove `"$SIM_OUT"`.
 Scenario ids are in `tests.tsv`.
 `api.retry_after_503` and `upload.retry_408` used to FAIL as known SDK findings;
 both pass now, so there are no standing known findings listed here. `upload.stall`
-reports `SKIP` because b2sdk documents no request-timeout option. A `FAIL` is a
+meets its request-timeout need through `B2HttpApiConfig(http_session_factory=...)`: b2sdk has no
+timeout option, but `B2Http` hands its timeout to the session on every request, so a `Session`
+subclass that clamps the read timeout makes the stalled upload give up and retry on a new upload
+URL. A `FAIL` is a
 real SDK or harness defect (or a simulator older than the checks expect), not a
 setup problem. `SKIP` is reserved for a question that genuinely cannot be asked
 (`no-realm-option`, `missing-runtime` when `b2sdk` is not installed at all,
