@@ -79,7 +79,7 @@ Concatenate files of known size
 
 If one of remote source has length smaller than :term:`absoluteMinimumPartSize` then it cannot be copied into large file part. Such remote source would be downloaded and concatenated locally with local source or with other downloaded remote source.
 
-Please note that this method only allows checksum verification for local upload sources. Checksum verification for remote sources is available only when local copy is available. In such case :meth:`b2sdk.v3.Bucket.create_file` can be used with overalapping ranges in input.
+Please note that this method only allows checksum verification for local upload sources. Checksum verification for remote sources is available only when local copy is available. In such case :meth:`b2sdk.v3.Bucket.create_file` can be used with overlapping ranges in input.
 
 For more information about ``concatenate`` please see :meth:`b2sdk.v3.Bucket.concatenate` and :class:`b2sdk.v3.CopySource`.
 
@@ -150,7 +150,7 @@ The assumption here is that the file has been appended to since it was last uplo
     >>> bucket.create_file(input_sources, remote_name, file_info)
     <b2sdk._internal.file_version.FileVersion at 0x7fc8cd560552>
 
-`LocalUploadSource` has the size determined automatically in this case. This is more efficient than :meth:`b2sdk.v3.Bucket.concatenate`, as it can use the overlapping ranges when a remote part is smaller than :term:`absoluteMinimumPartSize` to prevent downloading a range (when concatenating, local source would have destination offset at the end of remote source)
+:class:`b2sdk.v3.UploadSourceLocalFile` has the size determined automatically in this case. This is more efficient than :meth:`b2sdk.v3.Bucket.concatenate`, as it can use the overlapping ranges when a remote part is smaller than :term:`absoluteMinimumPartSize` to prevent downloading a range (when concatenating, local source would have destination offset at the end of remote source)
 
 For more information see :meth:`b2sdk.v3.Bucket.create_file`.
 
@@ -179,7 +179,7 @@ Change the middle of the remote file
     >>> bucket.create_file(input_sources, remote_name, file_info)
     <b2sdk._internal.file_version.FileVersion at 0x7fc8cd560552>
 
-`LocalUploadSource` has the size determined automatically in this case. This is more efficient than :meth:`b2sdk.v3.Bucket.concatenate`, as it can use the overlapping ranges when a remote part is smaller than :term:`absoluteMinimumPartSize` to prevent downloading a range.
+:class:`b2sdk.v3.UploadSourceLocalFile` has the size determined automatically in this case. This is more efficient than :meth:`b2sdk.v3.Bucket.concatenate`, as it can use the overlapping ranges when a remote part is smaller than :term:`absoluteMinimumPartSize` to prevent downloading a range.
 
 For more information see :meth:`b2sdk.v3.Bucket.create_file`.
 
@@ -284,7 +284,7 @@ Here the planner has only used a remote source where remote range was not availa
 
 .. code-block:: python
 
-    >>> planner.create_file(input_sources, remote_name, file_info, prioritize='remote')
+    >>> bucket.create_file(input_sources, remote_name, file_info, prioritize='remote')
     # planner parts: cloud[A, D], local[D, E]
 
 Here the planner has only used a local source where remote range was not available, minimizing uploads.
@@ -301,8 +301,10 @@ In `local_verification` mode the remote range was artificially split into three 
 .. note::
   `prioritize` is just a planner setting - remote parts are always verified if matching local parts exists.
 
-.. TODO::
-  prioritization should accept enum, not string
+.. todo::
+  Prioritization should accept an enum, not a string. Tracked in
+  `issue #602 <https://github.com/Backblaze/b2-sdk-python/issues/602>`_. Kept here so that anyone
+  editing this section sees it alongside the documented string values.
 
 
 .. _continuation:
@@ -353,7 +355,7 @@ Manual continuation (streamed version)
     >>> large_file_id = storage.query({'name': remote_name})[0]['large_file_id']
     >>> bucket.create_file_stream(input_sources, remote_name, file_info, large_file_id=large_file_id)
 
-Streams that contains remote sources cannot be continued with :meth:`b2sdk.v3.Bucket.create_file` - internally :meth:`b2sdk.v3.Bucket.create_file` stores plan information in file info for such inputs, and verifies it before any copy/upload and :meth:`b2sdk.v3.Bucket.create_file_stream` cannot store this information. Local source only inputs can be safely continued with :meth:`b2sdk.v3.Bucket.create_file` in auto continue mode or manual continue mode (because plan information is not stored in file info in such case).
+Streams that contain remote sources cannot be continued with :meth:`b2sdk.v3.Bucket.create_file` - internally :meth:`b2sdk.v3.Bucket.create_file` stores plan information in file info for such inputs, and verifies it before any copy/upload and :meth:`b2sdk.v3.Bucket.create_file_stream` cannot store this information. Local source only inputs can be safely continued with :meth:`b2sdk.v3.Bucket.create_file` in auto continue mode or manual continue mode (because plan information is not stored in file info in such case).
 
 Auto continuation
 -----------------
@@ -364,7 +366,7 @@ Auto continuation
 
 For local source only input, :meth:`b2sdk.v3.Bucket.create_file` would try to find matching unfinished large file. It will verify uploaded parts checksums with local sources - the most completed, having all uploaded parts matched candidate would be automatically selected as file to continue. If there is no matching candidate (even if there are unfinished files for the same file name) new large file would be started.
 
-In other cases plan information would be generated and :meth:`b2sdk.v3.Bucket.create_file` would try to find unfinished large file with matching plan info in its file info. If there is one or more such unfinished large files, :meth:`b2sdk.v3.Bucket.create_file` would verify checksums for all locally available parts and choose any matching candidate. If all candidates fails on uploaded parts checksums verification, process is interrupted and error raises. In such case corrupted unfinished large files should be cancelled manullay and :meth:`b2sdk.v3.Bucket.create_file` should be retried, or auto continuation should be turned off with `auto_continue=False`
+In other cases plan information would be generated and :meth:`b2sdk.v3.Bucket.create_file` would try to find unfinished large file with matching plan info in its file info. If there is one or more such unfinished large files, :meth:`b2sdk.v3.Bucket.create_file` would verify checksums for all locally available parts and choose any matching candidate. If all candidates fail on uploaded parts checksums verification, process is interrupted and error raises. In such case corrupted unfinished large files should be cancelled manually and :meth:`b2sdk.v3.Bucket.create_file` should be retried, or auto continuation should be turned off with `auto_continue=False`
 
 
 No continuation
