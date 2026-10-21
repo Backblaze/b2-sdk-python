@@ -23,6 +23,7 @@ classifiers = [
 ]
 dependencies = [
     "annotated_types>=0.5.0",
+    "certifi>=2026.10.19",
     "logfury<2.0.0,>=1.0.1",
     "requests<3.0.0,>=2.33.0",
     "typing-extensions>=4.7.1; python_version < '3.12'",
