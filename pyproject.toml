@@ -23,6 +23,7 @@ classifiers = [
 ]
 dependencies = [
     "annotated_types>=0.5.0",
+    "certifi>=2026.10.19",
     "logfury<2.0.0,>=1.0.1",
     "requests<3.0.0,>=2.33.0",
     "typing-extensions>=4.7.1; python_version < '3.12'",
@@ -38,12 +39,13 @@ full = [
 [dependency-groups]
 nox = [
     "nox>=2025.11.12",
+    "pip>=26.2.2",
 ]
 format = [
     "ruff~=0.8.4",
 ]
 lint = [
-    "pip>=26.1",
+    "pip>=26.2.2",
     "ruff~=0.8.4",
     "pytest>=9.0.3,<10",
     "tenacity>=9.1.4,<10",
@@ -51,6 +53,7 @@ lint = [
     "setuptools",
 ]
 test = [
+    "pip>=26.2.2",
     "coverage>=7.13.5,<8",
     "pytest>=9.0.3,<10",
     "pytest-cov>=7.1.0,<8",

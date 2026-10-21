@@ -62,6 +62,7 @@ name = "b2sdk"
 source = { editable = "." }
 dependencies = [
     { name = "annotated-types" },
+    { name = "certifi" },
     { name = "logfury" },
     { name = "requests" },
     { name = "typing-extensions", marker = "python_full_version < '3.12'" },
@@ -98,12 +99,14 @@ lint = [
 ]
 nox = [
     { name = "nox" },
+    { name = "pip" },
 ]
 release = [
     { name = "towncrier" },
 ]
 test = [
     { name = "coverage" },
+    { name = "pip" },
     { name = "pydantic", version = "2.12.5", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11' and platform_python_implementation == 'PyPy'" },
     { name = "pydantic", version = "2.13.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11' or platform_python_implementation != 'PyPy'" },
     { name = "pytest" },
@@ -122,6 +125,7 @@ test = [
 [package.metadata]
 requires-dist = [
     { name = "annotated-types", specifier = ">=0.5.0" },
+    { name = "certifi", specifier = ">=2026.10.19" },
     { name = "logfury", specifier = ">=1.0.1,<2.0.0" },
     { name = "pydantic", marker = "python_full_version < '3.11' and platform_python_implementation == 'PyPy' and extra == 'full'", specifier = ">=2.0.1,<2.13" },
     { name = "pydantic", marker = "(python_full_version >= '3.11' and extra == 'full') or (platform_python_implementation != 'PyPy' and extra == 'full')", specifier = ">=2.0.1" },
@@ -144,16 +148,20 @@ doc = [
 format = [{ name = "ruff", specifier = "~=0.8.4" }]
 lint = [
     { name = "liccheck", specifier = "==0.9.2" },
-    { name = "pip", specifier = ">=26.1" },
+    { name = "pip", specifier = ">=26.2.2" },
     { name = "pytest", specifier = ">=9.0.3,<10" },
     { name = "ruff", specifier = "~=0.8.4" },
     { name = "setuptools" },
     { name = "tenacity", specifier = ">=9.1.4,<10" },
 ]
-nox = [{ name = "nox", specifier = ">=2025.11.12" }]
+nox = [
+    { name = "nox", specifier = ">=2025.11.12" },
+    { name = "pip", specifier = ">=26.2.2" },
+]
 release = [{ name = "towncrier", specifier = "==23.11.0" }]
 test = [
     { name = "coverage", specifier = ">=7.13.5,<8" },
+    { name = "pip", specifier = ">=26.2.2" },
     { name = "pydantic", marker = "python_full_version >= '3.11' or platform_python_implementation != 'PyPy'", specifier = ">=2.13.3,<3" },
     { name = "pydantic", marker = "python_full_version < '3.11' and platform_python_implementation == 'PyPy'", specifier = ">=2.0.1,<2.13" },
     { name = "pytest", specifier = ">=9.0.3,<10" },
@@ -180,11 +188,11 @@ wheels = [
 
 [[package]]
 name = "certifi"
-version = "2026.1.4"
+version = "2026.10.19"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/e0/2d/a891ca51311197f6ad14a7ef42e2399f36cf2f9bd44752b3dc4eab60fdc5/certifi-2026.1.4.tar.gz", hash = "sha256:ac726dd470482006e014ad384921ed6438c457018f4b3d204aea4281258b2120", size = 154268, upload-time = "2026-01-04T02:42:41.825Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a6/bd/1436c50cc46699de0230fbaacc1d1de7bfec413176099949e9d5112e88f2/certifi-2026.10.19.tar.gz", hash = "sha256:035c1e85572b141bf1c3a3eff0e33a8eb74917522f2559075ff8d2fea780a1ae", size = 137598, upload-time = "2026-10-20T02:24:16.604Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e6/ad/3cc14f097111b4de0040c83a525973216457bbeeb63739ef1ed275c1c021/certifi-2026.1.4-py3-none-any.whl", hash = "sha256:9943707519e4add1115f44c2bc244f782c0249876bf51b6599fee1ffbedd685c", size = 152900, upload-time = "2026-01-04T02:42:40.15Z" },
+    { url = "https://files.pythonhosted.org/packages/c4/51/29046e48f693c54e5b7412216d447a1d8362c9653148d98c02cdf65fa733/certifi-2026.10.19-py3-none-any.whl", hash = "sha256:42d35340cc5b9ba78e818ddbff0c5b1c2b779de448a340fd1b989f5fa8670e1b", size = 136464, upload-time = "2026-10-20T02:24:15.072Z" },
 ]
 
 [[package]]
@@ -744,11 +752,11 @@ wheels = [
 
 [[package]]
 name = "pip"
-version = "26.1"
+version = "26.2.2"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/73/7e/d2b04004e1068ad4fdfa2f227b839b5d03e602e47cdbbf49de71137c9546/pip-26.1.tar.gz", hash = "sha256:81e13ebcca3ffa8cc85e4deff5c27e1ee26dea0aa7fc2f294a073ac208806ff3", size = 1840316, upload-time = "2026-04-26T21:00:05.406Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/fa/e8/0842d757e483e895e670f655084cfe8b8c72580c6769a76b30b2789a0608/pip-26.2.2.tar.gz", hash = "sha256:3a8e5c800492787f33a4114ef54444546c340df428974ebba17e0fd47e11af2f", size = 1863336, upload-time = "2026-10-20T16:36:29.008Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/70/7a/be4bd8bcbb24ea475856dd68159d78b03b2bb53dae369f69c9606b8888f5/pip-26.1-py3-none-any.whl", hash = "sha256:4e8486d821d814b77319acb7b9e8bf5a4ee7590a643e7cb21029f209be8573c1", size = 1812804, upload-time = "2026-04-26T21:00:03.194Z" },
+    { url = "https://files.pythonhosted.org/packages/3f/06/3e4420302363fbb71be3c7f35ce042f54bfca330e3e66b3a2e3c4cca579f/pip-26.2.2-py3-none-any.whl", hash = "sha256:fd7f4dfa8190e014013b9f08f3e973f4e4c26ffd179a204895533a7254813a70", size = 1819850, upload-time = "2026-10-20T16:36:27.046Z" },
 ]
 
 [[package]]

@@ -195,7 +195,7 @@ def build(session):
     if len(sdists) != 1:
         session.error(f'Expected exactly one source distribution, found {len(sdists)}: {sdists!r}')
 
-    session.install(str(sdists[0]))
+    session.install('pip>=26.2.2', str(sdists[0]))
     session.cd('dist')  # avoid importing from the checkout instead of the built package
     session.run(
         'python',
