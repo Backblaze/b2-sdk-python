@@ -74,6 +74,40 @@ Those modules will generally not change in a backwards-incompatible way between 
 .. note::
   ``b2sdk.*._something`` and ``b2sdk.*.*._something``, while having a name beginning with an underscore, are **NOT** considered public interface.
 
+Importable is not the same as public
+====================================
+
+The versioned namespace re-exports a considerably larger surface than the public interface. Alongside
+the classes documented here, ``b2sdk.v3`` carries low-level HTTP machinery, test simulators,
+transfer-manager internals, module-level constants, and a few names that are merely an artefact of
+star-imports - ``annotations``, leaked from ``from __future__ import annotations``, is one. Most of the
+names in the namespace are not mentioned anywhere in this documentation.
+
+**Being importable from** ``b2sdk.v3`` **is therefore not a compatibility promise.** To find out where a
+name stands, look it up in the :doc:`API Reference <api_reference>`:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 26 74
+
+   * - Where the name appears
+     - What is promised
+   * - :ref:`Public API <api_public>`
+     - Public interface. Pin the major version.
+   * - :ref:`Internal API <api_internal>`
+     - Documented, but may change in a non-major release. Pin the middle version.
+   * - Neither
+     - No compatibility promise. It may be renamed or removed in any release.
+
+A name in the third group has not necessarily been judged internal - classifying the namespace is still
+in progress. Treat the absence of documentation as the absence of a promise, rather than as a statement
+about what the name is meant to be. If you depend on such a name, please file an issue so it can be
+considered for the public interface instead of being relied on as an incidental re-export.
+
+The current contents of the namespace can be listed with::
+
+    python -c "import b2sdk.v3; print(sorted(n for n in vars(b2sdk.v3) if not n.startswith('_')))"
+
 .. _internal_interface:
 
 ******************

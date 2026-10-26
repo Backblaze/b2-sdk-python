@@ -37,6 +37,10 @@ Public API
    api/transfer/outbound/outbound_source
    api/encryption/setting
    api/encryption/types
+   api/replication/setting
+   api/replication/setup
+   api/replication/monitoring
+   api/replication/types
 
 .. _api_internal:
 
