@@ -13,7 +13,8 @@ Report how much human review merged PRs got, and how often changes were reverted
 Usage: python contrib/review_metrics.py [--repo OWNER/NAME] [--days 30]
 
 Needs an authenticated `gh` CLI. Read-only. Bots (logins ending in `[bot]` or starting with
-`copilot`) never count as human reviewers; the PR author never counts as their own reviewer.
+`copilot`) never count as human reviewers; the PR author never counts as their own reviewer. Only
+reviews and comments made before the merge count; replies inside review threads count.
 """
 
 from __future__ import annotations
@@ -26,14 +27,17 @@ import subprocess
 
 QUERY = """
 query($q: String!, $endCursor: String) {
-  search(query: $q, type: ISSUE, first: 50, after: $endCursor) {
+  search(query: $q, type: ISSUE, first: 20, after: $endCursor) {
     pageInfo { hasNextPage endCursor }
     nodes {
       ... on PullRequest {
         number title createdAt mergedAt author { login }
-        reviews(first: 100) { nodes { author { login } state submittedAt } }
-        comments(first: 100) { nodes { author { login } } }
-        reviewThreads(first: 100) { nodes { comments(first: 1) { nodes { author { login } } } } }
+        reviews(first: 100) { totalCount nodes { author { login } state submittedAt } }
+        comments(first: 100) { totalCount nodes { author { login } createdAt } }
+        reviewThreads(first: 100) {
+          totalCount
+          nodes { comments(first: 50) { totalCount nodes { author { login } createdAt } } }
+        }
       }
     }
   }
@@ -52,12 +56,15 @@ def _parse_time(value: str) -> datetime.datetime:
 def _fetch(repo: str, days: int) -> list[dict]:
     since = (datetime.date.today() - datetime.timedelta(days=days)).isoformat()
     search = f'repo:{repo} is:pr is:merged merged:>={since}'
-    out = subprocess.run(
+    result = subprocess.run(
         ['gh', 'api', 'graphql', '--paginate', '-f', f'query={QUERY}', '-f', f'q={search}'],
-        check=True,
+        check=False,
         capture_output=True,
         text=True,
-    ).stdout
+    )
+    if result.returncode:
+        raise SystemExit(f'gh api graphql failed: {result.stderr.strip()}')
+    out = result.stdout
     decoder = json.JSONDecoder()
     pages, index = [], 0
     while index < len(out):
@@ -67,6 +74,27 @@ def _fetch(repo: str, days: int) -> list[dict]:
         page, index = decoder.raw_decode(out, index)
         pages.append(page)
     return [node for page in pages for node in page['data']['search']['nodes'] if node]
+
+
+def _human_before_merge(
+    nodes: list[dict], author: str | None, merged_at, time_key: str
+) -> list[dict]:
+    """Keep items by people other than the author, submitted before the PR merged (pending reviews,
+    which have no timestamp, are dropped)."""
+    return [
+        node
+        for node in nodes
+        if not _is_bot((node['author'] or {}).get('login'))
+        and node['author']['login'] != author
+        and node[time_key]
+        and _parse_time(node[time_key]) <= merged_at
+    ]
+
+
+def _truncated(pr: dict) -> bool:
+    connections = [pr['reviews'], pr['comments'], pr['reviewThreads']]
+    connections += [thread['comments'] for thread in pr['reviewThreads']['nodes']]
+    return any(c['totalCount'] > len(c['nodes']) for c in connections)
 
 
 def _percentile(values: list[float], fraction: float) -> float:
@@ -87,25 +115,21 @@ def main() -> None:
 
     approvals, comments, waits, rounds = [], [], [], []
     unreviewed = 0
+    truncated = [pr['number'] for pr in prs if _truncated(pr)]
     for pr in prs:
         author = (pr['author'] or {}).get('login')
-        reviews = [
-            r
-            for r in pr['reviews']['nodes']
-            if not _is_bot((r['author'] or {}).get('login')) and r['author']['login'] != author
-        ]
+        merged_at = _parse_time(pr['mergedAt'])
+        reviews = _human_before_merge(pr['reviews']['nodes'], author, merged_at, 'submittedAt')
         approvers = {r['author']['login'] for r in reviews if r['state'] == 'APPROVED'}
-        human_comments = [
-            c
-            for c in pr['comments']['nodes']
-            + [t['comments']['nodes'][0] for t in pr['reviewThreads']['nodes']]
-            if not _is_bot((c['author'] or {}).get('login')) and c['author']['login'] != author
-        ]
+        thread_comments = [c for t in pr['reviewThreads']['nodes'] for c in t['comments']['nodes']]
+        human_comments = _human_before_merge(
+            pr['comments']['nodes'] + thread_comments, author, merged_at, 'createdAt'
+        )
         approvals.append(len(approvers))
         comments.append(len(human_comments))
         rounds.append(len(reviews))
         if reviews:
-            first = min(_parse_time(r['submittedAt']) for r in reviews if r['submittedAt'])
+            first = min(_parse_time(r['submittedAt']) for r in reviews)
             waits.append((first - _parse_time(pr['createdAt'])).total_seconds() / 3600)
         else:
             unreviewed += 1
@@ -125,6 +149,10 @@ def main() -> None:
             f'p95 {_percentile(waits, 0.95):.1f}'
         )
     print(f'  reverts (guardrail): {len(reverts)} {[pr["number"] for pr in reverts]}')
+    if truncated:
+        print(
+            f'  note: more than 100 reviews, comments or threads; counts are lower bounds on {truncated}'
+        )
 
 
 if __name__ == '__main__':

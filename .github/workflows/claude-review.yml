@@ -57,8 +57,28 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 2
       - uses: anthropics/claude-code-security-review@0c6a49f1fa56a1d472575da86a94dbc1edb78eda # main
+        id: security
         if: ${{ env.ANTHROPIC_API_KEY != '' }}
         with:
           claude-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
           comment-pr: true
+          run-every-commit: true
           exclude-directories: doc,.claude,intent,changelog.d
+      # The action posts inline comments only on its first report per PR, so surface every commit's
+      # findings here and fail the check (also when the scan produced no count).
+      - name: Report security findings for this commit
+        if: ${{ env.ANTHROPIC_API_KEY != '' && steps.security.outputs.findings-count != '0' }}
+        env:
+          COUNT: ${{ steps.security.outputs.findings-count }}
+          RESULTS: ${{ steps.security.outputs.results-file }}
+        run: |
+          {
+            echo "## Security review: ${COUNT:-unknown} finding(s) on ${GITHUB_SHA}"
+            if [ -n "$RESULTS" ] && [ -f "$RESULTS" ]; then
+              echo '```json'
+              cat "$RESULTS"
+              echo '```'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "Security review reported ${COUNT:-no count}; see the job summary." >&2
+          exit 1
