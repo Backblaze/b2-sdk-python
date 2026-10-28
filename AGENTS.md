@@ -54,34 +54,46 @@ Tooling is `nox` + `uv` (`pip install nox uv`). Sessions are defined in `noxfile
 
 ## Things agents get wrong here
 
-Each line was raised by a reviewer, or fixed by a follow-up PR, on at least two PRs.
+Each line was raised by reviewers on at least two merged PRs (all 370 were read, #1 to #632) or fixed by a
+follow-up PR. Detail and PR numbers in [docs/review-lessons.md](docs/review-lessons.md).
 
 1. **Missing or wrong changelog fragment.** Every PR adds `changelog.d/<issue>.<type>.md` or
    `+slug.<type>.md` (types in `pyproject.toml`). Write it for SDK users, about the fix, not the test.
 2. **Tests that do not pin the fix.** Revert the change and the new test must fail. Exercise the mechanism
    (the real sleep in `_translate_and_retry`, a new upload URL fetched after a 408), not an attribute.
-3. **Retrying uploads in the HTTP layer.** Uploads go out with `try_count=1` so the error reaches
-   `UploadManager`, which gets a fresh upload URL and token. Do not retry them in `b2http.py`.
-4. **Retry parity.** Treat every retryable 5xx alike, and parse `Retry-After` through
-   `_parse_retry_after_seconds` so a non-numeric value (an HTTP date) never raises.
-5. **Missing apiver exports.** A new public name is exported from `b2sdk/v3` (`__init__.py`,
-   `exception.py`, `testing/__init__.py` as relevant); older layers must not pick up v3 behavior or
-   rely on v3-only abstractions. Run the unit tests on every `--api`.
-6. **`raw_simulator.py` drift.** Any change to `AbstractRawApi` or a B2 call's behavior lands in
-   `RawSimulator` in the same PR.
-7. **Accidental public interface.** Do not call another class's `_private` members; keep tunables as
-   module-level `_CONSTANTS`, not new parameters; use SDK-style names and thread new options up to `Bucket`.
-8. **Hidden failures.** No catch-all `except`, no `pytest.fail` that drops the real error, no async test
-   that is never awaited. A skipped check is NOT RUN, never PASS.
-9. **Portability.** Windows and new Pythons: do not reopen a `NamedTemporaryFile` by name; handle
-   permissions and symlinks; check `scan/` on Windows paths.
-10. **Integration tests without the helpers.** Use `bucket_manager.py` (seeded names, retries, cleanup) and
-    a temporary account-info dir; never leave buckets or keys behind.
-11. **sdkharness safety.** Checks target only `http://127.0.0.1:<port>` with `test-key-id`/`test-key`;
+   Server-format fixes get a simulator unit test and an integration test.
+3. **Reordered or inserted positional parameters.** New optional parameters go last (or keyword-only);
+   never reorder. Callers pass many positionals (`Bucket.upload_bytes`), and a shift is silent.
+4. **apiver layering.** Change only the unreleased layer; a released `b2sdk/vN` keeps its behavior through
+   a wrapper in `b2sdk/vN/` that forwards `*args, **kwargs`. Export new public names from `b2sdk/v3`
+   (`__init__.py`, `exception.py`, `testing/__init__.py`). Compat shims kept for the CLI get existence and
+   signature tests. Run the unit tests on every `--api`.
+5. **Raw API drift.** `AbstractRawApi`, `B2RawHTTPApi` and `RawSimulator` change together with matching
+   signatures and argument names. Check live B2 before changing simulator behavior; keep it deterministic
+   and bounded in memory. No `requests` types in the raw API interface.
+6. **Retries in the wrong place.** Uploads go out with `try_count=1` so `UploadManager` retries with a
+   fresh upload URL and token; never retry them in `b2http.py`. Treat every retryable 5xx alike and parse
+   `Retry-After` through `_parse_retry_after_seconds`.
+7. **Accidental public interface.** Do not call another class's `_private` members. Tunables are named
+   constants: module-level, or a class attribute (`DEFAULT_*_CLASS`, `B2Http.TIMEOUT`) when a subclass or
+   apiver layer may override it. Logic lives in `B2Api` and `Bucket` delegates; use `_by_id`/`_by_name`.
+8. **Hidden failures.** No bare `Exception` (subclass in `exception.py`), no catch-all `except`, no
+   `pytest.fail` that drops the real error, no unawaited async test. A skipped check is NOT RUN, not PASS.
+9. **Undocumented public API.** Every new public class gets a docstring and every new parameter a `:param`,
+   with units and whether ranges are inclusive. `doc_cover` fails on the first, reviewers on the second.
+10. **Sync and scan safety.** Reject `..` traversal, decide absolute paths per platform, allow names legal on
+    the OS, and never silently drop user files. Windows: do not reopen a `NamedTemporaryFile` by name.
+11. **Large files and transfers.** A new upload option flows through emerger, executor and the
+    unfinished-file matcher, and a mismatch must not resume. Cover zero length, the 10,000-part limit and
+    >5 GB. Thread pools: lazy init and `get` share a lock; one `max_workers` default in one place.
+12. **Test and integration hygiene.** `parametrize`, not loops of asserts; no nested functions (use
+    `_method`); `@pytest.mark.apiver` only where behavior differs. Integration tests use
+    `bucket_manager.py` and never touch real account info or leave buckets behind.
+13. **sdkharness safety.** Checks target only `http://127.0.0.1:<port>` with `test-key-id`/`test-key`;
     never read or print ambient `B2_*` credentials.
-12. **Duplicate and split PRs.** Search open PRs first; one change per PR, against `master`.
-13. **Claiming green over a red CI.** The live-B2 stage has known failures (#614). Reproduce on `master`
-    and cite the issue; never call a failure "unrelated" without showing it.
+14. **PR scope.** Search open PRs first; one change per PR, against `master`; no unrelated reformatting;
+    file an issue for out-of-scope bugs. The live-B2 stage has known failures (#614): reproduce on `master`
+    before calling a failure unrelated.
 
 ## Workflow (AI-native SDLC)
 
@@ -93,9 +105,15 @@ Each line was raised by a reviewer, or fixed by a follow-up PR, on at least two 
   every Python file Claude edits.
 - Before opening a PR, review your own diff in a fresh context (`/code-review` and `/security-review`, or a
   subagent that did not write the code) and fix or answer what it finds. Say in the PR what it reported.
+- Every non-draft PR gets an automated Claude review and security review (`claude-review.yml`, once the
+  `ANTHROPIC_API_KEY` secret is set). `python contrib/review_metrics.py` reports human review time.
 - Review: [REVIEW.md](REVIEW.md). Every finding gets fixed or resolved with a reason. Agents never approve
   or merge their own PRs; a maintainer approves.
-- The person directing an agent owns its PR: they count as one of its reviewers and fix what it breaks.
+- The person directing an agent owns its PR: they count as one of its reviewers and fix what it breaks
+  ("you land it, you own it"). Keep PRs small so they are easy to review and revert.
+- Before changing an unfamiliar area, ask Claude for an explainer of that slice of the code as it is today.
+- When reviewers flag the same thing twice, fix it at the source in the same PR: this file, `REVIEW.md`,
+  a skill, or a lint rule or test.
 - Stacked PRs: state the base PR and merge order in the description; retarget to `master` after it merges.
 - Releases: [RELEASE.md](RELEASE.md). Security reports: [SECURITY.md](SECURITY.md).
 

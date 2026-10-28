@@ -1,1 +1,1 @@
-Add `AGENTS.md`, `CLAUDE.md`, `REVIEW.md`, `RELEASE.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, issue forms, a PR template and `intent/` templates for the AI-native SDLC, with its skills and a ruff hook in `.claude/`.
+Add `AGENTS.md`, `CLAUDE.md`, `REVIEW.md`, `RELEASE.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, issue forms, a PR template, `intent/` templates and review lessons from every merged PR for the AI-native SDLC, with its skills and a ruff hook in `.claude/`, an automated Claude code and security review workflow, and `contrib/review_metrics.py`.

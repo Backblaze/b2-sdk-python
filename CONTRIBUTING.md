@@ -36,6 +36,11 @@ agent owns the PR: they read the diff, answer review findings, and fix what it b
 PR, have a fresh context (`/code-review`, `/security-review` or a subagent that did not write the code)
 review the diff, and say in the PR what it found. Agents never approve or merge PRs.
 
+If you doubt a change should be made at all, say so early on the issue or a draft PR, not as a blocking
+comment on a finished one. Whoever lands a change owns fixing it if it breaks something; keep changes
+small so they are easy to review and revert. `python contrib/review_metrics.py` reports how much human
+review merged PRs got.
+
 ## Versioning
 
 This package's versions adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and the versions are

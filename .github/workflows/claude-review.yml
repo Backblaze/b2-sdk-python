@@ -1,0 +1,64 @@
+name: Claude review
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: write
+  id-token: write
+
+concurrency:
+  group: claude-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  code-review:
+    if: ${{ github.actor != 'dependabot[bot]' && github.event.pull_request.user.login != 'dependabot[bot]' && !github.event.pull_request.draft }}
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    steps:
+      - name: Skip without an API key
+        if: ${{ env.ANTHROPIC_API_KEY == '' }}
+        run: echo "ANTHROPIC_API_KEY is not set (or this is a fork PR); skipping the Claude review."
+      - uses: actions/checkout@v4
+        if: ${{ env.ANTHROPIC_API_KEY != '' }}
+        with:
+          fetch-depth: 0
+      - uses: anthropics/claude-code-action@d70510b174a1244958df0b03166a54912811f3e6 # v1
+        if: ${{ env.ANTHROPIC_API_KEY != '' }}
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            Review pull request #${{ github.event.pull_request.number }} in ${{ github.repository }}.
+            Follow REVIEW.md exactly, using AGENTS.md and docs/review-lessons.md as context. Review only
+            what changed since your last review on this PR after round 2, and never repeat a finding
+            already posted. Post each finding as an inline comment tagged Important, Nit or Pre-existing,
+            with file:line evidence. Then post one summary comment that starts with the count.
+          claude_args: |
+            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Read,Grep,Glob"
+
+  security-review:
+    if: ${{ github.actor != 'dependabot[bot]' && github.event.pull_request.user.login != 'dependabot[bot]' && !github.event.pull_request.draft }}
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    steps:
+      - name: Skip without an API key
+        if: ${{ env.ANTHROPIC_API_KEY == '' }}
+        run: echo "ANTHROPIC_API_KEY is not set (or this is a fork PR); skipping the security review."
+      - uses: actions/checkout@v4
+        if: ${{ env.ANTHROPIC_API_KEY != '' }}
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 2
+      - uses: anthropics/claude-code-security-review@0c6a49f1fa56a1d472575da86a94dbc1edb78eda # main
+        if: ${{ env.ANTHROPIC_API_KEY != '' }}
+        with:
+          claude-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
+          comment-pr: true
+          exclude-directories: doc,.claude,intent,changelog.d
