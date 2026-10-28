@@ -57,8 +57,10 @@ Out of scope:
   endpoint; the token returned is kept in the account-info store and sent in the `Authorization` header.
 - **Account info**: `SqliteAccountInfo` creates its database with owner-only permissions before writing
   credentials to it.
-- **SSE-C keys**: customer-provided keys travel in request headers on uploads, downloads and copies, and
-  are not persisted. If you log requests, redact headers.
+- **SSE-C keys**: customer-provided keys travel in request headers on uploads and downloads, and as
+  `customerKey` fields in JSON request bodies on large-file start (`serverSideEncryption`) and server-side
+  copy (`sourceServerSideEncryption`, `destinationServerSideEncryption`). They are not persisted. If you
+  log requests, redact encryption keys in both headers and bodies.
 - **Transport**: all B2 API traffic uses HTTPS through `requests`, with certificates from `certifi`.
 - **Tests and CI**: integration tests read `B2_TEST_APPLICATION_KEY_ID` and `B2_TEST_APPLICATION_KEY` from
   repository secrets. The `.sdkharness` checks refuse any non-loopback endpoint and ambient `B2_*`

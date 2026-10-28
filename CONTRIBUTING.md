@@ -135,7 +135,7 @@ Run these before every push; they mirror the `lint`, `build` and `test` jobs of
     nox -s towncrier_check
     nox -s unit-3.14
     nox -s build
-    nox -s doc
+    nox --non-interactive -s doc
 
 `doc` needs `graphviz` and `plantuml` installed. CI also runs the unit tests on every supported Python and
 OS, the integration tests with B2 credentials, and the B2 CLI test suite against this checkout

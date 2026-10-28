@@ -9,13 +9,14 @@ Keep it under about 150 lines and link out for detail.
 Tooling is `nox` + `uv` (`pip install nox uv`). Sessions are defined in `noxfile.py`.
 
 - Local CI, run before every push and paste the tail in the PR:
-  `nox -s lint`, `nox -s towncrier_check`, `nox -s unit-3.14`, `nox -s build`, `nox -s doc`.
+  `nox -s lint`, `nox -s towncrier_check`, `nox -s unit-3.14`, `nox -s build`, `nox --non-interactive -s doc`.
 - Format: `nox -s format` (ruff). Lint: `nox -s lint` (ruff, `test/static`, liccheck).
 - Unit tests run once per apiver: `nox -s unit-3.14` runs `pytest --api=v3`, then `v2`, `v1`, `v0`.
   By keyword: `nox -s unit-3.14 -- -k keyword`. One apiver: `uv run --group test pytest --api=v2 test/unit`.
 - Integration tests hit live B2 and need `B2_TEST_APPLICATION_KEY_ID` and `B2_TEST_APPLICATION_KEY`:
   `nox -s integration-3.14`. Leftover test buckets: `nox -s cleanup_old_buckets`.
-- Docs: `nox -s doc` (needs `graphviz` and `plantuml`) also runs `doc_cover`, which fails on undocumented API.
+- Docs: `nox --non-interactive -s doc` (needs `graphviz` and `plantuml`) also runs `doc_cover`, which fails on
+  undocumented API. Without `--non-interactive` in a terminal it starts a live-reload server instead.
 - Lock file: `uv lock --check`. Dependency changes go through `uv add`/`uv lock`, never by hand.
 - Changelog fragment: `uv run --group release towncrier create -c 'Text.' +slug.fixed.md`.
 - Release: [RELEASE.md](RELEASE.md) (`nox -s make_release_commit -- X.Y.Z`).
