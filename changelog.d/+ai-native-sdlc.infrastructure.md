@@ -1,0 +1,1 @@
+Add `AGENTS.md`, `CLAUDE.md`, `REVIEW.md`, `RELEASE.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, issue forms, a PR template and `intent/` templates for the AI-native SDLC, with its skills and a ruff hook in `.claude/`.

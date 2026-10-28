@@ -1,0 +1,46 @@
+name: Bug report
+description: Something in b2sdk behaves incorrectly.
+labels: [bug]
+type: Bug
+body:
+  - type: input
+    id: version
+    attributes:
+      label: b2sdk version
+      description: From `python -c "import b2sdk.version; print(b2sdk.version.VERSION)"` or `pip show b2sdk`.
+    validations:
+      required: true
+  - type: input
+    id: apiver
+    attributes:
+      label: API version you import
+      placeholder: b2sdk.v2
+    validations:
+      required: true
+  - type: input
+    id: python
+    attributes:
+      label: Python version and OS
+      placeholder: CPython 3.12.7, Ubuntu 24.04
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Minimal reproduction
+      description: Code and steps. Never paste application keys or auth tokens.
+      render: python
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Traceback or logs
+      description: Redact keys, tokens and bucket names you consider private.
+      render: text
