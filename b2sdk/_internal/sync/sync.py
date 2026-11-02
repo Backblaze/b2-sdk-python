@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import concurrent.futures as futures
+import io
 import logging
 from enum import Enum, unique
 from typing import cast
@@ -202,7 +203,11 @@ class Synchronizer:
         queue_limit = self.max_workers + 1000
         sync_executor = BoundedQueueExecutor(unbounded_executor, queue_limit=queue_limit)
 
-        if source_type == 'local' and reporter is not None:
+        if reporter is None:
+            # silent reporter so that downstream code can call it unconditionally
+            reporter = SyncReport(io.StringIO(), True)
+
+        if source_type == 'local':
             # Start the thread that counts the local files. That's the operation
             # that should be fastest, and it provides scale for the progress reporting.
             sync_executor.submit(count_files, source_folder, reporter, self.policies_manager)

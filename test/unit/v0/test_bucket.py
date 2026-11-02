@@ -220,7 +220,16 @@ class TestReauthorization(TestCaseWithBucket):
                 raise InvalidAuthToken('message', 401)
 
         self.simulator.create_bucket = InvalidAuthTokenWrapper(self.simulator.create_bucket)
-        self.bucket = self.api.create_bucket('your-bucket', 'allPublic')
+        with mock.patch.object(
+            self.api.session, 'authorize_account', wraps=self.api.session.authorize_account
+        ) as authorize_account:
+            self.bucket = self.api.create_bucket('your-bucket', 'allPublic')
+
+        # the invalid token must have triggered exactly one re-authorization, and the retried
+        # call must have created the bucket
+        authorize_account.assert_called_once()
+        self.assertEqual('your-bucket', self.bucket.name)
+        self.assertEqual(self.bucket.id_, self.api.get_bucket_by_name('your-bucket').id_)
 
 
 class TestListParts(TestCaseWithBucket):
@@ -598,6 +607,7 @@ class TestCopyFile(TestCaseWithBucket):
                     resulting_file_version = self.bucket.copy(
                         file_id,
                         'copied_file',
+                        length=length,
                         file_retention=FileRetentionSetting(RetentionMode.COMPLIANCE, 100),
                         legal_hold=LegalHold.ON,
                         max_part_size=400,

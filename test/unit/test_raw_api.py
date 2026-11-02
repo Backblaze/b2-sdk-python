@@ -169,3 +169,38 @@ def test_raw_api_omits_encryption_from_request_when_not_given(raw_api, call, tra
     sent = {**headers, **(payload if isinstance(payload, dict) else {})}
 
     assert not [key for key in sent if 'encryption' in key.lower()], sent
+
+
+def test_start_large_file_sends_custom_upload_timestamp_under_its_wire_name(raw_api):
+    """
+    The b2_start_large_file request body uses camelCase for every field, so the custom
+    upload timestamp must be sent as ``customUploadTimestamp``. The simulator never looks at
+    the wire key, so only a request-level assertion can catch a misspelling.
+    """
+    raw_api.start_large_file(
+        'api-url',
+        'account-token',
+        'bucket-id',
+        'file-name',
+        'text/plain',
+        {},
+        custom_upload_timestamp=123,
+    )
+
+    _, _, payload = raw_api.b2_http.post_json_return_json.call_args.args[:3]
+
+    assert payload.get('customUploadTimestamp') == 123, payload
+    assert 'custom_upload_timestamp' not in payload, payload
+
+
+def test_update_bucket_sends_if_revision_is_under_its_wire_name(raw_api):
+    """
+    ``ifRevisionIs`` is the optimistic-locking guard of b2_update_bucket. If it is not on the
+    wire, concurrent bucket updates silently overwrite each other, and the simulator, which
+    takes the Python argument directly, cannot tell.
+    """
+    raw_api.update_bucket('api-url', 'account-token', 'account-id', 'bucket-id', if_revision_is=7)
+
+    _, _, payload = raw_api.b2_http.post_json_return_json.call_args.args[:3]
+
+    assert payload.get('ifRevisionIs') == 7, payload

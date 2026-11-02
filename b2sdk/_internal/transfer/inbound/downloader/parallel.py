@@ -156,7 +156,7 @@ class ParallelDownloader(AbstractDownloader):
                 stop = True
             else:
                 to_hash = data
-            hasher.update(data)
+            hasher.update(to_hash)
             current_offset += len(to_hash)
             if stop:
                 break
@@ -248,6 +248,8 @@ class WriterThread(threading.Thread):
         self.file = file
         self.queue = queue.Queue(max_queue_depth)
         self.total = 0
+        self.error: BaseException | None = None
+        self._stopped = threading.Event()
         self.stats_collector = StatsCollector(str(self.file), 'writer', 'seek')
         super().__init__()
 
@@ -266,11 +268,18 @@ class WriterThread(threading.Thread):
                 if shutdown:
                     break
 
-                with stats_collector_other:
-                    file.seek(offset)
+                if self.error is not None:
+                    continue  # keep draining so that producers never block
 
-                with stats_collector_write:
-                    file.write(data)
+                try:
+                    with stats_collector_other:
+                        file.seek(offset)
+
+                    with stats_collector_write:
+                        file.write(data)
+                except Exception as e:
+                    self.error = e
+                    continue
 
                 self.total += len(data)
 
@@ -279,12 +288,25 @@ class WriterThread(threading.Thread):
         return self
 
     def queue_write(self, offset: int, data: bytes) -> None:
-        self.queue.put((False, offset, data))
+        item = (False, offset, data)
+        while True:
+            if self.error is not None:
+                raise self.error
+            if self._stopped.is_set():
+                raise RuntimeError('writer has been stopped')
+            try:
+                self.queue.put(item, timeout=0.1)
+                return
+            except queue.Full:
+                pass
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.queue.put((True, None, None))
+        self._stopped.set()  # make straggling producers fail instead of blocking forever
+        self.queue.put((True, None, None))  # writer keeps draining, so this cannot block for long
         self.join()
         self.stats_collector.report()
+        if exc_type is None and self.error is not None:
+            raise self.error
 
 
 def download_first_part(

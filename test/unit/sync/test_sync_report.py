@@ -27,6 +27,35 @@ class TestSyncReport:
         sync_report = SyncReport(stdout, False)
         sync_report.print_completion('transferred: 123.txt')
 
+    def test_bad_terminal_falls_back_to_escaped_output_and_warns_once(self):
+        written = []
+
+        class BadTerminal:
+            encoding = 'ascii'
+
+            def __init__(self):
+                self.fail_next = True
+
+            def write(self, text):
+                if self.fail_next:
+                    self.fail_next = False
+                    raise UnicodeEncodeError('codec', 'foo', 100, 105, 'artificial')
+                written.append(text)
+
+            def flush(self):
+                pass
+
+        sync_report = SyncReport(BadTerminal(), True)
+        sync_report.print_completion('transferred: caf\u00e9.txt')
+        sync_report.print_completion('transferred: other.txt')
+
+        output = ''.join(written)
+        assert (
+            output.count('!WARNING! this terminal cannot properly handle progress reporting') == 1
+        )
+        assert 'transferred: caf\\xe9.txt' in output
+        assert 'transferred: other.txt' in output
+
     @pytest.mark.apiver(to_ver=1)
     def test_legacy_methods(self):
         stdout = MagicMock()

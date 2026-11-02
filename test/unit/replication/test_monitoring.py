@@ -9,6 +9,10 @@
 ######################################################################
 from __future__ import annotations
 
+import queue
+import threading
+
+import pytest
 from apiver_deps import (
     SSE_B2_AES,
     EncryptionAlgorithm,
@@ -19,6 +23,8 @@ from apiver_deps import (
     ReplicationScanResult,
     RetentionMode,
 )
+
+from b2sdk._internal.replication import monitoring as monitoring_module
 
 SSE_C_AES = EncryptionSetting(
     mode=EncryptionMode.SSE_C,
@@ -280,3 +286,87 @@ def test_scan_source_and_destination(
         ]
         == 1
     )
+
+
+class _SpyQueue(queue.Queue):
+    """A queue that remembers its instances, so the test can release threads stuck on it."""
+
+    instances: list = []
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.instances.append(self)
+
+
+def _release_blocked_threads(spy_queue: queue.Queue, worker: threading.Thread) -> None:
+    """Unblock whichever side of the queue is stuck, so that a failing test does not leak threads."""
+    for _ in range(50):
+        if not worker.is_alive():
+            return
+        while True:
+            try:
+                spy_queue.get_nowait()  # frees a producer blocked on put()
+            except queue.Empty:
+                break
+        worker.join(timeout=0.1)
+        if not worker.is_alive():
+            return
+        try:
+            spy_queue.put_nowait(None)  # frees a consumer blocked on get()
+        except queue.Full:
+            pass
+        worker.join(timeout=0.1)
+
+
+@pytest.mark.parametrize('failing_side', ['producer', 'consumer'])
+def test_scan__failure_in_one_thread__is_raised_instead_of_hanging(
+    source_bucket, test_file, monitor, monkeypatch, failing_side
+):
+    """
+    When listing files (producer) or building the report (consumer) raises, ``scan`` must
+    propagate the error. The two threads talk through a bounded queue, so the surviving
+    thread must not wait forever for a partner that is gone.
+    """
+    for i in range(6):
+        source_bucket.upload_local_file(test_file, f'folder/test-{i}.txt')
+
+    _SpyQueue.instances = []
+    monkeypatch.setattr(monitoring_module, 'Queue', _SpyQueue)
+    monkeypatch.setattr(type(monitor), 'QUEUE_SIZE', 2)
+
+    if failing_side == 'producer':
+        base_folder_class = type(monitor).B2_FOLDER_CLASS
+
+        class FailingFolder(base_folder_class):
+            def all_files(self, *args, **kwargs):
+                for i, path in enumerate(super().all_files(*args, **kwargs)):
+                    if i == 2:
+                        raise RuntimeError('listing failed')
+                    yield path
+
+        monkeypatch.setattr(type(monitor), 'B2_FOLDER_CLASS', FailingFolder)
+    else:
+
+        class FailingReport(type(monitor).REPORT_CLASS):
+            def add(self, *args, **kwargs):
+                raise RuntimeError('report failed')
+
+        monkeypatch.setattr(type(monitor), 'REPORT_CLASS', FailingReport)
+
+    outcome = {}
+
+    def run_scan():
+        try:
+            monitor.scan(scan_destination=False)
+        except RuntimeError as e:
+            outcome['error'] = e
+
+    # daemon thread: with the bug present, scan() never returns
+    worker = threading.Thread(target=run_scan, daemon=True)
+    worker.start()
+    worker.join(timeout=10)
+    hung = worker.is_alive()
+    _release_blocked_threads(_SpyQueue.instances[-1], worker)
+
+    assert not hung, 'scan() is blocked waiting for the other thread'
+    assert str(outcome.get('error')) in ('listing failed', 'report failed')

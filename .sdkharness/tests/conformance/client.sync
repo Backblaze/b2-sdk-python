@@ -9,6 +9,10 @@ claims it):
             policy; sync down into a fresh directory
     Assert  all 3 land; the remote matches the local side after the second
             pass; the round-tripped bytes are identical
+    Leg     reporter=None (sync_folders documents `SyncReport | None`): sync
+            down from the bucket, and sync up from a directory holding a
+            dangling symlink; neither may crash, and the unreadable entry is
+            skipped, not uploaded
 
 NO DOCUMENTED CONTRACT FOUND -- this is SDK-side/ecosystem tooling, not a B2 API contract.
 B2 documents only sync's building blocks. "Remote matches local" is read
@@ -257,7 +261,16 @@ def write(path, data):
         handle.write(data)
 
 
-def sync(b2, syncer, source, destination):
+def sync(b2, syncer, source, destination, silent=False):
+    """Run one sync pass. `silent` passes reporter=None, which sync_folders documents as valid."""
+    if silent:
+        syncer.sync_folders(
+            source_folder=source,
+            dest_folder=destination,
+            now_millis=int(time.time() * 1000),
+            reporter=None,
+        )
+        return
     reporter = b2.SyncReport(io.StringIO(), True)
     try:
         syncer.sync_folders(
@@ -353,6 +366,62 @@ def run(target: str) -> None:
         extra = sorted(set(os.listdir(down_dir)) - set(contents))
         if extra:
             raise Failure('sync down', f'{len(extra)} unexpected file(s) came down')
+
+        # Leg: reporter=None. sync_folders documents `SyncReport | None`, so a caller
+        # that wants no progress output must get a normal sync, never an AttributeError
+        # (b2-source path) and never a crash on an inaccessible local file.
+        silent_down = tempfile.mkdtemp(prefix='sdkharness-conf-silent-down-')
+        silent_up = tempfile.mkdtemp(prefix='sdkharness-conf-silent-up-')
+        try:
+            step(
+                'sync down with reporter=None',
+                lambda: sync(
+                    b2,
+                    syncer,
+                    b2.parse_folder(remote_url, api),
+                    b2.parse_folder(silent_down, api),
+                    silent=True,
+                ),
+            )
+            if sorted(os.listdir(silent_down)) != sorted(contents):
+                raise Failure('sync down with reporter=None', 'the files did not all come down')
+            for name, expected in contents.items():
+                with open(os.path.join(silent_down, name), 'rb') as handle:
+                    if handle.read() != expected:
+                        raise Failure('sync down with reporter=None', "a file's bytes differ")
+
+            # A local source holding a file that cannot be read. A dangling symlink is
+            # inaccessible whoever runs the check (chmod 000 is not for root).
+            write(os.path.join(silent_up, 'good.txt'), payload_of(300))
+            os.symlink(
+                os.path.join(silent_up, 'does-not-exist'), os.path.join(silent_up, 'a-dangling')
+            )
+            silent_url = f'b2://{bucket.name}/{REMOTE_PREFIX}-silent'
+            step(
+                'sync up with reporter=None past an inaccessible file',
+                lambda: sync(
+                    b2,
+                    syncer,
+                    b2.parse_folder(silent_up, api),
+                    b2.parse_folder(silent_url, api),
+                    silent=True,
+                ),
+            )
+            silent_landed = step(
+                'list the reporter=None upload',
+                lambda: sorted(
+                    v.file_name.rsplit('/', 1)[-1]
+                    for v, _folder in bucket.ls(REMOTE_PREFIX + '-silent/', recursive=True)
+                ),
+            )
+            if silent_landed != ['good.txt']:
+                raise Failure(
+                    'sync up with reporter=None past an inaccessible file',
+                    f'the remote holds {len(silent_landed)} file(s), expected only the readable one',
+                )
+        finally:
+            shutil.rmtree(silent_down, ignore_errors=True)
+            shutil.rmtree(silent_up, ignore_errors=True)
     finally:
         teardown(api, bucket)
         shutil.rmtree(up_dir, ignore_errors=True)

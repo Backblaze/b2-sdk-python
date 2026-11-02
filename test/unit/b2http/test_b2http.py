@@ -530,10 +530,20 @@ class TestSetLocaleContextManager(TestBase):
         if saved == test_locale:
             test_locale, other_locale = other_locale, test_locale
 
-        locale.setlocale(locale.LC_ALL, other_locale)
-        with setlocale(test_locale):
-            assert locale.setlocale(category=locale.LC_ALL) == test_locale
-        locale.setlocale(locale.LC_ALL, saved)
+        try:
+            locale.setlocale(locale.LC_ALL, other_locale)
+            with setlocale(test_locale):
+                assert locale.setlocale(category=locale.LC_ALL) == test_locale
+            # leaving the context manager must put the previous locale back...
+            assert locale.setlocale(category=locale.LC_ALL) == other_locale
+
+            # ...also when the body raises
+            with pytest.raises(RuntimeError):
+                with setlocale(test_locale):
+                    raise RuntimeError('boom')
+            assert locale.setlocale(category=locale.LC_ALL) == other_locale
+        finally:
+            locale.setlocale(locale.LC_ALL, saved)
 
 
 class TestClockSkewHook(TestBase):
