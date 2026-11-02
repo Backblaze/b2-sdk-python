@@ -15,3 +15,5 @@ venv
 .pdm-build/
 .pdm-python
 .env
+.DS_Store
+.claude/settings.local.json

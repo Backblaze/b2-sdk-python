@@ -1,0 +1,24 @@
+name: Feature request
+description: A B2 capability or API improvement b2sdk should support.
+labels: [enhancement]
+type: Feature
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What can you not do today, and who is affected?
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Proposed outcome
+      description: What better looks like. Link the B2 API docs for the calls involved if you know them.
+    validations:
+      required: true
+  - type: textarea
+    id: constraints
+    attributes:
+      label: Constraints and alternatives
+      description: Compatibility, capabilities needed, apiver layers affected (`b2sdk.v2`, `b2sdk.v3`), behavior of the b2 CLI or other B2 SDKs, workarounds.
