@@ -793,3 +793,40 @@ class TestFolderTraversal:
         assert not reporter.warnings
 
         reporter.close()
+
+    @pytest.mark.skipif(
+        platform.system() == 'Windows', reason='Broken symlinks are only tested on Unix'
+    )
+    @pytest.mark.parametrize('broken_link_name', ['a_broken_link', 'z_broken_link'])
+    @pytest.mark.parametrize('with_reporter', [True, False])
+    def test_broken_symlink_is_skipped(self, tmp_path, broken_link_name, with_reporter):
+        """
+        A symlink to a missing target must be skipped, whether or not a reporter is given
+        (``reporter`` is optional) and whatever its position among the other entries.
+        """
+        (tmp_path / 'file.txt').write_text('content')
+        (tmp_path / broken_link_name).symlink_to(tmp_path / 'missing_target')
+
+        reporter = ProgressReport(sys.stdout, False) if with_reporter else None
+        folder = LocalFolder(str(tmp_path))
+        local_paths = list(
+            folder.all_files(reporter=reporter, policies_manager=ScanPoliciesManager())
+        )
+
+        assert [path.relative_path for path in local_paths] == ['file.txt']
+        if reporter is not None:
+            assert len(reporter.warnings) == 1
+            reporter.close()
+
+    @pytest.mark.skipif(
+        platform.system() == 'Windows', reason='Unix-only filesystem permissions are tested'
+    )
+    def test_unreadable_file_is_skipped_without_reporter(self, tmp_path, fs_perm_tool):
+        (tmp_path / 'readable.txt').write_text('content')
+        (tmp_path / 'no_perm_file.txt').write_text('content')
+        fs_perm_tool.deny_access(tmp_path / 'no_perm_file.txt')
+
+        folder = LocalFolder(str(tmp_path))
+        local_paths = list(folder.all_files(reporter=None, policies_manager=ScanPoliciesManager()))
+
+        assert [path.relative_path for path in local_paths] == ['readable.txt']

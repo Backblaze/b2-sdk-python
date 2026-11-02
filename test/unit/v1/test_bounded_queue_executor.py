@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import concurrent.futures as futures
+import threading
 import time
 
 from ..test_base import TestBase
@@ -45,6 +46,33 @@ class TestBoundedQueueExecutor(TestBase):
         # Check the answers
         answers = list(map(lambda f: f.result(), futures))
         self.assertEqual(list(range(10)), answers)
+
+    def test_submit_blocks_until_a_slot_is_free(self):
+        """With a queue limit of 1, a second submit() must wait for the first job to finish."""
+        release_first_job = threading.Event()
+        first_job_started = threading.Event()
+
+        def first_job():
+            first_job_started.set()
+            release_first_job.wait(timeout=10)
+
+        self.executor.submit(first_job)
+        assert first_job_started.wait(timeout=10)
+
+        second_submit_returned = threading.Event()
+
+        def submit_second_job():
+            self.executor.submit(lambda: None)
+            second_submit_returned.set()
+
+        # daemon thread: it must not keep the test process alive if submit() blocks for good
+        submitter = threading.Thread(target=submit_second_job, daemon=True)
+        submitter.start()
+        try:
+            self.assertFalse(second_submit_returned.wait(timeout=0.3), 'submit() did not block')
+        finally:
+            release_first_job.set()
+        self.assertTrue(second_submit_returned.wait(timeout=10), 'submit() never returned')
 
     def test_no_exceptions(self):
         f = self.executor.submit(lambda: 1)

@@ -8,6 +8,7 @@
 #
 ######################################################################
 import hashlib
+import threading
 from concurrent.futures import ThreadPoolExecutor
 from io import BytesIO
 from unittest.mock import Mock
@@ -84,6 +85,27 @@ def test_download_file(apiver_module, b2api, bucket, downloader, output_file):
     assert hash_hex == '7804df8c623573ccfc1993e04981006e5bc30383'
     assert output_file.getvalue() == b'dummy' * 20
     mock_response.close.assert_called_once()
+
+
+def test_download_file__does_not_hash_bytes_after_the_downloaded_range(
+    apiver_module, b2api, bucket, downloader
+):
+    """
+    The returned hash is the hash of the downloaded content, even when the output file already
+    holds more data after the end of the downloaded range.
+    """
+    file_size = 100
+    mock_response, download_version = mock_download_response_factory(
+        apiver_module, bucket, file_size=file_size
+    )
+    output_file = BytesIO(b'trailing data that is not part of the download' * 10)
+
+    bytes_written, hash_hex = downloader.download(
+        output_file, mock_response, download_version, b2api.session
+    )
+
+    assert bytes_written == file_size
+    assert hash_hex == '7804df8c623573ccfc1993e04981006e5bc30383'  # sha1 of b'dummy' * 20
 
 
 def test_download_file__data_stream_error__in_first_response(
@@ -169,3 +191,44 @@ def test_download_file__data_stream_error__multiple_errors_recovery(
 
     assert bytes_written == file_size
     assert output_file.getvalue() == b'dUMMY' + b'DUMMY' * 19
+
+
+class FileFailingOnSecondWrite(BytesIO):
+    """A file-like object that behaves like a full disk after the first write."""
+
+    def __init__(self):
+        super().__init__()
+        self.write_calls = 0
+
+    def write(self, data):
+        self.write_calls += 1
+        if self.write_calls > 1:
+            raise OSError('disk full')
+        return super().write(data)
+
+
+def test_writer_thread__write_error__does_not_block_producers(apiver_module):
+    """
+    If the file cannot be written, the error must reach the caller and the producers must not
+    block forever on a queue that nobody drains any more.
+    """
+    from b2sdk._internal.transfer.inbound.downloader.parallel import WriterThread
+
+    outcome = {}
+
+    def produce():
+        try:
+            with WriterThread(FileFailingOnSecondWrite(), max_queue_depth=4) as writer:
+                for offset in range(50):
+                    writer.queue_write(offset, b'x')
+        except OSError as e:
+            outcome['error'] = e
+
+    # daemon thread: if the bug is present, this thread blocks forever and must not keep the
+    # test process alive
+    producer = threading.Thread(target=produce, daemon=True)
+    producer.start()
+    producer.join(timeout=10)
+
+    assert not producer.is_alive(), 'producer is blocked on a queue that is no longer drained'
+    assert 'disk full' in str(outcome.get('error'))

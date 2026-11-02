@@ -217,6 +217,18 @@ class AccountInfoBase(metaclass=ABCMeta):
         )
         assert account_info.get_allowed() == allowed
 
+    def test_clear_drops_cached_upload_urls(self, account_info_default_data):
+        """After ``clear()`` (log out) no upload URL or token of the cleared account may be handed out."""
+        account_info = self._make_info()
+        account_info.set_auth_data(**account_info_default_data)
+        account_info.put_bucket_upload_url('bucket-0', 'http://bucket-0', 'bucket-0_auth')
+        account_info.put_large_file_upload_url('file_0', 'http://file_0', 'auth_0')
+
+        account_info.clear()
+
+        assert (None, None) == account_info.take_bucket_upload_url('bucket-0')
+        assert (None, None) == account_info.take_large_file_upload_url('file_0')
+
     def test_clear_bucket_upload_data(self):
         account_info = self._make_info()
         account_info.put_bucket_upload_url('bucket-0', 'http://bucket-0', 'bucket-0_auth')

@@ -162,6 +162,27 @@ def test_leaf_checks_refuse_ambient_staging_runs(leaf):
     assert 'real-looking' not in refused.stdout + refused.stderr
 
 
+@pytest.mark.parametrize('leaf', LEAVES, ids=lambda path: f'{path.parent.name}/{path.name}')
+def test_leaf_checks_refuse_staging_target_even_with_a_valid_loopback_simulator(leaf):
+    """
+    The staging refusal must be what stops the run. Everything else about this environment is
+    valid (loopback simulator, test credential), so if the target check were deleted the leaf
+    would go on to try the simulator instead of refusing.
+    """
+    prefix = leaf.parent.name.upper()
+    ambient = {
+        f'{prefix}_TARGET': 'staging',
+        f'{prefix}_SIMULATOR_URL': 'http://127.0.0.1:8180',
+    }
+    if prefix == 'RESILIENCE':
+        ambient['RESILIENCE_CONTROL_URL'] = 'http://127.0.0.1:8181'
+
+    refused = run_leaf(leaf, ambient)
+
+    assert refused.returncode == 1
+    assert 'FAIL (configuration -- only the simulator target is supported' in refused.stdout
+
+
 @pytest.mark.parametrize('leaf', LEAVES[:2] + LEAVES[-2:], ids=lambda path: path.name)
 def test_leaf_checks_refuse_missing_or_non_loopback_simulator(leaf):
     prefix = leaf.parent.name.upper()

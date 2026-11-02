@@ -289,7 +289,7 @@ class LocalFolder(AbstractFolder):
                 except OSError:
                     if reporter is not None:
                         reporter.local_access_error(str(local_path))
-                        continue
+                    continue
 
                 local_scan_path = LocalPath(
                     absolute_path=self.make_full_path(str(relative_file_path)),
@@ -303,7 +303,7 @@ class LocalFolder(AbstractFolder):
                 if not _file_read_access(local_path):
                     if reporter is not None:
                         reporter.local_permission_error(str(local_path))
-                        continue
+                    continue
 
                 yield local_scan_path
 

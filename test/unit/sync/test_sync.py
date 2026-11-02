@@ -32,6 +32,8 @@ from apiver_deps import (
 )
 from apiver_deps_exception import DestFileNewer, InvalidArgument
 
+import b2sdk._internal.sync.sync as sync_module
+
 from ..fixtures.folder import *
 from .fixtures import *
 
@@ -975,13 +977,11 @@ class TestSynchronizer:
                 large_file_sha1=local_sha1 if should_be_incremental else None,
             )
         ]
-        # In Python 3.7 unittest.mock.call doesn't have `args` properly defined. Instead we have to take 1st index.
-        # TODO: use .args[0] instead of [1] when we drop Python 3.7
-        num_calls = len(bucket.mock_calls[0][1])
-        assert num_calls == 2 if should_be_incremental else 1, bucket.mock_calls[0]
+        # first positional argument of concatenate() is the list of sources
+        sources = bucket.mock_calls[0][1][0]
+        assert len(sources) == (2 if should_be_incremental else 1), bucket.mock_calls[0]
         if should_be_incremental:
-            # Order of indices: call index, pick arguments, pick first argument, first element of the first argument.
-            assert isinstance(bucket.mock_calls[0][1][0][0], CopySource)
+            assert isinstance(sources[0], CopySource)
 
     def test_sync_lexicographical_order(self, synchronizer_factory):
         """
@@ -1007,6 +1007,59 @@ class TestSynchronizer:
 
         dst_with_files = self.folder_factory('b2', *files)
         self.assert_folder_sync_actions(synchronizer, src, dst_with_files, [])
+
+    @pytest.mark.apiver(from_ver=2)
+    @pytest.mark.parametrize(
+        'src_type, dst_type',
+        [
+            ('b2', 'local'),
+            ('local', 'b2'),
+        ],
+    )
+    def test_sync_folders_without_reporter(self, synchronizer_factory, src_type, dst_type):
+        """
+        ``sync_folders`` documents ``reporter`` as optional (``SyncReport | None``), so a
+        sync run without a reporter must complete instead of failing on ``None``.
+        """
+        synchronizer = synchronizer_factory(dry_run=True, allow_empty_source=True)
+        src = self.folder_factory(src_type, ('a.txt', [200], 10))
+        dst = self.folder_factory(dst_type)
+
+        synchronizer.sync_folders(src, dst, TODAY, None)
+
+    @pytest.mark.xfail(
+        strict=True,
+        reason=(
+            'known bug (review b2-sdk-python prod:7, sync.py:201, owner decides): the executor '
+            'is not shut down when scheduling raises, so queued actions keep running in '
+            'the background; whether to wait for or cancel them is not decided'
+        ),
+    )
+    def test_sync_folders_shuts_executor_down_when_scheduling_fails(self, synchronizer_factory):
+        synchronizer = synchronizer_factory(dry_run=True, allow_empty_source=True)
+        src = self.folder_factory('b2', ('a.txt', [200], 10))
+        dst = self.folder_factory('local')
+
+        def failing_actions(*args, **kwargs):
+            yield mock.MagicMock()
+            raise RuntimeError('scheduling failed')
+
+        executors = []
+        real_executor_class = sync_module.BoundedQueueExecutor
+
+        def spy(*args, **kwargs):
+            executor = real_executor_class(*args, **kwargs)
+            executor.shutdown = mock.MagicMock(wraps=executor.shutdown)
+            executors.append(executor)
+            return executor
+
+        with mock.patch.object(synchronizer, '_make_folder_sync_actions', failing_actions):
+            with mock.patch.object(sync_module, 'BoundedQueueExecutor', spy):
+                with pytest.raises(RuntimeError, match='scheduling failed'):
+                    synchronizer.sync_folders(src, dst, TODAY, None)
+
+        assert len(executors) == 1
+        executors[0].shutdown.assert_called_once()
 
 
 class TstEncryptionSettingsProvider(AbstractSyncEncryptionSettingsProvider):

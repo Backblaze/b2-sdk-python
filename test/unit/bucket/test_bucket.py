@@ -32,6 +32,7 @@ from apiver_deps_exception import (
     B2Error,
     B2RequestTimeoutDuringUpload,
     BucketIdNotFound,
+    Conflict,
     DestinationDirectoryDoesntAllowOperation,
     DestinationDirectoryDoesntExist,
     DestinationIsADirectory,
@@ -1450,6 +1451,7 @@ class TestCopyFile(TestCaseWithBucket):
                     resulting_file_version = self.bucket.copy(
                         file_id,
                         'copied_file',
+                        length=length,
                         file_retention=FileRetentionSetting(RetentionMode.COMPLIANCE, 100),
                         legal_hold=LegalHold.ON,
                         max_part_size=400,
@@ -1459,6 +1461,32 @@ class TestCopyFile(TestCaseWithBucket):
                         resulting_file_version.file_retention,
                     )
                     self.assertEqual(LegalHold.ON, resulting_file_version.legal_hold)
+
+    @pytest.mark.apiver(from_ver=2)
+    def test_copy_keeps_http_header_params_with_and_without_length(self):
+        """
+        ``expires``, ``content_disposition``, ``content_encoding`` and ``content_language``
+        must end up in the new file's file_info whether the copy is a plain ``b2_copy_file``
+        (no ``length``) or goes through the large file interface (``length`` given).
+        """
+        for length in [None, 5]:
+            with self.subTest(length=length):
+                file_id = self._make_file()
+                copied = self.bucket.copy(
+                    file_id,
+                    f'copied_{length}.txt',
+                    offset=0,
+                    length=length,
+                    content_type='text/plain',
+                    content_disposition='attachment',
+                    expires='Thu, 01 Dec 2050 16:00:00 GMT',
+                    content_language='en',
+                    content_encoding='identity',
+                )
+                self.assertEqual('attachment', copied.file_info['b2-content-disposition'])
+                self.assertEqual('Thu, 01 Dec 2050 16:00:00 GMT', copied.file_info['b2-expires'])
+                self.assertEqual('en', copied.file_info['b2-content-language'])
+                self.assertEqual('identity', copied.file_info['b2-content-encoding'])
 
     def test_copy_encryption(self):
         data = b'hello_world'
@@ -1829,13 +1857,12 @@ class TestUpdate(TestCaseWithBucket):
         updated_bucket = self.api.get_bucket_by_name(self.bucket.name)
         self.assertEqual([{'fileNamePrefix': 'is_life'}], updated_bucket.lifecycle_rules)
 
-        try:
+        # a stale revision must be rejected, and the rejected update must not be applied
+        with self.assertRaises(Conflict):
             self.bucket.update(
-                lifecycle_rules=[{'fileNamePrefix': 'is_life'}],
+                lifecycle_rules=[{'fileNamePrefix': 'stale_update'}],
                 if_revision_is=current_revision,  # this is now the old revision
             )
-        except Exception:
-            pass
 
         not_updated_bucket = self.api.get_bucket_by_name(self.bucket.name)
         self.assertEqual([{'fileNamePrefix': 'is_life'}], not_updated_bucket.lifecycle_rules)
@@ -3018,6 +3045,16 @@ class TestDownloadParallelALotOfStreams(DownloadTestsBase, TestCaseWithBucket):
     def test_download_by_id_progress_monotonic(self):
         self.download_file_by_id(self.file_version.id_, progress_listener=self.progress_listener)
         self._verify(self.DATA)
+        # _verify does not require incremental reports; a single end-of-download report
+        # would pass it, so require several, non-decreasing ones here
+        valid, reason = self.progress_listener.is_valid_reason(
+            check_progress=True,
+            check_monotonic_progress=True,
+        )
+        assert valid, reason
+        reports = [int(v) for v in self.progress_listener.history[1:] if v != 'closed']
+        assert len(reports) > 1
+        assert reports == sorted(reports)
 
 
 # Truncated downloads

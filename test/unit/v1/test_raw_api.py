@@ -116,17 +116,26 @@ class TestUpdateBucket(BucketTestBase):
             self.raw_api.update_bucket('test', 'account_auth_token', 'account_id', 'bucket_id')
 
     @pytest.mark.parametrize(
-        'bucket_type,bucket_info,default_retention',
+        'bucket_type,bucket_info,default_retention,expected_payload',
         (
-            (None, {}, None),
+            (None, {}, None, {'bucketInfo': {}}),
             (
                 'allPublic',
                 None,
                 BucketRetentionSetting(RetentionMode.COMPLIANCE, RetentionPeriod(years=1)),
+                {
+                    'bucketType': 'allPublic',
+                    'defaultRetention': {
+                        'mode': 'compliance',
+                        'period': {'duration': 1, 'unit': 'years'},
+                    },
+                },
             ),
         ),
     )
-    def test_assertion_not_raises(self, bucket_type, bucket_info, default_retention):
+    def test_assertion_not_raises(
+        self, bucket_type, bucket_info, default_retention, expected_payload
+    ):
         self.raw_api.update_bucket(
             'test',
             'account_auth_token',
@@ -137,8 +146,15 @@ class TestUpdateBucket(BucketTestBase):
             default_retention=default_retention,
         )
 
+        _, _, payload = self.raw_api.b2_http.post_json_return_json.call_args.args[:3]
+        assert payload == {
+            'accountId': 'account_id',
+            'bucketId': 'bucket_id',
+            **expected_payload,
+        }
+
     @pytest.mark.parametrize(
-        'encryption_setting,',
+        'encryption_setting',
         (
             EncryptionSetting(
                 mode=EncryptionMode.SSE_C,
@@ -169,7 +185,7 @@ class TestCreateBucket(BucketTestBase):
     """Test creating bucket."""
 
     @pytest.mark.parametrize(
-        'encryption_setting,',
+        'encryption_setting',
         (
             EncryptionSetting(
                 mode=EncryptionMode.SSE_C,

@@ -999,7 +999,6 @@ class TestBoundedQueueExecutor(TestBase):
         """
         raw_executor = futures.ThreadPoolExecutor(2)
         bounded_executor = BoundedQueueExecutor(raw_executor, 1)
-        assert_equal = self.assertEqual
 
         class CountAtOnce:
             """
@@ -1010,12 +1009,14 @@ class TestBoundedQueueExecutor(TestBase):
 
             def __init__(self):
                 self.running_at_once = 0
+                self.max_seen = 0
+                self.counter = 0
                 self.lock = threading.Lock()
 
             def run(self):
                 with self.lock:
                     self.running_at_once += 1
-                    assert_equal(1, self.running_at_once)
+                    self.max_seen = max(self.max_seen, self.running_at_once)
                 # While we are sleeping here, no other actions should start
                 # running.  If they do, they will increment the counter and
                 # fail the above assertion.
@@ -1030,6 +1031,9 @@ class TestBoundedQueueExecutor(TestBase):
         for _ in range(5):
             bounded_executor.submit(count_at_once.run)
         bounded_executor.shutdown()
+        self.assertEqual(1, count_at_once.max_seen)
+        self.assertEqual(5, count_at_once.counter)
+        self.assertEqual(2, bounded_executor.get_num_exceptions())
 
 
 if __name__ == '__main__':

@@ -392,6 +392,7 @@ class AbstractRawApi(metaclass=ABCMeta):
         server_side_encryption: EncryptionSetting | None = None,
         file_retention: FileRetentionSetting | None = None,
         legal_hold: LegalHold | None = None,
+        custom_upload_timestamp: int | None = None,
     ):
         pass
 
@@ -880,7 +881,7 @@ class B2RawHTTPApi(AbstractRawApi):
             kwargs['fileRetention'] = file_retention.serialize_to_json_for_request()
 
         if custom_upload_timestamp is not None:
-            kwargs['custom_upload_timestamp'] = custom_upload_timestamp
+            kwargs['customUploadTimestamp'] = custom_upload_timestamp
 
         return self._post_json(
             api_url,

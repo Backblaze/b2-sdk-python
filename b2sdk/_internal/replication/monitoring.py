@@ -12,7 +12,8 @@ from __future__ import annotations
 import sys
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
-from queue import Queue
+from queue import Full, Queue
+from threading import Event
 from typing import ClassVar, Iterator
 
 from ..api import B2Api
@@ -195,29 +196,49 @@ class ReplicationMonitor:
         """
         report = self.REPORT_CLASS()
         queue = Queue(maxsize=self.QUEUE_SIZE)
+        stop = Event()  # set when the consumer dies, so the producer never blocks on a full queue
+
+        def put(item) -> bool:
+            while not stop.is_set():
+                try:
+                    queue.put(item, timeout=0.1)
+                    return True
+                except Full:
+                    pass
+            return False
 
         if not scan_destination:
 
             def fill_queue():
-                for path in self.source_folder.all_files(
-                    policies_manager=self.scan_policies_manager,
-                    reporter=self.report,
-                ):
-                    queue.put((path,), block=True)
-                queue.put(None, block=True)
+                try:
+                    for path in self.source_folder.all_files(
+                        policies_manager=self.scan_policies_manager,
+                        reporter=self.report,
+                    ):
+                        if not put((path,)):
+                            return
+                finally:
+                    put(None)
         else:
 
             def fill_queue():
-                for pair in self.iter_pairs():
-                    queue.put(pair, block=True)
-                queue.put(None, block=True)
+                try:
+                    for pair in self.iter_pairs():
+                        if not put(pair):
+                            return
+                finally:
+                    put(None)
 
         def consume_queue():
             while True:
                 items = queue.get(block=True)
                 if items is None:  # using None as "end of queue" marker
                     break
-                report.add(*items)
+                try:
+                    report.add(*items)
+                except BaseException:
+                    stop.set()
+                    raise
 
         with ThreadPoolExecutor(max_workers=2) as thread_pool:
             futures = [

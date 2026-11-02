@@ -194,6 +194,45 @@ class TestDatabseMigrations:
         assert new_account_info.get_allowed() == exp_allowed
         assert new_account_info._get_update_count(end_version) == 1
 
+    @pytest.mark.parametrize(
+        ('start_version', 'end_version'),
+        [
+            (4, 5),
+            (5, 6),
+        ],
+    )
+    @pytest.mark.apiver(from_ver=3)
+    def test_migrate_to_5_v3_name_prefix_with_apostrophe(
+        self,
+        sqlite_account_info_factory,
+        account_info_default_data: dict,
+        start_version: int,
+        end_version: int,
+    ):
+        """A single quote in the stored ``allowed`` JSON must not break the migration SQL."""
+        old_allowed = dict(
+            bucketId='123',
+            bucketName='bucket1',
+            capabilities=['listBuckets', 'readBuckets'],
+            namePrefix="it's/",
+        )
+        old_account_info = sqlite_account_info_factory(last_upgrade_to_run=start_version)
+        old_account_info.set_auth_data(**account_info_default_data)
+
+        with old_account_info._get_connection() as conn:
+            conn.execute('UPDATE account SET allowed = ?;', (json.dumps(old_allowed),))
+
+        new_account_info = self.sqlite_account_info_factory(
+            file_name=old_account_info.filename, last_upgrade_to_run=end_version
+        )
+
+        assert new_account_info.get_allowed() == dict(
+            buckets=[{'id': '123', 'name': 'bucket1'}],
+            capabilities=['listBuckets', 'readBuckets'],
+            namePrefix="it's/",
+        )
+        assert new_account_info._get_update_count(end_version) == 1
+
     @pytest.mark.apiver(2)
     def test_multi_bucket_key_error_apiver_v2(
         self,

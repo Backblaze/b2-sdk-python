@@ -1485,6 +1485,10 @@ class Bucket(metaclass=B2TraceMeta):
             file_retention=file_retention,
             legal_hold=legal_hold,
             cache_control=cache_control,
+            expires=expires,
+            content_disposition=content_disposition,
+            content_encoding=content_encoding,
+            content_language=content_language,
             min_part_size=min_part_size,
             max_part_size=max_part_size,
         )

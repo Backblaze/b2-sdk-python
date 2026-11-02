@@ -441,9 +441,8 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
             allowed['buckets'] = None
 
         allowed_text = json.dumps(allowed)
-        stmt = f"UPDATE account SET allowed = ('{allowed_text}');"
 
-        self._perform_update(version, [stmt])
+        self._perform_update(version, [('UPDATE account SET allowed = ?;', (allowed_text,))])
 
     def _ensure_update(self, update_number, update_commands: list[str]):
         """
@@ -466,17 +465,21 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
             )
             return cursor.fetchone()[0]
 
-    def _perform_update(self, update_number, update_commands: list[str]):
+    def _perform_update(self, update_number, update_commands: list[str | tuple[str, tuple]]):
         with self._get_connection() as conn:
             conn.execute('BEGIN')
             for command in update_commands:
-                conn.execute(command)
+                if isinstance(command, str):
+                    conn.execute(command)
+                else:
+                    conn.execute(*command)
             conn.execute('INSERT INTO update_done (update_number) VALUES (?);', (update_number,))
 
     def clear(self):
         """
         Remove all info about accounts and buckets.
         """
+        self._reset_upload_pools()
         with self._get_connection() as conn:
             conn.execute('DELETE FROM account;')
             conn.execute('DELETE FROM bucket;')
