@@ -9,6 +9,25 @@ upcoming release can be found in [changelog.d](changelog.d).
 
 <!-- towncrier release notes start -->
 
+## [2.13.3](https://github.com/Backblaze/b2-sdk-python/releases/tag/v2.13.3) - 2026-11-06
+
+
+### Fixed
+
+- Accept `reporter=None` in `Synchronizer.sync_folders` by using a silent reporter instead of failing.
+- Keep scanning a local folder after a file cannot be read or accessed when no reporter is given, instead of failing on that file.
+- Parallel download: hash the data that was actually written, and surface a failing writer to producers instead of blocking them or losing the error.
+- Pass `expires`, `content_disposition`, `content_encoding` and `content_language` through `Bucket.copy` to the created file instead of dropping them.
+- Send `customUploadTimestamp` under its B2 wire name when starting a large file, so custom upload timestamps are no longer ignored.
+- Stop the replication monitor from hanging when its consumer fails: the producer no longer blocks on a full queue and always signals the end of input.
+- Store the account's allowed capabilities in SQLite with a bound parameter instead of string formatting, and reset cached upload pools when `SqliteAccountInfo.clear()` is called.
+
+### Infrastructure
+
+- Updated the locked urllib3 dependency to version 2.8.0. ([#638](https://github.com/Backblaze/b2-sdk-python/issues/638))
+- Updated Starlette, AnyIO, and virtualenv in the development tooling. Setuptools remains below 81 for liccheck compatibility and requires a dev-only dismissal; filelock and tornado retain Python 3.10-compatible dev-only locks. ([#640](https://github.com/Backblaze/b2-sdk-python/issues/640))
+
+
 ## [2.13.2](https://github.com/Backblaze/b2-sdk-python/releases/tag/v2.13.2) - 2026-10-21
 
 
