@@ -467,7 +467,13 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
 
     def _perform_update(self, update_number, update_commands: list[str | tuple[str, tuple]]):
         with self._get_connection() as conn:
-            conn.execute('BEGIN')
+            # Serialize the check and migration across independent connections.
+            conn.execute('BEGIN IMMEDIATE')
+            if conn.execute(
+                'SELECT COUNT(*) FROM update_done WHERE update_number = ?;',
+                (update_number,),
+            ).fetchone()[0]:
+                return
             for command in update_commands:
                 if isinstance(command, str):
                     conn.execute(command)
