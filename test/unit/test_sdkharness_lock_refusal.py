@@ -16,7 +16,7 @@ from pathlib import Path
 import pytest
 
 CONFORMANCE = Path(__file__).parents[2] / '.sdkharness' / 'tests' / 'conformance'
-LEAVES = ('lock.bypass_governance', 'lock.per_file_retention')
+LEAVES = ('lock.bypass_governance', 'lock.per_file_retention', 'lock.legal_hold')
 EXPECTED = ('AccessDenied', 'RetentionWriteError', 'Conflict', 'BadRequest')
 
 

@@ -116,11 +116,15 @@ def step(name, action):
         raise Failure(name, name_of) from error
 
 
-def refused(name, action, expected):
+def refused(name, action, expected, *, access_denied_401=False):
     """Assert something is REFUSED, and record what refused it.
 
     `expected` is a tuple of exception class names. A different class -- or no
     exception at all -- is a Failure, because the refusal IS the claim here.
+    With `access_denied_401`, b2sdk's Unauthorized is also accepted, but only
+    when its code is `access_denied` (what real B2 answers for a delete of a
+    version under a legal hold); InvalidAuthToken and every other Unauthorized
+    code stay failures.
     """
     try:
         action()
@@ -130,6 +134,12 @@ def refused(name, action, expected):
         name_of = type(error).__name__
         if name_of in expected:
             return name_of
+        if (
+            access_denied_401
+            and name_of == 'Unauthorized'
+            and getattr(error, 'code', None) == 'access_denied'
+        ):
+            return 'Unauthorized(access_denied)'
         raise Failure(name, f"refused with {name_of}, expected {'/'.join(expected)}") from error
     raise Failure(name, 'the call was permitted; the claim under test is that it is refused')
 
@@ -269,6 +279,11 @@ def run(target: str) -> None:
             'delete while held',
             lambda: bucket.delete_file_version(uploaded.id_, OBJECT_NAME),
             ('AccessDenied', 'RetentionWriteError', 'Conflict', 'BadRequest'),
+            # Real B2 answers a delete under a legal hold with 401 access_denied
+            # ("Access Denied"), measured 2026-11-10 (b2-simulator ledger F-139);
+            # b2sdk raises Unauthorized for it. The classes above are the
+            # simulator's older shapes and stay accepted.
+            access_denied_401=True,
         )
 
         step(
