@@ -29,6 +29,8 @@ def test_notification_rule_values_are_not_traced(bucket, caplog, method_name):
             },
         }
     ]
+    # Precaution: B2TraceMeta skips get_* and logfury does not log return values.
+    # Keep this case in case either behavior changes.
     if method_name == 'get_notification_rules':
         bucket.set_notification_rules(rules)
 
