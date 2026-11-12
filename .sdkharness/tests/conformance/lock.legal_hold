@@ -268,7 +268,8 @@ def run(target: str) -> None:
         refused(
             'delete while held',
             lambda: bucket.delete_file_version(uploaded.id_, OBJECT_NAME),
-            ('AccessDenied', 'RetentionWriteError', 'Conflict', 'BadRequest'),
+            # b2_delete_file_version error table: Object Lock refusal is 401 access_denied.
+            ('Unauthorized',),
         )
 
         step(

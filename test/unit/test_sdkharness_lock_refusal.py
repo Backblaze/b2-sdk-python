@@ -18,6 +18,7 @@ import pytest
 CONFORMANCE = Path(__file__).parents[2] / '.sdkharness' / 'tests' / 'conformance'
 LEAVES = ('lock.bypass_governance', 'lock.per_file_retention')
 EXPECTED = ('AccessDenied', 'RetentionWriteError', 'Conflict', 'BadRequest')
+LEGAL_HOLD = 'lock.legal_hold'
 
 
 def load_leaf(name):
@@ -111,3 +112,9 @@ def test_unauthorized_is_not_accepted_unless_asked(leaf):
 def test_the_leaf_asks_for_the_401_on_its_delete_without_bypass(leaf):
     source = (CONFORMANCE / leaf).read_text()
     assert 'access_denied_401=True' in source
+
+
+def test_legal_hold_delete_requires_only_unauthorized():
+    source = (CONFORMANCE / LEGAL_HOLD).read_text()
+    assert "            ('Unauthorized',)," in source
+    assert 'FIDELITY.md F-139' not in source
