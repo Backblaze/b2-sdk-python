@@ -13,7 +13,7 @@ upcoming release can be found in [changelog.d](changelog.d).
 
 ### Fixed
 
-- Disable call tracing for bucket notification rule methods.
+- `Bucket.get_notification_rules` / `set_notification_rules` are no longer recorded in SDK debug tracing.
 
 
 ## [2.13.3](https://github.com/Backblaze/b2-sdk-python/releases/tag/v2.13.3) - 2026-11-06
