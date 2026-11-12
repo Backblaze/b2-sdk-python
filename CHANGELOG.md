@@ -9,6 +9,13 @@ upcoming release can be found in [changelog.d](changelog.d).
 
 <!-- towncrier release notes start -->
 
+## [2.13.4](https://github.com/Backblaze/b2-sdk-python/releases/tag/v2.13.4) - 2026-11-12
+
+### Fixed
+
+- Disable call tracing for bucket notification rule methods.
+
+
 ## [2.13.3](https://github.com/Backblaze/b2-sdk-python/releases/tag/v2.13.3) - 2026-11-06
 
 
