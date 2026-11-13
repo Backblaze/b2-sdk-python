@@ -1535,12 +1535,14 @@ class Bucket(metaclass=B2TraceMeta):
     def __repr__(self):
         return f'Bucket<{self.id_},{self.name},{self.type_}>'
 
+    @disable_trace
     def get_notification_rules(self) -> list[NotificationRuleResponse]:
         """
         Get all notification rules for this bucket.
         """
         return self.api.session.get_bucket_notification_rules(self.id_)
 
+    @disable_trace
     def set_notification_rules(
         self, rules: Iterable[NotificationRule]
     ) -> list[NotificationRuleResponse]:

@@ -661,7 +661,7 @@ _error_handlers: dict[tuple[int, str | None], typing.Callable] = {
 }
 
 
-@trace_call(logger)
+@trace_call(logger, only=('status', 'code'))
 def interpret_b2_error(
     status: int,
     code: str | None,

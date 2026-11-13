@@ -9,7 +9,23 @@
 ######################################################################
 from __future__ import annotations
 
+import base64
+import json
+import logging
+import re
+import secrets
+from contextlib import closing
+from logging.handlers import BufferingHandler
+
 import pytest
+import responses
+from apiver_deps import (
+    B2RawHTTPApi,
+    EncryptionAlgorithm,
+    EncryptionKey,
+    EncryptionMode,
+    EncryptionSetting,
+)
 from apiver_deps_exception import (
     AlreadyFailed,
     B2Error,
@@ -35,7 +51,9 @@ from apiver_deps_exception import (
     interpret_b2_error,
 )
 
-from b2sdk._internal.exception import RequestTimeout, ResourceNotFound
+from b2sdk._internal.api_config import B2HttpApiConfig
+from b2sdk._internal.b2http import B2Http
+from b2sdk._internal.exception import BadRequest, RequestTimeout, ResourceNotFound, SSECKeyError
 
 
 class TestB2Error:
@@ -156,6 +174,43 @@ class TestInterpretError:
         error = self._check_one(ServiceError, 503, '', '', {})
         assert error.retry_after_seconds is None
 
+    @pytest.mark.parametrize('use_keywords', [False, True], ids=['positional', 'keyword'])
+    def test_trace_uses_only_safe_arguments(self, caplog, monkeypatch, use_keywords):
+        key_value = base64.b64encode(secrets.token_bytes(32)).decode('ascii')
+        header_value = secrets.token_urlsafe(24)
+        message_value = secrets.token_urlsafe(24)
+        arguments = dict(
+            status=503,
+            code='server_busy',
+            message=message_value,
+            response_headers={'retry-after': '7', 'X-Trace-Test': header_value},
+            post_params={'serverSideEncryption': {'mode': 'SSE-C', 'customerKey': key_value}},
+        )
+        logger = logging.getLogger('b2sdk._internal.exception')
+        with closing(BufferingHandler(capacity=100)) as handler, monkeypatch.context() as patch:
+            # Keep test values in memory, including on a failed assertion.
+            patch.setattr(logger, 'handlers', [handler])
+            patch.setattr(logger, 'propagate', False)
+            with caplog.at_level(logging.DEBUG, logger=logger.name):
+                if use_keywords:
+                    error = interpret_b2_error(**arguments)
+                else:
+                    error = interpret_b2_error(*arguments.values())
+
+            messages = [record.getMessage() for record in handler.buffer]
+            has_private_values = any(
+                value in message
+                for value in (key_value, header_value, message_value)
+                for message in messages
+            )
+            assert not has_private_values, 'trace included a disallowed argument value'
+            assert any(
+                'status=503' in message and "code='server_busy'" in message for message in messages
+            )
+
+        assert isinstance(error, ServiceError)
+        assert error.retry_after_seconds == 7
+
     @pytest.mark.apiver(
         from_ver=3
     )  # previous apivers throw this as well, but BucketIdNotFound is a different class in them
@@ -206,3 +261,89 @@ class TestInterpretError:
         error = interpret_b2_error(status, code, '', {})
         assert isinstance(error, expected_exception_cls)
         assert error.code == code
+
+
+@pytest.mark.parametrize('operation', ['notification_rules', 'sse_c_copy'])
+def test_http_error_trace_keeps_request_values_private(bucket, caplog, monkeypatch, operation):
+    signing_value = secrets.token_hex(16)
+    header_value = secrets.token_urlsafe(24)
+    response_value = secrets.token_urlsafe(24)
+    message_value = secrets.token_urlsafe(24)
+    key = EncryptionKey(secret=secrets.token_bytes(32), key_id=None)
+    key_value = key.key_b64()
+    encryption = EncryptionSetting(EncryptionMode.SSE_C, EncryptionAlgorithm.AES256, key)
+    rules = [
+        {
+            'eventTypes': ['b2:ObjectCreated:*'],
+            'isEnabled': True,
+            'name': 'test-rule',
+            'objectNamePrefix': '',
+            'targetConfiguration': {
+                'targetType': 'webhook',
+                'url': 'https://example.com/webhook',
+                'hmacSha256SigningSecret': signing_value,
+                'customHeaders': [{'name': 'X-Test-Header', 'value': header_value}],
+            },
+        }
+    ]
+    if operation == 'notification_rules':
+        endpoint, status, code, error_class = (
+            'b2_set_bucket_notification_rules',
+            400,
+            'bad_request',
+            BadRequest,
+        )
+    else:
+        endpoint, status, code, error_class = 'b2_copy_file', 403, 'access_denied', SSECKeyError
+
+    http = B2Http(B2HttpApiConfig(install_clock_skew_hook=False))
+    bucket.api.session.raw_api = B2RawHTTPApi(http)
+    logger = logging.getLogger('b2sdk')
+    with (
+        closing(BufferingHandler(capacity=100)) as handler,
+        monkeypatch.context() as patch,
+        responses.RequestsMock() as transport,
+    ):
+        # Capture the entire SDK namespace without letting values reach pytest's log output.
+        patch.setattr(logger, 'handlers', [handler])
+        patch.setattr(logger, 'propagate', False)
+        transport.add(
+            responses.POST,
+            re.compile(r'.*/' + endpoint + '$'),
+            status=status,
+            json={'status': status, 'code': code, 'message': message_value},
+            headers={'X-Test-Response': response_value},
+        )
+        with caplog.at_level(logging.DEBUG, logger=logger.name), pytest.raises(error_class):
+            if operation == 'notification_rules':
+                bucket.set_notification_rules(rules)
+            else:
+                bucket.api.session.copy_file(
+                    'source-file', 'target-file', source_server_side_encryption=encryption
+                )
+
+        assert len(transport.calls) == 1
+        request = json.loads(transport.calls[0].request.body)
+        if operation == 'notification_rules':
+            target = request['eventNotificationRules'][0]['targetConfiguration']
+            request_has_values = (
+                target['hmacSha256SigningSecret'] == signing_value
+                and target['customHeaders'][0]['value'] == header_value
+            )
+        else:
+            request_has_values = request['sourceServerSideEncryption']['customerKey'] == key_value
+        assert request_has_values, 'The HTTP request must exercise the sensitive request fields'
+
+        messages = [record.getMessage() for record in handler.buffer]
+        has_private_values = any(
+            value in message
+            for value in (signing_value, header_value, key_value, response_value, message_value)
+            for message in messages
+        )
+        assert not has_private_values, 'Private values must not appear in SDK tracing'
+        assert any(
+            'calling interpret_b2_error(' in message
+            and f'status={status}' in message
+            and f'code={code!r}' in message
+            for message in messages
+        )
