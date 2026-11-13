@@ -16,7 +16,7 @@ from pathlib import Path
 import pytest
 
 CONFORMANCE = Path(__file__).parents[2] / '.sdkharness' / 'tests' / 'conformance'
-LEAVES = ('lock.bypass_governance', 'lock.per_file_retention')
+LEAVES = ('lock.bypass_governance', 'lock.per_file_retention', 'lock.legal_hold')
 EXPECTED = ('AccessDenied', 'RetentionWriteError', 'Conflict', 'BadRequest')
 
 
@@ -64,14 +64,15 @@ def test_401_access_denied_counts_as_the_refusal(leaf):
 
 
 @pytest.mark.parametrize('leaf', LEAVES)
-def test_the_old_refusal_classes_are_still_accepted(leaf):
+@pytest.mark.parametrize('error_name', EXPECTED)
+def test_the_old_refusal_classes_are_still_accepted(leaf, error_name):
     module = load_leaf(leaf)
-    AccessDenied = type('AccessDenied', (Exception,), {})
+    refusal_class = type(error_name, (Exception,), {})
     assert (
         module.refused(
-            'delete without bypass', raising(AccessDenied()), EXPECTED, access_denied_401=True
+            'delete without bypass', raising(refusal_class()), EXPECTED, access_denied_401=True
         )
-        == 'AccessDenied'
+        == error_name
     )
 
 
@@ -89,10 +90,18 @@ def test_an_allowed_operation_still_fails(leaf):
         InvalidAuthToken('expired_auth_token'),
         Unauthorized('bad_auth_token'),
         Unauthorized('email_not_verified'),
+        Unauthorized('unauthorized'),
         ServiceError('503'),
         KeyError('404'),
     ],
-    ids=['bad-token', 'other-401-code', 'unverified-email', '5xx', 'not-found'],
+    ids=[
+        'bad-token',
+        'other-401-code',
+        'unverified-email',
+        'missing-capability',
+        '5xx',
+        'not-found',
+    ],
 )
 def test_an_unrelated_refusal_still_fails(leaf, error):
     module = load_leaf(leaf)
