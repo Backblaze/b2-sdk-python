@@ -274,6 +274,21 @@ class TestSqliteAccountProfileFileLocation:
         with pytest.raises(ValueError):
             SqliteAccountInfo.get_user_account_info_path(profile='&@(*$')
 
+    @pytest.mark.parametrize(
+        'profile',
+        [
+            'a/../../etc',
+            'a\\..\\..\\etc',
+            'a b',
+            'a&@(*$',
+            'a' * 65,
+            'abc\n',
+        ],
+    )
+    def test_invalid_profile_name_with_valid_first_character(self, profile):
+        with pytest.raises(ValueError):
+            SqliteAccountInfo.get_user_account_info_path(profile=profile)
+
     def test_profile_and_file_name_conflict(self):
         with pytest.raises(ValueError):
             SqliteAccountInfo.get_user_account_info_path(file_name='foo', profile='bar')

@@ -109,7 +109,7 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
 
     @classmethod
     def get_user_account_info_path(cls, file_name: str | None = None, profile: str | None = None):
-        if profile and not B2_ACCOUNT_INFO_PROFILE_NAME_REGEXP.match(profile):
+        if profile and not B2_ACCOUNT_INFO_PROFILE_NAME_REGEXP.fullmatch(profile):
             raise ValueError(f'Invalid profile name: {profile}')
 
         profile_file = B2_ACCOUNT_INFO_PROFILE_FILE.format(profile=profile) if profile else None
