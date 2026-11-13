@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/Backblaze/b2-sdk-python/security/advisories/new
+    about: Report privately. Do not open a public issue. See SECURITY.md.
+  - name: B2 service or account problem
+    url: https://help.backblaze.com/hc/en-us/requests/new
+    about: Problems with the B2 service itself, billing or your account go to Backblaze support.

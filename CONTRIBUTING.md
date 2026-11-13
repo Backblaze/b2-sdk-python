@@ -19,6 +19,28 @@ In order to make it easier to contribute, core developers of this project:
    * checks if the documentation can be built properly
 * maintain other Continuous Integration tools (coverage tracker)
 
+## Before you start
+
+Read [AGENTS.md](AGENTS.md): it maps the codebase, lists the local CI commands, and collects the problems
+reviewers keep finding. Larger changes start from an intent in [`intent/`](intent/README.md) (problem →
+spec → plan, each approved by a maintainer). Bug fixes with a linked issue can start from a failing test.
+
+Reviews follow [REVIEW.md](REVIEW.md). Releases follow [RELEASE.md](RELEASE.md). Report vulnerabilities
+privately as described in [SECURITY.md](SECURITY.md). Everyone taking part follows the
+[Code of Conduct](CODE_OF_CONDUCT.md).
+
+## Coding agents
+
+PRs written with coding agents are welcome on the same terms as any other PR. The person directing the
+agent owns the PR: they read the diff, answer review findings, and fix what it breaks. Before opening the
+PR, have a fresh context (`/code-review`, `/security-review` or a subagent that did not write the code)
+review the diff, and say in the PR what it found. Agents never approve or merge PRs.
+
+If you doubt a change should be made at all, say so early on the issue or a draft PR, not as a blocking
+comment on a finished one. Whoever lands a change owns fixing it if it breaks something; keep changes
+small so they are easy to review and revert. `python contrib/review_metrics.py` reports how much human
+review merged PRs got.
+
 ## Versioning
 
 This package's versions adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and the versions are
@@ -52,6 +74,10 @@ These files can either be created manually, or using `towncrier` e.g.
 
 `towncrier create` also takes care of duplicates automatically (if there is more than 1 news fragment of one type 
 for a given github issue).
+
+Each entry is one or more full sentences, starting with a capital letter and ending with a full stop, written
+for SDK users. `nox -s towncrier_check` validates names and content locally. PRs that need no entry (for example
+a lockfile-only change) are labelled `-changelog` by a maintainer.
 
 ## Developer Info
 
@@ -104,6 +130,21 @@ If you want to change any of the project requirements (or requirement bounds) in
 make sure that `uv.lock` file reflects those changes by using `uv add`, `uv lock` or other
 commands - see [documentation](https://docs.astral.sh/uv/). You can verify that the lock file
 is up to date by running `uv lock --check`.
+
+## Local CI
+
+Run these before every push; they mirror the `lint`, `build` and `test` jobs of
+[ci.yml](.github/workflows/ci.yml) on one Python version:
+
+    nox -s lint
+    nox -s towncrier_check
+    nox -s unit-3.14
+    nox -s build
+    nox --non-interactive -s doc
+
+`doc` needs `graphviz` and `plantuml` installed. CI also runs the unit tests on every supported Python and
+OS, the integration tests with B2 credentials, and the B2 CLI test suite against this checkout
+(`cli-compat`).
 
 ## Linting
 
