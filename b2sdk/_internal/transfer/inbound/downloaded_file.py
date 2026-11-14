@@ -170,29 +170,26 @@ class DownloadedFile:
         self.check_hash = check_hash
 
     def _validate_download(self, bytes_read, actual_sha1):
-        if (
-            self.download_version.content_encoding is not None
-            and self.download_version.api.api_config.decode_content
-        ):
-            return
-        if self.range_ is None:
-            if bytes_read != self.download_version.content_length:
-                raise TruncatedOutput(bytes_read, self.download_version.content_length)
+        desired_length = (
+            self.range_[1] - self.range_[0] + 1
+            if self.range_ is not None
+            else self.download_version.content_length
+        )
+        if bytes_read != desired_length:
+            raise TruncatedOutput(bytes_read, desired_length)
 
-            if (
-                self.check_hash
-                and self.download_version.content_sha1 != 'none'
-                and actual_sha1 != self.download_version.content_sha1
-            ):
-                raise ChecksumMismatch(
-                    checksum_type='sha1',
-                    expected=self.download_version.content_sha1,
-                    actual=actual_sha1,
-                )
-        else:
-            desired_length = self.range_[1] - self.range_[0] + 1
-            if bytes_read != desired_length:
-                raise TruncatedOutput(bytes_read, desired_length)
+        if (
+            not self.download_version._should_be_decoded
+            and self.check_hash
+            and self.range_ is None
+            and self.download_version.content_sha1 != 'none'
+            and actual_sha1 != self.download_version.content_sha1
+        ):
+            raise ChecksumMismatch(
+                checksum_type='sha1',
+                expected=self.download_version.content_sha1,
+                actual=actual_sha1,
+            )
 
     def save(self, file: BinaryIO, allow_seeking: bool | None = None) -> None:
         """

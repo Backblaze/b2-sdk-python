@@ -31,9 +31,8 @@ class B2Session(v2.B2Session):
                 'raw_api,api_config', 'Provide at most one of: raw_api, api_config'
             )
 
-        if api_config is None:
-            api_config = v2.DEFAULT_HTTP_API_CONFIG
-        super().__init__(account_info=account_info, cache=cache, api_config=api_config)
+        self.api_config = api_config or v2.DEFAULT_HTTP_API_CONFIG
+        super().__init__(account_info=account_info, cache=cache, api_config=self.api_config)
         if raw_api is not None:
             self.raw_api = raw_api
 
