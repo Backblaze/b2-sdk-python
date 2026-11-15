@@ -628,5 +628,16 @@ class NotDecompressingHTTPAdapter(HTTPAdapter):
     :code:`requests.Response` class.
     """
 
+    # urllib3 defaults to 16 KiB, which makes upload bodies go through the stream wrappers in tiny steps
+    SEND_BLOCKSIZE = 1024 * 1024
+
+    def init_poolmanager(self, *args, **kwargs):
+        kwargs.setdefault('blocksize', self.SEND_BLOCKSIZE)
+        super().init_poolmanager(*args, **kwargs)
+
+    def proxy_manager_for(self, proxy, **proxy_kwargs):
+        proxy_kwargs.setdefault('blocksize', self.SEND_BLOCKSIZE)
+        return super().proxy_manager_for(proxy, **proxy_kwargs)
+
     def build_response(self, req, resp):
         return NotDecompressingResponse.from_builtin_response(super().build_response(req, resp))

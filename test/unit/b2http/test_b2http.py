@@ -517,6 +517,14 @@ class TestB2HttpUserAgentAppend(TestB2Http):
         return self.UA_APPEND
 
 
+def test_request_body_is_sent_in_large_blocks():
+    adapter = B2Http().session.get_adapter('https://api.backblazeb2.com')
+    pool = adapter.poolmanager.connection_from_url('https://api.backblazeb2.com')
+    assert pool.conn_kw['blocksize'] == 1024 * 1024
+    proxy_manager = adapter.proxy_manager_for('http://proxy.example.com:3128')
+    assert proxy_manager.connection_pool_kw['blocksize'] == 1024 * 1024
+
+
 class TestSetLocaleContextManager(TestBase):
     def test_set_locale_context_manager(self):
         # C.UTF-8 on Ubuntu 18.04 Bionic, C.utf8 on Ubuntu 22.04 Jammy
