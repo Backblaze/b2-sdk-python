@@ -13,7 +13,7 @@ from unittest import mock
 
 import pytest
 from apiver_deps import AuthInfoCache, B2Session, DummyCache, InMemoryAccountInfo
-from apiver_deps_exception import Unauthorized
+from apiver_deps_exception import EmailNotVerified, NoPaymentHistory, Unauthorized
 
 from .account_info.fixtures import *  # noqa
 from .fixtures import *  # noqa
@@ -134,6 +134,19 @@ class TestB2Session:
             Unauthorized,
             match=r"no_go for application key with capabilities 'readFiles', restricted to buckets \['my-bucket', 'their-bucket'\], restricted to files that start with 'prefix/' \(code\)",
         ):
+            self.b2_session.get_file_info_by_id(None)
+
+    @pytest.mark.apiver(from_ver=3)
+    @pytest.mark.parametrize('exc_class', [EmailNotVerified, NoPaymentHistory])
+    def test_app_key_info_keeps_exception_type(self, exc_class):
+        self.b2_session.account_info.get_allowed.return_value = dict(
+            buckets=None,
+            capabilities=ALL_CAPABILITIES,
+            namePrefix=None,
+        )
+        self.b2_session.raw_api.get_file_info_by_id.side_effect = exc_class('no_go', 'code')
+
+        with pytest.raises(exc_class, match=r'no_go for application key with no restrictions'):
             self.b2_session.get_file_info_by_id(None)
 
 

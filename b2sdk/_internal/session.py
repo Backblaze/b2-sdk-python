@@ -546,7 +546,7 @@ class B2Session:
         new_message = unauthorized.message or 'unauthorized'
         new_message += ' for application key ' + ', '.join(key_messages)
 
-        return Unauthorized(new_message, unauthorized.code)
+        return type(unauthorized)(new_message, unauthorized.code)
 
     def _get_allowed_buckets_message(self, allowed) -> str | None:
         buckets = allowed['buckets']
