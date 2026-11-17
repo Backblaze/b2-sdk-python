@@ -69,7 +69,15 @@ def verify(tag, root, *, enforce, maintainers, fetch=fetch_keys):
             signers = home / 'allowed_signers'
             signers.write_text('\n'.join(ssh_keys) + '\n')
             commands = [
-                ['git', '-c', 'gpg.format=openpgp', 'verify-tag', tag],
+                [
+                    'git',
+                    '-c',
+                    'gpg.format=openpgp',
+                    '-c',
+                    f'gpg.ssh.allowedSignersFile={signers}',
+                    'verify-tag',
+                    tag,
+                ],
                 [
                     'git',
                     '-c',

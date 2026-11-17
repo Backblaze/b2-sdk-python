@@ -33,6 +33,8 @@ def release_repo(tmp_path):
     git('init', '--initial-branch=master')
     git('config', 'user.name', 'Release test')
     git('config', 'user.email', 'release-test@example.invalid')
+    git('config', 'commit.gpgsign', 'false')
+    git('config', 'tag.gpgsign', 'false')
     git('commit', '--allow-empty', '-m', 'Initial fixture')
     return tmp_path, git
 
@@ -185,6 +187,12 @@ def test_ssh_signed_tag_requires_an_enrolled_key(release_repo, tmp_path):
         return public_key if url.endswith('.keys') else ''
 
     assert verify('v2.13.5', root, enforce=True, maintainers=['example'], fetch=fetch)
+    assert not verify('v2.13.5', root, enforce=True, maintainers=['example'], fetch=lambda url: '')
+
+    # A pre-existing local/global signer configuration cannot expand enrollment.
+    external = root / 'external-signers'
+    external.write_text(f'external {public_key}')
+    git('config', 'gpg.ssh.allowedSignersFile', str(external))
     assert not verify('v2.13.5', root, enforce=True, maintainers=['example'], fetch=lambda url: '')
 
 
