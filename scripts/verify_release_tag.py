@@ -56,12 +56,14 @@ def verify(tag, root, *, enforce, maintainers, fetch=fetch_keys):
             for name in maintainers:
                 gpg_keys = fetch(f'https://github.com/{name}.gpg')
                 if gpg_keys and shutil.which('gpg'):
+                    # GitHub returns an armored stub for accounts with no GPG keys.
+                    # An unsuccessful import must still allow an enrolled SSH key.
                     subprocess.run(
                         ['gpg', '--batch', '--homedir', str(home), '--import'],
                         input=gpg_keys,
                         text=True,
                         capture_output=True,
-                        check=True,
+                        check=False,
                     )
                 for key in fetch(f'https://github.com/{name}.keys').splitlines():
                     if key.strip():

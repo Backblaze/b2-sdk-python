@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import runpy
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -80,6 +81,59 @@ def test_release_preparation_batches_then_merges_without_tagging(release_repo):
     tooling('prepare_release')['prepare']('2.13.5', root, run=run)
     assert [call[3:] for call in calls] == [['batch', 'v2.13.5'], ['merge']]
     assert git('tag', '--list').stdout == ''
+
+
+def test_release_preparation_preserves_the_prerelease_version(release_repo):
+    root, _ = release_repo
+    calls = []
+
+    def run(args, **kwargs):
+        if args[0] == 'go':
+            calls.append(args)
+            return subprocess.CompletedProcess(args, 0, '')
+        return subprocess.run(args, **kwargs)
+
+    tooling('prepare_release')['prepare']('2.14.0-rc.1', root, run=run)
+    assert calls[0][3:] == ['batch', 'v2.14.0-rc.1']
+
+
+def test_github_no_gpg_keys_response_does_not_prevent_ssh_verification(release_repo, monkeypatch):
+    root, git = release_repo
+    key = root / 'fixture-key'
+    subprocess.run(['ssh-keygen', '-q', '-t', 'ed25519', '-N', '', '-f', str(key)], check=True)
+    git(
+        '-c',
+        'gpg.format=ssh',
+        '-c',
+        f'user.signingkey={key}',
+        'tag',
+        '-s',
+        'v2.13.5',
+        '-m',
+        'Fixture',
+    )
+    public_key = key.with_suffix('.pub').read_text()
+    real_run, real_which = subprocess.run, shutil.which
+
+    def run(args, **kwargs):
+        if args[0] == 'gpg':
+            if kwargs.get('check'):
+                raise subprocess.CalledProcessError(2, args)
+            return subprocess.CompletedProcess(args, 2)
+        return real_run(args, **kwargs)
+
+    def fetch(url):
+        if url.endswith('.keys'):
+            return public_key
+        return (
+            "-----BEGIN PGP PUBLIC KEY BLOCK-----\nNote: This user hasn't uploaded any GPG keys.\n"
+        )
+
+    monkeypatch.setattr(subprocess, 'run', run)
+    monkeypatch.setattr(shutil, 'which', lambda name: 'gpg' if name == 'gpg' else real_which(name))
+    assert tooling('verify_release_tag')['verify'](
+        'v2.13.5', root, enforce=True, maintainers=['example'], fetch=fetch
+    )
 
 
 def alerts(dependabot=None, code=None, secrets=None):
