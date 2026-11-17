@@ -9,6 +9,13 @@ Towncrier in the `release` dependency group. This does not add a runtime depende
 
 ## One-time setup
 
+- A repository administrator must configure an **active tag ruleset** for `v*`
+  before enabling either protected release environment. Restrict tag creation and
+  updates to the release-maintainer team through an explicit bypass list; do not
+  grant a blanket write-role bypass. Protect published tags against update/deletion
+  and keep `master` behind required review and CI. Review the ruleset whenever the
+  release-maintainer membership changes. These are repository settings, not rules
+  a tag-controlled workflow can securely enforce about itself.
 - Install Git, GitHub CLI, Go, uv and Python 3.14. Signed GPG tags also need GnuPG;
   SSH-signed tags need Git 2.34+ and OpenSSH. Authenticate `gh` with this repository.
 - Configure a PyPI **Trusted Publisher** for project `b2sdk`, owner `Backblaze`,
@@ -30,6 +37,28 @@ Towncrier in the `release` dependency group. This does not add a runtime depende
   the release; disabled scanners are not silently treated as clean.
 - Select and review the intended maintainer accounts in `.github/signing-maintainers`:
   `goanpeca`, `ffumero2003`, `sophiecarreras`. They are GitHub usernames, not fixture keys.
+
+### Environment approval is an independent trust check
+
+Before approving **either** `release-security` or `pypi`, inspect the exact tag
+commit and its release PR from a trusted checkout. Confirm its master ancestry and
+successful CI independently of the candidate workflow:
+
+```sh
+TAG=vX.Y.Z
+git fetch origin master
+git fetch origin tag "$TAG"
+sha=$(git rev-parse "$TAG^{commit}")
+git merge-base --is-ancestor "$sha" origin/master
+git log -1 --oneline "$sha"
+gh run list --repo Backblaze/b2-sdk-python --workflow ci.yml --branch master --commit "$sha" --limit 1
+```
+
+Do not approve solely because the deployment displays a `v*` tag name. A tag can
+point to unmerged code, including a modified workflow. The external tag ruleset
+and the approver's independent ancestry/CI check protect the credential and OIDC
+boundaries; the in-workflow preflight provides an additional normal-path check.
+For a master dry run, confirm the selected master commit and CI instead.
 
 ### Enroll signing keys before enforcement
 
@@ -172,7 +201,9 @@ publish. TestPyPI is not configured by this workflow and dispatch does not publi
 GitHub may reject dispatch before the workflow trigger exists on master; record
 that as a verification limit rather than bypassing the gate. The protected
 security environment intentionally rejects dispatches on release/feature branches;
-its privileged token is not available to unmerged workflow code.
+tag deployments additionally require the tag ruleset and independent environment
+approval described above. Environment ref patterns alone do not establish that a
+tag's commit was merged.
 
 ## Tag and publish (maintainer only)
 
