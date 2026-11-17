@@ -44,7 +44,7 @@ A `-changelog` label can waive adding a fragment; validation still runs. Lockfil
 updates and release PRs that batch fragments have their own checks.
 
 Release managers use `changie batch` and `changie merge` through the Nox release
-session. See [RELEASE.md](RELEASE.md) for the complete process. The `.changes/v2.13.4.md`
+session. See [RELEASE.md](RELEASE.md) for the complete process. The `.changes/v2.13.5.md`
 archive preserves all earlier release notes; do not rewrite that history.
 
 ## Developer Info
