@@ -56,7 +56,9 @@ def verify(tag, root, *, enforce, maintainers, fetch=fetch_keys):
             ).stdout.strip()
             for ref in (f'refs/tags/{tag}^{{commit}}', 'HEAD')
         ]
-        if commits[0] != commits[1]:
+        if commits[0] != commits[1] or (
+            os.getenv('GITHUB_SHA') and commits[0] != os.environ['GITHUB_SHA']
+        ):
             print('::error::Restored tag does not point to the checked-out release commit.')
             return False
         if not maintainers or any(not re.fullmatch(r'[A-Za-z0-9-]+', name) for name in maintainers):

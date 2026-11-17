@@ -30,7 +30,10 @@ def tooling(name):
 
 
 @pytest.fixture
-def release_repo(tmp_path):
+def release_repo(tmp_path, monkeypatch):
+    # Temporary repositories have their own commits, independent of the CI checkout.
+    monkeypatch.delenv('GITHUB_SHA', raising=False)
+
     def git(*args):
         return subprocess.run(
             ['git', *args], cwd=tmp_path, check=True, capture_output=True, text=True
@@ -326,7 +329,7 @@ def test_unsigned_tag_is_warning_only_until_enrolled(release_repo):
 
 @pytest.mark.parametrize('signing_key_enrolled', [False, True])
 def test_ssh_signed_tag_requires_an_enrolled_signing_key(
-    release_repo, tmp_path, signing_key_enrolled
+    release_repo, tmp_path, monkeypatch, signing_key_enrolled
 ):
     root, git = release_repo
     # Generated fixture material stays in pytest's temporary directory.
@@ -371,6 +374,15 @@ def test_ssh_signed_tag_requires_an_enrolled_signing_key(
     assert not verify('v2.13.5', root, enforce=True, maintainers=['example'], fetch=no_keys)
 
     if signing_key_enrolled:
+        monkeypatch.setenv('GITHUB_SHA', git('rev-parse', 'HEAD').stdout.strip())
+        assert verify('v2.13.5', root, enforce=True, maintainers=['example'], fetch=fetch)
+        workflow_commit = git('commit-tree', 'HEAD^{tree}', '-m', 'Workflow fixture').stdout.strip()
+        monkeypatch.setenv('GITHUB_SHA', workflow_commit)
+        for enforce in (False, True):
+            assert not verify(
+                'v2.13.5', root, enforce=enforce, maintainers=['example'], fetch=fetch
+            )
+        monkeypatch.delenv('GITHUB_SHA')
         # A valid signature on a different commit cannot authorize this checkout.
         git('commit', '--allow-empty', '-m', 'Different workflow commit')
         for enforce in (False, True):
