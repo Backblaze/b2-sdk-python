@@ -38,7 +38,7 @@ jobs:
         # caf is intentional escaped Unicode test data.
         run: |
           uvx codespell==2.4.1 --ignore-words-list=datas,re-use,caf --skip='.git,.nox,.venv,build,dist,uv.lock,CHANGELOG.md'
-          uvx codespell==2.4.1 --check-hidden .changes --skip='.changes/v2.13.4.md'
+          uvx codespell==2.4.1 --check-hidden .changes --skip='.changes/v2.13.5.md'
   changelog-check:
     timeout-minutes: 10
     runs-on: ubuntu-latest

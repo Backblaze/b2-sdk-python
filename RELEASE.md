@@ -139,7 +139,7 @@ details out of public issues, PRs, release notes and workflow logs.
    rejects an existing tag; runs `changie batch vX.Y.Z` then `changie merge`; and
    stops. It never commits, tags or publishes. It creates `.changes/vX.Y.Z.md`,
    consumes the unreleased fragments and updates `CHANGELOG.md`. Historical notes
-   remain in `.changes/v2.13.4.md`; do not rewrite that archive. Review the new
+   remain in `.changes/v2.13.5.md`; do not rewrite that archive. Review the new
    `## [X.Y.Z]` section and regenerate with `changie merge` after editing its batch.
    Supported prerelease suffixes are `-aN`, `-bN` and `-rcN`, also accepting a dot
    before `N` (`-a.N`, `-b.N`, `-rc.N`). This preserves the repository's historical

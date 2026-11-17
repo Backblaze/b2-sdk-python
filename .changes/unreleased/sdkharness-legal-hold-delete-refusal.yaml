@@ -1,5 +1,0 @@
-{
-  "kind": "Infrastructure",
-  "body": "Make the sdkharness legal-hold delete check accept B2's `401 access_denied` response while retaining older simulator refusal shapes.",
-  "time": "2026-11-13T19:52:04Z"
-}
