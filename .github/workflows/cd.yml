@@ -26,6 +26,7 @@ jobs:
   release-gates:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    environment: release-security
     permissions:
       contents: read
       actions: read
@@ -114,7 +115,7 @@ jobs:
 
   publish-pypi:
     needs: build
-    if: github.event_name == 'push' && needs.build.outputs.prerelease == 'false'
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment:
@@ -137,7 +138,7 @@ jobs:
     needs: [build, publish-pypi]
     if: >-
       always() && github.event_name == 'push' && needs.build.result == 'success' &&
-      (needs.publish-pypi.result == 'success' || needs.build.outputs.prerelease == 'true')
+      needs.publish-pypi.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:

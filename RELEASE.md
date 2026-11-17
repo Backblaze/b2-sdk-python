@@ -19,10 +19,14 @@ Towncrier in the `release` dependency group. This does not add a runtime depende
   the old publishing credential; remove that credential after the migration is verified.
 - The publish job has `id-token: write` and explicitly enables PEP 740 attestations.
   It downloads built distributions and does not build code or install build dependencies.
-- Ensure the release gate can read Code scanning alerts, Dependabot alerts and
-  Secret scanning alerts. If `GITHUB_TOKEN` cannot read all three, configure
-  `RELEASE_SECURITY_TOKEN` with those read permissions (prefer an installation
-  token managed by the organization). An unreadable or malformed source **holds**
+- Create a `release-security` GitHub environment with deployment rules allowing
+  only `master` and `v*` tags, required security-maintainer approval, and self-review
+  disabled. Configure these protections **before adding any credential**.
+  Ensure its gate can read Code scanning alerts, Dependabot alerts and Secret
+  scanning alerts. If `GITHUB_TOKEN` cannot read all three, store
+  `RELEASE_SECURITY_TOKEN` only as a secret of this protected environment (prefer
+  an installation token managed by the organization). Never store a copy as a
+  repository/organization secret; remove such a copy if it exists. An unreadable or malformed source **holds**
   the release; disabled scanners are not silently treated as clean.
 - Select and review the intended maintainer accounts in `.github/signing-maintainers`:
   `goanpeca`, `ffumero2003`, `sophiecarreras`. They are GitHub usernames, not fixture keys.
@@ -60,7 +64,9 @@ uv run --group nox python scripts/release_security.py Backblaze/b2-sdk-python
 
 It holds for medium/high/critical CodeQL security alerts, medium/high/critical
 Dependabot alerts with an available fix, and every open secret-scanning alert
-(that API has no severity field). Low alerts and dependencies without a patched
+(that API has no severity field). Code-scanning alerts from other tools are outside
+this automated CodeQL policy. Secret-scanning requests set `hide_secret=true`.
+Low alerts and dependencies without a patched
 version do not hold this gate. The output contains source counts only. Resolve or
 have an authorized owner dismiss findings in their source system with a reason;
 the gate has no finding waiver flag. An API error is `UNVERIFIED` and exits nonzero.
@@ -153,7 +159,7 @@ details out of public issues, PRs, release notes and workflow logs.
 After the dispatch-enabled `cd.yml` is on the default branch:
 
 ```sh
-gh workflow run cd.yml --repo Backblaze/b2-sdk-python --ref release/vX.Y.Z -f dry_run=true
+gh workflow run cd.yml --repo Backblaze/b2-sdk-python --ref master -f dry_run=true
 ```
 
 The dry run checks current master CI and the live security sources, assembles a
@@ -164,7 +170,9 @@ Neither the PyPI publisher nor `gh release create/edit/upload` runs on dispatch;
 configuration or attestation upload; those are only exercised by an actual approved
 publish. TestPyPI is not configured by this workflow and dispatch does not publish there.
 GitHub may reject dispatch before the workflow trigger exists on master; record
-that as a verification limit rather than bypassing the gate.
+that as a verification limit rather than bypassing the gate. The protected
+security environment intentionally rejects dispatches on release/feature branches;
+its privileged token is not available to unmerged workflow code.
 
 ## Tag and publish (maintainer only)
 
@@ -187,9 +195,11 @@ Configure `gpg.format=ssh` and `user.signingkey` for SSH, or the GPG signing key
 GPG, before `git tag -s`. The tag workflow requires successful master and tagged
 commit CI, master ancestry, the configured signature gate, a clean security gate,
 matching Changie version/notes and no remaining fragments before publishing.
-Stable tags publish to PyPI through OIDC with PEP 740 attestations. Prerelease tags
-create a GitHub prerelease without a PyPI upload, matching the prior stable-only
-publication policy. The publishing job requires the protected `pypi` environment.
+Stable and supported prerelease tags publish to PyPI through OIDC with PEP 740
+attestations, preserving uploads for the established digit-terminated prerelease
+tag style. Prereleases are now correctly marked as GitHub prereleases instead of
+using the previous last-character classification. The publishing job requires the
+protected `pypi` environment for both stable and prerelease uploads.
 
 After successful PyPI upload, the workflow creates the GitHub release with the
 exact changelog section. Re-running the GitHub-release job edits existing notes

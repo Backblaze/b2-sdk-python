@@ -18,6 +18,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+import yaml
 
 ROOT = Path(__file__).parents[2]
 
@@ -204,8 +205,46 @@ def test_security_gate_does_not_block_low_or_unpatched_dependabot_alerts():
 
 @pytest.mark.parametrize('severity', ['medium', 'high', 'critical'])
 def test_security_gate_blocks_code_scanning_alerts(severity):
-    source = {'rule': {'security_severity_level': severity}}
+    source = {'tool': {'name': 'CodeQL'}, 'rule': {'security_severity_level': severity}}
     assert tooling('release_security')['check']('owner/repo', api=alerts(code=[source]))
+
+
+def test_security_gate_applies_the_codeql_policy_to_codeql_only():
+    source = {'tool': {'name': 'Other scanner'}, 'rule': {'security_severity_level': 'high'}}
+    assert tooling('release_security')['check']('owner/repo', api=alerts(code=[source])) == []
+
+
+def test_security_gate_requests_secret_metadata_without_secret_values():
+    endpoints = []
+
+    def api(endpoint):
+        endpoints.append(endpoint)
+        return []
+
+    assert tooling('release_security')['check']('owner/repo', api=api) == []
+    assert any('/secret-scanning/' in url and 'hide_secret=true' in url for url in endpoints)
+
+
+def test_release_security_credentials_have_a_protected_environment_boundary():
+    workflow = yaml.load((ROOT / '.github/workflows/cd.yml').read_text(), Loader=yaml.BaseLoader)
+    gates = workflow['jobs']['release-gates']
+    assert gates.get('environment') == 'release-security'
+    assert gates['permissions']['contents'] == 'read'
+    assert 'id-token' not in gates['permissions']
+    for name in ('publish-pypi', 'github-release'):
+        assert "github.event_name == 'push'" in workflow['jobs'][name]['if']
+
+
+def test_supported_prerelease_tags_retain_the_pypi_publish_path():
+    workflow = yaml.load((ROOT / '.github/workflows/cd.yml').read_text(), Loader=yaml.BaseLoader)
+    condition = workflow['jobs']['publish-pypi']['if']
+    assert condition == "github.event_name == 'push'"
+
+
+def test_release_preflight_retains_safe_actionable_failure_reasons():
+    module = tooling('release_preflight')
+    hold = module['ReleaseHold']('Current master CI is not successful')
+    assert 'Current master CI is not successful' in module['failure_reason'](hold)
 
 
 def test_security_gate_blocks_open_secret_scanning_alerts():

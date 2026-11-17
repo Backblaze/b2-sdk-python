@@ -38,7 +38,10 @@ def check(repo, api=github_api):
     holds = []
     for source in ('dependabot', 'code-scanning', 'secret-scanning'):
         try:
-            items = api(f'repos/{repo}/{source}/alerts?state=open&per_page=100')
+            endpoint = f'repos/{repo}/{source}/alerts?state=open&per_page=100'
+            if source == 'secret-scanning':
+                endpoint += '&hide_secret=true'
+            items = api(endpoint)
             if not isinstance(items, list) or not all(isinstance(item, dict) for item in items):
                 raise ValueError('Invalid alert response')
             count = 0
@@ -51,6 +54,8 @@ def check(repo, api=github_api):
                         item['security_vulnerability']['first_patched_version']
                     )
                 elif source == 'code-scanning':
+                    if item['tool']['name'] != 'CodeQL':
+                        continue
                     rule = item['rule']
                     severity = rule.get('security_severity_level')
                     if severity not in BLOCKING | {'low', None}:

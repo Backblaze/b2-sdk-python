@@ -20,6 +20,25 @@ import sys
 from prepare_release import VERSION_PATTERN
 
 
+class ReleaseHold(RuntimeError):
+    """An actionable reason constructed by this gate, never remote error content."""
+
+
+def failure_reason(error):
+    if isinstance(error, ReleaseHold):
+        reason = str(error)
+    elif isinstance(error, subprocess.CalledProcessError):
+        if error.cmd[:2] == ['git', 'merge-base']:
+            reason = 'Release commit is not on master history'
+        elif error.cmd[0] == 'gh':
+            reason = 'Cannot read required CI metadata'
+        else:
+            reason = 'Cannot fetch or resolve the release and master revisions'
+    else:
+        reason = 'Required release or CI metadata is missing or malformed'
+    return f'Release preflight failed: {reason}'
+
+
 def require_green_ci(repo, sha):
     result = subprocess.run(
         ['gh', 'api', f'repos/{repo}/actions/workflows/ci.yml/runs?head_sha={sha}&per_page=100'],
@@ -33,7 +52,7 @@ def require_green_ci(repo, sha):
         if run['head_sha'] == sha and run['head_branch'] == 'master' and run['event'] == 'push'
     ]
     if not runs or runs[0]['status'] != 'completed' or runs[0]['conclusion'] != 'success':
-        raise RuntimeError(
+        raise ReleaseHold(
             'The latest master CI run for this commit must have completed successfully'
         )
 
@@ -41,7 +60,7 @@ def require_green_ci(repo, sha):
 def main():
     repo = os.environ['GITHUB_REPOSITORY']
     if repo != 'Backblaze/b2-sdk-python':
-        raise RuntimeError('Release workflow is restricted to Backblaze/b2-sdk-python')
+        raise ReleaseHold('Release workflow is restricted to Backblaze/b2-sdk-python')
     subprocess.run(['git', 'fetch', '--no-tags', 'origin', 'master'], check=True)
 
     def git(*args):
@@ -53,17 +72,17 @@ def main():
     require_green_ci(repo, master)
     if os.environ['GITHUB_EVENT_NAME'] == 'workflow_dispatch':
         if os.environ.get('INPUT_DRY_RUN') != 'true':
-            raise RuntimeError('Manual dispatch supports dry_run=true only; it never publishes')
+            raise ReleaseHold('Manual dispatch supports dry_run=true only; it never publishes')
         print('Non-publishing dry run; master CI is green.')
         return
     if os.environ.get('GITHUB_REF_TYPE') != 'tag':
-        raise RuntimeError('A release requires a tag push')
+        raise ReleaseHold('A release requires a tag push')
     tag = os.environ['GITHUB_REF_NAME']
     if not re.fullmatch('v' + VERSION_PATTERN, tag):
-        raise RuntimeError('Invalid release tag')
+        raise ReleaseHold('Invalid release tag')
     head = git('rev-parse', 'HEAD')
     if git('rev-parse', f'refs/tags/{tag}^{{commit}}') != head:
-        raise RuntimeError('Checked-out revision differs from the release tag')
+        raise ReleaseHold('Checked-out revision differs from the release tag')
     subprocess.run(['git', 'merge-base', '--is-ancestor', head, master], check=True)
     require_green_ci(repo, head)
     print('Release tag is on master history and both release and master CI are green.')
@@ -74,4 +93,4 @@ if __name__ == '__main__':
         main()
     except (KeyError, ValueError, RuntimeError, subprocess.SubprocessError) as error:
         # Do not echo API payloads or credential-bearing stderr.
-        sys.exit(f'Release preflight failed ({type(error).__name__})')
+        sys.exit(failure_reason(error))
