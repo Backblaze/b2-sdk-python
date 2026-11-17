@@ -1,0 +1,32 @@
+changesDir: .changes
+unreleasedDir: unreleased
+headerPath: header.tpl.md
+changelogPath: CHANGELOG.md
+versionExt: md
+versionFormat: '## [{{.VersionNoPrefix}}](https://github.com/Backblaze/b2-sdk-python/releases/tag/v{{.VersionNoPrefix}}) - {{.Time.Format "2006-01-02"}}'
+kindFormat: '### {{.Kind}}'
+changeFormat: '- {{.Body}}'
+kinds:
+  - label: Removed
+    auto: major
+  - label: Changed
+    auto: minor
+  - label: Fixed
+    auto: patch
+  - label: Deprecated
+    auto: minor
+  - label: Added
+    auto: minor
+  - label: Doc
+    auto: patch
+  - label: Infrastructure
+    auto: patch
+  - label: Security
+    auto: patch
+newlines:
+  afterChangelogHeader: 0
+  beforeChangelogVersion: 1
+  endOfVersion: 1
+  afterKind: 1
+  beforeKind: 1
+envPrefix: CHANGIE_

@@ -12,12 +12,8 @@ from __future__ import annotations
 import os
 import pathlib
 import platform
-import re
-import subprocess
 
 import nox
-
-UPSTREAM_REPO_URL = 'git@github.com:Backblaze/b2-sdk-python.git'
 
 CI = os.environ.get('CI') is not None
 NOX_PYTHONS = os.environ.get('NOX_PYTHONS')
@@ -56,7 +52,7 @@ PYTHON_DEFAULT_VERSION = next(
     PYTHON_VERSIONS[-1],
 )
 
-PY_PATHS = ['b2sdk', 'test', 'noxfile.py']
+PY_PATHS = ['b2sdk', 'test', 'scripts', 'noxfile.py']
 
 nox.options.default_venv_backend = 'uv'
 nox.options.reuse_existing_virtualenvs = True
@@ -210,7 +206,7 @@ def build(session):
             "'v2': pathlib.Path(v2.__file__).resolve(), "
             "'v3': pathlib.Path(v3.__file__).resolve()}; "
             'print(module_files); '
-            "assert all(not path.is_relative_to(source_root) for path in module_files.values()), "
+            'assert all(not path.is_relative_to(source_root) for path in module_files.values()), '
             "f'Imported modules from checkout: {module_files!r}'; "
             "assert all('site-packages' in path.parts for path in module_files.values()), "
             "f'Imported modules from an unexpected location: {module_files!r}'"
@@ -261,158 +257,14 @@ def doc_cover(session):
 
 @nox.session(python=PYTHON_DEFAULT_VERSION)
 def make_release_commit(session):
-    """
-    Runs `towncrier build`, commits changes, tags, all that is left to do is pushing
-    """
-    if session.posargs:
-        version = session.posargs[0]
-    else:
-        session.error('Provide -- {release_version} (X.Y.Z - without leading "v")')
-
-    if not re.match(r'^\d+\.\d+\.\d+$', version):
-        session.error(
-            f'Provided version="{version}". Version must be of the form X.Y.Z where '
-            f'X, Y and Z are integers'
-        )
-
-    local_changes = subprocess.check_output(['git', 'diff', '--stat'])
-    if local_changes:
-        session.error('Uncommitted changes detected')
-
-    current_branch = subprocess.check_output(['git', 'rev-parse', '--abbrev-ref', 'HEAD']).decode()
-    if current_branch != 'master':
-        session.log('WARNING: releasing from a branch different than master')
-
-    uv_install(session, groups=('release',))
-    session.run('towncrier', 'build', '--yes', '--version', version)
-
-    session.log(
-        f'CHANGELOG updated, changes ready to commit and push\n'
-        f'    git remote add upstream {UPSTREAM_REPO_URL!r} 2>/dev/null || git remote get-url upstream\n'
-        f'    git commit -m "release {version}"\n'
-        f'    git push upstream {current_branch}\n'
-        f'Wait for a CI workflow to complete successfully, before triggering CD by pushing a tag.\n'
-        f'    git tag v{version}\n'
-        f'    git push upstream v{version}\n'
-        f'Wait for a CD workflow to complete successfully, indicates the release is done.'
-    )
-
-
-def load_allowed_change_types(
-    project_toml: pathlib.Path = pathlib.Path('./pyproject.toml'),
-) -> set[str]:
-    """
-    Load the list of allowed change types from the pyproject.toml file.
-    """
-    import tomllib
-
-    configuration = tomllib.loads(project_toml.read_text())
-    return set(entry['directory'] for entry in configuration['tool']['towncrier']['type'])
-
-
-def is_changelog_filename_valid(filename: str, allowed_change_types: set[str]) -> tuple[bool, str]:
-    """
-    Validates whether the given filename matches our rules.
-    Provides information about why it doesn't match them.
-    """
-    error_reasons = []
-
-    wanted_extension = 'md'
-    try:
-        description, change_type, extension = filename.rsplit('.', maxsplit=2)
-    except ValueError:
-        # Not enough values to unpack.
-        return False, 'Doesn\'t follow the "<description>.<change_type>.md" pattern.'
-
-    # Check whether the filename ends with .md.
-    if extension != wanted_extension:
-        error_reasons.append(f"Doesn't end with {wanted_extension} extension.")
-
-    # Check whether the change type is valid.
-    if change_type not in allowed_change_types:
-        error_reasons.append(
-            f"Change type '{change_type}' doesn't match allowed types: {allowed_change_types}."
-        )
-
-    # Check whether the description makes sense.
-    try:
-        int(description)
-    except ValueError:
-        if description[0] != '+':
-            error_reasons.append("Doesn't start with a number nor a plus sign.")
-
-    return len(error_reasons) == 0, ' / '.join(error_reasons) if error_reasons else ''
-
-
-def is_changelog_entry_valid(file_content: str) -> tuple[bool, str]:
-    """
-    We expect the changelog entry to be a valid sentence in the English language.
-    This includes, but not limits to, providing a capital letter at the start
-    and the full-stop character at the end.
-
-    Note: to do this "properly", tools like `nltk` and `spacy` should be used.
-    """
-    error_reasons = []
-
-    # Check whether the first character is a capital letter.
-    # Not allowing special characters nor numbers at the very start.
-    if not file_content[0].isalpha() or not file_content[0].isupper():
-        error_reasons.append('The first character is not a capital letter.')
-
-    # Check if the last character is a full-stop character.
-    if file_content.strip()[-1] != '.':
-        error_reasons.append('The last character is not a full-stop character.')
-
-    return len(error_reasons) == 0, ' / '.join(error_reasons) if error_reasons else ''
+    """Prepare a Changie batch on clean master; never commit, tag or publish."""
+    if len(session.posargs) != 1:
+        session.error('Provide -- X.Y.Z (without leading v)')
+    session.run('python', 'scripts/prepare_release.py', session.posargs[0])
 
 
 @nox.session(python=PYTHON_DEFAULT_VERSION)
-def towncrier_check(session):
-    """
-    Check whether all the entries in the changelog.d follow the expected naming convention
-    as well as some basic rules as to their format.
-    """
-    expected_non_md_files = {'.gitkeep'}
-    allowed_change_types = load_allowed_change_types()
-
-    is_error = False
-
-    for filename in pathlib.Path('./changelog.d/').glob('*'):
-        # If that's an expected file, it's all right.
-        if filename.name in expected_non_md_files:
-            continue
-
-        # Check whether the file matches the expected pattern.
-        is_valid, error_message = is_changelog_filename_valid(filename.name, allowed_change_types)
-        if not is_valid:
-            session.log(f"File {filename.name} doesn't match the expected pattern: {error_message}")
-            is_error = True
-            continue
-
-        # Check whether the file isn't too big.
-        if filename.lstat().st_size > 16 * 1024:
-            session.log(
-                f'File {filename.name} content is too big – it should be smaller than 16kB.'
-            )
-            is_error = True
-            continue
-
-        # Check whether the file can be loaded as UTF-8 file.
-        try:
-            file_content = filename.read_text(encoding='utf-8')
-        except UnicodeDecodeError:
-            session.log(f'File {filename.name} is not a valid UTF-8 file.')
-            is_error = True
-            continue
-
-        # Check whether the content of the file is anyhow valid.
-        is_valid, error_message = is_changelog_entry_valid(file_content)
-        if not is_valid:
-            session.log(f'File {filename.name} is not a valid changelog entry: {error_message}')
-            is_error = True
-            continue
-
-    if is_error:
-        session.error(
-            'Found errors in the changelog.d directory. Check logs above for more information'
-        )
+def changelog_check(session):
+    """Validate Changie fragments, generated history and optional PR coverage."""
+    uv_install(session, groups=('release',))
+    session.run('python', 'scripts/check_changelog.py', *session.posargs)

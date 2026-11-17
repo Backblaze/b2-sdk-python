@@ -100,7 +100,7 @@ class TestDownload(IntegrationTestBase):
 
 @pytest.mark.parametrize('size_multiplier', [1, 100])
 def test_gzip(b2_auth_data, bucket, tmp_path, b2_api, size_multiplier, realm):
-    """Test downloading gzipped files of varius sizes with and without content-encoding."""
+    """Test downloading gzipped files of various sizes with and without content-encoding."""
     source_file = tmp_path / 'compressed_file.gz'
     downloaded_uncompressed_file = tmp_path / 'downloaded_uncompressed_file'
     downloaded_compressed_file = tmp_path / 'downloaded_compressed_file'

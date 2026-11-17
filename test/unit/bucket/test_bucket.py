@@ -2863,9 +2863,9 @@ class DownloadTests(DownloadTestsBase):
         file_version = self.bucket.upload_bytes(self.DATA.encode(), 'file1')
 
         non_seekable_strategies = [
-            strat
-            for strat in self.bucket.api.services.download_manager.strategies
-            if not isinstance(strat, ParallelDownloader)
+            strategy
+            for strategy in self.bucket.api.services.download_manager.strategies
+            if not isinstance(strategy, ParallelDownloader)
         ]
         context = (
             contextlib.nullcontext()
@@ -2888,9 +2888,9 @@ class DownloadTests(DownloadTestsBase):
         file_version = self.bucket.upload_bytes(self.DATA.encode(), 'file1')
 
         non_seekable_strategies = [
-            strat
-            for strat in self.bucket.api.services.download_manager.strategies
-            if not isinstance(strat, ParallelDownloader)
+            strategy
+            for strategy in self.bucket.api.services.download_manager.strategies
+            if not isinstance(strategy, ParallelDownloader)
         ]
         context = (
             contextlib.nullcontext()
