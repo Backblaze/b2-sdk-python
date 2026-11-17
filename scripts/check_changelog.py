@@ -40,6 +40,7 @@ def main():
     parser.add_argument('--allow-missing-fragment', action='store_true')
     args = parser.parse_args()
     root = Path.cwd()
+    has_fragments = False
     for path in (root / '.changes/unreleased').iterdir():
         if path.name == '.gitkeep':
             continue
@@ -48,12 +49,14 @@ def main():
         if path.stat().st_size > 16 * 1024:
             raise ValueError('Fragment exceeds 16 KiB')
         validate_fragment(yaml.safe_load(path.read_text()))
+        has_fragments = True
     merged = subprocess.run(
         [*CHANGIE, 'merge', '--dry-run'], check=True, capture_output=True, text=True
     )
     if merged.stdout != (root / 'CHANGELOG.md').read_text():
         raise ValueError('CHANGELOG.md differs from changie merge; regenerate it')
-    subprocess.run([*CHANGIE, 'batch', 'patch', '--dry-run'], check=True, capture_output=True)
+    if has_fragments:
+        subprocess.run([*CHANGIE, 'batch', 'patch', '--dry-run'], check=True, capture_output=True)
     if args.base and not args.allow_missing_fragment:
         diff = subprocess.run(
             ['git', 'diff', '--name-status', f'{args.base}...HEAD'],

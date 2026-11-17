@@ -65,10 +65,12 @@ For a master dry run, confirm the selected master commit and CI instead.
 There is no enrolled-key baseline yet. Each maintainer must create a personal GPG
 or SSH signing key, register its public key with their GitHub account and configure
 Git to sign tags. Review fingerprints with the maintainer through an independent
-channel. The workflow resolves public keys from `https://github.com/<username>.gpg`
-and `.keys` at check time into a temporary keyring/allowed-signers file, and runs
+channel. The workflow resolves GPG keys from `https://github.com/<username>.gpg`
+and SSH signing keys from `https://api.github.com/users/<username>/ssh_signing_keys`
+at check time into a temporary keyring/allowed-signers file, and runs
 `git verify-tag`. Do not commit a private key or test key to the maintainer list.
-An SSH signing key must be present in the public `.keys` response used by the verifier.
+Register SSH keys as **Signing Keys** on GitHub. The `.keys` endpoint lists
+authentication keys and is not used to authorize release signatures.
 
 `ENFORCE_SIGNED_TAGS` is a repository variable. Unset or `false` means **warn-only**:
 an unsigned, unknown-key or unverifiable tag is reported but does not hold the
@@ -143,8 +145,8 @@ details out of public issues, PRs, release notes and workflow logs.
    `## [X.Y.Z]` section and regenerate with `changie merge` after editing its batch.
    Supported prerelease suffixes are `-aN`, `-bN` and `-rcN`, also accepting a dot
    before `N` (`-a.N`, `-b.N`, `-rc.N`). This preserves the repository's historical
-   `v1.0.0-rc1` tag style. Components use ASCII digits without leading zeroes;
-   `N` is nonnegative. This is a deliberately restricted,
+   `v1.0.0-rc1` tag style. Numeric release components accept ASCII digits, including
+   leading zeroes; `N` is nonnegative. This is a deliberately restricted,
    Python-compatible interface, not arbitrary SemVer identifiers or build metadata.
    All three release entry points use the same validator. For example, run
    `uv run --locked --group nox nox -vs make_release_commit -- 2.14.0-rc.1`.

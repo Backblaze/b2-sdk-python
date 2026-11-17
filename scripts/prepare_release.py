@@ -17,10 +17,7 @@ import sys
 from pathlib import Path
 
 CHANGIE = ['go', 'run', 'github.com/miniscruff/changie@v1.24.0']
-VERSION_PATTERN = (
-    r'(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)'
-    r'(?:-(?:a|b|rc)\.?(?:0|[1-9][0-9]*))?'
-)
+VERSION_PATTERN = r'[0-9]+\.[0-9]+\.[0-9]+(?:-(?:a|b|rc)\.?(?:0|[1-9][0-9]*))?'
 
 
 def prepare(version, root, run=subprocess.run):

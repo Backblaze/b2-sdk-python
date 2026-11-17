@@ -41,6 +41,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           INPUT_DRY_RUN: ${{ inputs.dry_run }}
         run: python scripts/release_preflight.py
+      - name: Restore annotated release tag
+        if: github.event_name == 'push'
+        env:
+          TAG: ${{ github.ref_name }}
+        run: git fetch --force --no-tags origin "refs/tags/$TAG:refs/tags/$TAG"
       - name: Verify maintainer tag signature
         if: github.event_name == 'push'
         env:

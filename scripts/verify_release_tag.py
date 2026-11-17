@@ -11,6 +11,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import shutil
@@ -67,9 +68,27 @@ def verify(tag, root, *, enforce, maintainers, fetch=fetch_keys):
                         capture_output=True,
                         check=False,
                     )
-                for key in fetch(f'https://github.com/{name}.keys').splitlines():
-                    if key.strip():
-                        ssh_keys.append(f'{name} {key}')
+                page = 1
+                while True:
+                    keys = json.loads(
+                        fetch(
+                            f'https://api.github.com/users/{name}/ssh_signing_keys?per_page=100&page={page}'
+                        )
+                    )
+                    if not isinstance(keys, list):
+                        raise ValueError('Invalid SSH signing-key response')
+                    for item in keys:
+                        key = item.get('key') if isinstance(item, dict) else None
+                        if (
+                            not isinstance(key, str)
+                            or not key.strip()
+                            or len(key.splitlines()) != 1
+                        ):
+                            raise ValueError('Invalid SSH signing key')
+                        ssh_keys.append(f'{name} {key.strip()}')
+                    if len(keys) < 100:
+                        break
+                    page += 1
             signers = home / 'allowed_signers'
             signers.write_text('\n'.join(ssh_keys) + '\n')
             commands = [

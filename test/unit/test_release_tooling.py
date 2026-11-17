@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import runpy
+import shlex
 import shutil
 import subprocess
 import sys
@@ -102,6 +103,20 @@ def test_release_preparation_preserves_the_prerelease_version(release_repo, vers
     assert calls[0][3:] == ['batch', f'v{version}']
 
 
+def test_release_preparation_preserves_zero_padded_components(release_repo):
+    root, _ = release_repo
+    calls = []
+
+    def run(args, **kwargs):
+        if args[0] == 'go':
+            calls.append(args)
+            return subprocess.CompletedProcess(args, 0, '')
+        return subprocess.run(args, **kwargs)
+
+    tooling('prepare_release')['prepare']('02.13.05', root, run=run)
+    assert [call[3:] for call in calls] == [['batch', 'v02.13.05'], ['merge']]
+
+
 @pytest.mark.parametrize(
     'version', ['2.14.0-preview.1', '2.14.0-rc-1', '2.14.0-rc..1', '2.1\u0664.0']
 )
@@ -150,8 +165,8 @@ def test_github_no_gpg_keys_response_does_not_prevent_ssh_verification(release_r
         return real_run(args, **kwargs)
 
     def fetch(url):
-        if url.endswith('.keys'):
-            return public_key
+        if '/ssh_signing_keys?' in url:
+            return json.dumps([{'key': public_key.strip()}])
         return (
             "-----BEGIN PGP PUBLIC KEY BLOCK-----\nNote: This user hasn't uploaded any GPG keys.\n"
         )
@@ -241,6 +256,33 @@ def test_supported_prerelease_tags_retain_the_pypi_publish_path():
     assert condition == "github.event_name == 'push'"
 
 
+def test_release_workflow_restores_the_origin_tag_object(release_repo):
+    root, git = release_repo
+    origin = root / 'origin.git'
+    git('init', '--bare', str(origin))
+    git('remote', 'add', 'origin', str(origin))
+    tag = 'v2.13.5'
+    git('tag', '-a', tag, '-m', 'Annotated fixture')
+    tag_object = git('rev-parse', tag).stdout.strip()
+    git('push', 'origin', f'refs/tags/{tag}')
+    # Reproduce checkout's replacement of the tag object with the peeled commit.
+    git('update-ref', f'refs/tags/{tag}', git('rev-parse', 'HEAD').stdout.strip())
+    assert git('cat-file', '-t', tag).stdout.strip() == 'commit'
+
+    workflow = yaml.load((ROOT / '.github/workflows/cd.yml').read_text(), Loader=yaml.BaseLoader)
+    steps = workflow['jobs']['release-gates']['steps']
+    for step in steps:
+        if step.get('name') == 'Verify maintainer tag signature':
+            break
+        if step.get('name') == 'Restore annotated release tag':
+            assert step['if'] == "github.event_name == 'push'"
+            assert step['env']['TAG'] == '${{ github.ref_name }}'
+            command = [arg.replace('$TAG', tag) for arg in shlex.split(step['run'])]
+            subprocess.run(command, cwd=root, check=True, capture_output=True)
+    assert git('rev-parse', tag).stdout.strip() == tag_object
+    assert git('cat-file', '-t', tag).stdout.strip() == 'tag'
+
+
 def test_release_preflight_retains_safe_actionable_failure_reasons():
     module = tooling('release_preflight')
     hold = module['ReleaseHold']('Current master CI is not successful')
@@ -282,7 +324,10 @@ def test_unsigned_tag_is_warning_only_until_enrolled(release_repo):
     assert not verify('v2.13.5', root, enforce=True, maintainers=['example'], fetch=lambda url: '')
 
 
-def test_ssh_signed_tag_requires_an_enrolled_key(release_repo, tmp_path):
+@pytest.mark.parametrize('signing_key_enrolled', [False, True])
+def test_ssh_signed_tag_requires_an_enrolled_signing_key(
+    release_repo, tmp_path, signing_key_enrolled
+):
     root, git = release_repo
     # Generated fixture material stays in pytest's temporary directory.
     key = tmp_path / 'fixture-signing-key'
@@ -303,16 +348,27 @@ def test_ssh_signed_tag_requires_an_enrolled_key(release_repo, tmp_path):
 
     # Key files are untracked fixtures; signature verification itself does not mutate the repo.
     def fetch(url):
-        return public_key if url.endswith('.keys') else ''
+        if url.endswith('.keys'):
+            return '' if signing_key_enrolled else public_key
+        if '/ssh_signing_keys?' in url:
+            return json.dumps([{'key': public_key.strip()}] if signing_key_enrolled else [])
+        return ''
 
-    assert verify('v2.13.5', root, enforce=True, maintainers=['example'], fetch=fetch)
-    assert not verify('v2.13.5', root, enforce=True, maintainers=['example'], fetch=lambda url: '')
+    assert (
+        verify('v2.13.5', root, enforce=True, maintainers=['example'], fetch=fetch)
+        is signing_key_enrolled
+    )
+
+    def no_keys(url):
+        return '[]' if '/ssh_signing_keys?' in url else ''
+
+    assert not verify('v2.13.5', root, enforce=True, maintainers=['example'], fetch=no_keys)
 
     # A pre-existing local/global signer configuration cannot expand enrollment.
     external = root / 'external-signers'
     external.write_text(f'external {public_key}')
     git('config', 'gpg.ssh.allowedSignersFile', str(external))
-    assert not verify('v2.13.5', root, enforce=True, maintainers=['example'], fetch=lambda url: '')
+    assert not verify('v2.13.5', root, enforce=True, maintainers=['example'], fetch=no_keys)
 
 
 @pytest.mark.parametrize(
@@ -327,6 +383,38 @@ def test_changie_fragment_validation_accepts_a_complete_entry():
     tooling('check_changelog')['validate_fragment'](
         {'kind': 'Fixed', 'body': 'Correct a release check.', 'time': '2026-11-17T00:00:00Z'}
     )
+
+
+@pytest.mark.parametrize('has_fragment', [False, True])
+@pytest.mark.parametrize('base_diff', [None, 'A\t.changes/v2.13.6.md\nM\tCHANGELOG.md\n'])
+def test_changelog_check_batches_only_when_fragments_exist(
+    tmp_path, monkeypatch, has_fragment, base_diff
+):
+    unreleased = tmp_path / '.changes/unreleased'
+    unreleased.mkdir(parents=True)
+    (unreleased / '.gitkeep').touch()
+    if has_fragment:
+        (unreleased / 'entry.yaml').write_text(
+            'kind: Fixed\nbody: Correct a release check.\ntime: 2026-11-17T00:00:00Z\n'
+        )
+    changelog = '## [2.13.6]\n'
+    (tmp_path / 'CHANGELOG.md').write_text(changelog)
+    calls = []
+
+    def run(args, **kwargs):
+        calls.append(args)
+        if 'batch' in args and not has_fragment:
+            raise subprocess.CalledProcessError(1, args, stderr='no unreleased changes found')
+        output = base_diff if args[:2] == ['git', 'diff'] else changelog
+        return subprocess.CompletedProcess(args, 0, output)
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(
+        sys, 'argv', ['check_changelog', *(['--base', 'base'] if base_diff else [])]
+    )
+    monkeypatch.setattr(subprocess, 'run', run)
+    tooling('check_changelog')['main']()
+    assert any('batch' in call for call in calls) is has_fragment
 
 
 @pytest.mark.parametrize(
