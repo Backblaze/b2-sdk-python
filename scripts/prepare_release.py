@@ -16,11 +16,13 @@ import subprocess
 import sys
 from pathlib import Path
 
+from release_versions import VERSION_PATTERN
+
 CHANGIE = ['go', 'run', 'github.com/miniscruff/changie@v1.24.0']
 
 
 def prepare(version, root, run=subprocess.run):
-    if not re.fullmatch(r'\d+\.\d+\.\d+(?:-[A-Za-z0-9.]+)?', version):
+    if not re.fullmatch(VERSION_PATTERN, version):
         raise ValueError('Version must be X.Y.Z or X.Y.Z-rc.1 without a leading v')
 
     def git(*args):

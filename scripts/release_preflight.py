@@ -17,6 +17,8 @@ import re
 import subprocess
 import sys
 
+from release_versions import VERSION_PATTERN
+
 
 def require_green_ci(repo, sha):
     result = subprocess.run(
@@ -57,7 +59,7 @@ def main():
     if os.environ.get('GITHUB_REF_TYPE') != 'tag':
         raise RuntimeError('A release requires a tag push')
     tag = os.environ['GITHUB_REF_NAME']
-    if not re.fullmatch(r'v\d+\.\d+\.\d+(?:-[A-Za-z0-9.]+)?', tag):
+    if not re.fullmatch('v' + VERSION_PATTERN, tag):
         raise RuntimeError('Invalid release tag')
     head = git('rev-parse', 'HEAD')
     if git('rev-parse', f'refs/tags/{tag}^{{commit}}') != head:

@@ -21,6 +21,8 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
+from release_versions import VERSION_PATTERN
+
 
 def enforcing(value):
     normalized = value.strip().lower()
@@ -45,7 +47,7 @@ def fetch_keys(url):
 def verify(tag, root, *, enforce, maintainers, fetch=fetch_keys):
     verified = False
     try:
-        if not re.fullmatch(r'v\d+\.\d+\.\d+(?:-[A-Za-z0-9.]+)?', tag):
+        if not re.fullmatch('v' + VERSION_PATTERN, tag):
             raise ValueError('Invalid release tag')
         if not maintainers or any(not re.fullmatch(r'[A-Za-z0-9-]+', name) for name in maintainers):
             raise ValueError('Invalid maintainer list')

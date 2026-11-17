@@ -4,6 +4,8 @@ A release is a reviewed preparation PR merged into `master`, followed by a
 maintainer's tag on that PR's merge commit. Hatch-vcs derives the package version
 from Git; do not add a static version to `pyproject.toml` or `b2sdk/version.py`.
 Go and Changie manage the release notes, following Backblaze/blazer's setup.
+The release tooling directly depends on PyYAML for fragment validation, replacing
+Towncrier in the `release` dependency group. This does not add a runtime dependency.
 
 ## One-time setup
 
@@ -104,7 +106,10 @@ details out of public issues, PRs, release notes and workflow logs.
    consumes the unreleased fragments and updates `CHANGELOG.md`. Historical notes
    remain in `.changes/v2.13.4.md`; do not rewrite that archive. Review the new
    `## [X.Y.Z]` section and regenerate with `changie merge` after editing its batch.
-   For a prerelease, pass the full SemVer version instead, for example
+   Supported prerelease suffixes are `-a.N`, `-b.N` and `-rc.N`, where `N` is a
+   nonnegative integer without leading zeroes. This is a deliberately restricted,
+   Python-compatible interface, not arbitrary SemVer identifiers or build metadata.
+   All three release entry points use the same validator. For example, run
    `uv run --locked --group nox nox -vs make_release_commit -- 2.14.0-rc.1`.
    Keep that exact suffix in the branch, Changie batch and tag (`v2.14.0-rc.1`);
    preparing `2.14.0` does not prepare the notes for `2.14.0-rc.1`.

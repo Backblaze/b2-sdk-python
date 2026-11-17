@@ -13,7 +13,9 @@ import json
 import runpy
 import shutil
 import subprocess
+import sys
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
@@ -21,7 +23,8 @@ ROOT = Path(__file__).parents[2]
 
 
 def tooling(name):
-    return runpy.run_path(str(ROOT / 'scripts' / f'{name}.py'))
+    with patch.object(sys, 'path', [str(ROOT / 'scripts'), *sys.path]):
+        return runpy.run_path(str(ROOT / 'scripts' / f'{name}.py'))
 
 
 @pytest.fixture
@@ -83,7 +86,8 @@ def test_release_preparation_batches_then_merges_without_tagging(release_repo):
     assert git('tag', '--list').stdout == ''
 
 
-def test_release_preparation_preserves_the_prerelease_version(release_repo):
+@pytest.mark.parametrize('version', ['2.14.0-a.1', '2.14.0-b.1', '2.14.0-rc.1'])
+def test_release_preparation_preserves_the_prerelease_version(release_repo, version):
     root, _ = release_repo
     calls = []
 
@@ -93,8 +97,21 @@ def test_release_preparation_preserves_the_prerelease_version(release_repo):
             return subprocess.CompletedProcess(args, 0, '')
         return subprocess.run(args, **kwargs)
 
-    tooling('prepare_release')['prepare']('2.14.0-rc.1', root, run=run)
-    assert calls[0][3:] == ['batch', 'v2.14.0-rc.1']
+    tooling('prepare_release')['prepare'](version, root, run=run)
+    assert calls[0][3:] == ['batch', f'v{version}']
+
+
+@pytest.mark.parametrize('version', ['2.14.0-preview.1', '2.14.0-rc-1', '2.14.0-rc..1'])
+def test_release_preparation_rejects_unsupported_prerelease_schemes(release_repo, version):
+    root, _ = release_repo
+
+    def run(args, **kwargs):
+        if args[0] == 'go':
+            return subprocess.CompletedProcess(args, 0, '')
+        return subprocess.run(args, **kwargs)
+
+    with pytest.raises(ValueError, match='X.Y.Z'):
+        tooling('prepare_release')['prepare'](version, root, run=run)
 
 
 def test_github_no_gpg_keys_response_does_not_prevent_ssh_verification(release_repo, monkeypatch):
