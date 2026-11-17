@@ -9,6 +9,14 @@ upcoming release can be found in [changelog.d](changelog.d).
 
 <!-- towncrier release notes start -->
 
+## [2.13.5](https://github.com/Backblaze/b2-sdk-python/releases/tag/v2.13.5) - 2026-11-17
+
+
+### Infrastructure
+
+- Make the sdkharness legal-hold delete check accept B2's `401 access_denied` response while retaining older simulator refusal shapes.
+
+
 ## [2.13.4](https://github.com/Backblaze/b2-sdk-python/releases/tag/v2.13.4) - 2026-11-12
 
 ### Fixed
