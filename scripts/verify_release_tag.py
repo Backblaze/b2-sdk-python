@@ -21,7 +21,7 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-from release_versions import VERSION_PATTERN
+from prepare_release import VERSION_PATTERN
 
 
 def enforcing(value):

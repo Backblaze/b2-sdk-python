@@ -17,7 +17,7 @@ import re
 import subprocess
 import sys
 
-from release_versions import VERSION_PATTERN
+from prepare_release import VERSION_PATTERN
 
 
 def require_green_ci(repo, sha):

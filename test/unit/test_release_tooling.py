@@ -86,7 +86,7 @@ def test_release_preparation_batches_then_merges_without_tagging(release_repo):
     assert git('tag', '--list').stdout == ''
 
 
-@pytest.mark.parametrize('version', ['2.14.0-a.1', '2.14.0-b.1', '2.14.0-rc.1'])
+@pytest.mark.parametrize('version', ['2.14.0-a.1', '2.14.0-b.1', '2.14.0-rc.1', '2.14.0-rc1'])
 def test_release_preparation_preserves_the_prerelease_version(release_repo, version):
     root, _ = release_repo
     calls = []
@@ -101,7 +101,9 @@ def test_release_preparation_preserves_the_prerelease_version(release_repo, vers
     assert calls[0][3:] == ['batch', f'v{version}']
 
 
-@pytest.mark.parametrize('version', ['2.14.0-preview.1', '2.14.0-rc-1', '2.14.0-rc..1'])
+@pytest.mark.parametrize(
+    'version', ['2.14.0-preview.1', '2.14.0-rc-1', '2.14.0-rc..1', '2.1\u0664.0']
+)
 def test_release_preparation_rejects_unsupported_prerelease_schemes(release_repo, version):
     root, _ = release_repo
 
@@ -112,6 +114,13 @@ def test_release_preparation_rejects_unsupported_prerelease_schemes(release_repo
 
     with pytest.raises(ValueError, match='X.Y.Z'):
         tooling('prepare_release')['prepare'](version, root, run=run)
+
+
+def test_version_error_explains_all_supported_stages(release_repo):
+    root, _ = release_repo
+    with pytest.raises(ValueError) as error:
+        tooling('prepare_release')['prepare']('unsupported', root)
+    assert all(stage in str(error.value) for stage in ('a.N', 'b.N', 'rc.N'))
 
 
 def test_github_no_gpg_keys_response_does_not_prevent_ssh_verification(release_repo, monkeypatch):

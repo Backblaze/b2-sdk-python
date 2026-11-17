@@ -106,8 +106,10 @@ details out of public issues, PRs, release notes and workflow logs.
    consumes the unreleased fragments and updates `CHANGELOG.md`. Historical notes
    remain in `.changes/v2.13.4.md`; do not rewrite that archive. Review the new
    `## [X.Y.Z]` section and regenerate with `changie merge` after editing its batch.
-   Supported prerelease suffixes are `-a.N`, `-b.N` and `-rc.N`, where `N` is a
-   nonnegative integer without leading zeroes. This is a deliberately restricted,
+   Supported prerelease suffixes are `-aN`, `-bN` and `-rcN`, also accepting a dot
+   before `N` (`-a.N`, `-b.N`, `-rc.N`). This preserves the repository's historical
+   `v1.0.0-rc1` tag style. Components use ASCII digits without leading zeroes;
+   `N` is nonnegative. This is a deliberately restricted,
    Python-compatible interface, not arbitrary SemVer identifiers or build metadata.
    All three release entry points use the same validator. For example, run
    `uv run --locked --group nox nox -vs make_release_commit -- 2.14.0-rc.1`.
