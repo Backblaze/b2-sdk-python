@@ -74,8 +74,9 @@ authentication keys and is not used to authorize release signatures.
 
 `ENFORCE_SIGNED_TAGS` is a repository variable. Unset or `false` means **warn-only**:
 an unsigned, unknown-key or unverifiable tag is reported but does not hold the
-release. Once every intended release signer is enrolled and a signed-tag check has
-been verified, a repository administrator enables enforcement:
+release. A restored tag pointing to a different commit than the checkout always
+blocks, regardless of this variable. Once every intended release signer is enrolled
+and a signed-tag check has been verified, a repository administrator enables enforcement:
 
 ```sh
 gh variable set ENFORCE_SIGNED_TAGS --repo Backblaze/b2-sdk-python --body true

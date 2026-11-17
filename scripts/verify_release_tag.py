@@ -50,6 +50,15 @@ def verify(tag, root, *, enforce, maintainers, fetch=fetch_keys):
     try:
         if not re.fullmatch('v' + VERSION_PATTERN, tag):
             raise ValueError('Invalid release tag')
+        commits = [
+            subprocess.run(
+                ['git', 'rev-parse', ref], cwd=root, check=True, capture_output=True, text=True
+            ).stdout.strip()
+            for ref in (f'refs/tags/{tag}^{{commit}}', 'HEAD')
+        ]
+        if commits[0] != commits[1]:
+            print('::error::Restored tag does not point to the checked-out release commit.')
+            return False
         if not maintainers or any(not re.fullmatch(r'[A-Za-z0-9-]+', name) for name in maintainers):
             raise ValueError('Invalid maintainer list')
         with tempfile.TemporaryDirectory(prefix='b2sdk-signers-') as temporary:

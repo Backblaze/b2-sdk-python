@@ -370,6 +370,14 @@ def test_ssh_signed_tag_requires_an_enrolled_signing_key(
     git('config', 'gpg.ssh.allowedSignersFile', str(external))
     assert not verify('v2.13.5', root, enforce=True, maintainers=['example'], fetch=no_keys)
 
+    if signing_key_enrolled:
+        # A valid signature on a different commit cannot authorize this checkout.
+        git('commit', '--allow-empty', '-m', 'Different workflow commit')
+        for enforce in (False, True):
+            assert not verify(
+                'v2.13.5', root, enforce=enforce, maintainers=['example'], fetch=fetch
+            )
+
 
 @pytest.mark.parametrize(
     'value', [None, {}, {'kind': 'Fixed'}, {'kind': 'Unknown', 'body': 'Entry.'}]
