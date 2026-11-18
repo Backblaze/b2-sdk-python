@@ -28,7 +28,7 @@ class RegexSet:
 
     def __init__(self, regex_iterable):
         """
-        :param regex_iterable: an interable which yields regexes
+        :param regex_iterable: an iterable which yields regexes
         """
         self._compiled_list = [re.compile(r) for r in regex_iterable]
 

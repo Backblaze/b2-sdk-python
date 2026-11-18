@@ -26,32 +26,26 @@ established by reading git tags, i.e. no code or manifest file changes are requi
 
 ## Changelog
 
-Each PR needs to have at least one changelog (aka news) item added. This is done by creating files in `changelog.d`.
-`towncrier` is used for compiling these files into [CHANGELOG.md](CHANGELOG.md). There are several types of changes 
-(news):
+Add a [Changie](https://changie.dev) fragment to `.changes/unreleased/` for each
+user-visible, documentation or infrastructure change. Go is required to run the
+pinned tool, following the same setup as Backblaze/blazer:
 
-1. fixed
-2. changed
-3. added
-4. deprecated
-5. removed
-6. infrastructure
-7. doc
+```sh
+go run github.com/miniscruff/changie@v1.24.0 new
+uv run --group nox nox -s changelog_check
+```
 
+Choose Added, Changed, Deprecated, Removed, Fixed, Doc, Infrastructure or Security.
+Write a complete sentence that explains the resulting behavior. Include a public
+issue link in the body when applicable; keep private findings out of fragments.
+Use `--kind Fixed --body 'Correct the documented behavior.'` for noninteractive
+creation. CI checks the fragment fields and reproduces the merged changelog.
+A `-changelog` label can waive adding a fragment; validation still runs. Lockfile-only
+updates and release PRs that batch fragments have their own checks.
 
-The `changelog.d` file name convention is:
-
-1. If the PR closes a github issue: `{issue_number}.{type}.md` e.g. `157.fixed.md`. Note that the
-   change description still has to be complete, linking an issue is just there for convenience, a change like 
-   `fixed #157` will not be accepted.
-2. If the PR is not related to a github issue: `+{unique_string}.{type}.md` e.g. `+foobar.fixed.md`. 
-
-These files can either be created manually, or using `towncrier` e.g.
-
-    towncrier create -c 'write your description here' 157.fixed.md
-
-`towncrier create` also takes care of duplicates automatically (if there is more than 1 news fragment of one type 
-for a given github issue).
+Release managers use `changie batch` and `changie merge` through the Nox release
+session. See [RELEASE.md](RELEASE.md) for the complete process. The `.changes/v2.13.5.md`
+archive preserves all earlier release notes; do not rewrite that history.
 
 ## Developer Info
 
@@ -78,7 +72,7 @@ For example:
 
     $ nox -s format
     nox > Running session format
-    nox > Re-using existing virtual environment at .nox/format.
+    nox > Reusing existing virtual environment at .nox/format.
     ...
 
     $ nox --no-venv -s format

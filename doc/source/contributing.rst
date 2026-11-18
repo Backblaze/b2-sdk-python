@@ -49,7 +49,7 @@ For example::
 
     $ nox -s format
     nox > Running session format
-    nox > Re-using existing virtual environment at .nox/format.
+    nox > Reusing existing virtual environment at .nox/format.
     ...
 
     $ nox --no-venv -s format

@@ -158,7 +158,7 @@ def test_download_file__data_stream_error__persistent_errors(
 def test_download_file__data_stream_error__multiple_errors_recovery(
     apiver_module, b2api, bucket, downloader, output_file
 ):
-    """Test downloader handles multiple half-failed requests and still downlaods entire file."""
+    """Test downloader handles multiple half-failed requests and still downloads entire file."""
     # This works since each part is attempted up to 15 times before giving up
     file_size = 100
     mock_response, download_version = mock_download_response_factory(

@@ -1,0 +1,5 @@
+kind: Infrastructure
+body: >-
+  Migrate release notes to Changie, use PyPI Trusted Publishing with attestations,
+  and add release security checks and a staged signed-tag verification gate.
+time: 2026-11-17T00:00:00Z
