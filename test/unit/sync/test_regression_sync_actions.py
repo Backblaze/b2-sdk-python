@@ -34,7 +34,7 @@ from apiver_deps_exception import ChecksumMismatch, TruncatedOutput
 
 from b2sdk._internal.scan.path import B2Path
 from b2sdk._internal.sync.action import B2CopyAction, B2DownloadAction
-from test.known_defect import known_defect
+from test.known_defect import DefectStillPresent, expect, known_defect
 
 pytestmark = [pytest.mark.apiver(from_ver=2)]
 
@@ -70,7 +70,9 @@ def _corrupt_stored_sha1(api, bucket, file_version):
 
 class TestDownloadedFileModTime:
     @known_defect(
-        'C3', 'a download that fails its checksum check still gets the remote modification time'
+        'C3',
+        'a download that fails its checksum check still gets the remote modification time',
+        raises=AssertionError,
     )
     def test_c3_failed_checksum_does_not_stamp_remote_mtime(self, api_and_bucket, tmp_path):
         """C3: a download that fails validation must not leave a file that looks current."""
@@ -92,7 +94,9 @@ class TestDownloadedFileModTime:
 
 
 class TestSyncDownloadAction:
-    @known_defect('C3', 'a failed sync download leaves the temporary file behind')
+    @known_defect(
+        'C3', 'a failed sync download leaves the temporary file behind', raises=DefectStillPresent
+    )
     def test_c3_failed_download_leaves_no_temp_file(self, api_and_bucket, tmp_path):
         """C3: after a failed sync download the .b2.sync.tmp file must not be left behind."""
         api, bucket = api_and_bucket
@@ -102,23 +106,36 @@ class TestSyncDownloadAction:
         with pytest.raises((ChecksumMismatch, TruncatedOutput)):
             action.do_action(bucket, None)
         assert not (tmp_path / 'f.txt').exists(), 'final file was created'
-        assert not (tmp_path / 'f.txt.b2.sync.tmp').exists(), 'temporary file left behind'
+        expect(not (tmp_path / 'f.txt.b2.sync.tmp').exists(), 'temporary file left behind')
 
     @known_defect(
-        'C17', 'sync download deletes the old local file before renaming the new one into place'
+        'C17',
+        'sync download deletes the old local file before renaming the new one into place',
+        raises=DefectStillPresent,
     )
-    def test_c17_failed_rename_keeps_previous_local_copy(self, api_and_bucket, tmp_path):
-        """C17: if moving the new file into place fails, the old local file must still exist."""
+    def test_c17_failed_replacement_keeps_previous_local_copy(self, api_and_bucket, tmp_path):
+        """C17: if moving the new file into place fails, the old local file must still exist.
+
+        The fault is injected into both os.rename and os.replace, so the test does not depend on
+        which of them the implementation uses to move the file into place.
+        """
         api, bucket = api_and_bucket
         fv = bucket.upload_bytes(b'new content', 'f.txt')
         local = tmp_path / 'f.txt'
         local.write_bytes(b'old content')
         action = _download_action(bucket, fv, local)
-        with mock.patch('os.rename', side_effect=OSError('simulated rename failure')):
-            with pytest.raises(OSError):
+        injected = []
+
+        def fail(*args, **kwargs):
+            injected.append(args)
+            raise OSError('simulated replacement failure')
+
+        with mock.patch('os.rename', side_effect=fail), mock.patch('os.replace', side_effect=fail):
+            with pytest.raises(OSError, match='simulated replacement failure'):
                 action.do_action(bucket, None)
-        assert local.exists(), 'the previous local copy was removed'
-        assert local.read_bytes() == b'old content', 'the previous local copy was changed'
+        assert injected, 'the download never tried to move the new file into place'
+        expect(local.exists(), 'the previous local copy was removed')
+        expect(local.read_bytes() == b'old content', 'the previous local copy was changed')
 
     def test_c17_guard_successful_download_replaces_file(self, api_and_bucket, tmp_path):
         """Guard for C17: a normal sync download replaces the local file and leaves no temp file."""
@@ -138,7 +155,9 @@ class TestSyncMessages:
         return B2Path(self.NAME, mock.Mock(), [])
 
     @known_defect(
-        'C24', 'the sync download message prints remote names without escaping control characters'
+        'C24',
+        'the sync download message prints remote names without escaping control characters',
+        raises=AssertionError,
     )
     def test_c24_download_message_escapes_control_characters(self):
         """C24: remote names with control chars must be escaped in output."""
@@ -149,7 +168,9 @@ class TestSyncMessages:
         assert '\x1b' not in printed, repr(printed)
 
     @known_defect(
-        'C24', 'the sync copy message prints remote names without escaping control characters'
+        'C24',
+        'the sync copy message prints remote names without escaping control characters',
+        raises=AssertionError,
     )
     def test_c24_copy_message_escapes_control_characters(self):
         """C24: same for copy actions."""

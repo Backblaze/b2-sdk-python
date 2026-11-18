@@ -19,6 +19,7 @@ short labels that also appear in the test names and decorators.
 from __future__ import annotations
 
 import os
+import sqlite3
 import threading
 
 import pytest
@@ -28,7 +29,7 @@ from apiver_deps import (
     SqliteAccountInfo,
 )
 
-from test.known_defect import known_defect
+from test.known_defect import DefectStillPresent, expect, known_defect
 
 pytestmark = [pytest.mark.apiver(from_ver=2)]
 
@@ -46,6 +47,7 @@ class TestProfilePaths:
     @known_defect(
         'C47',
         'an existing ~/.b2db-<profile>.sqlite is ignored because "~" is not expanded before the existence check',
+        raises=AssertionError,
     )
     def test_c47_existing_legacy_profile_database_is_used_with_xdg(self, home, monkeypatch):
         """C47: an existing ~/.b2db-<profile>.sqlite must be found even when XDG_CONFIG_HOME is set."""
@@ -57,7 +59,11 @@ class TestProfilePaths:
 
 
 class TestThreadConnections:
-    @known_defect('C37', "close() closes only the calling thread's database connection")
+    @known_defect(
+        'C37',
+        "close() closes only the calling thread's database connection",
+        raises=DefectStillPresent,
+    )
     def test_c37_close_closes_connections_of_other_threads(self, tmp_path):
         """C37: close() must close the database connections opened by other threads, too."""
         info = SqliteAccountInfo(file_name=str(tmp_path / 'acct.sqlite'))
@@ -70,7 +76,7 @@ class TestThreadConnections:
             try:
                 conn.execute('select 1')
                 result['closed'] = False
-            except Exception:  # sqlite3.ProgrammingError: Cannot operate on a closed database
+            except sqlite3.ProgrammingError:  # Cannot operate on a closed database
                 result['closed'] = True
 
         thread = threading.Thread(target=worker)
@@ -79,6 +85,5 @@ class TestThreadConnections:
         info.close()
         closed_by_main.set()
         thread.join(timeout=10)
-        assert (
-            result.get('closed') is True
-        ), 'connection of another thread is still open after close()'
+        assert 'closed' in result, 'the worker thread did not finish its check'
+        expect(result['closed'], 'connection of another thread is still open after close()')

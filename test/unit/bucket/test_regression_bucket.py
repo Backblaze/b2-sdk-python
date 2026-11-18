@@ -18,9 +18,11 @@ short labels that also appear in the test names and decorators.
 
 from __future__ import annotations
 
+import concurrent.futures
 import datetime
 import json
 import locale
+import threading
 
 import apiver_deps
 import pytest
@@ -35,10 +37,11 @@ from apiver_deps import (
     InMemoryAccountInfo,
     InMemoryCache,
     RawSimulator,
+    UploadSourceBytes,
 )
-from apiver_deps_exception import NonExistentBucket
+from apiver_deps_exception import CopyArgumentsMismatch, NonExistentBucket
 
-from test.known_defect import known_defect
+from test.known_defect import DefectStillPresent, defect_raises, expect, known_defect
 
 from .test_bucket import TestCaseWithBucket
 
@@ -47,18 +50,21 @@ pytestmark = [pytest.mark.apiver(from_ver=2)]
 
 class TestRegressionCopyAndLs(TestCaseWithBucket):
     @known_defect(
-        'C1', 'copy() with expires/content_disposition/cache_control but no content_type is refused'
+        'C1',
+        'copy() with expires/content_disposition/cache_control but no content_type is refused',
+        raises=DefectStillPresent,
     )
     def test_c1_copy_with_expiry_but_no_content_type(self):
         """C1: copy() with expires/headers but no content_type must work (2.13.3 notes)."""
         file_id = self.bucket.upload_bytes(b'hello world', 'src.txt').id_
-        copied = self.bucket.copy(
-            file_id,
-            'copied.txt',
-            expires='Thu, 01 Dec 2050 16:00:00 GMT',
-            content_disposition='attachment',
-            cache_control='max-age=5',
-        )
+        with defect_raises(CopyArgumentsMismatch, match='content type'):
+            copied = self.bucket.copy(
+                file_id,
+                'copied.txt',
+                expires='Thu, 01 Dec 2050 16:00:00 GMT',
+                content_disposition='attachment',
+                cache_control='max-age=5',
+            )
         assert copied.file_info['b2-expires'] == 'Thu, 01 Dec 2050 16:00:00 GMT', copied.file_info
         assert copied.file_info['b2-content-disposition'] == 'attachment', copied.file_info
 
@@ -66,6 +72,7 @@ class TestRegressionCopyAndLs(TestCaseWithBucket):
         'C5',
         'ls("x") stops at an object named "x" and never lists "x/..."',
         condition=apiver_deps.V >= 3,
+        raises=AssertionError,
     )
     def test_c5_ls_path_without_slash_lists_folder_next_to_same_named_file(self):
         """C5: ls('x') with an object 'x' and objects 'x/...' must also list 'x/...'."""
@@ -78,6 +85,7 @@ class TestRegressionCopyAndLs(TestCaseWithBucket):
         'C5',
         'B2Folder for a prefix naming a single object hits an AssertionError',
         condition=apiver_deps.V >= 3,
+        raises=AssertionError,
     )
     def test_c5_folder_sync_source_with_prefix_naming_a_single_object(self):
         """C5: B2Folder for 'b2://bucket/x' must not hit an AssertionError when only 'x' exists."""
@@ -89,7 +97,10 @@ class TestRegressionCopyAndLs(TestCaseWithBucket):
         list(folder.all_files(None))
 
     @known_defect(
-        'C6', 'ls() of an exact file name ignores the filters', condition=apiver_deps.V >= 3
+        'C6',
+        'ls() of an exact file name ignores the filters',
+        condition=apiver_deps.V >= 3,
+        raises=AssertionError,
     )
     def test_c6_exact_filename_respects_exclude_filter(self):
         """C6: an exclude filter naming the exact file must hide it from ls()."""
@@ -103,7 +114,10 @@ class TestRegressionCopyAndLs(TestCaseWithBucket):
         assert result == [], 'the filter was ignored'
 
     @known_defect(
-        'C6', 'ls() of an exact file name ignores the filters', condition=apiver_deps.V >= 3
+        'C6',
+        'ls() of an exact file name ignores the filters',
+        condition=apiver_deps.V >= 3,
+        raises=AssertionError,
     )
     def test_c6_exact_filename_respects_include_filter_for_other_name(self):
         """C6: an include filter not matching the exact file must hide it from ls()."""
@@ -118,14 +132,14 @@ class TestRegressionCopyAndLs(TestCaseWithBucket):
 
 
 class TestRegressionUploadOptions(TestCaseWithBucket):
-    @known_defect('C45', 'multipart uploads ignore custom_upload_timestamp')
+    @known_defect('C45', 'multipart uploads ignore custom_upload_timestamp', raises=AssertionError)
     def test_c45_custom_timestamp_is_kept_on_large_upload(self):
         """C45: a custom upload timestamp must be applied to multi-part uploads too."""
         data = self._make_data(self.simulator.MIN_PART_SIZE * 3)
         file_version = self.bucket.upload_bytes(data, 'large', custom_upload_timestamp=12345)
         assert file_version.upload_timestamp == 12345, file_version.upload_timestamp
 
-    @known_defect('C45', 'multipart uploads ignore custom_upload_timestamp')
+    @known_defect('C45', 'multipart uploads ignore custom_upload_timestamp', raises=AssertionError)
     def test_c45_custom_timestamp_is_kept_on_large_unfinished_file(self):
         """C45: the started large file carries the custom timestamp (visible after the upload)."""
         data = self._make_data(self.simulator.MIN_PART_SIZE * 3)
@@ -133,10 +147,50 @@ class TestRegressionUploadOptions(TestCaseWithBucket):
         stored = self.bucket.get_file_info_by_name('large2')
         assert stored.upload_timestamp == 777, stored.upload_timestamp
 
+    @known_defect(
+        'C33',
+        'Bucket.upload passes min_part_size as the recommended part size instead of a lower limit',
+        raises=DefectStillPresent,
+    )
+    def test_c33_upload_min_part_size_is_only_a_lower_limit(self):
+        """C33: min_part_size is a lower limit; parts must still follow the recommended part size.
+
+        A min_part_size below what the server accepts must not shrink the parts below it: the
+        planner has to keep using the account's recommended part size (not the user's minimum),
+        otherwise the real service refuses the parts. Bucket.upload documents the first and does
+        the second.
+        """
+        from unittest import mock
+
+        absolute_minimum = self.account_info.get_absolute_minimum_part_size()
+        part_lengths = []
+        original = self.simulator.upload_part
+
+        def recording(upload_url, token, part_number, content_length, *args, **kwargs):
+            part_lengths.append((part_number, content_length))
+            return original(upload_url, token, part_number, content_length, *args, **kwargs)
+
+        data = self._make_data(absolute_minimum * 10)
+        with mock.patch.object(self.simulator, 'upload_part', recording):
+            self.bucket.upload(
+                UploadSourceBytes(data), 'min-part.bin', min_part_size=absolute_minimum // 2
+            )
+        self._check_file_contents('min-part.bin', data)
+        assert len(part_lengths) > 2, f'the upload was not split into several parts: {part_lengths}'
+        non_final = [length for _, length in sorted(part_lengths)[:-1]]
+        expect(
+            all(length >= absolute_minimum for length in non_final),
+            f'parts below the absolute minimum part size {absolute_minimum}: {non_final}',
+        )
+
     @pytest.mark.skipif(
         not hasattr(locale, 'setlocale'), reason='locale support is required for this test'
     )
-    @known_defect('C32', 'the "expires" header uses day and month names of the process locale')
+    @known_defect(
+        'C32',
+        'the "expires" header uses day and month names of the process locale',
+        raises=AssertionError,
+    )
     def test_c32_expires_header_uses_english_names_under_foreign_locale(self):
         """C32: the 'expires' date must not use process-locale day/month names."""
         old = locale.setlocale(locale.LC_TIME)
@@ -171,7 +225,11 @@ class TestRegressionApi:
         )
         return api, master_key
 
-    @known_defect('C2', 'delete_bucket does not remove the bucket name from the name cache')
+    @known_defect(
+        'C2',
+        'delete_bucket does not remove the bucket name from the name cache',
+        raises=pytest.fail.Exception,
+    )
     def test_c2_deleted_bucket_not_returned_from_name_cache(self):
         """C2: after delete_bucket, a lookup by name must fail, not return the stale ID."""
         api, _ = self._api()
@@ -181,7 +239,11 @@ class TestRegressionApi:
         with pytest.raises(NonExistentBucket):
             api.get_bucket_by_name('to-delete')
 
-    @known_defect('C28', 'the create_bucket mismatch message prints the same name twice')
+    @known_defect(
+        'C28',
+        'the create_bucket mismatch message prints the same name twice',
+        raises=AssertionError,
+    )
     def test_c28_create_bucket_mismatch_message_names_both_buckets(self):
         """C28: the assertion message must show requested and returned names, not name twice."""
         from unittest import mock
@@ -203,7 +265,9 @@ class TestRegressionApi:
 class TestRegressionRawApiContract:
     @responses.activate
     @known_defect(
-        'C35', 'set_notification_rules fails for a generator although it is typed as Iterable'
+        'C35',
+        'set_notification_rules fails for a generator although it is typed as Iterable',
+        raises=DefectStillPresent,
     )
     def test_c35_set_notification_rules_accepts_a_generator(self):
         """C35: set_notification_rules is typed Iterable; a generator must serialize to JSON."""
@@ -212,7 +276,7 @@ class TestRegressionRawApiContract:
         )
         responses.add(
             responses.POST,
-            'https://api.example.com/b2api/v4/b2_set_bucket_notification_rules',
+            f'https://api.example.com/b2api/{B2RawHTTPApi.API_VERSION}/b2_set_bucket_notification_rules',
             json={'eventNotificationRules': []},
         )
         rule = {
@@ -226,19 +290,23 @@ class TestRegressionRawApiContract:
                 'customHeaders': [],
             },
         }
-        sent = raw_api.set_bucket_notification_rules(
-            'https://api.example.com', 'token', 'bucket-id', (r for r in [rule])
-        )
+        with defect_raises(TypeError, match='not JSON serializable'):
+            sent = raw_api.set_bucket_notification_rules(
+                'https://api.example.com', 'token', 'bucket-id', (r for r in [rule])
+            )
         assert sent == [], sent
         body = json.loads(responses.calls[0].request.body)
         assert body['eventNotificationRules'] == [rule], body
 
 
 class TestRegressionLargeUploadFailure:
-    @known_defect('C8', 'part uploads keep running after one part of a large upload failed')
+    @known_defect(
+        'C8',
+        'part uploads keep running after one part of a large upload failed',
+        raises=DefectStillPresent,
+    )
     def test_c8_failed_part_stops_remaining_part_uploads(self):
         """C8: once one part fails the whole upload fails; queued parts must not keep uploading."""
-        import time
         from unittest import mock
 
         from apiver_deps_exception import AccessDenied
@@ -247,7 +315,7 @@ class TestRegressionLargeUploadFailure:
             InMemoryAccountInfo(),
             cache=InMemoryCache(),
             api_config=B2HttpApiConfig(_raw_api_class=RawSimulator),
-            max_upload_workers=1,
+            max_upload_workers=1,  # parts start one at a time, in order
         )
         simulator = api.session.raw_api
         account_id, master_key = simulator.create_account()
@@ -256,32 +324,54 @@ class TestRegressionLargeUploadFailure:
         )
         bucket = api.create_bucket('big', 'allPrivate')
         original = simulator.upload_part
-        started = []
+        part_failed = threading.Event()
+        started_after_failure = []
 
         def flaky_upload_part(upload_url, token, part_number, *args, **kwargs):
-            started.append(part_number)
-            if part_number == 1:
+            if part_failed.is_set():
+                started_after_failure.append(part_number)
+            elif part_number == 1:
+                part_failed.set()  # before raising, so that no later start can be missed
                 raise AccessDenied()
-            time.sleep(0.2)
             return original(upload_url, token, part_number, *args, **kwargs)
+
+        # collect the futures of the real part uploads, to wait for all of them to finish
+        pool = api.services.upload_manager._thread_pool
+        real_submit = pool.submit
+        futures = []
+
+        def recording_submit(*args, **kwargs):
+            future = real_submit(*args, **kwargs)
+            futures.append(future)
+            return future
 
         data = b'x' * (simulator.MIN_PART_SIZE * 6)
         with mock.patch.object(simulator, 'upload_part', flaky_upload_part):
-            with pytest.raises(Exception):
-                bucket.upload_bytes(data, 'big.bin')
-            started_at_failure = len(started)
-            time.sleep(1.5)  # bounded wait for any background part threads
-        assert (
-            len(started) <= started_at_failure + 1
-        ), f'parts kept uploading after the failure: {started}'
+            with mock.patch.object(pool, 'submit', recording_submit):
+                with pytest.raises(AccessDenied):
+                    bucket.upload_bytes(data, 'big.bin')
+                _, pending = concurrent.futures.wait(futures, timeout=30)
+
+        assert part_failed.is_set(), 'part 1 was never uploaded, so no part failed'
+        assert len(futures) > 1, 'the upload was not split into several parts'
+        assert not pending, 'part uploads did not finish within the timeout'
+        expect(
+            not started_after_failure,
+            f'parts kept uploading after the failure: {started_after_failure}',
+        )
 
 
 class TestRegressionDownloadedFileContract:
     @responses.activate
-    @known_defect('C56', 'DownloadedFile.save() called twice re-reads a used response')
+    @known_defect(
+        'C56',
+        'DownloadedFile.save() called twice re-reads a used response',
+        raises=DefectStillPresent,
+    )
     def test_c56_downloaded_file_can_be_saved_twice_from_a_real_response(self):
-        """C56: save() called twice on a real streamed HTTP response must give the full data again
-        (or fail clearly); the simulator's in-memory response hides this."""
+        """C56: save() called twice on a real streamed HTTP response must give the full data again;
+        the simulator's in-memory response hides this. Today the second call raises requests'
+        StreamConsumedError."""
         import hashlib
         import io
         from unittest import mock
@@ -306,7 +396,8 @@ class TestRegressionDownloadedFileContract:
         first, second = io.BytesIO(), io.BytesIO()
         downloaded.save(first)
         assert first.getvalue() == data, 'first save() returned wrong data'
-        downloaded.save(second)
+        with defect_raises(requests.exceptions.StreamConsumedError):
+            downloaded.save(second)
         assert second.getvalue() == data, 'second save() returned wrong data'
 
 
@@ -360,24 +451,26 @@ class TestRegressionGuards(TestCaseWithBucket):
         """C13: after a retryable part failure the retry must not reuse the failed URL/token."""
         from unittest import mock
 
-        from apiver_deps_exception import ServiceError  # noqa: F401  (retryable class below)
-
         from .test_bucket import CanRetry
 
+        failing_part = 2
         attempts = []
         original = self.simulator.upload_part
 
         def recording(upload_url, token, part_number, *args, **kwargs):
             attempts.append((part_number, upload_url, token))
+            first_attempt = [a for a in attempts if a[0] == failing_part] == [attempts[-1]]
+            if part_number == failing_part and first_attempt:
+                raise CanRetry(True)  # RawSimulator only consumes set_upload_errors() for files
             return original(upload_url, token, part_number, *args, **kwargs)
 
-        self.simulator.set_upload_errors([CanRetry(True)])
         data = self._make_data(self.simulator.MIN_PART_SIZE * 3)
         with mock.patch.object(self.simulator, 'upload_part', recording):
             self.bucket.upload_bytes(data, 'large.bin')
         self._check_file_contents('large.bin', data)
-        per_part = {}
-        for part_number, url, token in attempts:
-            per_part.setdefault(part_number, []).append((url, token))
-        for part_number, tried in per_part.items():
-            assert len(set(tried)) == len(tried), f'part {part_number} reused a failed URL/token'
+
+        tried = [
+            (url, token) for part_number, url, token in attempts if part_number == failing_part
+        ]
+        assert len(tried) >= 2, f'part {failing_part} was not retried: {tried}'
+        assert tried[1] != tried[0], f'part {failing_part} retried with the failed URL/token'
