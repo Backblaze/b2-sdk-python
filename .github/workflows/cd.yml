@@ -10,6 +10,8 @@ env:
 
 jobs:
   deploy:
+    permissions:
+      contents: write
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       B2_PYPI_PASSWORD: ${{ secrets.B2_PYPI_PASSWORD }}
@@ -18,8 +20,9 @@ jobs:
       - name: Determine if pre-release
         id: prerelease_check
         run: |
-          export IS_PRERELEASE=$([[ ${{ github.ref }} =~ [^0-9]$ ]] && echo true || echo false)
-          echo "prerelease=$IS_PRERELEASE" >> $GITHUB_OUTPUT
+          IS_PRERELEASE=$([[ ${{ github.ref }} =~ [^0-9]$ ]] && echo true || echo false)
+          export IS_PRERELEASE
+          echo "prerelease=$IS_PRERELEASE" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -38,20 +41,78 @@ jobs:
       - name: Build the distribution
         id: build
         run: uv run nox -vs build
-      - name: Read the Changelog
+      # actions-governance: replaced by Read the Changelog with awk; remove after a real run verifies the replacement
+      # - name: Read the Changelog
+      #   id: read-changelog
+      #   uses: mindsers/changelog-reader-action@v2
+      #   with:
+      #     version: ${{ steps.build.outputs.version }}
+      - name: Read the Changelog with awk
         id: read-changelog
-        uses: mindsers/changelog-reader-action@v2
-        with:
-          version: ${{ steps.build.outputs.version }}
-      - name: Create GitHub release and upload the distribution
+        env:
+          VERSION: ${{ steps.build.outputs.version }}
+        run: |
+          notes_file="$RUNNER_TEMP/release-notes.md"
+          awk -v version="$VERSION" '
+            /^## \[/ {
+              if (found) exit
+              heading = $0
+              sub(/^## \[/, "", heading)
+              sub(/\].*$/, "", heading)
+              found = (heading == version)
+              next
+            }
+            found { lines[++count] = $0 }
+            END {
+              if (!found) exit 1
+              while (count && lines[count] ~ /^[[:space:]]*$/) count--
+              for (i = 1; i <= count; i++)
+                printf "%s%s", lines[i], (i < count ? "\n" : "")
+            }
+          ' CHANGELOG.md > "$notes_file"
+          delimiter="changelog_$(python -c 'import uuid; print(uuid.uuid4().hex)')"
+          {
+            echo "changes<<$delimiter"
+            cat "$notes_file"
+            echo
+            echo "$delimiter"
+          } >> "$GITHUB_OUTPUT"
+      # actions-governance: replaced by Create GitHub release with gh and upload the distribution; remove after a real run verifies the replacement
+      # - name: Create GitHub release and upload the distribution
+      #   id: create-release
+      #   uses: softprops/action-gh-release@v2
+      #   with:
+      #     name: ${{ steps.build.outputs.version }}
+      #     body: ${{ steps.read-changelog.outputs.changes }}
+      #     draft: ${{ env.ACTIONS_STEP_DEBUG == 'true' }}
+      #     prerelease: ${{ steps.prerelease_check.outputs.prerelease }}
+      #     files: ${{ steps.build.outputs.asset_path }}
+      - name: Create GitHub release with gh and upload the distribution
         id: create-release
-        uses: softprops/action-gh-release@v2
-        with:
-          name: ${{ steps.build.outputs.version }}
-          body: ${{ steps.read-changelog.outputs.changes }}
-          draft: ${{ env.ACTIONS_STEP_DEBUG == 'true' }}
-          prerelease: ${{ steps.prerelease_check.outputs.prerelease }}
-          files: ${{ steps.build.outputs.asset_path }}
+        env:
+          TAG: ${{ github.ref_name }}
+          VERSION: ${{ steps.build.outputs.version }}
+          RELEASE_NOTES: ${{ steps.read-changelog.outputs.changes }}
+          IS_DRAFT: ${{ env.ACTIONS_STEP_DEBUG == 'true' }}
+          IS_PRERELEASE: ${{ steps.prerelease_check.outputs.prerelease }}
+          ASSET_PATH: ${{ steps.build.outputs.asset_path }}
+        run: |
+          notes_file="$RUNNER_TEMP/github-release-notes.md"
+          printf '%s' "$RELEASE_NOTES" > "$notes_file"
+          if ! gh release view "$TAG" > /dev/null 2>&1; then
+            # Upload assets before publishing the requested final release state.
+            gh release create "$TAG" --verify-tag --title "$VERSION" \
+              --notes-file "$notes_file" --draft --prerelease="$IS_PRERELEASE"
+          fi
+          assets=()
+          while IFS= read -r asset; do
+            assets+=("$asset")
+          done < <(compgen -G "$ASSET_PATH" || true)
+          if ((${#assets[@]})); then
+            gh release upload "$TAG" "${assets[@]}" --clobber
+          fi
+          gh release edit "$TAG" --title "$VERSION" --notes-file "$notes_file" \
+            --draft="$IS_DRAFT" --prerelease="$IS_PRERELEASE"
       - name: Upload the distribution to PyPI
         if: ${{ env.B2_PYPI_PASSWORD != '' && steps.prerelease_check.outputs.prerelease == 'false' }}
         uses: pypa/gh-action-pypi-publish@release/v1
