@@ -113,7 +113,7 @@ jobs:
         with:
           name: release-distributions
           path: |
-            dist/*
+            dist/
             release-notes.md
           if-no-files-found: error
           retention-days: 7

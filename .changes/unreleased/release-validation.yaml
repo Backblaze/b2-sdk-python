@@ -1,0 +1,5 @@
+kind: Infrastructure
+body: >-
+  Preserve the distribution directory when transferring release artifacts, and
+  require restored release tags to match the checked-out commit and workflow event.
+time: 2026-11-18T00:00:00Z

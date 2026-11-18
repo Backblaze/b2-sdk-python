@@ -259,6 +259,25 @@ def test_supported_prerelease_tags_retain_the_pypi_publish_path():
     assert condition == "github.event_name == 'push'"
 
 
+def test_release_artifact_explicitly_preserves_the_distribution_directory():
+    """Both publishers expect dist/ beside release-notes.md in the artifact root."""
+    workflow = yaml.load((ROOT / '.github/workflows/cd.yml').read_text(), Loader=yaml.BaseLoader)
+    upload = next(
+        step
+        for step in workflow['jobs']['build']['steps']
+        if step.get('uses', '').startswith('actions/upload-artifact@')
+    )
+    assert upload['with']['name'] == 'release-distributions'
+    assert {Path(path) for path in upload['with']['path'].splitlines()} == {
+        Path('dist'),
+        Path('release-notes.md'),
+    }
+    for publisher in ('publish-pypi', 'github-release'):
+        download = workflow['jobs'][publisher]['steps'][0]
+        assert download['with']['name'] == 'release-distributions'
+        assert Path(download['with'].get('path', '.')) == Path('.')
+
+
 def test_release_workflow_restores_the_origin_tag_object(release_repo):
     root, git = release_repo
     origin = root / 'origin.git'
