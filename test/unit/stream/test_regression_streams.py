@@ -201,22 +201,30 @@ class TestUnboundWriteIntentMemory:
     @known_defect(
         'C57',
         'UnboundSourceBytes copies the chunk, using about twice the documented memory',
-        raises=AssertionError,
+        raises=DefectStillPresent,
     )
     def test_c57_unbound_buffer_wrapping_does_not_copy_the_chunk(self):
         """C57: wrapping a bytearray chunk for upload must not allocate a second full copy."""
-        import tracemalloc
+        tracemalloc = pytest.importorskip(
+            'tracemalloc',
+            reason='allocation measurements require tracemalloc (unavailable on PyPy)',
+            exc_type=ModuleNotFoundError,
+        )
 
         from b2sdk._internal.transfer.emerge.unbound_write_intent import UnboundSourceBytes
 
         size = 8 * 1024 * 1024
         chunk = bytearray(size)
-        tracemalloc.start()
+        already_tracing = tracemalloc.is_tracing()
+        if not already_tracing:
+            tracemalloc.start()
         try:
             before = tracemalloc.get_traced_memory()[0]
+            tracemalloc.reset_peak()
             source = UnboundSourceBytes(chunk, lambda: None)
-            extra = tracemalloc.get_traced_memory()[0] - before
+            extra = tracemalloc.get_traced_memory()[1] - before
         finally:
-            tracemalloc.stop()
+            if not already_tracing:
+                tracemalloc.stop()
         assert source.get_content_length() == size, 'wrong content length'
-        assert extra < size // 2, f'wrapping allocated {extra} extra bytes for a {size} byte chunk'
+        expect(extra < size // 2, f'wrapping allocated {extra} extra bytes for a {size} byte chunk')

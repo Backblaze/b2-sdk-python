@@ -47,7 +47,14 @@ def test_c48_v0_unhide_file_removes_hide_marker(bucket):
     """C48: on the v0 interface unhide_file() must not fail with a TypeError."""
     bucket.upload_bytes(b'hello', 'hello.txt')
     bucket.hide_file('hello.txt')
-    with defect_raises(TypeError, match="unexpected keyword argument 'file_name'"):
+    # CPython names the first invalid keyword; PyPy reports both invalid keywords.
+    with defect_raises(
+        TypeError,
+        match=(
+            r"^Bucket\.list_file_versions\(\) got (?:an unexpected keyword argument 'file_name'"
+            r'|2 unexpected keyword arguments)$'
+        ),
+    ):
         bucket.unhide_file('hello.txt')
     names = [info.file_name for info, _ in bucket.ls(show_versions=False)]
     assert 'hello.txt' in names, names
