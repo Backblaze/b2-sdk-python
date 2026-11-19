@@ -58,12 +58,12 @@ class RangeOfInputStream(ReadOnlyStreamMixin, StreamWithLengthWrapper):
         """
         Read data from the stream.
 
-        :param int size: number of bytes to read
+        :param int size: number of bytes to read; None or a negative value reads the remaining range
         :return: data read from the stream
         :rtype: bytes
         """
         remaining = max(0, self.length - self.relative_pos)
-        if size is None:
+        if size is None or size < 0:
             to_read = remaining
         else:
             to_read = min(size, remaining)
