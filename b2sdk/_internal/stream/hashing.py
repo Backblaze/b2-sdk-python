@@ -55,17 +55,26 @@ class StreamWithHash(ReadOnlyStreamMixin, StreamWithLengthWrapper):
         :return: read data
         :rtype: bytes|None
         """
+        if size == 0:
+            return super().read(size)
+        if size is not None and size < 0:
+            size = None
+
         data = b''
         if self.hash is None:
-            data = super().read(size)
-            # Update hash
-            self.digest.update(data)
-
-            # Check for end of stream
-            if size is None or len(data) < size:
-                self.hash = self.digest.hexdigest()
-                if size is not None:
-                    size -= len(data)
+            chunks = []
+            data_len = 0
+            while size is None or data_len < size:
+                chunk = super().read(None if size is None else size - data_len)
+                if chunk == b'':
+                    self.hash = self.digest.hexdigest()
+                    break
+                self.digest.update(chunk)
+                chunks.append(chunk)
+                data_len += len(chunk)
+            data = b''.join(chunks)
+            if self.hash is not None and size is not None:
+                size -= data_len
 
         if self.hash is not None:
             # The end of stream was reached, return hash now
