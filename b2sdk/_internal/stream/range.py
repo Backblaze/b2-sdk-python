@@ -63,7 +63,7 @@ class RangeOfInputStream(ReadOnlyStreamMixin, StreamWithLengthWrapper):
         :rtype: bytes
         """
         remaining = max(0, self.length - self.relative_pos)
-        if size is None:
+        if size is None or size < 0:
             to_read = remaining
         else:
             to_read = min(size, remaining)
