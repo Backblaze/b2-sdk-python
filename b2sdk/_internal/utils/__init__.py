@@ -180,7 +180,7 @@ class IncrementalHexDigester:
                 self.digest.update(data)
                 self.read_bytes += data_len
                 offset += data_len
-            if data_len < to_read or to_read == 0:
+            if data_len == 0 or to_read == 0:
                 break
 
         return self.hex_digest
