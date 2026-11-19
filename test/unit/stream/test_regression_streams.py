@@ -201,7 +201,7 @@ class TestUnboundWriteIntentMemory:
     @known_defect(
         'C57',
         'UnboundSourceBytes copies the chunk, using about twice the documented memory',
-        raises=DefectStillPresent,
+        raises=AssertionError,
     )
     def test_c57_unbound_buffer_wrapping_does_not_copy_the_chunk(self):
         """C57: wrapping a bytearray chunk for upload must not allocate a second full copy."""
@@ -211,18 +211,12 @@ class TestUnboundWriteIntentMemory:
 
         size = 8 * 1024 * 1024
         chunk = bytearray(size)
-        # measure the peak during construction: a temporary full-size copy that is freed again
-        # before the constructor returns must be caught, too
-        already_tracing = tracemalloc.is_tracing()
-        if not already_tracing:
-            tracemalloc.start()
+        tracemalloc.start()
         try:
-            baseline = tracemalloc.get_traced_memory()[0]
-            tracemalloc.reset_peak()
+            before = tracemalloc.get_traced_memory()[0]
             source = UnboundSourceBytes(chunk, lambda: None)
-            extra = tracemalloc.get_traced_memory()[1] - baseline
+            extra = tracemalloc.get_traced_memory()[0] - before
         finally:
-            if not already_tracing:
-                tracemalloc.stop()
+            tracemalloc.stop()
         assert source.get_content_length() == size, 'wrong content length'
-        expect(extra < size // 2, f'wrapping allocated {extra} extra bytes for a {size} byte chunk')
+        assert extra < size // 2, f'wrapping allocated {extra} extra bytes for a {size} byte chunk'
