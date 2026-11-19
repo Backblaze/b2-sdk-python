@@ -53,7 +53,14 @@ from apiver_deps_exception import (
 
 from b2sdk._internal.api_config import B2HttpApiConfig
 from b2sdk._internal.b2http import B2Http
-from b2sdk._internal.exception import BadRequest, RequestTimeout, ResourceNotFound, SSECKeyError
+from b2sdk._internal.exception import (
+    BadRequest,
+    MaxRetriesExceeded,
+    RequestTimeout,
+    ResourceNotFound,
+    SSECKeyError,
+    UploadTokenUsedConcurrently,
+)
 
 
 class TestB2Error:
@@ -65,6 +72,19 @@ class TestB2Error:
 
 
 class TestExceptions:
+    @pytest.mark.parametrize('retry_summary', [False, True], ids=['direct', 'retry-summary'])
+    def test_concurrent_upload_error_text_omits_token(self, retry_summary):
+        tokens = ('test-only-upload-token-a', 'test-only-upload-token-b')
+        errors = [UploadTokenUsedConcurrently(token) for token in tokens]
+        error = MaxRetriesExceeded(2, errors) if retry_summary else errors[0]
+
+        message = str(error)
+        contains_token = any(token in message for token in tokens)
+        assert not contains_token, 'upload authorization token was included in exception text'
+        assert message.count('More than one concurrent upload') == (2 if retry_summary else 1)
+        if retry_summary:
+            assert 'FAILED to upload after 2 tries.' in message
+
     def test_bad_upload_url_exception(self):
         try:
             raise BadUploadUrl('foo')
@@ -90,6 +110,38 @@ class TestExceptions:
 
 
 class TestInterpretError:
+    @pytest.mark.parametrize('http_path', [False, True], ids=['direct', 'http'])
+    @pytest.mark.parametrize('variant', ['casing', 'parenthesis'])
+    def test_unexpected_auth_token_limit_text_omits_token(self, variant, http_path, caplog):
+        token = 'test-only-upload-token-secret'
+        message = f'More than one upload using auth token {token}'
+        if variant == 'parenthesis':
+            token += ')suffix'
+            message = f'more than one upload using auth token {token}'
+
+        if http_path:
+            http = B2Http(B2HttpApiConfig(install_clock_skew_hook=False))
+            url = 'https://example.com/b2api/v3/b2_upload_file'
+            with responses.RequestsMock() as transport:
+                transport.add(
+                    responses.POST,
+                    url,
+                    status=400,
+                    json={'status': 400, 'code': 'auth_token_limit', 'message': message},
+                )
+                with caplog.at_level(logging.ERROR, logger='b2sdk'), pytest.raises(
+                    UnknownError
+                ) as raised:
+                    http.post_json_return_json(url, {}, {}, try_count=1)
+                assert len(transport.calls) == 1
+            assert any(record.exc_info for record in caplog.records)
+        else:
+            with pytest.raises(AssertionError) as raised:
+                interpret_b2_error(400, 'auth_token_limit', message, {})
+
+        assert token not in str(raised.value)
+        assert token not in caplog.text
+
     def test_file_already_hidden(self):
         self._check_one(FileAlreadyHidden, 400, 'already_hidden', '', {})
         assert 'File already hidden: file.txt' == str(

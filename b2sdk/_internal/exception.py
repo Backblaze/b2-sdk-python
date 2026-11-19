@@ -522,7 +522,7 @@ class UploadTokenUsedConcurrently(B2Error):
         self.token = token
 
     def __str__(self):
-        return f'More than one concurrent upload using auth token {self.token}'
+        return 'More than one concurrent upload using the same auth token'
 
 
 class AccessDenied(B2Error):
@@ -713,7 +713,8 @@ def interpret_b2_error(
         return BucketIdNotFound(post_params.get('bucketId'))
     elif status == 400 and code == 'auth_token_limit':
         matcher = UPLOAD_TOKEN_USED_CONCURRENTLY_ERROR_MESSAGE_RE.match(message)
-        assert matcher is not None, f'unexpected error message: {message}'
+        if matcher is None:
+            raise AssertionError('unexpected auth_token_limit error message')
         token = matcher.group('token')
         return UploadTokenUsedConcurrently(token)
     elif status == 400 and code == 'source_too_large':
