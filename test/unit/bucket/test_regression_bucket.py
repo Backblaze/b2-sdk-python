@@ -163,6 +163,8 @@ class TestRegressionUploadOptions(TestCaseWithBucket):
         from unittest import mock
 
         absolute_minimum = self.account_info.get_absolute_minimum_part_size()
+        recommended_part_size = absolute_minimum * 3
+        user_minimum = absolute_minimum // 2
         part_lengths = []
         original = self.simulator.upload_part
 
@@ -170,17 +172,18 @@ class TestRegressionUploadOptions(TestCaseWithBucket):
             part_lengths.append((part_number, content_length))
             return original(upload_url, token, part_number, content_length, *args, **kwargs)
 
-        data = self._make_data(absolute_minimum * 10)
-        with mock.patch.object(self.simulator, 'upload_part', recording):
-            self.bucket.upload(
-                UploadSourceBytes(data), 'min-part.bin', min_part_size=absolute_minimum // 2
-            )
+        data = self._make_data(recommended_part_size * 4 + 1)
+        with mock.patch.object(
+            self.account_info, 'get_recommended_part_size', return_value=recommended_part_size
+        ), mock.patch.object(self.simulator, 'upload_part', recording):
+            self.bucket.upload(UploadSourceBytes(data), 'min-part.bin', min_part_size=user_minimum)
         self._check_file_contents('min-part.bin', data)
         assert len(part_lengths) > 2, f'the upload was not split into several parts: {part_lengths}'
         non_final = [length for _, length in sorted(part_lengths)[:-1]]
+        assert all(length >= user_minimum for length in non_final), non_final
         expect(
-            all(length >= absolute_minimum for length in non_final),
-            f'parts below the absolute minimum part size {absolute_minimum}: {non_final}',
+            all(length >= recommended_part_size for length in non_final),
+            f'parts below the recommended part size {recommended_part_size}: {non_final}',
         )
 
     @pytest.mark.skipif(
