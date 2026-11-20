@@ -29,6 +29,7 @@ import pytest
 import requests
 import responses
 from apiver_deps import (
+    AuthInfoCache,
     B2Api,
     B2Http,
     B2HttpApiConfig,
@@ -37,6 +38,7 @@ from apiver_deps import (
     InMemoryAccountInfo,
     InMemoryCache,
     RawSimulator,
+    SqliteAccountInfo,
     UploadSourceBytes,
 )
 from apiver_deps_exception import CopyArgumentsMismatch, NonExistentBucket
@@ -216,19 +218,33 @@ class TestRegressionApi:
         )
         return api, master_key
 
-    @known_defect(
-        'C2',
-        'delete_bucket does not remove the bucket name from the name cache',
-        raises=pytest.fail.Exception,
-    )
-    def test_c2_deleted_bucket_not_returned_from_name_cache(self):
+    @pytest.mark.parametrize('cache_kind', ['memory', 'account_info', 'sqlite'])
+    def test_c2_deleted_bucket_not_returned_from_name_cache(self, cache_kind, tmp_path):
         """C2: after delete_bucket, a lookup by name must fail, not return the stale ID."""
-        api, _ = self._api()
+        account_info = (
+            SqliteAccountInfo(file_name=str(tmp_path / 'account.sqlite'))
+            if cache_kind == 'sqlite'
+            else InMemoryAccountInfo()
+        )
+        cache = InMemoryCache() if cache_kind == 'memory' else AuthInfoCache(account_info)
+        api, _ = self._api(account_info=account_info, cache=cache)
         bucket = api.create_bucket('to-delete', 'allPrivate')
         assert api.get_bucket_by_name('to-delete').id_ == bucket.id_, 'cache was not warm'
         api.delete_bucket(bucket)
         with pytest.raises(NonExistentBucket):
             api.get_bucket_by_name('to-delete')
+
+    def test_failed_bucket_delete_preserves_cached_name(self, monkeypatch):
+        api, _ = self._api()
+        bucket = api.create_bucket('not-deleted', 'allPrivate')
+
+        def fail_delete(*args):
+            raise RuntimeError('delete failed')
+
+        monkeypatch.setattr(api.session, 'delete_bucket', fail_delete)
+        with pytest.raises(RuntimeError, match='delete failed'):
+            api.delete_bucket(bucket)
+        assert api.cache.get_bucket_id_or_none_from_bucket_name(bucket.name) == bucket.id_
 
     @known_defect(
         'C28',
