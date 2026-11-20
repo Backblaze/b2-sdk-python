@@ -50,14 +50,18 @@ Synchronization
         )
 
     >>> no_progress = False
-    >>> encryption_settings_provider = BasicSyncEncryptionSettingsProvider({
-            'bucket1': EncryptionSettings(mode=EncryptionMode.SSE_B2),
-            'bucket2': EncryptionSettings(
+    >>> bucket_settings = {
+            'bucket1': EncryptionSetting(mode=EncryptionMode.SSE_B2),
+            'bucket2': EncryptionSetting(
                            mode=EncryptionMode.SSE_C,
-                           key=EncryptionKey(secret=b'VkYp3s6v9y$B&E)H@McQfTjWmZq4t7w!', id='user-generated-key-id')
+                           key=EncryptionKey(secret=b'VkYp3s6v9y$B&E)H@McQfTjWmZq4t7w!', key_id='user-generated-key-id')
                        ),
             'bucket3': None,
-        })
+        }
+    >>> encryption_settings_provider = BasicSyncEncryptionSettingsProvider(
+            read_bucket_settings=bucket_settings,
+            write_bucket_settings=bucket_settings,
+        )
     >>> with SyncReport(sys.stdout, no_progress) as reporter:
             synchronizer.sync_folders(
                 source_folder=source,
@@ -176,7 +180,7 @@ Upload file
     >>> bucket.upload_local_file(
             local_file=local_file_path,
             file_name=b2_file_name,
-            file_infos=file_info,
+            file_info=file_info,
         )
     <b2sdk._internal.file_version.FileVersion at 0x7fc8cd560550>
 
@@ -194,14 +198,14 @@ Upload file encrypted with SSE-C
     >>> file_info = {'how': 'good-file'}
     >>> encryption_setting = EncryptionSetting(
             mode=EncryptionMode.SSE_C,
-            key=EncryptionKey(secret=b'VkYp3s6v9y$B&E)H@McQfTjWmZq4t7w!', id='user-generated-key-id'),
+            key=EncryptionKey(secret=b'VkYp3s6v9y$B&E)H@McQfTjWmZq4t7w!', key_id='user-generated-key-id'),
         )
 
     >>> bucket = b2_api.get_bucket_by_name(bucket_name)
     >>> bucket.upload_local_file(
             local_file=local_file_path,
             file_name=b2_file_name,
-            file_infos=file_info,
+            file_info=file_info,
             encryption=encryption_setting,
         )
 
@@ -337,7 +341,7 @@ Update file lock configuration
     >>> file_id = '4_z5485a1682662eb3e60980d10_f113f963288e711a6_d20190404_m065910_c002_v0001095_t0044'
     >>> file_name = 'dummy.pdf'
     >>> b2_api.update_file_legal_hold(file_id, file_name, LegalHold.ON)
-    >>> b2_api.update_file_legal_hold(
+    >>> b2_api.update_file_retention(
             file_id, file_name,
             FileRetentionSetting(RetentionMode.GOVERNANCE, int(time.time() + 100)*1000))
 
@@ -497,10 +501,10 @@ Update file lock
     >>> # equivalent to
     >>> b2_api.update_file_legal_hold(file_version.id_, file_version.file_name, LegalHold.ON)
     >>> b2_api.update_file_legal_hold(download_version.id_, download_version.file_name, LegalHold.ON)
-    >>> b2_api.update_file_legal_hold(
+    >>> b2_api.update_file_retention(
             file_version.id_, file_version.file_name,
             FileRetentionSetting(RetentionMode.GOVERNANCE, int(time.time() + 100)*1000))
-    >>> b2_api.update_file_legal_hold(
+    >>> b2_api.update_file_retention(
             download_version.id_, download_version.file_name,
             FileRetentionSetting(RetentionMode.GOVERNANCE, int(time.time() + 100)*1000))
 
