@@ -13,6 +13,10 @@ from b2sdk import v1
 
 
 class Bucket(v1.Bucket):
+    def _list_file_versions_for_unhide(self, file_name: str):
+        # v0's public list_file_versions returns a raw response, not typed versions.
+        return super().list_file_versions(file_name=file_name, fetch_count=1)
+
     def list_file_names(self, start_filename=None, max_entries=None, prefix=None):
         """
         Legacy interface which just returns whatever remote API returns.
