@@ -88,6 +88,7 @@ class LargeFileServices:
         encryption: EncryptionSetting | None = None,
         file_retention: FileRetentionSetting | None = None,
         legal_hold: LegalHold | None = None,
+        custom_upload_timestamp: int | None = None,
     ):
         """
         Start a large file transfer.
@@ -98,6 +99,7 @@ class LargeFileServices:
         :param b2sdk.v2.EncryptionSetting encryption: encryption settings (``None`` if unknown)
         :param b2sdk.v2.FileRetentionSetting file_retention: file retention setting
         :param b2sdk.v2.LegalHold legal_hold: legal hold setting
+        :param int,None custom_upload_timestamp: override the upload timestamp in milliseconds since epoch
         """
         return self.UNFINISHED_LARGE_FILE_CLASS(
             self.services.session.start_large_file(
@@ -108,6 +110,7 @@ class LargeFileServices:
                 server_side_encryption=encryption,
                 file_retention=file_retention,
                 legal_hold=legal_hold,
+                custom_upload_timestamp=custom_upload_timestamp,
             )
         )
 

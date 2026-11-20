@@ -205,6 +205,7 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
                 encryption=encryption,
                 file_retention=self.file_retention,
                 legal_hold=self.legal_hold,
+                custom_upload_timestamp=self.custom_upload_timestamp,
             )
         file_id = unfinished_file.file_id
 
@@ -273,6 +274,13 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
                 continue_large_file_id,
                 prefix=file_name,
             )
+            if (
+                custom_upload_timestamp is not None
+                and unfinished_file._upload_timestamp != custom_upload_timestamp
+            ):
+                raise ValueError(
+                    'Cannot manually resume unfinished large file with different custom_upload_timestamp'
+                )
             if unfinished_file.file_info != file_info:
                 raise ValueError(
                     'Cannot manually resume unfinished large file with different file_info'
@@ -387,7 +395,7 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
 
             if (
                 custom_upload_timestamp is not None
-                and file_.upload_timestamp != custom_upload_timestamp
+                and file_._upload_timestamp != custom_upload_timestamp
             ):
                 logger.debug('Rejecting %s: custom_upload_timestamp mismatch', file_.file_id)
                 continue

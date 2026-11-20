@@ -23,6 +23,7 @@ import datetime
 import json
 import locale
 import threading
+from unittest import mock
 
 import apiver_deps
 import pytest
@@ -40,6 +41,7 @@ from apiver_deps import (
     RawSimulator,
     SqliteAccountInfo,
     UploadSourceBytes,
+    WriteIntent,
 )
 from apiver_deps_exception import CopyArgumentsMismatch, NonExistentBucket
 
@@ -122,20 +124,93 @@ class TestRegressionCopyAndLs(TestCaseWithBucket):
 
 
 class TestRegressionUploadOptions(TestCaseWithBucket):
-    @known_defect('C45', 'multipart uploads ignore custom_upload_timestamp', raises=AssertionError)
     def test_c45_custom_timestamp_is_kept_on_large_upload(self):
         """C45: a custom upload timestamp must be applied to multi-part uploads too."""
         data = self._make_data(self.simulator.MIN_PART_SIZE * 3)
         file_version = self.bucket.upload_bytes(data, 'large', custom_upload_timestamp=12345)
         assert file_version.upload_timestamp == 12345, file_version.upload_timestamp
 
-    @known_defect('C45', 'multipart uploads ignore custom_upload_timestamp', raises=AssertionError)
     def test_c45_custom_timestamp_is_kept_on_large_unfinished_file(self):
         """C45: the started large file carries the custom timestamp (visible after the upload)."""
         data = self._make_data(self.simulator.MIN_PART_SIZE * 3)
         self.bucket.upload_bytes(data, 'large2', custom_upload_timestamp=777)
         stored = self.bucket.get_file_info_by_name('large2')
         assert stored.upload_timestamp == 777, stored.upload_timestamp
+
+    def test_c45_interrupted_upload_preserves_timestamp_and_resumes(self):
+        data = self._make_data(self.simulator.MIN_PART_SIZE * 3)
+        for timestamp in (0, 777):
+            with self.subTest(timestamp=timestamp):
+                name = f'resume-{timestamp}'
+                with mock.patch.object(
+                    self.api.services.upload_manager,
+                    'upload_part',
+                    side_effect=RuntimeError('interrupted'),
+                ):
+                    with pytest.raises(RuntimeError, match='interrupted'):
+                        self.bucket.upload_bytes(data, name, custom_upload_timestamp=timestamp)
+
+                unfinished = list(self.bucket.list_unfinished_large_files(prefix=name))
+                assert len(unfinished) == 1
+                raw = self.simulator.list_unfinished_large_files(
+                    self.api_url, self.account_auth_token, self.bucket_id, prefix=name
+                )
+                assert raw['files'][0]['uploadTimestamp'] == timestamp
+                completed = self.bucket.upload_bytes(data, name, custom_upload_timestamp=timestamp)
+                assert completed.id_ == unfinished[0].file_id
+                assert completed.upload_timestamp == timestamp
+
+    def test_c45_resume_matches_requested_timestamp(self):
+        data = self._make_data(self.simulator.MIN_PART_SIZE * 3)
+        for existing_timestamp, requested_timestamp in ((777, 777), (777, 888), (0, 0)):
+            with self.subTest(existing=existing_timestamp, requested=requested_timestamp):
+                name = f'match-{existing_timestamp}-{requested_timestamp}'
+                unfinished = self.simulator.start_large_file(
+                    self.api_url,
+                    self.account_auth_token,
+                    self.bucket_id,
+                    name,
+                    None,
+                    {},
+                    custom_upload_timestamp=existing_timestamp,
+                )
+                completed = self.bucket.upload_bytes(
+                    data, name, custom_upload_timestamp=requested_timestamp
+                )
+                if existing_timestamp == requested_timestamp:
+                    assert completed.id_ == unfinished['fileId']
+                else:
+                    assert completed.id_ != unfinished['fileId']
+                assert completed.upload_timestamp == requested_timestamp
+
+    def test_c45_explicit_resume_requires_matching_timestamp(self):
+        data = self._make_data(self.simulator.MIN_PART_SIZE * 3)
+        for requested_timestamp in (777, 888):
+            with self.subTest(requested=requested_timestamp):
+                name = f'explicit-{requested_timestamp}'
+                unfinished = self.simulator.start_large_file(
+                    self.api_url,
+                    self.account_auth_token,
+                    self.bucket_id,
+                    name,
+                    None,
+                    {'large_file_sha1': apiver_deps.hex_sha1_of_bytes(data)},
+                    custom_upload_timestamp=777,
+                )
+                kwargs = dict(
+                    write_intents=[WriteIntent(UploadSourceBytes(data))],
+                    file_name=name,
+                    continue_large_file_id=unfinished['fileId'],
+                    custom_upload_timestamp=requested_timestamp,
+                )
+                if requested_timestamp == 777:
+                    completed = self.bucket.create_file(**kwargs)
+                    assert completed.id_ == unfinished['fileId']
+                    assert completed.upload_timestamp == 777
+                else:
+                    with pytest.raises(ValueError, match='custom_upload_timestamp'):
+                        self.bucket.create_file(**kwargs)
+                    assert list(self.bucket.list_unfinished_large_files(prefix=name))
 
     @known_defect(
         'C33',
