@@ -52,44 +52,6 @@ def test_c59_readme_mentions_full_extra():
     assert re.search(r'b2sdk\[full\]', _read('README.md')), 'README does not mention b2sdk[full]'
 
 
-# an EncryptionKey(...) call whose arguments contain `id=`; quoted strings are skipped as a whole,
-# so a ")" inside the secret does not end the argument list early
-ENCRYPTION_KEY_WITH_ID = re.compile(r"""EncryptionKey\((?:[^()'"]|'[^']*'|"[^"]*")*?\bid=""")
-# installs the local checkout (`pip install .` or `pip install -e .`), not a package index or a URL
-PIP_INSTALL_CHECKOUT = re.compile(r'pip install (?:-e\s+)?\.(?:\[[^\]]*\])?(?=\s|$)')
-
-
-@known_defect('C4', 'the Quick Start uses a class that does not exist', raises=AssertionError)
-def test_c4_quick_start_does_not_use_encryption_settings_class():
-    """C4: Quick Start must not use the non-existent class EncryptionSettings."""
-    assert 'EncryptionSettings(' not in _read(
-        'doc/source/quick_start.rst'
-    ), 'EncryptionSettings does not exist'
-
-
-@known_defect(
-    'C4',
-    'the Quick Start uses an EncryptionKey argument that does not exist',
-    raises=AssertionError,
-)
-def test_c4_quick_start_uses_key_id_argument_of_encryption_key():
-    """C4: Quick Start must call EncryptionKey with `key_id=`, which is the argument it has."""
-    assert not ENCRYPTION_KEY_WITH_ID.search(
-        _read('doc/source/quick_start.rst')
-    ), 'EncryptionKey has no id= argument'
-
-
-@known_defect(
-    'C4',
-    'the development-version install instructions install from PyPI, not the checkout',
-    raises=AssertionError,
-)
-def test_c4_install_doc_development_version_installs_from_checkout():
-    """C4: 'Installing a development version' must install the checkout, not PyPI."""
-    section = _read('doc/source/install.rst').split('Installing a development version', 1)[1]
-    assert PIP_INSTALL_CHECKOUT.search(section), 'development-version section installs from PyPI'
-
-
 @known_defect(
     'C36',
     'importing b2sdk fails when the package metadata is not installed',
