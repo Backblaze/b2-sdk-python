@@ -383,6 +383,7 @@ class B2Api(metaclass=B2TraceMeta):
         """
         account_id = self.account_info.get_account_id()
         self.session.delete_bucket(account_id, bucket.id_)
+        self.cache.clear()
 
     def list_buckets(
         self, bucket_name=None, bucket_id=None, *, use_cache: bool = False
