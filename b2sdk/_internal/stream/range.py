@@ -25,7 +25,7 @@ class RangeOfInputStream(ReadOnlyStreamMixin, StreamWithLengthWrapper):
         """
         :param stream: a seekable stream
         :param int offset: offset in the stream
-        :param int length: max number of bytes to read
+        :param length: max number of bytes to read, or None to read to the end of the stream
         """
         super().__init__(stream, length)
         self.offset = offset
@@ -62,12 +62,15 @@ class RangeOfInputStream(ReadOnlyStreamMixin, StreamWithLengthWrapper):
         :return: data read from the stream
         :rtype: bytes
         """
-        remaining = max(0, self.length - self.relative_pos)
-        if size is None or size < 0:
-            to_read = remaining
+        if self.length is None:
+            to_read = size
         else:
-            to_read = min(size, remaining)
-        data = self.stream.read(to_read)
+            remaining = max(0, self.length - self.relative_pos)
+            if size is None or size < 0:
+                to_read = remaining
+            else:
+                to_read = min(size, remaining)
+        data = super().read(to_read)
         self.relative_pos += len(data)
         return data
 
