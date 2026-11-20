@@ -412,6 +412,8 @@ class Bucket(metaclass=B2TraceMeta):
         if with_wildcard and not recursive:
             raise ValueError('with_wildcard requires recursive to be turned on as well')
 
+        filter_matcher = FilterMatcher(filters)
+
         # check if path points to an object instead of a folder
         if path and not with_wildcard and not path.endswith('/'):
             file_versions = self.list_file_versions(path, 1 if latest_only else fetch_count)
@@ -420,7 +422,9 @@ class Bucket(metaclass=B2TraceMeta):
             path_pointed_to_file = False
             for file_version in file_versions:
                 path_pointed_to_file = True
-                if not latest_only or file_version.action == 'upload':
+                if filter_matcher.match(path) and (
+                    not latest_only or file_version.action == 'upload'
+                ):
                     yield file_version, None
             if path_pointed_to_file:
                 return
@@ -471,7 +475,6 @@ class Bucket(metaclass=B2TraceMeta):
         # "folder".   If the first search doesn't produce enough results,
         # then we keep calling list_file_names until we get all of the
         # names in this "folder".
-        filter_matcher = FilterMatcher(filters)
         current_dir = None
         start_file_name = prefix
         start_file_id = None

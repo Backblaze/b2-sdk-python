@@ -96,12 +96,6 @@ class TestRegressionCopyAndLs(TestCaseWithBucket):
         # must not raise AssertionError (it may list nothing or the object, but not crash)
         list(folder.all_files(None))
 
-    @known_defect(
-        'C6',
-        'ls() of an exact file name ignores the filters',
-        condition=apiver_deps.V >= 3,
-        raises=AssertionError,
-    )
     def test_c6_exact_filename_respects_exclude_filter(self):
         """C6: an exclude filter naming the exact file must hide it from ls()."""
         self.bucket.upload_bytes(b'hello world', 'b/a.txt')
@@ -113,12 +107,6 @@ class TestRegressionCopyAndLs(TestCaseWithBucket):
         ]
         assert result == [], 'the filter was ignored'
 
-    @known_defect(
-        'C6',
-        'ls() of an exact file name ignores the filters',
-        condition=apiver_deps.V >= 3,
-        raises=AssertionError,
-    )
     def test_c6_exact_filename_respects_include_filter_for_other_name(self):
         """C6: an include filter not matching the exact file must hide it from ls()."""
         self.bucket.upload_bytes(b'hello world', 'b/a.txt')
