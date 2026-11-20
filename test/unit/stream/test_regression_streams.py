@@ -121,30 +121,18 @@ class TestChainedStream:
 
 
 class TestUploadSourceStreamRange:
-    @known_defect(
-        'C15',
-        'UploadSourceStreamRange built without a length fails on the first read',
-        raises=DefectStillPresent,
-    )
     def test_c15_stream_range_without_length_can_be_read(self):
         """C15: docs allow omitting the stream length; open() then read must work."""
         data = b'0123456789'
         source = UploadSourceStreamRange(lambda: io.BytesIO(data), offset=4)
-        with defect_raises(TypeError, match="unsupported operand type.*'NoneType'"):
-            with source.open() as fp:
-                content = fp.read()
+        with source.open() as fp:
+            content = fp.read()
         assert content == data[4:], 'wrong data read from the stream range'
 
-    @known_defect(
-        'C15',
-        'UploadSourceStreamRange built without a length cannot report its length',
-        raises=DefectStillPresent,
-    )
     def test_c15_stream_range_without_length_computes_length(self):
         """C15: length is computed lazily when not given."""
         source = UploadSourceStreamRange(lambda: io.BytesIO(b'0123456789'), offset=0)
-        with defect_raises(TypeError, match="unsupported operand type.*'NoneType'"):
-            length = source.get_content_length()
+        length = source.get_content_length()
         assert length == 10, 'wrong computed length'
 
     @known_defect(
