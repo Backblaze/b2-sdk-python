@@ -11,6 +11,9 @@ from __future__ import annotations
 
 import json
 import os
+import sqlite3
+import threading
+from concurrent.futures import ThreadPoolExecutor
 
 import pytest
 from apiver_deps import (
@@ -33,6 +36,46 @@ class TestDatabseMigrations:
     def setup(self, sqlite_account_info_factory, account_info_default_data_schema_0):
         self.sqlite_account_info_factory = sqlite_account_info_factory
         self.account_info_default_data = account_info_default_data_schema_0
+
+    @pytest.mark.parametrize('version', range(1, 7))
+    def test_concurrent_migrations(self, version):
+        original = self.sqlite_account_info_factory(last_upgrade_to_run=0)
+        original.set_auth_data_with_schema_0_for_test(**self.account_info_default_data)
+        old_account_info = self.sqlite_account_info_factory(last_upgrade_to_run=version - 1)
+        barrier = threading.Barrier(2, timeout=10)
+
+        class ConcurrentAccountInfo(SqliteAccountInfo):
+            def _get_update_count(self, update_number):
+                count = super()._get_update_count(update_number)
+                if update_number == version and count == 0:
+                    # Both independent connections observe the pending migration.
+                    barrier.wait()
+                return count
+
+        def upgrade():
+            account_info = ConcurrentAccountInfo(
+                file_name=old_account_info.filename, last_upgrade_to_run=version
+            )
+            try:
+                assert account_info.get_account_id() == 'account_id'
+                assert account_info.get_account_auth_token() == 'account_auth'
+                return account_info._get_update_count(version)
+            finally:
+                account_info.close()
+
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            futures = [executor.submit(upgrade) for _ in range(2)]
+            assert [future.result(timeout=20) for future in futures] == [1, 1]
+        assert old_account_info._get_update_count(version) == 1
+
+    def test_failed_migration_rolls_back_and_can_be_retried(self):
+        account_info = self.sqlite_account_info_factory()
+        command = 'ALTER TABLE account ADD COLUMN migration_test TEXT;'
+        with pytest.raises(sqlite3.OperationalError):
+            account_info._ensure_update(7, [command, 'INVALID SQL'])
+        assert account_info._get_update_count(7) == 0
+        account_info._ensure_update(7, [command])
+        assert account_info._get_update_count(7) == 1
 
     def test_upgrade_1_default_allowed(self):
         """The 'allowed' field should be the default for upgraded databases."""
