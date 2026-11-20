@@ -241,6 +241,36 @@ def test_creates_retry_only_failures_before_the_server_effect(method, args, fail
     sleep.assert_called_once_with(2 if failure == '429' else 1)
 
 
+@pytest.mark.parametrize('method, args', CREATE_CALLS)
+def test_create_retries_wrapped_connect_timeout(method, args, mocker):
+    http = B2Http(B2HttpApiConfig(install_clock_skew_hook=False))
+    requests_sent = []
+    created = []
+
+    def request(http_method, url, *, data, **kwargs):
+        assert http_method == 'POST'
+        requests_sent.append(json.loads(data))
+        if len(requests_sent) == 1:
+            urllib3_errors = requests.packages.urllib3.exceptions
+            reason = urllib3_errors.ConnectTimeoutError(None, 'connection timed out')
+            raise requests.ConnectionError(urllib3_errors.MaxRetryError(None, url, reason=reason))
+        created.append({'id': len(created) + 1})
+        return CommittedCreateTransport.response(url, 200, created[-1])
+
+    mocker.patch.object(http.session, 'request', side_effect=request)
+    sleep = mocker.patch('b2sdk._internal.b2http.time.sleep')
+    try:
+        result = getattr(B2RawHTTPApi(http), method)(API_URL, AUTH_TOKEN, *args)
+    finally:
+        http.session.close()
+
+    assert len(requests_sent) == 2
+    assert requests_sent[0] == requests_sent[1]
+    assert created == [{'id': 1}]
+    assert result == {'id': 1}
+    sleep.assert_called_once_with(1)
+
+
 @pytest.mark.parametrize('failure', ['503', 'timeout', 'connection-lost'])
 def test_ambiguous_create_is_not_replayed_after_a_safe_retry(failure, mocker):
     transport = CommittedCreateTransport(['429', failure])
