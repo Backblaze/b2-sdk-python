@@ -201,7 +201,7 @@ class LocalFolder(AbstractFolder):
         relative_dir_path: Path,
         reporter: ProgressReport,
         policies_manager: ScanPoliciesManager,
-        visited_symlinks: set[int] | None = None,
+        visited_symlinks: set[tuple[int, int]] | None = None,
     ):
         """
         Yield a File object for each of the files anywhere under this folder,
@@ -211,7 +211,7 @@ class LocalFolder(AbstractFolder):
         :param relative_dir_path: the path of this dir relative to the scan point, or Path('') if at scan point
         :param reporter: a reporter object to report errors and warnings
         :param policies_manager: a policies manager object
-        :param visited_symlinks: a set of paths to symlinks that have already been visited. Using inode numbers to reduce memory usage
+        :param visited_symlinks: device and inode pairs for already visited symlink targets
         """
 
         # Collect the names.  We do this before returning any results, because
@@ -230,12 +230,13 @@ class LocalFolder(AbstractFolder):
         visited_symlinks = visited_symlinks or set()
 
         if local_dir.is_symlink():
-            inode_number = local_dir.resolve().stat().st_ino
-            if inode_number in visited_symlinks:
+            target_stat = local_dir.resolve().stat()
+            target_id = (target_stat.st_dev, target_stat.st_ino)
+            if target_id in visited_symlinks:
                 if reporter:
                     reporter.circular_symlink_skipped(str(local_dir))
                 return  # Skip if symlink already visited
-            visited_symlinks.add(inode_number)
+            visited_symlinks.add(target_id)
 
         try:
             dir_children = sorted(local_dir.iterdir())
