@@ -26,6 +26,10 @@ class RangeOfInputStream(ReadOnlyStreamMixin, StreamWithLengthWrapper):
         :param stream: a seekable stream
         :param int offset: offset in the stream
         :param length: max number of bytes to read, or None to read to the end of the stream
+
+        If length is None, ``len()`` on this stream raises ``TypeError``. For an
+        ``UploadSourceStreamRange``, call ``get_content_length()`` on the source and open a
+        new stream to obtain a stream with a known length.
         """
         super().__init__(stream, length)
         self.offset = offset

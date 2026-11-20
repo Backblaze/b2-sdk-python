@@ -82,3 +82,17 @@ def test_unknown_length_read_none_uses_default_inner_read():
     source = UploadSourceStreamRange(lambda: NoExplicitNoneStream(b'0123456789'), offset=4)
     with source.open() as stream:
         assert stream.read(None) == b'456789'
+
+
+def test_unknown_stream_length_requires_new_open_after_calculation():
+    source = UploadSourceStreamRange(lambda: io.BytesIO(b'0123456789'), offset=4)
+    with source.open() as unknown_length_stream:
+        with pytest.raises(TypeError):
+            len(unknown_length_stream)
+        assert source.get_content_length() == 6
+        # Existing stream wrappers retain the length they were opened with.
+        with pytest.raises(TypeError):
+            len(unknown_length_stream)
+        with source.open() as known_length_stream:
+            assert len(known_length_stream) == 6
+            assert known_length_stream.read() == b'456789'
