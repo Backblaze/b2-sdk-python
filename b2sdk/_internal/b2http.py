@@ -647,7 +647,9 @@ class B2Http:
             urllib3_errors = requests.packages.urllib3.exceptions
             if isinstance(reason, urllib3_errors.MaxRetryError):
                 reason = reason.reason
-            return isinstance(reason, urllib3_errors.ConnectTimeoutError)
+            return isinstance(
+                reason, (urllib3_errors.NewConnectionError, urllib3_errors.ConnectTimeoutError)
+            )
         return False
 
     @classmethod

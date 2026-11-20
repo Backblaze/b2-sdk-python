@@ -91,6 +91,12 @@ class CommittedCreateTransport:
             raise requests.ReadTimeout('response unavailable after commit')
         if failure == 'connection-lost':
             raise requests.ConnectionError('connection lost after commit')
+        if failure == 'wrapped-connection-lost':
+            urllib3_errors = requests.packages.urllib3.exceptions
+            reason = urllib3_errors.ProtocolError(
+                'connection lost after send', ConnectionResetError()
+            )
+            raise requests.ConnectionError(urllib3_errors.MaxRetryError(None, url, reason))
         if failure == '503':
             return self.response(
                 url,
@@ -101,7 +107,9 @@ class CommittedCreateTransport:
 
 
 @pytest.mark.parametrize('method, args', CREATE_CALLS)
-@pytest.mark.parametrize('failure', ['503', 'timeout', 'connection-lost'])
+@pytest.mark.parametrize(
+    'failure', ['503', 'timeout', 'connection-lost', 'wrapped-connection-lost']
+)
 def test_committed_create_is_not_replayed_after_ambiguous_failure(method, args, failure, mocker):
     transport = CommittedCreateTransport(failure)
     http = B2Http(B2HttpApiConfig(install_clock_skew_hook=False))
@@ -113,6 +121,7 @@ def test_committed_create_is_not_replayed_after_ambiguous_failure(method, args, 
         'timeout': B2RequestTimeout,
         '503': ServiceError,
         'connection-lost': B2ConnectionError,
+        'wrapped-connection-lost': B2ConnectionError,
     }[failure]
 
     try:
@@ -239,6 +248,32 @@ def test_creates_retry_only_failures_before_the_server_effect(method, args, fail
     assert transport.created == [{'id': 1}]
     assert len(transport.requests) == 2
     sleep.assert_called_once_with(2 if failure == '429' else 1)
+
+
+@pytest.mark.parametrize('method, args', CREATE_CALLS)
+def test_create_retries_new_connection_without_shared_timeout_parent(method, args, mocker):
+    # Simulate a future hierarchy while retaining real NewConnectionError instances.
+    urllib3_errors = requests.packages.urllib3.exceptions
+
+    class IndependentConnectTimeoutError(urllib3_errors.HTTPError):
+        pass
+
+    mocker.patch.object(urllib3_errors, 'ConnectTimeoutError', IndependentConnectTimeoutError)
+    assert not issubclass(urllib3_errors.NewConnectionError, urllib3_errors.ConnectTimeoutError)
+    transport = CommittedCreateTransport('new-connection')
+    http = B2Http(B2HttpApiConfig(install_clock_skew_hook=False))
+    mocker.patch.object(http.session, 'request', side_effect=transport.request)
+    sleep = mocker.patch('b2sdk._internal.b2http.time.sleep')
+    try:
+        result = getattr(B2RawHTTPApi(http), method)(API_URL, AUTH_TOKEN, *args)
+    finally:
+        http.session.close()
+
+    assert len(transport.requests) == 2
+    assert transport.requests[0] == transport.requests[1]
+    assert transport.created == [{'id': 1}]
+    assert result == {'id': 1}
+    sleep.assert_called_once_with(1)
 
 
 @pytest.mark.parametrize('method, args', CREATE_CALLS)
