@@ -14,6 +14,14 @@ import pytest
 pytest_plugins = ['b2sdk.v3.testing']
 
 
+def pytest_configure(config):
+    config.addinivalue_line(
+        'markers',
+        'known_defect: test of a defect that is still present, marked as a strict expected failure '
+        '(see test/known_defect.py)',
+    )
+
+
 @pytest.fixture
 def bg_executor():
     with concurrent.futures.ThreadPoolExecutor() as executor:
