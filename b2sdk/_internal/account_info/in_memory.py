@@ -73,17 +73,18 @@ class InMemoryAccountInfo(UrlPoolAccountInfo):
         allowed,
         application_key_id,
     ):
-        self._account_id = account_id
-        self._application_key_id = application_key_id
-        self._auth_token = auth_token
-        self._api_url = api_url
-        self._download_url = download_url
-        self._absolute_minimum_part_size = absolute_minimum_part_size
-        self._recommended_part_size = recommended_part_size
-        self._application_key = application_key
-        self._realm = realm
-        self._s3_api_url = s3_api_url
-        self._allowed = allowed
+        with self._auth_data_change(application_key_id, realm):
+            self._account_id = account_id
+            self._application_key_id = application_key_id
+            self._auth_token = auth_token
+            self._api_url = api_url
+            self._download_url = download_url
+            self._absolute_minimum_part_size = absolute_minimum_part_size
+            self._recommended_part_size = recommended_part_size
+            self._application_key = application_key
+            self._realm = realm
+            self._s3_api_url = s3_api_url
+            self._allowed = allowed
 
     def refresh_entire_bucket_name_cache(self, name_id_iterable):
         self._buckets = dict(name_id_iterable)

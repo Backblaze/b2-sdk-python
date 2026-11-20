@@ -479,11 +479,12 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
         """
         Remove all info about accounts and buckets.
         """
-        self._reset_upload_pools()
-        with self._get_connection() as conn:
-            conn.execute('DELETE FROM account;')
-            conn.execute('DELETE FROM bucket;')
-            conn.execute('DELETE FROM bucket_upload_url;')
+        with self._auth_data_lock:
+            self._reset_upload_pools()
+            with self._get_connection() as conn:
+                conn.execute('DELETE FROM account;')
+                conn.execute('DELETE FROM bucket;')
+                conn.execute('DELETE FROM bucket_upload_url;')
 
     def _set_auth_data(
         self,
@@ -499,7 +500,7 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
         allowed,
         application_key_id,
     ):
-        with self._get_connection() as conn:
+        with self._auth_data_change(application_key_id, realm), self._get_connection() as conn:
             conn.execute('DELETE FROM account;')
             conn.execute('DELETE FROM bucket;')
             conn.execute('DELETE FROM bucket_upload_url;')

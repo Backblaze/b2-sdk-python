@@ -12,6 +12,7 @@ from __future__ import annotations
 import collections
 import threading
 from abc import abstractmethod
+from contextlib import contextmanager
 
 from .abstract import AbstractAccountInfo
 
@@ -82,6 +83,8 @@ class UrlPoolAccountInfo(AbstractAccountInfo):
 
     def __init__(self):
         super().__init__()
+        self._auth_data_lock = threading.RLock()
+        self._upload_pool_generation = 0
         self._reset_upload_pools()
 
     @abstractmethod
@@ -90,25 +93,46 @@ class UrlPoolAccountInfo(AbstractAccountInfo):
         return super().clear()
 
     def _reset_upload_pools(self):
-        self._bucket_uploads = self.BUCKET_UPLOAD_POOL_CLASS()
-        self._large_file_uploads = self.LARGE_FILE_UPLOAD_POOL_CLASS()
+        with self._auth_data_lock:
+            self._upload_pool_generation += 1
+            self._bucket_uploads = self.BUCKET_UPLOAD_POOL_CLASS()
+            self._large_file_uploads = self.LARGE_FILE_UPLOAD_POOL_CLASS()
+
+    @contextmanager
+    def _auth_data_change(self, application_key_id, realm):
+        with self._auth_data_lock:
+            changed = not self.is_same_key(application_key_id, realm)
+            yield
+            if changed:
+                self._reset_upload_pools()
+
+    @contextmanager
+    def _upload_pool_context(self):
+        with self._auth_data_lock:
+            yield self._upload_pool_generation
 
     # bucket upload url
     def put_bucket_upload_url(self, bucket_id, upload_url, upload_auth_token):
-        self._bucket_uploads.put(bucket_id, upload_url, upload_auth_token)
+        with self._auth_data_lock:
+            self._bucket_uploads.put(bucket_id, upload_url, upload_auth_token)
 
     def clear_bucket_upload_data(self, bucket_id):
-        self._bucket_uploads.clear_for_key(bucket_id)
+        with self._auth_data_lock:
+            self._bucket_uploads.clear_for_key(bucket_id)
 
     def take_bucket_upload_url(self, bucket_id):
-        return self._bucket_uploads.take(bucket_id)
+        with self._auth_data_lock:
+            return self._bucket_uploads.take(bucket_id)
 
     # large file upload url
     def put_large_file_upload_url(self, file_id, upload_url, upload_auth_token):
-        self._large_file_uploads.put(file_id, upload_url, upload_auth_token)
+        with self._auth_data_lock:
+            self._large_file_uploads.put(file_id, upload_url, upload_auth_token)
 
     def take_large_file_upload_url(self, file_id):
-        return self._large_file_uploads.take(file_id)
+        with self._auth_data_lock:
+            return self._large_file_uploads.take(file_id)
 
     def clear_large_file_upload_urls(self, file_id):
-        self._large_file_uploads.clear_for_key(file_id)
+        with self._auth_data_lock:
+            self._large_file_uploads.clear_for_key(file_id)
