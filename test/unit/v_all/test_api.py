@@ -21,6 +21,7 @@ from apiver_deps import (
     InMemoryAccountInfo,
     InMemoryCache,
     RawSimulator,
+    StubAccountInfo,
 )
 from apiver_deps_exception import BucketIdNotFound
 
@@ -35,6 +36,21 @@ class DummyA:
 class DummyB:
     def __init__(self, *args, **kwargs):
         pass
+
+
+def test_b2api_stores_api_config_when_specified():
+    api_config = B2HttpApiConfig(decode_content=True)
+    api = B2Api(StubAccountInfo(), api_config=api_config)
+    assert api.api_config is api_config
+    if apiver_deps.V <= 1:
+        assert api.api_config is api.session.api_config
+
+
+@pytest.mark.apiver(to_ver=1)
+def test_b2api_stores_api_config_when_not_specified():
+    api = B2Api(StubAccountInfo())
+    assert isinstance(api.api_config, B2HttpApiConfig)
+    assert api.api_config is api.session.api_config
 
 
 class TestServices:
