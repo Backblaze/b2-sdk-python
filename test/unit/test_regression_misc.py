@@ -105,9 +105,6 @@ class TestTypes:
 
 class TestHttpLayer:
     @responses.activate
-    @known_defect(
-        'C10', 'calls that create things are re-sent after a timeout', raises=DefectStillPresent
-    )
     def test_c10_create_style_post_is_not_blindly_resent_after_timeout(self):
         """C10: a POST that creates something (b2_create_bucket) must not be re-sent after a timeout."""
         url = 'https://example.com/b2api/v4/b2_create_bucket'

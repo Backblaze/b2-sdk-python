@@ -18,8 +18,10 @@ import socket
 import threading
 import time
 from contextlib import contextmanager
+from contextvars import ContextVar
 from random import random
 from typing import Any, Callable
+from urllib.parse import urlsplit
 
 try:
     from typing_extensions import Literal
@@ -41,6 +43,7 @@ from .exception import (
     ClockSkew,
     ConnectionReset,
     PotentialS3EndpointPassedAsRealm,
+    TooManyRequests,
     UnknownError,
     UnknownHost,
     interpret_b2_error,
@@ -50,6 +53,33 @@ from .utils.typing import JSON
 
 LOCALE_LOCK = threading.Lock()
 logger = logging.getLogger(__name__)
+_JSON_POST_ORIGIN = ContextVar('b2sdk_json_post_origin', default=None)
+
+# These Native API operations can be replayed without creating another resource.
+_REPLAYABLE_JSON_POST_ENDPOINTS = frozenset(
+    {
+        'b2_authorize_account',
+        'b2_cancel_large_file',
+        'b2_delete_bucket',
+        'b2_delete_file_version',
+        'b2_delete_key',
+        'b2_get_download_authorization',
+        'b2_get_file_info',
+        'b2_get_upload_url',
+        'b2_get_upload_part_url',
+        'b2_list_buckets',
+        'b2_list_file_names',
+        'b2_list_file_versions',
+        'b2_list_keys',
+        'b2_list_parts',
+        'b2_list_unfinished_large_files',
+        'b2_update_bucket',
+        'b2_update_file_retention',
+        'b2_update_file_legal_hold',
+        'b2_copy_part',
+        'b2_set_bucket_notification_rules',
+    }
+)
 
 
 def _print_exception(e, indent=''):
@@ -280,7 +310,30 @@ class B2Http:
             self._run_post_request_hooks(method, url, request_headers, response)
             return response
 
-        return self._translate_and_retry(do_request, try_count, params)
+        origin = _JSON_POST_ORIGIN.get()
+        # Hooks may issue nested requests, each of which needs its own policy.
+        origin_token = _JSON_POST_ORIGIN.set(None)
+        try:
+            return self._translate_and_retry(
+                do_request,
+                try_count,
+                params,
+                retry_on_ambiguous=(origin is not self or self._is_replayable_request(method, url)),
+            )
+        finally:
+            _JSON_POST_ORIGIN.reset(origin_token)
+
+    @staticmethod
+    def _is_replayable_request(method, url):
+        if method != 'POST':
+            return True
+        try:
+            api_path = urlsplit(url).path.rsplit('/', 3)
+        except ValueError:
+            # Let requests validate the URL inside the normal error translator.
+            return False
+        native_api = len(api_path) == 4 and api_path[1] == 'b2api'
+        return native_api and api_path[-1] in _REPLAYABLE_JSON_POST_ENDPOINTS
 
     def request_content_return_json(
         self,
@@ -373,6 +426,11 @@ class B2Http:
         :param str url: a URL to call
         :param dict headers: headers to send.
         :param dict params: a dict that will be converted to JSON
+        :param int try_count: maximum attempts; ambiguous failures are only retried
+            for known replayable Native API operations. Create-style or unclassified
+            JSON POSTs still retry rate limits and proven connection failures before
+            sending, but surface response timeouts, connection loss and 5xx (including
+            503). The operation may have succeeded; check server state before retrying.
         :return: the decoded JSON document
         :rtype: dict
         """
@@ -384,17 +442,21 @@ class B2Http:
         timeout = self.TIMEOUT_FOR_COPY
 
         data = json.dumps(params).encode()
-        return self.post_content_return_json(
-            url,
-            {
-                **headers,
-                'Content-Type': 'application/json',
-            },
-            data,
-            try_count,
-            params,
-            _timeout=timeout,
-        )
+        origin_token = _JSON_POST_ORIGIN.set(self)
+        try:
+            return self.post_content_return_json(
+                url,
+                {
+                    **headers,
+                    'Content-Type': 'application/json',
+                },
+                data,
+                try_count,
+                params,
+                _timeout=timeout,
+            )
+        finally:
+            _JSON_POST_ORIGIN.reset(origin_token)
 
     def get_content(self, url, headers, try_count: int = TRY_COUNT_DOWNLOAD):
         """
@@ -571,9 +633,33 @@ class B2Http:
             logger.exception('_translate_errors has intercepted an unexpected exception')
             raise UnknownError(text)
 
+    @staticmethod
+    def _is_unapplied_error(error):
+        if isinstance(error, TooManyRequests):
+            return True
+        if not isinstance(error, B2ConnectionError):
+            return False
+        original = error.__context__
+        if isinstance(original, requests.ConnectTimeout):
+            return True
+        if isinstance(original, requests.ConnectionError) and original.args:
+            reason = original.args[0]
+            urllib3_errors = requests.packages.urllib3.exceptions
+            if isinstance(reason, urllib3_errors.MaxRetryError):
+                reason = reason.reason
+            return isinstance(
+                reason, (urllib3_errors.NewConnectionError, urllib3_errors.ConnectTimeoutError)
+            )
+        return False
+
     @classmethod
     def _translate_and_retry(
-        cls, fcn: Callable, try_count: int, post_params: dict[str, Any] | None = None
+        cls,
+        fcn: Callable,
+        try_count: int,
+        post_params: dict[str, Any] | None = None,
+        *,
+        retry_on_ambiguous: bool = True,
     ):
         """
         Try calling fcn try_count times, retrying only if
@@ -595,6 +681,8 @@ class B2Http:
                 return cls._translate_errors(fcn, post_params)
             except B2Error as e:
                 if not e.should_retry_http():
+                    raise
+                if not retry_on_ambiguous and not cls._is_unapplied_error(e):
                     raise
                 logger.debug(str(e), exc_info=True)
                 if e.retry_after_seconds is not None:
