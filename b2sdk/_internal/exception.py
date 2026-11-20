@@ -27,12 +27,28 @@ COPY_SOURCE_TOO_BIG_ERROR_MESSAGE_RE = re.compile(r'^Copy source too big: (?P<si
 logger = logging.getLogger(__name__)
 
 
+# Keep server-requested waits bounded while preserving ordinary delays.
+_MAX_RETRY_AFTER_SECONDS = 300
+
+
 def _parse_retry_after_seconds(retry_after_seconds):
-    """Return Retry-After delay-seconds, ignoring HTTP-date and invalid forms."""
+    """Return bounded Retry-After delay-seconds, ignoring dates and invalid forms."""
+    if isinstance(retry_after_seconds, str):
+        text = retry_after_seconds.strip()
+        negative = text.startswith('-')
+        digits = text[1:] if text[:1] in ('+', '-') else text
+        if digits.isascii() and digits.isdecimal():
+            digits = digits.lstrip('0')
+            if not digits or negative:
+                return 0
+            if len(digits) > len(str(_MAX_RETRY_AFTER_SECONDS)):
+                return _MAX_RETRY_AFTER_SECONDS
+            return min(int(digits), _MAX_RETRY_AFTER_SECONDS)
     try:
-        return int(retry_after_seconds)
+        delay = int(retry_after_seconds)
     except (TypeError, ValueError):
         return None
+    return max(0, min(delay, _MAX_RETRY_AFTER_SECONDS))
 
 
 class B2Error(Exception, metaclass=ABCMeta):
