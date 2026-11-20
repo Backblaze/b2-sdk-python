@@ -18,6 +18,7 @@ import socket
 import threading
 import time
 from contextlib import contextmanager
+from contextvars import ContextVar
 from random import random
 from typing import Any, Callable
 from urllib.parse import urlsplit
@@ -52,6 +53,7 @@ from .utils.typing import JSON
 
 LOCALE_LOCK = threading.Lock()
 logger = logging.getLogger(__name__)
+_JSON_POST_ORIGIN = ContextVar('b2sdk_json_post_origin', default=None)
 
 # These Native API operations can be replayed without creating another resource.
 _REPLAYABLE_JSON_POST_ENDPOINTS = frozenset(
@@ -308,19 +310,28 @@ class B2Http:
             self._run_post_request_hooks(method, url, request_headers, response)
             return response
 
-        return self._translate_and_retry(
-            do_request,
-            try_count,
-            params,
-            retry_on_ambiguous=self._is_replayable_request(method, url, params),
-        )
+        origin = _JSON_POST_ORIGIN.get()
+        # Hooks may issue nested requests, each of which needs its own policy.
+        origin_token = _JSON_POST_ORIGIN.set(None)
+        try:
+            return self._translate_and_retry(
+                do_request,
+                try_count,
+                params,
+                retry_on_ambiguous=(origin is not self or self._is_replayable_request(method, url)),
+            )
+        finally:
+            _JSON_POST_ORIGIN.reset(origin_token)
 
     @staticmethod
-    def _is_replayable_request(method, url, params):
-        # post_json_return_json supplies JSON metadata; binary uploads do not.
-        if method != 'POST' or params is None:
+    def _is_replayable_request(method, url):
+        if method != 'POST':
             return True
-        api_path = urlsplit(url).path.rsplit('/', 3)
+        try:
+            api_path = urlsplit(url).path.rsplit('/', 3)
+        except ValueError:
+            # Let requests validate the URL inside the normal error translator.
+            return False
         native_api = len(api_path) == 4 and api_path[1] == 'b2api'
         return native_api and api_path[-1] in _REPLAYABLE_JSON_POST_ENDPOINTS
 
@@ -431,17 +442,21 @@ class B2Http:
         timeout = self.TIMEOUT_FOR_COPY
 
         data = json.dumps(params).encode()
-        return self.post_content_return_json(
-            url,
-            {
-                **headers,
-                'Content-Type': 'application/json',
-            },
-            data,
-            try_count,
-            params,
-            _timeout=timeout,
-        )
+        origin_token = _JSON_POST_ORIGIN.set(self)
+        try:
+            return self.post_content_return_json(
+                url,
+                {
+                    **headers,
+                    'Content-Type': 'application/json',
+                },
+                data,
+                try_count,
+                params,
+                _timeout=timeout,
+            )
+        finally:
+            _JSON_POST_ORIGIN.reset(origin_token)
 
     def get_content(self, url, headers, try_count: int = TRY_COUNT_DOWNLOAD):
         """

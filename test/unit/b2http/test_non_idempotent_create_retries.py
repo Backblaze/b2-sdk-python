@@ -14,10 +14,10 @@ import json
 import pytest
 import requests
 from apiver_deps import B2RawHTTPApi
-from apiver_deps_exception import B2ConnectionError, B2RequestTimeout, ServiceError
+from apiver_deps_exception import B2ConnectionError, B2RequestTimeout, ServiceError, UnknownError
 
 from b2sdk._internal.api_config import B2HttpApiConfig
-from b2sdk._internal.b2http import B2Http
+from b2sdk._internal.b2http import B2Http, HttpCallback
 
 API_URL = 'https://api.example.invalid'
 AUTH_TOKEN = 'synthetic-account-token'
@@ -290,3 +290,86 @@ def test_binary_part_upload_retains_its_explicit_retry_policy(mocker):
         http.session.close()
     assert bodies == [b'part', b'part']
     assert result == {'fileId': 'large-file-id', 'partNumber': 1}
+
+
+@pytest.mark.parametrize('after_json_failure', [False, True])
+def test_content_metadata_does_not_enable_the_json_retry_policy(after_json_failure, mocker):
+    http = B2Http(B2HttpApiConfig(install_clock_skew_hook=False))
+    bodies = []
+
+    def request(method, url, *, data, **kwargs):
+        if url.endswith('b2_create_bucket'):
+            return CommittedCreateTransport.response(
+                url, 503, {'status': 503, 'code': 'service_unavailable', 'message': 'unavailable'}
+            )
+        bodies.append(data)
+        if len(bodies) == 1:
+            return CommittedCreateTransport.response(
+                url, 503, {'status': 503, 'code': 'service_unavailable', 'message': 'unavailable'}
+            )
+        return CommittedCreateTransport.response(url, 200, {'ok': True})
+
+    mocker.patch.object(http.session, 'request', side_effect=request)
+    mocker.patch('b2sdk._internal.b2http.time.sleep')
+    try:
+        if after_json_failure:
+            with pytest.raises(ServiceError):
+                http.post_json_return_json(
+                    API_URL + '/b2api/v4/b2_create_bucket', {}, {'bucketName': 'candidate'}
+                )
+        result = http.post_content_return_json(
+            API_URL + '/content', {}, b'part', try_count=2, post_params={'fileName': 'part.bin'}
+        )
+    finally:
+        http.session.close()
+    assert result == {'ok': True}
+    assert bodies == [b'part', b'part']
+
+
+def test_nested_content_request_keeps_its_own_retry_policy(mocker):
+    http = B2Http(B2HttpApiConfig(install_clock_skew_hook=False))
+    create_url = API_URL + '/b2api/v4/b2_create_bucket'
+    attempts = {'create': 0, 'content': 0}
+    nested_results = []
+
+    def request(method, url, **kwargs):
+        kind = 'create' if url == create_url else 'content'
+        attempts[kind] += 1
+        if kind == 'create' or attempts[kind] == 1:
+            return CommittedCreateTransport.response(
+                url, 503, {'status': 503, 'code': 'service_unavailable', 'message': 'unavailable'}
+            )
+        return CommittedCreateTransport.response(url, 200, {'ok': True})
+
+    class NestedRequest(HttpCallback):
+        def post_request(self, method, url, headers, response):
+            if url == create_url:
+                nested_results.append(
+                    http.post_content_return_json(
+                        API_URL + '/content',
+                        {},
+                        b'part',
+                        try_count=2,
+                        post_params={'fileName': 'part.bin'},
+                    )
+                )
+
+    http.add_callback(NestedRequest())
+    mocker.patch.object(http.session, 'request', side_effect=request)
+    mocker.patch('b2sdk._internal.b2http.time.sleep')
+    try:
+        with pytest.raises(ServiceError):
+            http.post_json_return_json(create_url, {}, {'bucketName': 'candidate'})
+    finally:
+        http.session.close()
+    assert attempts == {'create': 1, 'content': 2}
+    assert nested_results == [{'ok': True}]
+
+
+def test_retry_classification_preserves_invalid_url_error_translation():
+    http = B2Http(B2HttpApiConfig(install_clock_skew_hook=False))
+    try:
+        with pytest.raises(UnknownError):
+            http.post_json_return_json('http://[invalid', {}, {'name': 'candidate'})
+    finally:
+        http.session.close()
