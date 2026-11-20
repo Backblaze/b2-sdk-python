@@ -58,11 +58,6 @@ class ClosableTracker(io.BytesIO):
 
 class TestHashingShortReads:
     @pytest.mark.parametrize('chunk', [1, 7, 100])
-    @known_defect(
-        'C16',
-        'hex_sha1_of_unlimited_stream stops at the first short read, so length and SHA1 cover only a prefix',
-        raises=AssertionError,
-    )
     def test_c16_hash_and_length_cover_whole_stream_with_short_reads(self, chunk):
         """C16: a source returning fewer bytes than asked must not truncate hash/length."""
         data = bytes(range(256)) * 20
@@ -70,11 +65,6 @@ class TestHashingShortReads:
         assert length == len(data), f'length {length} != {len(data)}'
         assert sha1 == hashlib.sha1(data).hexdigest(), 'SHA1 does not cover the whole stream'
 
-    @known_defect(
-        'C16',
-        'UploadSourceStream length and SHA1 cover only a prefix when the stream returns short reads',
-        raises=AssertionError,
-    )
     def test_c16_upload_source_stream_reports_full_length_with_short_reads(self):
         """C16: UploadSourceStream computing length/sha1 from a pipe-like stream."""
         data = b'x' * 5000
@@ -86,11 +76,6 @@ class TestHashingShortReads:
 
 
 class TestRangeOfInputStream:
-    @known_defect(
-        'C46',
-        'RangeOfInputStream.read(-1) passes -1 to the inner stream and reads past the end of the range',
-        raises=AssertionError,
-    )
     def test_c46_read_minus_one_does_not_go_past_range_end(self):
         """C46: read(-1) must be limited to the range, like read() is."""
         stream = RangeOfInputStream(io.BytesIO(b'0123456789'), offset=2, length=3)
