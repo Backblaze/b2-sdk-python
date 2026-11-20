@@ -1355,13 +1355,16 @@ class Bucket(metaclass=B2TraceMeta):
         response = self.api.session.hide_file(self.id_, file_name)
         return self.api.file_version_factory.from_api_response(response)
 
+    def _list_file_versions_for_unhide(self, file_name: str):
+        return self.list_file_versions(file_name=file_name, fetch_count=1)
+
     def unhide_file(self, file_name: str, bypass_governance: bool = False) -> FileIdAndName:
         """
         Unhide a file by deleting the "hide marker".
         """
 
         # get the latest file version
-        file_versions = self.list_file_versions(file_name=file_name, fetch_count=1)
+        file_versions = self._list_file_versions_for_unhide(file_name)
         latest_file_version = next(file_versions, None)
         if latest_file_version is None:
             raise FileNotPresent(bucket_name=self.name, file_id_or_name=file_name)
