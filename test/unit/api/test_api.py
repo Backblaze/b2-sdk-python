@@ -38,6 +38,7 @@ from apiver_deps_exception import (
     AccessDenied,
     FileNotPresent,
     InvalidArgument,
+    NonExistentBucket,
     RestrictedBucket,
     WrongEncryptionModeForBucketDefault,
 )
@@ -258,6 +259,26 @@ class TestApi:
         assert delete_output == expected_delete_bucket_output
         self.api.create_bucket('bucket3', 'allPrivate')
         assert [b.name for b in self.api.list_buckets()] == ['bucket1', 'bucket3']
+
+    def test_delete_bucket_invalidates_cached_name(self):
+        self._authorize_account()
+        bucket = self.api.create_bucket('bucket1', 'allPrivate')
+        assert self.cache.get_bucket_id_or_none_from_bucket_name(bucket.name) == bucket.id_
+        self.api.delete_bucket(bucket)
+        with pytest.raises(NonExistentBucket):
+            self.api.get_bucket_by_name(bucket.name)
+
+    def test_failed_delete_bucket_keeps_cached_name(self, monkeypatch):
+        self._authorize_account()
+        bucket = self.api.create_bucket('bucket1', 'allPrivate')
+
+        def fail_delete(*args):
+            raise RuntimeError('delete failed')
+
+        monkeypatch.setattr(self.api.session, 'delete_bucket', fail_delete)
+        with pytest.raises(RuntimeError, match='delete failed'):
+            self.api.delete_bucket(bucket)
+        assert self.cache.get_bucket_id_or_none_from_bucket_name(bucket.name) == bucket.id_
 
     def test_list_buckets_with_name(self):
         self._authorize_account()
