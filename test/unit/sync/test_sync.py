@@ -278,6 +278,22 @@ class TestSynchronizer:
         ]
         self.assert_folder_sync_actions(synchronizer, src, dst, expected)
 
+    def test_delete_b2_when_source_hidden(self, synchronizer_factory):
+        synchronizer = synchronizer_factory(keep_days_or_delete=KeepOrDeleteMode.DELETE)
+        src = self.b2_folder_factory(('a.txt', [-300, 100]))
+        dst = self.b2_folder_factory(('a.txt', [100]))
+        expected = ['b2_delete(folder/a.txt, id_a_100, )']
+        self.assert_folder_sync_actions(synchronizer, src, dst, expected)
+
+    def test_keep_days_hide_b2_when_source_hidden(self, synchronizer_factory):
+        synchronizer = synchronizer_factory(
+            keep_days_or_delete=KeepOrDeleteMode.KEEP_BEFORE_DELETE, keep_days=1
+        )
+        src = self.b2_folder_factory(('a.txt', [-TODAY, TODAY - 2 * DAY]))
+        dst = self.b2_folder_factory(('a.txt', [TODAY - 2 * DAY]))
+        expected = ['b2_hide(folder/a.txt)']
+        self.assert_folder_sync_actions(synchronizer, src, dst, expected)
+
     @pytest.mark.parametrize(
         'src_type',
         [

@@ -436,6 +436,8 @@ def make_b2_delete_actions(
         # B2 does not really store folders, so there is no need to hide
         # them or delete them
         return
+    if source_path is not None and not source_path.is_visible():
+        source_path = None
     for version_index, version in enumerate(dest_path.all_versions):
         keep = (version_index == 0) and (source_path is not None) and not transferred
         if not keep:
@@ -477,6 +479,8 @@ def make_b2_keep_days_actions(
         # B2 does not really store folders, so there is no need to hide
         # them or delete them
         return
+    if source_path is not None and not source_path.is_visible():
+        source_path = None
     for version_index, version in enumerate(dest_path.all_versions):
         # How old is this version?
         age_days = (now_millis - version.mod_time_millis) / ONE_DAY_IN_MS
