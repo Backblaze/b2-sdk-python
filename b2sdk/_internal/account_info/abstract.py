@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 from abc import abstractmethod
+from contextlib import contextmanager
 
 from b2sdk._internal.account_info import exception
 from b2sdk._internal.raw_api import ALL_CAPABILITIES
@@ -378,6 +379,32 @@ class AbstractAccountInfo(metaclass=B2TraceMetaAbstract):
         :param str bucket_id: a bucket ID
         :rtype: tuple
         """
+
+    @contextmanager
+    def _upload_pool_context(self):
+        """Custom backends without generations retain their existing pool behavior."""
+        yield None
+
+    def _get_upload_pool_generation(self):
+        with self._upload_pool_context() as generation:
+            return generation
+
+    def _take_upload_url_tagged(self, resource_id, generation=None, *, large_file=False):
+        with self._upload_pool_context() as current_generation:
+            # Reauthorization can occur after the caller's initial snapshot.
+            if generation != current_generation:
+                generation = current_generation
+            take = self.take_large_file_upload_url if large_file else self.take_bucket_upload_url
+            upload_url, upload_auth_token = take(resource_id)
+            return upload_url, upload_auth_token, generation
+
+    def _put_upload_url_tagged(
+        self, resource_id, upload_url, upload_auth_token, generation, *, large_file=False
+    ):
+        with self._upload_pool_context() as current_generation:
+            if generation == current_generation:
+                put = self.put_large_file_upload_url if large_file else self.put_bucket_upload_url
+                put(resource_id, upload_url, upload_auth_token)
 
     @abstractmethod
     @limit_trace_arguments(only=['self', 'bucket_id'])
