@@ -38,6 +38,7 @@ class UnfinishedLargeFile:
         self.bucket_id = file_dict['bucketId']
         self.content_type = file_dict['contentType']
         self.file_info = file_dict['fileInfo']
+        self._upload_timestamp = file_dict.get('uploadTimestamp')
         self.encryption = EncryptionSettingFactory.from_file_version_dict(file_dict)
         self.file_retention = FileRetentionSetting.from_file_version_dict(file_dict)
         self.legal_hold = LegalHold.from_file_version_dict(file_dict)
