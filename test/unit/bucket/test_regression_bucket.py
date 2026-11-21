@@ -445,15 +445,8 @@ class TestRegressionLargeUploadFailure:
 
 class TestRegressionDownloadedFileContract:
     @responses.activate
-    @known_defect(
-        'C56',
-        'DownloadedFile.save() called twice re-reads a used response',
-        raises=DefectStillPresent,
-    )
-    def test_c56_downloaded_file_can_be_saved_twice_from_a_real_response(self):
-        """C56: save() called twice on a real streamed HTTP response must give the full data again;
-        the simulator's in-memory response hides this. Today the second call raises requests'
-        StreamConsumedError."""
+    def test_c56_downloaded_file_rejects_second_save_from_a_real_response(self):
+        """A consumed HTTP response must be rejected with a clear error on re-save."""
         import hashlib
         import io
         from unittest import mock
@@ -478,9 +471,9 @@ class TestRegressionDownloadedFileContract:
         first, second = io.BytesIO(), io.BytesIO()
         downloaded.save(first)
         assert first.getvalue() == data, 'first save() returned wrong data'
-        with defect_raises(requests.exceptions.StreamConsumedError):
+        with pytest.raises(RuntimeError, match='already been consumed'):
             downloaded.save(second)
-        assert second.getvalue() == data, 'second save() returned wrong data'
+        assert second.getvalue() == b'', 'rejected save() modified the destination'
 
 
 class TestRegressionGuards(TestCaseWithBucket):
