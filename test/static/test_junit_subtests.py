@@ -202,3 +202,31 @@ def test_junit_subtests_retain_requested_captured_output(tmp_path, workers, outc
             assert token in captured[0].text
         else:
             assert not captured
+
+
+def test_junit_does_not_count_an_interrupted_test_as_passed(tmp_path):
+    (tmp_path / 'pytest.ini').write_text('[pytest]\n')
+    (tmp_path / 'conftest.py').write_text("pytest_plugins = ['test.junit_subtests']\n")
+    (tmp_path / 'test_sample.py').write_text(
+        'def test_interrupted():\n    raise KeyboardInterrupt\n'
+    )
+    env = {
+        key: value
+        for key, value in os.environ.items()
+        if not key.startswith(('B2_', 'PYTEST_', 'COV_CORE_', 'COVERAGE_'))
+    }
+    env['PYTHONPATH'] = str(ROOT)
+    completed = subprocess.run(
+        [sys.executable, '-m', 'pytest', '--junitxml=result.xml', '-q'],
+        cwd=tmp_path,
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    assert completed.returncode == 2, completed.stdout + completed.stderr
+    suite = ET.parse(tmp_path / 'result.xml').getroot().find('testsuite')
+    declared_passes = int(suite.get('tests')) - sum(
+        int(suite.get(key)) for key in ('failures', 'errors', 'skipped')
+    )
+    assert declared_passes == 0, 'an interrupted call has no passing test outcome'

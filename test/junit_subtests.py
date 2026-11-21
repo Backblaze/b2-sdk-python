@@ -53,7 +53,10 @@ class SubtestLogXML(LogXML):
         # Upstream subtracts a logical test when call and teardown both fail,
         # although it emits two XML cases. Compensate from the actual case list
         # so every outcome remains present and the declared count matches it.
-        self.cnt_double_fail_tests = sum(self.stats.values()) - len(self.node_reporters_ordered)
+        # An interrupted call can leave a bare, unfinished XML case. Do not
+        # reconcile such a report: that would manufacture a passing outcome.
+        if not self.node_reporters:
+            self.cnt_double_fail_tests = sum(self.stats.values()) - len(self.node_reporters_ordered)
         super().pytest_sessionfinish()
 
 
