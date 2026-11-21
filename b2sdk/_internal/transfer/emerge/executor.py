@@ -212,25 +212,56 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
         large_file_upload_state = LargeFileUploadState(self.progress_listener)
 
         part_futures = []
-        for part_number, emerge_part in emerge_plan.enumerate_emerge_parts():
-            execution_step_factory = LargeFileEmergeExecutionStepFactory(
-                self,
-                emerge_part,
-                part_number,
-                file_id,
-                large_file_upload_state,
-                finished_parts=finished_parts,
-                # it already knows encryption from BaseMergeExecution being passed as self
-            )
-            execution_step = execution_step_factory.get_execution_step()
-            future = self._execute_step(execution_step)
-            part_futures.append(future)
+        failure_lock = threading.RLock()
+        first_failure = []
 
-        # Collect the sha1 checksums of the parts as the uploads finish.
-        # If any of them raised an exception, that same exception will
-        # be raised here by result()
-        part_sha1_array = [f.result()['contentSha1'] for f in part_futures]
+        def cancel_on_failure(future):
+            if future.cancelled():
+                return
+            error = future.exception()
+            if error is None:
+                return
+            with failure_lock:
+                if not first_failure:
+                    first_failure.append(error)
+                    large_file_upload_state.set_error(str(error))
+                for sibling in part_futures:
+                    if sibling is not future:
+                        sibling.cancel()
 
+        try:
+            for part_number, emerge_part in emerge_plan.enumerate_emerge_parts():
+                with failure_lock:
+                    if first_failure:
+                        raise first_failure[0]
+                execution_step_factory = LargeFileEmergeExecutionStepFactory(
+                    self,
+                    emerge_part,
+                    part_number,
+                    file_id,
+                    large_file_upload_state,
+                    finished_parts=finished_parts,
+                )
+                execution_step = execution_step_factory.get_execution_step()
+                future = self._execute_step(execution_step)
+                with failure_lock:
+                    part_futures.append(future)
+                    future.add_done_callback(cancel_on_failure)
+                    if first_failure:
+                        future.cancel()
+                        raise first_failure[0]
+
+            # Keep the part checksums in part-number order.
+            part_sha1_array = [f.result()['contentSha1'] for f in part_futures]
+        except BaseException:
+            with failure_lock:
+                for future in part_futures:
+                    future.cancel()
+                if first_failure:
+                    raise first_failure[0]
+            raise
+
+        # Leave unfinished uploads on the server after failure so they can be resumed.
         # Finish the large file
         response = self.services.session.finish_large_file(file_id, part_sha1_array)
         return self.services.api.file_version_factory.from_api_response(response)
