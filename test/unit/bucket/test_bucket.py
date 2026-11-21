@@ -51,6 +51,8 @@ from apiver_deps_exception import (
     UnsatisfiableRange,
     WrongEncryptionSettingForFileWrite,
 )
+from requests import Response
+from urllib3.response import HTTPResponse
 
 from test.helpers import NonSeekableIO, assert_dict_equal_ignore_extra
 
@@ -2956,6 +2958,35 @@ class UnverifiedChecksumDownloadScenarioMixin:
 
 @pytest.mark.apiver(from_ver=2)
 class TestChooseStrategy(TestCaseWithBucket):
+    def test_save_twice(self):
+        for data in (b'', b'hello world'):
+            for save_method in ('save', 'save_to'):
+                with self.subTest(data=data, save_method=save_method):
+                    file_version = self.bucket.upload_bytes(data, 'file1')
+                    downloaded_file = self.bucket.download_file_by_id(file_version.id_)
+                    # Use a streaming response: the simulator response can be replayed.
+                    response = Response()
+                    response.request = downloaded_file.response.request
+                    response.headers.update(downloaded_file.response.headers)
+                    response.raw = HTTPResponse(body=io.BytesIO(data), preload_content=False)
+                    downloaded_file.response = response
+                    first_output = io.BytesIO()
+                    downloaded_file.save(first_output)
+                    assert first_output.getvalue() == data
+
+                    second_output = io.BytesIO(b'existing data')
+                    with tempfile.TemporaryDirectory() as directory:
+                        destination = pathlib.Path(directory) / 'destination'
+                        destination.write_bytes(b'existing data')
+                        with pytest.raises(RuntimeError, match='already been consumed'):
+                            if save_method == 'save':
+                                downloaded_file.save(second_output)
+                            else:
+                                downloaded_file.save_to(destination)
+
+                        assert second_output.getvalue() == b'existing data'
+                        assert destination.read_bytes() == b'existing data'
+
     def test_choose_strategy(self):
         file_version = self.bucket.upload_bytes(b'hello world' * 8, 'file1')
         download_manager = self.bucket.api.services.download_manager
