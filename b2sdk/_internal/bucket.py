@@ -40,7 +40,11 @@ from .file_lock import (
 )
 from .file_version import DownloadVersion, FileIdAndName, FileVersion
 from .filter import Filter, FilterMatcher
-from .http_constants import LIST_FILE_NAMES_MAX_LIMIT, SSE_C_KEY_ID_FILE_INFO_KEY_NAME
+from .http_constants import (
+    LARGE_FILE_SHA1,
+    LIST_FILE_NAMES_MAX_LIMIT,
+    SSE_C_KEY_ID_FILE_INFO_KEY_NAME,
+)
 from .progress import AbstractProgressListener, DoNothingProgressListener
 from .raw_api import LifecycleRule, NotificationRule, NotificationRuleResponse
 from .replication.setting import ReplicationConfiguration, ReplicationConfigurationFactory
@@ -1441,6 +1445,13 @@ class Bucket(metaclass=B2TraceMeta):
             Example string value: 'gzip'.
         :param str,None content_language: an optional content language setting. Syntax based on the section 14.12 of RFC 2616.
             Example string value: 'mi, en_US'.
+
+        .. note::
+            When header overrides are provided without ``content_type``, source metadata is used
+            to preserve the content type and, if ``file_info`` is omitted, the source file info.
+            If the required source metadata is not supplied, fetching it requires the ``readFiles``
+            capability. Supplying ``source_content_type`` and either ``source_file_info`` or
+            destination ``file_info`` avoids that lookup.
         """
 
         if content_type is None and any(
@@ -1463,6 +1474,8 @@ class Bucket(metaclass=B2TraceMeta):
             if file_info is None:
                 file_info = source_file_info.copy()
                 file_info.pop(SSE_C_KEY_ID_FILE_INFO_KEY_NAME, None)
+                if offset or length:
+                    file_info.pop(LARGE_FILE_SHA1, None)
 
         copy_source = CopySource(
             file_id,
