@@ -28,7 +28,7 @@ from pathlib import Path
 
 import pytest
 
-from test.known_defect import DefectStillPresent, expect, known_defect
+from test.known_defect import known_defect
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -52,11 +52,6 @@ def test_c59_readme_mentions_full_extra():
     assert re.search(r'b2sdk\[full\]', _read('README.md')), 'README does not mention b2sdk[full]'
 
 
-@known_defect(
-    'C36',
-    'importing b2sdk fails when the package metadata is not installed',
-    raises=DefectStillPresent,
-)
 def test_c36_version_import_works_when_package_metadata_is_missing(tmp_path):
     """C36: importing a vendored/uninstalled copy of b2sdk must not fail for missing dist metadata."""
     script = textwrap.dedent(
@@ -70,11 +65,11 @@ def test_c36_version_import_works_when_package_metadata_is_missing(tmp_path):
         m.version = fake
         sys.path.insert(0, {str(ROOT)!r})
         import b2sdk.version
+        assert b2sdk.__version__ == b2sdk.version.VERSION
+        assert b2sdk.version.VERSION
         """
     )
     result = subprocess.run(
         [sys.executable, '-c', script], capture_output=True, text=True, cwd=tmp_path
     )
-    # only the missing-metadata error is the defect; any other failure is a real failure
-    expect('PackageNotFoundError' not in result.stderr, result.stderr[-300:])
     assert result.returncode == 0, result.stderr[-300:]
