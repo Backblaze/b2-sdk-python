@@ -38,20 +38,33 @@ def expression(value, context):
     code = re.sub(r'\btrue\b', 'True', code)
     code = re.sub(r'\bfalse\b', 'False', code)
     tree = ast.parse(code.strip(), mode='eval')
-    allowed = (
-        ast.Expression,
-        ast.Constant,
-        ast.BoolOp,
-        ast.And,
-        ast.Or,
-        ast.UnaryOp,
-        ast.Not,
-        ast.Compare,
-        ast.Eq,
-        ast.NotEq,
-    )
-    assert all(isinstance(node, allowed) for node in ast.walk(tree)), code
-    return eval(compile(tree, '<workflow-condition>', 'eval'), {'__builtins__': {}}, {})
+
+    def resolve(node):
+        if isinstance(node, ast.Constant) and isinstance(node.value, (str, bool)):
+            return node.value
+        if isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.Not):
+            return not resolve(node.operand)
+        if isinstance(node, ast.BoolOp):
+            result = resolve(node.values[0])
+            for child in node.values[1:]:
+                if isinstance(node.op, ast.And) and not result:
+                    return result
+                if isinstance(node.op, ast.Or) and result:
+                    return result
+                result = resolve(child)
+            return result
+        if isinstance(node, ast.Compare):
+            left = resolve(node.left)
+            for operator, child in zip(node.ops, node.comparators):
+                right = resolve(child)
+                assert isinstance(operator, (ast.Eq, ast.NotEq)), code
+                if (left == right) != isinstance(operator, ast.Eq):
+                    return False
+                left = right
+            return True
+        raise AssertionError(f'Unsupported workflow expression: {code}')
+
+    return resolve(tree.body)
 
 
 def context(draft=True, credentials=True, event='pull_request', lint='success', cleanup='skipped'):
