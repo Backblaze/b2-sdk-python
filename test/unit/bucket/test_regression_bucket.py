@@ -21,8 +21,8 @@ from __future__ import annotations
 import concurrent.futures
 import datetime
 import json
-import locale
 import threading
+import types
 from unittest import mock
 
 import apiver_deps
@@ -251,25 +251,55 @@ class TestRegressionUploadOptions(TestCaseWithBucket):
             f'parts below the recommended part size {recommended_part_size}: {non_final}',
         )
 
-    @pytest.mark.skipif(
-        not hasattr(locale, 'setlocale'), reason='locale support is required for this test'
-    )
     def test_c32_expires_header_uses_english_names_under_foreign_locale(self):
-        """C32: the 'expires' date must not use process-locale day/month names."""
-        old = locale.setlocale(locale.LC_TIME)
-        for name in ('de_DE.UTF-8', 'de_DE.utf8', 'fr_FR.UTF-8', 'es_ES.UTF-8'):
-            try:
-                locale.setlocale(locale.LC_TIME, name)
-                break
-            except locale.Error:
-                continue
-        else:
-            pytest.skip('no non-English locale available on this host')
-        try:
-            expires = datetime.datetime(2050, 12, 1, 16, 0, tzinfo=datetime.timezone.utc)
+        """C32: the 'expires' date must not use process-locale day/month names.
+
+        Runs on every host, never skips: rather than depending on a non-English OS locale
+        being installed, it forces the bucket module's ``datetime.strftime`` to emit
+        non-English day/month names (as a reverted, locale-dependent formatter would under a
+        foreign ``LC_TIME``). The fix formats with ``email.utils.format_datetime``, which is
+        locale-independent, so the header stays English; a regression to ``strftime('%a…%b…')``
+        would pick up the foreign names and fail this assertion.
+        """
+        import b2sdk._internal.bucket as bucket_module
+
+        # Abbreviated day/month names as a German LC_TIME would render them; used to simulate
+        # the locale leakage a locale-dependent strftime would exhibit on a non-English host.
+        foreign_names = {
+            'Mon': 'Mo',
+            'Tue': 'Di',
+            'Wed': 'Mi',
+            'Thu': 'Do',
+            'Fri': 'Fr',
+            'Sat': 'Sa',
+            'Sun': 'So',
+            'Mar': 'Mär',
+            'May': 'Mai',
+            'Oct': 'Okt',
+            'Dec': 'Dez',
+        }
+
+        class _ForeignLocaleDatetimeMeta(type):
+            def __instancecheck__(cls, instance):
+                return isinstance(instance, datetime.datetime)
+
+        class _ForeignLocaleDatetime(metaclass=_ForeignLocaleDatetimeMeta):
+            @staticmethod
+            def strftime(value, fmt):
+                # Localise exactly as the C library would under a foreign LC_TIME: substitute
+                # the English %a/%b tokens, so only a locale-dependent formatter is caught.
+                rendered = datetime.datetime.strftime(value, fmt)
+                for english, foreign in foreign_names.items():
+                    rendered = rendered.replace(english, foreign)
+                return rendered
+
+        foreign_dt = types.SimpleNamespace(
+            datetime=_ForeignLocaleDatetime, timezone=datetime.timezone
+        )
+
+        expires = datetime.datetime(2050, 12, 1, 16, 0, tzinfo=datetime.timezone.utc)
+        with mock.patch.object(bucket_module, 'dt', foreign_dt):
             file_version = self.bucket.upload_bytes(b'x', 'f.txt', expires=expires)
-        finally:
-            locale.setlocale(locale.LC_TIME, old)
         assert (
             file_version.file_info['b2-expires'] == 'Thu, 01 Dec 2050 16:00:00 GMT'
         ), file_version.file_info
