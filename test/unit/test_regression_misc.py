@@ -27,7 +27,7 @@ import responses
 from apiver_deps import B2Http, B2HttpApiConfig
 from apiver_deps_exception import B2ConnectionError, B2RequestTimeout
 
-from test.known_defect import DefectStillPresent, defect_raises, expect, known_defect
+from test.known_defect import expect
 
 pytestmark = [pytest.mark.apiver(from_ver=2)]
 
@@ -39,23 +39,28 @@ def _b2_http():
 
 
 class TestTypes:
-    @known_defect(
-        'C31',
-        'the pydantic version is compared as text, so "10.0" counts as older than "2"',
-        raises=AssertionError,
+    @pytest.mark.parametrize(
+        'version, supported',
+        [
+            ('1.10.20', False),
+            ('2.0.0', True),
+            ('2.0.0rc1', True),
+            ('10.0.0', True),
+            ('', False),
+        ],
     )
-    def test_c31_pydantic_version_ten_counts_as_v2_or_newer(self, monkeypatch):
+    def test_c31_pydantic_version_is_compared_numerically(self, monkeypatch, version, supported):
         """C31: pydantic version comparison must be numeric ('10.0' is newer than '2')."""
         pydantic = pytest.importorskip('pydantic')
         types_module = importlib.import_module('b2sdk._internal.types')
-        monkeypatch.setattr(pydantic, '__version__', '10.0.0')
+        monkeypatch.setattr(pydantic, '__version__', version)
         try:
             importlib.reload(types_module)
             detected = types_module.pydantic
         finally:
             monkeypatch.undo()
             importlib.reload(types_module)
-        assert detected is not None, 'pydantic was not detected'
+        assert (detected is not None) == supported
 
 
 class TestHttpLayer:
@@ -70,17 +75,21 @@ class TestHttpLayer:
                 http.post_json_return_json(url, {}, {'bucketName': 'b'})
         expect(len(responses.calls) == 1, f'request was sent {len(responses.calls)} times')
 
-    @pytest.mark.parametrize('args', [()])
-    @known_defect(
-        'C51',
-        'error mapping raises IndexError for a ConnectionError with no arguments',
-        raises=DefectStillPresent,
+    @pytest.mark.parametrize(
+        'args',
+        [
+            (),
+            (requests.packages.urllib3.exceptions.MaxRetryError(None, URL),),
+            (requests.packages.urllib3.exceptions.ProtocolError(),),
+            (requests.packages.urllib3.exceptions.ProtocolError('incomplete'),),
+        ],
     )
     def test_c51_connection_error_with_missing_args_is_mapped_without_indexerror(self, args):
         """C51: ConnectionError carrying fewer than 2 args must map to a B2 error, not IndexError."""
         from b2sdk._internal.b2http import B2Http as InternalB2Http
 
+        if args and isinstance(args[0], requests.packages.urllib3.exceptions.MaxRetryError):
+            args[0].args = ()
         error = requests.ConnectionError(*args)
-        with defect_raises(IndexError, match='tuple index out of range'):
-            with pytest.raises(B2ConnectionError):
-                InternalB2Http._translate_errors(lambda: (_ for _ in ()).throw(error))
+        with pytest.raises(B2ConnectionError):
+            InternalB2Http._translate_errors(lambda: (_ for _ in ()).throw(error))
