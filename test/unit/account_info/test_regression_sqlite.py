@@ -29,7 +29,7 @@ from apiver_deps import (
     SqliteAccountInfo,
 )
 
-from test.known_defect import DefectStillPresent, expect, known_defect
+from test.known_defect import known_defect
 
 pytestmark = [pytest.mark.apiver(from_ver=2)]
 
@@ -59,11 +59,6 @@ class TestProfilePaths:
 
 
 class TestThreadConnections:
-    @known_defect(
-        'C37',
-        "close() closes only the calling thread's database connection",
-        raises=DefectStillPresent,
-    )
     def test_c37_close_closes_connections_of_other_threads(self, tmp_path):
         """C37: close() must close the database connections opened by other threads, too."""
         info = SqliteAccountInfo(file_name=str(tmp_path / 'acct.sqlite'))
@@ -86,4 +81,4 @@ class TestThreadConnections:
         closed_by_main.set()
         thread.join(timeout=10)
         assert 'closed' in result, 'the worker thread did not finish its check'
-        expect(result['closed'], 'connection of another thread is still open after close()')
+        assert result['closed'], 'connection of another thread is still open after close()'
