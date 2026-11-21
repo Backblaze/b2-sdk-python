@@ -123,11 +123,6 @@ class TestUploadSourceStreamRange:
         length = source.get_content_length()
         assert length == 10, 'wrong computed length'
 
-    @known_defect(
-        'C14',
-        'UploadSourceStream does not close the stream it opened to compute the checksum',
-        raises=DefectStillPresent,
-    )
     def test_c14_stream_is_closed_after_checksum_computation(self):
         """C14: computing the checksum must close the stream it opened."""
         opened = []
@@ -145,17 +140,13 @@ class TestUploadSourceStreamRange:
 
 class TestUploadSourceLocalFileRange:
     @pytest.mark.parametrize('offset', [-3, 15])
-    @known_defect(
-        'C52',
-        'UploadSourceLocalFileRange accepts a negative offset or an offset past the end of the file',
-        raises=pytest.fail.Exception,
-    )
-    def test_c52_invalid_offset_is_rejected(self, tmp_path, offset):
+    @pytest.mark.parametrize('length', [None, 0, 1])
+    def test_c52_invalid_offset_is_rejected(self, tmp_path, offset, length):
         """C52: negative offset or offset past end (file is 10 bytes) must be refused."""
         path = tmp_path / 'f.bin'
         path.write_bytes(b'0123456789')
         with pytest.raises(ValueError):
-            UploadSourceLocalFileRange(str(path), offset=offset)
+            UploadSourceLocalFileRange(str(path), offset=offset, length=length)
 
 
 class TestUnboundWriteIntentMemory:
