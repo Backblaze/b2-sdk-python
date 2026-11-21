@@ -45,7 +45,7 @@ from apiver_deps import (
 )
 from apiver_deps_exception import NonExistentBucket
 
-from test.known_defect import DefectStillPresent, defect_raises, expect, known_defect
+from test.known_defect import DefectStillPresent, expect, known_defect
 
 from .test_bucket import TestCaseWithBucket
 
