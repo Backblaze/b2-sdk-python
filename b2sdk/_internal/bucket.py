@@ -1555,7 +1555,7 @@ class Bucket(metaclass=B2TraceMeta):
         """
         Set notification rules for this bucket.
         """
-        return self.api.session.set_bucket_notification_rules(self.id_, rules)
+        return self.api.session.set_bucket_notification_rules(self.id_, list(rules))
 
 
 class BucketFactory:
