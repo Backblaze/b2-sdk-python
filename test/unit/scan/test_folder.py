@@ -16,6 +16,7 @@ import pytest
 
 from b2sdk._internal.scan.exception import UnsupportedFilename
 from b2sdk._internal.scan.folder import LocalFolder
+from b2sdk._internal.utils import fix_windows_path_limit
 
 
 @pytest.mark.skipif(
@@ -75,6 +76,6 @@ def test_make_full_path_accepts_internal_link_and_symlinked_root(tmp_path):
     root_link = tmp_path / 'root-link'
     root_link.symlink_to(root, target_is_directory=True)
 
-    assert LocalFolder(root_link).make_full_path('link/new-file.txt') == str(
-        root_link / 'link' / 'new-file.txt'
+    assert LocalFolder(root_link).make_full_path('link/new-file.txt') == fix_windows_path_limit(
+        str(root_link / 'link' / 'new-file.txt')
     )
