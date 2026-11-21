@@ -96,3 +96,33 @@ class TestValidateB2FileNameAsPath:
             match=r'drive letters',
         ):
             validate_b2_file_name_as_path(r'C:\file.txt')
+
+
+@pytest.mark.parametrize(
+    'file_name',
+    ['CON', 'folder/nul.txt', r'folder\PRN.log', 'aux ', 'dir/COM1.txt', 'lpt³', 'file:stream'],
+)
+def test_windows_device_names_and_streams_are_rejected(monkeypatch, file_name):
+    from b2sdk._internal.utils import filesystem
+
+    monkeypatch.setattr(filesystem, '_IS_WINDOWS', True)
+    with pytest.raises(ValueError):
+        filesystem.validate_b2_file_name_as_path(file_name)
+
+
+@pytest.mark.parametrize(
+    'file_name', ['console.txt', 'com0', 'com10', 'lpt40.logfile', 'folder/file.txt']
+)
+def test_windows_regular_names_are_allowed(monkeypatch, file_name):
+    from b2sdk._internal.utils import filesystem
+
+    monkeypatch.setattr(filesystem, '_IS_WINDOWS', True)
+    filesystem.validate_b2_file_name_as_path(file_name)
+
+
+@pytest.mark.parametrize('file_name', ['CON', 'folder/nul.txt', 'file:stream'])
+def test_unix_allows_windows_device_names_and_stream_characters(monkeypatch, file_name):
+    from b2sdk._internal.utils import filesystem
+
+    monkeypatch.setattr(filesystem, '_IS_WINDOWS', False)
+    filesystem.validate_b2_file_name_as_path(file_name)
