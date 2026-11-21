@@ -40,7 +40,7 @@ from .file_lock import (
 )
 from .file_version import DownloadVersion, FileIdAndName, FileVersion
 from .filter import Filter, FilterMatcher
-from .http_constants import LIST_FILE_NAMES_MAX_LIMIT
+from .http_constants import LIST_FILE_NAMES_MAX_LIMIT, SSE_C_KEY_ID_FILE_INFO_KEY_NAME
 from .progress import AbstractProgressListener, DoNothingProgressListener
 from .raw_api import LifecycleRule, NotificationRule, NotificationRuleResponse
 from .replication.setting import ReplicationConfiguration, ReplicationConfigurationFactory
@@ -1442,6 +1442,27 @@ class Bucket(metaclass=B2TraceMeta):
         :param str,None content_language: an optional content language setting. Syntax based on the section 14.12 of RFC 2616.
             Example string value: 'mi, en_US'.
         """
+
+        if content_type is None and any(
+            value is not None
+            for value in (
+                cache_control,
+                expires,
+                content_disposition,
+                content_encoding,
+                content_language,
+            )
+        ):
+            if source_content_type is None or (file_info is None and source_file_info is None):
+                source_metadata = self.api.session.get_file_info_by_id(file_id)
+                if source_content_type is None:
+                    source_content_type = source_metadata['contentType']
+                if source_file_info is None:
+                    source_file_info = source_metadata['fileInfo']
+            content_type = source_content_type
+            if file_info is None:
+                file_info = source_file_info.copy()
+                file_info.pop(SSE_C_KEY_ID_FILE_INFO_KEY_NAME, None)
 
         copy_source = CopySource(
             file_id,
