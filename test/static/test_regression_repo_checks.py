@@ -11,11 +11,9 @@
 
 They read repository files only and are skipped when the repository files are not available.
 
-Tests marked with ``@known_defect`` describe a defect that is still present: they assert the correct
-behaviour and are strict expected failures, so the default run stays green and fails with
-"XPASS(strict)" once the defect is fixed (then remove the decorator). To see them fail, run
-``pytest --runxfail -m known_defect`` (see ``test/known_defect.py``). The ``C<n>`` identifiers are
-short labels that also appear in the test names and decorators.
+These ordinary regression tests retain coverage for resolved defects. The ``C<n>`` identifiers
+are short labels retained in the test names and docstrings. See ``test/known_defect.py`` for the
+expected-failure convention used for unresolved defects elsewhere in the suite.
 """
 
 from __future__ import annotations
