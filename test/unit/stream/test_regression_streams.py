@@ -150,11 +150,6 @@ class TestUploadSourceLocalFileRange:
 
 
 class TestUnboundWriteIntentMemory:
-    @known_defect(
-        'C57',
-        'UnboundSourceBytes copies the chunk, using about twice the documented memory',
-        raises=DefectStillPresent,
-    )
     def test_c57_unbound_buffer_wrapping_does_not_copy_the_chunk(self):
         """C57: wrapping a bytearray chunk for upload must not allocate a second full copy."""
         tracemalloc = pytest.importorskip(

@@ -31,6 +31,21 @@ class TestIOWrapper(TestBase):
         self.mock_fun = MagicMock()
         self.wrapper = IOWrapper(self.data, release_function=self.mock_fun)
 
+    def test_read_seek_retry_and_release_buffer(self):
+        data = bytearray(b'abcdef')
+        release = MagicMock()
+        stream = IOWrapper(data, release)
+        self.assertEqual(stream.read(2), b'ab')
+        self.assertEqual(stream.tell(), 2)
+        self.assertEqual(stream.seek(-2, io.SEEK_END), 4)
+        self.assertEqual(stream.read(), b'ef')
+        self.assertEqual(stream.seek(0), 0)
+        self.assertEqual(stream.read(), b'abcdef')
+        stream.close()
+        stream.close()
+        release.assert_called_once()
+        data.extend(b'g')  # closing releases the memoryview's export
+
     def test_function_called_on_close_manual(self):
         self.mock_fun.assert_not_called()
 

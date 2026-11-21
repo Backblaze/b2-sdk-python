@@ -402,11 +402,6 @@ class TestRegressionRawApiContract(TestCaseWithBucket):
 
 
 class TestRegressionLargeUploadFailure:
-    @known_defect(
-        'C8',
-        'part uploads keep running after one part of a large upload failed',
-        raises=DefectStillPresent,
-    )
     def test_c8_failed_part_stops_remaining_part_uploads(self):
         """C8: once one part fails the whole upload fails; queued parts must not keep uploading."""
         from unittest import mock
@@ -427,12 +422,14 @@ class TestRegressionLargeUploadFailure:
         bucket = api.create_bucket('big', 'allPrivate')
         original = simulator.upload_part
         part_failed = threading.Event()
+        queued_sibling = threading.Event()
         started_after_failure = []
 
         def flaky_upload_part(upload_url, token, part_number, *args, **kwargs):
             if part_failed.is_set():
                 started_after_failure.append(part_number)
             elif part_number == 1:
+                assert queued_sibling.wait(5), 'a sibling was not queued'
                 part_failed.set()  # before raising, so that no later start can be missed
                 raise AccessDenied()
             return original(upload_url, token, part_number, *args, **kwargs)
@@ -445,6 +442,8 @@ class TestRegressionLargeUploadFailure:
         def recording_submit(*args, **kwargs):
             future = real_submit(*args, **kwargs)
             futures.append(future)
+            if len(futures) > 1:
+                queued_sibling.set()
             return future
 
         data = b'x' * (simulator.MIN_PART_SIZE * 6)
