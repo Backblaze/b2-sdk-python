@@ -344,21 +344,23 @@ class TestRegressionApi:
         assert 'returned-other-name' in message, message
 
 
-class TestRegressionRawApiContract:
-    @responses.activate
-    @known_defect(
-        'C35',
-        'set_notification_rules fails for a generator although it is typed as Iterable',
-        raises=DefectStillPresent,
-    )
+class TestRegressionRawApiContract(TestCaseWithBucket):
     def test_c35_set_notification_rules_accepts_a_generator(self):
-        """C35: set_notification_rules is typed Iterable; a generator must serialize to JSON."""
+        self._check_iterable_rules('generator')
+
+    def test_c35_set_notification_rules_accepts_a_set(self):
+        self._check_iterable_rules('set')
+
+    @responses.activate
+    def _check_iterable_rules(self, input_kind):
+        """C35: Bucket accepts iterable rules and sends a JSON array."""
         raw_api = B2RawHTTPApi(
             B2Http(B2HttpApiConfig(requests.Session, install_clock_skew_hook=False))
         )
+        self.api.session.raw_api = raw_api
         responses.add(
             responses.POST,
-            f'https://api.example.com/b2api/{B2RawHTTPApi.API_VERSION}/b2_set_bucket_notification_rules',
+            f'{self.api_url}/b2api/{B2RawHTTPApi.API_VERSION}/b2_set_bucket_notification_rules',
             json={'eventNotificationRules': []},
         )
         rule = {
@@ -372,13 +374,12 @@ class TestRegressionRawApiContract:
                 'customHeaders': [],
             },
         }
-        with defect_raises(TypeError, match='not JSON serializable'):
-            sent = raw_api.set_bucket_notification_rules(
-                'https://api.example.com', 'token', 'bucket-id', (r for r in [rule])
-            )
+        expected = [rule] if input_kind == 'generator' else []
+        rules = (r for r in expected) if input_kind == 'generator' else set()
+        sent = self.bucket.set_notification_rules(rules)
         assert sent == [], sent
         body = json.loads(responses.calls[0].request.body)
-        assert body['eventNotificationRules'] == [rule], body
+        assert body['eventNotificationRules'] == expected, body
 
 
 class TestRegressionLargeUploadFailure:
