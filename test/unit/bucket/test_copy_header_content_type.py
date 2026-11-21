@@ -182,3 +182,10 @@ def test_copy_headers_propagates_source_info_access_denied(bucket, monkeypatch):
         with pytest.raises(AccessDenied):
             bucket.copy(source.id_, 'destination.txt', content_language='en')
     copy_file.assert_not_called()
+
+
+@pytest.mark.apiver(from_ver=2)
+def test_copy_documents_omission_of_source_checksum_for_partial_copies(bucket):
+    doc = bucket.copy.__doc__
+    assert 'partial cop' in doc.lower()
+    assert 'large_file_sha1' in doc

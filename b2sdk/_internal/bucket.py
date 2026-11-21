@@ -1452,6 +1452,8 @@ class Bucket(metaclass=B2TraceMeta):
             If the required source metadata is not supplied, fetching it requires the ``readFiles``
             capability. Supplying ``source_content_type`` and either ``source_file_info`` or
             destination ``file_info`` avoids that lookup.
+            For partial copies and other copies with a specified range, the inherited
+            ``large_file_sha1`` is omitted because it may not describe the copied bytes.
         """
 
         if content_type is None and any(
