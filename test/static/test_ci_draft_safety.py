@@ -67,13 +67,21 @@ def expression(value, context):
     return resolve(tree.body)
 
 
-def context(draft=True, credentials=True, event='pull_request', lint='success', cleanup='skipped'):
+def context(
+    draft=True,
+    credentials=True,
+    event='pull_request',
+    lint='success',
+    cleanup='skipped',
+    live_enabled='true',
+):
     return {
         'github.event_name': event,
         'github.event.pull_request.draft': draft,
         'needs.lint.result': lint,
         'needs.cleanup_buckets.result': cleanup,
         'cancelled': False,
+        'vars.B2_LIVE_TESTS_ENABLED': live_enabled,
         'secrets.B2_TEST_APPLICATION_KEY': 'test-key' if credentials else '',
         'secrets.B2_TEST_APPLICATION_KEY_ID': 'test-id' if credentials else '',
     }
@@ -146,3 +154,26 @@ def test_unit_jobs_survive_skipped_cleanup_but_not_failed_dependencies(
 @pytest.mark.parametrize('event', ['pull_request', 'push'])
 def test_non_draft_cleanup_is_retained(event):
     assert expression(JOBS['cleanup_buckets']['if'], context(draft=False, event=event))
+
+
+@pytest.mark.parametrize('event', ['pull_request', 'push'])
+@pytest.mark.parametrize('live_enabled', ['', 'false', 'true'])
+def test_non_draft_live_operations_require_explicit_repository_opt_in(event, live_enabled):
+    values = context(draft=False, event=event, live_enabled=live_enabled)
+    allowed = live_enabled == 'true'
+    assert bool(expression(JOBS['cleanup_buckets']['if'], values)) == allowed
+    for job_id in ('test', 'cli-compat'):
+        job_values = dict(values)
+        for name in ('B2_TEST_APPLICATION_KEY', 'B2_TEST_APPLICATION_KEY_ID'):
+            actual = expression(JOBS[job_id]['env'][name], values)
+            assert actual == (values[f'secrets.{name}'] if allowed else '')
+            job_values[f'env.{name}'] = actual
+        job_values.update({'matrix.os': 'ubuntu-latest', 'matrix.python-version': '3.14'})
+        steps = [
+            step
+            for step in JOBS[job_id]['steps']
+            if step.get('name')
+            in ('Run integration tests', 'Run CLI integration tests (with secrets)')
+        ]
+        assert len(steps) == 1
+        assert bool(expression(steps[0]['if'], job_values)) == allowed
