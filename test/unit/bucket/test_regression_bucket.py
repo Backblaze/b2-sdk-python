@@ -43,7 +43,7 @@ from apiver_deps import (
     UploadSourceBytes,
     WriteIntent,
 )
-from apiver_deps_exception import CopyArgumentsMismatch, NonExistentBucket
+from apiver_deps_exception import NonExistentBucket
 
 from test.known_defect import DefectStillPresent, defect_raises, expect, known_defect
 
@@ -53,22 +53,16 @@ pytestmark = [pytest.mark.apiver(from_ver=2)]
 
 
 class TestRegressionCopyAndLs(TestCaseWithBucket):
-    @known_defect(
-        'C1',
-        'copy() with expires/content_disposition/cache_control but no content_type is refused',
-        raises=DefectStillPresent,
-    )
     def test_c1_copy_with_expiry_but_no_content_type(self):
         """C1: copy() with expires/headers but no content_type must work (2.13.3 notes)."""
         file_id = self.bucket.upload_bytes(b'hello world', 'src.txt').id_
-        with defect_raises(CopyArgumentsMismatch, match='content type'):
-            copied = self.bucket.copy(
-                file_id,
-                'copied.txt',
-                expires='Thu, 01 Dec 2050 16:00:00 GMT',
-                content_disposition='attachment',
-                cache_control='max-age=5',
-            )
+        copied = self.bucket.copy(
+            file_id,
+            'copied.txt',
+            expires='Thu, 01 Dec 2050 16:00:00 GMT',
+            content_disposition='attachment',
+            cache_control='max-age=5',
+        )
         assert copied.file_info['b2-expires'] == 'Thu, 01 Dec 2050 16:00:00 GMT', copied.file_info
         assert copied.file_info['b2-content-disposition'] == 'attachment', copied.file_info
 
