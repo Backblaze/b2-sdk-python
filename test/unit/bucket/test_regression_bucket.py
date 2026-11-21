@@ -254,11 +254,6 @@ class TestRegressionUploadOptions(TestCaseWithBucket):
     @pytest.mark.skipif(
         not hasattr(locale, 'setlocale'), reason='locale support is required for this test'
     )
-    @known_defect(
-        'C32',
-        'the "expires" header uses day and month names of the process locale',
-        raises=AssertionError,
-    )
     def test_c32_expires_header_uses_english_names_under_foreign_locale(self):
         """C32: the 'expires' date must not use process-locale day/month names."""
         old = locale.setlocale(locale.LC_TIME)
