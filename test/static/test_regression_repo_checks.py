@@ -11,11 +11,9 @@
 
 They read repository files only and are skipped when the repository files are not available.
 
-Tests marked with ``@known_defect`` describe a defect that is still present: they assert the correct
-behaviour and are strict expected failures, so the default run stays green and fails with
-"XPASS(strict)" once the defect is fixed (then remove the decorator). To see them fail, run
-``pytest --runxfail -m known_defect`` (see ``test/known_defect.py``). The ``C<n>`` identifiers are
-short labels that also appear in the test names and decorators.
+These ordinary regression tests retain coverage for resolved defects. The ``C<n>`` identifiers
+are short labels retained in the test names and docstrings. See ``test/known_defect.py`` for the
+expected-failure convention used for unresolved defects elsewhere in the suite.
 """
 
 from __future__ import annotations
@@ -28,8 +26,6 @@ from pathlib import Path
 
 import pytest
 
-from test.known_defect import known_defect
-
 ROOT = Path(__file__).resolve().parents[2]
 
 
@@ -40,13 +36,11 @@ def _read(rel: str) -> str:
     return path.read_text(encoding='utf-8')
 
 
-@known_defect('C30', 'typo in .github/SUPPORT.md', raises=AssertionError)
 def test_c30_support_file_has_no_known_typo():
     """C30: typo 'Issuew' in .github/SUPPORT.md (codespell did not catch it)."""
     assert 'Issuew' not in _read('.github/SUPPORT.md'), 'typo is still present'
 
 
-@known_defect('C59', 'the README does not mention the "full" install extra', raises=AssertionError)
 def test_c59_readme_mentions_full_extra():
     """C59: README must mention the `full` install extra (tqdm/pydantic support)."""
     assert re.search(r'b2sdk\[full\]', _read('README.md')), 'README does not mention b2sdk[full]'
