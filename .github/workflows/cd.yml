@@ -9,7 +9,28 @@ env:
   UV_VERSION: "0.13.4"
 
 jobs:
+  test:
+    permissions:
+      contents: read
+    timeout-minutes: 90
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: ${{ env.PYTHON_DEFAULT_VERSION }}
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+      - name: Install dependencies
+        run: uv sync --only-group nox --locked
+      - name: Run unit tests
+        run: uv run nox -vs unit -p ${{ env.PYTHON_DEFAULT_VERSION }} -- -v
   deploy:
+    needs: test
     permissions:
       contents: write
     env:
@@ -23,14 +44,14 @@ jobs:
           IS_PRERELEASE=$([[ ${{ github.ref }} =~ [^0-9]$ ]] && echo true || echo false)
           export IS_PRERELEASE
           echo "prerelease=$IS_PRERELEASE" >> "$GITHUB_OUTPUT"
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0
       - name: Set up Python ${{ env.PYTHON_DEFAULT_VERSION }}
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: ${{ env.PYTHON_DEFAULT_VERSION }}
-      - uses: astral-sh/setup-uv@v7
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
         with:
           version: ${{ env.UV_VERSION }}
           enable-cache: true
@@ -115,7 +136,7 @@ jobs:
             --draft="$IS_DRAFT" --prerelease="$IS_PRERELEASE"
       - name: Upload the distribution to PyPI
         if: ${{ env.B2_PYPI_PASSWORD != '' && steps.prerelease_check.outputs.prerelease == 'false' }}
-        uses: pypa/gh-action-pypi-publish@release/v1
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # release/v1
         with:
           user: __token__
           password: ${{ secrets.B2_PYPI_PASSWORD }}
