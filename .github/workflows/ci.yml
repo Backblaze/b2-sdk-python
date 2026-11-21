@@ -73,6 +73,8 @@ jobs:
         run: uv sync --only-group nox --locked
       - name: Build the distribution
         run: uv run nox -vs build
+      - name: Compile documentation examples
+        run: uv run nox -vs doc_examples
   cleanup_buckets:
     timeout-minutes: 30
     needs: lint
