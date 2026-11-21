@@ -1,0 +1,1 @@
+Keep JUnit case totals consistent when a failed subtest parent also has a teardown error. Preserve requested captured output on subtest cases while respecting passing-test logging settings.

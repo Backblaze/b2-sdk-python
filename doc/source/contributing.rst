@@ -166,8 +166,11 @@ validation is pending.
 JUnit reports include each subtest as its own case, as well as its parent test.
 The repository's ``test.junit_subtests`` compatibility plugin supplies those cases
 because pytest 9's reporter counts subtest outcomes without emitting separate
-case elements. It copies reports only for JUnit serialization; assertions, test
-selection, terminal outcomes and exit codes keep their normal pytest behavior.
+case elements. Totals count emitted cases, including separate parent-call and
+teardown-error cases. Requested captured output is retained on subtest cases,
+respecting ``junit_logging`` and ``junit_log_passing_tests``. It copies reports
+only for JUnit serialization; assertions, test selection, terminal outcomes and
+exit codes keep their normal pytest behavior.
 The plugin uses pytest's internal reporter API, so dependency updates should run
 ``pytest test/static/test_junit_subtests.py`` (serial and xdist regression cases).
 Remove the compatibility layer only after upstream reporting passes those checks.
