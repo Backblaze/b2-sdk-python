@@ -74,6 +74,8 @@ jobs:
         run: uv sync --only-group nox --locked
       - name: Build the distribution
         run: uv run nox -vs build
+      - name: Compile documentation examples
+        run: uv run nox -vs doc_examples
   cleanup_buckets:
     # Live B2 access requires explicit opt-in and is never allowed for drafts.
     if: ${{ vars.B2_LIVE_TESTS_ENABLED == 'true' && (github.event_name != 'pull_request' || !github.event.pull_request.draft) }}

@@ -243,6 +243,13 @@ def doc(session):
         session.run('sphinx-autobuild', *sphinx_args)
 
 
+@nox.session(python=PYTHON_DEFAULT_VERSION)
+def doc_examples(session):
+    """Compile the documentation examples: every import in README/docs must resolve against b2sdk."""
+    uv_install(session, groups=('test',), extras=('full',))
+    session.run('pytest', '--api=v3', 'test/unit/test_documentation_examples.py', *session.posargs)
+
+
 @nox.session
 def doc_cover(session):
     """Perform coverage analysis for the documentation."""
