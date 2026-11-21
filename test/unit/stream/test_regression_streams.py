@@ -31,7 +31,7 @@ from b2sdk._internal.transfer.outbound.upload_source import (
     UploadSourceStreamRange,
 )
 from b2sdk._internal.utils import hex_sha1_of_unlimited_stream
-from test.known_defect import DefectStillPresent, expect, known_defect
+from test.known_defect import expect
 
 
 class ShortReadStream(io.RawIOBase):
