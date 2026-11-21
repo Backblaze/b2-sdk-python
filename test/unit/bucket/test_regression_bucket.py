@@ -206,11 +206,6 @@ class TestRegressionUploadOptions(TestCaseWithBucket):
                         self.bucket.create_file(**kwargs)
                     assert list(self.bucket.list_unfinished_large_files(prefix=name))
 
-    @known_defect(
-        'C33',
-        'Bucket.upload passes min_part_size as the recommended part size instead of a lower limit',
-        raises=DefectStillPresent,
-    )
     def test_c33_upload_min_part_size_is_only_a_lower_limit(self):
         """C33: min_part_size is a lower limit; parts must still follow the recommended part size.
 
@@ -340,11 +335,64 @@ class TestRegressionApi:
             api.delete_bucket(bucket)
         assert api.cache.get_bucket_id_or_none_from_bucket_name(bucket.name) == bucket.id_
 
-    @known_defect(
-        'C28',
-        'the create_bucket mismatch message prints the same name twice',
-        raises=AssertionError,
-    )
+    @pytest.mark.parametrize('account_kind', ['fresh', 'same', 'different'])
+    @pytest.mark.parametrize('cache_kind', ['memory', 'account_info', 'sqlite'])
+    def test_c55_failed_authorization_preserves_session(self, account_kind, cache_kind, tmp_path):
+        from apiver_deps_exception import MissingAccountData, RestrictedBucketMissing
+
+        from test.unit.test_base import create_key
+
+        info = (
+            SqliteAccountInfo(file_name=str(tmp_path / 'auth.sqlite'))
+            if cache_kind == 'sqlite'
+            else InMemoryAccountInfo()
+        )
+        cache = InMemoryCache() if cache_kind == 'memory' else AuthInfoCache(info)
+        api, _ = self._api(account_info=info, cache=cache)
+        old_bucket = api.create_bucket('old-bucket', 'allPrivate')
+        old_token = info.get_account_auth_token()
+        old_key = info.get_application_key_id()
+        old_allowed = info.get_allowed()
+        if account_kind == 'different':
+            other = B2Api(
+                InMemoryAccountInfo(), api_config=B2HttpApiConfig(_raw_api_class=RawSimulator)
+            )
+            other.session.raw_api = api.session.raw_api
+            account_id, master_key = other.session.raw_api.create_account()
+            other.authorize_account(
+                application_key_id=account_id, application_key=master_key, realm='production'
+            )
+        else:
+            other = api
+        key = create_key(
+            other,
+            key_name='deleted-bucket',
+            capabilities=['listBuckets'],
+            bucket_id='missing-bucket',
+        )
+        if account_kind == 'fresh':
+            info.clear()
+            cache.clear()
+        old_cache = cache.list_bucket_names_ids()
+
+        with pytest.raises(RestrictedBucketMissing):
+            api.authorize_account(
+                application_key_id=key.id_, application_key=key.application_key, realm='production'
+            )
+
+        if account_kind == 'fresh':
+            with pytest.raises(MissingAccountData):
+                info.get_application_key_id()
+            assert not api.authorize_automatically()
+        else:
+            assert info.get_account_auth_token() == old_token
+            assert info.get_application_key_id() == old_key
+            assert info.get_allowed() == old_allowed
+            assert api.get_bucket_by_name(old_bucket.name).id_ == old_bucket.id_
+        assert cache.list_bucket_names_ids() == old_cache
+        if cache_kind == 'sqlite':
+            info.close()
+
     def test_c28_create_bucket_mismatch_message_names_both_buckets(self):
         """C28: the assertion message must show requested and returned names, not name twice."""
         from unittest import mock

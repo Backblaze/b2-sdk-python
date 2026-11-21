@@ -32,7 +32,7 @@ __all__ = [  # prevents linter from removing "unused imports" which we want to e
 try:
     import pydantic
 
-    if getattr(pydantic, '__version__', '') < '2':
+    if int(getattr(pydantic, '__version__', '0').split('.')[0] or '0') < 2:
         raise ImportError
 
     if sys.version_info < (3, 10):  # https://github.com/pydantic/pydantic/issues/7873

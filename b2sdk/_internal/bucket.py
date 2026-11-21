@@ -910,7 +910,8 @@ class Bucket(metaclass=B2TraceMeta):
         :param str file_name: the file name of the new B2 file
         :param str,None content_type: the MIME type, or ``None`` to accept the default based on file extension of the B2 file name
         :param dict,None file_info: a file info to store with the file or ``None`` to not store anything
-        :param min_part_size: lower limit of part size for the transfer planner, in bytes
+        :param min_part_size: lower limit of part size for the transfer planner, in bytes;
+            the account's recommended part size is used when larger
         :param b2sdk.v2.AbstractProgressListener,None progress_listener: a progress listener object to use, or ``None`` to not report progress
         :param b2sdk.v2.EncryptionSetting encryption: encryption settings (``None`` if unknown)
         :param b2sdk.v2.FileRetentionSetting file_retention: file retention setting
@@ -937,8 +938,7 @@ class Bucket(metaclass=B2TraceMeta):
             content_type=content_type,
             file_info=file_info,
             progress_listener=progress_listener,
-            # FIXME: Bucket.upload documents wrong logic
-            recommended_upload_part_size=min_part_size,
+            min_part_size=min_part_size,
             encryption=encryption,
             file_retention=file_retention,
             legal_hold=legal_hold,

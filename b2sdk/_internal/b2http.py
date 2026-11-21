@@ -591,16 +591,16 @@ class B2Http:
             raise  # pass through exceptions from just above
 
         except requests.ConnectionError as e0:
-            e1 = e0.args[0]
+            e1 = e0.args[0] if e0.args else None
             if isinstance(e1, requests.packages.urllib3.exceptions.MaxRetryError):
-                msg = e1.args[0]
+                msg = e1.args[0] if e1.args else ''
                 if 'nodename nor servname provided, or not known' in msg:
                     # Unknown host, or DNS failing.  In the context of calling
                     # B2, this means that something is down between here and
                     # Backblaze, so we treat it like 503 Service Unavailable.
                     raise UnknownHost()
             elif isinstance(e1, requests.packages.urllib3.exceptions.ProtocolError):
-                e2 = e1.args[1]
+                e2 = e1.args[1] if len(e1.args) > 1 else None
 
                 if isinstance(e2, TimeoutError):
                     raise B2RequestTimeout(str(e0))
