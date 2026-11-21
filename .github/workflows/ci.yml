@@ -5,6 +5,7 @@ on:
     branches: [master]
   pull_request:
     branches: [master]
+    types: [opened, synchronize, reopened, ready_for_review]
 
 env:
   PYTHON_DEFAULT_VERSION: "3.14"
@@ -74,11 +75,13 @@ jobs:
       - name: Build the distribution
         run: uv run nox -vs build
   cleanup_buckets:
+    # Draft validation must never touch B2 resources.
+    if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
     timeout-minutes: 30
     needs: lint
     env:
-      B2_TEST_APPLICATION_KEY: ${{ secrets.B2_TEST_APPLICATION_KEY }}
-      B2_TEST_APPLICATION_KEY_ID: ${{ secrets.B2_TEST_APPLICATION_KEY_ID }}
+      B2_TEST_APPLICATION_KEY: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft) && secrets.B2_TEST_APPLICATION_KEY || '' }}
+      B2_TEST_APPLICATION_KEY_ID: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft) && secrets.B2_TEST_APPLICATION_KEY_ID || '' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -103,10 +106,11 @@ jobs:
         run: uv run nox -vs cleanup_old_buckets
   test:
     timeout-minutes: 90
-    needs: cleanup_buckets
+    needs: [lint, cleanup_buckets]
+    if: ${{ !cancelled() && needs.lint.result == 'success' && (needs.cleanup_buckets.result == 'success' || needs.cleanup_buckets.result == 'skipped') }}
     env:
-      B2_TEST_APPLICATION_KEY: ${{ secrets.B2_TEST_APPLICATION_KEY }}
-      B2_TEST_APPLICATION_KEY_ID: ${{ secrets.B2_TEST_APPLICATION_KEY_ID }}
+      B2_TEST_APPLICATION_KEY: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft) && secrets.B2_TEST_APPLICATION_KEY || '' }}
+      B2_TEST_APPLICATION_KEY_ID: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft) && secrets.B2_TEST_APPLICATION_KEY_ID || '' }}
       NOX_EXTRAS: ${{ matrix.extras }}
     runs-on: ${{ matrix.os }}
     strategy:
@@ -141,14 +145,15 @@ jobs:
       - name: Run unit tests
         run: uv run nox -vs unit -- -v
       - name: Run integration tests
-        if: ${{ env.B2_TEST_APPLICATION_KEY != '' && env.B2_TEST_APPLICATION_KEY_ID != '' }}
+        if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft) && env.B2_TEST_APPLICATION_KEY != '' && env.B2_TEST_APPLICATION_KEY_ID != '' }}
         run: uv run nox -vs integration -- --dont-cleanup-old-buckets -v
   cli-compat:
     timeout-minutes: 90
-    needs: cleanup_buckets
+    needs: [lint, cleanup_buckets]
+    if: ${{ !cancelled() && needs.lint.result == 'success' && (needs.cleanup_buckets.result == 'success' || needs.cleanup_buckets.result == 'skipped') }}
     env:
-      B2_TEST_APPLICATION_KEY: ${{ secrets.B2_TEST_APPLICATION_KEY }}
-      B2_TEST_APPLICATION_KEY_ID: ${{ secrets.B2_TEST_APPLICATION_KEY_ID }}
+      B2_TEST_APPLICATION_KEY: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft) && secrets.B2_TEST_APPLICATION_KEY || '' }}
+      B2_TEST_APPLICATION_KEY_ID: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft) && secrets.B2_TEST_APPLICATION_KEY_ID || '' }}
       INSTALL_SDK_FROM: ../b2-sdk-python
     runs-on: ${{ matrix.os }}
     strategy:
@@ -196,7 +201,7 @@ jobs:
       - name: Run CLI integration tests (without secrets)
         run: uv run --directory ./B2_Command_Line_Tool nox -vs integration -p ${{ matrix.python-version }} -- -m "not require_secrets"
       - name: Run CLI integration tests (with secrets)
-        if: ${{ env.B2_TEST_APPLICATION_KEY != '' && env.B2_TEST_APPLICATION_KEY_ID != '' && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.14' }}
+        if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft) && env.B2_TEST_APPLICATION_KEY != '' && env.B2_TEST_APPLICATION_KEY_ID != '' && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.14' }}
         working-directory: B2_Command_Line_Tool
         run: |
           export VIRTUAL_ENV="$PWD/.nox/integration-3-14"

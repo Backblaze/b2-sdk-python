@@ -155,6 +155,14 @@ To run tests matching a keyword expression::
 
     $ nox -s unit-3.10 -- -k keyword
 
+Draft pull requests run credential-free checks. CI skips the bucket-cleanup job,
+withholds B2 test credentials, and skips SDK and CLI live integration steps.
+Unit and CLI compatibility jobs still run when cleanup is deliberately skipped;
+failed lint or cleanup jobs continue to block them. Marking a pull request ready
+for review starts the normal CI lane, which can use configured test-account
+credentials for live tests and cleanup. Keep a pull request draft while live
+validation is pending.
+
 JUnit reports include each subtest as its own case, as well as its parent test.
 The repository's ``test.junit_subtests`` compatibility plugin supplies those cases
 because pytest 9's reporter counts subtest outcomes without emitting separate

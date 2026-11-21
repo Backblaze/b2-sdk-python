@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.10"
 resolution-markers = [
     "python_full_version >= '3.11'",
@@ -94,6 +94,8 @@ lint = [
     { name = "liccheck" },
     { name = "pip" },
     { name = "pytest" },
+    { name = "pytest-xdist" },
+    { name = "pyyaml" },
     { name = "ruff" },
     { name = "setuptools" },
     { name = "tenacity" },
@@ -118,6 +120,7 @@ test = [
     { name = "pytest-watcher" },
     { name = "pytest-xdist" },
     { name = "pywin32", marker = "platform_python_implementation != 'PyPy' and sys_platform == 'win32'" },
+    { name = "pyyaml" },
     { name = "responses" },
     { name = "tenacity" },
     { name = "tqdm" },
@@ -151,6 +154,8 @@ lint = [
     { name = "liccheck", specifier = "==0.9.2" },
     { name = "pip", specifier = ">=26.2.2" },
     { name = "pytest", specifier = ">=9.0.3,<10" },
+    { name = "pytest-xdist", specifier = ">=3.8.0,<4" },
+    { name = "pyyaml", specifier = ">=6,<7" },
     { name = "ruff", specifier = "~=0.8.4" },
     { name = "setuptools", specifier = "<81" },
     { name = "tenacity", specifier = ">=9.1.4,<10" },
@@ -173,6 +178,7 @@ test = [
     { name = "pytest-watcher", specifier = ">=0.6.3,<1" },
     { name = "pytest-xdist", specifier = ">=3.8.0,<4" },
     { name = "pywin32", marker = "platform_python_implementation != 'PyPy' and sys_platform == 'win32'", specifier = ">=311,<312" },
+    { name = "pyyaml", specifier = ">=6,<7" },
     { name = "responses", specifier = ">=0.26.0,<1" },
     { name = "tenacity", specifier = ">=9.1.4,<10" },
     { name = "tqdm", specifier = ">=4.5.0,<5.0.0" },
