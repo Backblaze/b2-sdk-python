@@ -15,7 +15,7 @@ from b2sdk._internal.scan.folder import LocalFolder
 
 def test_symlink_targets_with_same_inode_on_different_devices_are_scanned(tmp_path, monkeypatch):
     first = tmp_path / 'first'
-    second = tmp_path / 'second'
+    second = first / 'second'
     first.mkdir()
     second.mkdir()
     (second / 'file.txt').write_text('contents')
@@ -37,4 +37,4 @@ def test_symlink_targets_with_same_inode_on_different_devices_are_scanned(tmp_pa
     monkeypatch.setattr(Path, 'stat', stat_with_device_collision)
     files = list(LocalFolder(root).all_files(None))
 
-    assert [path.relative_path for path in files] == ['next/file.txt']
+    assert [path.relative_path for path in files] == ['next/file.txt', 'second/file.txt']

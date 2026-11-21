@@ -20,6 +20,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from b2sdk._internal.scan.exception import UnsupportedFilename
 from b2sdk._internal.scan.folder import LocalFolder
 from b2sdk._internal.scan.policies import ScanPoliciesManager
 from b2sdk._internal.scan.report import ProgressReport
@@ -287,39 +288,8 @@ class TestFolderTraversal:
 
         folder = LocalFolder(str(tmp_path / 'parent' / 'child'))
 
-        local_paths = folder.all_files(reporter=MagicMock())
-        absolute_paths = [path.absolute_path for path in list(local_paths)]
-
-        assert absolute_paths == [
-            fix_windows_path_limit(str(tmp_path / 'parent' / 'child' / 'file4.txt')),
-            fix_windows_path_limit(str(tmp_path / 'parent' / 'child' / 'grandchild' / 'file5.txt')),
-            fix_windows_path_limit(
-                str(
-                    tmp_path
-                    / 'parent'
-                    / 'child'
-                    / 'grandchild'
-                    / 'symlink_dir'
-                    / 'child'
-                    / 'file4.txt'
-                )
-            ),
-            fix_windows_path_limit(
-                str(
-                    tmp_path
-                    / 'parent'
-                    / 'child'
-                    / 'grandchild'
-                    / 'symlink_dir'
-                    / 'child'
-                    / 'grandchild'
-                    / 'file5.txt'
-                )
-            ),
-            fix_windows_path_limit(
-                str(tmp_path / 'parent' / 'child' / 'grandchild' / 'symlink_dir' / 'file3.txt')
-            ),
-        ]
+        with pytest.raises(UnsupportedFilename, match='illegal file name'):
+            list(folder.all_files(reporter=MagicMock()))
 
     @pytest.mark.skipif(
         platform.system() == 'Windows' and platform.python_implementation() == 'PyPy',
