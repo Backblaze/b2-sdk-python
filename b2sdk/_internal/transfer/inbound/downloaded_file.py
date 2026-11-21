@@ -136,7 +136,8 @@ class MtimeUpdatedFile(io.IOBase):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.file.close()
-        set_file_mtime(self.path_, self.mod_time_to_set)
+        if exc_type is None:
+            set_file_mtime(self.path_, self.mod_time_to_set)
 
     def __str__(self):
         return str(self.path)
