@@ -97,7 +97,7 @@ class ChainedStream(ReadOnlyStreamMixin, io.IOBase):
         """
         byte_arrays = []
 
-        if size < 0 or size is None:
+        if size is None or size < 0:
             while 1:
                 current_stream = self.stream
                 buff = current_stream.read()

@@ -31,7 +31,7 @@ from b2sdk._internal.transfer.outbound.upload_source import (
     UploadSourceStreamRange,
 )
 from b2sdk._internal.utils import hex_sha1_of_unlimited_stream
-from test.known_defect import DefectStillPresent, defect_raises, expect, known_defect
+from test.known_defect import DefectStillPresent, expect, known_defect
 
 
 class ShortReadStream(io.RawIOBase):
@@ -88,28 +88,16 @@ class TestRangeOfInputStream:
 
 
 class TestChainedStream:
-    @known_defect(
-        'C11',
-        'ChainedStream.read() with the default size raises TypeError instead of reading everything',
-        raises=DefectStillPresent,
-    )
     def test_c11_default_read_returns_everything(self):
         """C11: read() with default size reads everything (docs), not a TypeError."""
         stream = ChainedStream([lambda: io.BytesIO(b'abc'), lambda: io.BytesIO(b'def')])
-        with defect_raises(TypeError, match="'<' not supported between instances of 'NoneType'"):
-            data = stream.read()
+        data = stream.read()
         assert data == b'abcdef', 'read() did not return all data'
 
-    @known_defect(
-        'C11',
-        'ChainedStream.read(None) raises TypeError instead of reading everything',
-        raises=DefectStillPresent,
-    )
     def test_c11_explicit_none_returns_everything(self):
         """C11: read(None) is documented as 'read everything'."""
         stream = ChainedStream([lambda: io.BytesIO(b'abc'), lambda: io.BytesIO(b'def')])
-        with defect_raises(TypeError, match="'<' not supported between instances of 'NoneType'"):
-            data = stream.read(None)
+        data = stream.read(None)
         assert data == b'abcdef', 'read(None) did not return all data'
 
     def test_c12_guard_sized_reads_cross_stream_boundaries(self):
