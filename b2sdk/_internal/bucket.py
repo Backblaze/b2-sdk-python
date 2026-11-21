@@ -15,6 +15,7 @@ import itertools
 import logging
 import pathlib
 from contextlib import suppress
+from email.utils import format_datetime
 from typing import Iterable, Sequence
 
 from .encryption.setting import EncryptionSetting, EncryptionSettingFactory
@@ -142,7 +143,7 @@ class Bucket(metaclass=B2TraceMeta):
 
         if isinstance(expires, dt.datetime):
             expires = expires.astimezone(dt.timezone.utc)
-            expires = dt.datetime.strftime(expires, '%a, %d %b %Y %H:%M:%S GMT')
+            expires = format_datetime(expires, usegmt=True)
 
         self._add_file_info_item(updated_file_info, 'b2-expires', expires)
         self._add_file_info_item(updated_file_info, 'b2-cache-control', cache_control)
