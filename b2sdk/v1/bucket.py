@@ -29,7 +29,7 @@ from b2sdk._internal.raw_api import LifecycleRule
 # and to retain old style download_file_by_name signature
 # and to retain old style download_file_by_id signature (allowing for the new one as well)
 # and to retain old style get_file_info_by_name return type
-# and to to adjust to old style B2Api.get_file_info return type
+# and to adjust to old style B2Api.get_file_info return type
 # and to retain old style update return type
 class Bucket(v2.Bucket):
     FILE_VERSION_FACTORY = staticmethod(FileVersionInfoFactory)
