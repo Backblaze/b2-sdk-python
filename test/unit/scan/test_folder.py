@@ -17,6 +17,7 @@ import pytest
 
 from b2sdk._internal.scan.exception import UnsupportedFilename
 from b2sdk._internal.scan.folder import LocalFolder
+from b2sdk._internal.utils import fix_windows_path_limit
 
 
 @pytest.mark.skipif(
@@ -78,8 +79,8 @@ def test_make_full_path_accepts_internal_link_and_symlinked_root(tmp_path):
 
     result = LocalFolder(root_link).make_full_path('link/new-file.txt')
     expected = str(root_link / 'link' / 'new-file.txt')
-    # Windows symlink resolution can add an extended-length ("\\?\\") prefix that
-    # realpath does not normalize away, so compare by filesystem identity of the
-    # (existing) parent directory plus the file name instead of raw strings.
+    assert result == fix_windows_path_limit(expected)
+    # Also check the existing parent by filesystem identity: realpath alone
+    # does not normalize away the Windows extended-length prefix.
     assert os.path.basename(result) == os.path.basename(expected) == 'new-file.txt'
     assert os.path.samefile(os.path.dirname(result), os.path.dirname(expected))
