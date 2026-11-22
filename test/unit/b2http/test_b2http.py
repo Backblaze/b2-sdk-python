@@ -553,7 +553,7 @@ class TestB2Http:
         close_mock = MagicMock()
 
         def response_callback(resp):
-            # mock the response close method so that we can can check if it has been called later
+            # mock the response close method so that we can check if it has been called later
             resp.close = close_mock
             return resp
 
