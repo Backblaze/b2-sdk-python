@@ -9,6 +9,7 @@
 ######################################################################
 from __future__ import annotations
 
+import os
 import platform
 from pathlib import Path
 
@@ -76,6 +77,10 @@ def test_make_full_path_accepts_internal_link_and_symlinked_root(tmp_path):
     root_link = tmp_path / 'root-link'
     root_link.symlink_to(root, target_is_directory=True)
 
-    assert LocalFolder(root_link).make_full_path('link/new-file.txt') == fix_windows_path_limit(
-        str(root_link / 'link' / 'new-file.txt')
-    )
+    result = LocalFolder(root_link).make_full_path('link/new-file.txt')
+    expected = str(root_link / 'link' / 'new-file.txt')
+    assert result == fix_windows_path_limit(expected)
+    # Also check the existing parent by filesystem identity: realpath alone
+    # does not normalize away the Windows extended-length prefix.
+    assert os.path.basename(result) == os.path.basename(expected) == 'new-file.txt'
+    assert os.path.samefile(os.path.dirname(result), os.path.dirname(expected))
