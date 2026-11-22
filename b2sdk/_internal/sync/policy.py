@@ -137,7 +137,7 @@ class AbstractFileSyncPolicy(metaclass=ABCMeta):
         newer_file_mode: NewerFileSyncMode = NewerFileSyncMode.RAISE_ERROR,
     ):
         """
-        Compare two files and determine if the the destination file
+        Compare two files and determine if the destination file
         should be replaced by the source file.
 
         :param b2sdk.v2.AbstractPath source_path: source file object
