@@ -78,6 +78,8 @@ def test_make_full_path_accepts_internal_link_and_symlinked_root(tmp_path):
 
     result = LocalFolder(root_link).make_full_path('link/new-file.txt')
     expected = str(root_link / 'link' / 'new-file.txt')
-    # On Windows, symlink resolution can return an extended-length ("\\?\\") path,
-    # so compare the resolved real paths rather than the raw strings.
-    assert os.path.realpath(result) == os.path.realpath(expected)
+    # Windows symlink resolution can add an extended-length ("\\?\\") prefix that
+    # realpath does not normalize away, so compare by filesystem identity of the
+    # (existing) parent directory plus the file name instead of raw strings.
+    assert os.path.basename(result) == os.path.basename(expected) == 'new-file.txt'
+    assert os.path.samefile(os.path.dirname(result), os.path.dirname(expected))
