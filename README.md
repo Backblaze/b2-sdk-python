@@ -17,6 +17,10 @@ The sdk can be installed with:
 
     pip install b2sdk
 
+To install with all optional dependencies:
+
+    pip install 'b2sdk[full]'
+
 # Version policy
 
 b2sdk follows [Semantic Versioning](https://semver.org/) policy, so in essence the version number is MAJOR.MINOR.PATCH (for example 1.2.3) and:

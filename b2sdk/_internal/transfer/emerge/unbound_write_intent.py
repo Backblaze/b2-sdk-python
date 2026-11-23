@@ -19,9 +19,9 @@ from b2sdk._internal.transfer.emerge.write_intent import WriteIntent
 from b2sdk._internal.transfer.outbound.upload_source import AbstractUploadSource
 
 
-class IOWrapper(io.BytesIO):
+class IOWrapper(io.RawIOBase):
     """
-    Wrapper for BytesIO that knows when it has been read in full.
+    Seekable, read-only view over an upload buffer.
 
     Note that this stream should go through ``emerge_unbound``, as it's the only
     one that skips ``_get_emerge_parts`` and pushes buffers to the cloud
@@ -38,7 +38,7 @@ class IOWrapper(io.BytesIO):
         release_function: Callable[[], None],
     ):
         """
-        Prepares a new ``io.BytesIO`` structure that will call
+        Prepares a stream over the buffer that will call
         a ``release_function`` when buffer is read in full.
 
         ``release_function`` can be called from another thread.
@@ -48,13 +48,48 @@ class IOWrapper(io.BytesIO):
         :param data: data to be provided as a stream
         :param release_function: function to be called when resource will be released
         """
-        super().__init__(data)
+        super().__init__()
+        self._view = memoryview(data)
+        self._position = 0
         self.release_function = release_function
+
+    def readable(self):
+        return True
+
+    def seekable(self):
+        return True
+
+    def tell(self):
+        self._checkClosed()
+        return self._position
+
+    def seek(self, offset, whence=io.SEEK_SET):
+        self._checkClosed()
+        if whence == io.SEEK_CUR:
+            offset += self._position
+        elif whence == io.SEEK_END:
+            offset += len(self._view)
+        elif whence != io.SEEK_SET:
+            raise ValueError('invalid whence')
+        if offset < 0:
+            raise ValueError('negative seek position')
+        self._position = offset
+        return offset
+
+    def readinto(self, buffer):
+        self._checkClosed()
+        count = min(len(buffer), max(0, len(self._view) - self._position))
+        buffer[:count] = self._view[self._position : self._position + count]
+        self._position += count
+        return count
 
     def close(self):
         if not self.closed:
-            self.release_function()
-        return super().close()
+            self._view.release()
+            try:
+                self.release_function()
+            finally:
+                super().close()
 
 
 class UnboundSourceBytes(AbstractUploadSource):

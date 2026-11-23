@@ -318,20 +318,27 @@ class B2DownloadAction(AbstractAction):
             bucket=bucket,
             file_version=self.source_path.selected_version,
         )
-        with contextlib.ExitStack() as exit_stack:
-            if progress_listener:
-                exit_stack.enter_context(progress_listener)
-            downloaded_file = bucket.download_file_by_id(
-                self.source_path.selected_version.id_,
-                progress_listener=progress_listener,
-                encryption=encryption,
-            )
-            downloaded_file.save_to(download_path)
+        try:
+            with contextlib.ExitStack() as exit_stack:
+                if progress_listener:
+                    exit_stack.enter_context(progress_listener)
+                downloaded_file = bucket.download_file_by_id(
+                    self.source_path.selected_version.id_,
+                    progress_listener=progress_listener,
+                    encryption=encryption,
+                )
+                downloaded_file.save_to(download_path)
 
-        # Move the file into place
-        with suppress(OSError):
-            os.unlink(self.local_full_path)
-        os.rename(download_path, self.local_full_path)
+            # Move the file into place
+            os.replace(download_path, self.local_full_path)
+        except BaseException:
+            try:
+                os.unlink(download_path)
+            except FileNotFoundError:
+                pass
+            except OSError:
+                logger.warning('Could not remove temporary sync download', exc_info=True)
+            raise
 
     def do_report(self, bucket: Bucket, reporter: ProgressReport) -> None:
         """
@@ -340,7 +347,7 @@ class B2DownloadAction(AbstractAction):
         :param bucket: a Bucket object
         :param reporter: a place to report errors
         """
-        reporter.print_completion('dnload ' + self.source_path.relative_path)
+        reporter.print_completion('dnload ' + escape_control_chars(self.source_path.relative_path))
 
     def __str__(self) -> str:
         return 'b2_download(%s, %s, %s, %d)' % (
@@ -430,7 +437,7 @@ class B2CopyAction(AbstractAction):
         :param bucket: a Bucket object
         :param reporter: a place to report errors
         """
-        reporter.print_completion('copy ' + self.source_path.relative_path)
+        reporter.print_completion('copy ' + escape_control_chars(self.source_path.relative_path))
 
     def __str__(self) -> str:
         return 'b2_copy(%s, %s, %s, %d)' % (

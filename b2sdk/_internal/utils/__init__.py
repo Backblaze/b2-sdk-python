@@ -253,6 +253,8 @@ def validate_b2_file_name(name):
         raise ValueError("file names must not contain '\\'")
     if '//' in name:
         raise ValueError("file names must not contain '//'")
+    if any(ord(char) < 32 for char in name):
+        raise ValueError('file names must not contain ASCII control characters')
     if chr(127) in name:
         raise ValueError('file names must not contain DEL')
     if any(250 < len(segment) for segment in name_utf8.split(b'/')):

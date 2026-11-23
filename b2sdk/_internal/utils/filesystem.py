@@ -16,6 +16,7 @@ _IS_WINDOWS = platform.system() == 'Windows'
 
 DRIVE_MATCHER = re.compile(r'^([A-Za-z]):([/\\])')
 ABSOLUTE_PATH_MATCHER = re.compile(r'^(/)|^(\\)')
+WINDOWS_DEVICE_NAMES = re.compile(r'^(?:CON|PRN|AUX|NUL|COM[1-9¹²³]|LPT[1-9¹²³])$', re.I)
 RELATIVE_PATH_MATCHER = re.compile(
     # "abc" and "xyz" represent anything, including "nothing"
     r'^(\.\.[/\\])|'  # ../abc or ..\abc
@@ -63,3 +64,10 @@ def validate_b2_file_name_as_path(file_name: str) -> None:
 
     if _IS_WINDOWS and DRIVE_MATCHER.search(file_name):
         raise ValueError('File names containing Windows drive letters are not supported')
+
+    if _IS_WINDOWS:
+        if ':' in file_name:
+            raise ValueError('File names containing Windows stream separators are not supported')
+        for part in re.split(r'[/\\]', file_name):
+            if WINDOWS_DEVICE_NAMES.fullmatch(part.split('.')[0].rstrip(' ')):
+                raise ValueError('File names containing Windows device names are not supported')

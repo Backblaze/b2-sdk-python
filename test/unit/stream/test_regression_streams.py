@@ -31,7 +31,7 @@ from b2sdk._internal.transfer.outbound.upload_source import (
     UploadSourceStreamRange,
 )
 from b2sdk._internal.utils import hex_sha1_of_unlimited_stream
-from test.known_defect import DefectStillPresent, defect_raises, expect, known_defect
+from test.known_defect import expect
 
 
 class ShortReadStream(io.RawIOBase):
@@ -88,28 +88,16 @@ class TestRangeOfInputStream:
 
 
 class TestChainedStream:
-    @known_defect(
-        'C11',
-        'ChainedStream.read() with the default size raises TypeError instead of reading everything',
-        raises=DefectStillPresent,
-    )
     def test_c11_default_read_returns_everything(self):
         """C11: read() with default size reads everything (docs), not a TypeError."""
         stream = ChainedStream([lambda: io.BytesIO(b'abc'), lambda: io.BytesIO(b'def')])
-        with defect_raises(TypeError, match="'<' not supported between instances of 'NoneType'"):
-            data = stream.read()
+        data = stream.read()
         assert data == b'abcdef', 'read() did not return all data'
 
-    @known_defect(
-        'C11',
-        'ChainedStream.read(None) raises TypeError instead of reading everything',
-        raises=DefectStillPresent,
-    )
     def test_c11_explicit_none_returns_everything(self):
         """C11: read(None) is documented as 'read everything'."""
         stream = ChainedStream([lambda: io.BytesIO(b'abc'), lambda: io.BytesIO(b'def')])
-        with defect_raises(TypeError, match="'<' not supported between instances of 'NoneType'"):
-            data = stream.read(None)
+        data = stream.read(None)
         assert data == b'abcdef', 'read(None) did not return all data'
 
     def test_c12_guard_sized_reads_cross_stream_boundaries(self):
@@ -135,11 +123,6 @@ class TestUploadSourceStreamRange:
         length = source.get_content_length()
         assert length == 10, 'wrong computed length'
 
-    @known_defect(
-        'C14',
-        'UploadSourceStream does not close the stream it opened to compute the checksum',
-        raises=DefectStillPresent,
-    )
     def test_c14_stream_is_closed_after_checksum_computation(self):
         """C14: computing the checksum must close the stream it opened."""
         opened = []
@@ -157,25 +140,16 @@ class TestUploadSourceStreamRange:
 
 class TestUploadSourceLocalFileRange:
     @pytest.mark.parametrize('offset', [-3, 15])
-    @known_defect(
-        'C52',
-        'UploadSourceLocalFileRange accepts a negative offset or an offset past the end of the file',
-        raises=pytest.fail.Exception,
-    )
-    def test_c52_invalid_offset_is_rejected(self, tmp_path, offset):
+    @pytest.mark.parametrize('length', [None, 0, 1])
+    def test_c52_invalid_offset_is_rejected(self, tmp_path, offset, length):
         """C52: negative offset or offset past end (file is 10 bytes) must be refused."""
         path = tmp_path / 'f.bin'
         path.write_bytes(b'0123456789')
         with pytest.raises(ValueError):
-            UploadSourceLocalFileRange(str(path), offset=offset)
+            UploadSourceLocalFileRange(str(path), offset=offset, length=length)
 
 
 class TestUnboundWriteIntentMemory:
-    @known_defect(
-        'C57',
-        'UnboundSourceBytes copies the chunk, using about twice the documented memory',
-        raises=DefectStillPresent,
-    )
     def test_c57_unbound_buffer_wrapping_does_not_copy_the_chunk(self):
         """C57: wrapping a bytearray chunk for upload must not allocate a second full copy."""
         tracemalloc = pytest.importorskip(

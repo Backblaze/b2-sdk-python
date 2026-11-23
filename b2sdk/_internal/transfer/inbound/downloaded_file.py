@@ -136,7 +136,8 @@ class MtimeUpdatedFile(io.IOBase):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.file.close()
-        set_file_mtime(self.path_, self.mod_time_to_set)
+        if exc_type is None:
+            set_file_mtime(self.path_, self.mod_time_to_set)
 
     def __str__(self):
         return str(self.path)
@@ -168,6 +169,7 @@ class DownloadedFile:
         self.download_strategy = None
         self.write_buffer_size = write_buffer_size
         self.check_hash = check_hash
+        self._consumed = False
 
     def _validate_download(self, bytes_read, actual_sha1):
         if (
@@ -201,7 +203,10 @@ class DownloadedFile:
         :param file: a file-like object
         :param allow_seeking: if False, download strategies that rely on seeking to write data
                               (parallel strategies) will be discarded.
+        :raises RuntimeError: if a download has already been attempted on this object
         """
+        self._check_not_consumed()
+
         if allow_seeking is None:
             allow_seeking = file.seekable()
         elif allow_seeking and not file.seekable():
@@ -230,6 +235,7 @@ class DownloadedFile:
         else:
             raise ValueError('no strategy suitable for download was found!')
         self.download_strategy = strategy
+        self._consumed = True
         bytes_read, actual_sha1 = strategy.download(
             file,
             response=self.response,
@@ -238,6 +244,12 @@ class DownloadedFile:
             encryption=self.encryption,
         )
         self._validate_download(bytes_read, actual_sha1)
+
+    def _check_not_consumed(self) -> None:
+        if self._consumed:
+            raise RuntimeError(
+                'This download response has already been consumed. Request a new download to save again.'
+            )
 
     def save_to(
         self,
@@ -252,7 +264,9 @@ class DownloadedFile:
         :param mode: mode in which the file should be opened
         :param allow_seeking: if False, download strategies that rely on seeking to write data
                               (parallel strategies) will be discarded.
+        :raises RuntimeError: if a download has already been attempted on this object
         """
+        self._check_not_consumed()
         path_ = pathlib.Path(path_)
         is_stdout = points_to_stdout(path_)
         if is_stdout or points_to_fifo(path_):
