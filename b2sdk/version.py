@@ -9,6 +9,7 @@
 ######################################################################
 from __future__ import annotations
 
+from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as _version
 from sys import version_info as _version_info
 
@@ -18,7 +19,10 @@ __all__ = [
     'USER_AGENT',
 ]
 
-VERSION = _version('b2sdk')
+try:
+    VERSION = _version('b2sdk')
+except PackageNotFoundError:
+    VERSION = '0.0.0+unknown'
 
 PYTHON_VERSION = '.'.join(map(str, _version_info[:3]))  # something like: 3.9.1
 

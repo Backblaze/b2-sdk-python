@@ -22,7 +22,7 @@ from b2sdk._internal.api_config import DEFAULT_HTTP_API_CONFIG, B2HttpApiConfig
 from b2sdk._internal.b2http import B2Http
 from b2sdk._internal.cache import AbstractCache, AuthInfoCache, DummyCache
 from b2sdk._internal.encryption.setting import EncryptionSetting
-from b2sdk._internal.exception import InvalidAuthToken, Unauthorized
+from b2sdk._internal.exception import InvalidAuthToken, RestrictedBucketMissing, Unauthorized
 from b2sdk._internal.file_lock import BucketRetentionSetting, FileRetentionSetting, LegalHold
 from b2sdk._internal.raw_api import ALL_CAPABILITIES, REALM_URLS, LifecycleRule
 from b2sdk._internal.replication.setting import ReplicationConfiguration
@@ -123,6 +123,8 @@ class B2Session:
 
         allowed = self._construct_allowed_dict(storage_api_info)
 
+        self._validate_bucket_restrictions(allowed)
+
         # Clear the cache if new account has been used
         if not self.account_info.is_same_account(account_id, realm):
             self.cache.clear()
@@ -141,6 +143,14 @@ class B2Session:
             allowed=allowed,
             application_key_id=application_key_id,
         )
+
+    @staticmethod
+    def _validate_bucket_restrictions(allowed):
+        # Reject deleted-bucket restrictions before changing credentials or caches.
+        if any(bucket['name'] is None for bucket in allowed.get('buckets') or []):
+            raise RestrictedBucketMissing
+        if allowed.get('bucketId') is not None and allowed.get('bucketName') is None:
+            raise RestrictedBucketMissing
 
     def _construct_allowed_dict(self, storage_api_info):
         # `allowed` object has been deprecated in the v3 of the API, but we still

@@ -15,6 +15,7 @@ import itertools
 import logging
 import pathlib
 from contextlib import suppress
+from email.utils import format_datetime
 from typing import Iterable, Sequence
 
 from .encryption.setting import EncryptionSetting, EncryptionSettingFactory
@@ -39,7 +40,11 @@ from .file_lock import (
 )
 from .file_version import DownloadVersion, FileIdAndName, FileVersion
 from .filter import Filter, FilterMatcher
-from .http_constants import LIST_FILE_NAMES_MAX_LIMIT
+from .http_constants import (
+    LARGE_FILE_SHA1,
+    LIST_FILE_NAMES_MAX_LIMIT,
+    SSE_C_KEY_ID_FILE_INFO_KEY_NAME,
+)
 from .progress import AbstractProgressListener, DoNothingProgressListener
 from .raw_api import LifecycleRule, NotificationRule, NotificationRuleResponse
 from .replication.setting import ReplicationConfiguration, ReplicationConfigurationFactory
@@ -142,7 +147,7 @@ class Bucket(metaclass=B2TraceMeta):
 
         if isinstance(expires, dt.datetime):
             expires = expires.astimezone(dt.timezone.utc)
-            expires = dt.datetime.strftime(expires, '%a, %d %b %Y %H:%M:%S GMT')
+            expires = format_datetime(expires, usegmt=True)
 
         self._add_file_info_item(updated_file_info, 'b2-expires', expires)
         self._add_file_info_item(updated_file_info, 'b2-cache-control', cache_control)
@@ -905,7 +910,8 @@ class Bucket(metaclass=B2TraceMeta):
         :param str file_name: the file name of the new B2 file
         :param str,None content_type: the MIME type, or ``None`` to accept the default based on file extension of the B2 file name
         :param dict,None file_info: a file info to store with the file or ``None`` to not store anything
-        :param min_part_size: lower limit of part size for the transfer planner, in bytes
+        :param min_part_size: lower limit of part size for the transfer planner, in bytes;
+            the account's recommended part size is used when larger
         :param b2sdk.v2.AbstractProgressListener,None progress_listener: a progress listener object to use, or ``None`` to not report progress
         :param b2sdk.v2.EncryptionSetting encryption: encryption settings (``None`` if unknown)
         :param b2sdk.v2.FileRetentionSetting file_retention: file retention setting
@@ -932,8 +938,7 @@ class Bucket(metaclass=B2TraceMeta):
             content_type=content_type,
             file_info=file_info,
             progress_listener=progress_listener,
-            # FIXME: Bucket.upload documents wrong logic
-            recommended_upload_part_size=min_part_size,
+            min_part_size=min_part_size,
             encryption=encryption,
             file_retention=file_retention,
             legal_hold=legal_hold,
@@ -1440,7 +1445,39 @@ class Bucket(metaclass=B2TraceMeta):
             Example string value: 'gzip'.
         :param str,None content_language: an optional content language setting. Syntax based on the section 14.12 of RFC 2616.
             Example string value: 'mi, en_US'.
+
+        .. note::
+            When header overrides are provided without ``content_type``, source metadata is used
+            to preserve the content type and, if ``file_info`` is omitted, the source file info.
+            If the required source metadata is not supplied, fetching it requires the ``readFiles``
+            capability. Supplying ``source_content_type`` and either ``source_file_info`` or
+            destination ``file_info`` avoids that lookup.
+            For partial copies and other copies with a specified range, the inherited
+            ``large_file_sha1`` is omitted because it may not describe the copied bytes.
         """
+
+        if content_type is None and any(
+            value is not None
+            for value in (
+                cache_control,
+                expires,
+                content_disposition,
+                content_encoding,
+                content_language,
+            )
+        ):
+            if source_content_type is None or (file_info is None and source_file_info is None):
+                source_metadata = self.api.session.get_file_info_by_id(file_id)
+                if source_content_type is None:
+                    source_content_type = source_metadata['contentType']
+                if source_file_info is None:
+                    source_file_info = source_metadata['fileInfo']
+            content_type = source_content_type
+            if file_info is None:
+                file_info = source_file_info.copy()
+                file_info.pop(SSE_C_KEY_ID_FILE_INFO_KEY_NAME, None)
+                if offset or length:
+                    file_info.pop(LARGE_FILE_SHA1, None)
 
         copy_source = CopySource(
             file_id,
@@ -1555,7 +1592,7 @@ class Bucket(metaclass=B2TraceMeta):
         """
         Set notification rules for this bucket.
         """
-        return self.api.session.set_bucket_notification_rules(self.id_, rules)
+        return self.api.session.set_bucket_notification_rules(self.id_, list(rules))
 
 
 class BucketFactory:

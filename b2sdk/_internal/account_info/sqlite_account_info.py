@@ -75,6 +75,8 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
         :param int last_upgrade_to_run: For testing only, override the auto-update on the db.
         """
         self.thread_local = threading.local()
+        self._connections = set()
+        self._connections_lock = threading.Lock()
 
         self.filename = self.get_user_account_info_path(file_name=file_name, profile=profile)
         logger.debug('%s file path to use: %s', self.__class__.__name__, self.filename)
@@ -109,7 +111,7 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
 
     @classmethod
     def get_user_account_info_path(cls, file_name: str | None = None, profile: str | None = None):
-        if profile and not B2_ACCOUNT_INFO_PROFILE_NAME_REGEXP.match(profile):
+        if profile and not B2_ACCOUNT_INFO_PROFILE_NAME_REGEXP.fullmatch(profile):
             raise ValueError(f'Invalid profile name: {profile}')
 
         profile_file = B2_ACCOUNT_INFO_PROFILE_FILE.format(profile=profile) if profile else None
@@ -130,7 +132,7 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
         elif profile and os.path.exists(profile_file):
             user_account_info_path = profile_file
         elif xdg_config_path:
-            os.makedirs(os.path.join(xdg_config_path, 'b2'), mode=0o755, exist_ok=True)
+            os.makedirs(os.path.join(xdg_config_path, 'b2'), mode=0o700, exist_ok=True)
 
             file_name = f'db-{profile}.sqlite' if profile else 'account_info'
             user_account_info_path = os.path.join(xdg_config_path, 'b2', file_name)
@@ -203,17 +205,17 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
         raise CorruptAccountInfo(self.filename)
 
     def _get_connection(self):
-        """
-        Connections to sqlite cannot be shared across threads.
-        """
-        try:
-            return self.thread_local.connection
-        except AttributeError:
-            self.thread_local.connection = self._connect()
-            return self.thread_local.connection
+        """Return a connection owned by the calling thread, reopening it after close()."""
+        with self._connections_lock:
+            connection = getattr(self.thread_local, 'connection', None)
+            if connection not in self._connections:
+                connection = self._connect()
+                self._connections.add(connection)
+                self.thread_local.connection = connection
+            return connection
 
     def _connect(self):
-        return sqlite3.connect(self.filename, isolation_level='EXCLUSIVE')
+        return sqlite3.connect(self.filename, isolation_level='EXCLUSIVE', check_same_thread=False)
 
     @contextmanager
     def _temp_connection(self):
@@ -226,12 +228,13 @@ class SqliteAccountInfo(UrlPoolAccountInfo):
             conn.close()
 
     def close(self):
-        connection = getattr(self.thread_local, 'connection', None)
-        if connection is None:
-            return
-
-        connection.close()
-        del self.thread_local.connection
+        """Close cached connections after callers have finished using them."""
+        with self._connections_lock:
+            for connection in self._connections:
+                connection.close()
+            self._connections.clear()
+            if hasattr(self.thread_local, 'connection'):
+                del self.thread_local.connection
 
     def _create_database(self, last_upgrade_to_run):
         """

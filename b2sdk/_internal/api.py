@@ -265,7 +265,7 @@ class B2Api(metaclass=B2TraceMeta):
         bucket = self.BUCKET_FACTORY_CLASS.from_api_bucket_dict(self, response)
         assert (
             name == bucket.name
-        ), f'API created a bucket with different name than requested: {name} != {name}'
+        ), f'API created a bucket with different name than requested: {name} != {bucket.name}'
         assert (
             bucket_type == bucket.type_
         ), f'API created a bucket with different type than requested: {bucket_type} != {bucket.type_}'

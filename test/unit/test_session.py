@@ -69,6 +69,22 @@ class TestB2Session:
         assert self.b2_session.cache.clear.called is False
         self.b2_session.account_info.set_auth_data.assert_called_once_with(**authorize_call_kwargs)
 
+    def test_c55_deleted_bucket_does_not_replace_auth_data(self, apiver_int):
+        from apiver_deps_exception import RestrictedBucketMissing
+
+        storage = self.b2_session.raw_api.authorize_account.return_value['apiInfo']['storageApi']
+        if apiver_int >= 3:
+            storage['allowed']['buckets'] = [{'id': 'deleted', 'name': None}]
+        else:
+            storage.update(bucketId='deleted', bucketName=None)
+        self.b2_session.account_info.is_same_account.return_value = False
+
+        with pytest.raises(RestrictedBucketMissing):
+            self.b2_session.authorize_account('dev', '123', '456')
+
+        self.b2_session.account_info.set_auth_data.assert_not_called()
+        self.b2_session.cache.clear.assert_not_called()
+
     def test_clear_cache(self):
         self.b2_session.account_info.is_same_account.return_value = False
 

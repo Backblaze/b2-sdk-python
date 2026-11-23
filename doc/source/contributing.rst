@@ -155,6 +155,29 @@ To run tests matching a keyword expression::
 
     $ nox -s unit-3.10 -- -k keyword
 
+Draft pull requests run credential-free checks. CI skips the bucket-cleanup job,
+withholds B2 test credentials, and skips SDK and CLI live integration steps.
+Unit and CLI compatibility jobs still run when cleanup is deliberately skipped;
+failed lint or cleanup jobs continue to block them. Live tests, B2 credential
+access and bucket cleanup also require the repository Actions variable
+``B2_LIVE_TESTS_ENABLED`` to be explicitly set to ``true``. The default is off,
+including ready pull requests and pushes to master. Enable that variable only
+when live validation with an approved test account is intended; marking a pull
+request ready or merging it does not itself enable live operations.
+
+JUnit reports include each subtest as its own case, as well as its parent test.
+The repository's ``test.junit_subtests`` compatibility plugin supplies those cases
+because pytest 9's reporter counts subtest outcomes without emitting separate
+case elements. Totals count emitted cases, including separate parent-call and
+teardown-error cases. Incomplete reports stay unreconciled rather than counting
+unfinished cases as passes. Requested captured output is retained on subtest cases,
+respecting ``junit_logging`` and ``junit_log_passing_tests``. It copies reports
+only for JUnit serialization; assertions, test selection, terminal outcomes and
+exit codes keep their normal pytest behavior.
+The plugin uses pytest's internal reporter API, so dependency updates should run
+``pytest test/static/test_junit_subtests.py`` (serial and xdist regression cases).
+Remove the compatibility layer only after upstream reporting passes those checks.
+
 Where to put a new test
 =======================
 

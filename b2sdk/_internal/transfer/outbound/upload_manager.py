@@ -17,6 +17,7 @@ from b2sdk._internal.encryption.setting import EncryptionMode, EncryptionSetting
 from b2sdk._internal.exception import (
     AlreadyFailed,
     B2Error,
+    ChecksumMismatch,
     MaxRetriesExceeded,
 )
 from b2sdk._internal.file_lock import FileRetentionSetting, LegalHold
@@ -175,15 +176,17 @@ class UploadManager(TransferManager, ThreadPoolMixin):
                         input_stream,
                         server_side_encryption=encryption,  # todo: client side encryption
                     )
-                    if content_sha1 == HEX_DIGITS_AT_END:
-                        content_sha1 = input_stream.hash
-                    assert content_sha1 == response['contentSha1']
-                    return response
                 except B2Error as e:
                     if not e.should_retry_upload():
                         raise
                     exception_list.append(e)
                     self.account_info.clear_bucket_upload_data(bucket_id)
+                else:
+                    if content_sha1 == HEX_DIGITS_AT_END:
+                        content_sha1 = input_stream.hash
+                    if content_sha1 != response['contentSha1']:
+                        raise ChecksumMismatch('sha1', content_sha1, response['contentSha1'])
+                    return response
 
         large_file_upload_state.set_error(str(exception_list[-1]))
         raise MaxRetriesExceeded(self.MAX_UPLOAD_ATTEMPTS, exception_list)
@@ -228,17 +231,16 @@ class UploadManager(TransferManager, ThreadPoolMixin):
                         legal_hold=legal_hold,
                         custom_upload_timestamp=custom_upload_timestamp,
                     )
-                    if content_sha1 == HEX_DIGITS_AT_END:
-                        content_sha1 = input_stream.hash
-                    assert (
-                        content_sha1 == 'do_not_verify' or content_sha1 == response['contentSha1']
-                    ), '{} != {}'.format(content_sha1, response['contentSha1'])
-                    return self.services.api.file_version_factory.from_api_response(response)
-
                 except B2Error as e:
                     if not e.should_retry_upload():
                         raise
                     exception_info_list.append(e)
                     self.account_info.clear_bucket_upload_data(bucket_id)
+                else:
+                    if content_sha1 == HEX_DIGITS_AT_END:
+                        content_sha1 = input_stream.hash
+                    if content_sha1 != 'do_not_verify' and content_sha1 != response['contentSha1']:
+                        raise ChecksumMismatch('sha1', content_sha1, response['contentSha1'])
+                    return self.services.api.file_version_factory.from_api_response(response)
 
         raise MaxRetriesExceeded(self.MAX_UPLOAD_ATTEMPTS, exception_info_list)

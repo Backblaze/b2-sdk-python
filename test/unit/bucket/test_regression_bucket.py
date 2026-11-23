@@ -21,8 +21,8 @@ from __future__ import annotations
 import concurrent.futures
 import datetime
 import json
-import locale
 import threading
+import types
 from unittest import mock
 
 import apiver_deps
@@ -43,9 +43,9 @@ from apiver_deps import (
     UploadSourceBytes,
     WriteIntent,
 )
-from apiver_deps_exception import CopyArgumentsMismatch, NonExistentBucket
+from apiver_deps_exception import NonExistentBucket
 
-from test.known_defect import DefectStillPresent, defect_raises, expect, known_defect
+from test.known_defect import expect, known_defect
 
 from .test_bucket import TestCaseWithBucket
 
@@ -53,22 +53,16 @@ pytestmark = [pytest.mark.apiver(from_ver=2)]
 
 
 class TestRegressionCopyAndLs(TestCaseWithBucket):
-    @known_defect(
-        'C1',
-        'copy() with expires/content_disposition/cache_control but no content_type is refused',
-        raises=DefectStillPresent,
-    )
     def test_c1_copy_with_expiry_but_no_content_type(self):
         """C1: copy() with expires/headers but no content_type must work (2.13.3 notes)."""
         file_id = self.bucket.upload_bytes(b'hello world', 'src.txt').id_
-        with defect_raises(CopyArgumentsMismatch, match='content type'):
-            copied = self.bucket.copy(
-                file_id,
-                'copied.txt',
-                expires='Thu, 01 Dec 2050 16:00:00 GMT',
-                content_disposition='attachment',
-                cache_control='max-age=5',
-            )
+        copied = self.bucket.copy(
+            file_id,
+            'copied.txt',
+            expires='Thu, 01 Dec 2050 16:00:00 GMT',
+            content_disposition='attachment',
+            cache_control='max-age=5',
+        )
         assert copied.file_info['b2-expires'] == 'Thu, 01 Dec 2050 16:00:00 GMT', copied.file_info
         assert copied.file_info['b2-content-disposition'] == 'attachment', copied.file_info
 
@@ -212,11 +206,6 @@ class TestRegressionUploadOptions(TestCaseWithBucket):
                         self.bucket.create_file(**kwargs)
                     assert list(self.bucket.list_unfinished_large_files(prefix=name))
 
-    @known_defect(
-        'C33',
-        'Bucket.upload passes min_part_size as the recommended part size instead of a lower limit',
-        raises=DefectStillPresent,
-    )
     def test_c33_upload_min_part_size_is_only_a_lower_limit(self):
         """C33: min_part_size is a lower limit; parts must still follow the recommended part size.
 
@@ -251,30 +240,55 @@ class TestRegressionUploadOptions(TestCaseWithBucket):
             f'parts below the recommended part size {recommended_part_size}: {non_final}',
         )
 
-    @pytest.mark.skipif(
-        not hasattr(locale, 'setlocale'), reason='locale support is required for this test'
-    )
-    @known_defect(
-        'C32',
-        'the "expires" header uses day and month names of the process locale',
-        raises=AssertionError,
-    )
     def test_c32_expires_header_uses_english_names_under_foreign_locale(self):
-        """C32: the 'expires' date must not use process-locale day/month names."""
-        old = locale.setlocale(locale.LC_TIME)
-        for name in ('de_DE.UTF-8', 'de_DE.utf8', 'fr_FR.UTF-8', 'es_ES.UTF-8'):
-            try:
-                locale.setlocale(locale.LC_TIME, name)
-                break
-            except locale.Error:
-                continue
-        else:
-            pytest.skip('no non-English locale available on this host')
-        try:
-            expires = datetime.datetime(2050, 12, 1, 16, 0, tzinfo=datetime.timezone.utc)
+        """C32: the 'expires' date must not use process-locale day/month names.
+
+        Runs on every host, never skips: rather than depending on a non-English OS locale
+        being installed, it forces the bucket module's ``datetime.strftime`` to emit
+        non-English day/month names (as a reverted, locale-dependent formatter would under a
+        foreign ``LC_TIME``). The fix formats with ``email.utils.format_datetime``, which is
+        locale-independent, so the header stays English; a regression to ``strftime('%a…%b…')``
+        would pick up the foreign names and fail this assertion.
+        """
+        import b2sdk._internal.bucket as bucket_module
+
+        # Abbreviated day/month names as a German LC_TIME would render them; used to simulate
+        # the locale leakage a locale-dependent strftime would exhibit on a non-English host.
+        foreign_names = {
+            'Mon': 'Mo',
+            'Tue': 'Di',
+            'Wed': 'Mi',
+            'Thu': 'Do',
+            'Fri': 'Fr',
+            'Sat': 'Sa',
+            'Sun': 'So',
+            'Mar': 'Mär',
+            'May': 'Mai',
+            'Oct': 'Okt',
+            'Dec': 'Dez',
+        }
+
+        class _ForeignLocaleDatetimeMeta(type):
+            def __instancecheck__(cls, instance):
+                return isinstance(instance, datetime.datetime)
+
+        class _ForeignLocaleDatetime(metaclass=_ForeignLocaleDatetimeMeta):
+            @staticmethod
+            def strftime(value, fmt):
+                # Localise exactly as the C library would under a foreign LC_TIME: substitute
+                # the English %a/%b tokens, so only a locale-dependent formatter is caught.
+                rendered = datetime.datetime.strftime(value, fmt)
+                for english, foreign in foreign_names.items():
+                    rendered = rendered.replace(english, foreign)
+                return rendered
+
+        foreign_dt = types.SimpleNamespace(
+            datetime=_ForeignLocaleDatetime, timezone=datetime.timezone
+        )
+
+        expires = datetime.datetime(2050, 12, 1, 16, 0, tzinfo=datetime.timezone.utc)
+        with mock.patch.object(bucket_module, 'dt', foreign_dt):
             file_version = self.bucket.upload_bytes(b'x', 'f.txt', expires=expires)
-        finally:
-            locale.setlocale(locale.LC_TIME, old)
         assert (
             file_version.file_info['b2-expires'] == 'Thu, 01 Dec 2050 16:00:00 GMT'
         ), file_version.file_info
@@ -321,11 +335,64 @@ class TestRegressionApi:
             api.delete_bucket(bucket)
         assert api.cache.get_bucket_id_or_none_from_bucket_name(bucket.name) == bucket.id_
 
-    @known_defect(
-        'C28',
-        'the create_bucket mismatch message prints the same name twice',
-        raises=AssertionError,
-    )
+    @pytest.mark.parametrize('account_kind', ['fresh', 'same', 'different'])
+    @pytest.mark.parametrize('cache_kind', ['memory', 'account_info', 'sqlite'])
+    def test_c55_failed_authorization_preserves_session(self, account_kind, cache_kind, tmp_path):
+        from apiver_deps_exception import MissingAccountData, RestrictedBucketMissing
+
+        from test.unit.test_base import create_key
+
+        info = (
+            SqliteAccountInfo(file_name=str(tmp_path / 'auth.sqlite'))
+            if cache_kind == 'sqlite'
+            else InMemoryAccountInfo()
+        )
+        cache = InMemoryCache() if cache_kind == 'memory' else AuthInfoCache(info)
+        api, _ = self._api(account_info=info, cache=cache)
+        old_bucket = api.create_bucket('old-bucket', 'allPrivate')
+        old_token = info.get_account_auth_token()
+        old_key = info.get_application_key_id()
+        old_allowed = info.get_allowed()
+        if account_kind == 'different':
+            other = B2Api(
+                InMemoryAccountInfo(), api_config=B2HttpApiConfig(_raw_api_class=RawSimulator)
+            )
+            other.session.raw_api = api.session.raw_api
+            account_id, master_key = other.session.raw_api.create_account()
+            other.authorize_account(
+                application_key_id=account_id, application_key=master_key, realm='production'
+            )
+        else:
+            other = api
+        key = create_key(
+            other,
+            key_name='deleted-bucket',
+            capabilities=['listBuckets'],
+            bucket_id='missing-bucket',
+        )
+        if account_kind == 'fresh':
+            info.clear()
+            cache.clear()
+        old_cache = cache.list_bucket_names_ids()
+
+        with pytest.raises(RestrictedBucketMissing):
+            api.authorize_account(
+                application_key_id=key.id_, application_key=key.application_key, realm='production'
+            )
+
+        if account_kind == 'fresh':
+            with pytest.raises(MissingAccountData):
+                info.get_application_key_id()
+            assert not api.authorize_automatically()
+        else:
+            assert info.get_account_auth_token() == old_token
+            assert info.get_application_key_id() == old_key
+            assert info.get_allowed() == old_allowed
+            assert api.get_bucket_by_name(old_bucket.name).id_ == old_bucket.id_
+        assert cache.list_bucket_names_ids() == old_cache
+        if cache_kind == 'sqlite':
+            info.close()
+
     def test_c28_create_bucket_mismatch_message_names_both_buckets(self):
         """C28: the assertion message must show requested and returned names, not name twice."""
         from unittest import mock
@@ -344,21 +411,23 @@ class TestRegressionApi:
         assert 'returned-other-name' in message, message
 
 
-class TestRegressionRawApiContract:
-    @responses.activate
-    @known_defect(
-        'C35',
-        'set_notification_rules fails for a generator although it is typed as Iterable',
-        raises=DefectStillPresent,
-    )
+class TestRegressionRawApiContract(TestCaseWithBucket):
     def test_c35_set_notification_rules_accepts_a_generator(self):
-        """C35: set_notification_rules is typed Iterable; a generator must serialize to JSON."""
+        self._check_iterable_rules('generator')
+
+    def test_c35_set_notification_rules_accepts_a_set(self):
+        self._check_iterable_rules('set')
+
+    @responses.activate
+    def _check_iterable_rules(self, input_kind):
+        """C35: Bucket accepts iterable rules and sends a JSON array."""
         raw_api = B2RawHTTPApi(
             B2Http(B2HttpApiConfig(requests.Session, install_clock_skew_hook=False))
         )
+        self.api.session.raw_api = raw_api
         responses.add(
             responses.POST,
-            f'https://api.example.com/b2api/{B2RawHTTPApi.API_VERSION}/b2_set_bucket_notification_rules',
+            f'{self.api_url}/b2api/{B2RawHTTPApi.API_VERSION}/b2_set_bucket_notification_rules',
             json={'eventNotificationRules': []},
         )
         rule = {
@@ -372,21 +441,15 @@ class TestRegressionRawApiContract:
                 'customHeaders': [],
             },
         }
-        with defect_raises(TypeError, match='not JSON serializable'):
-            sent = raw_api.set_bucket_notification_rules(
-                'https://api.example.com', 'token', 'bucket-id', (r for r in [rule])
-            )
+        expected = [rule] if input_kind == 'generator' else []
+        rules = (r for r in expected) if input_kind == 'generator' else set()
+        sent = self.bucket.set_notification_rules(rules)
         assert sent == [], sent
         body = json.loads(responses.calls[0].request.body)
-        assert body['eventNotificationRules'] == [rule], body
+        assert body['eventNotificationRules'] == expected, body
 
 
 class TestRegressionLargeUploadFailure:
-    @known_defect(
-        'C8',
-        'part uploads keep running after one part of a large upload failed',
-        raises=DefectStillPresent,
-    )
     def test_c8_failed_part_stops_remaining_part_uploads(self):
         """C8: once one part fails the whole upload fails; queued parts must not keep uploading."""
         from unittest import mock
@@ -407,12 +470,14 @@ class TestRegressionLargeUploadFailure:
         bucket = api.create_bucket('big', 'allPrivate')
         original = simulator.upload_part
         part_failed = threading.Event()
+        queued_sibling = threading.Event()
         started_after_failure = []
 
         def flaky_upload_part(upload_url, token, part_number, *args, **kwargs):
             if part_failed.is_set():
                 started_after_failure.append(part_number)
             elif part_number == 1:
+                assert queued_sibling.wait(5), 'a sibling was not queued'
                 part_failed.set()  # before raising, so that no later start can be missed
                 raise AccessDenied()
             return original(upload_url, token, part_number, *args, **kwargs)
@@ -425,6 +490,8 @@ class TestRegressionLargeUploadFailure:
         def recording_submit(*args, **kwargs):
             future = real_submit(*args, **kwargs)
             futures.append(future)
+            if len(futures) > 1:
+                queued_sibling.set()
             return future
 
         data = b'x' * (simulator.MIN_PART_SIZE * 6)
@@ -445,15 +512,8 @@ class TestRegressionLargeUploadFailure:
 
 class TestRegressionDownloadedFileContract:
     @responses.activate
-    @known_defect(
-        'C56',
-        'DownloadedFile.save() called twice re-reads a used response',
-        raises=DefectStillPresent,
-    )
-    def test_c56_downloaded_file_can_be_saved_twice_from_a_real_response(self):
-        """C56: save() called twice on a real streamed HTTP response must give the full data again;
-        the simulator's in-memory response hides this. Today the second call raises requests'
-        StreamConsumedError."""
+    def test_c56_downloaded_file_rejects_second_save_from_a_real_response(self):
+        """A consumed HTTP response must be rejected with a clear error on re-save."""
         import hashlib
         import io
         from unittest import mock
@@ -478,9 +538,9 @@ class TestRegressionDownloadedFileContract:
         first, second = io.BytesIO(), io.BytesIO()
         downloaded.save(first)
         assert first.getvalue() == data, 'first save() returned wrong data'
-        with defect_raises(requests.exceptions.StreamConsumedError):
+        with pytest.raises(RuntimeError, match='already been consumed'):
             downloaded.save(second)
-        assert second.getvalue() == data, 'second save() returned wrong data'
+        assert second.getvalue() == b'', 'rejected save() modified the destination'
 
 
 class TestRegressionGuards(TestCaseWithBucket):
