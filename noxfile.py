@@ -245,7 +245,7 @@ def doc(session):
 
 @nox.session(python=PYTHON_DEFAULT_VERSION)
 def doc_examples(session):
-    """Compile the documentation examples: every import in README/docs must resolve against b2sdk."""
+    """Check that every import shown in the documented examples (doc/source/*.rst) resolves against b2sdk."""
     uv_install(session, groups=('test',), extras=('full',))
     session.run('pytest', '--api=v3', 'test/unit/test_documentation_examples.py', *session.posargs)
 
