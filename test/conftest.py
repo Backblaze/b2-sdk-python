@@ -11,7 +11,7 @@ import concurrent.futures
 
 import pytest
 
-pytest_plugins = ['b2sdk.v3.testing']
+pytest_plugins = ['b2sdk.v3.testing', 'test.junit_subtests']
 
 
 def pytest_configure(config):

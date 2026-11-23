@@ -165,11 +165,15 @@ class LocalFolder(AbstractFolder):
         # Generate the full path to the file
         full_path = os.path.normpath(os.path.join(self.root, file_name))
 
-        # Get the common path between the new full_path and self.root
-        common_path = os.path.commonpath([full_path, self.root])
+        # Resolve symlinks in both paths before checking containment.
+        resolved_root = os.path.realpath(self.root)
+        resolved_path = os.path.realpath(full_path)
+        try:
+            common_path = os.path.commonpath([resolved_path, resolved_root])
+        except ValueError:  # Paths on different Windows drives.
+            raise UnsupportedFilename('illegal file name', full_path) from None
 
-        # Ensure the new full_path is inside the self.root directory
-        if common_path != self.root:
+        if os.path.normcase(common_path) != os.path.normcase(resolved_root):
             raise UnsupportedFilename('illegal file name', full_path)
 
         return full_path

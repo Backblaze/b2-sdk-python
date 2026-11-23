@@ -1,0 +1,1 @@
+Add a SECURITY.md describing the coordinated vulnerability-disclosure policy.

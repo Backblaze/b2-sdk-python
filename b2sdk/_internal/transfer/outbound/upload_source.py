@@ -89,13 +89,7 @@ class UploadSourceBytes(AbstractUploadSource):
         self.content_sha1 = content_sha1
 
     def __repr__(self) -> str:
-        return '<{classname} data={data} id={id}>'.format(
-            classname=self.__class__.__name__,
-            data=str(self.data_bytes[:20]) + '...'
-            if len(self.data_bytes) > 20
-            else self.data_bytes,
-            id=id(self),
-        )
+        return f'<{self.__class__.__name__} content_length={len(self.data_bytes)} id={id(self)}>'
 
     def get_content_length(self) -> int:
         return len(self.data_bytes)
@@ -178,6 +172,8 @@ class UploadSourceLocalFileRange(UploadSourceLocalFileBase):
         """
         super().__init__(local_path, content_sha1)
         self.file_size = self.content_length
+        if offset < 0 or offset > self.file_size:
+            raise ValueError('Range offset outside file size')
         self.offset = offset
         if length is None:
             self.content_length = self.file_size - self.offset
@@ -316,7 +312,8 @@ class UploadSourceStream(AbstractUploadSource):
         return self.stream_opener()
 
     def _set_content_length_and_sha1(self) -> None:
-        sha1, content_length = hex_sha1_of_unlimited_stream(self.open())
+        with self.open() as stream:
+            sha1, content_length = hex_sha1_of_unlimited_stream(stream)
         self._content_length = content_length
         self._content_sha1 = sha1
 

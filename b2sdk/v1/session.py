@@ -60,6 +60,8 @@ class B2Session(v2.B2Session):
             'namePrefix': storage_api_info['namePrefix'],
         }
 
+        self._validate_bucket_restrictions(allowed)
+
         # Clear the cache if new account has been used
         if not self.account_info.is_same_account(account_id, realm):
             self.cache.clear()
