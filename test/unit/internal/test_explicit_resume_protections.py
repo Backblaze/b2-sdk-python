@@ -74,8 +74,6 @@ def prepared_resume(b2api):
             {},
             'encryption',
         ),
-        ({}, {'retention': RETENTION}, 'file_retention'),
-        ({}, {'hold': LegalHold.ON}, 'legal_hold'),
         ({'legal_hold': LegalHold.OFF}, {}, 'legal_hold'),
     ],
     ids=[
@@ -83,8 +81,6 @@ def prepared_resume(b2api):
         'retention',
         'hold',
         'combined',
-        'omitted-retention',
-        'omitted-hold',
         'off-vs-unset',
     ],
 )
@@ -127,6 +123,24 @@ def test_explicit_resume_accepts_matching_protections(prepared_resume, retention
     assert result.server_side_encryption == SSE_B2_AES
     assert result.file_retention == (retention or NO_RETENTION_FILE_SETTING)
     assert result.legal_hold == (hold or LegalHold.UNSET)
+
+
+@pytest.mark.parametrize(
+    'existing',
+    [{'retention': RETENTION}, {'hold': LegalHold.ON}],
+    ids=['omitted-retention', 'omitted-hold'],
+)
+def test_explicit_resume_allows_omitted_protections(prepared_resume, existing):
+    # Omitting file_retention / legal_hold is "not requested", not a conflicting NONE/UNSET,
+    # so the resume is allowed and the unfinished file keeps its existing protection.
+    bucket, data, file_id = prepared_resume(**existing)
+    result = bucket.create_file(
+        [WriteIntent(UploadSourceBytes(data))],
+        'destination',
+        continue_large_file_id=file_id,
+        max_part_size=200,
+    )
+    assert result.id_ == file_id
 
 
 @pytest.mark.parametrize(

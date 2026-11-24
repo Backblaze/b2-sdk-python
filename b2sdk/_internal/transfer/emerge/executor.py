@@ -320,13 +320,16 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
                 raise ValueError(
                     'Cannot manually resume unfinished large file with different encryption'
                 )
-            if (file_retention or NO_RETENTION_FILE_SETTING) != unfinished_file.file_retention:
+            # Only an explicitly requested protection can conflict. An omitted
+            # file_retention or legal_hold means the caller did not request one (not that
+            # it is NONE/UNSET), so -- as with encryption above -- it is left uncompared
+            # rather than assuming a default and rejecting a resume that relies on, for
+            # example, the bucket's default retention.
+            if file_retention is not None and file_retention != unfinished_file.file_retention:
                 raise ValueError(
                     'Cannot manually resume unfinished large file with different file_retention'
                 )
-            if (
-                legal_hold if legal_hold is not None else LegalHold.UNSET
-            ) != unfinished_file.legal_hold:
+            if legal_hold is not None and legal_hold != unfinished_file.legal_hold:
                 raise ValueError(
                     'Cannot manually resume unfinished large file with different legal_hold'
                 )
