@@ -232,9 +232,12 @@ class FileSimulator:
     @classmethod
     @contextmanager
     def dont_check_encryption(cls):
+        previous = cls.CHECK_ENCRYPTION
         cls.CHECK_ENCRYPTION = False
-        yield
-        cls.CHECK_ENCRYPTION = True
+        try:
+            yield
+        finally:
+            cls.CHECK_ENCRYPTION = previous
 
     def sort_key(self):
         """
