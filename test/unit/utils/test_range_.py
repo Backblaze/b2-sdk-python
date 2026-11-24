@@ -81,7 +81,7 @@ def test_empty_range(apiver_module):
     assert r.size() == 0
 
 
-@pytest.mark.parametrize('header', ['garbage', 'items=0-11', 'bytes=5-', 'bytes=0-11junk'])
+@pytest.mark.parametrize('header', ['garbage', 'items=0-11', 'bytes=5-x', 'bytes=0-11junk'])
 def test_malformed_range_header_is_rejected(apiver_module, header):
     with pytest.raises(ValueError, match='Invalid range header:'):
         apiver_module.Range.from_header_with_size(header)
