@@ -34,6 +34,7 @@ from apiver_deps import (
     FileRetentionSetting,
     LegalHold,
     MetadataDirectiveMode,
+    ReplicationConfiguration,
     RetentionMode,
     RetentionPeriod,
 )
@@ -42,12 +43,14 @@ from apiver_deps_exception import (
     InvalidMetadataDirective,
     RetentionWriteError,
     SSECKeyError,
+    UnusableFileName,
     WrongEncryptionModeForBucketDefault,
     WrongEncryptionSettingForFileWrite,
 )
 
 # These raw-transport exceptions have no public interface export.
 from b2sdk._internal.exception import FileOrBucketNotFound, ResourceNotFound
+from b2sdk._internal.raw_api import notification_rule_response_to_request
 
 API = 'https://api.example.invalid'
 TOKEN = 'synthetic-account-token'
@@ -239,6 +242,9 @@ def test_bucket_settings_preserve_explicit_false_and_empty_values(raw_api, api_v
             EncryptionMode.SSE_B2, EncryptionAlgorithm.AES256
         ),
         is_file_lock_enabled=False,
+        replication=ReplicationConfiguration(
+            source_to_destination_key_mapping={'source-key': 'destination-key'}
+        ),
     )
     payload = {
         'accountId': 'account-id',
@@ -247,6 +253,12 @@ def test_bucket_settings_preserve_explicit_false_and_empty_values(raw_api, api_v
         'lifecycleRules': [],
         'defaultServerSideEncryption': {'mode': 'SSE-B2', 'algorithm': 'AES256'},
         'fileLockEnabled': False,
+        'replicationConfiguration': {
+            'asReplicationSource': None,
+            'asReplicationDestination': {
+                'sourceToDestinationKeyMapping': {'source-key': 'destination-key'}
+            },
+        },
     }
     if operation == 'create':
         raw_api.create_bucket(API, TOKEN, 'account-id', 'bucket-name', 'allPrivate', **options)
@@ -294,7 +306,13 @@ def test_customer_encryption_cannot_be_a_bucket_default(raw_api, operation):
     assert raw_api.b2_http.mock_calls == []
 
 
-def test_start_large_file_sends_encryption_retention_and_legal_hold(raw_api, api_version):
+@pytest.mark.parametrize('mode', [EncryptionMode.SSE_C, EncryptionMode.SSE_B2])
+def test_start_large_file_sends_encryption_retention_and_legal_hold(raw_api, api_version, mode):
+    setting = (
+        customer_setting()
+        if mode == EncryptionMode.SSE_C
+        else EncryptionSetting(mode, EncryptionAlgorithm.AES256)
+    )
     raw_api.start_large_file(
         API,
         TOKEN,
@@ -302,7 +320,7 @@ def test_start_large_file_sends_encryption_retention_and_legal_hold(raw_api, api
         'dir/a.txt',
         'text/plain',
         {},
-        server_side_encryption=customer_setting(),
+        server_side_encryption=setting,
         file_retention=FileRetentionSetting(RetentionMode.GOVERNANCE, UNTIL),
         legal_hold=LegalHold.ON,
     )
@@ -314,8 +332,10 @@ def test_start_large_file_sends_encryption_retention_and_legal_hold(raw_api, api
             'bucketId': 'bucket-id',
             'fileName': 'dir/a.txt',
             'contentType': 'text/plain',
-            'fileInfo': {'sse_c_key_id': 'public-key-id'},
-            'serverSideEncryption': SSE_JSON,
+            'fileInfo': {'sse_c_key_id': 'public-key-id'} if mode == EncryptionMode.SSE_C else {},
+            'serverSideEncryption': SSE_JSON
+            if mode == EncryptionMode.SSE_C
+            else {'mode': 'SSE-B2', 'algorithm': 'AES256'},
             'fileRetention': {'mode': 'governance', 'retainUntilTimestamp': UNTIL},
             'legalHold': 'on',
         },
@@ -763,4 +783,57 @@ def test_unknown_customer_key_id_is_rejected_before_metadata_write(raw_api, oper
                 io.BytesIO(b'x'),
                 server_side_encryption=setting,
             )
+    assert raw_api.b2_http.mock_calls == []
+
+
+@pytest.mark.parametrize('operation', ['get', 'set'])
+def test_notification_requests_preserve_method_parameters_and_response(
+    raw_api, api_version, operation
+):
+    # The notification GET endpoint is Native API v4, including when called
+    # through a compatibility facade. POST keeps the facade's native version.
+    rules = [
+        {
+            'name': 'example-rule',
+            'eventTypes': ['b2:ObjectCreated:Upload'],
+            'isEnabled': True,
+            'objectNamePrefix': 'dir/',
+            'targetConfiguration': {'targetType': 'webhook', 'url': 'https://hook.example.invalid'},
+        }
+    ]
+    if operation == 'get':
+        raw_api.b2_http.request_content_return_json.return_value = {'eventNotificationRules': rules}
+        result = raw_api.get_bucket_notification_rules(API, TOKEN, 'bucket-id')
+        raw_api.b2_http.request_content_return_json.assert_called_once_with(
+            'GET',
+            f'{API}/b2api/v4/b2_get_bucket_notification_rules',
+            {'Authorization': TOKEN},
+            params={'bucketId': 'bucket-id'},
+        )
+        raw_api.b2_http.post_json_return_json.assert_not_called()
+    else:
+        raw_api.b2_http.post_json_return_json.return_value = {'eventNotificationRules': rules}
+        result = raw_api.set_bucket_notification_rules(API, TOKEN, 'bucket-id', rules)
+        assert_json_request(
+            raw_api,
+            api_version,
+            'b2_set_bucket_notification_rules',
+            {'bucketId': 'bucket-id', 'eventNotificationRules': rules},
+        )
+    assert result == rules
+
+
+@pytest.mark.parametrize('status_fields', [{}, {'isSuspended': False, 'suspensionReason': ''}])
+def test_notification_response_status_is_not_sent_back_or_removed_from_input(status_fields):
+    response = {'name': 'example-rule', 'isEnabled': True, **status_fields}
+    original = response.copy()
+    request = notification_rule_response_to_request(response)
+    assert request == {'name': 'example-rule', 'isEnabled': True}
+    assert request is not response
+    assert response == original
+
+
+def test_empty_upload_filename_is_rejected_before_transport(raw_api):
+    with pytest.raises(UnusableFileName, match='at least 1 character'):
+        raw_api.upload_file(API, TOKEN, '', 1, 'text/plain', 'sha1', {}, io.BytesIO(b'x'))
     assert raw_api.b2_http.mock_calls == []
