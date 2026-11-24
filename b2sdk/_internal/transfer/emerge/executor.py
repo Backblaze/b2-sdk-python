@@ -316,6 +316,20 @@ class LargeFileEmergeExecution(BaseEmergeExecution):
                 raise ValueError(
                     'Cannot manually resume unfinished large file with different file_info'
                 )
+            if encryption is not None and encryption != unfinished_file.encryption:
+                raise ValueError(
+                    'Cannot manually resume unfinished large file with different encryption'
+                )
+            if (file_retention or NO_RETENTION_FILE_SETTING) != unfinished_file.file_retention:
+                raise ValueError(
+                    'Cannot manually resume unfinished large file with different file_retention'
+                )
+            if (
+                legal_hold if legal_hold is not None else LegalHold.UNSET
+            ) != unfinished_file.legal_hold:
+                raise ValueError(
+                    'Cannot manually resume unfinished large file with different legal_hold'
+                )
             finished_parts = {
                 part.part_number: part
                 for part in self.services.large_file.list_parts(continue_large_file_id)
