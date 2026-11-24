@@ -356,6 +356,90 @@ class TestTranslateAndRetry:
 
         mock_time.assert_called_once_with(1.0)
 
+    @pytest.mark.parametrize(
+        'http_status, body_status, retry_expected',
+        [(503, 400, True), (503, 'invalid', True), (503, None, True), (400, 503, False)],
+    )
+    @responses.activate
+    def test_http_status_controls_retries_when_error_metadata_is_invalid(
+        self, b2_http: B2Http, mock_time: MagicMock, http_status, body_status, retry_expected
+    ):
+        responses.get(
+            self.URL,
+            status=http_status,
+            json={
+                'status': body_status,
+                'code': 'bad_json',
+                'message': 'synthetic upstream error',
+                'additional_metadata': {'ignored': True},
+            },
+        )
+        responses.get(self.URL, json={'recovered': True})
+
+        if retry_expected:
+            result = b2_http.request(responses.GET, self.URL, {}, try_count=2)
+            assert result.json() == {'recovered': True}
+            assert len(responses.calls) == 2
+            mock_time.assert_called_once_with(1.0)
+        else:
+            with pytest.raises(BadJson, match='synthetic upstream error'):
+                b2_http.request(responses.GET, self.URL, {}, try_count=2)
+            assert len(responses.calls) == 1
+            mock_time.assert_not_called()
+
+    @responses.activate
+    def test_invalid_utf8_error_body_still_retries_service_failure(
+        self, b2_http: B2Http, mock_time: MagicMock
+    ):
+        responses.get(self.URL, status=503, body=b'upstream failure: \xff')
+        responses.get(self.URL, json={'recovered': True})
+
+        result = b2_http.request(responses.GET, self.URL, {}, try_count=2)
+
+        assert result.json() == {'recovered': True}
+        assert len(responses.calls) == 2
+        mock_time.assert_called_once_with(1.0)
+
+    @pytest.mark.parametrize('try_count', [0, -1])
+    @responses.activate
+    def test_invalid_attempt_budget_never_sends_request(
+        self, b2_http: B2Http, mock_time: MagicMock, try_count
+    ):
+        responses.get(self.URL, json={'unexpected': True})
+
+        with pytest.raises(ValueError, match='try_count must be >= 1'):
+            b2_http.request(responses.GET, self.URL, {}, try_count=try_count)
+
+        assert len(responses.calls) == 0
+        mock_time.assert_not_called()
+
+    @responses.activate
+    def test_backoff_is_bounded_and_exhaustion_preserves_last_error(
+        self, b2_http: B2Http, mock_time: MagicMock, mocker: MockerFixture
+    ):
+        attempts = []
+
+        def fail_request(request):
+            attempts.append(request.url)
+            return (
+                503,
+                {'Content-Type': 'application/json'},
+                '{"status": 503, "code": "server_busy", "message": "attempt %d"}' % len(attempts),
+            )
+
+        responses.add_callback(responses.GET, self.URL, callback=fail_request)
+        mocker.patch('b2sdk._internal.b2http.random', return_value=0.25)
+
+        with pytest.raises(ServiceError, match='attempt 14'):
+            b2_http.request(responses.GET, self.URL, {}, try_count=14)
+
+        delays = [args.args[0] for args in mock_time.call_args_list]
+        assert len(attempts) == len(responses.calls) == 14
+        assert len(delays) == 13  # No sleep after the final failed attempt.
+        assert delays[:3] == [1.0, 1.5, 2.25]
+        assert all(0 < delay <= 65 for delay in delays)
+        assert delays[-2:] == [64.25, 64.25]
+
     @responses.activate
     def test_never_works(self, b2_http: B2Http, mock_time: MagicMock):
         _mock_error_response(self.URL, status=503)
