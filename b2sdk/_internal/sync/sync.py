@@ -173,6 +173,9 @@ class Synchronizer:
         source is also in the destination.  Deletes any file versions
         in the destination older than history_days.
 
+        If scheduling fails, wait for already submitted actions to finish before
+        propagating the scheduling error.
+
         :param source_folder: source folder object
         :param dest_folder: destination folder object
         :param now_millis: current time in milliseconds
@@ -203,37 +206,39 @@ class Synchronizer:
         queue_limit = self.max_workers + 1000
         sync_executor = BoundedQueueExecutor(unbounded_executor, queue_limit=queue_limit)
 
-        if reporter is None:
-            # silent reporter so that downstream code can call it unconditionally
-            reporter = SyncReport(io.StringIO(), True)
+        try:
+            if reporter is None:
+                # silent reporter so that downstream code can call it unconditionally
+                reporter = SyncReport(io.StringIO(), True)
 
-        if source_type == 'local':
-            # Start the thread that counts the local files. That's the operation
-            # that should be fastest, and it provides scale for the progress reporting.
-            sync_executor.submit(count_files, source_folder, reporter, self.policies_manager)
+            if source_type == 'local':
+                # Start the thread that counts the local files. That's the operation
+                # that should be fastest, and it provides scale for the progress reporting.
+                sync_executor.submit(count_files, source_folder, reporter, self.policies_manager)
 
-        # Bucket for scheduling actions.
-        # For bucket-to-bucket sync, the bucket for the API calls should be the destination.
-        action_bucket = None
-        if dest_type == 'b2':
-            action_bucket = cast(B2Folder, dest_folder).bucket
-        elif source_type == 'b2':
-            action_bucket = cast(B2Folder, source_folder).bucket
+            # Bucket for scheduling actions.
+            # For bucket-to-bucket sync, the bucket for the API calls should be the destination.
+            action_bucket = None
+            if dest_type == 'b2':
+                action_bucket = cast(B2Folder, dest_folder).bucket
+            elif source_type == 'b2':
+                action_bucket = cast(B2Folder, source_folder).bucket
 
-        # Schedule each of the actions.
-        for action in self._make_folder_sync_actions(
-            source_folder,
-            dest_folder,
-            now_millis,
-            reporter,
-            self.policies_manager,
-            encryption_settings_provider,
-        ):
-            logging.debug('scheduling action %s on bucket %s', action, action_bucket)
-            sync_executor.submit(action.run, action_bucket, reporter, self.dry_run)
+            # Schedule each of the actions.
+            for action in self._make_folder_sync_actions(
+                source_folder,
+                dest_folder,
+                now_millis,
+                reporter,
+                self.policies_manager,
+                encryption_settings_provider,
+            ):
+                logging.debug('scheduling action %s on bucket %s', action, action_bucket)
+                sync_executor.submit(action.run, action_bucket, reporter, self.dry_run)
 
-        # Wait for everything to finish
-        sync_executor.shutdown()
+        finally:
+            # Drain queued actions before returning, including when scheduling fails.
+            sync_executor.shutdown()
         if sync_executor.get_num_exceptions() != 0:
             raise IncompleteSync('sync is incomplete')
 

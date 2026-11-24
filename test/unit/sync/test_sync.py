@@ -13,6 +13,7 @@ from collections import defaultdict
 from contextlib import ExitStack
 from enum import Enum
 from functools import partial
+from threading import Event, Thread
 from unittest import mock
 
 import pytest
@@ -1027,14 +1028,6 @@ class TestSynchronizer:
 
         synchronizer.sync_folders(src, dst, TODAY, None)
 
-    @pytest.mark.xfail(
-        strict=True,
-        reason=(
-            'known bug (review b2-sdk-python prod:7, sync.py:201, owner decides): the executor '
-            'is not shut down when scheduling raises, so queued actions keep running in '
-            'the background; whether to wait for or cancel them is not decided'
-        ),
-    )
     def test_sync_folders_shuts_executor_down_when_scheduling_fails(self, synchronizer_factory):
         synchronizer = synchronizer_factory(dry_run=True, allow_empty_source=True)
         src = self.folder_factory('b2', ('a.txt', [200], 10))
@@ -1060,6 +1053,61 @@ class TestSynchronizer:
 
         assert len(executors) == 1
         executors[0].shutdown.assert_called_once()
+
+    def test_sync_folders_waits_for_queued_actions_before_scheduling_error(
+        self, synchronizer_factory
+    ):
+        synchronizer = synchronizer_factory(dry_run=True, allow_empty_source=True)
+        src = self.folder_factory('b2', ('a.txt', [200], 10))
+        dst = self.folder_factory('local')
+        first_started, release_first, shutdown_started = Event(), Event(), Event()
+        completed, observed_errors, completed_when_error_returned = [], [], []
+        scheduling_error = RuntimeError('scheduling failed')
+
+        def first_action(*args):
+            first_started.set()
+            assert release_first.wait(timeout=5), 'first action was not released'
+            completed.append('first')
+
+        def second_action(*args):
+            completed.append('second')
+
+        def failing_actions(*args, **kwargs):
+            yield mock.Mock(run=first_action)
+            assert first_started.wait(timeout=5), 'first action did not start'
+            yield mock.Mock(run=second_action)
+            raise scheduling_error
+
+        real_shutdown = sync_module.BoundedQueueExecutor.shutdown
+
+        def shutdown(executor):
+            shutdown_started.set()
+            real_shutdown(executor)
+
+        def sync():
+            try:
+                synchronizer.sync_folders(src, dst, TODAY, None)
+            except BaseException as exc:
+                completed_when_error_returned.extend(completed)
+                observed_errors.append(exc)
+
+        with mock.patch.object(synchronizer, '_make_folder_sync_actions', failing_actions):
+            with mock.patch.object(sync_module.BoundedQueueExecutor, 'shutdown', shutdown):
+                thread = Thread(target=sync, daemon=True)
+                thread.start()
+                try:
+                    assert first_started.wait(timeout=5), 'first action did not start'
+                    assert shutdown_started.wait(timeout=5), 'executor was not shut down'
+                    assert thread.is_alive(), 'sync returned while its first action was blocked'
+                    assert completed == []
+                finally:
+                    release_first.set()
+                    thread.join(timeout=5)
+
+        assert not thread.is_alive(), 'sync did not finish'
+        assert completed == ['first', 'second']
+        assert completed_when_error_returned == ['first', 'second']
+        assert observed_errors == [scheduling_error]
 
 
 class TstEncryptionSettingsProvider(AbstractSyncEncryptionSettingsProvider):

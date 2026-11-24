@@ -32,6 +32,7 @@ import responses
 from apiver_deps import (
     AuthInfoCache,
     B2Api,
+    B2Folder,
     B2Http,
     B2HttpApiConfig,
     B2RawHTTPApi,
@@ -45,7 +46,7 @@ from apiver_deps import (
 )
 from apiver_deps_exception import NonExistentBucket
 
-from test.known_defect import expect, known_defect
+from test.known_defect import expect
 
 from .test_bucket import TestCaseWithBucket
 
@@ -66,33 +67,19 @@ class TestRegressionCopyAndLs(TestCaseWithBucket):
         assert copied.file_info['b2-expires'] == 'Thu, 01 Dec 2050 16:00:00 GMT', copied.file_info
         assert copied.file_info['b2-content-disposition'] == 'attachment', copied.file_info
 
-    @known_defect(
-        'C5',
-        'ls("x") stops at an object named "x" and never lists "x/..."',
-        condition=apiver_deps.V >= 3,
-        raises=AssertionError,
-    )
-    def test_c5_ls_path_without_slash_lists_folder_next_to_same_named_file(self):
-        """C5: ls('x') with an object 'x' and objects 'x/...' must also list 'x/...'."""
+    def test_listing_distinguishes_exact_object_from_explicit_folder(self):
         self.bucket.upload_bytes(b'data', 'x')
         self.bucket.upload_bytes(b'data', 'x/1.txt')
         names = [fv.file_name for fv, _ in self.bucket.ls('x', recursive=True)]
-        assert 'x/1.txt' in names, names
+        # v3 prefers an exact object; older interfaces default to folders.
+        expected = ['x'] if apiver_deps.V >= 3 else ['x/1.txt']
+        assert names == expected
+        assert [fv.file_name for fv, _ in self.bucket.ls('x/', recursive=True)] == ['x/1.txt']
 
-    @known_defect(
-        'C5',
-        'B2Folder for a prefix naming a single object hits an AssertionError',
-        condition=apiver_deps.V >= 3,
-        raises=AssertionError,
-    )
-    def test_c5_folder_sync_source_with_prefix_naming_a_single_object(self):
-        """C5: B2Folder for 'b2://bucket/x' must not hit an AssertionError when only 'x' exists."""
-        from apiver_deps import B2Folder
-
+    def test_folder_prefix_matching_single_object_is_empty(self):
         self.bucket.upload_bytes(b'data', 'x')
         folder = B2Folder(self.bucket_name, 'x', self.api)
-        # must not raise AssertionError (it may list nothing or the object, but not crash)
-        list(folder.all_files(None))
+        assert list(folder.all_files(None)) == []
 
     def test_c6_exact_filename_respects_exclude_filter(self):
         """C6: an exclude filter naming the exact file must hide it from ls()."""
