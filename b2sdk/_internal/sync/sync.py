@@ -13,6 +13,7 @@ import concurrent.futures as futures
 import io
 import logging
 from enum import Enum, unique
+from pathlib import Path, PurePosixPath
 from typing import cast
 
 from ..bounded_queue_executor import BoundedQueueExecutor
@@ -283,6 +284,19 @@ class Synchronizer:
             policies_manager,
         ):
             if source_path is None:
+                relative_path = dest_path.relative_path
+                path_class = PurePosixPath if dest_type == 'b2' else Path
+                exclude_directory = (
+                    policies_manager.should_exclude_b2_directory
+                    if dest_type == 'b2'
+                    else policies_manager.should_exclude_local_directory
+                )
+                if policies_manager.should_exclude_relative_path(relative_path) or any(
+                    exclude_directory(str(parent))
+                    for parent in path_class(relative_path).parents
+                    if str(parent) != '.'
+                ):
+                    continue
                 logger.debug('determined that %s is not present on source', dest_path)
             elif dest_path is None:
                 logger.debug('determined that %s is not present on destination', source_path)
