@@ -13,13 +13,13 @@ import concurrent.futures as futures
 import io
 import logging
 from enum import Enum, unique
-from pathlib import Path, PurePosixPath
+from pathlib import PurePosixPath
 from typing import cast
 
 from ..bounded_queue_executor import BoundedQueueExecutor
 from ..scan.exception import InvalidArgument
 from ..scan.folder import AbstractFolder, B2Folder, LocalFolder
-from ..scan.path import AbstractPath
+from ..scan.path import AbstractPath, B2Path, LocalPath
 from ..scan.policies import DEFAULT_SCAN_MANAGER, ScanPoliciesManager
 from ..scan.scan import zip_folders
 from ..transfer.outbound.upload_source import UploadMode
@@ -285,18 +285,37 @@ class Synchronizer:
         ):
             if source_path is None:
                 relative_path = dest_path.relative_path
-                path_class = PurePosixPath if dest_type == 'b2' else Path
                 exclude_directory = (
                     policies_manager.should_exclude_b2_directory
                     if dest_type == 'b2'
                     else policies_manager.should_exclude_local_directory
                 )
-                if policies_manager.should_exclude_relative_path(relative_path) or any(
+                excluded = (
+                    policies_manager.should_exclude_b2_file_version(
+                        cast(B2Path, dest_path).selected_version, relative_path
+                    )
+                    if dest_type == 'b2'
+                    else policies_manager.should_exclude_local_path(cast(LocalPath, dest_path))
+                )
+                if excluded or any(
                     exclude_directory(str(parent))
-                    for parent in path_class(relative_path).parents
+                    for parent in PurePosixPath(relative_path).parents
                     if str(parent) != '.'
                 ):
                     continue
+                if dest_type == 'b2':
+                    b2_path = cast(B2Path, dest_path)
+                    dest_path = B2Path(
+                        relative_path,
+                        b2_path.selected_version,
+                        [
+                            version
+                            for version in b2_path.all_versions
+                            if not policies_manager.should_exclude_b2_file_version(
+                                version, relative_path
+                            )
+                        ],
+                    )
                 logger.debug('determined that %s is not present on source', dest_path)
             elif dest_path is None:
                 logger.debug('determined that %s is not present on destination', source_path)
