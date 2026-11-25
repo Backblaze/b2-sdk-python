@@ -214,3 +214,114 @@ def test_blocked_transfer_does_not_starve_unrelated_file(tmp_path, b2api, bucket
         thread.join(10)
     assert not thread.is_alive()
     assert not errors
+
+
+def test_ready_cleanup_is_bounded_during_enumeration(tmp_path, b2api, bucket, monkeypatch):
+    import itertools
+    import queue
+    from types import SimpleNamespace
+
+    import b2sdk._internal.sync.sync as sync_module
+
+    b2api.session.raw_api.bucket_id_to_bucket[bucket.id_].upload_url_counter = itertools.count()
+    max_ready = []
+
+    class TrackedQueue(queue.SimpleQueue):
+        def put(self, item):
+            super().put(item)
+            max_ready.append(self.qsize())
+
+    monkeypatch.setattr(
+        sync_module, 'queue', SimpleNamespace(SimpleQueue=TrackedQueue, Empty=queue.Empty)
+    )
+    for index in range(1010):
+        name = f'{index:04}.txt'
+        bucket.upload_bytes(b'old', name)
+        (tmp_path / name).write_bytes(b'new content')
+
+    sync = Synchronizer(
+        max_workers=1,
+        keep_days_or_delete=KeepOrDeleteMode.DELETE,
+        compare_version_mode=CompareVersionMode.SIZE,
+    )
+    original_actions = sync._make_folder_sync_actions
+
+    def slow_actions(*args, **kwargs):
+        for action in original_actions(*args, **kwargs):
+            is_transfer = vars(action).get('_sync_transfer') is None
+            yield action
+            if is_transfer:
+                action._sync_future.result(timeout=10)
+
+    monkeypatch.setattr(sync, '_make_folder_sync_actions', slow_actions)
+    sync.sync_folders(
+        LocalFolder(tmp_path), B2Folder(bucket.name, '', b2api), int(time.time() * 1000), None
+    )
+    assert max_ready
+    assert max(max_ready) <= sync.max_workers + 1000
+
+
+@pytest.mark.parametrize('fail', [False, True])
+def test_pending_cleanup_backpressure_with_one_worker(tmp_path, b2api, bucket, monkeypatch, fail):
+    import itertools
+    from threading import Event, Thread
+
+    b2api.session.raw_api.bucket_id_to_bucket[bucket.id_].upload_url_counter = itertools.count()
+    old_ids = {bucket.upload_bytes(b'old', 'file.txt').id_ for _ in range(1002)}
+    (tmp_path / 'file.txt').write_bytes(b'replacement contents')
+    dest = B2Folder(bucket.name, '', b2api)
+    started, release, at_limit, beyond_limit = Event(), Event(), Event(), Event()
+    original_upload = dest.bucket.concatenate
+    errors = []
+
+    def blocked_upload(*args, **kwargs):
+        started.set()
+        assert release.wait(10), 'upload was not released'
+        if fail:
+            raise RuntimeError('replacement failed')
+        return original_upload(*args, **kwargs)
+
+    monkeypatch.setattr(dest.bucket, 'concatenate', blocked_upload)
+    sync = Synchronizer(
+        max_workers=1,
+        keep_days_or_delete=KeepOrDeleteMode.DELETE,
+        compare_version_mode=CompareVersionMode.SIZE,
+    )
+    original_actions = sync._make_folder_sync_actions
+
+    def tracked_actions(*args, **kwargs):
+        count = 0
+        for action in original_actions(*args, **kwargs):
+            if vars(action).get('_sync_transfer') is not None:
+                count += 1
+                if count == 1001:
+                    at_limit.set()
+                if count == 1002:
+                    beyond_limit.set()
+            yield action
+
+    monkeypatch.setattr(sync, '_make_folder_sync_actions', tracked_actions)
+
+    def run_sync():
+        try:
+            sync.sync_folders(LocalFolder(tmp_path), dest, int(time.time() * 1000), None)
+        except Exception as exc:
+            errors.append(exc)
+
+    thread = Thread(target=run_sync, daemon=True)
+    thread.start()
+    try:
+        assert started.wait(10)
+        assert at_limit.wait(10), 'scheduler did not reach the bound'
+        assert not beyond_limit.wait(0.3), 'scheduler exceeded the dependency bound'
+    finally:
+        release.set()
+        thread.join(10)
+    assert not thread.is_alive(), 'sync deadlocked after transfer completion'
+    remaining = {v.id_ for v in bucket.list_file_versions('file.txt')}
+    if fail:
+        assert len(errors) == 1 and isinstance(errors[0], IncompleteSync)
+        assert remaining == old_ids
+    else:
+        assert not errors
+        assert len(remaining) == 1 and not remaining.intersection(old_ids)
