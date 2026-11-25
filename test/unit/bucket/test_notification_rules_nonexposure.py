@@ -11,29 +11,33 @@
 Operation-level secret non-exposure for ``Bucket.set_notification_rules``.
 
 A notification rule can carry an HMAC signing secret and a custom header value. Neither may
-reach the SDK's DEBUG trace or the text of an exception raised by the call.
+reach the SDK's DEBUG trace or the text of an exception raised by the call. Each test is run
+once per sensitive input (``signing_secret``, ``custom_header``).
 
-There is one test per (surface, path); each is run once per sensitive input
-(``signing_secret``, ``custom_header``) and asserts exactly that cell:
+What each case can and cannot detect:
 
-* surfaces: SDK DEBUG trace (every ``logging`` record, with tracebacks, at DEBUG level; the SDK
-  traces little on the success, pre-authorization and validation paths, so those tests also
-  emit a marker record to prove the capture is live; on the API error path the SDK's own
-  records, including the HTTP error, are asserted to be present) and
-  exception text (message, repr and formatted traceback of whatever the call raised);
-* paths: success (simulator-backed), failure before authorization, API error (a real
-  ``B2RawHTTPApi`` over a faked HTTP session answering 400), and a local validation error
-  (a request that cannot be serialized, raised before anything is sent).
-
-On the success path nothing is raised, so the success x exception test can only assert that the
-call does not raise and that no exception text can carry the secret. It is weaker than the
-failure-path exception tests and is documented as such rather than dressed up.
+* API error path (``B2RawHTTPApi`` over a real ``B2Http``, only ``session.request`` faked to
+  answer 400): detects a leak anywhere in the SDK stack, including ``b2http`` and the raw API
+  (for example logging or raising with the request body). The debug test also requires the
+  SDK's own ``interpret_b2_error`` call record to be present, so it cannot pass on an empty
+  trace. It overlaps ``test_exception.py::test_http_error_trace_keeps_request_values_private``
+  for log messages, but also covers formatted tracebacks (``caplog.text``); the exception test
+  is the only one asserting on exception text.
+* Pre-authorization path and unserializable-request path: detect leaks in ``Bucket`` and
+  ``Session`` on a failure path (the pre-authorization case runs on ``RawSimulator``, so it
+  cannot see anything below ``Session``). The SDK logs almost nothing there, so the debug tests
+  emit a marker record to prove the capture is live; the marker does not prove the SDK
+  logging itself.
+* Success path: not covered here. ``test_notification_rule_tracing.py`` already asserts that
+  ``set_notification_rules`` does not trace the secret on success, and a successful call
+  raises nothing, so an exception-text test there cannot fail.
 """
 
 from __future__ import annotations
 
 import json
 import logging
+import secrets
 import traceback
 
 import pytest
@@ -45,12 +49,14 @@ from apiver_deps import (
     InMemoryAccountInfo,
     RawSimulator,
 )
+from apiver_deps_exception import BadRequest, MissingAccountData
 
 from b2sdk._internal.b2http import B2Http
 
+# Random per run, so no credential-shaped literal lives in the source.
 SECRET_VALUES = {
-    'signing_secret': 'hmac-signing-secret-must-not-leak-4b1e',
-    'custom_header': 'custom-header-value-must-not-leak-9d7c',
+    'signing_secret': secrets.token_hex(16),
+    'custom_header': secrets.token_urlsafe(24),
 }
 
 
@@ -130,24 +136,12 @@ CAPTURE_MARKER = 'debug capture is active'
 
 
 @pytest.mark.parametrize('sensitive_input', ['signing_secret', 'custom_header'])
-def test_sensitive_input_stays_out_of_sdk_debug_trace_on_success_path(
-    bucket, caplog, sensitive_input
-):
-    with caplog.at_level(logging.DEBUG):
-        logging.getLogger('b2sdk').debug(CAPTURE_MARKER)
-        bucket.set_notification_rules(sensitive_rules())
-    sdk_debug_trace = caplog.text
-    assert CAPTURE_MARKER in sdk_debug_trace  # DEBUG capture works
-    assert SECRET_VALUES[sensitive_input] not in sdk_debug_trace
-
-
-@pytest.mark.parametrize('sensitive_input', ['signing_secret', 'custom_header'])
 def test_sensitive_input_stays_out_of_sdk_debug_trace_on_pre_authorization_path(
     unauthorized_bucket, caplog, sensitive_input
 ):
     with caplog.at_level(logging.DEBUG):
         logging.getLogger('b2sdk').debug(CAPTURE_MARKER)
-        with pytest.raises(Exception):
+        with pytest.raises(MissingAccountData):
             unauthorized_bucket.set_notification_rules(sensitive_rules())
     sdk_debug_trace = caplog.text
     assert CAPTURE_MARKER in sdk_debug_trace  # DEBUG capture works
@@ -158,15 +152,21 @@ def test_sensitive_input_stays_out_of_sdk_debug_trace_on_pre_authorization_path(
 def test_sensitive_input_stays_out_of_sdk_debug_trace_on_api_error_path(
     http_rejecting_bucket, caplog, sensitive_input
 ):
-    with caplog.at_level(logging.DEBUG), pytest.raises(Exception):
+    with caplog.at_level(logging.DEBUG), pytest.raises(BadRequest):
         http_rejecting_bucket.set_notification_rules(sensitive_rules())
     sdk_debug_trace = caplog.text
-    assert 'interpret_b2_error' in sdk_debug_trace  # the SDK traced the service error itself
+    # the SDK's own trace record of the service error is present (stable logfury message)
+    assert any(
+        'calling interpret_b2_error(' in record.getMessage()
+        and 'status=400' in record.getMessage()
+        and "code='bad_request'" in record.getMessage()
+        for record in caplog.records
+    )
     assert SECRET_VALUES[sensitive_input] not in sdk_debug_trace
 
 
 @pytest.mark.parametrize('sensitive_input', ['signing_secret', 'custom_header'])
-def test_sensitive_input_stays_out_of_sdk_debug_trace_on_validation_error_path(
+def test_sensitive_input_stays_out_of_sdk_debug_trace_on_unserializable_request_path(
     http_rejecting_bucket, caplog, sensitive_input
 ):
     with caplog.at_level(logging.DEBUG):
@@ -182,25 +182,10 @@ def test_sensitive_input_stays_out_of_sdk_debug_trace_on_validation_error_path(
 
 
 @pytest.mark.parametrize('sensitive_input', ['signing_secret', 'custom_header'])
-def test_sensitive_input_stays_out_of_exception_on_success_path(bucket, sensitive_input):
-    # Weaker than the failure-path cells: a successful call raises nothing, so there is no
-    # exception text that could carry the secret. This pins that the call really does succeed
-    # (nothing raised) and that the exception text is therefore free of the secret.
-    raised = None
-    try:
-        bucket.set_notification_rules(sensitive_rules())
-    except Exception as error:
-        raised = error
-    exception_text_of_call = '' if raised is None else exception_text(raised)
-    assert raised is None
-    assert SECRET_VALUES[sensitive_input] not in exception_text_of_call
-
-
-@pytest.mark.parametrize('sensitive_input', ['signing_secret', 'custom_header'])
 def test_sensitive_input_stays_out_of_exception_on_pre_authorization_path(
     unauthorized_bucket, sensitive_input
 ):
-    with pytest.raises(Exception) as excinfo:
+    with pytest.raises(MissingAccountData) as excinfo:
         unauthorized_bucket.set_notification_rules(sensitive_rules())
     assert SECRET_VALUES[sensitive_input] not in exception_text(excinfo.value)
 
@@ -209,14 +194,14 @@ def test_sensitive_input_stays_out_of_exception_on_pre_authorization_path(
 def test_sensitive_input_stays_out_of_exception_on_api_error_path(
     http_rejecting_bucket, sensitive_input
 ):
-    with pytest.raises(Exception) as excinfo:
+    with pytest.raises(BadRequest) as excinfo:
         http_rejecting_bucket.set_notification_rules(sensitive_rules())
     assert SECRET_VALUES[sensitive_input] not in exception_text(excinfo.value)
     assert 'rejected by the service' in exception_text(excinfo.value)  # the service error is real
 
 
 @pytest.mark.parametrize('sensitive_input', ['signing_secret', 'custom_header'])
-def test_sensitive_input_stays_out_of_exception_on_validation_error_path(
+def test_sensitive_input_stays_out_of_exception_on_unserializable_request_path(
     http_rejecting_bucket, sensitive_input
 ):
     with pytest.raises(TypeError) as excinfo:
