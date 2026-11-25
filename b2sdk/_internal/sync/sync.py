@@ -12,6 +12,7 @@ from __future__ import annotations
 import concurrent.futures as futures
 import io
 import logging
+import queue
 from enum import Enum, unique
 from typing import cast
 
@@ -205,6 +206,20 @@ class Synchronizer:
         unbounded_executor = futures.ThreadPoolExecutor(max_workers=self.max_workers)
         queue_limit = self.max_workers + 1000
         sync_executor = BoundedQueueExecutor(unbounded_executor, queue_limit=queue_limit)
+        cleanup_ready = queue.SimpleQueue()
+        pending_cleanup = 0
+        action_bucket = None
+
+        def drain_cleanup(block):
+            nonlocal pending_cleanup
+            try:
+                future, action = cleanup_ready.get(block=block)
+            except queue.Empty:
+                return False
+            pending_cleanup -= 1
+            if not future.cancelled() and future.exception() is None:
+                sync_executor.submit(action.run, action_bucket, reporter, self.dry_run)
+            return True
 
         try:
             if reporter is None:
@@ -234,11 +249,32 @@ class Synchronizer:
                 encryption_settings_provider,
             ):
                 logging.debug('scheduling action %s on bucket %s', action, action_bucket)
-                sync_executor.submit(action.run, action_bucket, reporter, self.dry_run)
+                transfer = vars(action).get('_sync_transfer')
+                if transfer is None:
+                    action._sync_future = sync_executor.submit(
+                        action.run, action_bucket, reporter, self.dry_run
+                    )
+                else:
+                    # The callback owns the action now; avoid a reference cycle through
+                    # its transfer and future after the cleanup is drained.
+                    del action._sync_transfer
+                    pending_cleanup += 1
+                    transfer._sync_future.add_done_callback(
+                        lambda future, action=action: cleanup_ready.put((future, action))
+                    )
+                while drain_cleanup(block=False):
+                    pass
+                if pending_cleanup >= queue_limit:
+                    drain_cleanup(block=True)
 
         finally:
-            # Drain queued actions before returning, including when scheduling fails.
-            sync_executor.shutdown()
+            try:
+                # Callbacks do not occupy executor workers or submit during shutdown.
+                # Drain them even if action scheduling raises.
+                while pending_cleanup:
+                    drain_cleanup(block=True)
+            finally:
+                sync_executor.shutdown()
         if sync_executor.get_num_exceptions() != 0:
             raise IncompleteSync('sync is incomplete')
 
