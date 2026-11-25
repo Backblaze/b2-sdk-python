@@ -9,6 +9,8 @@
 from __future__ import annotations
 
 import datetime
+import gzip
+import io
 import locale
 import sys
 from unittest.mock import MagicMock, call
@@ -35,8 +37,11 @@ from apiver_deps_exception import (
 )
 from pytest_mock import MockerFixture
 from responses import matchers
+from urllib3.exceptions import DecodeError, ProtocolError, ReadTimeoutError
+from urllib3.response import HTTPResponse
 
 from b2sdk._internal.b2http import setlocale
+from b2sdk._internal.requests import NotDecompressingResponse
 
 from ..test_base import TestBase
 
@@ -356,6 +361,90 @@ class TestTranslateAndRetry:
 
         mock_time.assert_called_once_with(1.0)
 
+    @pytest.mark.parametrize(
+        'http_status, body_status, retry_expected',
+        [(503, 400, True), (503, 'invalid', True), (503, None, True), (400, 503, False)],
+    )
+    @responses.activate
+    def test_http_status_controls_retries_when_error_metadata_is_invalid(
+        self, b2_http: B2Http, mock_time: MagicMock, http_status, body_status, retry_expected
+    ):
+        responses.get(
+            self.URL,
+            status=http_status,
+            json={
+                'status': body_status,
+                'code': 'bad_json',
+                'message': 'synthetic upstream error',
+                'additional_metadata': {'ignored': True},
+            },
+        )
+        responses.get(self.URL, json={'recovered': True})
+
+        if retry_expected:
+            result = b2_http.request(responses.GET, self.URL, {}, try_count=2)
+            assert result.json() == {'recovered': True}
+            assert len(responses.calls) == 2
+            mock_time.assert_called_once_with(1.0)
+        else:
+            with pytest.raises(BadJson, match='synthetic upstream error'):
+                b2_http.request(responses.GET, self.URL, {}, try_count=2)
+            assert len(responses.calls) == 1
+            mock_time.assert_not_called()
+
+    @responses.activate
+    def test_invalid_utf8_error_body_still_retries_service_failure(
+        self, b2_http: B2Http, mock_time: MagicMock
+    ):
+        responses.get(self.URL, status=503, body=b'upstream failure: \xff')
+        responses.get(self.URL, json={'recovered': True})
+
+        result = b2_http.request(responses.GET, self.URL, {}, try_count=2)
+
+        assert result.json() == {'recovered': True}
+        assert len(responses.calls) == 2
+        mock_time.assert_called_once_with(1.0)
+
+    @pytest.mark.parametrize('try_count', [0, -1])
+    @responses.activate
+    def test_invalid_attempt_budget_never_sends_request(
+        self, b2_http: B2Http, mock_time: MagicMock, try_count
+    ):
+        responses.get(self.URL, json={'unexpected': True})
+
+        with pytest.raises(ValueError, match='try_count must be >= 1'):
+            b2_http.request(responses.GET, self.URL, {}, try_count=try_count)
+
+        assert len(responses.calls) == 0
+        mock_time.assert_not_called()
+
+    @responses.activate
+    def test_backoff_is_bounded_and_exhaustion_preserves_last_error(
+        self, b2_http: B2Http, mock_time: MagicMock, mocker: MockerFixture
+    ):
+        attempts = []
+
+        def fail_request(request):
+            attempts.append(request.url)
+            return (
+                503,
+                {'Content-Type': 'application/json'},
+                '{"status": 503, "code": "server_busy", "message": "attempt %d"}' % len(attempts),
+            )
+
+        responses.add_callback(responses.GET, self.URL, callback=fail_request)
+        mocker.patch('b2sdk._internal.b2http.random', return_value=0.25)
+
+        with pytest.raises(ServiceError, match='attempt 14'):
+            b2_http.request(responses.GET, self.URL, {}, try_count=14)
+
+        delays = [args.args[0] for args in mock_time.call_args_list]
+        assert len(attempts) == len(responses.calls) == 14
+        assert len(delays) == 13  # No sleep after the final failed attempt.
+        assert delays[:3] == [1.0, 1.5, 2.25]
+        assert all(0 < delay <= 65 for delay in delays)
+        assert delays[-2:] == [64.25, 64.25]
+
     @responses.activate
     def test_never_works(self, b2_http: B2Http, mock_time: MagicMock):
         _mock_error_response(self.URL, status=503)
@@ -581,3 +670,69 @@ class TestClockSkewHook(TestBase):
         response.headers = {'Date': now_str}
         with self.assertRaises(ClockSkew):
             ClockSkewHook().post_request('POST', 'http://example.com', {}, response)
+
+
+class TestStreamingResponse:
+    @responses.activate
+    def test_http_download_preserves_gzip_bytes(self, b2_http):
+        original = b'encoded file bytes must remain intact' * 20
+        encoded = gzip.compress(original, mtime=0)
+        url = 'https://download.example.invalid/encoded-file'
+        responses.get(url, body=encoded, headers={'Content-Encoding': 'gzip'})
+
+        with b2_http.get_content(url, {}, try_count=1) as response:
+            chunks = list(response.iter_content(chunk_size=7))
+
+        assert b''.join(chunks) == encoded
+        assert all(0 < len(chunk) <= 7 for chunk in chunks)
+        assert len(responses.calls) == 1
+
+    @pytest.mark.parametrize(
+        'raw_error, expected_error',
+        [
+            (ProtocolError('interrupted stream'), requests.exceptions.ChunkedEncodingError),
+            (DecodeError('invalid encoded data'), requests.exceptions.ContentDecodingError),
+            (ReadTimeoutError(None, '/synthetic', 'read timed out'), requests.ConnectionError),
+        ],
+    )
+    def test_stream_error_keeps_partial_data_and_requests_exception(
+        self, raw_error, expected_error
+    ):
+        calls = []
+
+        class FailingRawStream:
+            def stream(self, chunk_size, decode_content):
+                calls.append((chunk_size, decode_content))
+                yield b'ok'
+                raise raw_error
+
+        # This internal response component is shared and is not exported by apiver_deps.
+        response = NotDecompressingResponse()
+        response.raw = FailingRawStream()
+        chunks = response.iter_content(chunk_size=2)
+
+        assert next(chunks) == b'ok'
+        with pytest.raises(expected_error) as caught:
+            next(chunks)
+
+        assert caught.value.args[0] is raw_error
+        assert calls == [(2, False)]
+
+    def test_unicode_decoding_handles_split_multibyte_characters(self):
+        text = 'a snowman: \u2603; coffee: \u2615'
+        response = NotDecompressingResponse()
+        response.encoding = 'utf-8'
+        response.raw = HTTPResponse(body=io.BytesIO(text.encode()), preload_content=False)
+
+        chunks = list(response.iter_content(chunk_size=2, decode_unicode=True))
+
+        assert ''.join(chunks) == text
+        assert all(isinstance(chunk, str) for chunk in chunks)
+
+    def test_consumed_stream_cannot_be_read_again(self):
+        response = NotDecompressingResponse()
+        response.raw = HTTPResponse(body=io.BytesIO(b'abcd'), preload_content=False)
+
+        assert list(response.iter_content(chunk_size=2)) == [b'ab', b'cd']
+        with pytest.raises(requests.exceptions.StreamConsumedError):
+            list(response.iter_content(chunk_size=2))

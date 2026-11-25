@@ -12,13 +12,15 @@ from __future__ import annotations
 import concurrent.futures as futures
 import io
 import logging
+import queue
 from enum import Enum, unique
+from pathlib import PurePosixPath
 from typing import cast
 
 from ..bounded_queue_executor import BoundedQueueExecutor
 from ..scan.exception import InvalidArgument
 from ..scan.folder import AbstractFolder, B2Folder, LocalFolder
-from ..scan.path import AbstractPath
+from ..scan.path import AbstractPath, B2Path, LocalPath
 from ..scan.policies import DEFAULT_SCAN_MANAGER, ScanPoliciesManager
 from ..scan.scan import zip_folders
 from ..transfer.outbound.upload_source import UploadMode
@@ -173,6 +175,9 @@ class Synchronizer:
         source is also in the destination.  Deletes any file versions
         in the destination older than history_days.
 
+        If scheduling fails, wait for already submitted actions to finish before
+        propagating the scheduling error.
+
         :param source_folder: source folder object
         :param dest_folder: destination folder object
         :param now_millis: current time in milliseconds
@@ -202,38 +207,75 @@ class Synchronizer:
         unbounded_executor = futures.ThreadPoolExecutor(max_workers=self.max_workers)
         queue_limit = self.max_workers + 1000
         sync_executor = BoundedQueueExecutor(unbounded_executor, queue_limit=queue_limit)
-
-        if reporter is None:
-            # silent reporter so that downstream code can call it unconditionally
-            reporter = SyncReport(io.StringIO(), True)
-
-        if source_type == 'local':
-            # Start the thread that counts the local files. That's the operation
-            # that should be fastest, and it provides scale for the progress reporting.
-            sync_executor.submit(count_files, source_folder, reporter, self.policies_manager)
-
-        # Bucket for scheduling actions.
-        # For bucket-to-bucket sync, the bucket for the API calls should be the destination.
+        cleanup_ready = queue.SimpleQueue()
+        pending_cleanup = 0
         action_bucket = None
-        if dest_type == 'b2':
-            action_bucket = cast(B2Folder, dest_folder).bucket
-        elif source_type == 'b2':
-            action_bucket = cast(B2Folder, source_folder).bucket
 
-        # Schedule each of the actions.
-        for action in self._make_folder_sync_actions(
-            source_folder,
-            dest_folder,
-            now_millis,
-            reporter,
-            self.policies_manager,
-            encryption_settings_provider,
-        ):
-            logging.debug('scheduling action %s on bucket %s', action, action_bucket)
-            sync_executor.submit(action.run, action_bucket, reporter, self.dry_run)
+        def drain_cleanup(block):
+            nonlocal pending_cleanup
+            try:
+                future, action = cleanup_ready.get(block=block)
+            except queue.Empty:
+                return False
+            pending_cleanup -= 1
+            if not future.cancelled() and future.exception() is None:
+                sync_executor.submit(action.run, action_bucket, reporter, self.dry_run)
+            return True
 
-        # Wait for everything to finish
-        sync_executor.shutdown()
+        try:
+            if reporter is None:
+                # silent reporter so that downstream code can call it unconditionally
+                reporter = SyncReport(io.StringIO(), True)
+
+            if source_type == 'local':
+                # Start the thread that counts the local files. That's the operation
+                # that should be fastest, and it provides scale for the progress reporting.
+                sync_executor.submit(count_files, source_folder, reporter, self.policies_manager)
+
+            # Bucket for scheduling actions.
+            # For bucket-to-bucket sync, the bucket for the API calls should be the destination.
+            action_bucket = None
+            if dest_type == 'b2':
+                action_bucket = cast(B2Folder, dest_folder).bucket
+            elif source_type == 'b2':
+                action_bucket = cast(B2Folder, source_folder).bucket
+
+            # Schedule each of the actions.
+            for action in self._make_folder_sync_actions(
+                source_folder,
+                dest_folder,
+                now_millis,
+                reporter,
+                self.policies_manager,
+                encryption_settings_provider,
+            ):
+                logging.debug('scheduling action %s on bucket %s', action, action_bucket)
+                transfer = vars(action).get('_sync_transfer')
+                if transfer is None:
+                    action._sync_future = sync_executor.submit(
+                        action.run, action_bucket, reporter, self.dry_run
+                    )
+                else:
+                    # The callback owns the action now; avoid a reference cycle through
+                    # its transfer and future after the cleanup is drained.
+                    del action._sync_transfer
+                    pending_cleanup += 1
+                    transfer._sync_future.add_done_callback(
+                        lambda future, action=action: cleanup_ready.put((future, action))
+                    )
+                while drain_cleanup(block=False):
+                    pass
+                if pending_cleanup >= queue_limit:
+                    drain_cleanup(block=True)
+
+        finally:
+            try:
+                # Callbacks do not occupy executor workers or submit during shutdown.
+                # Drain them even if action scheduling raises.
+                while pending_cleanup:
+                    drain_cleanup(block=True)
+            finally:
+                sync_executor.shutdown()
         if sync_executor.get_num_exceptions() != 0:
             raise IncompleteSync('sync is incomplete')
 
@@ -278,6 +320,26 @@ class Synchronizer:
             policies_manager,
         ):
             if source_path is None:
+                relative_path = dest_path.relative_path
+                exclude_directory = (
+                    policies_manager.should_exclude_b2_directory
+                    if dest_type == 'b2'
+                    else policies_manager.should_exclude_local_directory
+                )
+                excluded = (
+                    any(
+                        policies_manager.should_exclude_b2_file_version(version, relative_path)
+                        for version in cast(B2Path, dest_path).all_versions
+                    )
+                    if dest_type == 'b2'
+                    else policies_manager.should_exclude_local_path(cast(LocalPath, dest_path))
+                )
+                if excluded or any(
+                    exclude_directory(str(parent))
+                    for parent in PurePosixPath(relative_path).parents
+                    if str(parent) != '.'
+                ):
+                    continue
                 logger.debug('determined that %s is not present on source', dest_path)
             elif dest_path is None:
                 logger.debug('determined that %s is not present on destination', source_path)

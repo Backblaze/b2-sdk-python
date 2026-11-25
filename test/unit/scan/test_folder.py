@@ -14,6 +14,7 @@ import platform
 from pathlib import Path
 
 import pytest
+from apiver_deps import B2Folder
 
 from b2sdk._internal.scan.exception import UnsupportedFilename
 from b2sdk._internal.scan.folder import LocalFolder
@@ -84,3 +85,33 @@ def test_make_full_path_accepts_internal_link_and_symlinked_root(tmp_path):
     # does not normalize away the Windows extended-length prefix.
     assert os.path.basename(result) == os.path.basename(expected) == 'new-file.txt'
     assert os.path.samefile(os.path.dirname(result), os.path.dirname(expected))
+
+
+@pytest.mark.parametrize('folder_name', ['x', 'x/'])
+@pytest.mark.parametrize('children', [(), ('a.txt', 'nested/b.txt')])
+def test_b2_folder_uses_directory_prefix_with_same_named_object(
+    bucket, b2api, folder_name, children
+):
+    bucket.upload_bytes(b'object', 'x')
+    bucket.upload_bytes(b'neighbor', 'xx/not-a-child.txt')
+    for name in children:
+        bucket.upload_bytes(b'child', 'x/' + name)
+
+    folder = B2Folder(bucket.name, folder_name, b2api)
+    paths = list(folder.all_files(None))
+
+    assert [path.relative_path for path in paths] == list(children)
+
+
+@pytest.mark.parametrize('folder_name', ['x', 'x/'])
+def test_b2_folder_retains_child_version_history(bucket, b2api, folder_name):
+    bucket.upload_bytes(b'object', 'x')
+    first = bucket.upload_bytes(b'first', 'x/a.txt')
+    second = bucket.upload_bytes(b'second', 'x/a.txt')
+    bucket.hide_file('x/a.txt')
+
+    paths = list(B2Folder(bucket.name, folder_name, b2api).all_files(None))
+
+    assert [path.relative_path for path in paths] == ['a.txt']
+    assert [version.action for version in paths[0].all_versions] == ['hide', 'upload', 'upload']
+    assert [version.id_ for version in paths[0].all_versions[1:]] == [second.id_, first.id_]

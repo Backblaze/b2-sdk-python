@@ -214,13 +214,18 @@ class AbstractFileSyncPolicy(metaclass=ABCMeta):
         """
         Yield file actions.
         """
+        transfer = None
         if self._should_transfer():
-            yield self._make_transfer_action()
+            transfer = self._make_transfer_action()
+            yield transfer
             self._transferred = True
 
         assert self._dest_path is not None or self._source_path is not None
 
-        yield from self._get_hide_delete_actions()
+        for action in self._get_hide_delete_actions():
+            if transfer is not None:
+                action._sync_transfer = transfer
+            yield action
 
     def _get_hide_delete_actions(self):
         """

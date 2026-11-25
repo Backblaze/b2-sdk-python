@@ -186,7 +186,12 @@ class EncryptionSetting:
             self._add_sse_c_headers(headers)
             if self.key.key_id is not None:
                 header = SSE_C_KEY_ID_HEADER
-                if headers.get(header) is not None and headers[header] != self.key.key_id:
+                # File-info headers are percent-encoded; compare decoded identities.
+                header_key_id = headers.get(header)
+                if (
+                    header_key_id is not None
+                    and urllib.parse.unquote(header_key_id) != self.key.key_id
+                ):
                     raise ValueError(
                         f'Ambiguous key id set: "{headers[header]}" in headers and "{self.key.key_id}" in {self.__class__.__name__}'
                     )
