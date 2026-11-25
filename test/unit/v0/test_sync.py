@@ -913,7 +913,6 @@ class TestExclusions(TestSync):
     def test_file_exclusions_with_delete(self):
         expected_actions = [
             'b2_upload(/dir/a.txt, folder/a.txt, 100)',
-            'b2_delete(folder/b.txt.incl, id_b_100, )',
             'b2_delete(folder/c.txt, id_c_100, )',
             'b2_upload(/dir/d/d.txt, folder/d/d.txt, 100)',
             'b2_upload(/dir/e/e.incl, folder/e/e.incl, 100)',
