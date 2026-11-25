@@ -291,8 +291,9 @@ class Synchronizer:
                     else policies_manager.should_exclude_local_directory
                 )
                 excluded = (
-                    policies_manager.should_exclude_b2_file_version(
-                        cast(B2Path, dest_path).selected_version, relative_path
+                    any(
+                        policies_manager.should_exclude_b2_file_version(version, relative_path)
+                        for version in cast(B2Path, dest_path).all_versions
                     )
                     if dest_type == 'b2'
                     else policies_manager.should_exclude_local_path(cast(LocalPath, dest_path))
@@ -303,19 +304,6 @@ class Synchronizer:
                     if str(parent) != '.'
                 ):
                     continue
-                if dest_type == 'b2':
-                    b2_path = cast(B2Path, dest_path)
-                    dest_path = B2Path(
-                        relative_path,
-                        b2_path.selected_version,
-                        [
-                            version
-                            for version in b2_path.all_versions
-                            if not policies_manager.should_exclude_b2_file_version(
-                                version, relative_path
-                            )
-                        ],
-                    )
                 logger.debug('determined that %s is not present on source', dest_path)
             elif dest_path is None:
                 logger.debug('determined that %s is not present on destination', source_path)

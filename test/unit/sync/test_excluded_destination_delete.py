@@ -73,7 +73,10 @@ def test_destination_time_filter_does_not_hide_existing_file(folder_factory, syn
             source, destination, 1000, mock.MagicMock(), policies_manager=policy
         )
     )
-    assert any('id_a_100' in str(action) for action in actions)
+    assert [str(action) for action in actions] == [
+        'b2_upload(/dir/a.txt, folder/a.txt, 200)',
+        'b2_delete(folder/a.txt, id_a_100, (old version))',
+    ]
 
 
 @pytest.mark.apiver(from_ver=3)
@@ -114,8 +117,12 @@ def test_delete_sync_directory_only_exclusion(folder_factory, synchronizer_facto
             source, destination, 1000, mock.MagicMock(), policies_manager=policy
         )
     )
-    assert len(actions) == 1
-    assert 'remove.txt' in str(actions[0])
+    expected = (
+        'local_delete(/dir/remove.txt)'
+        if dst_type == 'local'
+        else 'b2_delete(folder/remove.txt, id_r_100, )'
+    )
+    assert [str(action) for action in actions] == [expected]
 
 
 @pytest.mark.apiver(from_ver=3)
@@ -190,5 +197,20 @@ def test_b2_destination_only_preserves_time_excluded_older_version(
             source, destination, 1000, mock.MagicMock(), policies_manager=policy
         )
     )
-    assert len(actions) == 1
-    assert 'id_f_200' in str(actions[0])
+    assert [str(action) for action in actions] == []
+
+
+@pytest.mark.apiver(from_ver=3)
+def test_b2_destination_only_does_not_delete_hide_marker_above_excluded_version(
+    folder_factory, synchronizer_factory
+):
+    source = folder_factory('local')
+    destination = folder_factory('b2', ('file.txt', [-200, 100]))
+    policy = ScanPoliciesManager(exclude_modified_before=150)
+    synchronizer = synchronizer_factory(keep_days_or_delete=KeepOrDeleteMode.DELETE)
+    actions = list(
+        synchronizer._make_folder_sync_actions(
+            source, destination, 1000, mock.MagicMock(), policies_manager=policy
+        )
+    )
+    assert [str(action) for action in actions] == []
