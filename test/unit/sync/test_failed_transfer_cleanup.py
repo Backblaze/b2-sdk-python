@@ -12,6 +12,7 @@ import time
 import pytest
 
 from b2sdk._internal.scan.folder import B2Folder, LocalFolder
+from b2sdk._internal.sync.action import B2DeleteAction
 from b2sdk._internal.sync.exception import IncompleteSync
 from b2sdk._internal.sync.policy import CompareVersionMode
 from b2sdk._internal.sync.sync import KeepOrDeleteMode, Synchronizer
@@ -69,7 +70,7 @@ def test_cleanup_waits_for_in_progress_upload(tmp_path, b2api, bucket, monkeypat
     old_id = bucket.upload_bytes(b'old', 'file.txt').id_
     (tmp_path / 'file.txt').write_bytes(b'replacement bytes')
     dest = B2Folder(bucket.name, '', b2api)
-    started, release = Event(), Event()
+    started, release, scheduled, delete_started = Event(), Event(), Event(), Event()
     errors = []
     real_upload = dest.bucket.concatenate
 
@@ -85,6 +86,20 @@ def test_cleanup_waits_for_in_progress_upload(tmp_path, b2api, bucket, monkeypat
         compare_version_mode=CompareVersionMode.SIZE,
     )
 
+    original_actions = sync._make_folder_sync_actions
+    original_delete = B2DeleteAction.run
+
+    def tracked_actions(*args, **kwargs):
+        yield from original_actions(*args, **kwargs)
+        scheduled.set()
+
+    def tracked_delete(self, *args, **kwargs):
+        delete_started.set()
+        return original_delete(self, *args, **kwargs)
+
+    monkeypatch.setattr(sync, '_make_folder_sync_actions', tracked_actions)
+    monkeypatch.setattr(B2DeleteAction, 'run', tracked_delete)
+
     def run_sync():
         try:
             sync.sync_folders(LocalFolder(tmp_path), dest, int(time.time() * 1000), None)
@@ -95,6 +110,8 @@ def test_cleanup_waits_for_in_progress_upload(tmp_path, b2api, bucket, monkeypat
     thread.start()
     try:
         assert started.wait(10), 'upload did not start'
+        assert scheduled.wait(10), 'scheduler did not finish'
+        assert not delete_started.wait(0.3), 'delete ran while upload was blocked'
         assert [v.id_ for v in bucket.list_file_versions('file.txt')] == [old_id]
     finally:
         release.set()
@@ -151,3 +168,49 @@ def test_failed_copy_preserves_old_versions(b2api, bucket, monkeypatch):
     with pytest.raises(IncompleteSync):
         sync.sync_folders(source, dest, int(time.time() * 1000), None)
     assert {v.id_ for v in bucket.list_file_versions('file.txt')} == old_ids
+
+
+def test_blocked_transfer_does_not_starve_unrelated_file(tmp_path, b2api, bucket, monkeypatch):
+    from threading import Event, Thread
+
+    for content in (b'old', b'older', b'oldest'):
+        bucket.upload_bytes(content, 'a.txt')
+    (tmp_path / 'a.txt').write_bytes(b'replacement contents')
+    (tmp_path / 'b.txt').write_bytes(b'unrelated contents')
+    dest = B2Folder(bucket.name, '', b2api)
+    started, release, other_done = Event(), Event(), Event()
+    errors = []
+    original = dest.bucket.concatenate
+
+    def upload(sources, name, *args, **kwargs):
+        if name == 'a.txt':
+            started.set()
+            assert release.wait(10), 'blocked upload was not released'
+        result = original(sources, name, *args, **kwargs)
+        if name == 'b.txt':
+            other_done.set()
+        return result
+
+    monkeypatch.setattr(dest.bucket, 'concatenate', upload)
+    sync = Synchronizer(
+        max_workers=2,
+        keep_days_or_delete=KeepOrDeleteMode.DELETE,
+        compare_version_mode=CompareVersionMode.SIZE,
+    )
+
+    def run_sync():
+        try:
+            sync.sync_folders(LocalFolder(tmp_path), dest, int(time.time() * 1000), None)
+        except Exception as exc:
+            errors.append(exc)
+
+    thread = Thread(target=run_sync)
+    thread.start()
+    try:
+        assert started.wait(10), 'first upload did not start'
+        assert other_done.wait(2), 'unrelated upload was starved by cleanup tasks'
+    finally:
+        release.set()
+        thread.join(10)
+    assert not thread.is_alive()
+    assert not errors
