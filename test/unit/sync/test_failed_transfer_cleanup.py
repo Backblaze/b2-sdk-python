@@ -234,9 +234,10 @@ def test_ready_cleanup_is_bounded_during_enumeration(tmp_path, b2api, bucket, mo
     monkeypatch.setattr(
         sync_module, 'queue', SimpleNamespace(SimpleQueue=TrackedQueue, Empty=queue.Empty)
     )
+    old_ids = set()
     for index in range(1010):
         name = f'{index:04}.txt'
-        bucket.upload_bytes(b'old', name)
+        old_ids.add(bucket.upload_bytes(b'old', name).id_)
         (tmp_path / name).write_bytes(b'new content')
 
     sync = Synchronizer(
@@ -258,7 +259,10 @@ def test_ready_cleanup_is_bounded_during_enumeration(tmp_path, b2api, bucket, mo
         LocalFolder(tmp_path), B2Folder(bucket.name, '', b2api), int(time.time() * 1000), None
     )
     assert max_ready
-    assert max(max_ready) <= sync.max_workers + 1000
+    assert max(max_ready) <= 1
+    remaining_ids = {version.id_ for version, _ in bucket.ls('', latest_only=False, recursive=True)}
+    assert len(old_ids) == 1010
+    assert not old_ids.intersection(remaining_ids)
 
 
 @pytest.mark.parametrize('fail', [False, True])
