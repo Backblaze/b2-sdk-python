@@ -48,6 +48,15 @@ def count_files(local_folder, reporter, policies_manager):
     reporter.end_total()
 
 
+def _run_after_transfer(transfer_future, action, bucket, reporter, dry_run):
+    """Run cleanup only if the corresponding transfer completed successfully."""
+    try:
+        transfer_future.result()
+    except Exception:
+        return  # The transfer already reported the failure and the executor counted it.
+    action.run(bucket, reporter, dry_run)
+
+
 @unique
 class KeepOrDeleteMode(Enum):
     """Mode of dealing with old versions of files on the destination"""
@@ -234,7 +243,20 @@ class Synchronizer:
                 encryption_settings_provider,
             ):
                 logging.debug('scheduling action %s on bucket %s', action, action_bucket)
-                sync_executor.submit(action.run, action_bucket, reporter, self.dry_run)
+                transfer = vars(action).get('_sync_transfer')
+                if transfer is None:
+                    action._sync_future = sync_executor.submit(
+                        action.run, action_bucket, reporter, self.dry_run
+                    )
+                else:
+                    sync_executor.submit(
+                        _run_after_transfer,
+                        transfer._sync_future,
+                        action,
+                        action_bucket,
+                        reporter,
+                        self.dry_run,
+                    )
 
         finally:
             # Drain queued actions before returning, including when scheduling fails.
