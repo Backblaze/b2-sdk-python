@@ -43,6 +43,7 @@ Documentation index
    replication
    advanced
    errors_and_retries
+   account_info
    glossary
    api_types
    api_reference
