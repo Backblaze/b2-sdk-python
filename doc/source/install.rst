@@ -5,7 +5,7 @@ Installation Guide
 Installing as a dependency
 ==========================
 
-**b2sdk** can simply be added to ``requirements.txt`` (or equivalent such as ``setup.py``, ``.pipfile`` etc).
+You can add **b2sdk** to ``requirements.txt`` (or equivalent such as ``setup.py``, ``.pipfile`` etc).
 In order to properly set a dependency, see :ref:`versioning chapter <semantic_versioning>` for details.
 
 .. note::
@@ -20,8 +20,8 @@ in your python environment::
 
  pip install -e .
 
-The ``-e`` flag installs the package in editable mode, so changes you make to the source
-are picked up without reinstalling. Running ``pip install b2sdk`` instead would download
+The ``-e`` flag installs the package in editable mode, so the package reflects your source
+changes without reinstalling. Running ``pip install b2sdk`` instead would download
 the published release from PyPI and ignore your local changes.
 
 The project uses `nox <https://github.com/theacodes/nox>`_ and

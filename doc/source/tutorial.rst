@@ -6,7 +6,7 @@ Tutorial
 AccountInfo
 ***************************
 
-``AccountInfo`` object holds information about access keys, tokens, upload urls, as well as a bucket id-name map.
+``AccountInfo`` object holds information about application keys, tokens, upload urls, as well as a bucket id-name map.
 
 It is the first object that you need to create to use **b2sdk**. Using ``AccountInfo``, we'll be able to create a ``B2Api`` object to manage a B2 account.
 
