@@ -107,7 +107,7 @@ def assert_import_resolves(statement: str) -> None:
 
 
 def documentation_files() -> list[pathlib.Path]:
-    return [REPO_ROOT / 'README.md', *sorted(DOC_SOURCE.glob('*.rst'))]
+    return [REPO_ROOT / 'README.md', *sorted(DOC_SOURCE.rglob('*.rst'))]
 
 
 class TestExtraction:
@@ -159,6 +159,18 @@ def _documented_imports() -> list:
                     )
                 )
     return params
+
+
+def test_every_doc_page_with_python_examples_is_scanned():
+    # The API reference lives in subdirectories (doc/source/api/...); its examples count too.
+    scanned = {path.relative_to(REPO_ROOT).as_posix() for path in documentation_files()}
+    with_examples = {
+        path.relative_to(REPO_ROOT).as_posix()
+        for path in DOC_SOURCE.rglob('*.rst')
+        if extract_python_blocks(path.read_text(encoding='utf-8'))
+    }
+    assert 'doc/source/api/exception.rst' in with_examples
+    assert with_examples - scanned == set()
 
 
 def test_documentation_contains_examples_to_validate():
