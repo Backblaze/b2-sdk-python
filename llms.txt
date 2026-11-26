@@ -12,6 +12,7 @@
 ## Guides
 
 - [Advanced usage](https://b2-sdk-python.readthedocs.io/en/master/advanced.html): Explore advanced SDK usage.
+- [Errors and retries](https://b2-sdk-python.readthedocs.io/en/master/errors_and_retries.html): Catch SDK errors and understand automatic retry behavior.
 - [Replication](https://github.com/Backblaze/b2-sdk-python/blob/master/doc/source/replication.rst): Configure replication.
 - [Server-side encryption](https://b2-sdk-python.readthedocs.io/en/master/server_side_encryption.html): Use server-side encryption.
 
