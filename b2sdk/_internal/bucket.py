@@ -98,7 +98,7 @@ class Bucket(metaclass=B2TraceMeta):
         :param str name: a bucket name
         :param str type_: a bucket type
         :param dict bucket_info: an info to store with a bucket
-        :param dict cors_rules: CORS rules to store with a bucket
+        :param list[dict] cors_rules: CORS rules to store with a bucket
         :param lifecycle_rules: lifecycle rules of the bucket
         :param int revision: a bucket revision number
         :param dict bucket_dict: a dictionary which contains bucket parameters
@@ -199,7 +199,7 @@ class Bucket(metaclass=B2TraceMeta):
         self,
         bucket_type: str | None = None,
         bucket_info: dict | None = None,
-        cors_rules: dict | None = None,
+        cors_rules: list[dict] | None = None,
         lifecycle_rules: list[LifecycleRule] | None = None,
         if_revision_is: int | None = None,
         default_server_side_encryption: EncryptionSetting | None = None,
@@ -212,7 +212,7 @@ class Bucket(metaclass=B2TraceMeta):
 
         :param bucket_type: a bucket type, e.g. ``allPrivate`` or ``allPublic``
         :param bucket_info: an info to store with a bucket
-        :param cors_rules: CORS rules to store with a bucket
+        :param cors_rules: list of CORS rule dictionaries to store with a bucket
         :param lifecycle_rules: lifecycle rules to store with a bucket
         :param if_revision_is: revision number, update the info **only if** *revision* equals to *if_revision_is*
         :param default_server_side_encryption: default server side encryption settings (``None`` if unknown)
@@ -261,7 +261,7 @@ class Bucket(metaclass=B2TraceMeta):
 
         :param file_id: a file ID
         :param progress_listener: a progress listener object to use, or ``None`` to not track progress
-        :param range_: two integer values, start and end offsets
+        :param range_: two integer values, start and inclusive end offsets
         :param encryption: encryption settings (``None`` if unknown)
         """
         return self.api.download_file_by_id(
@@ -287,7 +287,7 @@ class Bucket(metaclass=B2TraceMeta):
 
         :param file_name: a file name
         :param progress_listener: a progress listener object to use, or ``None`` to not track progress
-        :param range_: two integer values, start and end offsets
+        :param range_: two integer values, start and inclusive end offsets
         :param encryption: encryption settings (``None`` if unknown)
         """
         url = self.api.session.get_download_url_by_name(self.name, file_name)
@@ -302,8 +302,8 @@ class Bucket(metaclass=B2TraceMeta):
         """
         Gets a file version's by ID.
 
-        :param str file_id: the id of the file who's info will be retrieved.
-        :rtype: generator[b2sdk.v2.FileVersion]
+        :param str file_id: the id of the file whose info will be retrieved.
+        :rtype: b2sdk.v2.FileVersion
         """
         return self.api.get_file_info(file_id)
 
@@ -311,7 +311,7 @@ class Bucket(metaclass=B2TraceMeta):
         """
         Gets a file's DownloadVersion by name.
 
-        :param str file_name: the name of the file who's info will be retrieved.
+        :param str file_name: the name of the file whose info will be retrieved.
         """
         try:
             return self.api.download_version_factory.from_response_headers(
@@ -403,9 +403,9 @@ class Bucket(metaclass=B2TraceMeta):
                             when ``True``, just returns info about the most recent versions
         :param recursive: if ``True``, list folders recursively
         :param fetch_count: how many entries to list per API call or ``None`` to use the default. Acceptable values: 1 - 10000
-        :param with_wildcard: Accepts "*", "?", "[]" and "[!]" in folder_to_list, similarly to what shell does.
+        :param with_wildcard: Accepts "*", "?", "[]" and "[!]" in path, similarly to what shell does.
                               As of 1.19.0 it can only be enabled when recursive is also enabled.
-                              Also, in this mode, folder_to_list is considered to be a filename or a pattern.
+                              Also, in this mode, path is considered to be a filename or a pattern.
         :param filters: list of filters to apply to the files returned by the server.
         :rtype: generator[tuple[b2sdk.v2.FileVersion, str]]
         :returns: generator of (file_version, folder_name) tuples
@@ -549,7 +549,7 @@ class Bucket(metaclass=B2TraceMeta):
         unfinished large file in the bucket, starting at the given file, filtering by prefix.
 
         :param str,None start_file_id: a file ID to start from or None to start from the beginning
-        :param int,None batch_size: max file count
+        :param int,None batch_size: the number of files to fetch at a time from the server
         :param str,None prefix: file name prefix filter
         :rtype: generator[b2sdk.v2.UnfinishedLargeFile]
         """

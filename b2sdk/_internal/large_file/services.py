@@ -49,7 +49,7 @@ class LargeFileServices:
 
         :param str bucket_id: bucket id
         :param str,None start_file_id: a file ID to start from or None to start from the beginning
-        :param int,None batch_size: max file count
+        :param int,None batch_size: the number of files to fetch at a time from the server
         :param str,None prefix: file name prefix filter
         :rtype: generator[b2sdk.v2.UnfinishedLargeFile]
         """
