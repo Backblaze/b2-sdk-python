@@ -6,7 +6,7 @@ Advanced usage patterns
 
 B2 server API allows for creation of an object from existing objects. This allows to avoid transferring data from the source machine if the desired outcome can be (at least partially) constructed from what is already on the server.
 
-The way **b2sdk** exposes this functionality is through a few functions that allow the user to express the desired outcome and then the library takes care of planning and executing the work. Please refer to the table below to compare the support of object creation methods for various usage patterns.
+**b2sdk** provides functions that let you specify the desired outcome. The library plans and executes the work. Use the table below to compare object creation methods for different usage patterns.
 
 *****************
 Available methods
@@ -43,7 +43,7 @@ Some methods support overlapping ranges between local and remote files. **b2sdk*
 Streaming interface
 ===================
 
-Some object creation methods start writing data before reading the whole input (iterator). This can be used to write objects that do not have fully known contents without writing them first locally, so that they could be copied. Such usage pattern can be relevant to small devices which stream data to B2 from an external NAS, where caching large files such as media files or virtual machine images is not an option.
+Some object creation methods start writing data before reading the whole input (iterator). You can use these methods to write objects without fully known contents without first writing them locally for copying. Such usage pattern can be relevant to small devices which stream data to B2 from an external NAS, where caching large files such as media files or virtual machine images is not an option.
 
 Please see :ref:`advanced method support table <advanced_methods_support_table>` to see where streaming interface is supported.
 
@@ -316,7 +316,7 @@ Continuation
 Continuation of upload
 ======================
 
-In order to continue a simple upload session, **b2sdk** checks for any available sessions with of the same ``file name``, ``file_info`` and ``media type``, verifying the size of an object as much as possible.
+To continue a simple upload session, **b2sdk** checks available sessions for the same ``file name``, ``file_info`` and ``media type``. It verifies the object size as much as possible.
 
 To support automatic continuation, some advanced methods create a plan before starting copy/upload operations, saving the hash of that plan in ``file_info`` for increased reliability.
 
