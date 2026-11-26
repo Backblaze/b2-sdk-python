@@ -38,6 +38,10 @@ b2sdk>=2,<3
 
 Please refer to the [changelog](CHANGELOG.md).
 
+# Related projects
+
+- **[b2-mcp](https://github.com/backblaze-labs/b2-mcp)** — a Model Context Protocol server for B2.
+
 # Developer Info
 
 Please see our [contributing guidelines](CONTRIBUTING.md).
