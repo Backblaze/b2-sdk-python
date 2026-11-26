@@ -76,7 +76,7 @@ class Synchronizer:
 
     - Fails when the specified source directory doesn't exist or is empty.
       (see ``allow_empty_source`` argument)
-    - Fails when the source is newer.
+    - Fails when a destination file is newer than its source file.
       (see ``newer_file_mode`` argument)
     - Doesn't delete a file if it's present on the destination but not on the source.
       (see ``keep_days_or_delete`` and ``keep_days`` arguments)
@@ -109,7 +109,7 @@ class Synchronizer:
         :param b2sdk.v2.NewerFileSyncMode newer_file_mode: setting which determines handling for destination files newer than on the source
         :param b2sdk.v2.KeepOrDeleteMode keep_days_or_delete: setting which determines if we should delete or not delete or keep for `keep_days`
         :param b2sdk.v2.CompareVersionMode compare_version_mode: how to compare the source and destination files to find new ones
-        :param int compare_threshold: should be greater than 0, default is 0
+        :param int compare_threshold: must not be negative, default is 0
         :param int keep_days: if keep_days_or_delete is `b2sdk.v2.KeepOrDeleteMode.KEEP_BEFORE_DELETE`, then this should be greater than 0
         :param SyncPolicyManager sync_policy_manager: object which decides what to do with each file (upload, download, delete, copy, hide etc)
         :param b2sdk.v2.UploadMode upload_mode: determines how file uploads are handled
@@ -172,8 +172,13 @@ class Synchronizer:
     ):
         """
         Syncs two folders.  Always ensures that every file in the
-        source is also in the destination.  Deletes any file versions
-        in the destination older than history_days.
+        source is also in the destination.  By default, no files are deleted.
+        In DELETE mode, local destination files are removed when the source
+        file is absent or hidden. For B2 destinations, all existing versions
+        are removed if the source path is absent or a new version is transferred;
+        otherwise, only older versions are removed and the latest is kept.
+        KEEP_BEFORE_DELETE retains versions for the period specified by
+        keep_days before deletion.
 
         If scheduling fails, wait for already submitted actions to finish before
         propagating the scheduling error.

@@ -172,8 +172,12 @@ def sync_folders(
     """
     This is deprecated. Use the new Synchronizer class.
 
-    source is also in the destination.  Deletes any file versions
-    in the destination older than history_days.
+    Ensures source files are also in the destination.  By default, no files
+    are deleted.  The delete option removes local destination files when the
+    source file is absent or hidden. For B2 destinations, it removes all
+    existing versions if the source path is absent or a new version is
+    transferred; otherwise, it removes older versions and keeps the latest.
+    The keepDays option retains versions for the specified period before deletion.
 
     :param source_folder: source folder object
     :type source_folder: b2sdk._internal.scan.folder.AbstractFolder
