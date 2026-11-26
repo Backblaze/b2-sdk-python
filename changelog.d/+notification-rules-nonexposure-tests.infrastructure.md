@@ -1,0 +1,1 @@
+Add unit tests asserting that the signing secret and custom header value of a notification rule never appear in the SDK DEBUG trace or in exception text raised by `Bucket.set_notification_rules`, on the pre-authorization, API error and validation error paths (the success path is already covered by `test_notification_rule_tracing.py`).
