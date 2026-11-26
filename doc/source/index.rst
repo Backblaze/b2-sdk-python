@@ -42,6 +42,7 @@ Documentation index
    server_side_encryption
    replication
    advanced
+   errors_and_retries
    glossary
    api_types
    api_reference
