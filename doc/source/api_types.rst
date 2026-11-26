@@ -36,7 +36,7 @@ It also means that **b2sdk** developers may change the interface in the future a
 Interface version compatibility
 *******************************
 
-A :term:`numbered interface<b2sdk interface version>` will not be exactly identical throughout its lifespan, which should not be a problem for anyone, however just in case, the acceptable differences that the developer must tolerate, are listed below.
+A :term:`numbered interface<b2sdk interface version>` will not remain exactly identical throughout its lifespan. This should not be a problem. Developers must tolerate the acceptable differences listed below.
 
 Exceptions
 ==========
@@ -48,7 +48,7 @@ Extensions
 
 Even in the same interface version, objects/classes/enums can get additional fields and their representations such as ``as_dict()`` or ``__repr__`` (but not ``__str__``) may start to contain those fields.
 
-Methods and functions can start accepting new **optional** arguments. New methods can be added to existing classes.
+Methods and functions can start accepting new **optional** arguments. The library can add new methods to existing classes.
 
 Performance
 ===========
@@ -123,7 +123,7 @@ but that's a lot of work and we both know it's not going to happen). In practice
 permissive, but when considering whether to keep your patches private or public, please take into consideration the long-term cost of keeping up with a dynamic open-source project and/or
 the cost of missing the updates, especially those related to performance and reliability (as those are being actively developed in parallel to documentation).
 
-Internal interface modules are listed in :ref:`API Internal <api_internal>` section.
+The :ref:`API Internal <api_internal>` section lists internal interface modules.
 
 .. note::
   It is OK for you to use our internal interface (better that than copying our source files!), however, if you do, please pin your dependencies to **middle** version,

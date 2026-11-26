@@ -9,7 +9,7 @@ bucket being copied *from* is the **source**; the bucket being copied *to* is th
 bucket may be both at once, and a source bucket may replicate to several destinations under different
 rules.
 
-Replication is configured on the buckets, not on individual files: you attach a
+You configure replication on the buckets, not on individual files. Attach a
 :class:`b2sdk.v3.ReplicationConfiguration` to each side, and B2 does the copying. The SDK's job is to
 help you write that configuration, create the application keys it needs, and inspect the outcome.
 
@@ -175,8 +175,8 @@ Monitoring a rule
     >>> monitor = ReplicationMonitor(bucket=source_bucket, rule=rule)
     >>> report = monitor.scan()
 
-The monitor scans the source and, by default, the matching files on the destination so it can compare
-them. Pass ``scan_destination=False`` to look at the source alone, which is much cheaper.
+By default, the monitor scans the source and matching files on the destination. It can then compare
+them. Pass ``scan_destination=False`` to scan only the source, which is much cheaper.
 
 Two optional arguments matter in practice. ``destination_api`` takes a second
 :class:`b2sdk.v3.B2Api`, and is required when the destination bucket is on another account; omit it and
@@ -214,8 +214,7 @@ side of the pair exists, or because the destination was not scanned.
 Interpreting partial results
 ============================
 
-A scan is a snapshot of a system that is still moving, so mixed results are normal rather than a sign of
-failure:
+A scan is a snapshot of a system that is still moving. Mixed results are normal. They are not a sign of failure:
 
 * **A destination file is missing entirely.** The destination fields are ``None``. Expected while a file
   is still ``PENDING``; worth investigating once the source reads ``COMPLETED``.
