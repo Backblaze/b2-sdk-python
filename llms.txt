@@ -28,6 +28,7 @@
 
 ## Optional
 
+- [b2-mcp](https://github.com/backblaze-labs/b2-mcp): a Model Context Protocol server for B2.
 - [Changelog](https://github.com/Backblaze/b2-sdk-python/blob/master/CHANGELOG.md): Review release changes.
 - [Security](https://github.com/Backblaze/b2-sdk-python/blob/master/SECURITY.md): Report security concerns.
 - [Release process](https://github.com/Backblaze/b2-sdk-python/blob/master/README.release.md): Review release procedures.
