@@ -1,0 +1,33 @@
+# B2 Python SDK
+
+> The B2 Python SDK provides Python interfaces for the Backblaze B2 Native API.
+
+## Start here
+
+- [README](https://github.com/Backblaze/b2-sdk-python/blob/master/README.md): Overview and entry points.
+- [Install](https://b2-sdk-python.readthedocs.io/en/master/install.html): Install the SDK.
+- [Quick start](https://b2-sdk-python.readthedocs.io/en/master/quick_start.html): Start using the SDK.
+- [Tutorial](https://b2-sdk-python.readthedocs.io/en/master/tutorial.html): Follow a walkthrough.
+
+## Guides
+
+- [Advanced usage](https://b2-sdk-python.readthedocs.io/en/master/advanced.html): Explore advanced SDK usage.
+- [Replication](https://github.com/Backblaze/b2-sdk-python/blob/master/doc/source/replication.rst): Configure replication.
+- [Server-side encryption](https://b2-sdk-python.readthedocs.io/en/master/server_side_encryption.html): Use server-side encryption.
+
+## API reference
+
+- [B2Api](https://b2-sdk-python.readthedocs.io/en/master/api/api.html): Work with the B2 API.
+- [Bucket](https://b2-sdk-python.readthedocs.io/en/master/api/bucket.html): Work with buckets and files.
+- [Exceptions](https://b2-sdk-python.readthedocs.io/en/master/api/exception.html): Inspect SDK exceptions.
+- [Raw simulator](https://b2-sdk-python.readthedocs.io/en/master/api/internal/raw_simulator.html): Explore the internal B2 simulator.
+
+## Contributing and testing
+
+- [Contributing](https://github.com/Backblaze/b2-sdk-python/blob/master/CONTRIBUTING.md): Find contribution and testing guidance.
+
+## Optional
+
+- [Changelog](https://github.com/Backblaze/b2-sdk-python/blob/master/CHANGELOG.md): Review release changes.
+- [Security](https://github.com/Backblaze/b2-sdk-python/blob/master/SECURITY.md): Report security concerns.
+- [Release process](https://github.com/Backblaze/b2-sdk-python/blob/master/README.release.md): Review release procedures.
