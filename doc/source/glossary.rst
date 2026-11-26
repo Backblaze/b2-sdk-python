@@ -11,7 +11,7 @@ Glossary
       An identifier of the B2 account (not login). Looks like this: ``4ba5845d7aaf``.
 
     application key ID
-      Since every :term:`account ID` can have multiple access keys associated with it, the keys need to be distinguished from each other. :term:`application key ID` is an identifier of the access key. There are two types of keys: :term:`master application key` and :term:`non-master application key`.
+      Each :term:`account ID` can have multiple application keys. An :term:`application key ID` distinguishes application keys for the same account. There are two types of keys: :term:`master application key` and :term:`non-master application key`.
 
     application key
       The secret associated with an :term:`application key ID`, used to authenticate with the server. Looks like this: ``N2Zug0evLcHDlh_L0Z0AJhiGGdY`` or ``0a1bce5ea463a7e4b090ef5bd6bd82b851928ab2c6`` or ``K0014pbwo1zxcIVMnqSNTfWHReU/O3s``
