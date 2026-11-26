@@ -26,6 +26,7 @@ Integration tests need real B2 credentials; see the published guide for details.
 ## Before you open a pull request
 
 * Follow the [writing style guide](docs/writing-style.md) for documentation and docstrings.
+* Use the [testing guide](docs/testing.md) to choose and report checks.
 * **Add a changelog entry.** Every PR needs at least one news fragment in `changelog.d`, or CI will
   fail. Name it `{issue_number}.{type}.md` (e.g. `157.fixed.md`) when the PR closes an issue, or
   `+{unique_string}.{type}.md` (e.g. `+foobar.fixed.md`) otherwise. Valid types are `fixed`, `changed`,
