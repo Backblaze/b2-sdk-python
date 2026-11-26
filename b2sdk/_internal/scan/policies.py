@@ -113,13 +113,14 @@ class ScanPoliciesManager:
     Policy object used when scanning folders, used to decide
     which files to include in the list of files.
 
-    Code that scans through files should at least use should_exclude_file()
-    to decide whether each file should be included; it will check include/exclude
-    patterns for file names, as well as patterns for excluding directories.
-
-    Code that scans may optionally use should_exclude_directory() to test whether
-    it can skip a directory completely and not bother listing the files and
-    sub-directories in it.
+    Use should_exclude_relative_path(), should_exclude_local_path(), or
+    should_exclude_b2_file_version() to filter files using file-name include
+    and exclude patterns. These checks assume their directories have already
+    been checked for exclusion. Use should_exclude_local_directory() or
+    should_exclude_b2_directory() to skip excluded directories without listing
+    their files and sub-directories. The v1 policy manager instead provides
+    should_exclude_file(), which checks both file-name include/exclude patterns
+    and directory-exclusion patterns, and should_exclude_directory().
     """
 
     def __init__(
