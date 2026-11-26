@@ -35,11 +35,9 @@ under `sse_c_key_id` in `fileInfo`. This allows developers to create key manager
 securely in a file or a database. Implementing such managers, and linking them to :class:`b2sdk.v3.AbstractSyncEncryptionSettingsProvider`
 implementations (necessary for using Sync) is outside of the scope of this library.
 
-There is, however, a convention to such managers that authors of this library strongly suggest: if a manager needs to generate
-a new key-key_id pair for uploading, it's best to commit this data to the underlying storage before commencing the upload.
-The justification of such approach is: should the key-key_id pair be committed to permanent storage after completing an IO
-operation, committing could fail after successfully upload the data. This data, however, is now just a random blob, that
-can never be read, since the key to decrypting it is lost.
+The library authors strongly suggest a convention for these managers. If a manager needs to generate a new key-key_id pair
+for uploading, the library authors recommend committing the pair to storage before starting the upload. If the manager commits the pair after the I/O
+operation, the commit could fail after the upload succeeds. The uploaded data can never be read if the decryption key is lost.
 
 This approach comes an overhead: to download a file, its `fileInfo` has to be known. This means that fetching metadata
 is required before downloading.
