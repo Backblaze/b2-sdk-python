@@ -79,12 +79,12 @@ Synchronization
     To learn more about sync, see :ref:`sync`.
 
 Sync uses an encryption provider. In principle, it's a mapping between file metadata (bucket_name, file_info, etc) and
-`EncryptionSetting`. The reason for employing such a mapping, rather than a single `EncryptionSetting`, is the fact that
-users of Sync do not necessarily know up front what files it's going to upload and download. This approach enables using
-unique keys, or key identifiers, across files. This is covered in greater detail in :ref:`server_side_encryption`.
+`EncryptionSetting`. Users of Sync do not necessarily know in advance which files it will upload and download.
+A mapping allows for this uncertainty, unlike a single `EncryptionSetting`. This approach enables using
+unique keys, or key identifiers, across files. For more detail, see :ref:`server_side_encryption`.
 
-In the example above, Sync will assume `SSE-B2` for all files in `bucket1`, `SSE-C` with the key provided for `bucket2`
-and rely on bucket default for `bucket3`. Should developers need to provide keys per file (and not per bucket), they
+In the example above, Sync will assume `SSE-B2` for all files in `bucket1`.
+It will use `SSE-C` with the provided key for `bucket2` and rely on the bucket default for `bucket3`. Should developers need to provide keys per file (and not per bucket), they
 need to implement their own :class:`b2sdk.v3.AbstractSyncEncryptionSettingsProvider`.
 
 **************
@@ -370,8 +370,8 @@ Copy file
 
 If the ``content length`` is not provided and the file is larger than 5GB, ``copy`` would not succeed and error would be raised. If length is provided, then the file may be copied as a large file. Maximum copy part size can be set by ``max_copy_part_size`` - if not set, it will default to 5GB. If ``max_copy_part_size`` is lower than :term:`absoluteMinimumPartSize`, file would be copied in single request - this may be used to force copy in single request large file that fits in server small file limit.
 
-Copying files allows for providing encryption settings for both source and destination files - `SSE-C` encrypted source files
-cannot be used unless the proper key is provided.
+When copying files, you can provide encryption settings for both source and destination files.
+You cannot use `SSE-C` encrypted source files without the proper key.
 
 If you want to copy just the part of the file, then you can specify the offset and content length:
 
@@ -414,11 +414,10 @@ Cancel large file uploads
 Direct file operations
 **********************
 
-Methods for manipulating object (file) state mentioned in sections above are low level and useful when users have access
+The file state methods described above are low level. They are useful when users have access
 to basic information, like file id and name. Many API methods, however, return python objects representing files
 (:class:`b2sdk.v3.FileVersion` and :class:`b2sdk.v3.DownloadVersion`), that provide high-level access to methods
-manipulating their state. As a rule, these methods don't change properties of python objects they are called on, but
-return new objects instead.
+manipulating their state. As a rule, these methods return new objects instead of changing the properties of the python objects they are called on.
 
 Obtain file representing objects
 ================================
