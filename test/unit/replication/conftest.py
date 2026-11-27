@@ -25,7 +25,8 @@ def destination_bucket(b2api) -> Bucket:
 
 @pytest.fixture
 def source_bucket(b2api, destination_bucket) -> Bucket:
-    bucket = b2api.create_bucket('source-bucket', 'allPublic')
+    # Object Lock, so a scan test can store a file with retention (B2 refuses it elsewhere).
+    bucket = b2api.create_bucket('source-bucket', 'allPublic', is_file_lock_enabled=True)
 
     bucket.replication = ReplicationConfiguration(
         rules=[

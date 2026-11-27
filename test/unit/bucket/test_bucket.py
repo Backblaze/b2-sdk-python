@@ -735,6 +735,8 @@ class TestLs(TestCaseWithBucket):
 
         # Real B2 refuses this delete with 401 access_denied (the b2_delete_file_version error
         # table), which the SDK raises as Unauthorized; RawSimulator raises AccessDenied.
+        # TODO: once --b2-simulator is the default, assert only the real-B2 error:
+        # Unauthorized with code 'access_denied' (401), and drop AccessDenied.
         with pytest.raises((AccessDenied, Unauthorized)) as refusal:
             self.bucket.delete_file_version(file_id, 'hello.txt')
         if isinstance(refusal.value, Unauthorized):
@@ -2084,7 +2086,9 @@ class TestUpload(TestCaseWithBucket):
         self.assertEqual(file_info.cache_control, 'max-age=3600')
 
     def test_upload_bytes_progress(self):
-        data = b'hello world'
+        # Three parts, so the listener gets an update per part. Over HTTP a body is read in one go,
+        # so a single small file reports only its total; RawSimulator's chunked reads hid that.
+        data = self._make_data(self.simulator.MIN_PART_SIZE * 3)
         progress_listener = StubProgressListener()
         self.bucket.upload_bytes(data, 'file1', progress_listener=progress_listener)
         self.assertTrue(progress_listener.is_valid())
@@ -2191,6 +2195,9 @@ class TestUpload(TestCaseWithBucket):
             # B2 refuses the upload with 400 bad_request "Sha1 did not match data received"
             # (b2_upload_file), which the SDK raises as BadRequest; RawSimulator raises
             # FileSha1Mismatch.
+            # TODO: once --b2-simulator is the default, assert only the real-B2 error: BadRequest
+            # with code 'bad_request' and message 'Sha1 did not match data received' (400), and
+            # drop FileSha1Mismatch.
             with pytest.raises((FileSha1Mismatch, BadRequest)) as refusal:
                 self.bucket.upload_local_file(
                     path,

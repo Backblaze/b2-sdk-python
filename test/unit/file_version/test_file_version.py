@@ -171,6 +171,8 @@ class TestFileVersion:
 
         # Real B2 refuses this delete with 401 access_denied (the b2_delete_file_version error
         # table), which the SDK raises as Unauthorized; RawSimulator raises AccessDenied.
+        # TODO: once --b2-simulator is the default, assert only the real-B2 error:
+        # Unauthorized with code 'access_denied' (401), and drop AccessDenied.
         with pytest.raises((AccessDenied, Unauthorized)) as refusal:
             locked_file_version.delete()
         if isinstance(refusal.value, Unauthorized):
