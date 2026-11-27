@@ -26,6 +26,8 @@ import pytest
 
 pytest.register_assert_rewrite('test.unit')
 
+from test.unit.b2_simulator import raw_api_class  # noqa: E402
+
 
 def get_api_versions():
     return [
@@ -178,7 +180,7 @@ def b2api():
     account_info = StubAccountInfo()
     api = B2Api(
         account_info,
-        api_config=B2HttpApiConfig(_raw_api_class=RawSimulator),
+        api_config=B2HttpApiConfig(_raw_api_class=raw_api_class(RawSimulator)),
     )
 
     simulator = api.session.raw_api

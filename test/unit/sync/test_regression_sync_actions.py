@@ -35,6 +35,7 @@ from apiver_deps_exception import ChecksumMismatch, TruncatedOutput
 from b2sdk._internal.scan.path import B2Path
 from b2sdk._internal.sync.action import B2CopyAction, B2DownloadAction
 from test.known_defect import expect
+from test.unit.b2_simulator import raw_api_class
 
 pytestmark = [pytest.mark.apiver(from_ver=2)]
 
@@ -46,7 +47,7 @@ def api_and_bucket():
     api = B2Api(
         InMemoryAccountInfo(),
         cache=InMemoryCache(),
-        api_config=B2HttpApiConfig(_raw_api_class=RawSimulator),
+        api_config=B2HttpApiConfig(_raw_api_class=raw_api_class(RawSimulator)),
     )
     account_id, key = api.session.raw_api.create_account()
     api.authorize_account(application_key_id=account_id, application_key=key, realm='production')

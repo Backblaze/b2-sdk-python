@@ -29,7 +29,7 @@ from b2sdk._internal.replication import monitoring as monitoring_module
 SSE_C_AES = EncryptionSetting(
     mode=EncryptionMode.SSE_C,
     algorithm=EncryptionAlgorithm.AES256,
-    key=EncryptionKey(secret=b'some_key', key_id='some-id'),
+    key=EncryptionKey(secret=b'some_key'.ljust(32, b'.'), key_id='some-id'),
 )
 
 RETENTION_GOVERNANCE = FileRetentionSetting(RetentionMode.GOVERNANCE, retain_until=1)

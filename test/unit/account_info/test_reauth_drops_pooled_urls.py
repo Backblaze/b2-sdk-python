@@ -18,6 +18,8 @@ import pytest
 from apiver_deps import ALL_CAPABILITIES, B2HttpApiConfig, B2Session, RawSimulator
 from apiver_deps_exception import InvalidAuthToken, MissingAccountData
 
+from test.unit.b2_simulator import raw_api_class
+
 from .fixtures import *  # noqa: F401, F403
 
 
@@ -25,11 +27,12 @@ from .fixtures import *  # noqa: F401, F403
 def session_with_keys(account_info):
     session = B2Session(
         account_info=account_info,
-        api_config=B2HttpApiConfig(_raw_api_class=RawSimulator),
+        api_config=B2HttpApiConfig(_raw_api_class=raw_api_class(RawSimulator)),
     )
     simulator = session.raw_api
-    account_id, master_key = simulator.create_account()
-    session.authorize_account('production', account_id, master_key)
+    key_id, master_key = simulator.create_account()
+    session.authorize_account('production', key_id, master_key)
+    account_id = account_info.get_account_id()  # B2 account ids differ from key ids
     bucket_id = session.create_bucket(account_id, 'reauth-test', 'allPrivate')['bucketId']
     file_id = session.start_large_file(bucket_id, 'large.bin', 'application/octet-stream', {})[
         'fileId'
@@ -471,7 +474,7 @@ def test_upload_preserves_public_session_getter_override(
 
     overridden = SessionWithOverride(
         account_info=session.account_info,
-        api_config=B2HttpApiConfig(_raw_api_class=RawSimulator),
+        api_config=B2HttpApiConfig(_raw_api_class=raw_api_class(RawSimulator)),
     )
     overridden.raw_api = session.raw_api
     _upload(overridden, bucket_id, file_id, large_file=large_file)

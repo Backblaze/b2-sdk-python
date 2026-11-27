@@ -52,6 +52,7 @@ from apiver_deps import (
 from apiver_deps_exception import BadRequest, MissingAccountData
 
 from b2sdk._internal.b2http import B2Http
+from test.unit.b2_simulator import raw_api_class
 
 # Random per run, so no credential-shaped literal lives in the source.
 SECRET_VALUES = {
@@ -120,7 +121,10 @@ def http_rejecting_bucket(b2api, mocker):
 @pytest.fixture
 def unauthorized_bucket():
     """A bucket whose account info was cleared, so the call fails before it is authorized."""
-    api = B2Api(InMemoryAccountInfo(), api_config=B2HttpApiConfig(_raw_api_class=RawSimulator))
+    api = B2Api(
+        InMemoryAccountInfo(),
+        api_config=B2HttpApiConfig(_raw_api_class=raw_api_class(RawSimulator)),
+    )
     account_id, master_key = api.session.raw_api.create_account()
     api.authorize_account(
         application_key_id=account_id, application_key=master_key, realm='production'

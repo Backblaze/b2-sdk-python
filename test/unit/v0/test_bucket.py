@@ -17,6 +17,8 @@ from io import BytesIO
 
 import pytest
 
+from test.unit.b2_simulator import raw_api_class
+
 from ..test_base import TestBase
 from .deps import (
     NO_RETENTION_FILE_SETTING,
@@ -63,10 +65,11 @@ from .deps_exception import (
     WrongEncryptionSettingForFileWrite,
 )
 
+# SSE-C keys must be 256-bit (32-byte) AES keys, as B2 requires.
 SSE_C_AES = EncryptionSetting(
     mode=EncryptionMode.SSE_C,
     algorithm=EncryptionAlgorithm.AES256,
-    key=EncryptionKey(secret=b'some_key', key_id='some-id'),
+    key=EncryptionKey(secret=b'some_key'.ljust(32, b'.'), key_id='some-id'),
 )
 SSE_C_AES_NO_SECRET = EncryptionSetting(
     mode=EncryptionMode.SSE_C,
@@ -76,7 +79,7 @@ SSE_C_AES_NO_SECRET = EncryptionSetting(
 SSE_C_AES_2 = EncryptionSetting(
     mode=EncryptionMode.SSE_C,
     algorithm=EncryptionAlgorithm.AES256,
-    key=EncryptionKey(secret=b'some_other_key', key_id='some-id-2'),
+    key=EncryptionKey(secret=b'some_other_key'.ljust(32, b'.'), key_id='some-id-2'),
 )
 SSE_C_AES_2_NO_SECRET = EncryptionSetting(
     mode=EncryptionMode.SSE_C,
@@ -168,7 +171,7 @@ class TestCaseWithBucket(TestBase):
 
     def setUp(self):
         self.bucket_name = 'my-bucket'
-        self.simulator = self.RAW_SIMULATOR_CLASS()
+        self.simulator = raw_api_class(self.RAW_SIMULATOR_CLASS)()
         self.account_info = StubAccountInfo()
         self.api = B2Api(self.account_info, raw_api=self.simulator)
         (self.account_id, self.master_key) = self.simulator.create_account()

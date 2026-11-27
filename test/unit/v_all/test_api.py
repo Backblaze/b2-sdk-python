@@ -24,6 +24,8 @@ from apiver_deps import (
 )
 from apiver_deps_exception import BucketIdNotFound
 
+from test.unit.b2_simulator import raw_api_class
+
 from ..test_base import TestBase
 
 
@@ -108,7 +110,9 @@ class TestApi(TestBase):
         self.account_info = InMemoryAccountInfo()
         self.cache = InMemoryCache()
         self.api = B2Api(
-            self.account_info, self.cache, api_config=B2HttpApiConfig(_raw_api_class=RawSimulator)
+            self.account_info,
+            self.cache,
+            api_config=B2HttpApiConfig(_raw_api_class=raw_api_class(RawSimulator)),
         )
         self.raw_api = self.api.session.raw_api
         (self.application_key_id, self.master_key) = self.raw_api.create_account()
@@ -155,16 +159,18 @@ class TestApi(TestBase):
 
         download_url = self.api.get_download_url_for_file_name('bucket1', 'some-file.txt')
 
-        assert download_url == 'http://download.example.com/file/bucket1/some-file.txt'
+        base_url = self.account_info.get_download_url()
+        assert download_url == f'{base_url}/file/bucket1/some-file.txt'
 
     def test_get_download_url_for_fileid(self):
         self._authorize_account()
 
         download_url = self.api.get_download_url_for_fileid('file-id')
 
+        base_url = self.account_info.get_download_url()
         if apiver_deps.V >= 3:
-            exp_url = 'http://download.example.com/b2api/v4/b2_download_file_by_id?fileId=file-id'
+            exp_url = f'{base_url}/b2api/v4/b2_download_file_by_id?fileId=file-id'
         else:
-            exp_url = 'http://download.example.com/b2api/v3/b2_download_file_by_id?fileId=file-id'
+            exp_url = f'{base_url}/b2api/v3/b2_download_file_by_id?fileId=file-id'
 
         assert download_url == exp_url

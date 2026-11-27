@@ -15,6 +15,30 @@ The examples use Python 3.13. Use `nox -l` to list the sessions for your install
 
 The unit session selects each API version with the `--api` option.
 
+## Unit tests on the standalone b2-simulator (opt-in)
+
+The `--b2-simulator` option runs the simulator-backed unit tests against
+b2-simulator (`backblaze-labs/b2-simulator`) over HTTP instead of the in-process `RawSimulator`.
+The default run does not change. The option is in trial: many tests still fail with it.
+The b2-simulator repository is not public yet, so only people with access to it can use the option.
+
+1. Clone b2-simulator. It needs Node.js 20.6 or later.
+2. Set `B2_SIMULATOR_DIR` to the clone.
+3. Run `uv run --group test pytest --api=v3 -n auto --b2-simulator test/unit`.
+
+The plugin in [`test/unit/b2_simulator.py`](../test/unit/b2_simulator.py) starts one simulator for each pytest process.
+With pytest-xdist, each worker gets its own simulator. The plugin resets the simulator before each test.
+The reset sets the part sizes to `RawSimulator.MIN_PART_SIZE` (200 bytes).
+Use `@pytest.mark.b2_simulator_config(...)` to send other reset settings for one test.
+The raw API's `MIN_PART_SIZE` attribute stays 200 bytes; a test that changes the part size must not size its data from it.
+A simulator stops when the pytest process that started it stops.
+If `B2_SIMULATOR_DIR` is missing or wrong, or `node` is not on `PATH`, the run stops with a usage error. It does not skip tests.
+
+Shared setups get their raw API class from `raw_api_class()`: the `b2api` fixture, `TestCaseWithBucket`, and the other
+per-class setups. The option replaces the SDK's `RawSimulator` only. A test's own `RawSimulator` subclass stays in-process.
+Tests that construct `RawSimulator()` directly also stay in-process.
+Tests marked `needs_b2_simulator` run only with the option.
+
 The integration fixture requires `B2_TEST_APPLICATION_KEY_ID` and `B2_TEST_APPLICATION_KEY`.
 If either variable is unset, the credential fixture fails instead of skipping the test.
 Run integration tests only with an appropriate test account.

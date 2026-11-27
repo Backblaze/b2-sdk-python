@@ -43,6 +43,8 @@ from apiver_deps_exception import (
     WrongEncryptionModeForBucketDefault,
 )
 
+from test.unit.b2_simulator import raw_api_class
+
 from ..test_base import create_key, create_key_multibucket
 
 if apiver_deps.V <= 1:
@@ -57,7 +59,9 @@ class TestApi:
         self.account_info = InMemoryAccountInfo()
         self.cache = InMemoryCache()
         self.api = B2Api(
-            self.account_info, self.cache, api_config=B2HttpApiConfig(_raw_api_class=RawSimulator)
+            self.account_info,
+            self.cache,
+            api_config=B2HttpApiConfig(_raw_api_class=raw_api_class(RawSimulator)),
         )
         self.raw_api = self.api.session.raw_api
         (self.application_key_id, self.master_key) = self.raw_api.create_account()
@@ -122,22 +126,23 @@ class TestApi:
     def test_get_file_info_by_name(self):
         self._authorize_account()
         bucket = self.api.create_bucket('bucket1', 'allPrivate')
-        bucket.upload_bytes(
+        uploaded = bucket.upload_bytes(
             b'hello world',
             'file',
         )
         result = self.api.get_file_info_by_name('bucket1', 'file')
 
+        # The server assigns the id, the timestamp and the stored content type at upload.
         expected_result = {
-            'fileId': '9999',
+            'fileId': uploaded.id_,
             'fileName': 'file',
             'fileInfo': {},
             'serverSideEncryption': {'algorithm': 'AES256', 'mode': 'SSE-B2'},
             'legalHold': None,
             'fileRetention': {'mode': None, 'retainUntilTimestamp': None},
             'size': 11,
-            'uploadTimestamp': 5000,
-            'contentType': 'b2/x-auto',
+            'uploadTimestamp': uploaded.upload_timestamp,
+            'contentType': uploaded.content_type,
             'contentSha1': '2aae6c35c94fcfb415dbe95f408b9ce91ee846ed',
             'replicationStatus': None,
         }
@@ -195,7 +200,9 @@ class TestApi:
 
     def test_get_file_info_by_name_with_properties(self):
         encr_setting = EncryptionSetting(
-            EncryptionMode.SSE_C, EncryptionAlgorithm.AES256, EncryptionKey(b'secret', None)
+            EncryptionMode.SSE_C,
+            EncryptionAlgorithm.AES256,
+            EncryptionKey(b'secret'.ljust(32, b'.'), None),
         )
         lh_setting = LegalHold.ON
         retention_setting = FileRetentionSetting(RetentionMode.COMPLIANCE, 100)
@@ -773,32 +780,12 @@ class TestApi:
     @pytest.mark.apiver(from_ver=2)
     def test_list_keys_v2(self):
         self._authorize_account()
-        for i in range(20):
-            self.api.create_key(['readFiles'], f'testkey{i}')
+        existing_ids = [key.id_ for key in self.api.list_keys()]
+        created_ids = [self.api.create_key(['readFiles'], f'testkey{i}').id_ for i in range(20)]
         with mock.patch.object(self.api, 'DEFAULT_LIST_KEY_COUNT', 10):
             keys = list(self.api.list_keys())
-        assert [key.id_ for key in keys] == [
-            'appKeyId0',
-            'appKeyId1',
-            'appKeyId10',
-            'appKeyId11',
-            'appKeyId12',
-            'appKeyId13',
-            'appKeyId14',
-            'appKeyId15',
-            'appKeyId16',
-            'appKeyId17',
-            'appKeyId18',
-            'appKeyId19',
-            'appKeyId2',
-            'appKeyId3',
-            'appKeyId4',
-            'appKeyId5',
-            'appKeyId6',
-            'appKeyId7',
-            'appKeyId8',
-            'appKeyId9',
-        ]
+        # Keys are listed in key id order, across pages.
+        assert [key.id_ for key in keys] == sorted(existing_ids + created_ids)
         assert isinstance(keys[0], ApplicationKey)
 
     def test_get_key(self):

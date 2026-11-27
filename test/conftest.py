@@ -11,7 +11,8 @@ import concurrent.futures
 
 import pytest
 
-pytest_plugins = ['b2sdk.v3.testing', 'test.junit_subtests']
+# test.unit.b2_simulator: the opt-in --b2-simulator option for the unit tests.
+pytest_plugins = ['b2sdk.v3.testing', 'test.junit_subtests', 'test.unit.b2_simulator']
 
 
 def pytest_configure(config):

@@ -23,6 +23,8 @@ from apiver_deps import (
     ReplicationSetupHelper,
 )
 
+from test.unit.b2_simulator import raw_api_class
+
 from ..test_base import TestBase
 
 logger = logging.getLogger(__name__)
@@ -33,7 +35,9 @@ class TestReplication(TestBase):
         self.account_info = InMemoryAccountInfo()
         self.cache = InMemoryCache()
         self.api = B2Api(
-            self.account_info, self.cache, api_config=B2HttpApiConfig(_raw_api_class=RawSimulator)
+            self.account_info,
+            self.cache,
+            api_config=B2HttpApiConfig(_raw_api_class=raw_api_class(RawSimulator)),
         )
         self.raw_api = self.api.session.raw_api
         self.application_key_id, self.master_key = self.raw_api.create_account()
@@ -50,6 +54,7 @@ class TestReplication(TestBase):
         self._authorize_account()
         source_bucket = self.api.create_bucket('bucket1', 'allPrivate')
         destination_bucket = self.api.create_bucket('bucket2', 'allPrivate')
+        destination_bucket_id = destination_bucket.id_
         logger.info('preparations complete, starting the test')
         rsh = ReplicationSetupHelper()
         source_bucket, destination_bucket = rsh.setup_both(
@@ -83,7 +88,7 @@ class TestReplication(TestBase):
 
         assert source_bucket.replication.rules == [
             ReplicationRule(
-                destination_bucket_id='bucket_1',
+                destination_bucket_id=destination_bucket_id,
                 name='aa',
                 file_name_prefix='ab',
                 is_enabled=True,
@@ -113,14 +118,14 @@ class TestReplication(TestBase):
         new_source_application_key = keymap['bucket1-replisrc']
         assert source_bucket.replication.rules == [
             ReplicationRule(
-                destination_bucket_id='bucket_1',
+                destination_bucket_id=destination_bucket_id,
                 name='aa',
                 file_name_prefix='ab',
                 is_enabled=True,
                 priority=128,
             ),
             ReplicationRule(
-                destination_bucket_id='bucket_1',
+                destination_bucket_id=destination_bucket_id,
                 name='bucket2',
                 file_name_prefix='ad',
                 is_enabled=True,
