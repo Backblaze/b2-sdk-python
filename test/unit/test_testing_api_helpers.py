@@ -18,6 +18,13 @@ from b2sdk._internal.exception import InvalidAuthToken
 from b2sdk._internal.raw_simulator import RawSimulator
 from b2sdk._internal.testing.helpers.api import authorize, get_b2_auth_data, get_realm
 
+# These helpers are checked with every HTTP request refused, so they need an in-process server.
+pytestmark = [
+    pytest.mark.rawsimulator(
+        reason='tests the live-test helpers with HTTP forbidden, on the in-process RawSimulator'
+    )
+]
+
 
 @pytest.fixture
 def simulator_config(mocker):

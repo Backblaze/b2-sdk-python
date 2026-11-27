@@ -7,7 +7,7 @@
 # License https://www.backblaze.com/using_b2_code.html
 #
 ######################################################################
-"""Tests of the opt-in ``--b2-simulator`` pytest plugin (``test/unit/b2_simulator.py``)."""
+"""Tests of the b2-simulator pytest plugin (``test/unit/b2_simulator.py``)."""
 
 from __future__ import annotations
 
@@ -26,7 +26,7 @@ from apiver_deps import RawSimulator
 ROOT = Path(__file__).parents[2]
 
 
-def run_pytest(tmp_path, test_source, *args, env_update=None, env_remove=()):
+def run_pytest(tmp_path, test_source, *args, env_update=None, env_remove=(), unit=True):
     """Run pytest in a subprocess on one generated test file, with the unit-test plugins loaded."""
     test_file = tmp_path / 'test_generated.py'
     test_file.write_text(textwrap.dedent(test_source))
@@ -41,8 +41,7 @@ def run_pytest(tmp_path, test_source, *args, env_update=None, env_remove=()):
             'pytest',
             '-p',
             'test.conftest',
-            '-p',
-            'test.unit.conftest',
+            *(['-p', 'test.unit.conftest'] if unit else []),
             '-p',
             'no:cacheprovider',
             '-p',
@@ -68,24 +67,20 @@ def test_nothing():
 """
 
 
-def test_opt_in_without_a_checkout_fails_and_names_the_variable(tmp_path):
-    completed = run_pytest(
-        tmp_path, PASSING_TEST, '--b2-simulator', env_remove=('B2_SIMULATOR_DIR',)
-    )
+def test_without_a_checkout_the_run_fails_and_names_the_variable(tmp_path):
+    completed = run_pytest(tmp_path, PASSING_TEST, env_remove=('B2_SIMULATOR_DIR',))
     assert completed.returncode == pytest.ExitCode.USAGE_ERROR, completed.stdout
-    assert '--b2-simulator needs B2_SIMULATOR_DIR' in completed.stderr
+    assert 'the unit tests need B2_SIMULATOR_DIR' in completed.stderr
+    assert '--rawsimulator' in completed.stderr
     assert 'passed' not in completed.stdout
     assert 'skipped' not in completed.stdout
 
 
-def test_opt_in_with_a_directory_that_is_not_a_checkout_fails(tmp_path):
+def test_a_directory_that_is_not_a_checkout_fails(tmp_path):
     not_a_checkout = tmp_path / 'empty'
     not_a_checkout.mkdir()
     completed = run_pytest(
-        tmp_path,
-        PASSING_TEST,
-        '--b2-simulator',
-        env_update={'B2_SIMULATOR_DIR': str(not_a_checkout)},
+        tmp_path, PASSING_TEST, env_update={'B2_SIMULATOR_DIR': str(not_a_checkout)}
     )
     assert completed.returncode == pytest.ExitCode.USAGE_ERROR, completed.stdout
     expected = str(not_a_checkout / 'bin' / 'simulator' / 'serve.mjs')
@@ -93,7 +88,13 @@ def test_opt_in_with_a_directory_that_is_not_a_checkout_fails(tmp_path):
     assert 'passed' not in completed.stdout
 
 
-def test_without_the_flag_the_fixtures_use_raw_simulator(tmp_path):
+def test_the_old_opt_in_flag_is_refused(tmp_path):
+    completed = run_pytest(tmp_path, PASSING_TEST, '--b2-simulator')
+    assert completed.returncode == pytest.ExitCode.USAGE_ERROR, completed.stdout
+    assert '--b2-simulator' in completed.stderr
+
+
+def test_with_rawsimulator_the_fixtures_use_raw_simulator(tmp_path):
     completed = run_pytest(
         tmp_path,
         """
@@ -102,17 +103,52 @@ def test_without_the_flag_the_fixtures_use_raw_simulator(tmp_path):
         def test_fixture(b2api):
             assert type(b2api.session.raw_api) is RawSimulator
         """,
-        # Even with a checkout configured, nothing changes without the flag.
-        env_update={'B2_SIMULATOR_DIR': str(tmp_path / 'unused')},
+        '--rawsimulator',
+        # No checkout is needed for the opt-out run.
+        env_remove=('B2_SIMULATOR_DIR',),
     )
     assert completed.returncode == pytest.ExitCode.OK, completed.stdout + completed.stderr
     assert '1 passed' in completed.stdout
 
 
-def test_the_whole_test_directory_still_collects():
+def test_with_rawsimulator_tests_that_need_b2_simulator_are_deselected(tmp_path):
+    completed = run_pytest(
+        tmp_path,
+        """
+        import pytest
+
+        @pytest.mark.needs_b2_simulator
+        def test_needs_server():
+            raise AssertionError('must not run with --rawsimulator')
+
+        def test_plain():
+            pass
+        """,
+        '--rawsimulator',
+        env_remove=('B2_SIMULATOR_DIR',),
+    )
+    assert completed.returncode == pytest.ExitCode.OK, completed.stdout + completed.stderr
+    assert '1 passed, 1 deselected' in completed.stdout
+
+
+def test_tests_outside_the_unit_suite_need_no_checkout(tmp_path):
+    # Integration and static tests load the plugin through test/conftest.py only.
+    completed = run_pytest(
+        tmp_path,
+        PASSING_TEST,
+        env_remove=('B2_SIMULATOR_DIR',),
+        unit=False,
+    )
+    assert completed.returncode == pytest.ExitCode.OK, completed.stdout + completed.stderr
+    assert '1 passed' in completed.stdout
+
+
+def test_the_whole_test_directory_still_collects(pytestconfig):
     # pytest refuses `pytest_plugins` in a conftest below the top level when it collects `test`.
+    # The run collects in this run's mode, so a --rawsimulator run needs no checkout here either.
+    mode = ['--rawsimulator'] if pytestconfig.getoption('--rawsimulator') else []
     completed = subprocess.run(
-        [sys.executable, '-m', 'pytest', '--co', '-q', '-p', 'no:cacheprovider', 'test'],
+        [sys.executable, '-m', 'pytest', '--co', '-q', '-p', 'no:cacheprovider', *mode, 'test'],
         cwd=ROOT,
         stdin=subprocess.DEVNULL,
         capture_output=True,
@@ -133,17 +169,28 @@ def test_b2api_fixture_talks_to_this_workers_server(b2api, b2_simulator_server):
     assert [b.name for b in b2api.list_buckets()] == [bucket.name]
 
 
+def _part_sizes_from_the_server(b2api):
+    # Read the server's answer: at apiver v0 and v1 the account info replaces the absolute
+    # minimum part size with the SDK's own default, whatever the server says.
+    from test.unit.b2_simulator import KEY, KEY_ID
+
+    answer = b2api.session.raw_api.authorize_account('unused-realm', KEY_ID, KEY)
+    storage = answer['apiInfo']['storageApi']
+    return storage['absoluteMinimumPartSize'], storage['recommendedPartSize']
+
+
 @pytest.mark.needs_b2_simulator
 def test_reset_uses_raw_simulator_part_size_by_default(b2api):
-    assert b2api.account_info.get_absolute_minimum_part_size() == RawSimulator.MIN_PART_SIZE
-    assert b2api.account_info.get_recommended_part_size() == RawSimulator.MIN_PART_SIZE
+    assert _part_sizes_from_the_server(b2api) == (
+        RawSimulator.MIN_PART_SIZE,
+        RawSimulator.MIN_PART_SIZE,
+    )
 
 
 @pytest.mark.needs_b2_simulator
 @pytest.mark.b2_simulator_config(minimumPartSize=300, recommendedPartSize=400)
 def test_marker_config_is_sent_with_the_reset(b2api):
-    assert b2api.account_info.get_absolute_minimum_part_size() == 300
-    assert b2api.account_info.get_recommended_part_size() == 400
+    assert _part_sizes_from_the_server(b2api) == (300, 400)
 
 
 @pytest.mark.needs_b2_simulator
@@ -162,7 +209,6 @@ def test_each_test_starts_from_an_empty_server(tmp_path):
             with open(urls, 'a') as f:
                 f.write(b2_simulator_server.control_url + '\\n')
         """,
-        '--b2-simulator',
         f'--basetemp={tmp_path / "base"}',
     )
     assert completed.returncode == pytest.ExitCode.OK, completed.stdout + completed.stderr
@@ -201,6 +247,135 @@ def test_a_second_account_fails_instead_of_reusing_the_first(b2api):
     # RawSimulator.create_account() makes a new account on every call; b2-simulator has one.
     with pytest.raises(RuntimeError, match='b2-simulator has one account'):
         b2api.session.raw_api.create_account()
+
+
+@pytest.mark.needs_b2_simulator
+@pytest.mark.b2_simulator_config(extraAccounts=1)
+def test_a_second_account_comes_from_extra_accounts(b2api):
+    from apiver_deps import B2Api, B2HttpApiConfig, InMemoryAccountInfo
+
+    from test.unit.b2_simulator import raw_api_class
+
+    key_id, key = b2api.session.raw_api.create_account()
+    assert (key_id, key) == ('sim-master-id-2', 'sim-master-secret-2')
+    other = B2Api(
+        InMemoryAccountInfo(),
+        api_config=B2HttpApiConfig(_raw_api_class=raw_api_class(RawSimulator)),
+    )
+    other.authorize_account(application_key_id=key_id, application_key=key, realm='production')
+    assert other.account_info.get_account_id() != b2api.account_info.get_account_id()
+    # One extra account: a third one fails like any account the server does not have.
+    with pytest.raises(RuntimeError, match='b2-simulator has 2 accounts'):
+        b2api.session.raw_api.create_account()
+
+
+@pytest.mark.needs_b2_simulator
+def test_control_reaches_this_workers_control_plane(b2api):
+    from test.unit import b2_simulator
+
+    assert b2_simulator.enabled()
+    b2api.list_buckets()
+    entries = b2_simulator.control('GET', '/journal')['entries']
+    assert [e['endpoint'] for e in entries][-1] == 'b2_list_buckets'
+
+
+@pytest.mark.rawsimulator(reason='checks that a test kept on RawSimulator has no control plane')
+def test_a_test_kept_on_raw_simulator_has_no_control_plane(b2api):
+    from test.unit import b2_simulator
+
+    assert not b2_simulator.enabled()
+    assert type(b2api.session.raw_api) is RawSimulator
+    # The first message is the default run's, the second the --rawsimulator run's.
+    with pytest.raises(
+        RuntimeError, match='not for a test kept on RawSimulator|not used with --rawsimulator'
+    ):
+        b2_simulator.control('GET', '/journal')
+
+
+@pytest.mark.needs_b2_simulator
+def test_a_marked_test_stays_on_raw_simulator_and_the_others_do_not(tmp_path):
+    completed = run_pytest(
+        tmp_path,
+        """
+        import pytest
+        from apiver_deps import B2RawHTTPApi, RawSimulator
+
+        @pytest.mark.rawsimulator(reason='Backblaze/b2-sdk-python#0 (example)')
+        def test_marked(b2api):
+            assert type(b2api.session.raw_api) is RawSimulator
+            RawSimulator()  # building one directly is allowed too
+
+        def test_unmarked(b2api):
+            assert isinstance(b2api.session.raw_api, B2RawHTTPApi)
+        """,
+        '-rA',
+    )
+    assert completed.returncode == pytest.ExitCode.OK, completed.stdout + completed.stderr
+    assert '2 passed' in completed.stdout
+
+
+@pytest.mark.needs_b2_simulator
+def test_the_marker_can_be_limited_to_api_versions(tmp_path, apiver_int):
+    completed = run_pytest(
+        tmp_path,
+        f"""
+        import pytest
+        from apiver_deps import B2RawHTTPApi, RawSimulator
+
+        @pytest.mark.rawsimulator(reason='example', to_ver={apiver_int - 1})
+        def test_below(b2api):
+            assert isinstance(b2api.session.raw_api, B2RawHTTPApi)
+
+        @pytest.mark.rawsimulator(reason='example', from_ver={apiver_int})
+        def test_from(b2api):
+            assert type(b2api.session.raw_api) is RawSimulator
+        """,
+        f'--api=v{apiver_int}',
+    )
+    assert completed.returncode == pytest.ExitCode.OK, completed.stdout + completed.stderr
+    assert '2 passed' in completed.stdout
+
+
+@pytest.mark.needs_b2_simulator
+@pytest.mark.parametrize(
+    'marker,message',
+    [
+        (['@pytest.mark.rawsimulator'], 'needs a reason'),
+        (["@pytest.mark.rawsimulator(reason='')"], 'needs a reason'),
+        (
+            ["@pytest.mark.rawsimulator(reason='x')", '@pytest.mark.needs_b2_simulator'],
+            'cannot be marked both',
+        ),
+    ],
+)
+def test_a_wrong_marker_fails_the_test(tmp_path, marker, message):
+    source = '\n'.join(['import pytest', '', *marker, 'def test_marked(b2api):', '    pass', ''])
+    completed = run_pytest(tmp_path, source)
+    assert completed.returncode == pytest.ExitCode.TESTS_FAILED, completed.stdout
+    assert message in completed.stdout
+    assert 'passed' not in completed.stdout.splitlines()[-1]
+
+
+@pytest.mark.needs_b2_simulator
+def test_an_unmarked_test_cannot_build_raw_simulator(tmp_path):
+    completed = run_pytest(
+        tmp_path,
+        """
+        from apiver_deps import RawSimulator
+
+        def test_direct():
+            RawSimulator()
+
+        def test_subclass():
+            class Patched(RawSimulator):
+                pass
+
+            Patched()
+        """,
+    )
+    assert completed.returncode == pytest.ExitCode.TESTS_FAILED, completed.stdout
+    assert '2 failed' in completed.stdout
+    assert completed.stdout.count('@pytest.mark.rawsimulator(reason=') >= 2
 
 
 @pytest.mark.needs_b2_simulator

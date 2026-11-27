@@ -11,6 +11,8 @@ import pytest
 
 from b2sdk._internal.raw_simulator import FileSimulator
 
+pytestmark = [pytest.mark.rawsimulator(reason='tests RawSimulator itself')]
+
 
 @pytest.mark.parametrize('initial', [True, False])
 def test_context_restores_previous_flag_after_exception(monkeypatch, initial):

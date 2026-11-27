@@ -27,6 +27,7 @@ from apiver_deps import (
 )
 
 from b2sdk._internal.b2http import B2Http
+from test.unit.b2_simulator import raw_api_class
 
 if apiver_deps.V <= 1:
     from apiver_deps import DownloadDestBytes
@@ -38,7 +39,7 @@ pytestmark = [pytest.mark.apiver(to_ver=1)]
 
 @pytest.fixture
 def bucket():
-    simulator = RawSimulator()
+    simulator = raw_api_class(RawSimulator)()
     api = B2Api(StubAccountInfo(), raw_api=simulator)
     account_id, master_key = simulator.create_account()
     api.authorize_account('production', account_id, master_key)
@@ -66,14 +67,16 @@ def test_c44_legacy_api_can_download_file_stored_with_content_encoding(bucket):
 
 @pytest.mark.parametrize('decode_content', [False, True])
 def test_legacy_api_retains_explicit_configuration(decode_content):
-    config = B2HttpApiConfig(decode_content=decode_content, _raw_api_class=RawSimulator)
+    config = B2HttpApiConfig(
+        decode_content=decode_content, _raw_api_class=raw_api_class(RawSimulator)
+    )
     api = B2Api(StubAccountInfo(), api_config=config)
     assert api.api_config is config
 
 
 @pytest.mark.parametrize('use_raw_api', [False, True])
 def test_legacy_api_retains_default_configuration(use_raw_api):
-    raw_api = RawSimulator()
+    raw_api = raw_api_class(RawSimulator)()
     kwargs = {'raw_api': raw_api} if use_raw_api else {}
     api = B2Api(StubAccountInfo(), **kwargs)
     assert api.api_config is DEFAULT_HTTP_API_CONFIG
@@ -89,7 +92,7 @@ def test_legacy_encoded_http_download_preserves_decode_setting(decode_content, b
     config = B2HttpApiConfig(
         decode_content=decode_content,
         install_clock_skew_hook=False,
-        _raw_api_class=RawSimulator,
+        _raw_api_class=raw_api_class(RawSimulator),
     )
     api = B2Api(StubAccountInfo(), api_config=config)
     simulator = api.session.raw_api
@@ -130,4 +133,8 @@ def test_legacy_api_still_rejects_raw_api_with_configuration():
     from apiver_deps_exception import InvalidArgument
 
     with pytest.raises(InvalidArgument, match='Provide at most one'):
-        B2Api(StubAccountInfo(), raw_api=RawSimulator(), api_config=B2HttpApiConfig())
+        B2Api(
+            StubAccountInfo(),
+            raw_api=raw_api_class(RawSimulator)(),
+            api_config=B2HttpApiConfig(),
+        )

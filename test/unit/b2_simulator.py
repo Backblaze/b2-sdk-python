@@ -8,16 +8,19 @@
 #
 ######################################################################
 """
-Opt-in pytest plugin: run the unit tests against the standalone b2-simulator.
+Pytest plugin: run the unit tests against the standalone b2-simulator.
 
-``pytest --b2-simulator`` with ``B2_SIMULATOR_DIR`` set to a checkout of
-backblaze-labs/b2-simulator starts one simulator per pytest process (so one
-per pytest-xdist worker) and resets it before every test. Tests that build their API through
+The unit tests run against b2-simulator by default. With ``B2_SIMULATOR_DIR`` set to a checkout
+of backblaze-labs/b2-simulator, the plugin starts one simulator per pytest process (so one per
+pytest-xdist worker) and resets it before every test. Tests that build their API through
 :func:`raw_api_class` (the ``b2api`` fixture, ``TestCaseWithBucket`` and the other shared
-setups) then talk to it over HTTP instead of using the in-process ``RawSimulator``.
+setups) talk to it over HTTP instead of using the in-process ``RawSimulator``.
+Without a usable checkout the run stops with a usage error; it never skips.
 
-Without ``--b2-simulator`` nothing changes: :func:`raw_api_class` returns the class it is given.
-With ``--b2-simulator`` and no usable checkout, the run stops with a usage error; it never skips.
+``@pytest.mark.rawsimulator(reason=...)`` keeps one test on the in-process ``RawSimulator``; the
+reason names why (a ``RawSimulator`` self-test, or the issue that blocks the move). An unmarked
+test cannot build a ``RawSimulator`` at all. ``pytest --rawsimulator`` runs the whole unit suite
+on ``RawSimulator`` instead, and deselects the tests marked ``needs_b2_simulator``.
 
 ``@pytest.mark.b2_simulator_config(**settings)`` adds settings to the reset before that test
 (keys of the simulator's ``POST /reset`` ``config``, for example ``minimumPartSize``).
@@ -29,6 +32,7 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 import tempfile
 import threading
 import typing
@@ -53,8 +57,50 @@ _EXIT_WITH_PARENT = (
     'data:text/javascript,process.stdin.on("end",()=>process.exit(0));process.stdin.resume()'
 )
 
+# Reasons for @pytest.mark.rawsimulator that several tests share.
+#
+# SDK defects that only an HTTP server exposes: RawSimulator accepts these calls, B2 does not.
+COPY_SSE_B2_SOURCE_DEFECT = (
+    'Backblaze/b2-sdk-python#772: B2RawHTTPApi.copy_file asserts that a source encryption is '
+    'SSE-C, so the SSE-B2 source subtests fail in the SDK before any request is sent'
+)
+SIMPLE_DOWNLOAD_RESUME_DEFECT = (
+    'Backblaze/b2-sdk-python#776: SimpleDownloader does not resume after a connection drops '
+    'mid-body (ChunkedEncodingError over HTTP); it resumes only after a body that ends cleanly '
+    'short, which only RawSimulator produces'
+)
+# Open questions: b2-simulator and RawSimulator answer differently, and real B2 was not measured.
+SSE_C_HEAD_UNMEASURED = (
+    'get_file_info_by_name reads an SSE-C file with a HEAD and no key (it takes no key '
+    'parameter); b2-simulator answers 400, and real B2 has not been measured'
+)
+# b2-simulator gaps: b2-simulator is stricter than real B2. Remove the marker once it matches.
+#
+# v1 Bucket.copy_file sends fileInfo {} with the default COPY metadata directive. Real B2 accepts
+# that and copies the source's metadata (measured on 2026-11-27).
+V1_COPY_FILE_INFO_GAP = (
+    'b2-simulator v0.6.0 refuses fileInfo {} with COPY; real B2 accepts it (measured '
+    '2026-11-27); remove this marker once the simulator matches'
+)
+#
+# apiver v0 to v2 authorize at B2 API v3 with keys that b2_create_key (v3) restricted to one
+# bucket. Real B2 serves such a key at v3 (measured on 2026-11-27); b2-simulator v0.6.0 refuses
+# every bucket-restricted key at v3.
+V3_BUCKET_KEY_GAP = (
+    'b2-simulator v0.6.0 refuses a single-bucket key made by b2_create_key v3 at '
+    'b2_authorize_account v3; real B2 accepts it'
+)
+
+UNIT_TEST_DIR = Path(__file__).parent
+OPT_OUT = '--rawsimulator'
+
 _server: SimulatorServer | None = None
+# Whether this run uses b2-simulator (a unit-test run without --rawsimulator).
 _enabled = False
+# Whether the running test is marked rawsimulator, so it stays on RawSimulator.
+_test_on_raw_simulator = False
+# The settings of the last reset: create_account() reads extraAccounts from them.
+_config: dict = {}
 
 
 @dataclass
@@ -97,15 +143,21 @@ class SimulatorServer:
         return cls(process, api_url, urls['SIMULATOR-CONTROL'], stderr)
 
     def reset(self, config=None):
-        body = json.dumps({'config': {**DEFAULT_CONFIG, **(config or {})}}).encode()
+        global _config
+        _config = {**DEFAULT_CONFIG, **(config or {})}
+        self.control('POST', '/reset', {'config': _config})
+
+    def control(self, method, path, body=None):
+        """Send one control-plane request (see the simulator's docs/CONTRACT.md); return its JSON."""
         request = urllib.request.Request(
-            self.control_url + '/reset',
-            data=body,
-            method='POST',
+            self.control_url + path,
+            data=None if body is None else json.dumps(body).encode(),
+            method=method,
             headers={'Content-Type': 'application/json'},
         )
-        with urllib.request.urlopen(request, timeout=10) as response:
-            response.read()
+        with urllib.request.urlopen(request, timeout=30) as response:
+            text = response.read()
+        return json.loads(text) if text else {}
 
     def stop(self):
         try:
@@ -126,7 +178,10 @@ class SimulatorServer:
 def _node():
     node = shutil.which('node')
     if node is None:
-        raise pytest.UsageError('--b2-simulator needs Node.js 20.6 or later on PATH (`node`)')
+        raise pytest.UsageError(
+            f'the unit tests need Node.js 20.6 or later on PATH (`node`) for b2-simulator; '
+            f'use {OPT_OUT} to run them on RawSimulator instead'
+        )
     return node
 
 
@@ -151,26 +206,41 @@ def simulator_dir_from_env() -> Path:
     value = os.environ.get(ENV_VAR)
     if not value:
         raise pytest.UsageError(
-            f'--b2-simulator needs {ENV_VAR}: set it to a checkout of '
-            'backblaze-labs/b2-simulator'
+            f'the unit tests need {ENV_VAR}: set it to a checkout of '
+            f'backblaze-labs/b2-simulator, or use {OPT_OUT} to run them on RawSimulator'
         )
     script = Path(value) / SERVER_SCRIPT
     if not script.is_file():
-        raise pytest.UsageError(
-            f'--b2-simulator: no b2-simulator server at {script} (check {ENV_VAR})'
-        )
+        raise pytest.UsageError(f'no b2-simulator server at {script} (check {ENV_VAR})')
     return Path(value)
+
+
+def enabled() -> bool:
+    """Whether the running test uses b2-simulator (not ``--rawsimulator``, not marked)."""
+    return _enabled and not _test_on_raw_simulator
+
+
+def control(method, path, body=None):
+    """Send a request to this worker's b2-simulator control plane; only on b2-simulator."""
+    if not _enabled:
+        raise RuntimeError(f'the b2-simulator control plane is not used with {OPT_OUT}')
+    if _test_on_raw_simulator:
+        raise RuntimeError('the b2-simulator control plane is not for a test kept on RawSimulator')
+    if _server is None:
+        raise RuntimeError('b2-simulator is not running (use it inside a test)')
+    return _server.control(method, path, body)
 
 
 def raw_api_class(default):
     """
     Return the raw API class a test should build its ``B2Api`` with.
 
-    ``default`` is ``RawSimulator`` or a test's subclass of it. Under ``--b2-simulator`` the SDK's
-    own ``RawSimulator`` is replaced by an HTTP client of the per-worker b2-simulator; a test's
-    subclass (which overrides simulator internals) is returned unchanged.
+    ``default`` is ``RawSimulator`` or a test's subclass of it. On b2-simulator the SDK's own
+    ``RawSimulator`` is replaced by an HTTP client of the per-worker b2-simulator; a test's
+    subclass (which overrides simulator internals) is returned unchanged, and only a test marked
+    ``rawsimulator`` can build it.
     """
-    if not _enabled or not default.__module__.startswith('b2sdk.'):
+    if not enabled() or not default.__module__.startswith('b2sdk.'):
         return default
     return _http_raw_api_class()
 
@@ -195,16 +265,25 @@ def _http_raw_api_class():
                 """
                 Return the simulator's fixed credential; its key id is not the account id.
 
-                RawSimulator makes a new account on every call. b2-simulator has one account, so a
-                second call fails instead of silently returning the first account again.
+                RawSimulator makes a new account on every call. b2-simulator has one account, plus
+                the ``extraAccounts`` of the reset (``@pytest.mark.b2_simulator_config``): later calls
+                return their master credentials in turn, and a call past the last account fails
+                instead of silently returning an account again.
                 """
-                if getattr(self, '_account_created', False):
-                    raise RuntimeError(
-                        'b2-simulator has one account: this test needs a second account, '
-                        'which only RawSimulator provides'
-                    )
-                self._account_created = True
-                return KEY_ID, KEY
+                count = getattr(self, '_accounts_created', 0)
+                extra = _config.get('extraAccounts', 0)
+                if count > extra:
+                    if extra == 0:
+                        raise RuntimeError(
+                            'b2-simulator has one account: this test needs a second account; '
+                            'add @pytest.mark.b2_simulator_config(extraAccounts=N)'
+                        )
+                    raise RuntimeError(f'b2-simulator has {extra + 1} accounts (extraAccounts)')
+                self._accounts_created = count + 1
+                if count == 0:
+                    return KEY_ID, KEY
+                # Accounts 2 to N + 1 (docs/CONTRACT.md, "More accounts").
+                return f'sim-master-id-{count + 1}', f'sim-master-secret-{count + 1}'
 
             def authorize_account(self, realm_url, application_key_id, application_key):
                 # Every realm goes to the simulator, so a test can never reach real B2.
@@ -220,36 +299,53 @@ def _http_raw_api_class():
 
 def pytest_addoption(parser):
     parser.addoption(
-        '--b2-simulator',
+        OPT_OUT,
         action='store_true',
         default=False,
-        help=f'run simulator-backed unit tests against b2-simulator (checkout in ${ENV_VAR})',
+        help='run the unit tests on the in-process RawSimulator instead of b2-simulator '
+        f'(by default they need a b2-simulator checkout in ${ENV_VAR})',
     )
 
 
 def pytest_configure(config):
-    global _enabled
     config.addinivalue_line(
         'markers',
-        'b2_simulator_config(**settings): b2-simulator reset settings for this test '
-        '(only used with --b2-simulator)',
+        'b2_simulator_config(**settings): b2-simulator reset settings for this test',
     )
     config.addinivalue_line(
-        'markers', 'needs_b2_simulator: run only with --b2-simulator (deselected otherwise)'
+        'markers',
+        f'needs_b2_simulator: run only on b2-simulator (deselected with {OPT_OUT})',
     )
-    if config.getoption('--b2-simulator'):
-        simulator_dir_from_env()
-        _node()
-        _enabled = True
+    config.addinivalue_line(
+        'markers',
+        'rawsimulator(reason, *, from_ver=0, to_ver=sys.maxsize): keep this test on the '
+        'in-process RawSimulator at these apivers; the reason names the issue or the cause',
+    )
+
+
+def activate(config):
+    """
+    Use b2-simulator for this run unless ``--rawsimulator`` is given.
+
+    Called by the unit tests' conftest, so integration and static runs never need a checkout.
+    """
+    global _enabled
+    if config.getoption(OPT_OUT):
+        return
+    simulator_dir_from_env()
+    _node()
+    _enabled = True
 
 
 def pytest_report_header(config):
-    if config.getoption('--b2-simulator'):
+    if _enabled:
         return f'b2-simulator: {os.environ[ENV_VAR]}'
+    if config.getoption(OPT_OUT):
+        return f'b2-simulator: not used ({OPT_OUT})'
 
 
 def pytest_collection_modifyitems(config, items):
-    if config.getoption('--b2-simulator'):
+    if not config.getoption(OPT_OUT):
         return
     deselected = [item for item in items if item.get_closest_marker('needs_b2_simulator')]
     if deselected:
@@ -257,25 +353,80 @@ def pytest_collection_modifyitems(config, items):
         items[:] = [item for item in items if not item.get_closest_marker('needs_b2_simulator')]
 
 
+def _kept_on_raw_simulator(item) -> bool:
+    """Whether a ``rawsimulator`` marker keeps this test on RawSimulator at this apiver."""
+    marker = item.get_closest_marker('rawsimulator')
+    if marker is None:
+        return False
+    if not marker.kwargs.get('reason'):
+        pytest.fail(
+            '@pytest.mark.rawsimulator needs a reason=... naming why the test stays on '
+            'RawSimulator (the issue that blocks it, or that it tests RawSimulator itself)',
+            pytrace=False,
+        )
+    if item.get_closest_marker('needs_b2_simulator'):
+        pytest.fail(
+            'a test cannot be marked both rawsimulator and needs_b2_simulator', pytrace=False
+        )
+    apiver = int(item.config.getoption('--api')[1:])
+    from_ver = marker.kwargs.get('from_ver', 0)
+    to_ver = marker.kwargs.get('to_ver', sys.maxsize)
+    return from_ver <= apiver <= to_ver
+
+
+def _refuse_raw_simulator(monkeypatch):
+    """Make building any RawSimulator fail, so no unmarked test can use one unnoticed."""
+    from b2sdk._internal.raw_simulator import RawSimulator
+
+    def refuse(self, *args, **kwargs):
+        raise RuntimeError(
+            f'{type(self).__name__} is the in-process simulator; the unit tests run on '
+            'b2-simulator. Build the API through raw_api_class(), or keep this test on it with '
+            '@pytest.mark.rawsimulator(reason=...) naming why'
+        )
+
+    monkeypatch.setattr(RawSimulator, '__init__', refuse)
+
+
 @pytest.fixture(scope='session')
-def b2_simulator_server(pytestconfig):
+def b2_simulator_server():
     """This process's b2-simulator, started on first use and stopped with the session."""
     global _server
-    if not pytestconfig.getoption('--b2-simulator'):
-        raise pytest.UsageError('the b2_simulator_server fixture needs --b2-simulator')
+    if not _enabled:
+        raise pytest.UsageError(f'the b2_simulator_server fixture is not used with {OPT_OUT}')
     _server = SimulatorServer.start(simulator_dir_from_env())
     yield _server
     _server.stop()
     _server = None
 
 
+def _is_other_test_suite(path) -> bool:
+    """Whether a test is in this repository's integration or static suites, not the unit tests."""
+    parents = Path(path).parents
+    return UNIT_TEST_DIR.parent in parents and UNIT_TEST_DIR not in parents
+
+
 @pytest.fixture(autouse=True)
-def _b2_simulator_reset(request, pytestconfig):
-    """Reset the simulator before each test, with the test's ``b2_simulator_config`` settings."""
-    if not pytestconfig.getoption('--b2-simulator'):
+def _b2_simulator_reset(request, monkeypatch):
+    """
+    Before each unit test: reset the simulator with the test's ``b2_simulator_config``
+    settings, or, for a test marked ``rawsimulator``, let it use RawSimulator.
+    """
+    global _test_on_raw_simulator
+    if not _enabled or _is_other_test_suite(request.node.path):
+        yield
         return
+    if _kept_on_raw_simulator(request.node):
+        _test_on_raw_simulator = True
+        try:
+            yield
+        finally:
+            _test_on_raw_simulator = False
+        return
+    _refuse_raw_simulator(monkeypatch)
     server = request.getfixturevalue('b2_simulator_server')
     config = {}
     for marker in reversed(list(request.node.iter_markers('b2_simulator_config'))):
         config.update(marker.kwargs)
     server.reset(config)
+    yield

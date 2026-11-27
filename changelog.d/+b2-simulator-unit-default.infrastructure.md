@@ -1,0 +1,1 @@
+Run the unit tests against b2-simulator by default, in every CI unit-test job (pinned to b2-simulator v0.6.0) and in the release workflow. `--rawsimulator` runs them on the in-process `RawSimulator` instead. A test stays on `RawSimulator` only with a `rawsimulator` marker that gives the reason, and the tests that accepted either simulator's error now assert only real B2's.

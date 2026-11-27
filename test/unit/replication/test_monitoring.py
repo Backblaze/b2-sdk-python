@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import queue
 import threading
+import time
 
 import pytest
 from apiver_deps import (
@@ -32,7 +33,16 @@ SSE_C_AES = EncryptionSetting(
     key=EncryptionKey(secret=b'some_key'.ljust(32, b'.'), key_id='some-id'),
 )
 
-RETENTION_GOVERNANCE = FileRetentionSetting(RetentionMode.GOVERNANCE, retain_until=1)
+# B2 refuses a retention date in the past; one day ahead outlives any test run.
+RETENTION_GOVERNANCE = FileRetentionSetting(
+    RetentionMode.GOVERNANCE, retain_until=int(time.time() * 1000) + 24 * 60 * 60 * 1000
+)
+# b2_upload_file: "The file name and file info must fit within a 7,000 byte limit", reduced to
+# 2,048 bytes "for files that are uploaded with Server-Side Encryption and/or to Object
+# Lock-enabled buckets" (the source bucket has Object Lock). This value keeps name + info under
+# 2,048 bytes, while the whole upload header set, which ReplicationScanResult measures
+# (has_large_header), is over 2,048.
+LARGE_INFO_VALUE = 'a' * 1900
 
 DEFAULT_REPLICATION_RESULT = dict(
     source_replication_status=None,
@@ -94,14 +104,14 @@ def test_scan_source(source_bucket, test_file, monitor):
             test_file,
             'folder/test-large-meta.txt',
             file_info={
-                'dummy-key': 'a' * 7000,
+                'dummy-key': LARGE_INFO_VALUE,
             },
         ),
         source_bucket.upload_local_file(
             test_file,
             'folder/test-large-meta-encrypted.txt',
             file_info={
-                'dummy-key': 'a' * 2048,
+                'dummy-key': LARGE_INFO_VALUE,
             },
             encryption=SSE_C_AES,
         ),

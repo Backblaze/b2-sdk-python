@@ -106,7 +106,18 @@ def test_explicit_resume_rejects_incompatible_protections(
 
 @pytest.mark.parametrize(
     'retention,hold',
-    [(None, None), (NO_RETENTION_FILE_SETTING, LegalHold.UNSET), (RETENTION, LegalHold.ON)],
+    [
+        (None, None),
+        pytest.param(
+            NO_RETENTION_FILE_SETTING,
+            LegalHold.UNSET,
+            marks=pytest.mark.rawsimulator(
+                reason='Backblaze/b2-sdk-python#774: LegalHold.UNSET is sent as "off", so the '
+                'server stores off and the explicit resume refuses UNSET against it'
+            ),
+        ),
+        (RETENTION, LegalHold.ON),
+    ],
 )
 def test_explicit_resume_accepts_matching_protections(prepared_resume, retention, hold):
     bucket, data, file_id = prepared_resume(retention=retention, hold=hold)

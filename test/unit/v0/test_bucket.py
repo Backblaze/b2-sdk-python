@@ -12,12 +12,19 @@ from __future__ import annotations
 import os
 import platform
 import tempfile
+import time
 import unittest.mock as mock
 from io import BytesIO
 
 import pytest
 
-from test.unit.b2_simulator import raw_api_class
+from test.unit import b2_simulator, simulator_hooks
+from test.unit.b2_simulator import (
+    COPY_SSE_B2_SOURCE_DEFECT,
+    SIMPLE_DOWNLOAD_RESUME_DEFECT,
+    V1_COPY_FILE_INFO_GAP,
+    raw_api_class,
+)
 
 from ..test_base import TestBase
 from .deps import (
@@ -35,7 +42,6 @@ from .deps import (
     EncryptionSettingFactory,
     FakeResponse,
     FileRetentionSetting,
-    FileSimulator,
     FileVersionInfo,
     LargeFileUploadState,
     LegalHold,
@@ -54,7 +60,7 @@ from .deps import (
 )
 from .deps_exception import (
     AlreadyFailed,
-    B2Error,
+    BadRequest,
     InvalidAuthToken,
     InvalidMetadataDirective,
     InvalidRange,
@@ -91,6 +97,8 @@ SSE_C_AES_FROM_SERVER = EncryptionSetting(
     algorithm=EncryptionAlgorithm.AES256,
     key=EncryptionKey(key_id=None, secret=None),
 )
+# B2 refuses a retention date in the past; one day ahead outlives any test run.
+FUTURE_RETAIN_UNTIL = int(time.time() * 1000) + 24 * 60 * 60 * 1000
 
 
 def write_file(path, data):
@@ -153,19 +161,6 @@ class StubProgressListener(AbstractProgressListener):
         self.history.append('closed')
 
 
-class CanRetry(B2Error):
-    """
-    An exception that can be retryable, or not.
-    """
-
-    def __init__(self, can_retry):
-        super().__init__(None, None, None, None, None)
-        self.can_retry = can_retry
-
-    def should_retry_upload(self):
-        return self.can_retry
-
-
 class TestCaseWithBucket(TestBase):
     RAW_SIMULATOR_CLASS = RawSimulator
 
@@ -179,6 +174,13 @@ class TestCaseWithBucket(TestBase):
         self.api_url = self.account_info.get_api_url()
         self.account_auth_token = self.account_info.get_account_auth_token()
         self.bucket = self.api.create_bucket('my-bucket', 'allPublic')
+        self.bucket_id = self.bucket.id_
+
+    def _use_file_lock_bucket(self):
+        """Point the test at a new Object Lock bucket: B2 refuses retention and legal hold elsewhere."""
+        self.bucket = self.api.create_bucket(
+            self.bucket_name + '-file-lock', 'allPublic', is_file_lock_enabled=True
+        )
         self.bucket_id = self.bucket.id_
 
     def assertBucketContents(self, expected, *args, **kwargs):
@@ -256,9 +258,9 @@ class TestListParts(TestCaseWithBucket):
             self.bucket_id, file1.file_id, UploadSourceBytes(content), 3, large_file_upload_state
         ).result()
         expected_parts = [
-            Part('9999', 1, 11, content_sha1),
-            Part('9999', 2, 11, content_sha1),
-            Part('9999', 3, 11, content_sha1),
+            Part(file1.file_id, 1, 11, content_sha1),
+            Part(file1.file_id, 2, 11, content_sha1),
+            Part(file1.file_id, 3, 11, content_sha1),
         ]
         self.assertEqual(expected_parts, list(self.bucket.list_parts(file1.file_id, batch_size=1)))
 
@@ -306,17 +308,19 @@ class TestListUnfinished(TestCaseWithBucket):
 class TestGetFileInfo(TestCaseWithBucket):
     def test_version_by_name(self):
         data = b'hello world'
-        a_id = self.bucket.upload_bytes(data, 'a').id_
+        uploaded = self.bucket.upload_bytes(data, 'a')
+        a_id = uploaded.id_
 
         info = self.bucket.get_file_info_by_name('a')
 
         self.assertIsInstance(info, FileVersionInfo)
+        # The upload sent b2/x-auto; B2 stores the type it resolved, which the upload answer reports.
         expected = (
             a_id,
             'a',
             11,
             'upload',
-            'b2/x-auto',
+            uploaded.content_type,
             'SSE-B2',
             NO_RETENTION_FILE_SETTING,
             LegalHold.UNSET,
@@ -341,7 +345,7 @@ class TestGetFileInfo(TestCaseWithBucket):
         )
         data = b'hello world'
         legal_hold = LegalHold.ON
-        file_retention = FileRetentionSetting(RetentionMode.COMPLIANCE, 100)
+        file_retention = FileRetentionSetting(RetentionMode.COMPLIANCE, FUTURE_RETAIN_UNTIL)
 
         bucket.upload_bytes(data, 'a', file_retention=file_retention, legal_hold=legal_hold)
 
@@ -375,12 +379,14 @@ class TestGetFileInfo(TestCaseWithBucket):
 
     def test_version_by_id(self):
         data = b'hello world'
-        b_id = self.bucket.upload_bytes(data, 'b').id_
+        uploaded = self.bucket.upload_bytes(data, 'b')
+        b_id = uploaded.id_
 
         info = self.bucket.get_file_info_by_id(b_id)
 
         self.assertIsInstance(info, FileVersionInfo)
-        expected = (b_id, 'b', 11, 'upload', 'b2/x-auto')
+        # The upload sent b2/x-auto; B2 stores the type it resolved, which the upload answer reports.
+        expected = (b_id, 'b', 11, 'upload', uploaded.content_type)
         actual = (info.id_, info.file_name, info.size, info.action, info.content_type)
         self.assertEqual(expected, actual)
 
@@ -424,19 +430,15 @@ class TestLs(TestCaseWithBucket):
 
     def test_three_files_multiple_versions(self):
         data = b'hello world'
-        self.bucket.upload_bytes(data, 'a')
-        self.bucket.upload_bytes(data, 'bb/1')
-        self.bucket.upload_bytes(data, 'bb/2')
-        self.bucket.upload_bytes(data, 'bb/2')
-        self.bucket.upload_bytes(data, 'bb/2')
-        self.bucket.upload_bytes(data, 'bb/3')
-        self.bucket.upload_bytes(data, 'ccc')
+        names = ['a', 'bb/1', 'bb/2', 'bb/2', 'bb/2', 'bb/3', 'ccc']
+        ids = [self.bucket.upload_bytes(data, name).id_ for name in names]
+        # Versions of one name are listed newest first.
         expected = [
-            ('9998', 'bb/1', 11, 'upload', None),
-            ('9995', 'bb/2', 11, 'upload', None),
-            ('9996', 'bb/2', 11, 'upload', None),
-            ('9997', 'bb/2', 11, 'upload', None),
-            ('9994', 'bb/3', 11, 'upload', None),
+            (ids[1], 'bb/1', 11, 'upload', None),
+            (ids[4], 'bb/2', 11, 'upload', None),
+            (ids[3], 'bb/2', 11, 'upload', None),
+            (ids[2], 'bb/2', 11, 'upload', None),
+            (ids[5], 'bb/3', 11, 'upload', None),
         ]
         actual = [
             (info.id_, info.file_name, info.size, info.action, folder)
@@ -445,7 +447,8 @@ class TestLs(TestCaseWithBucket):
         self.assertEqual(expected, actual)
 
     def test_started_large_file(self):
-        self.bucket.start_large_file('hello.txt')
+        # An explicit content type: B2 refuses the null that content_type=None sends.
+        self.bucket.start_large_file('hello.txt', 'b2/x-auto')
         expected = [('hello.txt', 0, 'start', None)]
         self.assertBucketContents(expected, '', show_versions=True)
 
@@ -504,12 +507,14 @@ class TestListVersions(TestCaseWithBucket):
 
 
 class TestCopyFile(TestCaseWithBucket):
+    @pytest.mark.rawsimulator(reason=V1_COPY_FILE_INFO_GAP)
     def test_copy_without_optional_params(self):
         file_id = self._make_file()
         self.bucket.copy_file(file_id, 'hello_new.txt')
         expected = [('hello.txt', 11, 'upload', None), ('hello_new.txt', 11, 'upload', None)]
         self.assertBucketContents(expected, '', show_versions=True)
 
+    @pytest.mark.rawsimulator(reason=V1_COPY_FILE_INFO_GAP)
     def test_copy_with_range(self):
         file_id = self._make_file()
         self.bucket.copy_file(file_id, 'hello_new.txt', bytes_range=(3, 9))
@@ -559,8 +564,10 @@ class TestCopyFile(TestCaseWithBucket):
             metadata_directive=MetadataDirectiveMode.REPLACE,
             content_type='text/plain',
         )
+        # The source was uploaded with b2/x-auto; B2 stores the type it resolved.
+        source_content_type = self.bucket.get_file_info_by_name('hello.txt').content_type
         expected = [
-            ('hello.txt', 11, 'upload', 'b2/x-auto', None),
+            ('hello.txt', 11, 'upload', source_content_type, None),
             ('hello_new.txt', 11, 'upload', 'text/plain', None),
         ]
         actual = [
@@ -586,6 +593,7 @@ class TestCopyFile(TestCaseWithBucket):
         expected = [('hello.txt', 11, 'upload', None)]
         self.assertBucketContents(expected, '', show_versions=True)
 
+    @pytest.mark.rawsimulator(reason=V1_COPY_FILE_INFO_GAP)
     def test_copy_with_different_bucket(self):
         source_bucket = self.api.create_bucket('source-bucket', 'allPublic')
         file_id = self._make_file(source_bucket)
@@ -603,6 +611,7 @@ class TestCopyFile(TestCaseWithBucket):
         self.assertBucketContents(expected, '', show_versions=True)
 
     def test_copy_retention(self):
+        self._use_file_lock_bucket()
         for data in [self._make_data(self.simulator.MIN_PART_SIZE * 3), b'hello']:
             for length in [None, len(data)]:
                 with self.subTest(real_length=len(data), length=length):
@@ -611,16 +620,19 @@ class TestCopyFile(TestCaseWithBucket):
                         file_id,
                         'copied_file',
                         length=length,
-                        file_retention=FileRetentionSetting(RetentionMode.COMPLIANCE, 100),
+                        file_retention=FileRetentionSetting(
+                            RetentionMode.COMPLIANCE, FUTURE_RETAIN_UNTIL
+                        ),
                         legal_hold=LegalHold.ON,
                         max_part_size=400,
                     )
                     self.assertEqual(
-                        FileRetentionSetting(RetentionMode.COMPLIANCE, 100),
+                        FileRetentionSetting(RetentionMode.COMPLIANCE, FUTURE_RETAIN_UNTIL),
                         resulting_file_version.file_retention,
                     )
                     self.assertEqual(LegalHold.ON, resulting_file_version.legal_hold)
 
+    @pytest.mark.rawsimulator(reason=COPY_SSE_B2_SOURCE_DEFECT)
     def test_copy_encryption(self):
         data = b'hello_world'
         a = self.bucket.upload_bytes(data, 'a')
@@ -783,8 +795,9 @@ class TestUpload(TestCaseWithBucket):
             )
 
     def test_upload_bytes_file_retention(self):
+        self._use_file_lock_bucket()
         data = b'hello world'
-        retention = FileRetentionSetting(RetentionMode.COMPLIANCE, 150)
+        retention = FileRetentionSetting(RetentionMode.COMPLIANCE, FUTURE_RETAIN_UNTIL)
         file_info = self.bucket.upload_bytes(
             data, 'file1', file_retention=retention, legal_hold=LegalHold.ON
         )
@@ -822,7 +835,7 @@ class TestUpload(TestCaseWithBucket):
             file_info = self.bucket.upload_local_file(path, 'file1', encryption=SSE_C_AES)
             self.assertTrue(isinstance(file_info, FileVersionInfo))
             self.assertEqual(SSE_C_AES_NO_SECRET, file_info.server_side_encryption)
-            self._check_file_contents('file1', data)
+            self._check_file_contents('file1', data, encryption=SSE_C_AES)
 
     def test_upload_local_file_rejects_plaintext_encryption(self):
         with tempfile.TemporaryDirectory() as d:
@@ -837,11 +850,16 @@ class TestUpload(TestCaseWithBucket):
                 )
 
     def test_upload_local_file_retention(self):
+        # B2 keeps retention and legal hold only in a bucket with file lock enabled,
+        # and a retention date must be in the future.
+        self.bucket.update(is_file_lock_enabled=True)
         with tempfile.TemporaryDirectory() as d:
             path = os.path.join(d, 'file1')
             data = b'hello world'
             write_file(path, data)
-            retention = FileRetentionSetting(RetentionMode.COMPLIANCE, 150)
+            retention = FileRetentionSetting(
+                RetentionMode.COMPLIANCE, int(time.time() * 1000) + 24 * 60 * 60 * 1000
+            )
             file_info = self.bucket.upload_local_file(
                 path,
                 'file1',
@@ -849,12 +867,14 @@ class TestUpload(TestCaseWithBucket):
                 file_retention=retention,
                 legal_hold=LegalHold.ON,
             )
-            self._check_file_contents('file1', data)
+            self._check_file_contents('file1', data, encryption=SSE_C_AES)
             self.assertEqual(retention, file_info.file_retention)
             self.assertEqual(LegalHold.ON, file_info.legal_hold)
 
     def test_upload_bytes_progress(self):
-        data = b'hello world'
+        # Three parts, so the listener gets an update per part. Over HTTP a body is read in one go,
+        # so a single small file reports only its total; RawSimulator's chunked reads hid that.
+        data = self._make_data(self.simulator.MIN_PART_SIZE * 3)
         progress_listener = StubProgressListener()
         self.bucket.upload_bytes(data, 'file1', progress_listener=progress_listener)
         self.assertTrue(progress_listener.is_valid())
@@ -900,18 +920,22 @@ class TestUpload(TestCaseWithBucket):
                 self.bucket.upload_local_file(path, 'file1')
 
     def test_upload_one_retryable_error(self):
-        self.simulator.set_upload_errors([CanRetry(True)])
+        simulator_hooks.fail_uploads(self.simulator, 503, 'service_unavailable')
         data = b'hello world'
         self.bucket.upload_bytes(data, 'file1')
+        self._check_file_contents('file1', data)
+        simulator_hooks.assert_upload_faults_fired(self.simulator, 1)
 
     def test_upload_file_one_fatal_error(self):
-        self.simulator.set_upload_errors([CanRetry(False)])
+        simulator_hooks.fail_uploads(self.simulator, 400, 'bad_request')
         data = b'hello world'
-        with self.assertRaises(CanRetry):
+        with pytest.raises(BadRequest) as caught:
             self.bucket.upload_bytes(data, 'file1')
+        assert caught.value.code == 'bad_request'
+        simulator_hooks.assert_upload_faults_fired(self.simulator, 1)
 
     def test_upload_file_too_many_retryable_errors(self):
-        self.simulator.set_upload_errors([CanRetry(True)] * 6)
+        simulator_hooks.fail_uploads(self.simulator, 503, 'service_unavailable', count=6)
         data = b'hello world'
         with self.assertRaises(MaxRetriesExceeded):
             self.bucket.upload_bytes(data, 'file1')
@@ -1008,8 +1032,9 @@ class TestUpload(TestCaseWithBucket):
     def _start_large_file(self, file_name, file_info=None):
         if file_info is None:
             file_info = {}
+        # B2 refuses a null contentType on b2_start_large_file; use the SDK's default upload type.
         large_file_info = self.simulator.start_large_file(
-            self.api_url, self.account_auth_token, self.bucket_id, file_name, None, file_info
+            self.api_url, self.account_auth_token, self.bucket_id, file_name, 'b2/x-auto', file_info
         )
         return large_file_info['fileId']
 
@@ -1027,10 +1052,10 @@ class TestUpload(TestCaseWithBucket):
             part_stream,
         )
 
-    def _check_file_contents(self, file_name, expected_contents):
+    def _check_file_contents(self, file_name, expected_contents, encryption=None):
+        # An SSE-C file downloads only with its key, as on B2.
         download = DownloadDestBytes()
-        with FileSimulator.dont_check_encryption():
-            self.bucket.download_file_by_name(file_name, download)
+        self.bucket.download_file_by_name(file_name, download, encryption=encryption)
         self.assertEqual(expected_contents, download.get_bytes_written())
 
 
@@ -1061,7 +1086,8 @@ class TestConcatenate(TestCaseWithBucket):
                 created_file.size,
                 created_file.server_side_encryption,
             )
-            expected = ('9997', 'created_file', 33, SSE_B2_AES)
+            latest_id = self.bucket.get_file_info_by_name('created_file').id_
+            expected = (latest_id, 'created_file', 33, SSE_B2_AES)
             self.assertEqual(expected, actual)
 
     def test_create_remote_encryption(self):
@@ -1324,11 +1350,35 @@ class TruncatedDownloadRawSimulator(RawSimulator):
 
 class TestCaseWithTruncatedDownloadBucket(TestCaseWithBucket):
     RAW_SIMULATOR_CLASS = TruncatedDownloadRawSimulator
+    # On b2-simulator the server cuts every download answer short itself (a wire fault), so the
+    # SDK meets the truncation over HTTP. The in-process subclass above is for a test marked
+    # rawsimulator.
+    # B2 refuses a wrong SSE-C key before it sends any file data, so there is nothing to cut
+    # short (RawSimulator's short answers never apply to it either); a wire fault would cut the
+    # error answer instead.
+    NOT_TRUNCATED = {'test_download_by_id_no_progress_wrong_encryption'}
+
+    def setUp(self):
+        self._truncating = b2_simulator.enabled() and self._testMethodName not in self.NOT_TRUNCATED
+        if b2_simulator.enabled():
+            self.RAW_SIMULATOR_CLASS = RawSimulator
+        super().setUp()
+        if self._truncating:
+            simulator_hooks.truncate_downloads()
+
+    def tearDown(self):
+        if self._truncating:
+            assert simulator_hooks.truncated_downloads() > 0, 'no download was cut short'
+        super().tearDown()
 
 
 ####### actual tests of truncated downloads
 
 
+# SimpleDownloader resumes only after a body that ends cleanly short. Over HTTP a short body
+# raises requests' ChunkedEncodingError (urllib3 enforces Content-Length), which SimpleDownloader
+# does not catch, so the download fails on b2-simulator. Changing that is an SDK change.
+@pytest.mark.rawsimulator(reason=SIMPLE_DOWNLOAD_RESUME_DEFECT)
 class TestTruncatedDownloadSimple(DownloadTests, TestCaseWithTruncatedDownloadBucket):
     def setUp(self):
         super().setUp()
