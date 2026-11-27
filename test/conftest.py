@@ -11,7 +11,7 @@ import concurrent.futures
 
 import pytest
 
-# test.unit.b2_simulator: the opt-in --b2-simulator option for the unit tests.
+# test.unit.b2_simulator: runs the unit tests on b2-simulator (--rawsimulator opts out).
 pytest_plugins = ['b2sdk.v3.testing', 'test.junit_subtests', 'test.unit.b2_simulator']
 
 

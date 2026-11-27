@@ -26,6 +26,7 @@ import pytest
 
 pytest.register_assert_rewrite('test.unit')
 
+from test.unit import b2_simulator  # noqa: E402
 from test.unit.b2_simulator import raw_api_class  # noqa: E402
 
 
@@ -53,6 +54,8 @@ def pytest_addoption(parser):
 def pytest_configure(config):
     """Add apiver test folder to the path and add "apiver" marker used by `pytest_runtest_setup`."""
     sys.path.insert(0, str(Path(__file__).parent / config.getoption('--api') / 'apiver'))
+    # The unit tests run on b2-simulator unless --rawsimulator is given.
+    b2_simulator.activate(config)
     config.addinivalue_line(
         'markers',
         'apiver(*args, *, from_ver=0, to_ver=sys.maxsize): mark test to run only for specific apivers',
