@@ -45,3 +45,6 @@ Please refer to the [changelog](CHANGELOG.md).
 # Developer Info
 
 Please see our [contributing guidelines](CONTRIBUTING.md).
+The [testing guide](docs/testing.md) and the
+[writing style guide](docs/writing-style.md) describe how to test changes and write documentation.
+[llms.txt](llms.txt) lists the user documentation.
