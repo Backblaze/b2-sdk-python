@@ -24,7 +24,7 @@ LIVE_PATH = WORKFLOWS / 'live-b2.yml'
 LIVE_TESTS_PATH = WORKFLOWS / 'live-b2-tests.yml'
 KEYS = ('B2_TEST_APPLICATION_KEY', 'B2_TEST_APPLICATION_KEY_ID')
 SIMULATOR_REPOSITORY = 'backblaze-labs/b2-simulator'
-SIMULATOR_PIN = 'a1e1db373b71f2d5f40082c19bc716cb6b3c3675'
+SIMULATOR_PIN = '4052c6f8f45350486460d19bc796866cbdcdd3bc'
 CLI_REPOSITORY = 'Backblaze/B2_Command_Line_Tool'
 KEY_SET_FLAG = "${{ secrets.SIMULATOR_DEPLOY_KEY != '' }}"
 SECRET_EXPRESSION = re.compile(r'secrets\.[A-Za-z_]')
