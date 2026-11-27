@@ -28,8 +28,6 @@ pytest.register_assert_rewrite('test.unit')
 
 from test.unit.b2_simulator import raw_api_class  # noqa: E402
 
-pytest_plugins = ['test.unit.b2_simulator']
-
 
 def get_api_versions():
     return [

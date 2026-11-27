@@ -11,7 +11,7 @@
 Opt-in pytest plugin: run the unit tests against the standalone b2-simulator.
 
 ``pytest --b2-simulator`` with ``B2_SIMULATOR_DIR`` set to a checkout of
-https://github.com/backblaze-labs/b2-simulator starts one simulator per pytest process (so one
+backblaze-labs/b2-simulator starts one simulator per pytest process (so one
 per pytest-xdist worker) and resets it before every test. Tests that build their API through
 :func:`raw_api_class` (the ``b2api`` fixture, ``TestCaseWithBucket`` and the other shared
 setups) then talk to it over HTTP instead of using the in-process ``RawSimulator``.
@@ -79,7 +79,11 @@ class SimulatorServer:
         )
         lines = _read_ready_lines(process)
         urls = dict(line.split(' ', 1) for line in lines if ' ' in line)
-        if len(lines) < 3 or 'SIMULATOR-CONTROL' not in urls:
+        api_url = next(
+            (line.split()[1] for line in lines if line.startswith('SIMULATOR-LISTENING http:')),
+            None,
+        )
+        if api_url is None or 'SIMULATOR-CONTROL' not in urls:
             process.kill()
             process.wait()
             process.stdout.close()
@@ -90,9 +94,6 @@ class SimulatorServer:
                 f'b2-simulator at {script} did not start (exit code {process.returncode}): '
                 f'stdout {lines!r}, stderr {message!r}'
             )
-        api_url = next(
-            line.split()[1] for line in lines if line.startswith('SIMULATOR-LISTENING http:')
-        )
         return cls(process, api_url, urls['SIMULATOR-CONTROL'], stderr)
 
     def reset(self, config=None):
@@ -107,21 +108,25 @@ class SimulatorServer:
             response.read()
 
     def stop(self):
-        if self.process.poll() is None:
-            self.process.stdin.close()  # the simulator exits on its own; terminate as a fallback
-            try:
-                self.process.wait(timeout=5)
-            except subprocess.TimeoutExpired:
-                self.process.terminate()
-                self.process.wait(timeout=5)
-        self.process.stdout.close()
-        self.stderr.close()
+        try:
+            # The simulator exits when its stdin closes; terminate and kill are fallbacks.
+            self.process.stdin.close()
+            for fallback in (self.process.terminate, self.process.kill):
+                try:
+                    self.process.wait(timeout=5)
+                    break
+                except subprocess.TimeoutExpired:
+                    fallback()
+            self.process.wait(timeout=5)
+        finally:
+            self.process.stdout.close()
+            self.stderr.close()
 
 
 def _node():
     node = shutil.which('node')
     if node is None:
-        raise pytest.UsageError('--b2-simulator needs Node.js 20 or later on PATH (`node`)')
+        raise pytest.UsageError('--b2-simulator needs Node.js 20.6 or later on PATH (`node`)')
     return node
 
 
@@ -147,7 +152,7 @@ def simulator_dir_from_env() -> Path:
     if not value:
         raise pytest.UsageError(
             f'--b2-simulator needs {ENV_VAR}: set it to a checkout of '
-            'https://github.com/backblaze-labs/b2-simulator'
+            'backblaze-labs/b2-simulator'
         )
     script = Path(value) / SERVER_SCRIPT
     if not script.is_file():
@@ -187,7 +192,18 @@ def _http_raw_api_class():
                 super().__init__(b2_http or B2Http())
 
             def create_account(self):
-                """Return the simulator's fixed credential; its key id is not the account id."""
+                """
+                Return the simulator's fixed credential; its key id is not the account id.
+
+                RawSimulator makes a new account on every call. b2-simulator has one account, so a
+                second call fails instead of silently returning the first account again.
+                """
+                if getattr(self, '_account_created', False):
+                    raise RuntimeError(
+                        'b2-simulator has one account: this test needs a second account, '
+                        'which only RawSimulator provides'
+                    )
+                self._account_created = True
                 return KEY_ID, KEY
 
             def authorize_account(self, realm_url, application_key_id, application_key):

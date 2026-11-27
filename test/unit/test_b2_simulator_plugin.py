@@ -109,12 +109,26 @@ def test_without_the_flag_the_fixtures_use_raw_simulator(tmp_path):
     assert '1 passed' in completed.stdout
 
 
+def test_the_whole_test_directory_still_collects():
+    # pytest refuses `pytest_plugins` in a conftest below the top level when it collects `test`.
+    completed = subprocess.run(
+        [sys.executable, '-m', 'pytest', '--co', '-q', '-p', 'no:cacheprovider', 'test'],
+        cwd=ROOT,
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        timeout=120,
+        check=False,
+    )
+    assert completed.returncode == pytest.ExitCode.OK, completed.stdout[-2000:]
+
+
 @pytest.mark.needs_b2_simulator
 def test_b2api_fixture_talks_to_this_workers_server(b2api, b2_simulator_server):
     assert b2api.account_info.get_api_url() == b2_simulator_server.api_url
     # The account id comes from the server, not from the key id the test logged in with.
-    key_id, _ = b2api.session.raw_api.create_account()
-    assert b2api.account_info.get_account_id() != key_id
+    assert b2api.account_info.get_application_key_id() == 'sim-test-id'
+    assert b2api.account_info.get_account_id() != 'sim-test-id'
     bucket = b2api.create_bucket('plugin-start-check', 'allPrivate')
     assert [b.name for b in b2api.list_buckets()] == [bucket.name]
 
@@ -180,6 +194,13 @@ def test_v0_test_case_with_bucket_uses_the_simulator(b2_simulator_server):
     from test.unit.v0.test_bucket import TestCaseWithBucket
 
     _assert_on_simulator(TestCaseWithBucket('setUp'), b2_simulator_server)
+
+
+@pytest.mark.needs_b2_simulator
+def test_a_second_account_fails_instead_of_reusing_the_first(b2api):
+    # RawSimulator.create_account() makes a new account on every call; b2-simulator has one.
+    with pytest.raises(RuntimeError, match='b2-simulator has one account'):
+        b2api.session.raw_api.create_account()
 
 
 @pytest.mark.needs_b2_simulator
