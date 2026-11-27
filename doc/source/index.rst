@@ -46,6 +46,7 @@ Documentation index
    account_info
    glossary
    api_types
+   migrating
    api_reference
    contributing
 
