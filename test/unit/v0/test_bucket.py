@@ -12,11 +12,13 @@ from __future__ import annotations
 import os
 import platform
 import tempfile
+import time
 import unittest.mock as mock
 from io import BytesIO
 
 import pytest
 
+from test.unit import b2_simulator, simulator_hooks
 from test.unit.b2_simulator import raw_api_class
 
 from ..test_base import TestBase
@@ -35,7 +37,6 @@ from .deps import (
     EncryptionSettingFactory,
     FakeResponse,
     FileRetentionSetting,
-    FileSimulator,
     FileVersionInfo,
     LargeFileUploadState,
     LegalHold,
@@ -54,7 +55,7 @@ from .deps import (
 )
 from .deps_exception import (
     AlreadyFailed,
-    B2Error,
+    BadRequest,
     InvalidAuthToken,
     InvalidMetadataDirective,
     InvalidRange,
@@ -151,19 +152,6 @@ class StubProgressListener(AbstractProgressListener):
 
     def close(self):
         self.history.append('closed')
-
-
-class CanRetry(B2Error):
-    """
-    An exception that can be retryable, or not.
-    """
-
-    def __init__(self, can_retry):
-        super().__init__(None, None, None, None, None)
-        self.can_retry = can_retry
-
-    def should_retry_upload(self):
-        return self.can_retry
 
 
 class TestCaseWithBucket(TestBase):
@@ -822,7 +810,7 @@ class TestUpload(TestCaseWithBucket):
             file_info = self.bucket.upload_local_file(path, 'file1', encryption=SSE_C_AES)
             self.assertTrue(isinstance(file_info, FileVersionInfo))
             self.assertEqual(SSE_C_AES_NO_SECRET, file_info.server_side_encryption)
-            self._check_file_contents('file1', data)
+            self._check_file_contents('file1', data, encryption=SSE_C_AES)
 
     def test_upload_local_file_rejects_plaintext_encryption(self):
         with tempfile.TemporaryDirectory() as d:
@@ -837,11 +825,16 @@ class TestUpload(TestCaseWithBucket):
                 )
 
     def test_upload_local_file_retention(self):
+        # B2 keeps retention and legal hold only in a bucket with file lock enabled,
+        # and a retention date must be in the future.
+        self.bucket.update(is_file_lock_enabled=True)
         with tempfile.TemporaryDirectory() as d:
             path = os.path.join(d, 'file1')
             data = b'hello world'
             write_file(path, data)
-            retention = FileRetentionSetting(RetentionMode.COMPLIANCE, 150)
+            retention = FileRetentionSetting(
+                RetentionMode.COMPLIANCE, int(time.time() * 1000) + 24 * 60 * 60 * 1000
+            )
             file_info = self.bucket.upload_local_file(
                 path,
                 'file1',
@@ -849,7 +842,7 @@ class TestUpload(TestCaseWithBucket):
                 file_retention=retention,
                 legal_hold=LegalHold.ON,
             )
-            self._check_file_contents('file1', data)
+            self._check_file_contents('file1', data, encryption=SSE_C_AES)
             self.assertEqual(retention, file_info.file_retention)
             self.assertEqual(LegalHold.ON, file_info.legal_hold)
 
@@ -900,18 +893,22 @@ class TestUpload(TestCaseWithBucket):
                 self.bucket.upload_local_file(path, 'file1')
 
     def test_upload_one_retryable_error(self):
-        self.simulator.set_upload_errors([CanRetry(True)])
+        simulator_hooks.fail_uploads(self.simulator, 503, 'service_unavailable')
         data = b'hello world'
         self.bucket.upload_bytes(data, 'file1')
+        self._check_file_contents('file1', data)
+        simulator_hooks.assert_upload_faults_fired(self.simulator, 1)
 
     def test_upload_file_one_fatal_error(self):
-        self.simulator.set_upload_errors([CanRetry(False)])
+        simulator_hooks.fail_uploads(self.simulator, 400, 'bad_request')
         data = b'hello world'
-        with self.assertRaises(CanRetry):
+        with pytest.raises(BadRequest) as caught:
             self.bucket.upload_bytes(data, 'file1')
+        assert caught.value.code == 'bad_request'
+        simulator_hooks.assert_upload_faults_fired(self.simulator, 1)
 
     def test_upload_file_too_many_retryable_errors(self):
-        self.simulator.set_upload_errors([CanRetry(True)] * 6)
+        simulator_hooks.fail_uploads(self.simulator, 503, 'service_unavailable', count=6)
         data = b'hello world'
         with self.assertRaises(MaxRetriesExceeded):
             self.bucket.upload_bytes(data, 'file1')
@@ -1027,10 +1024,10 @@ class TestUpload(TestCaseWithBucket):
             part_stream,
         )
 
-    def _check_file_contents(self, file_name, expected_contents):
+    def _check_file_contents(self, file_name, expected_contents, encryption=None):
+        # An SSE-C file downloads only with its key, as on B2.
         download = DownloadDestBytes()
-        with FileSimulator.dont_check_encryption():
-            self.bucket.download_file_by_name(file_name, download)
+        self.bucket.download_file_by_name(file_name, download, encryption=encryption)
         self.assertEqual(expected_contents, download.get_bytes_written())
 
 
@@ -1324,12 +1321,42 @@ class TruncatedDownloadRawSimulator(RawSimulator):
 
 class TestCaseWithTruncatedDownloadBucket(TestCaseWithBucket):
     RAW_SIMULATOR_CLASS = TruncatedDownloadRawSimulator
+    # Under --b2-simulator, b2-simulator cuts every download answer short itself (a wire fault),
+    # so the SDK meets the truncation over HTTP instead of from the in-process subclass above.
+    TRUNCATE_ON_B2_SIMULATOR = True
+    # B2 refuses a wrong SSE-C key before it sends any file data, so there is nothing to cut
+    # short (RawSimulator's short answers never apply to it either); a wire fault would cut the
+    # error answer instead.
+    NOT_TRUNCATED = {'test_download_by_id_no_progress_wrong_encryption'}
+
+    def setUp(self):
+        self._truncating = (
+            b2_simulator.enabled()
+            and self.TRUNCATE_ON_B2_SIMULATOR
+            and self._testMethodName not in self.NOT_TRUNCATED
+        )
+        if b2_simulator.enabled() and self.TRUNCATE_ON_B2_SIMULATOR:
+            self.RAW_SIMULATOR_CLASS = RawSimulator
+        super().setUp()
+        if self._truncating:
+            simulator_hooks.truncate_downloads()
+
+    def tearDown(self):
+        if self._truncating:
+            assert simulator_hooks.truncated_downloads() > 0, 'no download was cut short'
+        super().tearDown()
 
 
 ####### actual tests of truncated downloads
 
 
 class TestTruncatedDownloadSimple(DownloadTests, TestCaseWithTruncatedDownloadBucket):
+    # Stays on RawSimulator: SimpleDownloader resumes only after a body that ends cleanly short.
+    # Over HTTP a short body raises requests' ChunkedEncodingError (urllib3 enforces
+    # Content-Length), which SimpleDownloader does not catch, so the download fails on
+    # b2-simulator. Changing that is an SDK change, not a test change.
+    TRUNCATE_ON_B2_SIMULATOR = False
+
     def setUp(self):
         super().setUp()
         download_manager = self.bucket.api.services.download_manager

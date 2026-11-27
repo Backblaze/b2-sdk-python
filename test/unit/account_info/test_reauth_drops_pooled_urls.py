@@ -18,6 +18,7 @@ import pytest
 from apiver_deps import ALL_CAPABILITIES, B2HttpApiConfig, B2Session, RawSimulator
 from apiver_deps_exception import InvalidAuthToken, MissingAccountData
 
+from test.unit import simulator_hooks
 from test.unit.b2_simulator import raw_api_class
 
 from .fixtures import *  # noqa: F401, F403
@@ -387,7 +388,7 @@ def test_url_request_retries_expired_account_token(session_with_keys, pooled_upl
         take(resource_id)
     info = session.account_info
     expired_token = info.get_account_auth_token()
-    session.raw_api.expire_auth_token(expired_token)
+    simulator_hooks.expire_account_token(session.raw_api, expired_token)
     issued = mocker.spy(session.raw_api, 'get_upload_part_url' if large_file else 'get_upload_url')
 
     _upload(session, bucket_id, file_id, large_file=large_file)
