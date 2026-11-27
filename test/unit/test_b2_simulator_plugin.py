@@ -204,6 +204,45 @@ def test_a_second_account_fails_instead_of_reusing_the_first(b2api):
 
 
 @pytest.mark.needs_b2_simulator
+@pytest.mark.b2_simulator_config(extraAccounts=1)
+def test_a_second_account_comes_from_extra_accounts(b2api):
+    from apiver_deps import B2Api, B2HttpApiConfig, InMemoryAccountInfo
+
+    from test.unit.b2_simulator import raw_api_class
+
+    key_id, key = b2api.session.raw_api.create_account()
+    assert (key_id, key) == ('sim-master-id-2', 'sim-master-secret-2')
+    other = B2Api(
+        InMemoryAccountInfo(),
+        api_config=B2HttpApiConfig(_raw_api_class=raw_api_class(RawSimulator)),
+    )
+    other.authorize_account(application_key_id=key_id, application_key=key, realm='production')
+    assert other.account_info.get_account_id() != b2api.account_info.get_account_id()
+    # One extra account: a third one fails like any account the server does not have.
+    with pytest.raises(RuntimeError, match='b2-simulator has 2 accounts'):
+        b2api.session.raw_api.create_account()
+
+
+@pytest.mark.needs_b2_simulator
+def test_control_reaches_this_workers_control_plane(b2api):
+    from test.unit import b2_simulator
+
+    assert b2_simulator.enabled()
+    b2api.list_buckets()
+    entries = b2_simulator.control('GET', '/journal')['entries']
+    assert [e['endpoint'] for e in entries][-1] == 'b2_list_buckets'
+
+
+def test_without_the_flag_the_control_plane_is_not_used(pytestconfig, monkeypatch):
+    from test.unit import b2_simulator
+
+    assert b2_simulator.enabled() == pytestconfig.getoption('--b2-simulator')
+    monkeypatch.setattr(b2_simulator, '_enabled', False)  # as in a run without the flag
+    with pytest.raises(RuntimeError, match='needs --b2-simulator'):
+        b2_simulator.control('GET', '/journal')
+
+
+@pytest.mark.needs_b2_simulator
 def test_a_tests_own_simulator_subclass_stays_in_process():
     from test.unit.b2_simulator import raw_api_class
 

@@ -323,6 +323,8 @@ class TestRegressionApi:
             api.delete_bucket(bucket)
         assert api.cache.get_bucket_id_or_none_from_bucket_name(bucket.name) == bucket.id_
 
+    # 'different' needs a second account: b2-simulator's extraAccounts.
+    @pytest.mark.b2_simulator_config(extraAccounts=1)
     @pytest.mark.parametrize('account_kind', ['fresh', 'same', 'different'])
     @pytest.mark.parametrize('cache_kind', ['memory', 'account_info', 'sqlite'])
     def test_c55_failed_authorization_preserves_session(self, account_kind, cache_kind, tmp_path):
@@ -456,7 +458,7 @@ class TestRegressionLargeUploadFailure:
         api.authorize_account(
             application_key_id=account_id, application_key=master_key, realm='production'
         )
-        bucket = api.create_bucket('big', 'allPrivate')
+        bucket = api.create_bucket('big-files', 'allPrivate')
         original = simulator.upload_part
         part_failed = threading.Event()
         queued_sibling = threading.Event()
