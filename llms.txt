@@ -16,6 +16,8 @@
 - [Replication](https://github.com/Backblaze/b2-sdk-python/blob/master/doc/source/replication.rst): Configure replication.
 - [Server-side encryption](https://b2-sdk-python.readthedocs.io/en/master/server_side_encryption.html): Use server-side encryption.
 - [Account info and authorization](https://b2-sdk-python.readthedocs.io/en/master/account_info.html): Choose a store and authorize an account.
+- [API compatibility](https://b2-sdk-python.readthedocs.io/en/master/api_types.html): Check what can change inside one interface version.
+- [Glossary](https://b2-sdk-python.readthedocs.io/en/master/glossary.html): Look up B2 and SDK terms.
 
 ## API reference
 
@@ -26,6 +28,8 @@
 
 ## Contributing and testing
 
+- [Testing guide](https://github.com/Backblaze/b2-sdk-python/blob/master/docs/testing.md): Choose a test level and check what it proves.
+- [Writing style](https://github.com/Backblaze/b2-sdk-python/blob/master/docs/writing-style.md): Write or edit documentation and docstrings.
 - [Contributing](https://github.com/Backblaze/b2-sdk-python/blob/master/CONTRIBUTING.md): Find contribution and testing guidance.
 - [Contributor instructions](https://github.com/Backblaze/b2-sdk-python/blob/master/AGENTS.md): Find commands, conventions and recurring review findings.
 
