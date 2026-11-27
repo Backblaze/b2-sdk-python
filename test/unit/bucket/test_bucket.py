@@ -55,6 +55,7 @@ from requests import Response
 from urllib3.response import HTTPResponse
 
 from test.helpers import NonSeekableIO, assert_dict_equal_ignore_extra
+from test.unit.b2_simulator import raw_api_class
 
 from ..test_base import TestBase, create_key
 
@@ -317,7 +318,7 @@ class TestCaseWithBucket(TestBase):
         return B2Api(
             self.account_info,
             cache=self.CACHE_CLASS(),
-            api_config=B2HttpApiConfig(_raw_api_class=self.RAW_SIMULATOR_CLASS),
+            api_config=B2HttpApiConfig(_raw_api_class=raw_api_class(self.RAW_SIMULATOR_CLASS)),
         )
 
     def setUp(self):
@@ -2372,7 +2373,7 @@ class TestBucketRaisingSession(TestUpload):
         self.api = B2ApiPatched(
             self.account_info,
             cache=self.CACHE_CLASS(),
-            api_config=B2HttpApiConfig(_raw_api_class=self.RAW_SIMULATOR_CLASS),
+            api_config=B2HttpApiConfig(_raw_api_class=raw_api_class(self.RAW_SIMULATOR_CLASS)),
         )
         return self.api
 
@@ -3173,7 +3174,7 @@ class TestDownloadTuneWriteBuffer(DownloadTestsBase, TestCaseWithBucket):
     def get_api(self):
         return B2Api(
             self.account_info,
-            api_config=B2HttpApiConfig(_raw_api_class=self.RAW_SIMULATOR_CLASS),
+            api_config=B2HttpApiConfig(_raw_api_class=raw_api_class(self.RAW_SIMULATOR_CLASS)),
             save_to_buffer_size=self.ALIGN_FACTOR,
         )
 
@@ -3221,7 +3222,7 @@ class TestDownloadNoHashChecking(DownloadTestsBase, TestCaseWithBucket):
     def get_api(self):
         return B2Api(
             self.account_info,
-            api_config=B2HttpApiConfig(_raw_api_class=self.RAW_SIMULATOR_CLASS),
+            api_config=B2HttpApiConfig(_raw_api_class=raw_api_class(self.RAW_SIMULATOR_CLASS)),
             check_download_hash=False,
         )
 

@@ -31,6 +31,8 @@ from apiver_deps import (
 )
 from apiver_deps_exception import AccessDenied, FileNotPresent
 
+from test.unit.b2_simulator import raw_api_class
+
 if apiver_deps.V <= 1:
     from apiver_deps import FileVersionInfo as VFileVersion
 else:
@@ -43,7 +45,9 @@ class TestFileVersion:
         self.account_info = InMemoryAccountInfo()
         self.cache = DummyCache()
         self.api = B2Api(
-            self.account_info, self.cache, api_config=B2HttpApiConfig(_raw_api_class=RawSimulator)
+            self.account_info,
+            self.cache,
+            api_config=B2HttpApiConfig(_raw_api_class=raw_api_class(RawSimulator)),
         )
         self.raw_api = self.api.session.raw_api
         (self.application_key_id, self.master_key) = self.raw_api.create_account()

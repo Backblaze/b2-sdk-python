@@ -43,6 +43,8 @@ from apiver_deps_exception import (
     WrongEncryptionModeForBucketDefault,
 )
 
+from test.unit.b2_simulator import raw_api_class
+
 from ..test_base import create_key, create_key_multibucket
 
 if apiver_deps.V <= 1:
@@ -57,7 +59,9 @@ class TestApi:
         self.account_info = InMemoryAccountInfo()
         self.cache = InMemoryCache()
         self.api = B2Api(
-            self.account_info, self.cache, api_config=B2HttpApiConfig(_raw_api_class=RawSimulator)
+            self.account_info,
+            self.cache,
+            api_config=B2HttpApiConfig(_raw_api_class=raw_api_class(RawSimulator)),
         )
         self.raw_api = self.api.session.raw_api
         (self.application_key_id, self.master_key) = self.raw_api.create_account()

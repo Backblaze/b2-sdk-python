@@ -47,6 +47,7 @@ from apiver_deps import (
 from apiver_deps_exception import NonExistentBucket
 
 from test.known_defect import expect
+from test.unit.b2_simulator import raw_api_class
 
 from .test_bucket import TestCaseWithBucket
 
@@ -286,7 +287,7 @@ class TestRegressionApi:
         api = B2Api(
             account_info or InMemoryAccountInfo(),
             cache=cache if cache is not None else InMemoryCache(),
-            api_config=B2HttpApiConfig(_raw_api_class=RawSimulator),
+            api_config=B2HttpApiConfig(_raw_api_class=raw_api_class(RawSimulator)),
         )
         account_id, master_key = api.session.raw_api.create_account()
         api.authorize_account(
@@ -342,7 +343,8 @@ class TestRegressionApi:
         old_allowed = info.get_allowed()
         if account_kind == 'different':
             other = B2Api(
-                InMemoryAccountInfo(), api_config=B2HttpApiConfig(_raw_api_class=RawSimulator)
+                InMemoryAccountInfo(),
+                api_config=B2HttpApiConfig(_raw_api_class=raw_api_class(RawSimulator)),
             )
             other.session.raw_api = api.session.raw_api
             account_id, master_key = other.session.raw_api.create_account()
@@ -446,7 +448,7 @@ class TestRegressionLargeUploadFailure:
         api = B2Api(
             InMemoryAccountInfo(),
             cache=InMemoryCache(),
-            api_config=B2HttpApiConfig(_raw_api_class=RawSimulator),
+            api_config=B2HttpApiConfig(_raw_api_class=raw_api_class(RawSimulator)),
             max_upload_workers=1,  # parts start one at a time, in order
         )
         simulator = api.session.raw_api

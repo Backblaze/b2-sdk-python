@@ -17,6 +17,8 @@ from io import BytesIO
 
 import pytest
 
+from test.unit.b2_simulator import raw_api_class
+
 from ..test_base import TestBase
 from .deps import (
     NO_RETENTION_FILE_SETTING,
@@ -168,7 +170,7 @@ class TestCaseWithBucket(TestBase):
 
     def setUp(self):
         self.bucket_name = 'my-bucket'
-        self.simulator = self.RAW_SIMULATOR_CLASS()
+        self.simulator = raw_api_class(self.RAW_SIMULATOR_CLASS)()
         self.account_info = StubAccountInfo()
         self.api = B2Api(self.account_info, raw_api=self.simulator)
         (self.account_id, self.master_key) = self.simulator.create_account()
