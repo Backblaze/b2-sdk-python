@@ -15,7 +15,7 @@ Prepare b2sdk
     >>> b2_api = B2Api(info, cache=AuthInfoCache(info))
     >>> application_key_id = '4a5b6c7d8e9f'
     >>> application_key = '001b8e23c26ff6efb941e237deb182b9599a84bef7'
-    >>> b2_api.authorize_account("production", application_key_id, application_key)
+    >>> b2_api.authorize_account(application_key_id, application_key)
 
 .. tip::
    Get credentials from B2 website
@@ -252,7 +252,7 @@ By name
     >>> b2_file_name = 'dummy_new.pdf'
     >>> local_file_name = '/home/user1/b2_example/new3.pdf'
     >>> downloaded_file = bucket.download_file_by_name(b2_file_name)
-    >>> downloaded_file.save_to(local_file_path)
+    >>> downloaded_file.save_to(local_file_name)
 
 
 Downloading encrypted files
@@ -283,18 +283,17 @@ List files
     f2.txt 1560927489000 None
     som2.pdf 1554296578000 None
     some.pdf 1554296579000 None
-    test-folder/.bzEmpty 1561005295000 test-folder/
+    test-folder/.bzEmpty 1561005295000 None
     test-folder/folder_file.txt 1561005349000 None
 
-Note: The files are returned recursively and in order so all files in a folder are printed one after another.
-The folder_name is returned only for the first file in the folder.
+In a recursive listing, ``folder_name`` is always ``None``.
 
 .. code-block:: python
 
     # Within folder
     >>> bucket_name = 'example-mybucket-b2'
     >>> bucket = b2_api.get_bucket_by_name(bucket_name)
-    >>> for file_version, folder_name in bucket.ls(folder_to_list='test-folder', latest_only=True):
+    >>> for file_version, folder_name in bucket.ls(path='test-folder', latest_only=True):
     >>>     print(file_version.file_name, file_version.upload_timestamp, folder_name)
     test-folder/.bzEmpty 1561005295000 None
     test-folder/folder_file.txt 1561005349000 None
@@ -368,7 +367,7 @@ Copy file
      "serverSideEncryption": {"algorithm": "AES256",
                               "mode": "SSE-B2"}}
 
-If the ``content length`` is not provided and the file is larger than 5GB, ``copy`` would not succeed and error would be raised. If length is provided, then the file may be copied as a large file. Maximum copy part size can be set by ``max_copy_part_size`` - if not set, it will default to 5GB. If ``max_copy_part_size`` is lower than :term:`absoluteMinimumPartSize`, file would be copied in single request - this may be used to force copy in single request large file that fits in server small file limit.
+If you omit ``length``, the SDK first attempts a single-request copy. If the source is too large for that request, the SDK logs a warning and uses the large-file interface. If you provide ``length``, the SDK uses the transfer planner, which can copy the file in parts. Use ``min_part_size`` and ``max_part_size`` to set the planner’s part-size bounds in bytes.
 
 When copying files, you can provide encryption settings for both source and destination files.
 You cannot use `SSE-C` encrypted source files without the proper key.
@@ -438,7 +437,7 @@ By listing
 
 .. code-block:: python
 
-    >>> for file_version, folder_name in bucket.ls(latest_only=True, prefix='dir_name'):
+    >>> for file_version, folder_name in bucket.ls(path='dir_name/', latest_only=True, recursive=True):
     >>>     ...
 
 
@@ -513,7 +512,7 @@ Usage examples
 
 .. code-block:: python
 
-    >>> for file_version, folder_name in bucket.ls(latest_only=True, prefix='dir_name'):
+    >>> for file_version, folder_name in bucket.ls(path='dir_name/', latest_only=True, recursive=True):
     >>>     if file_version.mod_time_millis < 1627979193913 and file_version.file_name.endswith('.csv'):
     >>>         if file_version.legal_hold.is_on():
     >>>             file_version = file_version.update_legal_hold(LegalHold.OFF)
