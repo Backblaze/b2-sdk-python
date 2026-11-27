@@ -155,15 +155,13 @@ To run tests matching a keyword expression::
 
     $ nox -s unit-3.10 -- -k keyword
 
-Draft pull requests run credential-free checks. CI skips the bucket-cleanup job,
-withholds B2 test credentials, and skips SDK and CLI live integration steps.
-Unit and CLI compatibility jobs still run when cleanup is deliberately skipped;
-failed lint or cleanup jobs continue to block them. Live tests, B2 credential
-access and bucket cleanup also require the repository Actions variable
-``B2_LIVE_TESTS_ENABLED`` to be explicitly set to ``true``. The default is off,
-including ready pull requests and pushes to master. Enable that variable only
-when live validation with an approved test account is intended; marking a pull
-request ready or merging it does not itself enable live operations.
+Pull requests and pushes to master never receive B2 test credentials. The
+``Simulator Integration`` workflow runs the SDK integration suite against a pinned
+revision of the B2 Simulator (``backblaze-labs/b2-simulator``) with fixed test
+credentials. It fails if the Simulator cannot be checked out or started, and it
+fails for pull requests from forks: push the branch to this repository instead.
+The ``Weekly Live B2 Integration`` workflow runs the same suite against live B2
+every Monday and on manual dispatch. It fails if the live credentials are missing.
 
 JUnit reports include each subtest as its own case, as well as its parent test.
 The repository's ``test.junit_subtests`` compatibility plugin supplies those cases
