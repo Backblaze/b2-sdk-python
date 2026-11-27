@@ -4,7 +4,7 @@
 Advanced usage patterns
 #########################################
 
-B2 server API allows for creation of an object from existing objects. This allows to avoid transferring data from the source machine if the desired outcome can be (at least partially) constructed from what is already on the server.
+The B2 server API can create an object from existing objects. This can avoid transferring data from the source machine if the desired outcome can be (at least partially) constructed from what is already on the server.
 
 **b2sdk** provides functions that let you specify the desired outcome. The library plans and executes the work. Use the table below to compare object creation methods for different usage patterns.
 
@@ -43,9 +43,9 @@ Some methods support overlapping ranges between local and remote files. **b2sdk*
 Streaming interface
 ===================
 
-Some object creation methods start writing data before reading the whole input (iterator). You can use these methods to write objects without fully known contents without first writing them locally for copying. Such usage pattern can be relevant to small devices which stream data to B2 from an external NAS, where caching large files such as media files or virtual machine images is not an option.
+Some object creation methods start writing data before reading the whole input (iterator). You can use these methods to write objects without fully known contents without first writing them locally for copying. This pattern can be relevant to small devices that stream data to B2 from an external NAS. On such devices, caching large files such as media files or virtual machine images is not an option.
 
-Please see :ref:`advanced method support table <advanced_methods_support_table>` to see where streaming interface is supported.
+See the :ref:`advanced method support table <advanced_methods_support_table>` for the methods that support the streaming interface.
 
 Continuation
 ============
@@ -57,9 +57,9 @@ Please see :ref:`here <continuation>`
 Concatenate files
 *****************
 
-:meth:`b2sdk.v3.Bucket.concatenate` accepts an iterable of upload sources (either local or remote). It can be used to glue remote files together, back-to-back, into a new file.
+:meth:`b2sdk.v3.Bucket.concatenate` accepts an iterable of upload sources (either local or remote). You can use it to glue remote files together, back-to-back, into a new file.
 
-:meth:`b2sdk.v3.Bucket.concatenate_stream` does not create and validate a plan before starting the transfer, so it can be used to process a large input iterator, at a cost of limited automated continuation.
+:meth:`b2sdk.v3.Bucket.concatenate_stream` does not create and validate a plan before starting the transfer. You can use it to process a large input iterator, at a cost of limited automated continuation.
 
 
 Concatenate files of known size
@@ -79,7 +79,7 @@ Concatenate files of known size
 
 If one of remote source has length smaller than :term:`absoluteMinimumPartSize` then it cannot be copied into large file part. Such remote source would be downloaded and concatenated locally with local source or with other downloaded remote source.
 
-Please note that this method only allows checksum verification for local upload sources. Checksum verification for remote sources is available only when local copy is available. In such case :meth:`b2sdk.v3.Bucket.create_file` can be used with overlapping ranges in input.
+This method allows checksum verification only for local upload sources. Checksum verification for remote sources is available only when a local copy is available. In that case, you can use :meth:`b2sdk.v3.Bucket.create_file` with overlapping ranges in the input.
 
 For more information about ``concatenate`` please see :meth:`b2sdk.v3.Bucket.concatenate` and :class:`b2sdk.v3.CopySource`.
 
@@ -106,14 +106,14 @@ Concatenate files of known size (streamed version)
 Concatenate files of unknown size
 =================================
 
-While it is supported by B2 server, this pattern is currently not supported by **b2sdk**.
+The B2 server supports this pattern, but **b2sdk** does not currently support it.
 
 
 *********************
 Synthethize an object
 *********************
 
-Using methods described below an object can be created from both local and remote sources while avoiding downloading small ranges when such range is already present on a local drive.
+The methods described below can create an object from both local and remote sources. They avoid downloading a small range when that range is already present on a local drive.
 
 Update a file efficiently
 ====================================
@@ -121,13 +121,13 @@ Update a file efficiently
 :meth:`b2sdk.v3.Bucket.create_file` accepts an iterable which *can contain overlapping destination ranges*.
 
 .. note::
-  Following examples *create* new file - data in bucket is immutable, but **b2sdk** can create a new file version with the same name and updated content
+  The following examples *create* a new file. Data in a bucket is immutable, but **b2sdk** can create a new file version with the same name and updated content.
 
 
 Append to the end of a file
 ---------------------------
 
-The assumption here is that the file has been appended to since it was last uploaded to. This assumption is verified by **b2sdk** when possible by recalculating checksums of the overlapping remote and local ranges. If copied remote part sha does not match with locally available source, file creation process would be interrupted and an exception would be raised.
+The assumption here is that the file has been appended to since it was last uploaded to. **b2sdk** verifies this assumption when possible, by recalculating checksums of the overlapping remote and local ranges. If the sha of a copied remote part does not match the locally available source, **b2sdk** interrupts the file creation and raises an exception.
 
 .. code-block:: python
 
@@ -193,7 +193,7 @@ This is useful for expert usage patterns such as:
  - mostly-server-side cutting and gluing uncompressed media files such as `wav` and `avi` with rewriting of file headers
  - various deduplicated backup scenarios
 
-Please note that :meth:`b2sdk.v3.Bucket.create_file_stream` accepts **an ordered iterable** which *can contain overlapping ranges*, so the operation does not need to be planned ahead, but can be streamed, which supports very large output objects.
+:meth:`b2sdk.v3.Bucket.create_file_stream` accepts **an ordered iterable** which *can contain overlapping ranges*. Because of this, the operation does not need to be planned ahead, but can be streamed, which supports very large output objects.
 
 Scenarios such as below are then possible:
 
@@ -246,7 +246,7 @@ For more information see :meth:`b2sdk.v3.Bucket.create_file`.
 Encryption
 ----------
 
-Even if files `A-C` and `D-G` are encrypted using `SSE-C` with different keys, they can still be used in a single :meth:`b2sdk.v3.Bucket.create_file` call, because :class:`b2sdk.v3.CopySource` accepts an optional :class:`b2sdk.v3.EncryptionSetting`.
+Files `A-C` and `D-G` can be used in a single :meth:`b2sdk.v3.Bucket.create_file` call even if they are encrypted using `SSE-C` with different keys. This works because :class:`b2sdk.v3.CopySource` accepts an optional :class:`b2sdk.v3.EncryptionSetting`.
 
 Prioritize remote or local sources
 ----------------------------------
@@ -296,7 +296,7 @@ To continue a simple upload session, **b2sdk** checks available sessions for the
 
 To support automatic continuation, some advanced methods create a plan before starting copy/upload operations, saving the hash of that plan in ``file_info`` for increased reliability.
 
-If that is not available, get the ``large_file_id`` of the unfinished large file with :meth:`b2sdk.v3.Bucket.list_unfinished_large_files`. Pass it as ``continue_large_file_id`` in the subsequent call to continue the same task. The user of the function is then responsible for passing the exact same input. Please see :ref:`advanced method support table <advanced_methods_support_table>` to see where automatic continuation is supported. ``continue_large_file_id`` can also be passed if automatic continuation is available in order to avoid issues where multiple matching upload sessions are matching the transfer.
+If that is not available, get the ``large_file_id`` of the unfinished large file with :meth:`b2sdk.v3.Bucket.list_unfinished_large_files`. Pass it as ``continue_large_file_id`` in the subsequent call to continue the same task. The user of the function is then responsible for passing the exact same input. See the :ref:`advanced method support table <advanced_methods_support_table>` for the methods that support automatic continuation. You can also pass ``continue_large_file_id`` when automatic continuation is available, to avoid issues where multiple upload sessions match the transfer.
 
 
 Continuation of create/concatenate
@@ -342,7 +342,7 @@ Auto continuation
 
     >>> bucket.create_file(input_sources, remote_name, file_info=file_info)
 
-For local source only input, :meth:`b2sdk.v3.Bucket.create_file` would try to find matching unfinished large file. It will verify uploaded parts checksums with local sources - the most completed, having all uploaded parts matched candidate would be automatically selected as file to continue. If there is no matching candidate (even if there are unfinished files for the same file name) new large file would be started.
+For local source only input, :meth:`b2sdk.v3.Bucket.create_file` tries to find a matching unfinished large file. It verifies the checksums of the uploaded parts against the local sources. It automatically selects the most complete candidate, in which all uploaded parts match, as the file to continue. If there is no matching candidate (even if there are unfinished files for the same file name), it starts a new large file.
 
 In other cases plan information would be generated and :meth:`b2sdk.v3.Bucket.create_file` would try to find unfinished large file with matching plan info in its file info. If there is one or more such unfinished large files, :meth:`b2sdk.v3.Bucket.create_file` would verify checksums for all locally available parts and choose any matching candidate. If all candidates fail on uploaded parts checksums verification, process is interrupted and error raises. In such case corrupted unfinished large files should be cancelled manually and :meth:`b2sdk.v3.Bucket.create_file` should be retried.
 
@@ -361,8 +361,8 @@ If :meth:`b2sdk.v3.Bucket.create_file_stream` does not receive ``continue_large_
 SHA-1 hashes for large files
 ****************************
 
-Depending on the number and size of sources and the size of the result file, the SDK may decide to use the large file API to create a file on the server.  In such cases the file's SHA-1 won't be stored on the server in the ``X-Bz-Content-Sha1`` header, but it may optionally be stored with the file in the ``large_file_sha1`` entry in the ``file_info``, as per [B2 integration checklist](https://www.backblaze.com/b2/docs/integration_checklist.html).
+Depending on the number and size of sources and the size of the result file, the SDK may decide to use the large file API to create a file on the server.  In such cases the file's SHA-1 won't be stored on the server in the ``X-Bz-Content-Sha1`` header. However, it may optionally be stored with the file in the ``large_file_sha1`` entry in the ``file_info``, as per [B2 integration checklist](https://www.backblaze.com/b2/docs/integration_checklist.html).
 
-In basic scenarios, large files uploaded to the server will have a ``large_file_sha1`` element added automatically to their ``file_info``.  However, when concatenating multiple sources, it may be impossible for the SDK to figure out the SHA-1 automatically.  In such cases, the SHA-1 can be provided using the ``large_file_sha1`` parameter to :meth:`b2sdk.v3.Bucket.create_file`, :meth:`b2sdk.v3.Bucket.concatenate` and their stream equivalents.  If the parameter is skipped or ``None``, the result file may not have the ``large_file_sha1`` value set.
+In basic scenarios, large files uploaded to the server will have a ``large_file_sha1`` element added automatically to their ``file_info``.  However, when concatenating multiple sources, it may be impossible for the SDK to figure out the SHA-1 automatically.  In such cases, you can provide the SHA-1 using the ``large_file_sha1`` parameter to :meth:`b2sdk.v3.Bucket.create_file`, :meth:`b2sdk.v3.Bucket.concatenate` and their stream equivalents.  If you skip the parameter or pass ``None``, the result file may not have the ``large_file_sha1`` value set.
 
 Note that the provided SHA-1 value is not verified.
