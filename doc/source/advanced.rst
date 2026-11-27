@@ -74,7 +74,7 @@ Concatenate files of known size
     ...     CopySource('4_z5485a1682662eb3e60980d10_f1022e2320daf707f_d20190620_m122848_c002_v0001123_t0020', length=2123456789),
     ... ]
     >>> file_info = {'how': 'good-file'}
-    >>> bucket.concatenate(input_sources, remote_name, file_info)
+    >>> bucket.concatenate(input_sources, remote_name, file_info=file_info)
     <b2sdk._internal.file_version.FileVersion at 0x7fc8cd560551>
 
 If one of remote source has length smaller than :term:`absoluteMinimumPartSize` then it cannot be copied into large file part. Such remote source would be downloaded and concatenated locally with local source or with other downloaded remote source.
@@ -98,7 +98,7 @@ Concatenate files of known size (streamed version)
     ...     CopySource('4_z5485a1682662eb3e60980d10_f1022e2320daf707f_d20190620_m122848_c002_v0001123_t0020', length=2123456789),
     ... ]
     >>> file_info = {'how': 'good-file'}
-    >>> bucket.concatenate_stream(input_sources, remote_name, file_info)
+    >>> bucket.concatenate_stream(input_sources, remote_name, file_info=file_info)
     <b2sdk._internal.file_version.FileVersion at 0x7fc8cd560551>
 
 
@@ -147,7 +147,7 @@ The assumption here is that the file has been appended to since it was last uplo
     ...     ),
     ... ]
     >>> file_info = {'how': 'good-file'}
-    >>> bucket.create_file(input_sources, remote_name, file_info)
+    >>> bucket.create_file(input_sources, remote_name, file_info=file_info)
     <b2sdk._internal.file_version.FileVersion at 0x7fc8cd560552>
 
 :class:`b2sdk.v3.UploadSourceLocalFile` has the size determined automatically in this case. This is more efficient than :meth:`b2sdk.v3.Bucket.concatenate`, as it can use the overlapping ranges when a remote part is smaller than :term:`absoluteMinimumPartSize` to prevent downloading a range (when concatenating, local source would have destination offset at the end of remote source)
@@ -176,7 +176,7 @@ Change the middle of the remote file
     ...     ),
     ... ]
     >>> file_info = {'how': 'good-file'}
-    >>> bucket.create_file(input_sources, remote_name, file_info)
+    >>> bucket.create_file(input_sources, remote_name, file_info=file_info)
     <b2sdk._internal.file_version.FileVersion at 0x7fc8cd560552>
 
 :class:`b2sdk.v3.UploadSourceLocalFile` has the size determined automatically in this case. This is more efficient than :meth:`b2sdk.v3.Bucket.concatenate`, as it can use the overlapping ranges when a remote part is smaller than :term:`absoluteMinimumPartSize` to prevent downloading a range.
@@ -235,7 +235,7 @@ Scenarios such as below are then possible:
     ...     )
     ...
     >>> file_info = {'how': 'good-file'}
-    >>> bucket.create_file(generate_input(), remote_name, file_info)
+    >>> bucket.create_file(generate_input(), remote_name, file_info=file_info)
     <b2sdk._internal.file_version.FileVersion at 0x7fc8cd560552>
 
 
@@ -251,7 +251,7 @@ Even if files `A-C` and `D-G` are encrypted using `SSE-C` with different keys, t
 Prioritize remote or local sources
 ----------------------------------
 
-:meth:`b2sdk.v3.Bucket.create_file` and :meth:`b2sdk.v3.Bucket.create_file_stream` support source/origin prioritization, so that planner would know which sources should be used for overlapping ranges. Supported values are: `local`, `remote` and `local_verification`.
+:meth:`b2sdk.v3.Bucket.create_file` and :meth:`b2sdk.v3.Bucket.create_file_stream` prioritize remote sources over local sources when possible. For overlapping ranges, the planner uses a remote source where one is available. It uses a local source where no remote source covers the range, or where the remote source is shorter than the minimum part size (:term:`absoluteMinimumPartSize` by default). The SDK cannot copy such a source as a part.
 
 .. code-block::
 
@@ -277,34 +277,10 @@ Prioritize remote or local sources
 
 .. code-block:: python
 
-    >>> bucket.create_file(input_sources, remote_name, file_info, prioritize='local')
-    # planner parts: cloud[A, B], local[B, C], remote[C, D], local[D, E]
-
-Here the planner has only used a remote source where remote range was not available, minimizing downloads.
-
-.. code-block:: python
-
-    >>> bucket.create_file(input_sources, remote_name, file_info, prioritize='remote')
+    >>> bucket.create_file(input_sources, remote_name, file_info=file_info)
     # planner parts: cloud[A, D], local[D, E]
 
-Here the planner has only used a local source where remote range was not available, minimizing uploads.
-
-.. code-block:: python
-
-    >>> bucket.create_file(input_sources, remote_name, file_info)
-    # or
-    >>> bucket.create_file(input_sources, remote_name, file_info, prioritize='local_verification')
-    # planner parts: cloud[A, B], cloud[B, C], cloud[C, D], local[D, E]
-
-In `local_verification` mode the remote range was artificially split into three parts to allow for checksum verification against matching local ranges.
-
-.. note::
-  `prioritize` is just a planner setting - remote parts are always verified if matching local parts exists.
-
-.. todo::
-  Prioritization should accept an enum, not a string. Tracked in
-  `issue #602 <https://github.com/Backblaze/b2-sdk-python/issues/602>`_. Kept here so that anyone
-  editing this section sees it alongside the documented string values.
+Here the remote range A-D is long enough to copy, so the planner uses a local source only for D-E, minimizing uploads.
 
 
 .. _continuation:
@@ -320,7 +296,7 @@ To continue a simple upload session, **b2sdk** checks available sessions for the
 
 To support automatic continuation, some advanced methods create a plan before starting copy/upload operations, saving the hash of that plan in ``file_info`` for increased reliability.
 
-If that is not available, ``large_file_id`` can be extracted via callback during the operation start. It can then be passed into the subsequent call to continue the same task, though the responsibility for passing the exact same input is then on the user of the function. Please see :ref:`advanced method support table <advanced_methods_support_table>` to see where automatic continuation is supported. ``large_file_id`` can also be passed if automatic continuation is available in order to avoid issues where multiple matching upload sessions are matching the transfer.
+If that is not available, get the ``large_file_id`` of the unfinished large file with :meth:`b2sdk.v3.Bucket.list_unfinished_large_files`. Pass it as ``continue_large_file_id`` in the subsequent call to continue the same task. The user of the function is then responsible for passing the exact same input. Please see :ref:`advanced method support table <advanced_methods_support_table>` to see where automatic continuation is supported. ``continue_large_file_id`` can also be passed if automatic continuation is available in order to avoid issues where multiple matching upload sessions are matching the transfer.
 
 
 Continuation of create/concatenate
@@ -333,13 +309,14 @@ Manual continuation
 
 .. code-block:: python
 
-    >>> def large_file_callback(large_file):
-    ...     # storage is not part of the interface - here only for demonstration purposes
-    ...     storage.store({'name': remote_name, 'large_file_id': large_file.id})
-    >>> bucket.create_file(input_sources, remote_name, file_info, large_file_callback=large_file_callback)
-    # ...
-    >>> large_file_id = storage.query({'name': remote_name})[0]['large_file_id']
-    >>> bucket.create_file(input_sources, remote_name, file_info, large_file_id=large_file_id)
+    >>> bucket.create_file(input_sources, remote_name, file_info=file_info)
+    # the call is interrupted
+    >>> large_file_id = next(
+    ...     f.file_id
+    ...     for f in bucket.list_unfinished_large_files(prefix=remote_name)
+    ...     if f.file_name == remote_name
+    ... )
+    >>> bucket.create_file(input_sources, remote_name, file_info=file_info, continue_large_file_id=large_file_id)
 
 
 Manual continuation (streamed version)
@@ -347,13 +324,14 @@ Manual continuation (streamed version)
 
 .. code-block:: python
 
-    >>> def large_file_callback(large_file):
-    ...     # storage is not part of the interface - here only for demonstration purposes
-    ...     storage.store({'name': remote_name, 'large_file_id': large_file.id})
-    >>> bucket.create_file_stream(input_sources, remote_name, file_info, large_file_callback=large_file_callback)
-    # ...
-    >>> large_file_id = storage.query({'name': remote_name})[0]['large_file_id']
-    >>> bucket.create_file_stream(input_sources, remote_name, file_info, large_file_id=large_file_id)
+    >>> bucket.create_file_stream(input_sources, remote_name, file_info=file_info)
+    # the call is interrupted
+    >>> large_file_id = next(
+    ...     f.file_id
+    ...     for f in bucket.list_unfinished_large_files(prefix=remote_name)
+    ...     if f.file_name == remote_name
+    ... )
+    >>> bucket.create_file_stream(input_sources, remote_name, file_info=file_info, continue_large_file_id=large_file_id)
 
 Streams that contain remote sources cannot be continued with :meth:`b2sdk.v3.Bucket.create_file` - internally :meth:`b2sdk.v3.Bucket.create_file` stores plan information in file info for such inputs, and verifies it before any copy/upload and :meth:`b2sdk.v3.Bucket.create_file_stream` cannot store this information. Local source only inputs can be safely continued with :meth:`b2sdk.v3.Bucket.create_file` in auto continue mode or manual continue mode (because plan information is not stored in file info in such case).
 
@@ -362,22 +340,21 @@ Auto continuation
 
 .. code-block:: python
 
-    >>> bucket.create_file(input_sources, remote_name, file_info)
+    >>> bucket.create_file(input_sources, remote_name, file_info=file_info)
 
 For local source only input, :meth:`b2sdk.v3.Bucket.create_file` would try to find matching unfinished large file. It will verify uploaded parts checksums with local sources - the most completed, having all uploaded parts matched candidate would be automatically selected as file to continue. If there is no matching candidate (even if there are unfinished files for the same file name) new large file would be started.
 
-In other cases plan information would be generated and :meth:`b2sdk.v3.Bucket.create_file` would try to find unfinished large file with matching plan info in its file info. If there is one or more such unfinished large files, :meth:`b2sdk.v3.Bucket.create_file` would verify checksums for all locally available parts and choose any matching candidate. If all candidates fail on uploaded parts checksums verification, process is interrupted and error raises. In such case corrupted unfinished large files should be cancelled manually and :meth:`b2sdk.v3.Bucket.create_file` should be retried, or auto continuation should be turned off with `auto_continue=False`
+In other cases plan information would be generated and :meth:`b2sdk.v3.Bucket.create_file` would try to find unfinished large file with matching plan info in its file info. If there is one or more such unfinished large files, :meth:`b2sdk.v3.Bucket.create_file` would verify checksums for all locally available parts and choose any matching candidate. If all candidates fail on uploaded parts checksums verification, process is interrupted and error raises. In such case corrupted unfinished large files should be cancelled manually and :meth:`b2sdk.v3.Bucket.create_file` should be retried.
 
 
 No continuation
 ---------------
 
+If :meth:`b2sdk.v3.Bucket.create_file_stream` does not receive ``continue_large_file_id``, it starts a new large file.
+
 .. code-block:: python
 
-    >>> bucket.create_file(input_sources, remote_name, file_info, auto_continue=False)
-
-
-Note, that this only forces start of a new large file - it is still possible to continue the process with either auto or manual modes.
+    >>> bucket.create_file_stream(input_sources, remote_name, file_info=file_info)
 
 
 ****************************
