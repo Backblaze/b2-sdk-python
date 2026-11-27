@@ -1,1 +1,0 @@
-Accept matching percent-encoded SSE-C key identifiers in upload metadata without double encoding, while rejecting conflicting identifiers. Add request, encryption and Object Lock unit tests across the supported SDK interfaces.
