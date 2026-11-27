@@ -44,7 +44,7 @@ from apiver_deps_exception import (
 )
 
 from test.unit import simulator_hooks
-from test.unit.b2_simulator import raw_api_class
+from test.unit.b2_simulator import V3_BUCKET_KEY_GAP, raw_api_class
 
 from ..test_base import create_key, create_key_multibucket
 
@@ -423,6 +423,7 @@ class TestApi:
         assert self.account_info.get_account_auth_token() != expired_token
         assert self.account_info.get_application_key_id() == key.id_
 
+    @pytest.mark.rawsimulator(reason=V3_BUCKET_KEY_GAP, to_ver=2)
     def test_list_buckets_with_restriction(self):
         self._authorize_account()
         bucket1 = self.api.create_bucket('bucket1', 'allPrivate')
@@ -452,6 +453,7 @@ class TestApi:
         assert [b.name for b in self.api.list_buckets(bucket_name=bucket1.name)] == ['bucket1']
         assert [b.name for b in self.api.list_buckets(bucket_name=bucket2.name)] == ['bucket2']
 
+    @pytest.mark.rawsimulator(reason=V3_BUCKET_KEY_GAP, to_ver=2)
     def test_get_bucket_by_name_with_bucket_restriction(self):
         self._authorize_account()
         bucket1 = self.api.create_bucket('bucket1', 'allPrivate')
@@ -464,6 +466,7 @@ class TestApi:
         assert self.api.get_bucket_by_name('bucket1').id_ == bucket1.id_
 
     @pytest.mark.apiver(to_ver=2)
+    @pytest.mark.rawsimulator(reason=V3_BUCKET_KEY_GAP, to_ver=2)
     def test_list_buckets_with_restriction_and_wrong_name_v2(self):
         self._authorize_account()
         bucket1 = self.api.create_bucket('bucket1', 'allPrivate')
@@ -496,6 +499,7 @@ class TestApi:
             self.api.list_buckets(bucket_name=bucket3.name)
 
     @pytest.mark.apiver(to_ver=2)
+    @pytest.mark.rawsimulator(reason=V3_BUCKET_KEY_GAP, to_ver=2)
     def test_list_buckets_with_restriction_and_no_name_v2(self):
         self._authorize_account()
         bucket1 = self.api.create_bucket('bucket1', 'allPrivate')
@@ -528,6 +532,7 @@ class TestApi:
             self.api.list_buckets()
 
     @pytest.mark.apiver(to_ver=2)
+    @pytest.mark.rawsimulator(reason=V3_BUCKET_KEY_GAP, to_ver=2)
     def test_list_buckets_with_restriction_and_wrong_id_v2(self):
         self._authorize_account()
         bucket1 = self.api.create_bucket('bucket1', 'allPrivate')
@@ -599,6 +604,10 @@ class TestApi:
         assert new_legal_hold == file_version.legal_hold
 
     @pytest.mark.apiver(from_ver=2)
+    @pytest.mark.rawsimulator(
+        reason='Backblaze/b2-sdk-python#770: start_large_file sends contentType null for '
+        'content_type=None, which B2 refuses'
+    )
     def test_cancel_large_file_v2(self):
         self._authorize_account()
         bucket = self.api.create_bucket('bucket1', 'allPrivate')
@@ -609,6 +618,10 @@ class TestApi:
         assert cancel_result == FileIdAndName('9999', 'a_large_file')
 
     @pytest.mark.apiver(to_ver=1)
+    @pytest.mark.rawsimulator(
+        reason='Backblaze/b2-sdk-python#770: start_large_file sends contentType null for '
+        'content_type=None, which B2 refuses'
+    )
     def test_cancel_large_file_v1(self):
         self._authorize_account()
         bucket = self.api.create_bucket('bucket1', 'allPrivate')

@@ -56,7 +56,13 @@ from urllib3.response import HTTPResponse
 
 from test.helpers import NonSeekableIO, assert_dict_equal_ignore_extra
 from test.unit import b2_simulator, simulator_hooks
-from test.unit.b2_simulator import raw_api_class
+from test.unit.b2_simulator import (
+    COPY_SSE_B2_SOURCE_DEFECT,
+    SIMPLE_DOWNLOAD_RESUME_DEFECT,
+    V1_COPY_FILE_INFO_DEFECT,
+    V3_BUCKET_KEY_GAP,
+    raw_api_class,
+)
 
 from ..test_base import TestBase, create_key
 
@@ -1345,6 +1351,7 @@ class TestCopyFile(TestCaseWithBucket):
         )
         self._check_file_contents('file2', data)
 
+    @pytest.mark.rawsimulator(reason=V1_COPY_FILE_INFO_DEFECT, to_ver=1)
     def test_copy_without_optional_params(self):
         file_id = self._make_file()
         if apiver_deps.V <= 1:
@@ -1356,6 +1363,7 @@ class TestCopyFile(TestCaseWithBucket):
         expected = [('hello.txt', 11, 'upload', None), ('hello_new.txt', 11, 'upload', None)]
         self.assertBucketContents(expected, '', show_versions=True)
 
+    @pytest.mark.rawsimulator(reason=V1_COPY_FILE_INFO_DEFECT, to_ver=1)
     def test_copy_with_range(self):
         file_id = self._make_file()
         # data = b'hello world'
@@ -1456,6 +1464,7 @@ class TestCopyFile(TestCaseWithBucket):
         expected = [('hello.txt', 11, 'upload', None)]
         self.assertBucketContents(expected, '', show_versions=True)
 
+    @pytest.mark.rawsimulator(reason=V1_COPY_FILE_INFO_DEFECT, to_ver=1)
     def test_copy_with_different_bucket(self):
         source_bucket = self.api.create_bucket('source-bucket', 'allPublic')
         file_id = self._make_file(source_bucket)
@@ -1520,6 +1529,7 @@ class TestCopyFile(TestCaseWithBucket):
                 self.assertEqual('en', copied.file_info['b2-content-language'])
                 self.assertEqual('identity', copied.file_info['b2-content-encoding'])
 
+    @pytest.mark.rawsimulator(reason=COPY_SSE_B2_SOURCE_DEFECT)
     def test_copy_encryption(self):
         data = b'hello_world'
         a = self.bucket.upload_bytes(data, 'a')
@@ -2412,6 +2422,7 @@ class TestUpload(TestCaseWithBucket):
         self._check_file_contents('file1', data)
         self.assertTrue(progress_listener.is_valid())
 
+    @pytest.mark.rawsimulator(reason=V3_BUCKET_KEY_GAP, to_ver=2)
     def test_upload_large_file_with_restricted_api_key(self):
         simulator_hooks.restrict_to_name_prefix(self.api, self.bucket_id, 'path/to')
         part_size = self.simulator.MIN_PART_SIZE
@@ -3244,21 +3255,17 @@ class TruncatedDownloadRawSimulator(RawSimulator):
 
 class TestCaseWithTruncatedDownloadBucket(TestCaseWithBucket):
     RAW_SIMULATOR_CLASS = TruncatedDownloadRawSimulator
-    # Under --b2-simulator, b2-simulator cuts every download answer short itself (a wire fault),
-    # so the SDK meets the truncation over HTTP instead of from the in-process subclass above.
-    TRUNCATE_ON_B2_SIMULATOR = True
+    # On b2-simulator the server cuts every download answer short itself (a wire fault), so the
+    # SDK meets the truncation over HTTP. The in-process subclass above is for a test marked
+    # rawsimulator.
     # B2 refuses a wrong SSE-C key before it sends any file data, so there is nothing to cut
     # short (RawSimulator's short answers never apply to it either); a wire fault would cut the
     # error answer instead.
     NOT_TRUNCATED = {'test_download_by_id_no_progress_wrong_encryption'}
 
     def setUp(self):
-        self._truncating = (
-            b2_simulator.enabled()
-            and self.TRUNCATE_ON_B2_SIMULATOR
-            and self._testMethodName not in self.NOT_TRUNCATED
-        )
-        if b2_simulator.enabled() and self.TRUNCATE_ON_B2_SIMULATOR:
+        self._truncating = b2_simulator.enabled() and self._testMethodName not in self.NOT_TRUNCATED
+        if b2_simulator.enabled():
             self.RAW_SIMULATOR_CLASS = RawSimulator
         super().setUp()
         if self._truncating:
@@ -3273,13 +3280,11 @@ class TestCaseWithTruncatedDownloadBucket(TestCaseWithBucket):
 ####### actual tests of truncated downloads
 
 
+# SimpleDownloader resumes only after a body that ends cleanly short. Over HTTP a short body
+# raises requests' ChunkedEncodingError (urllib3 enforces Content-Length), which SimpleDownloader
+# does not catch, so the download fails on b2-simulator. Changing that is an SDK change.
+@pytest.mark.rawsimulator(reason=SIMPLE_DOWNLOAD_RESUME_DEFECT)
 class TestTruncatedDownloadSimple(DownloadTests, TestCaseWithTruncatedDownloadBucket):
-    # Stays on RawSimulator: SimpleDownloader resumes only after a body that ends cleanly short.
-    # Over HTTP a short body raises requests' ChunkedEncodingError (urllib3 enforces
-    # Content-Length), which SimpleDownloader does not catch, so the download fails on
-    # b2-simulator. Changing that is an SDK change, not a test change.
-    TRUNCATE_ON_B2_SIMULATOR = False
-
     def setUp(self):
         super().setUp()
         download_manager = self.bucket.api.services.download_manager
@@ -3479,19 +3484,9 @@ class DecodeTests(DecodeTestsBase, TestCaseWithBucket):
         assert download_version.file_name == 'test.txt%253Ffoo%253Dbar'
 
 
-class _InProcessRawSimulator(RawSimulator):
-    """
-    Keeps a test on the in-process RawSimulator under --b2-simulator.
-
-    At apiver v2 the SDK authorizes at B2 API v3 with a key that b2_create_key (v3) restricted to
-    one bucket. b2-simulator v0.6.0 refuses every bucket-restricted key at v3, including one made
-    at v3; serving keys made at v3 is a later b2-simulator change.
-    """
-
-
+@pytest.mark.rawsimulator(reason=V3_BUCKET_KEY_GAP, to_ver=2)
 class TestAuthorizeForBucket(TestCaseWithBucket):
     CACHE_CLASS = InMemoryCache
-    RAW_SIMULATOR_CLASS = _InProcessRawSimulator if apiver_deps.V == 2 else RawSimulator
 
     @pytest.mark.apiver(from_ver=2)
     def test_authorize_for_bucket_ensures_cache(self):

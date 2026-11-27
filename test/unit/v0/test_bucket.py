@@ -19,7 +19,12 @@ from io import BytesIO
 import pytest
 
 from test.unit import b2_simulator, simulator_hooks
-from test.unit.b2_simulator import raw_api_class
+from test.unit.b2_simulator import (
+    COPY_SSE_B2_SOURCE_DEFECT,
+    SIMPLE_DOWNLOAD_RESUME_DEFECT,
+    V1_COPY_FILE_INFO_DEFECT,
+    raw_api_class,
+)
 
 from ..test_base import TestBase
 from .deps import (
@@ -492,12 +497,14 @@ class TestListVersions(TestCaseWithBucket):
 
 
 class TestCopyFile(TestCaseWithBucket):
+    @pytest.mark.rawsimulator(reason=V1_COPY_FILE_INFO_DEFECT)
     def test_copy_without_optional_params(self):
         file_id = self._make_file()
         self.bucket.copy_file(file_id, 'hello_new.txt')
         expected = [('hello.txt', 11, 'upload', None), ('hello_new.txt', 11, 'upload', None)]
         self.assertBucketContents(expected, '', show_versions=True)
 
+    @pytest.mark.rawsimulator(reason=V1_COPY_FILE_INFO_DEFECT)
     def test_copy_with_range(self):
         file_id = self._make_file()
         self.bucket.copy_file(file_id, 'hello_new.txt', bytes_range=(3, 9))
@@ -574,6 +581,7 @@ class TestCopyFile(TestCaseWithBucket):
         expected = [('hello.txt', 11, 'upload', None)]
         self.assertBucketContents(expected, '', show_versions=True)
 
+    @pytest.mark.rawsimulator(reason=V1_COPY_FILE_INFO_DEFECT)
     def test_copy_with_different_bucket(self):
         source_bucket = self.api.create_bucket('source-bucket', 'allPublic')
         file_id = self._make_file(source_bucket)
@@ -609,6 +617,7 @@ class TestCopyFile(TestCaseWithBucket):
                     )
                     self.assertEqual(LegalHold.ON, resulting_file_version.legal_hold)
 
+    @pytest.mark.rawsimulator(reason=COPY_SSE_B2_SOURCE_DEFECT)
     def test_copy_encryption(self):
         data = b'hello_world'
         a = self.bucket.upload_bytes(data, 'a')
@@ -1321,21 +1330,17 @@ class TruncatedDownloadRawSimulator(RawSimulator):
 
 class TestCaseWithTruncatedDownloadBucket(TestCaseWithBucket):
     RAW_SIMULATOR_CLASS = TruncatedDownloadRawSimulator
-    # Under --b2-simulator, b2-simulator cuts every download answer short itself (a wire fault),
-    # so the SDK meets the truncation over HTTP instead of from the in-process subclass above.
-    TRUNCATE_ON_B2_SIMULATOR = True
+    # On b2-simulator the server cuts every download answer short itself (a wire fault), so the
+    # SDK meets the truncation over HTTP. The in-process subclass above is for a test marked
+    # rawsimulator.
     # B2 refuses a wrong SSE-C key before it sends any file data, so there is nothing to cut
     # short (RawSimulator's short answers never apply to it either); a wire fault would cut the
     # error answer instead.
     NOT_TRUNCATED = {'test_download_by_id_no_progress_wrong_encryption'}
 
     def setUp(self):
-        self._truncating = (
-            b2_simulator.enabled()
-            and self.TRUNCATE_ON_B2_SIMULATOR
-            and self._testMethodName not in self.NOT_TRUNCATED
-        )
-        if b2_simulator.enabled() and self.TRUNCATE_ON_B2_SIMULATOR:
+        self._truncating = b2_simulator.enabled() and self._testMethodName not in self.NOT_TRUNCATED
+        if b2_simulator.enabled():
             self.RAW_SIMULATOR_CLASS = RawSimulator
         super().setUp()
         if self._truncating:
@@ -1350,13 +1355,11 @@ class TestCaseWithTruncatedDownloadBucket(TestCaseWithBucket):
 ####### actual tests of truncated downloads
 
 
+# SimpleDownloader resumes only after a body that ends cleanly short. Over HTTP a short body
+# raises requests' ChunkedEncodingError (urllib3 enforces Content-Length), which SimpleDownloader
+# does not catch, so the download fails on b2-simulator. Changing that is an SDK change.
+@pytest.mark.rawsimulator(reason=SIMPLE_DOWNLOAD_RESUME_DEFECT)
 class TestTruncatedDownloadSimple(DownloadTests, TestCaseWithTruncatedDownloadBucket):
-    # Stays on RawSimulator: SimpleDownloader resumes only after a body that ends cleanly short.
-    # Over HTTP a short body raises requests' ChunkedEncodingError (urllib3 enforces
-    # Content-Length), which SimpleDownloader does not catch, so the download fails on
-    # b2-simulator. Changing that is an SDK change, not a test change.
-    TRUNCATE_ON_B2_SIMULATOR = False
-
     def setUp(self):
         super().setUp()
         download_manager = self.bucket.api.services.download_manager

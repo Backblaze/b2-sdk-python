@@ -57,6 +57,31 @@ _EXIT_WITH_PARENT = (
     'data:text/javascript,process.stdin.on("end",()=>process.exit(0));process.stdin.resume()'
 )
 
+# Reasons for @pytest.mark.rawsimulator that several tests share.
+#
+# SDK defects that only an HTTP server exposes: RawSimulator accepts these calls, B2 does not.
+COPY_SSE_B2_SOURCE_DEFECT = (
+    'Backblaze/b2-sdk-python#772: B2RawHTTPApi.copy_file asserts that a source encryption is '
+    'SSE-C, so the SSE-B2 source subtests fail in the SDK before any request is sent'
+)
+V1_COPY_FILE_INFO_DEFECT = (
+    'Backblaze/b2-sdk-python#773: v1 Bucket.copy_file sends fileInfo {} with the COPY metadata '
+    'directive, which B2 refuses'
+)
+SIMPLE_DOWNLOAD_RESUME_DEFECT = (
+    'Backblaze/b2-sdk-python#776: SimpleDownloader does not resume after a connection drops '
+    'mid-body (ChunkedEncodingError over HTTP); it resumes only after a body that ends cleanly '
+    'short, which only RawSimulator produces'
+)
+# A b2-simulator gap. apiver v0 to v2 authorize at
+# B2 API v3 with keys that b2_create_key (v3) restricted to one bucket. Real B2 serves such a key
+# at v3 (measured on 2026-11-27); b2-simulator v0.6.0 refuses every bucket-restricted key at v3.
+# Fixing that is a b2-simulator change.
+V3_BUCKET_KEY_GAP = (
+    'b2-simulator v0.6.0 refuses a single-bucket key made by b2_create_key v3 at '
+    'b2_authorize_account v3; real B2 accepts it'
+)
+
 UNIT_TEST_DIR = Path(__file__).parent
 OPT_OUT = '--rawsimulator'
 

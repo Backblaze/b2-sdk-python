@@ -23,6 +23,9 @@ from test.helpers import patch_bind_params
 NO_ENCRYPTION = EncryptionSetting(EncryptionMode.NONE)
 
 
+pytestmark = [pytest.mark.rawsimulator(reason='tests RawSimulator itself')]
+
+
 @pytest.fixture
 def dummy_bucket_simulator(apiver_module):
     return apiver_module.BucketSimulator(
