@@ -36,8 +36,23 @@ def test_active_actions_are_pinned_to_full_commit_shas():
 
 def test_release_requires_successful_unit_tests():
     jobs = load_workflow('cd.yml')['jobs']
-    assert jobs['deploy']['needs'] == 'test'
+    assert isinstance(jobs['deploy']['needs'], list)
+    assert 'test' in jobs['deploy']['needs']
     assert 'if' not in jobs['deploy']
     steps = jobs['test']['steps']
     assert any('nox -vs unit' in step.get('run', '') for step in steps)
     assert jobs['test'].get('permissions') == {'contents': 'read'}
+
+
+def test_release_requires_a_green_live_b2_run_of_the_tagged_commit():
+    jobs = load_workflow('cd.yml')['jobs']
+    assert isinstance(jobs['deploy']['needs'], list)
+    assert set(jobs['deploy']['needs']) == {'test', 'live-b2'}
+    live = jobs['live-b2']
+    assert live['uses'] == './.github/workflows/live-b2-tests.yml'
+    assert live['permissions'] == {'contents': 'read'}
+    # Only the live test credentials reach the called workflow, never the PyPI token.
+    assert live['secrets'] == {
+        key: f'${{{{ secrets.{key} }}}}'
+        for key in ('B2_TEST_APPLICATION_KEY_ID', 'B2_TEST_APPLICATION_KEY')
+    }

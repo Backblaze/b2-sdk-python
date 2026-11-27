@@ -1,0 +1,1 @@
+Run SDK and CLI-compatibility integration tests against the pinned B2 Simulator for pull requests; run fail-closed live B2 integration weekly (reporting scheduled failures as an issue), on manual dispatch, and before each release.

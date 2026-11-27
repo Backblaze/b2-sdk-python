@@ -1,0 +1,43 @@
+name: Weekly Live B2 Integration
+
+on:
+  schedule:
+    - cron: "15 7 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  live-b2:
+    uses: ./.github/workflows/live-b2-tests.yml
+    with:
+      cli-compat: true
+    secrets:
+      B2_TEST_APPLICATION_KEY_ID: ${{ secrets.B2_TEST_APPLICATION_KEY_ID }}
+      B2_TEST_APPLICATION_KEY: ${{ secrets.B2_TEST_APPLICATION_KEY }}
+
+  report-scheduled-failure:
+    needs: live-b2
+    # Any scheduled run that did not succeed, including a cancelled or timed-out one.
+    if: ${{ always() && github.event_name == 'schedule' && needs.live-b2.result != 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - name: Open or update the live B2 failure issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          title="Weekly live B2 integration failed"
+          body="The scheduled live B2 run did not succeed: $RUN_URL"
+          number="$(gh issue list --state open --search "\"$title\" in:title" --json number,title \
+            --jq "map(select(.title == \"$title\")) | first | .number // empty")"
+          if [ -n "$number" ]; then
+            gh issue comment "$number" --body "$body"
+          else
+            gh issue create --title "$title" --body "$body"
+          fi

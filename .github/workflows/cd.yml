@@ -29,8 +29,16 @@ jobs:
         run: uv sync --only-group nox --locked
       - name: Run unit tests
         run: uv run nox -vs unit -p ${{ env.PYTHON_DEFAULT_VERSION }} -- -v
+  # Pull requests test against the Simulator only, so a release must pass live B2 on the tagged commit.
+  live-b2:
+    permissions:
+      contents: read
+    uses: ./.github/workflows/live-b2-tests.yml
+    secrets:
+      B2_TEST_APPLICATION_KEY_ID: ${{ secrets.B2_TEST_APPLICATION_KEY_ID }}
+      B2_TEST_APPLICATION_KEY: ${{ secrets.B2_TEST_APPLICATION_KEY }}
   deploy:
-    needs: test
+    needs: [test, live-b2]
     permissions:
       contents: write
     env:
