@@ -29,7 +29,7 @@ from apiver_deps import (
     RawSimulator,
     RetentionMode,
 )
-from apiver_deps_exception import AccessDenied, FileNotPresent, Unauthorized
+from apiver_deps_exception import FileNotPresent, Unauthorized
 
 from test.unit.b2_simulator import raw_api_class
 
@@ -162,6 +162,8 @@ class TestFileVersion:
         with pytest.raises(FileNotPresent):
             self.bucket.get_file_info_by_name(self.file_version.file_name)
 
+    # Asserts real B2's error, which RawSimulator does not give: runs only on b2-simulator.
+    @pytest.mark.needs_b2_simulator
     def test_delete_bypass_governance(self):
         locked_file_version = self.bucket.upload_bytes(
             b'nothing',
@@ -170,13 +172,11 @@ class TestFileVersion:
         )
 
         # Real B2 refuses this delete with 401 access_denied (the b2_delete_file_version error
-        # table), which the SDK raises as Unauthorized; RawSimulator raises AccessDenied.
-        # TODO: once --b2-simulator is the default, assert only the real-B2 error:
-        # Unauthorized with code 'access_denied' (401), and drop AccessDenied.
-        with pytest.raises((AccessDenied, Unauthorized)) as refusal:
+        # table), which the SDK raises as Unauthorized.
+        with pytest.raises(Unauthorized) as refusal:
             locked_file_version.delete()
-        if isinstance(refusal.value, Unauthorized):
-            assert refusal.value.code == 'access_denied'
+        assert type(refusal.value) is Unauthorized
+        assert refusal.value.code == 'access_denied'
 
         locked_file_version.delete(bypass_governance=True)
         with pytest.raises(FileNotPresent):

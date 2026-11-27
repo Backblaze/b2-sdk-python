@@ -9,6 +9,7 @@
 ######################################################################
 from __future__ import annotations
 
+import hashlib
 import time
 from contextlib import suppress
 from unittest import mock
@@ -35,18 +36,21 @@ from apiver_deps import (
     RetentionMode,
 )
 from apiver_deps_exception import (
-    AccessDenied,
     FileNotPresent,
     InvalidArgument,
     NonExistentBucket,
     RestrictedBucket,
+    Unauthorized,
     WrongEncryptionModeForBucketDefault,
 )
 
 from test.unit import simulator_hooks
-from test.unit.b2_simulator import V3_BUCKET_KEY_GAP, raw_api_class
+from test.unit.b2_simulator import SSE_C_HEAD_UNMEASURED, V3_BUCKET_KEY_GAP, raw_api_class
 
 from ..test_base import create_key, create_key_multibucket
+
+# B2 refuses a retention date in the past; one day ahead outlives any test run.
+FUTURE_RETAIN_UNTIL = int(time.time() * 1000) + 24 * 60 * 60 * 1000
 
 if apiver_deps.V <= 1:
     from apiver_deps import FileVersionInfo as VFileVersion
@@ -90,6 +94,9 @@ class TestApi:
             self.master_key,
         )
 
+    # At apiver v0 and v1 the raw answer is compared whole, in real B2's shape (contentMd5,
+    # retainUntilTimestamp), which RawSimulator does not produce.
+    @pytest.mark.needs_b2_simulator
     def test_get_file_info(self):
         self._authorize_account()
         bucket = self.api.create_bucket('bucket1', 'allPrivate')
@@ -103,22 +110,27 @@ class TestApi:
             self.maxDiff = None
             with suppress(KeyError):
                 del result['replicationStatus']
+            # The server assigns the ids, the timestamp and the stored content type at upload.
             assert result == {
-                'accountId': 'account-0',
+                'accountId': self.account_info.get_account_id(),
                 'action': 'upload',
-                'bucketId': 'bucket_0',
+                'bucketId': bucket.id_,
                 'contentLength': 11,
+                'contentMd5': hashlib.md5(b'hello world').hexdigest(),
                 'contentSha1': '2aae6c35c94fcfb415dbe95f408b9ce91ee846ed',
-                'contentType': 'b2/x-auto',
-                'fileId': '9999',
+                'contentType': created_file.content_type,
+                'fileId': created_file.id_,
                 'fileInfo': {
                     'b2-cache-control': 'private, max-age=3600',
                 },
                 'fileName': 'file',
-                'fileRetention': {'isClientAuthorizedToRead': True, 'value': {'mode': None}},
+                'fileRetention': {
+                    'isClientAuthorizedToRead': True,
+                    'value': {'mode': None, 'retainUntilTimestamp': None},
+                },
                 'legalHold': {'isClientAuthorizedToRead': True, 'value': None},
                 'serverSideEncryption': {'algorithm': 'AES256', 'mode': 'SSE-B2'},
-                'uploadTimestamp': 5000,
+                'uploadTimestamp': created_file.upload_timestamp,
             }
         else:
             assert isinstance(result, VFileVersion)
@@ -159,6 +171,9 @@ class TestApi:
 
         assert result.as_dict() == expected_result
 
+    # B2 answers a download by name of a hidden file like one of a missing file: 404 not_found
+    # (measured 2026-11-27). RawSimulator returns the hide marker instead.
+    @pytest.mark.needs_b2_simulator
     def test_get_hidden_file_info_by_name(self):
         self._authorize_account()
         bucket = self.api.create_bucket('bucket1', 'allPrivate')
@@ -167,31 +182,8 @@ class TestApi:
             'hidden-file.txt',
         )
         bucket.hide_file('hidden-file.txt')
-        result = self.api.get_file_info_by_name('bucket1', 'hidden-file.txt')
-
-        expected_result = {
-            'fileId': '9998',
-            'fileName': 'hidden-file.txt',
-            'fileInfo': {},
-            'serverSideEncryption': {'mode': 'none'},
-            'legalHold': None,
-            'fileRetention': {'mode': None, 'retainUntilTimestamp': None},
-            'size': 0,
-            'uploadTimestamp': 5001,
-            'contentSha1': 'none',
-            'replicationStatus': None,
-        }
-
-        if apiver_deps.V <= 1:
-            expected_result.update(
-                {
-                    'accountId': None,
-                    'action': 'upload',
-                    'bucketId': None,
-                }
-            )
-
-        assert result.as_dict() == expected_result
+        with pytest.raises(FileNotPresent):
+            self.api.get_file_info_by_name('bucket1', 'hidden-file.txt')
 
     def test_get_non_existent_file_info_by_name(self):
         self._authorize_account()
@@ -199,6 +191,7 @@ class TestApi:
         with pytest.raises(FileNotPresent):
             _ = self.api.get_file_info_by_name('bucket1', 'file-does-not-exist.txt')
 
+    @pytest.mark.rawsimulator(reason=SSE_C_HEAD_UNMEASURED)
     def test_get_file_info_by_name_with_properties(self):
         encr_setting = EncryptionSetting(
             EncryptionMode.SSE_C,
@@ -206,7 +199,7 @@ class TestApi:
             EncryptionKey(b'secret'.ljust(32, b'.'), None),
         )
         lh_setting = LegalHold.ON
-        retention_setting = FileRetentionSetting(RetentionMode.COMPLIANCE, 100)
+        retention_setting = FileRetentionSetting(RetentionMode.COMPLIANCE, FUTURE_RETAIN_UNTIL)
 
         self._authorize_account()
         bucket = self.api.create_bucket('bucket1', 'allPrivate', is_file_lock_enabled=True)
@@ -226,44 +219,48 @@ class TestApi:
         assert retention_setting == result.file_retention
 
     @pytest.mark.parametrize(
-        'expected_delete_bucket_output',
+        'returns_deleted_bucket',
         [
-            pytest.param(None, marks=pytest.mark.apiver(from_ver=1)),
+            pytest.param(False, marks=pytest.mark.apiver(from_ver=1)),
+            # The v0 answer is compared whole, in real B2's shape (options ['s3'],
+            # isFileLockEnabled false), which RawSimulator does not produce.
             pytest.param(
-                {
-                    'accountId': 'account-0',
-                    'bucketName': 'bucket2',
-                    'bucketId': 'bucket_1',
-                    'bucketType': 'allPrivate',
-                    'bucketInfo': {},
-                    'corsRules': [],
-                    'lifecycleRules': [],
-                    'options': set(),
-                    'revision': 1,
-                    'defaultServerSideEncryption': {
-                        'isClientAuthorizedToRead': True,
-                        'value': {'algorithm': 'AES256', 'mode': 'SSE-B2'},
-                    },
-                    'fileLockConfiguration': {
-                        'isClientAuthorizedToRead': True,
-                        'value': {
-                            'defaultRetention': {'mode': None, 'period': None},
-                            'isFileLockEnabled': None,
-                        },
-                    },
-                },
-                marks=pytest.mark.apiver(to_ver=0),
+                True, marks=[pytest.mark.apiver(to_ver=0), pytest.mark.needs_b2_simulator]
             ),
         ],
     )
-    def test_list_buckets(self, expected_delete_bucket_output):
+    def test_list_buckets(self, returns_deleted_bucket):
         self._authorize_account()
         self.api.create_bucket('bucket1', 'allPrivate')
         bucket2 = self.api.create_bucket('bucket2', 'allPrivate')
         delete_output = self.api.delete_bucket(bucket2)
-        if expected_delete_bucket_output is not None:
+        expected_delete_bucket_output = None
+        if returns_deleted_bucket:
             with suppress(KeyError):
                 del delete_output['replicationConfiguration']
+            # The server assigns the ids and the revision.
+            expected_delete_bucket_output = {
+                'accountId': self.account_info.get_account_id(),
+                'bucketName': 'bucket2',
+                'bucketId': bucket2.id_,
+                'bucketType': 'allPrivate',
+                'bucketInfo': {},
+                'corsRules': [],
+                'lifecycleRules': [],
+                'options': ['s3'],
+                'revision': bucket2.revision,
+                'defaultServerSideEncryption': {
+                    'isClientAuthorizedToRead': True,
+                    'value': {'algorithm': 'AES256', 'mode': 'SSE-B2'},
+                },
+                'fileLockConfiguration': {
+                    'isClientAuthorizedToRead': True,
+                    'value': {
+                        'defaultRetention': {'mode': None, 'period': None},
+                        'isFileLockEnabled': False,
+                    },
+                },
+            }
         assert delete_output == expected_delete_bucket_output
         self.api.create_bucket('bucket3', 'allPrivate')
         assert [b.name for b in self.api.list_buckets()] == ['bucket1', 'bucket3']
@@ -576,7 +573,7 @@ class TestApi:
         bucket = self.api.create_bucket('bucket1', 'allPrivate', is_file_lock_enabled=True)
         created_file = bucket.upload_bytes(b'hello world', 'file')
         assert created_file.file_retention == NO_RETENTION_FILE_SETTING
-        new_retention = FileRetentionSetting(RetentionMode.COMPLIANCE, 100)
+        new_retention = FileRetentionSetting(RetentionMode.COMPLIANCE, FUTURE_RETAIN_UNTIL)
         read_file_retention = self.api.update_file_retention(
             created_file.id_, created_file.file_name, new_retention
         )
@@ -657,17 +654,23 @@ class TestApi:
                 api_config=B2HttpApiConfig(user_agent_append='test append'),
             )
 
+    # The raw answer is compared whole, in real B2's shape (options ['s3']), which RawSimulator
+    # does not produce.
+    @pytest.mark.needs_b2_simulator
     @pytest.mark.apiver(to_ver=1)
     def test_create_and_delete_key_v1(self):
         self._authorize_account()
         create_result = self.api.create_key(['readFiles'], 'testkey')
+        # The server assigns the key id and the secret.
         assert create_result == {
             'accountId': self.account_info.get_account_id(),
-            'applicationKey': 'appKey0',
-            'applicationKeyId': 'appKeyId0',
+            'applicationKey': create_result['applicationKey'],
+            'applicationKeyId': create_result['applicationKeyId'],
             'capabilities': ['readFiles'],
             'keyName': 'testkey',
+            'options': ['s3'],
         }
+        assert create_result['applicationKeyId'] != self.application_key_id
 
         delete_result = self.api.delete_key(create_result['applicationKeyId'])
         self.assertDeleteAndCreateResult(create_result, delete_result)
@@ -762,36 +765,36 @@ class TestApi:
                 assert delete_result.bucket_ids == create_result.bucket_ids
             assert delete_result.name_prefix == create_result.name_prefix
 
+    # The raw answer is compared whole, in real B2's shape (options ['s3']), which RawSimulator
+    # does not produce.
+    @pytest.mark.needs_b2_simulator
     @pytest.mark.apiver(to_ver=1)
     def test_list_keys_v1(self):
         self._authorize_account()
-        for i in range(20):
-            self.api.create_key(['readFiles'], f'testkey{i}')
+        existing_ids = [key['applicationKeyId'] for key in self.api.list_keys()['keys']]
+        created = {
+            self.api.create_key(['readFiles'], f'testkey{i}')['applicationKeyId']: f'testkey{i}'
+            for i in range(20)
+        }
         with mock.patch.object(self.api, 'DEFAULT_LIST_KEY_COUNT', 10):
             response = self.api.list_keys()
-        assert response['nextApplicationKeyId'] == 'appKeyId18'
+        # Keys are listed in key id order: the first page holds the 10 lowest ids, and the next
+        # page starts at the 11th.
+        listed_ids = sorted(existing_ids + list(created))
+        assert response['nextApplicationKeyId'] == listed_ids[10]
+        assert set(listed_ids[:10]) <= set(created), 'the page should hold only the new keys'
         assert response['keys'] == [
             {
-                'accountId': 'account-0',
-                'applicationKeyId': f'appKeyId{ind}',
+                'accountId': self.account_info.get_account_id(),
+                'applicationKeyId': key_id,
                 'bucketId': None,
                 'capabilities': ['readFiles'],
                 'expirationTimestamp': None,
-                'keyName': f'testkey{ind}',
+                'keyName': created[key_id],
                 'namePrefix': None,
+                'options': ['s3'],
             }
-            for ind in [
-                0,
-                1,
-                10,
-                11,
-                12,
-                13,
-                14,
-                15,
-                16,
-                17,
-            ]
+            for key_id in listed_ids[:10]
         ]
 
     @pytest.mark.apiver(from_ver=2)
@@ -824,17 +827,23 @@ class TestApi:
         assert self.api.get_key(key_id) is None
         assert self.api.get_key('non-existent') is None
 
+    # B2 refuses this delete with 401 access_denied (the b2_delete_file_version error table),
+    # which the SDK raises as Unauthorized; RawSimulator raises AccessDenied instead.
+    @pytest.mark.needs_b2_simulator
     def test_delete_file_version_bypass_governance(self):
         self._authorize_account()
-        bucket = self.api.create_bucket('bucket1', 'allPrivate')
+        # B2 refuses retention on a bucket without Object Lock.
+        bucket = self.api.create_bucket('bucket1', 'allPrivate', is_file_lock_enabled=True)
         created_file = bucket.upload_bytes(
             b'hello world',
             'file',
-            file_retention=FileRetentionSetting(RetentionMode.GOVERNANCE, int(time.time()) + 100),
+            file_retention=FileRetentionSetting(RetentionMode.GOVERNANCE, FUTURE_RETAIN_UNTIL),
         )
 
-        with pytest.raises(AccessDenied):
+        with pytest.raises(Unauthorized) as refusal:
             self.api.delete_file_version(created_file.id_, 'file')
+        assert type(refusal.value) is Unauthorized
+        assert refusal.value.code == 'access_denied'
 
         self.api.delete_file_version(created_file.id_, 'file', bypass_governance=True)
         with pytest.raises(FileNotPresent):

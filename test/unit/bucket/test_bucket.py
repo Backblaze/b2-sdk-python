@@ -26,7 +26,6 @@ from io import BytesIO
 import apiver_deps
 import pytest
 from apiver_deps_exception import (
-    AccessDenied,
     AlreadyFailed,
     B2ConnectionError,
     B2Error,
@@ -38,7 +37,6 @@ from apiver_deps_exception import (
     DestinationIsADirectory,
     DestinationParentIsNotADirectory,
     DisablingFileLockNotSupported,
-    FileSha1Mismatch,
     InvalidAuthToken,
     InvalidMetadataDirective,
     InvalidRange,
@@ -59,6 +57,7 @@ from test.unit import b2_simulator, simulator_hooks
 from test.unit.b2_simulator import (
     COPY_SSE_B2_SOURCE_DEFECT,
     SIMPLE_DOWNLOAD_RESUME_DEFECT,
+    SSE_C_HEAD_UNMEASURED,
     V1_COPY_FILE_INFO_DEFECT,
     V3_BUCKET_KEY_GAP,
     raw_api_class,
@@ -729,6 +728,8 @@ class TestLs(TestCaseWithBucket):
         expected = [('hello.txt', 15, 'upload', None)]
         self.assertBucketContents(expected, '', show_versions=True)
 
+    # Asserts real B2's error, which RawSimulator does not give: runs only on b2-simulator.
+    @pytest.mark.needs_b2_simulator
     def test_delete_file_version_bypass_governance(self):
         self._use_file_lock_bucket()
         data = b'hello world'
@@ -740,13 +741,11 @@ class TestLs(TestCaseWithBucket):
         ).id_
 
         # Real B2 refuses this delete with 401 access_denied (the b2_delete_file_version error
-        # table), which the SDK raises as Unauthorized; RawSimulator raises AccessDenied.
-        # TODO: once --b2-simulator is the default, assert only the real-B2 error:
-        # Unauthorized with code 'access_denied' (401), and drop AccessDenied.
-        with pytest.raises((AccessDenied, Unauthorized)) as refusal:
+        # table), which the SDK raises as Unauthorized.
+        with pytest.raises(Unauthorized) as refusal:
             self.bucket.delete_file_version(file_id, 'hello.txt')
-        if isinstance(refusal.value, Unauthorized):
-            assert refusal.value.code == 'access_denied'
+        assert type(refusal.value) is Unauthorized
+        assert refusal.value.code == 'access_denied'
 
         self.bucket.delete_file_version(file_id, 'hello.txt', bypass_governance=True)
         self.assertBucketContents([], '', show_versions=True)
@@ -1294,6 +1293,7 @@ class TestListVersions(TestCaseWithBucket):
         except ValueError as e:
             self.assertEqual('unsupported fetch_count value', str(e))
 
+    @pytest.mark.rawsimulator(reason=SSE_C_HEAD_UNMEASURED)
     def test_encryption(self):
         data = b'hello world'
         a = self.bucket.upload_bytes(data, 'a')
@@ -1989,6 +1989,13 @@ class TestUpdate(TestCaseWithBucket):
         assert [bucket.is_file_lock_enabled for bucket in buckets] == [True]
 
     @pytest.mark.apiver(from_ver=2)
+    # b2-simulator refuses this update with 400 bad_request "Operation not supported for buckets
+    # with source replication", which the SDK does not map to SourceReplicationConflict; the real
+    # B2 answer is not measured.
+    @pytest.mark.rawsimulator(
+        reason='enabling file lock on a replication source: b2-simulator answers 400 bad_request '
+        'with a text the SDK does not map to SourceReplicationConflict; real B2 not measured'
+    )
     def test_is_file_lock_enabled_source_replication(self):
         assert not self.bucket.is_file_lock_enabled
 
@@ -2217,28 +2224,26 @@ class TestUpload(TestCaseWithBucket):
             with self.assertRaises(InvalidUploadSource):
                 self.bucket.upload_local_file(path, 'file1')
 
+    # Asserts real B2's error, which RawSimulator does not give: runs only on b2-simulator.
+    @pytest.mark.needs_b2_simulator
     def test_upload_local_wrong_sha(self):
         with tempfile.TemporaryDirectory() as d:
             path = os.path.join(d, 'file123')
             data = b'hello world'
             write_file(path, data)
             # B2 refuses the upload with 400 bad_request "Sha1 did not match data received"
-            # (b2_upload_file), which the SDK raises as BadRequest; RawSimulator raises
-            # FileSha1Mismatch.
-            # TODO: once --b2-simulator is the default, assert only the real-B2 error: BadRequest
-            # with code 'bad_request' and message 'Sha1 did not match data received' (400), and
-            # drop FileSha1Mismatch.
-            with pytest.raises((FileSha1Mismatch, BadRequest)) as refusal:
+            # (b2_upload_file), which the SDK raises as BadRequest.
+            with pytest.raises(BadRequest) as refusal:
                 self.bucket.upload_local_file(
                     path,
                     'file123',
                     sha1_sum='abcd' * 10,
                 )
-            if isinstance(refusal.value, BadRequest):
-                assert (refusal.value.code, refusal.value.message) == (
-                    'bad_request',
-                    'Sha1 did not match data received',
-                )
+            assert type(refusal.value) is BadRequest
+            assert (refusal.value.code, refusal.value.message) == (
+                'bad_request',
+                'Sha1 did not match data received',
+            )
             self.assertBucketContents([], '', show_versions=True)
 
     def test_upload_one_retryable_error(self):

@@ -73,6 +73,11 @@ SIMPLE_DOWNLOAD_RESUME_DEFECT = (
     'mid-body (ChunkedEncodingError over HTTP); it resumes only after a body that ends cleanly '
     'short, which only RawSimulator produces'
 )
+# Open questions: b2-simulator and RawSimulator answer differently, and real B2 was not measured.
+SSE_C_HEAD_UNMEASURED = (
+    'get_file_info_by_name reads an SSE-C file with a HEAD and no key (it takes no key '
+    'parameter); b2-simulator answers 400, and real B2 has not been measured'
+)
 # A b2-simulator gap. apiver v0 to v2 authorize at
 # B2 API v3 with keys that b2_create_key (v3) restricted to one bucket. Real B2 serves such a key
 # at v3 (measured on 2026-11-27); b2-simulator v0.6.0 refuses every bucket-restricted key at v3.

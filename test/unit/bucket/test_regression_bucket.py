@@ -47,7 +47,7 @@ from apiver_deps import (
 from apiver_deps_exception import NonExistentBucket
 
 from test.known_defect import expect
-from test.unit.b2_simulator import raw_api_class
+from test.unit.b2_simulator import V3_BUCKET_KEY_GAP, raw_api_class
 
 from .test_bucket import TestCaseWithBucket
 
@@ -105,13 +105,26 @@ class TestRegressionCopyAndLs(TestCaseWithBucket):
         assert result == [], 'the filter was ignored'
 
 
+# b2_start_large_file gets customUploadTimestamp in its JSON body, and the SDK sends a number.
+# b2-simulator v0.6.0 accepts only a string of digits there and answers 400
+# custom_timestamp_invalid; real B2's answer to a number has not been measured.
+LARGE_FILE_CUSTOM_TIMESTAMP_GAP = (
+    'b2-simulator v0.6.0 refuses a JSON-number customUploadTimestamp on b2_start_large_file, '
+    'which the SDK sends; real B2 not measured'
+)
+
+
+# The C45 tests set custom upload timestamps, which B2 allows only on accounts that have them.
+@pytest.mark.b2_simulator_config(customUploadTimestampsEnabled=True)
 class TestRegressionUploadOptions(TestCaseWithBucket):
+    @pytest.mark.rawsimulator(reason=LARGE_FILE_CUSTOM_TIMESTAMP_GAP)
     def test_c45_custom_timestamp_is_kept_on_large_upload(self):
         """C45: a custom upload timestamp must be applied to multi-part uploads too."""
         data = self._make_data(self.simulator.MIN_PART_SIZE * 3)
         file_version = self.bucket.upload_bytes(data, 'large', custom_upload_timestamp=12345)
         assert file_version.upload_timestamp == 12345, file_version.upload_timestamp
 
+    @pytest.mark.rawsimulator(reason=LARGE_FILE_CUSTOM_TIMESTAMP_GAP)
     def test_c45_custom_timestamp_is_kept_on_large_unfinished_file(self):
         """C45: the started large file carries the custom timestamp (visible after the upload)."""
         data = self._make_data(self.simulator.MIN_PART_SIZE * 3)
@@ -119,6 +132,7 @@ class TestRegressionUploadOptions(TestCaseWithBucket):
         stored = self.bucket.get_file_info_by_name('large2')
         assert stored.upload_timestamp == 777, stored.upload_timestamp
 
+    @pytest.mark.rawsimulator(reason=LARGE_FILE_CUSTOM_TIMESTAMP_GAP)
     def test_c45_interrupted_upload_preserves_timestamp_and_resumes(self):
         data = self._make_data(self.simulator.MIN_PART_SIZE * 3)
         for timestamp in (0, 777):
@@ -142,6 +156,7 @@ class TestRegressionUploadOptions(TestCaseWithBucket):
                 assert completed.id_ == unfinished[0].file_id
                 assert completed.upload_timestamp == timestamp
 
+    @pytest.mark.rawsimulator(reason=LARGE_FILE_CUSTOM_TIMESTAMP_GAP)
     def test_c45_resume_matches_requested_timestamp(self):
         data = self._make_data(self.simulator.MIN_PART_SIZE * 3)
         for existing_timestamp, requested_timestamp in ((777, 777), (777, 888), (0, 0)):
@@ -152,7 +167,8 @@ class TestRegressionUploadOptions(TestCaseWithBucket):
                     self.account_auth_token,
                     self.bucket_id,
                     name,
-                    None,
+                    # B2 refuses a null contentType; b2/x-auto is what the SDK's upload sends.
+                    'b2/x-auto',
                     {},
                     custom_upload_timestamp=existing_timestamp,
                 )
@@ -165,6 +181,7 @@ class TestRegressionUploadOptions(TestCaseWithBucket):
                     assert completed.id_ != unfinished['fileId']
                 assert completed.upload_timestamp == requested_timestamp
 
+    @pytest.mark.rawsimulator(reason=LARGE_FILE_CUSTOM_TIMESTAMP_GAP)
     def test_c45_explicit_resume_requires_matching_timestamp(self):
         data = self._make_data(self.simulator.MIN_PART_SIZE * 3)
         for requested_timestamp in (777, 888):
@@ -175,7 +192,8 @@ class TestRegressionUploadOptions(TestCaseWithBucket):
                     self.account_auth_token,
                     self.bucket_id,
                     name,
-                    None,
+                    # B2 refuses a null contentType; b2/x-auto is what the SDK's upload sends.
+                    'b2/x-auto',
                     {'large_file_sha1': apiver_deps.hex_sha1_of_bytes(data)},
                     custom_upload_timestamp=777,
                 )
@@ -325,6 +343,7 @@ class TestRegressionApi:
 
     # 'different' needs a second account: b2-simulator's extraAccounts.
     @pytest.mark.b2_simulator_config(extraAccounts=1)
+    @pytest.mark.rawsimulator(reason=V3_BUCKET_KEY_GAP, to_ver=2)
     @pytest.mark.parametrize('account_kind', ['fresh', 'same', 'different'])
     @pytest.mark.parametrize('cache_kind', ['memory', 'account_info', 'sqlite'])
     def test_c55_failed_authorization_preserves_session(self, account_kind, cache_kind, tmp_path):

@@ -16,7 +16,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 import pytest
 from apiver_deps import ALL_CAPABILITIES, B2HttpApiConfig, B2Session, RawSimulator
-from apiver_deps_exception import InvalidAuthToken, MissingAccountData
+from apiver_deps_exception import MissingAccountData, Unauthorized
 
 from test.unit import simulator_hooks
 from test.unit.b2_simulator import raw_api_class
@@ -102,13 +102,17 @@ def test_same_key_refresh_preserves_pooled_upload_urls(session_with_keys, pooled
     assert set(take(resource_id) for _ in pairs) == set(pairs)
 
 
+# B2 refuses a known key id with a wrong key with 401 unauthorized and an empty message (measured
+# 2026-11-27), which the SDK raises as Unauthorized. RawSimulator raises InvalidAuthToken instead.
+@pytest.mark.needs_b2_simulator
 def test_failed_authorization_preserves_pooled_upload_urls(session_with_keys, pooled_uploads):
     session, keys, _, _ = session_with_keys
     resource_id, take, pairs = pooled_uploads
 
-    with pytest.raises(InvalidAuthToken) as caught:
+    with pytest.raises(Unauthorized) as caught:
         session.authorize_account('production', keys[1]['applicationKeyId'], 'invalid-test-key')
 
+    assert type(caught.value) is Unauthorized
     assert caught.value.code == 'unauthorized'
     assert session.account_info.get_application_key_id() == keys[0]['applicationKeyId']
     assert set(take(resource_id) for _ in pairs) == set(pairs)
