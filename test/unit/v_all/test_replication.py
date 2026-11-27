@@ -54,6 +54,7 @@ class TestReplication(TestBase):
         self._authorize_account()
         source_bucket = self.api.create_bucket('bucket1', 'allPrivate')
         destination_bucket = self.api.create_bucket('bucket2', 'allPrivate')
+        destination_bucket_id = destination_bucket.id_
         logger.info('preparations complete, starting the test')
         rsh = ReplicationSetupHelper()
         source_bucket, destination_bucket = rsh.setup_both(
@@ -87,7 +88,7 @@ class TestReplication(TestBase):
 
         assert source_bucket.replication.rules == [
             ReplicationRule(
-                destination_bucket_id='bucket_1',
+                destination_bucket_id=destination_bucket_id,
                 name='aa',
                 file_name_prefix='ab',
                 is_enabled=True,
@@ -117,14 +118,14 @@ class TestReplication(TestBase):
         new_source_application_key = keymap['bucket1-replisrc']
         assert source_bucket.replication.rules == [
             ReplicationRule(
-                destination_bucket_id='bucket_1',
+                destination_bucket_id=destination_bucket_id,
                 name='aa',
                 file_name_prefix='ab',
                 is_enabled=True,
                 priority=128,
             ),
             ReplicationRule(
-                destination_bucket_id='bucket_1',
+                destination_bucket_id=destination_bucket_id,
                 name='bucket2',
                 file_name_prefix='ad',
                 is_enabled=True,

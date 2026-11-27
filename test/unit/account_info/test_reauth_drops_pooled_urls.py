@@ -30,8 +30,9 @@ def session_with_keys(account_info):
         api_config=B2HttpApiConfig(_raw_api_class=raw_api_class(RawSimulator)),
     )
     simulator = session.raw_api
-    account_id, master_key = simulator.create_account()
-    session.authorize_account('production', account_id, master_key)
+    key_id, master_key = simulator.create_account()
+    session.authorize_account('production', key_id, master_key)
+    account_id = account_info.get_account_id()  # B2 account ids differ from key ids
     bucket_id = session.create_bucket(account_id, 'reauth-test', 'allPrivate')['bucketId']
     file_id = session.start_large_file(bucket_id, 'large.bin', 'application/octet-stream', {})[
         'fileId'

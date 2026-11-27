@@ -159,16 +159,18 @@ class TestApi(TestBase):
 
         download_url = self.api.get_download_url_for_file_name('bucket1', 'some-file.txt')
 
-        assert download_url == 'http://download.example.com/file/bucket1/some-file.txt'
+        base_url = self.account_info.get_download_url()
+        assert download_url == f'{base_url}/file/bucket1/some-file.txt'
 
     def test_get_download_url_for_fileid(self):
         self._authorize_account()
 
         download_url = self.api.get_download_url_for_fileid('file-id')
 
+        base_url = self.account_info.get_download_url()
         if apiver_deps.V >= 3:
-            exp_url = 'http://download.example.com/b2api/v4/b2_download_file_by_id?fileId=file-id'
+            exp_url = f'{base_url}/b2api/v4/b2_download_file_by_id?fileId=file-id'
         else:
-            exp_url = 'http://download.example.com/b2api/v3/b2_download_file_by_id?fileId=file-id'
+            exp_url = f'{base_url}/b2api/v3/b2_download_file_by_id?fileId=file-id'
 
         assert download_url == exp_url

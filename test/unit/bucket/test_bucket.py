@@ -116,10 +116,11 @@ from apiver_deps import (
 
 pytestmark = [pytest.mark.apiver(from_ver=1)]
 
+# SSE-C keys must be 256-bit (32-byte) AES keys, as B2 requires.
 SSE_C_AES = EncryptionSetting(
     mode=EncryptionMode.SSE_C,
     algorithm=EncryptionAlgorithm.AES256,
-    key=EncryptionKey(secret=b'some_key', key_id='some-id'),
+    key=EncryptionKey(secret=b'some_key'.ljust(32, b'.'), key_id='some-id'),
 )
 SSE_NONE = EncryptionSetting(mode=EncryptionMode.NONE)
 SSE_C_AES_NO_SECRET = EncryptionSetting(
@@ -130,7 +131,7 @@ SSE_C_AES_NO_SECRET = EncryptionSetting(
 SSE_C_AES_2 = EncryptionSetting(
     mode=EncryptionMode.SSE_C,
     algorithm=EncryptionAlgorithm.AES256,
-    key=EncryptionKey(secret=b'some_other_key', key_id='some-id-2'),
+    key=EncryptionKey(secret=b'some_other_key'.ljust(32, b'.'), key_id='some-id-2'),
 )
 SSE_C_AES_2_NO_SECRET = EncryptionSetting(
     mode=EncryptionMode.SSE_C,
@@ -653,19 +654,15 @@ class TestLs(TestCaseWithBucket):
 
     def test_three_files_multiple_versions(self):
         data = b'hello world'
-        self.bucket.upload_bytes(data, 'a')
-        self.bucket.upload_bytes(data, 'bb/1')
-        self.bucket.upload_bytes(data, 'bb/2')
-        self.bucket.upload_bytes(data, 'bb/2')
-        self.bucket.upload_bytes(data, 'bb/2')
-        self.bucket.upload_bytes(data, 'bb/3')
-        self.bucket.upload_bytes(data, 'ccc')
+        names = ['a', 'bb/1', 'bb/2', 'bb/2', 'bb/2', 'bb/3', 'ccc']
+        ids = [self.bucket.upload_bytes(data, name).id_ for name in names]
+        # Versions of one name are listed newest first.
         expected = [
-            ('9998', 'bb/1', 11, 'upload', None),
-            ('9995', 'bb/2', 11, 'upload', None),
-            ('9996', 'bb/2', 11, 'upload', None),
-            ('9997', 'bb/2', 11, 'upload', None),
-            ('9994', 'bb/3', 11, 'upload', None),
+            (ids[1], 'bb/1', 11, 'upload', None),
+            (ids[4], 'bb/2', 11, 'upload', None),
+            (ids[3], 'bb/2', 11, 'upload', None),
+            (ids[2], 'bb/2', 11, 'upload', None),
+            (ids[5], 'bb/3', 11, 'upload', None),
         ]
         actual = [
             (info.id_, info.file_name, info.size, info.action, folder)
@@ -2204,7 +2201,8 @@ class TestUpload(TestCaseWithBucket):
                 created_file.size,
                 created_file.server_side_encryption,
             )
-            expected = ('9998', 'created_file', len(data), SSE_B2_AES)
+            latest_id = self.bucket.get_file_info_by_name('created_file').id_
+            expected = (latest_id, 'created_file', len(data), SSE_B2_AES)
             self.assertEqual(expected, actual)
 
     def test_upload_large_resume(self):
@@ -2443,7 +2441,8 @@ class TestConcatenate(TestCaseWithBucket):
                 created_file.size,
                 created_file.server_side_encryption,
             )
-            expected = ('9997', 'created_file', 33, SSE_B2_AES)
+            latest_id = self.bucket.get_file_info_by_name('created_file').id_
+            expected = (latest_id, 'created_file', 33, SSE_B2_AES)
             self.assertEqual(expected, actual)
 
     def test_create_remote_encryption(self):

@@ -87,7 +87,9 @@ class TestFileVersion:
 
     def test_clone_file_version_and_download_version(self):
         encryption = EncryptionSetting(
-            EncryptionMode.SSE_C, EncryptionAlgorithm.AES256, EncryptionKey(b'secret', None)
+            EncryptionMode.SSE_C,
+            EncryptionAlgorithm.AES256,
+            EncryptionKey(b'secret'.ljust(32, b'.'), None),
         )
         initial_file_version = self.bucket.upload_bytes(
             b'nothing',
@@ -187,13 +189,16 @@ class TestFileVersion:
             ),
         )
 
+        # The token and the stored content type come from the server.
+        auth_token = self.account_info.get_account_auth_token()
+        content_type = file_version.content_type
         assert (
             file_version._get_upload_headers()
-            == """
-            Authorization: auth_token_0
+            == f"""
+            Authorization: {auth_token}
             Content-Length: 7
             X-Bz-File-Name: test_file
-            Content-Type: b2/x-auto
+            Content-Type: {content_type}
             X-Bz-Content-Sha1: 0feca720e2c29dafb2c900713ba560e03b758711
             X-Bz-Info-b2-cache-control: private%2C%20max-age%3D3600
             X-Bz-Server-Side-Encryption-Customer-Algorithm: AES256
