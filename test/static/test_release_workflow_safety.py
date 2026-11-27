@@ -36,6 +36,7 @@ def test_active_actions_are_pinned_to_full_commit_shas():
 
 def test_release_requires_successful_unit_tests():
     jobs = load_workflow('cd.yml')['jobs']
+    assert isinstance(jobs['deploy']['needs'], list)
     assert 'test' in jobs['deploy']['needs']
     assert 'if' not in jobs['deploy']
     steps = jobs['test']['steps']
@@ -45,6 +46,7 @@ def test_release_requires_successful_unit_tests():
 
 def test_release_requires_a_green_live_b2_run_of_the_tagged_commit():
     jobs = load_workflow('cd.yml')['jobs']
+    assert isinstance(jobs['deploy']['needs'], list)
     assert set(jobs['deploy']['needs']) == {'test', 'live-b2'}
     live = jobs['live-b2']
     assert live['uses'] == './.github/workflows/live-b2-tests.yml'

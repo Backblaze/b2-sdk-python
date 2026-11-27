@@ -172,7 +172,11 @@ def test_live_b2_tests_are_reusable_serialized_and_fail_closed():
     assert set(events['workflow_call']['secrets']) == set(KEYS)
     assert workflow['permissions'] == {'contents': 'read'}
     [job] = workflow['jobs'].values()
-    assert job['concurrency'] == {'group': 'live-b2-account', 'cancel-in-progress': False}
+    # One group per caller and ref: a newer queued run must never replace a pending release run.
+    assert job['concurrency'] == {
+        'group': 'live-b2-${{ github.workflow }}-${{ github.ref }}',
+        'cancel-in-progress': False,
+    }
     assert job['env']['LIVE_B2_CREDENTIALS_SET'] == (
         "${{ secrets.B2_TEST_APPLICATION_KEY_ID != '' && secrets.B2_TEST_APPLICATION_KEY != '' }}"
     )
@@ -224,8 +228,11 @@ def test_weekly_live_b2_reports_scheduled_failures_with_a_scoped_token():
     [reporter] = reporters
     assert reporter['permissions'] == {'issues': 'write'}
     assert reporter['needs'] == live[0]
-    assert 'failure()' in reporter['if']
-    assert "github.event_name == 'schedule'" in reporter['if']
+    # Report any scheduled run that did not succeed, including cancelled or timed-out runs.
+    assert reporter['if'] == (
+        "${{ always() && github.event_name == 'schedule' && needs.%s.result != 'success' }}"
+        % live[0]
+    )
     run = '\n'.join(step.get('run', '') for step in reporter['steps'])
     assert 'gh issue create' in run
     assert 'gh issue comment' in run

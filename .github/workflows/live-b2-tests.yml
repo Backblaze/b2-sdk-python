@@ -26,9 +26,12 @@ jobs:
   live-b2-integration:
     runs-on: ubuntu-latest
     timeout-minutes: 120
-    # Every caller shares one live B2 account: run one live job at a time and never cancel one mid-run.
+    # One group per caller workflow and ref (in a called workflow these are the caller's), so a
+    # queued weekly or manual run never replaces a pending release run. Runs from different
+    # groups may share the live account; test buckets have unique names and cleanup only removes
+    # test buckets older than three hours.
     concurrency:
-      group: live-b2-account
+      group: live-b2-${{ github.workflow }}-${{ github.ref }}
       cancel-in-progress: false
     env:
       LIVE_B2_CREDENTIALS_SET: ${{ secrets.B2_TEST_APPLICATION_KEY_ID != '' && secrets.B2_TEST_APPLICATION_KEY != '' }}

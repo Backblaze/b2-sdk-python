@@ -64,8 +64,8 @@ Triggered by any pushed tag matching `v*`:
 2. Runs the unit tests, and runs the integration suite against live B2 on the tagged commit
    (`.github/workflows/live-b2-tests.yml`). Pull requests test against the B2 Simulator only, so
    this is the release's real-B2 check. Nothing is built or published unless both pass. The live
-   run needs the `B2_TEST_APPLICATION_KEY_ID` and `B2_TEST_APPLICATION_KEY` secrets, and it waits
-   while another live run (for example the weekly one) is using the test account.
+   run needs the `B2_TEST_APPLICATION_KEY_ID` and `B2_TEST_APPLICATION_KEY` secrets. Each tag
+   gets its own concurrency group, so a weekly or manual live run cannot cancel it.
 3. Builds the distribution with `nox -s build`, which also asserts the built package imports from
    `site-packages` rather than the checkout. The version is derived from the tag, not from any file.
 4. Reads the notes for that version out of `CHANGELOG.md`. If the tag and the changelog heading do not

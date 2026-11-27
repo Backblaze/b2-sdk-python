@@ -19,7 +19,8 @@ jobs:
 
   report-scheduled-failure:
     needs: live-b2
-    if: ${{ failure() && github.event_name == 'schedule' }}
+    # Any scheduled run that did not succeed, including a cancelled or timed-out one.
+    if: ${{ always() && github.event_name == 'schedule' && needs.live-b2.result != 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -32,7 +33,7 @@ jobs:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           title="Weekly live B2 integration failed"
-          body="The scheduled live B2 run failed: $RUN_URL"
+          body="The scheduled live B2 run did not succeed: $RUN_URL"
           number="$(gh issue list --state open --search "\"$title\" in:title" --json number,title \
             --jq "map(select(.title == \"$title\")) | first | .number // empty")"
           if [ -n "$number" ]; then
