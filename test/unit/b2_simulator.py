@@ -64,10 +64,6 @@ COPY_SSE_B2_SOURCE_DEFECT = (
     'Backblaze/b2-sdk-python#772: B2RawHTTPApi.copy_file asserts that a source encryption is '
     'SSE-C, so the SSE-B2 source subtests fail in the SDK before any request is sent'
 )
-V1_COPY_FILE_INFO_DEFECT = (
-    'Backblaze/b2-sdk-python#773: v1 Bucket.copy_file sends fileInfo {} with the COPY metadata '
-    'directive, which B2 refuses'
-)
 SIMPLE_DOWNLOAD_RESUME_DEFECT = (
     'Backblaze/b2-sdk-python#776: SimpleDownloader does not resume after a connection drops '
     'mid-body (ChunkedEncodingError over HTTP); it resumes only after a body that ends cleanly '
@@ -78,10 +74,18 @@ SSE_C_HEAD_UNMEASURED = (
     'get_file_info_by_name reads an SSE-C file with a HEAD and no key (it takes no key '
     'parameter); b2-simulator answers 400, and real B2 has not been measured'
 )
-# A b2-simulator gap. apiver v0 to v2 authorize at
-# B2 API v3 with keys that b2_create_key (v3) restricted to one bucket. Real B2 serves such a key
-# at v3 (measured on 2026-11-27); b2-simulator v0.6.0 refuses every bucket-restricted key at v3.
-# Fixing that is a b2-simulator change.
+# b2-simulator gaps: b2-simulator is stricter than real B2. Remove the marker once it matches.
+#
+# v1 Bucket.copy_file sends fileInfo {} with the default COPY metadata directive. Real B2 accepts
+# that and copies the source's metadata (measured on 2026-11-27).
+V1_COPY_FILE_INFO_GAP = (
+    'b2-simulator v0.6.0 refuses fileInfo {} with COPY; real B2 accepts it (measured '
+    '2026-11-27); remove this marker once the simulator matches'
+)
+#
+# apiver v0 to v2 authorize at B2 API v3 with keys that b2_create_key (v3) restricted to one
+# bucket. Real B2 serves such a key at v3 (measured on 2026-11-27); b2-simulator v0.6.0 refuses
+# every bucket-restricted key at v3.
 V3_BUCKET_KEY_GAP = (
     'b2-simulator v0.6.0 refuses a single-bucket key made by b2_create_key v3 at '
     'b2_authorize_account v3; real B2 accepts it'

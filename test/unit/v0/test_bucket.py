@@ -22,7 +22,7 @@ from test.unit import b2_simulator, simulator_hooks
 from test.unit.b2_simulator import (
     COPY_SSE_B2_SOURCE_DEFECT,
     SIMPLE_DOWNLOAD_RESUME_DEFECT,
-    V1_COPY_FILE_INFO_DEFECT,
+    V1_COPY_FILE_INFO_GAP,
     raw_api_class,
 )
 
@@ -507,14 +507,14 @@ class TestListVersions(TestCaseWithBucket):
 
 
 class TestCopyFile(TestCaseWithBucket):
-    @pytest.mark.rawsimulator(reason=V1_COPY_FILE_INFO_DEFECT)
+    @pytest.mark.rawsimulator(reason=V1_COPY_FILE_INFO_GAP)
     def test_copy_without_optional_params(self):
         file_id = self._make_file()
         self.bucket.copy_file(file_id, 'hello_new.txt')
         expected = [('hello.txt', 11, 'upload', None), ('hello_new.txt', 11, 'upload', None)]
         self.assertBucketContents(expected, '', show_versions=True)
 
-    @pytest.mark.rawsimulator(reason=V1_COPY_FILE_INFO_DEFECT)
+    @pytest.mark.rawsimulator(reason=V1_COPY_FILE_INFO_GAP)
     def test_copy_with_range(self):
         file_id = self._make_file()
         self.bucket.copy_file(file_id, 'hello_new.txt', bytes_range=(3, 9))
@@ -593,7 +593,7 @@ class TestCopyFile(TestCaseWithBucket):
         expected = [('hello.txt', 11, 'upload', None)]
         self.assertBucketContents(expected, '', show_versions=True)
 
-    @pytest.mark.rawsimulator(reason=V1_COPY_FILE_INFO_DEFECT)
+    @pytest.mark.rawsimulator(reason=V1_COPY_FILE_INFO_GAP)
     def test_copy_with_different_bucket(self):
         source_bucket = self.api.create_bucket('source-bucket', 'allPublic')
         file_id = self._make_file(source_bucket)

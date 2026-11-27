@@ -105,12 +105,12 @@ class TestRegressionCopyAndLs(TestCaseWithBucket):
         assert result == [], 'the filter was ignored'
 
 
-# b2_start_large_file gets customUploadTimestamp in its JSON body, and the SDK sends a number.
-# b2-simulator v0.6.0 accepts only a string of digits there and answers 400
-# custom_timestamp_invalid; real B2's answer to a number has not been measured.
+# b2_start_large_file takes customUploadTimestamp in its JSON body, typed as a number in B2's
+# documentation, and the SDK sends a number. b2-simulator v0.6.0 accepts only a string of digits
+# there and answers 400 custom_timestamp_invalid. Remove the marker once the simulator matches.
 LARGE_FILE_CUSTOM_TIMESTAMP_GAP = (
-    'b2-simulator v0.6.0 refuses a JSON-number customUploadTimestamp on b2_start_large_file, '
-    'which the SDK sends; real B2 not measured'
+    'b2-simulator v0.6.0 refuses a numeric customUploadTimestamp on b2_start_large_file; B2 '
+    'documents it as a number, which the SDK sends; remove this marker once the simulator matches'
 )
 
 
