@@ -105,9 +105,12 @@ The HTTP helpers use these defaults:
    * - Request helper
      - Constant
      - Attempts
-   * - Data requests, including upload data
+   * - Data requests, except upload data
      - ``TRY_COUNT_DATA``
      - 20
+   * - Upload data (``b2_upload_file`` and ``b2_upload_part``)
+     - set to 1 by the raw API
+     - 1
    * - Download requests
      - ``TRY_COUNT_DOWNLOAD``
      - 20
@@ -120,7 +123,8 @@ The HTTP helpers use these defaults:
 
 These are HTTP helper defaults, not a limit for a complete SDK operation.
 An operation can make several requests.
-Upload-manager attempts can also contain HTTP retries.
+The raw API sends upload data with ``try_count=1``, so the HTTP loop does not retry an upload data request.
+The HTTP loop can retry the request that fetches an upload URL.
 
 Before another attempt, the HTTP loop checks ``should_retry_http()``.
 If the result is ``False``, the loop raises the error immediately.
@@ -192,7 +196,8 @@ A part retry can take another pooled URL or request a new URL if none is availab
 An upload retry does not always make a new upload-URL request to the server.
 
 The upload-manager loop adds no delay of its own.
-The HTTP layer can wait and retry within an upload attempt.
+The HTTP layer does not retry the upload data request, so only this loop retries a failed upload.
+The HTTP layer can wait and retry the request that fetches an upload URL.
 If all 5 upload attempts fail with errors that permit upload retries, the manager raises
 ``MaxRetriesExceeded``.
 Its ``limit`` attribute holds the attempt limit.
