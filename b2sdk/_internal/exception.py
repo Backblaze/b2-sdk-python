@@ -228,7 +228,7 @@ class B2RequestTimeout(TransientErrorMixin, B2SimpleError):
 
 
 class B2RequestTimeoutDuringUpload(B2RequestTimeout):
-    # if a timeout is hit during upload, it is not guaranteed that the the server has released the upload token lock already, so we'll use a new token
+    # if a timeout is hit during upload, it is not guaranteed that the server has released the upload token lock already, so we'll use a new token
     def should_retry_http(self):
         return False
 
