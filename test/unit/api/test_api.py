@@ -43,6 +43,7 @@ from apiver_deps_exception import (
     WrongEncryptionModeForBucketDefault,
 )
 
+from test.unit import simulator_hooks
 from test.unit.b2_simulator import raw_api_class
 
 from ..test_base import create_key, create_key_multibucket
@@ -414,10 +415,13 @@ class TestApi:
         )
 
         # expire the auth token we just got
-        self.raw_api.expire_auth_token(self.account_info.get_account_auth_token())
+        expired_token = self.account_info.get_account_auth_token()
+        simulator_hooks.expire_account_token(self.raw_api, expired_token)
 
         # listing buckets should work, after it re-authorizes
         self.api.list_buckets()
+        assert self.account_info.get_account_auth_token() != expired_token
+        assert self.account_info.get_application_key_id() == key.id_
 
     def test_list_buckets_with_restriction(self):
         self._authorize_account()

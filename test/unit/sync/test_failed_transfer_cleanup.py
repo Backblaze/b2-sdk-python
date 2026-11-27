@@ -16,6 +16,7 @@ from b2sdk._internal.sync.action import B2DeleteAction
 from b2sdk._internal.sync.exception import IncompleteSync
 from b2sdk._internal.sync.policy import CompareVersionMode
 from b2sdk._internal.sync.sync import KeepOrDeleteMode, Synchronizer
+from test.unit import simulator_hooks
 
 pytestmark = pytest.mark.apiver(3)
 
@@ -217,13 +218,12 @@ def test_blocked_transfer_does_not_starve_unrelated_file(tmp_path, b2api, bucket
 
 
 def test_ready_cleanup_is_bounded_during_enumeration(tmp_path, b2api, bucket, monkeypatch):
-    import itertools
     import queue
     from types import SimpleNamespace
 
     import b2sdk._internal.sync.sync as sync_module
 
-    b2api.session.raw_api.bucket_id_to_bucket[bucket.id_].upload_url_counter = itertools.count()
+    simulator_hooks.allow_unlimited_upload_urls(b2api.session.raw_api, bucket.id_)
     max_ready = []
 
     class TrackedQueue(queue.SimpleQueue):
@@ -267,10 +267,9 @@ def test_ready_cleanup_is_bounded_during_enumeration(tmp_path, b2api, bucket, mo
 
 @pytest.mark.parametrize('fail', [False, True])
 def test_pending_cleanup_backpressure_with_one_worker(tmp_path, b2api, bucket, monkeypatch, fail):
-    import itertools
     from threading import Event, Thread
 
-    b2api.session.raw_api.bucket_id_to_bucket[bucket.id_].upload_url_counter = itertools.count()
+    simulator_hooks.allow_unlimited_upload_urls(b2api.session.raw_api, bucket.id_)
     old_ids = {bucket.upload_bytes(b'old', 'file.txt').id_ for _ in range(1002)}
     (tmp_path / 'file.txt').write_bytes(b'replacement contents')
     dest = B2Folder(bucket.name, '', b2api)

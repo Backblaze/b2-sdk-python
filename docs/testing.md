@@ -38,6 +38,10 @@ Shared setups get their raw API class from `raw_api_class()`: the `b2api` fixtur
 per-class setups. The option replaces the SDK's `RawSimulator` only. A test's own `RawSimulator` subclass stays in-process.
 Tests that construct `RawSimulator()` directly also stay in-process.
 Tests marked `needs_b2_simulator` run only with the option.
+Tests that need a server condition, such as an injected upload error, an expired token, a cut-short download or a
+suspended notification rule, use the hooks in [`test/unit/simulator_hooks.py`](../test/unit/simulator_hooks.py).
+Each hook uses `RawSimulator`'s test methods in the default run and b2-simulator's control plane with the option.
+`@pytest.mark.b2_simulator_config(extraAccounts=1)` gives a test a second account: the raw API's second `create_account()` call returns it.
 
 The integration fixture requires `B2_TEST_APPLICATION_KEY_ID` and `B2_TEST_APPLICATION_KEY`.
 If either variable is unset, the credential fixture fails instead of skipping the test.

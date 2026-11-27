@@ -55,6 +55,8 @@ _EXIT_WITH_PARENT = (
 
 _server: SimulatorServer | None = None
 _enabled = False
+# The settings of the last reset: create_account() reads extraAccounts from them.
+_config: dict = {}
 
 
 @dataclass
@@ -97,15 +99,21 @@ class SimulatorServer:
         return cls(process, api_url, urls['SIMULATOR-CONTROL'], stderr)
 
     def reset(self, config=None):
-        body = json.dumps({'config': {**DEFAULT_CONFIG, **(config or {})}}).encode()
+        global _config
+        _config = {**DEFAULT_CONFIG, **(config or {})}
+        self.control('POST', '/reset', {'config': _config})
+
+    def control(self, method, path, body=None):
+        """Send one control-plane request (see the simulator's docs/CONTRACT.md); return its JSON."""
         request = urllib.request.Request(
-            self.control_url + '/reset',
-            data=body,
-            method='POST',
+            self.control_url + path,
+            data=None if body is None else json.dumps(body).encode(),
+            method=method,
             headers={'Content-Type': 'application/json'},
         )
-        with urllib.request.urlopen(request, timeout=10) as response:
-            response.read()
+        with urllib.request.urlopen(request, timeout=30) as response:
+            text = response.read()
+        return json.loads(text) if text else {}
 
     def stop(self):
         try:
@@ -162,6 +170,20 @@ def simulator_dir_from_env() -> Path:
     return Path(value)
 
 
+def enabled() -> bool:
+    """Whether this run uses b2-simulator (``--b2-simulator``)."""
+    return _enabled
+
+
+def control(method, path, body=None):
+    """Send a request to this worker's b2-simulator control plane; only with ``--b2-simulator``."""
+    if not _enabled:
+        raise RuntimeError('the b2-simulator control plane needs --b2-simulator')
+    if _server is None:
+        raise RuntimeError('b2-simulator is not running (use it inside a test)')
+    return _server.control(method, path, body)
+
+
 def raw_api_class(default):
     """
     Return the raw API class a test should build its ``B2Api`` with.
@@ -195,16 +217,25 @@ def _http_raw_api_class():
                 """
                 Return the simulator's fixed credential; its key id is not the account id.
 
-                RawSimulator makes a new account on every call. b2-simulator has one account, so a
-                second call fails instead of silently returning the first account again.
+                RawSimulator makes a new account on every call. b2-simulator has one account, plus
+                the ``extraAccounts`` of the reset (``@pytest.mark.b2_simulator_config``): later calls
+                return their master credentials in turn, and a call past the last account fails
+                instead of silently returning an account again.
                 """
-                if getattr(self, '_account_created', False):
-                    raise RuntimeError(
-                        'b2-simulator has one account: this test needs a second account, '
-                        'which only RawSimulator provides'
-                    )
-                self._account_created = True
-                return KEY_ID, KEY
+                count = getattr(self, '_accounts_created', 0)
+                extra = _config.get('extraAccounts', 0)
+                if count > extra:
+                    if extra == 0:
+                        raise RuntimeError(
+                            'b2-simulator has one account: this test needs a second account; '
+                            'add @pytest.mark.b2_simulator_config(extraAccounts=N)'
+                        )
+                    raise RuntimeError(f'b2-simulator has {extra + 1} accounts (extraAccounts)')
+                self._accounts_created = count + 1
+                if count == 0:
+                    return KEY_ID, KEY
+                # Accounts 2 to N + 1 (docs/CONTRACT.md, "More accounts").
+                return f'sim-master-id-{count + 1}', f'sim-master-secret-{count + 1}'
 
             def authorize_account(self, realm_url, application_key_id, application_key):
                 # Every realm goes to the simulator, so a test can never reach real B2.

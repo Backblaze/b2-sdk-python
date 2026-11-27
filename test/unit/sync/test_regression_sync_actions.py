@@ -35,6 +35,7 @@ from apiver_deps_exception import ChecksumMismatch, TruncatedOutput
 from b2sdk._internal.scan.path import B2Path
 from b2sdk._internal.sync.action import B2CopyAction, B2DownloadAction
 from test.known_defect import expect
+from test.unit import simulator_hooks
 from test.unit.b2_simulator import raw_api_class
 
 pytestmark = [pytest.mark.apiver(from_ver=2)]
@@ -65,8 +66,7 @@ def _download_action(bucket, file_version, local_path):
 
 
 def _corrupt_stored_sha1(api, bucket, file_version):
-    sim_bucket = api.session.raw_api.bucket_id_to_bucket[bucket.id_]
-    sim_bucket.file_id_to_file[file_version.id_].content_sha1 = 'f' * 40
+    simulator_hooks.corrupt_stored_sha1(api.session.raw_api, bucket.id_, file_version.id_)
 
 
 class TestDownloadedFileModTime:

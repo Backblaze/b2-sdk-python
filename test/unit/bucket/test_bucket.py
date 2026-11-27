@@ -30,7 +30,6 @@ from apiver_deps_exception import (
     AlreadyFailed,
     B2ConnectionError,
     B2Error,
-    B2RequestTimeoutDuringUpload,
     BadRequest,
     BucketIdNotFound,
     Conflict,
@@ -45,7 +44,6 @@ from apiver_deps_exception import (
     InvalidRange,
     InvalidUploadSource,
     MaxRetriesExceeded,
-    RequestTimeout,
     RestrictedBucketMissing,
     SourceReplicationConflict,
     SSECKeyError,
@@ -57,6 +55,7 @@ from requests import Response
 from urllib3.response import HTTPResponse
 
 from test.helpers import NonSeekableIO, assert_dict_equal_ignore_extra
+from test.unit import b2_simulator, simulator_hooks
 from test.unit.b2_simulator import raw_api_class
 
 from ..test_base import TestBase, create_key
@@ -93,7 +92,6 @@ from apiver_deps import (
     EncryptionSetting,
     FakeResponse,
     FileRetentionSetting,
-    FileSimulator,
     Filter,
     InMemoryCache,
     LargeFileUploadState,
@@ -407,8 +405,8 @@ class TestCaseWithBucket(TestBase):
             fragments.append(fragment)
         return b''.join(fragments)
 
-    def _check_file_contents(self, file_name, expected_contents):
-        contents = self._download_file(file_name)
+    def _check_file_contents(self, file_name, expected_contents, encryption=None):
+        contents = self._download_file(file_name, encryption=encryption)
         self.assertEqual(expected_contents, contents)
 
     def _check_large_file_sha1(self, file_name, expected_sha1):
@@ -419,17 +417,19 @@ class TestCaseWithBucket(TestBase):
         else:
             assert LARGE_FILE_SHA1 not in file_info
 
-    def _download_file(self, file_name):
-        with FileSimulator.dont_check_encryption():
-            if apiver_deps.V <= 1:
-                download = DownloadDestBytes()
-                self.bucket.download_file_by_name(file_name, download)
-                return download.get_bytes_written()
-            else:
-                with io.BytesIO() as bytes_io:
-                    downloaded_file = self.bucket.download_file_by_name(file_name)
-                    downloaded_file.save(bytes_io)
-                    return bytes_io.getvalue()
+    def _download_file(self, file_name, encryption=None):
+        # An SSE-C file downloads only with its key, as on B2.
+        if apiver_deps.V <= 1:
+            download = DownloadDestBytes()
+            self.bucket.download_file_by_name(file_name, download, encryption=encryption)
+            return download.get_bytes_written()
+        else:
+            with io.BytesIO() as bytes_io:
+                downloaded_file = self.bucket.download_file_by_name(
+                    file_name, encryption=encryption
+                )
+                downloaded_file.save(bytes_io)
+                return bytes_io.getvalue()
 
 
 class TestReauthorization(TestCaseWithBucket):
@@ -1960,7 +1960,7 @@ class TestUpdate(TestCaseWithBucket):
         self.bucket.update(is_file_lock_enabled=True)
         updated_bucket = self.api.get_bucket_by_name(self.bucket.name)
         assert updated_bucket.is_file_lock_enabled
-        assert self.simulator.bucket_name_to_bucket[self.bucket.name].is_file_lock_enabled
+        self._assert_server_file_lock_enabled()
 
         # attempt to clear is_file_lock_enabled
         with pytest.raises(DisablingFileLockNotSupported):
@@ -1973,15 +1973,30 @@ class TestUpdate(TestCaseWithBucket):
         updated_bucket = self.api.get_bucket_by_name(self.bucket.name)
         assert updated_bucket.is_file_lock_enabled
 
+    def _assert_server_file_lock_enabled(self):
+        # Read the bucket back from the server, past any cache.
+        buckets = self.api.list_buckets(bucket_name=self.bucket.name)
+        assert [bucket.is_file_lock_enabled for bucket in buckets] == [True]
+
     @pytest.mark.apiver(from_ver=2)
     def test_is_file_lock_enabled_source_replication(self):
         assert not self.bucket.is_file_lock_enabled
 
+        # A replication source configuration that B2 accepts: an existing destination bucket and
+        # a source key that exists (the key this test authorized with).
+        destination = self.api.create_bucket('replica-bucket', 'allPrivate')
+        replication = ReplicationConfiguration(
+            rules=[
+                ReplicationRule(destination_bucket_id=destination.id_, name='replication-us-west')
+            ],
+            source_key_id=self.account_info.get_application_key_id(),
+        )
+
         # attempt to set is_file_lock_enabled with source replication enabled
-        self.bucket.update(replication=REPLICATION)
+        self.bucket.update(replication=replication)
         with pytest.raises(SourceReplicationConflict):
             self.bucket.update(is_file_lock_enabled=True)
-        updated_bucket = self.bucket.update(replication=REPLICATION)
+        updated_bucket = self.bucket.update(replication=replication)
         assert not updated_bucket.is_file_lock_enabled
 
         # sunny day scenario
@@ -1994,7 +2009,7 @@ class TestUpdate(TestCaseWithBucket):
         self.bucket.update(is_file_lock_enabled=True)
         updated_bucket = self.api.get_bucket_by_name(self.bucket.name)
         assert updated_bucket.is_file_lock_enabled
-        assert self.simulator.bucket_name_to_bucket[self.bucket.name].is_file_lock_enabled
+        self._assert_server_file_lock_enabled()
 
 
 class TestUpload(TestCaseWithBucket):
@@ -2047,14 +2062,19 @@ class TestUpload(TestCaseWithBucket):
             file_info = self.bucket.upload_local_file(path, 'file1', encryption=SSE_C_AES)
             self.assertTrue(isinstance(file_info, VFileVersionInfo))
             self.assertEqual(SSE_C_AES_NO_SECRET, file_info.server_side_encryption)
-            self._check_file_contents('file1', data)
+            self._check_file_contents('file1', data, encryption=SSE_C_AES)
 
     def test_upload_local_file_retention(self):
+        # B2 keeps retention and legal hold only in a bucket with file lock enabled,
+        # and a retention date must be in the future.
+        self.bucket.update(is_file_lock_enabled=True)
         with tempfile.TemporaryDirectory() as d:
             path = os.path.join(d, 'file1')
             data = b'hello world'
             write_file(path, data)
-            retention = FileRetentionSetting(RetentionMode.COMPLIANCE, 150)
+            retention = FileRetentionSetting(
+                RetentionMode.COMPLIANCE, int(time.time() * 1000) + 24 * 60 * 60 * 1000
+            )
             file_info = self.bucket.upload_local_file(
                 path,
                 'file1',
@@ -2062,7 +2082,7 @@ class TestUpload(TestCaseWithBucket):
                 file_retention=retention,
                 legal_hold=LegalHold.ON,
             )
-            self._check_file_contents('file1', data)
+            self._check_file_contents('file1', data, encryption=SSE_C_AES)
             self.assertEqual(retention, file_info.file_retention)
             self.assertEqual(LegalHold.ON, file_info.legal_hold)
 
@@ -2074,7 +2094,7 @@ class TestUpload(TestCaseWithBucket):
             file_info = self.bucket.upload_local_file(
                 path, 'file1', encryption=SSE_C_AES, cache_control='max-age=3600'
             )
-            self._check_file_contents('file1', data)
+            self._check_file_contents('file1', data, encryption=SSE_C_AES)
             self.assertEqual(file_info.cache_control, 'max-age=3600')
 
     def test_upload_bytes_cache_control(self):
@@ -2212,36 +2232,45 @@ class TestUpload(TestCaseWithBucket):
             self.assertBucketContents([], '', show_versions=True)
 
     def test_upload_one_retryable_error(self):
-        self.simulator.set_upload_errors([CanRetry(True)])
+        simulator_hooks.fail_uploads(self.simulator, 503, 'service_unavailable')
         data = b'hello world'
         self.bucket.upload_bytes(data, 'file1')
+        self._check_file_contents('file1', data)
+        simulator_hooks.assert_upload_faults_fired(self.simulator, 1)
 
     def test_upload_unbound_stream_one_retryable_error(self):
-        self.simulator.set_upload_errors([CanRetry(True)])
+        simulator_hooks.fail_uploads(self.simulator, 503, 'service_unavailable')
         data = b'hello world'
         self.bucket.upload_unbound_stream(io.BytesIO(data), 'file1')
+        self._check_file_contents('file1', data)
+        simulator_hooks.assert_upload_faults_fired(self.simulator, 1)
 
     def test_upload_timeout(self):
-        self.simulator.set_upload_errors([B2RequestTimeoutDuringUpload()])
         data = b'hello world'
-        self.bucket.upload_bytes(data, 'file1')
+        with simulator_hooks.upload_times_out_once(self.simulator):
+            self.bucket.upload_bytes(data, 'file1')
+        self._check_file_contents('file1', data)
+        simulator_hooks.assert_upload_faults_fired(self.simulator, 1)
 
     def test_upload_http_request_timeout(self):
-        self.simulator.set_upload_errors([RequestTimeout('408 request_timeout request timeout')])
+        simulator_hooks.fail_uploads(self.simulator, 408, 'request_timeout')
         data = b'hello world'
 
         self.bucket.upload_bytes(data, 'file1')
 
         self._check_file_contents('file1', data)
+        simulator_hooks.assert_upload_faults_fired(self.simulator, 1)
 
     def test_upload_file_one_fatal_error(self):
-        self.simulator.set_upload_errors([CanRetry(False)])
+        simulator_hooks.fail_uploads(self.simulator, 400, 'bad_request')
         data = b'hello world'
-        with self.assertRaises(CanRetry):
+        with pytest.raises(BadRequest) as caught:
             self.bucket.upload_bytes(data, 'file1')
+        assert caught.value.code == 'bad_request'
+        simulator_hooks.assert_upload_faults_fired(self.simulator, 1)
 
     def test_upload_file_too_many_retryable_errors(self):
-        self.simulator.set_upload_errors([CanRetry(True)] * 6)
+        simulator_hooks.fail_uploads(self.simulator, 503, 'service_unavailable', count=6)
         data = b'hello world'
         with self.assertRaises(MaxRetriesExceeded):
             self.bucket.upload_bytes(data, 'file1')
@@ -2384,7 +2413,7 @@ class TestUpload(TestCaseWithBucket):
         self.assertTrue(progress_listener.is_valid())
 
     def test_upload_large_file_with_restricted_api_key(self):
-        self.simulator.key_id_to_key[self.account_id].name_prefix_or_none = 'path/to'
+        simulator_hooks.restrict_to_name_prefix(self.api, self.bucket_id, 'path/to')
         part_size = self.simulator.MIN_PART_SIZE
         data = self._make_data(part_size * 3)
         progress_listener = StubProgressListener()
@@ -3039,12 +3068,15 @@ class UnverifiedChecksumDownloadScenarioMixin:
             path = os.path.join(d, 'file1')
             data = b'hello world'
             write_file(path, data)
-            file_info = self.bucket.upload_local_file(path, 'file1')
-            simulated_file = list(self.simulator.bucket_name_to_bucket.values())[0].file_id_to_file[
-                file_info.id_
-            ]
-            simulated_file.content_sha1 = 'unverified:' + simulated_file.content_sha1
-            # , sha1_sum='unverified:2aae6c35c94fcfb415dbe95f408b9ce91ee846ed')
+            file_info = simulator_hooks.upload_local_file_with_unverified_sha1(
+                self.simulator, self.bucket, path, 'file1'
+            )
+            if apiver_deps.V >= 2:
+                stored = self.bucket.get_file_info_by_id(file_info.id_)
+                assert (stored.content_sha1, stored.content_sha1_verified) == (
+                    hex_sha1_of_bytes(data),
+                    False,
+                )
 
             self.download_file_by_name('file1', progress_listener=self.progress_listener)
 
@@ -3212,12 +3244,42 @@ class TruncatedDownloadRawSimulator(RawSimulator):
 
 class TestCaseWithTruncatedDownloadBucket(TestCaseWithBucket):
     RAW_SIMULATOR_CLASS = TruncatedDownloadRawSimulator
+    # Under --b2-simulator, b2-simulator cuts every download answer short itself (a wire fault),
+    # so the SDK meets the truncation over HTTP instead of from the in-process subclass above.
+    TRUNCATE_ON_B2_SIMULATOR = True
+    # B2 refuses a wrong SSE-C key before it sends any file data, so there is nothing to cut
+    # short (RawSimulator's short answers never apply to it either); a wire fault would cut the
+    # error answer instead.
+    NOT_TRUNCATED = {'test_download_by_id_no_progress_wrong_encryption'}
+
+    def setUp(self):
+        self._truncating = (
+            b2_simulator.enabled()
+            and self.TRUNCATE_ON_B2_SIMULATOR
+            and self._testMethodName not in self.NOT_TRUNCATED
+        )
+        if b2_simulator.enabled() and self.TRUNCATE_ON_B2_SIMULATOR:
+            self.RAW_SIMULATOR_CLASS = RawSimulator
+        super().setUp()
+        if self._truncating:
+            simulator_hooks.truncate_downloads()
+
+    def tearDown(self):
+        if self._truncating:
+            assert simulator_hooks.truncated_downloads() > 0, 'no download was cut short'
+        super().tearDown()
 
 
 ####### actual tests of truncated downloads
 
 
 class TestTruncatedDownloadSimple(DownloadTests, TestCaseWithTruncatedDownloadBucket):
+    # Stays on RawSimulator: SimpleDownloader resumes only after a body that ends cleanly short.
+    # Over HTTP a short body raises requests' ChunkedEncodingError (urllib3 enforces
+    # Content-Length), which SimpleDownloader does not catch, so the download fails on
+    # b2-simulator. Changing that is an SDK change, not a test change.
+    TRUNCATE_ON_B2_SIMULATOR = False
+
     def setUp(self):
         super().setUp()
         download_manager = self.bucket.api.services.download_manager
@@ -3663,37 +3725,50 @@ class TestFileInfoB2Fields(TestCaseWithBucket):
 
 
 # Listing where every other response returns no entries and pointer to the next file
-class EmptyListBucketSimulator(BucketSimulator):
+class EmptyListRawApiMixin:
+    """
+    Raw API wrapper that makes every other list request return an empty page.
+
+    It sits on the client side of the raw API, so it works over HTTP (b2-simulator) as well as
+    on RawSimulator: the server answers the other requests, one file per page.
+    """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Whenever we receive a list request, if it's the first time
         # for this particular ``start_file_name``, we'll return
         # an empty response pointing to the same file.
-        self.last_queried_file = None
+        self.last_queried_file = {}
+        self.empty_pages_served = 0
 
-    def _should_return_empty(self, file_name: str) -> bool:
+    def _should_return_empty(self, bucket_id: str, file_name: str) -> bool:
         # Note that every other request is empty – the logic is as follows:
         #   1st request – unknown start name – empty response
         #   2nd request – known start name – normal response with a proper next filename
         #   3rd request – unknown start name (as it's the next filename from the previous request) – empty response
         #   4th request – known start name
         # etc. This works especially well when using limiter of number of files fetched set to 1.
-        should_return_empty = self.last_queried_file != file_name
-        self.last_queried_file = file_name
+        should_return_empty = self.last_queried_file.get(bucket_id) != file_name
+        self.last_queried_file[bucket_id] = file_name
+        self.empty_pages_served += should_return_empty
         return should_return_empty
 
     def list_file_versions(
         self,
+        api_url,
         account_auth_token,
+        bucket_id,
         start_file_name=None,
         start_file_id=None,
         max_file_count=None,  # noqa
         prefix=None,
     ):
-        if self._should_return_empty(start_file_name):
+        if self._should_return_empty(bucket_id, start_file_name):
             return dict(files=[], nextFileName=start_file_name, nextFileId=start_file_id)
         return super().list_file_versions(
+            api_url,
             account_auth_token,
+            bucket_id,
             start_file_name,
             start_file_id,
             1,  # Forcing only a single file per response.
@@ -3702,31 +3777,54 @@ class EmptyListBucketSimulator(BucketSimulator):
 
     def list_file_names(
         self,
+        api_url,
         account_auth_token,
+        bucket_id,
         start_file_name=None,
         max_file_count=None,  # noqa
         prefix=None,
     ):
-        if self._should_return_empty(start_file_name):
+        if self._should_return_empty(bucket_id, start_file_name):
             return dict(files=[], nextFileName=start_file_name)
         return super().list_file_names(
+            api_url,
             account_auth_token,
+            bucket_id,
             start_file_name,
             1,  # Forcing only a single file per response.
             prefix,
         )
 
 
-class EmptyListSimulator(RawSimulator):
-    BUCKET_SIMULATOR_CLASS = EmptyListBucketSimulator
+class EmptyListTestMixin:
+    def get_api(self):
+        base = raw_api_class(RawSimulator)
+        raw_api = type(f'EmptyList{base.__name__}', (EmptyListRawApiMixin, base), {})
+        return B2Api(
+            self.account_info,
+            cache=self.CACHE_CLASS(),
+            api_config=B2HttpApiConfig(_raw_api_class=raw_api),
+        )
+
+    def setUp(self):
+        super().setUp()
+        # Every listing in these tests goes through the wrapper, on either simulator.
+        assert isinstance(self.simulator, EmptyListRawApiMixin)
+
+    def test_empty_pages_are_served(self):
+        self.bucket.upload_bytes(b'1', 'a')
+        self.bucket.upload_bytes(b'2', 'b')
+        self.assertBucketContents([('a', 1, 'upload', None), ('b', 1, 'upload', None)], '')
+        # 'a' comes on the first page; the continuation at 'b' is first answered empty.
+        assert self.simulator.empty_pages_served >= 1
 
 
-class TestEmptyListVersions(TestListVersions):
-    RAW_SIMULATOR_CLASS = EmptyListSimulator
+class TestEmptyListVersions(EmptyListTestMixin, TestListVersions):
+    pass
 
 
-class TestEmptyLs(TestLs):
-    RAW_SIMULATOR_CLASS = EmptyListSimulator
+class TestEmptyLs(EmptyListTestMixin, TestLs):
+    pass
 
 
 def test_bucket_notification_rules(bucket, b2api_simulator):
@@ -3751,8 +3849,8 @@ def test_bucket_notification_rules(bucket, b2api_simulator):
         [{**notification_rule, 'isSuspended': False, 'suspensionReason': ''}],
     )
 
-    b2api_simulator.bucket_id_to_bucket[bucket.id_].simulate_notification_rule_suspension(
-        notification_rule['name'], 'simulated suspension'
+    simulator_hooks.suspend_notification_rule(
+        b2api_simulator, bucket.id_, notification_rule['name'], 'simulated suspension'
     )
     assert_dict_equal_ignore_extra(
         bucket.get_notification_rules(),
