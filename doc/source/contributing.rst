@@ -158,10 +158,17 @@ To run tests matching a keyword expression::
 Pull requests and pushes to master never receive B2 test credentials. The
 ``Simulator Integration`` workflow runs the SDK integration suite against a pinned
 revision of the B2 Simulator (``backblaze-labs/b2-simulator``) with fixed test
-credentials. It fails if the Simulator cannot be checked out or started, and it
-fails for pull requests from forks: push the branch to this repository instead.
-The ``Weekly Live B2 Integration`` workflow runs the same suite against live B2
-every Monday and on manual dispatch. It fails if the live credentials are missing.
+credentials. A second job runs the B2 Command Line Tool's secret-marked
+integration tests with this SDK against the same Simulator. Both jobs fail if the
+Simulator cannot be checked out or started, and they fail for pull requests from
+forks: push the branch to this repository instead. Dependabot pull requests run
+them too, so the deploy key must also be stored as a Dependabot secret.
+
+The ``Weekly Live B2 Integration`` workflow runs the SDK suite and the CLI's
+secret-marked tests against live B2 every Monday and on manual dispatch. It fails
+if the live credentials are missing, and a failed scheduled run opens or updates a
+"Weekly live B2 integration failed" issue. The release workflow runs the SDK suite
+against live B2 on the tagged commit and publishes only if it passes.
 
 JUnit reports include each subtest as its own case, as well as its parent test.
 The repository's ``test.junit_subtests`` compatibility plugin supplies those cases
