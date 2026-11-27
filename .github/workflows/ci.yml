@@ -13,6 +13,8 @@ permissions:
 env:
   PYTHON_DEFAULT_VERSION: "3.14"
   UV_VERSION: "0.13.4"
+  # The b2-simulator release the unit tests run against (v0.6.0); every checkout refers to it.
+  SIMULATOR_REVISION: "4052c6f8f45350486460d19bc796866cbdcdd3bc"
 
 jobs:
   lint:
@@ -117,6 +119,8 @@ jobs:
       B2_TEST_APPLICATION_KEY: ${{ (vars.B2_LIVE_TESTS_ENABLED == 'true' && (github.event_name != 'pull_request' || !github.event.pull_request.draft)) && secrets.B2_TEST_APPLICATION_KEY || '' }}
       B2_TEST_APPLICATION_KEY_ID: ${{ (vars.B2_LIVE_TESTS_ENABLED == 'true' && (github.event_name != 'pull_request' || !github.event.pull_request.draft)) && secrets.B2_TEST_APPLICATION_KEY_ID || '' }}
       NOX_EXTRAS: ${{ matrix.extras }}
+      # A boolean only; the key itself never enters a shell.
+      SIMULATOR_DEPLOY_KEY_SET: ${{ secrets.SIMULATOR_DEPLOY_KEY != '' }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -134,9 +138,44 @@ jobs:
             extras: "full"
             os: "ubuntu-latest"
     steps:
+      # The unit tests need the private b2-simulator, which a fork's pull request cannot check out.
+      - name: Require a pull request branch in this repository
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+        run: |
+          if [ "$EVENT_NAME" = "pull_request" ] && [ "$HEAD_REPOSITORY" != "$GITHUB_REPOSITORY" ]; then
+            echo "The unit tests run against the private b2-simulator, which pull requests from forks cannot check out. Push the branch to a branch in $GITHUB_REPOSITORY instead."
+            exit 1
+          fi
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0
+          path: sdk
+      - name: Require the b2-simulator deploy key
+        if: ${{ env.SIMULATOR_DEPLOY_KEY_SET != 'true' }}
+        shell: bash
+        run: |
+          echo "::error::SIMULATOR_DEPLOY_KEY is missing. The unit tests run against b2-simulator. A repository admin must add SIMULATOR_DEPLOY_KEY as an Actions secret and as a Dependabot secret (Dependabot pull requests only receive Dependabot secrets)."
+          exit 1
+      - name: Check out the pinned b2-simulator
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: backblaze-labs/b2-simulator
+          ref: ${{ env.SIMULATOR_REVISION }}
+          ssh-key: ${{ secrets.SIMULATOR_DEPLOY_KEY }}
+          persist-credentials: false
+          path: simulator
+      - name: Verify the b2-simulator revision
+        shell: bash
+        run: |
+          test "$(git -C simulator rev-parse HEAD)" = "$SIMULATOR_REVISION"
+          test -z "$(git -C simulator status --short)"
+      - name: Set up Node.js 22
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
@@ -146,11 +185,16 @@ jobs:
           version: ${{ env.UV_VERSION }}
           enable-cache: true
       - name: Install dependencies
+        working-directory: sdk
         run: uv sync --only-group nox --locked
       - name: Run unit tests
+        working-directory: sdk
+        env:
+          B2_SIMULATOR_DIR: ${{ github.workspace }}/simulator
         run: uv run nox -vs unit -- -v
       - name: Run integration tests
         if: ${{ (vars.B2_LIVE_TESTS_ENABLED == 'true' && (github.event_name != 'pull_request' || !github.event.pull_request.draft)) && env.B2_TEST_APPLICATION_KEY != '' && env.B2_TEST_APPLICATION_KEY_ID != '' }}
+        working-directory: sdk
         run: uv run nox -vs integration -- --dont-cleanup-old-buckets -v
   cli-compat:
     timeout-minutes: 90

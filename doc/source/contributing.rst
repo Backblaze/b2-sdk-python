@@ -143,7 +143,13 @@ To run all tests on a specific version::
 
 To run just unit tests::
 
+    $ export B2_SIMULATOR_DIR=/path/to/b2-simulator
     $ nox -s unit-3.10
+
+The unit tests run against a checkout of b2-simulator (``backblaze-labs/b2-simulator``), which needs
+Node.js 20.6 or later. Without ``B2_SIMULATOR_DIR`` the run stops with a usage error.
+``nox -s unit-3.10 -- --rawsimulator`` runs them on the in-process ``RawSimulator`` instead.
+See ``docs/testing.md`` for details.
 
 To run just integration tests::
 

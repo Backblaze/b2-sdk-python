@@ -10,9 +10,9 @@
 """
 Test hooks that work both on the in-process ``RawSimulator`` and on b2-simulator.
 
-In the default run each hook uses ``RawSimulator``'s own test methods. Under ``--b2-simulator``
-it uses b2-simulator's control plane (``docs/CONTRACT.md`` in backblaze-labs/b2-simulator), so the
-SDK meets the condition over real HTTP.
+On b2-simulator (the default) each hook uses b2-simulator's control plane (``docs/CONTRACT.md``
+in backblaze-labs/b2-simulator), so the SDK meets the condition over real HTTP. In a test marked
+``rawsimulator``, or with ``--rawsimulator``, it uses ``RawSimulator``'s own test methods.
 """
 
 from __future__ import annotations
@@ -30,7 +30,7 @@ UPLOAD_ENDPOINT = 'b2_upload_file'
 DOWNLOAD_ENDPOINTS = ('b2_download_file_by_id', 'b2_download_file_by_name')
 # b2-simulator's default authTokenTtlMs (24 h); the harness never changes it.
 AUTH_TOKEN_TTL_MS = 24 * 60 * 60 * 1000
-# Under --b2-simulator an upload times out after this many seconds, and the server holds the
+# On b2-simulator an upload times out after this many seconds, and the server holds the
 # request for STALL_MS before it answers.
 UPLOAD_TIMEOUT_SECONDS = 0.5
 STALL_MS = 1500
