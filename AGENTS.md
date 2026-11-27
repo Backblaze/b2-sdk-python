@@ -118,3 +118,4 @@ Each line comes from recurring review feedback on this repository.
 Run the local CI commands above and paste the tail of their output. If a test fails, fix the code, not
 the test. Say which apivers and Python versions you ran, and list any integration or `.sdkharness` checks
 you ran and any you could not.
+The `verify` skill in [.claude/skills/verify/SKILL.md](.claude/skills/verify/SKILL.md) wraps these commands.
