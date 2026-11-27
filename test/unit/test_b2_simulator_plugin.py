@@ -143,10 +143,12 @@ def test_tests_outside_the_unit_suite_need_no_checkout(tmp_path):
     assert '1 passed' in completed.stdout
 
 
-def test_the_whole_test_directory_still_collects():
+def test_the_whole_test_directory_still_collects(pytestconfig):
     # pytest refuses `pytest_plugins` in a conftest below the top level when it collects `test`.
+    # The run collects in this run's mode, so a --rawsimulator run needs no checkout here either.
+    mode = ['--rawsimulator'] if pytestconfig.getoption('--rawsimulator') else []
     completed = subprocess.run(
-        [sys.executable, '-m', 'pytest', '--co', '-q', '-p', 'no:cacheprovider', 'test'],
+        [sys.executable, '-m', 'pytest', '--co', '-q', '-p', 'no:cacheprovider', *mode, 'test'],
         cwd=ROOT,
         stdin=subprocess.DEVNULL,
         capture_output=True,
