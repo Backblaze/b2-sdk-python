@@ -27,6 +27,7 @@
 ## Contributing and testing
 
 - [Contributing](https://github.com/Backblaze/b2-sdk-python/blob/master/CONTRIBUTING.md): Find contribution and testing guidance.
+- [Contributor instructions](https://github.com/Backblaze/b2-sdk-python/blob/master/AGENTS.md): Find commands, conventions and recurring review findings.
 
 ## Optional
 
