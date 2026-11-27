@@ -23,7 +23,7 @@ from ..scan.path import B2Path
 from ..sync.report import ProgressReport, SyncReport
 from ..transfer.outbound.outbound_source import OutboundTransferSource
 from ..transfer.outbound.upload_source import UploadSourceLocalFile
-from ..utils.escape import escape_control_chars
+from ..utils.escape import escape_control_chars, unprintable_to_hex
 from .encryption_provider import AbstractSyncEncryptionSettingsProvider
 from .report import SyncFileReporter
 
@@ -57,7 +57,7 @@ class AbstractAction(metaclass=ABCMeta):
             self.do_report(bucket, reporter)
         except Exception as e:
             logger.exception('an exception occurred in a sync action')
-            reporter.error(str(self) + ': ' + repr(e) + ' ' + str(e))
+            reporter.error(unprintable_to_hex(f'{self}: {e!r} {e}'))
             raise  # Re-throw so we can identify failed actions
 
     @abstractmethod
