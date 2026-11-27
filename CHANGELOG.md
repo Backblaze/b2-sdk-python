@@ -9,6 +9,114 @@ upcoming release can be found in [changelog.d](changelog.d).
 
 <!-- towncrier release notes start -->
 
+## [2.13.6](https://github.com/Backblaze/b2-sdk-python/releases/tag/v2.13.6) - 2026-11-27
+
+
+### Fixed
+
+- Serialize account database schema migrations so concurrent SDK instances do not apply the same upgrade twice. ([#232](https://github.com/Backblaze/b2-sdk-python/issues/232))
+- Escape control characters in the remote file name printed when a sync action fails. ([#631](https://github.com/Backblaze/b2-sdk-python/issues/631))
+- Stream hashing now continues reading until the requested length or the true end of data. Previously a source that returned a short read before EOF could produce a checksum and length covering only a prefix, allowing a truncated body to be uploaded with a matching hash. ([#654](https://github.com/Backblaze/b2-sdk-python/issues/654))
+- Preserve destination-only paths during sync deletion when excluded by name or directory, or when any B2 version is excluded by a time policy. ([#736](https://github.com/Backblaze/b2-sdk-python/issues/736))
+- Accept matching percent-encoded SSE-C key identifiers in upload metadata without double encoding, while rejecting conflicting identifiers. Add request, encryption and Object Lock unit tests across the supported SDK interfaces.
+- Allow notification rules to be supplied as any iterable.
+- Allow stream range uploads with an unspecified length to read and calculate their size.
+- Allow the v0 bucket interface to unhide files.
+- Allow v0 and v1 clients to download files stored with a Content-Encoding.
+- Avoid replaying create-style JSON API calls after response timeouts, connection loss, or 5xx responses, including 503. Unlike the general [503 retry guidance](https://www.backblaze.com/docs/cloud-storage-integration-checklist), an uncertain create outcome is surfaced so callers can check server state before trying again. Replayable operations retain their retry policy; rate limits and proven connection-establishment failures are still retried.
+- Bound server-provided retry delays to between zero and five minutes.
+- Clear cached bucket names after deleting a bucket.
+- Compare the Pydantic major version numerically when detecting optional validation support.
+- Fix folder scans when an object has the same name as the source folder, preserving exact-object listing behavior. Ensure sync waits for queued actions to finish before returning a scheduling error.
+- Fix importing vendored or uninstalled copies of the SDK by using a fallback version when package metadata is unavailable.
+- Fix reading a chained stream when the size is omitted or None.
+- Fixed custom upload timestamps for multipart uploads and their resumption.
+- Fixed incorrect symlink loop detection when directories on different devices have the same inode number.
+- Fixed locale-dependent formatting of HTTP expiration dates.
+- Fixed sync download finalization and escaped control characters in sync completion messages.
+- Honor filters when listing an exact file name.
+- Map connection errors with missing exception arguments to B2 connection errors without raising IndexError.
+- Preserve destination versions when a sync replacement transfer fails.
+- Preserve existing credentials and bucket caches when authorization is rejected because a restricted bucket no longer exists.
+- Preserve the source content type when copying with header overrides and avoid inheriting an incorrect checksum for ranged copies.
+- Protect new account configuration directories, validate profile names, and close cached SQLite connections across threads.
+- Protect upload data in representations, close checksum streams, and validate local file range offsets.
+- Raise a clear error when saving a consumed download again, before modifying the destination.
+- Reading a range stream with a negative size no longer returns bytes past the end of the configured range.
+- Refresh pooled upload URLs when the authorization key changes, including when uploads or upload URL requests are in progress.
+- Reject incorrect upload checksums under Python optimization, cancel pending multipart work after a part fails, and avoid copying unbound upload buffers.
+- Reject local paths that resolve outside the sync root, Windows device names and streams, and ASCII control characters in file names.
+- Reject manually continuing an unfinished large file when an explicitly requested encryption, retention, or legal-hold setting differs from the unfinished file. Omitted settings are not compared.
+- Restore the raw simulator encryption-check flag after an exception inside `dont_check_encryption`, so later simulator checks are not left disabled (affects the test model only).
+- Show the returned bucket name in the assertion message when bucket creation returns a different name.
+- Simplify and clarify the error messages raised for concurrent-upload responses.
+- The session no longer turns `EmailNotVerified` and `NoPaymentHistory` into a plain `Unauthorized`, so uploads fail right away instead of being retried.
+- Treat Bucket.upload min_part_size as a lower limit while retaining the account recommended upload part size.
+
+### Doc
+
+- Fix the Quick Start examples to match the public `b2sdk.v3` interface: `EncryptionSetting` rather than `EncryptionSettings`, `EncryptionKey(key_id=...)` rather than `id=`, both required mappings for `BasicSyncEncryptionSettingsProvider`, and `file_info=` rather than `file_infos=`. ([#584](https://github.com/Backblaze/b2-sdk-python/issues/584))
+- Use `update_file_retention` instead of `update_file_legal_hold` in the Quick Start file-lock examples that pass a `FileRetentionSetting`. ([#585](https://github.com/Backblaze/b2-sdk-python/issues/585))
+- Fix the Advanced usage patterns guide to reference `UploadSourceLocalFile` rather than the nonexistent `LocalUploadSource`, and to call `bucket.create_file` rather than an undefined `planner` object. ([#586](https://github.com/Backblaze/b2-sdk-python/issues/586))
+- Remove the nonexistent `deploy` Nox session from the Contributors Guide and describe how releases are actually published by the Continuous Delivery workflow. ([#588](https://github.com/Backblaze/b2-sdk-python/issues/588))
+- Correct the stale CI test matrix description in the contributor guides, which claimed eight Python versions instead of the currently supported set. ([#589](https://github.com/Backblaze/b2-sdk-python/issues/589))
+- Correct the Installation Guide's development-install instructions, which told readers to check out the repository and then install the published package from PyPI instead of their local checkout. ([#590](https://github.com/Backblaze/b2-sdk-python/issues/590))
+- Fix typos in the Advanced usage patterns guide and remove an outdated time-relative claim about the library's age from the overview. ([#591](https://github.com/Backblaze/b2-sdk-python/issues/591))
+- Document how to choose a location for a new test in the Contributors Guide, covering the shared unit directories, the per-interface `v0`-`v3` directories, `v_all`, integration tests, the `apiver` marker, and a checklist for changes to `b2sdk/_internal`. ([#592](https://github.com/Backblaze/b2-sdk-python/issues/592))
+- Expand the release guide into a maintainer runbook covering prerequisites, the changelog build, the commit/CI/tag sequence, what the Continuous Delivery workflow does, post-release verification, and recovery before and after a tag is pushed. ([#593](https://github.com/Backblaze/b2-sdk-python/issues/593))
+- Add a task-oriented replication guide covering setup, required application-key capabilities, per-file replication status, monitoring and how to read a scan report, plus API reference pages for the public replication classes. ([#595](https://github.com/Backblaze/b2-sdk-python/issues/595))
+- Consolidate contributor guidance into the published Contributors Guide, and reduce `CONTRIBUTING.md` to a short entry point that links to it, so the two copies can no longer drift apart. ([#599](https://github.com/Backblaze/b2-sdk-python/issues/599))
+- Resolve the embedded documentation TODOs: drop the obsolete ones, make the "Why use b2sdk?" list consistent and linked, and document the progress reporters and the exception hierarchy properly. ([#601](https://github.com/Backblaze/b2-sdk-python/issues/601))
+- Add a writing style guide for SDK documentation and docstrings. ([#741](https://github.com/Backblaze/b2-sdk-python/issues/741))
+- Add a documentation index for SDK entry points. ([#742](https://github.com/Backblaze/b2-sdk-python/issues/742))
+- Add a link to the B2 Model Context Protocol server in SDK documentation. ([#743](https://github.com/Backblaze/b2-sdk-python/issues/743))
+- Add a guide to the SDK test levels and verification practices. ([#744](https://github.com/Backblaze/b2-sdk-python/issues/744))
+- Corrected bucket and large-file API docstrings to match their behavior. ([#745](https://github.com/Backblaze/b2-sdk-python/issues/745))
+- Correct the sync and scan docstrings to match their current behavior. ([#746](https://github.com/Backblaze/b2-sdk-python/issues/746))
+- Correct quick start and tutorial examples for the v3 API. ([#763](https://github.com/Backblaze/b2-sdk-python/issues/763))
+- Correct documentation for application keys, unbound uploads, and streamed concatenation. ([#764](https://github.com/Backblaze/b2-sdk-python/issues/764))
+- Fix the `create_file`, `create_file_stream`, `concatenate` and `concatenate_stream` examples in the advanced usage guide: remove the `prioritize`, `large_file_callback` and `auto_continue` parameters that do not exist, use `continue_large_file_id`, and pass `file_info` by keyword. ([#780](https://github.com/Backblaze/b2-sdk-python/issues/780))
+- Link the testing guide, the writing style guide, the API compatibility page and the glossary from `llms.txt`, and link the testing guide, the writing style guide and `llms.txt` from the README. ([#782](https://github.com/Backblaze/b2-sdk-python/issues/782))
+- Add a guide for migrating from `b2sdk.v2` to `b2sdk.v3`. ([#783](https://github.com/Backblaze/b2-sdk-python/issues/783))
+- Correct the errors and retries guide: upload data requests are sent once by the HTTP layer, and only the upload manager retries a failed upload. ([#785](https://github.com/Backblaze/b2-sdk-python/issues/785))
+- Add `AGENTS.md` and `CLAUDE.md` with commands, architecture, conventions and recurring review findings for coding agents and new contributors.
+- Add a guide to SDK exception handling, HTTP retries, and upload retries.
+- Correct the release date, support guidance, and installation instructions.
+- Document account info stores and account authorization.
+- Fix repeated words in comments and docstrings.
+- Improve the wording of the installation, quick start, and tutorial guides.
+- Improve the writing style in the replication guide, API interface guide, glossary, README, and support instructions.
+- Improve wording in the advanced usage and server-side encryption guides.
+- Rewrite flagged long and passive sentences in the advanced usage guide to follow the writing style.
+- State explicitly that being importable from a versioned namespace such as `b2sdk.v3` is not a compatibility promise, and document how to tell whether a name is public, internal, or unclassified.
+
+### Infrastructure
+
+- Account for the Windows long-path prefix when checking paths through internal symlinks and symlinked local roots in the unit tests.
+- Add a SECURITY.md describing the coordinated vulnerability-disclosure policy.
+- Add a `verify` skill that runs the local nox gate and explains what each stage failure means.
+- Add a static test that checks the `nox` sessions and relative paths named in `AGENTS.md`, `CONTRIBUTING.md` and the agent skills exist.
+- Add regression tests for known defects; tests of defects that are still present are strict expected failures marked `known_defect` (run them with `pytest --runxfail -m known_defect`).
+- Add shared unit tests for streaming response failures, encoded bytes, Unicode decoding, consumed streams, and simulator-only authorization helpers.
+- Add shared-interface unit coverage for malformed range headers, HTTP error parsing, retry attempt budgets, and capped retry backoff.
+- Add unit tests asserting that the signing secret and custom header value of a notification rule never appear in the SDK DEBUG trace or in exception text raised by `Bucket.set_notification_rules`, on the pre-authorization, API error and validation error paths (the success path is already covered by `test_notification_rule_tracing.py`).
+- Add unit tests proving that every outbound HTTP entry point of `B2Http` stops waiting on an unresponsive local server within its timeout and raises `B2RequestTimeout`.
+- Check in CI that every import shown in the documentation examples (`doc/source/*.rst`) resolves against the public `b2sdk` API, and add direct unit tests for the planner's `_filter_out_none` helper.
+- Compare the symlinked-root scan test path by filesystem identity so it passes on Windows.
+- Drop an unused test import left in the bucket regression suite after two fixes merged into the same file, restoring the lint gate on master.
+- Emit individual JUnit cases for pytest and unittest subtests so report totals match their case entries, including failures and skips.
+- Keep JUnit case totals consistent when a failed subtest parent also has a teardown error. Preserve requested captured output on subtest cases while respecting passing-test logging settings. Leave interrupted reports unreconciled rather than manufacturing passing outcomes.
+- Keep draft pull request CI credential-free: skip bucket cleanup and SDK/CLI live tests while retaining unit and build checks.
+- Make the symlinked-root scan test compare resolved paths so it passes on Windows.
+- Pin workflow actions and require unit tests to pass before release.
+- Remove the stale C4 known-defect test demonstrators, whose quick-start and install-documentation defects are already fixed, so the static test suite no longer fails with XPASS(strict).
+- Remove unused known-defect test imports left after resolving several low-severity findings.
+- Replace community spelling, changelog-reading, and GitHub release actions with local commands, retaining commented fallbacks until a real workflow run verifies the replacements.
+- Require the B2_LIVE_TESTS_ENABLED repository variable to opt into live tests and bucket cleanup, including ready pull requests and master pushes.
+- Run checks for the support text and optional dependency installation as ordinary regressions now that the documentation defects are fixed.
+- Unmark the C30 and C59 known-defect regression tests now that both defects are fixed.
+
+
 ## [2.13.5](https://github.com/Backblaze/b2-sdk-python/releases/tag/v2.13.5) - 2026-11-17
 
 
