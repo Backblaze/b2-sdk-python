@@ -810,7 +810,8 @@ class Bucket(metaclass=B2TraceMeta):
                         value of ``recommended_upload_part_size`` is used. If that also is ``None``,
                         it will be determined automatically as "recommended upload size".
         :param read_size: size of a single read operation performed on the ``read_only_object``
-        :param unused_buffer_timeout_seconds: amount of time that a buffer can be idle before returning error
+        :param unused_buffer_timeout_seconds: maximum seconds to wait for a free buffer slot.
+                        If no slot becomes free, raise ``UnboundStreamBufferTimeout``.
         :param int,None custom_upload_timestamp: override object creation date, expressed as a number of milliseconds since epoch
         :param str,None cache_control: an optional cache control setting. Syntax based on the section 14.9 of RFC 2616.
             Example string value: 'public, max-age=86400, s-maxage=3600, no-transform'.

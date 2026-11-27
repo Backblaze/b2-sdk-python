@@ -87,7 +87,7 @@ For more information about ``concatenate`` please see :meth:`b2sdk.v3.Bucket.con
 Concatenate files of known size (streamed version)
 ==================================================
 
-:meth:`b2sdk.v3.Bucket.concatenate` accepts an iterable of upload sources (either local or remote). The operation would not be planned ahead so it supports very large output objects, but continuation is only possible for local only sources and provided unfinished large file id. See more about continuation in :meth:`b2sdk.v3.Bucket.create_file` paragraph about continuation.
+:meth:`b2sdk.v3.Bucket.concatenate_stream` accepts an iterable of upload sources (either local or remote). The operation would not be planned ahead so it supports very large output objects, but continuation is only possible for local only sources and provided unfinished large file id. See more about continuation in :meth:`b2sdk.v3.Bucket.create_file` paragraph about continuation.
 
 .. code-block:: python
 

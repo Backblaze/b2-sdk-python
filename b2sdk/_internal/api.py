@@ -526,7 +526,7 @@ class B2Api(metaclass=B2TraceMeta):
         :param capabilities: a list of capabilities
         :param key_name: a name of a key
         :param valid_duration_seconds: key auto-expire time after it is created, in seconds, or ``None`` to not expire
-        :param bucket_id: a bucket ID to restrict the key to, or ``None`` to not restrict
+        :param bucket_ids: a list of bucket IDs to restrict the key to, or ``None`` for no bucket restriction
         :param name_prefix: a remote filename prefix to restrict the key to or ``None`` to not restrict
         """
         account_id = self.account_info.get_account_id()
