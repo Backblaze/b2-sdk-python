@@ -31,6 +31,7 @@ from apiver_deps_exception import (
     B2ConnectionError,
     B2Error,
     B2RequestTimeoutDuringUpload,
+    BadRequest,
     BucketIdNotFound,
     Conflict,
     DestinationDirectoryDoesntAllowOperation,
@@ -48,6 +49,7 @@ from apiver_deps_exception import (
     RestrictedBucketMissing,
     SourceReplicationConflict,
     SSECKeyError,
+    Unauthorized,
     UnsatisfiableRange,
     WrongEncryptionSettingForFileWrite,
 )
@@ -138,11 +140,17 @@ SSE_C_AES_2_NO_SECRET = EncryptionSetting(
     algorithm=EncryptionAlgorithm.AES256,
     key=EncryptionKey(secret=None, key_id='some-id-2'),
 )
+# B2 refuses a retention date in the past; one day ahead outlives any test run.
+FUTURE_RETAIN_UNTIL = int(time.time() * 1000) + 24 * 60 * 60 * 1000
+
 SSE_C_AES_FROM_SERVER = EncryptionSetting(
     mode=EncryptionMode.SSE_C,
     algorithm=EncryptionAlgorithm.AES256,
     key=EncryptionKey(key_id=None, secret=None),
 )
+# B2 needs at least one action in a lifecycle rule.
+LIFECYCLE_RULE = {'fileNamePrefix': 'is_life', 'daysFromHidingToDeleting': 1}
+
 REPLICATION = ReplicationConfiguration(
     rules=[
         ReplicationRule(
@@ -366,6 +374,13 @@ class TestCaseWithBucket(TestBase):
     def bucket_ls(self, *args, show_versions=False, **kwargs):
         return bucket_ls(self.bucket, *args, show_versions=show_versions, **kwargs)
 
+    def _use_file_lock_bucket(self):
+        """Point the test at a new Object Lock bucket: B2 refuses retention and legal hold elsewhere."""
+        self.bucket = self.api.create_bucket(
+            self.bucket_name + '-file-lock', 'allPublic', is_file_lock_enabled=True
+        )
+        self.bucket_id = self.bucket.id_
+
     def assertBucketContents(self, expected, *args, **kwargs):
         """
         *args and **kwargs are passed to self.bucket_ls()
@@ -458,9 +473,9 @@ class TestListParts(TestCaseWithBucket):
             self.bucket_id, file1.file_id, UploadSourceBytes(content), 3, large_file_upload_state
         ).result()
         expected_parts = [
-            Part('9999', 1, 11, content_sha1),
-            Part('9999', 2, 11, content_sha1),
-            Part('9999', 3, 11, content_sha1),
+            Part(file1.file_id, 1, 11, content_sha1),
+            Part(file1.file_id, 2, 11, content_sha1),
+            Part(file1.file_id, 3, 11, content_sha1),
         ]
         self.assertEqual(expected_parts, list(self.bucket.list_parts(file1.file_id, batch_size=1)))
 
@@ -526,7 +541,8 @@ class TestListUnfinished(TestCaseWithBucket):
 class TestGetFileInfo(TestCaseWithBucket):
     def test_version_by_name(self):
         data = b'hello world'
-        a_id = self.bucket.upload_bytes(data, 'a').id_
+        uploaded = self.bucket.upload_bytes(data, 'a')
+        a_id = uploaded.id_
 
         info = self.bucket.get_file_info_by_name('a')
 
@@ -534,11 +550,12 @@ class TestGetFileInfo(TestCaseWithBucket):
             self.assertIsInstance(info, VFileVersionInfo)
         else:
             self.assertIsInstance(info, DownloadVersion)
+        # The upload sent b2/x-auto; B2 stores the type it resolved, which the upload answer reports.
         expected = (
             a_id,
             'a',
             11,
-            'b2/x-auto',
+            uploaded.content_type,
             'SSE-B2',
             NO_RETENTION_FILE_SETTING,
             LegalHold.UNSET,
@@ -560,7 +577,7 @@ class TestGetFileInfo(TestCaseWithBucket):
         )
         data = b'hello world'
         legal_hold = LegalHold.ON
-        file_retention = FileRetentionSetting(RetentionMode.COMPLIANCE, 100)
+        file_retention = FileRetentionSetting(RetentionMode.COMPLIANCE, FUTURE_RETAIN_UNTIL)
 
         bucket.upload_bytes(data, 'a', file_retention=file_retention, legal_hold=legal_hold)
 
@@ -598,12 +615,14 @@ class TestGetFileInfo(TestCaseWithBucket):
 
     def test_version_by_id(self):
         data = b'hello world'
-        b_id = self.bucket.upload_bytes(data, 'b').id_
+        uploaded = self.bucket.upload_bytes(data, 'b')
+        b_id = uploaded.id_
 
         info = self.bucket.get_file_info_by_id(b_id)
 
         self.assertIsInstance(info, VFileVersionInfo)
-        expected = (b_id, 'b', 11, 'upload', 'b2/x-auto', 'SSE-B2')
+        # The upload sent b2/x-auto; B2 stores the type it resolved, which the upload answer reports.
+        expected = (b_id, 'b', 11, 'upload', uploaded.content_type, 'SSE-B2')
         actual = (
             info.id_,
             info.file_name,
@@ -672,7 +691,8 @@ class TestLs(TestCaseWithBucket):
 
     @pytest.mark.apiver(to_ver=1)
     def test_started_large_file(self):
-        self.bucket.start_large_file('hello.txt')
+        # An explicit content type: B2 refuses the null that content_type=None sends.
+        self.bucket.start_large_file('hello.txt', 'b2/x-auto')
         expected = [('hello.txt', 0, 'start', None)]
         self.assertBucketContents(expected, '', show_versions=True)
 
@@ -704,16 +724,21 @@ class TestLs(TestCaseWithBucket):
         self.assertBucketContents(expected, '', show_versions=True)
 
     def test_delete_file_version_bypass_governance(self):
+        self._use_file_lock_bucket()
         data = b'hello world'
 
         file_id = self.bucket.upload_bytes(
             data,
             'hello.txt',
-            file_retention=FileRetentionSetting(RetentionMode.GOVERNANCE, int(time.time()) + 100),
+            file_retention=FileRetentionSetting(RetentionMode.GOVERNANCE, FUTURE_RETAIN_UNTIL),
         ).id_
 
-        with pytest.raises(AccessDenied):
+        # Real B2 refuses this delete with 401 access_denied (the b2_delete_file_version error
+        # table), which the SDK raises as Unauthorized; RawSimulator raises AccessDenied.
+        with pytest.raises((AccessDenied, Unauthorized)) as refusal:
             self.bucket.delete_file_version(file_id, 'hello.txt')
+        if isinstance(refusal.value, Unauthorized):
+            assert refusal.value.code == 'access_denied'
 
         self.bucket.delete_file_version(file_id, 'hello.txt', bypass_governance=True)
         self.assertBucketContents([], '', show_versions=True)
@@ -1392,8 +1417,10 @@ class TestCopyFile(TestCaseWithBucket):
             metadata_directive=MetadataDirectiveMode.REPLACE,
             content_type='text/plain',
         )
+        # The source was uploaded with b2/x-auto; B2 stores the type it resolved.
+        source_content_type = self.bucket.get_file_info_by_name('hello.txt').content_type
         expected = [
-            ('hello.txt', 11, 'upload', 'b2/x-auto', None),
+            ('hello.txt', 11, 'upload', source_content_type, None),
             ('hello_new.txt', 11, 'upload', 'text/plain', None),
         ]
         actual = [
@@ -1444,6 +1471,7 @@ class TestCopyFile(TestCaseWithBucket):
         self.assertBucketContents(expected, '', show_versions=True)
 
     def test_copy_retention(self):
+        self._use_file_lock_bucket()
         for data in [self._make_data(self.simulator.MIN_PART_SIZE * 3), b'hello']:
             for length in [None, len(data)]:
                 with self.subTest(real_length=len(data), length=length):
@@ -1452,12 +1480,14 @@ class TestCopyFile(TestCaseWithBucket):
                         file_id,
                         'copied_file',
                         length=length,
-                        file_retention=FileRetentionSetting(RetentionMode.COMPLIANCE, 100),
+                        file_retention=FileRetentionSetting(
+                            RetentionMode.COMPLIANCE, FUTURE_RETAIN_UNTIL
+                        ),
                         legal_hold=LegalHold.ON,
                         max_part_size=400,
                     )
                     self.assertEqual(
-                        FileRetentionSetting(RetentionMode.COMPLIANCE, 100),
+                        FileRetentionSetting(RetentionMode.COMPLIANCE, FUTURE_RETAIN_UNTIL),
                         resulting_file_version.file_retention,
                     )
                     self.assertEqual(LegalHold.ON, resulting_file_version.legal_hold)
@@ -1771,30 +1801,79 @@ class TestBucketEncryptionOmitted(TestCaseWithBucket):
 
 
 class TestUpdate(TestCaseWithBucket):
+    def _replication_with_real_keys(self):
+        """REPLICATION's shape, with the buckets and keys B2 checks created for real."""
+        destination_ids = [
+            self.api.create_bucket(f'{self.bucket_name}-replica-{n}', 'allPrivate').id_
+            for n in (1, 2)
+        ]
+        source_key_ids = [
+            create_key(self.api, ['readFiles'], f'replication-source-{n}').id_ for n in (1, 2, 3)
+        ]
+        destination_key_ids = [
+            create_key(self.api, ['writeFiles'], f'replication-destination-{n}').id_ for n in (1, 2)
+        ]
+        return ReplicationConfiguration(
+            rules=[
+                ReplicationRule(
+                    destination_bucket_id=destination_ids[0],
+                    name='replication-us-west',
+                ),
+                ReplicationRule(
+                    destination_bucket_id=destination_ids[1],
+                    name='replication-us-west-2',
+                    file_name_prefix='replica/',
+                    is_enabled=False,
+                    priority=255,
+                ),
+            ],
+            source_key_id=source_key_ids[0],
+            source_to_destination_key_mapping={
+                source_key_ids[1]: destination_key_ids[0],
+                source_key_ids[2]: destination_key_ids[1],
+            },
+        )
+
     def test_update(self):
+        # B2 refuses a default retention on a bucket without Object Lock, CORS rules that are
+        # not a list of rules, a lifecycle rule without an action, and replication with keys or
+        # buckets that do not exist.
+        self._use_file_lock_bucket()
+        replication = self._replication_with_real_keys()
+        cors_rules = [
+            {
+                'corsRuleName': 'downloadFromAnyOrigin',
+                'allowedOrigins': ['https'],
+                'allowedOperations': ['b2_download_file_by_name'],
+                'maxAgeSeconds': 3600,
+            }
+        ]
+        revision_before = self.bucket.revision
         result = self.bucket.update(
             bucket_type='allPrivate',
             bucket_info={'info': 'o'},
-            cors_rules={'andrea': 'corr'},
-            lifecycle_rules=[{'fileNamePrefix': 'is_life'}],
+            cors_rules=cors_rules,
+            lifecycle_rules=[LIFECYCLE_RULE],
             default_server_side_encryption=SSE_B2_AES,
             default_retention=BucketRetentionSetting(
                 RetentionMode.COMPLIANCE, RetentionPeriod(years=7)
             ),
-            replication=REPLICATION,
+            replication=replication,
         )
         if apiver_deps.V <= 1:
             self.maxDiff = None
             with suppress(KeyError):
                 del result['replicationConfiguration']
+            # The bucket keeps the options it was created with (B2 sends a list, RawSimulator a set).
+            self.assertEqual(self.bucket.options_set, set(result.pop('options')))
             self.assertEqual(
                 {
-                    'accountId': 'account-0',
-                    'bucketId': 'bucket_0',
+                    'accountId': self.account_info.get_account_id(),
+                    'bucketId': self.bucket.id_,
                     'bucketInfo': {'info': 'o'},
-                    'bucketName': 'my-bucket',
+                    'bucketName': self.bucket.name,
                     'bucketType': 'allPrivate',
-                    'corsRules': {'andrea': 'corr'},
+                    'corsRules': cors_rules,
                     'defaultServerSideEncryption': {
                         'isClientAuthorizedToRead': True,
                         'value': {'algorithm': 'AES256', 'mode': 'SSE-B2'},
@@ -1806,12 +1885,11 @@ class TestUpdate(TestCaseWithBucket):
                                 'mode': 'compliance',
                                 'period': {'unit': 'years', 'duration': 7},
                             },
-                            'isFileLockEnabled': None,
+                            'isFileLockEnabled': True,
                         },
                     },
-                    'lifecycleRules': [{'fileNamePrefix': 'is_life'}],
-                    'options': set(),
-                    'revision': 2,
+                    'lifecycleRules': [LIFECYCLE_RULE],
+                    'revision': revision_before + 1,
                 },
                 result,
             )
@@ -1822,14 +1900,15 @@ class TestUpdate(TestCaseWithBucket):
                 'name': self.bucket.name,
                 'type_': 'allPrivate',
                 'bucket_info': {'info': 'o'},
-                'cors_rules': {'andrea': 'corr'},
-                'lifecycle_rules': [{'fileNamePrefix': 'is_life'}],
-                'options_set': set(),
+                'cors_rules': cors_rules,
+                'lifecycle_rules': [LIFECYCLE_RULE],
+                # the options the bucket was created with
+                'options_set': self.bucket.options_set,
                 'default_server_side_encryption': SSE_B2_AES,
                 'default_retention': BucketRetentionSetting(
                     RetentionMode.COMPLIANCE, RetentionPeriod(years=7)
                 ),
-                'replication': REPLICATION,
+                'replication': replication,
             }
             for attr_name, attr_value in assertions_mapping.items():
                 self.maxDiff = None
@@ -1851,21 +1930,21 @@ class TestUpdate(TestCaseWithBucket):
     def test_update_if_revision_is(self):
         current_revision = self.bucket.revision
         self.bucket.update(
-            lifecycle_rules=[{'fileNamePrefix': 'is_life'}],
+            lifecycle_rules=[LIFECYCLE_RULE],
             if_revision_is=current_revision,
         )
         updated_bucket = self.api.get_bucket_by_name(self.bucket.name)
-        self.assertEqual([{'fileNamePrefix': 'is_life'}], updated_bucket.lifecycle_rules)
+        self.assertEqual([LIFECYCLE_RULE], updated_bucket.lifecycle_rules)
 
         # a stale revision must be rejected, and the rejected update must not be applied
         with self.assertRaises(Conflict):
             self.bucket.update(
-                lifecycle_rules=[{'fileNamePrefix': 'stale_update'}],
+                lifecycle_rules=[{'fileNamePrefix': 'stale_update', 'daysFromHidingToDeleting': 1}],
                 if_revision_is=current_revision,  # this is now the old revision
             )
 
         not_updated_bucket = self.api.get_bucket_by_name(self.bucket.name)
-        self.assertEqual([{'fileNamePrefix': 'is_life'}], not_updated_bucket.lifecycle_rules)
+        self.assertEqual([LIFECYCLE_RULE], not_updated_bucket.lifecycle_rules)
 
     def test_is_file_lock_enabled(self):
         assert not self.bucket.is_file_lock_enabled
@@ -1925,8 +2004,9 @@ class TestUpload(TestCaseWithBucket):
         self._check_large_file_sha1('file1', None)
 
     def test_upload_bytes_file_retention(self):
+        self._use_file_lock_bucket()
         data = b'hello world'
-        retention = FileRetentionSetting(RetentionMode.COMPLIANCE, 150)
+        retention = FileRetentionSetting(RetentionMode.COMPLIANCE, FUTURE_RETAIN_UNTIL)
         file_info = self.bucket.upload_bytes(
             data, 'file1', file_retention=retention, legal_hold=LegalHold.ON
         )
@@ -2108,12 +2188,21 @@ class TestUpload(TestCaseWithBucket):
             path = os.path.join(d, 'file123')
             data = b'hello world'
             write_file(path, data)
-            with self.assertRaises(FileSha1Mismatch):
+            # B2 refuses the upload with 400 bad_request "Sha1 did not match data received"
+            # (b2_upload_file), which the SDK raises as BadRequest; RawSimulator raises
+            # FileSha1Mismatch.
+            with pytest.raises((FileSha1Mismatch, BadRequest)) as refusal:
                 self.bucket.upload_local_file(
                     path,
                     'file123',
                     sha1_sum='abcd' * 10,
                 )
+            if isinstance(refusal.value, BadRequest):
+                assert (refusal.value.code, refusal.value.message) == (
+                    'bad_request',
+                    'Sha1 did not match data received',
+                )
+            self.assertBucketContents([], '', show_versions=True)
 
     def test_upload_one_retryable_error(self):
         self.simulator.set_upload_errors([CanRetry(True)])
@@ -2316,8 +2405,9 @@ class TestUpload(TestCaseWithBucket):
     def _start_large_file(self, file_name, file_info=None):
         if file_info is None:
             file_info = {}
+        # B2 refuses a null contentType on b2_start_large_file; use the SDK's default upload type.
         large_file_info = self.simulator.start_large_file(
-            self.api_url, self.account_auth_token, self.bucket_id, file_name, None, file_info
+            self.api_url, self.account_auth_token, self.bucket_id, file_name, 'b2/x-auto', file_info
         )
         return large_file_info['fileId']
 
@@ -2502,6 +2592,8 @@ class TestCreateFileStream(TestConcatenate):
 
 
 class TestCustomTimestamp(TestCaseWithBucket):
+    # Custom upload timestamps are a restricted B2 feature; the account must have it enabled.
+    @pytest.mark.b2_simulator_config(customUploadTimestampsEnabled=True)
     def test_custom_timestamp(self):
         data = b'hello world'
 
@@ -2662,8 +2754,9 @@ class DownloadTests(DownloadTestsBase):
         expected = {
             'contentLength': 19,
             'contentSha1': '893e69ff0109f3459c4243013b3de8b12b41a30e',
-            'contentType': 'b2/x-auto',
-            'fileId': '9999',
+            # The upload sent b2/x-auto; B2 stores the type it resolved.
+            'contentType': self.file_version.content_type,
+            'fileId': self.file_version.id_,
             'fileInfo': {},
             'fileName': 'file1',
         }
@@ -3317,8 +3410,19 @@ class DecodeTests(DecodeTestsBase, TestCaseWithBucket):
         assert download_version.file_name == 'test.txt%253Ffoo%253Dbar'
 
 
+class _InProcessRawSimulator(RawSimulator):
+    """
+    Keeps a test on the in-process RawSimulator under --b2-simulator.
+
+    At apiver v2 the SDK authorizes at B2 API v3 with a key that b2_create_key (v3) restricted to
+    one bucket. b2-simulator v0.6.0 refuses every bucket-restricted key at v3, including one made
+    at v3; serving keys made at v3 is a later b2-simulator change.
+    """
+
+
 class TestAuthorizeForBucket(TestCaseWithBucket):
     CACHE_CLASS = InMemoryCache
+    RAW_SIMULATOR_CLASS = _InProcessRawSimulator if apiver_deps.V == 2 else RawSimulator
 
     @pytest.mark.apiver(from_ver=2)
     def test_authorize_for_bucket_ensures_cache(self):

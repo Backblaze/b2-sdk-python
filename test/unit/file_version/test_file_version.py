@@ -29,7 +29,7 @@ from apiver_deps import (
     RawSimulator,
     RetentionMode,
 )
-from apiver_deps_exception import AccessDenied, FileNotPresent
+from apiver_deps_exception import AccessDenied, FileNotPresent, Unauthorized
 
 from test.unit.b2_simulator import raw_api_class
 
@@ -37,6 +37,9 @@ if apiver_deps.V <= 1:
     from apiver_deps import FileVersionInfo as VFileVersion
 else:
     from apiver_deps import FileVersion as VFileVersion
+
+# B2 refuses a retention date in the past; one day ahead outlives any test run.
+FUTURE_RETAIN_UNTIL = int(time.time() * 1000) + 24 * 60 * 60 * 1000
 
 
 class TestFileVersion:
@@ -103,7 +106,7 @@ class TestFileVersion:
                 'b2-content-encoding': 'text',
             },
             encryption=encryption,
-            file_retention=FileRetentionSetting(RetentionMode.GOVERNANCE, 100),
+            file_retention=FileRetentionSetting(RetentionMode.GOVERNANCE, FUTURE_RETAIN_UNTIL),
             legal_hold=LegalHold.ON,
             cache_control='public, max-age=86400',
         )
@@ -142,7 +145,7 @@ class TestFileVersion:
         assert new_download_version.legal_hold == LegalHold.ON
 
     def test_update_retention(self):
-        new_retention = FileRetentionSetting(RetentionMode.COMPLIANCE, 100)
+        new_retention = FileRetentionSetting(RetentionMode.COMPLIANCE, FUTURE_RETAIN_UNTIL)
 
         new_file_version = self.file_version.update_retention(new_retention)
         assert isinstance(new_file_version, VFileVersion)
@@ -163,11 +166,15 @@ class TestFileVersion:
         locked_file_version = self.bucket.upload_bytes(
             b'nothing',
             'test_file_with_governance',
-            file_retention=FileRetentionSetting(RetentionMode.GOVERNANCE, int(time.time()) + 100),
+            file_retention=FileRetentionSetting(RetentionMode.GOVERNANCE, FUTURE_RETAIN_UNTIL),
         )
 
-        with pytest.raises(AccessDenied):
+        # Real B2 refuses this delete with 401 access_denied (the b2_delete_file_version error
+        # table), which the SDK raises as Unauthorized; RawSimulator raises AccessDenied.
+        with pytest.raises((AccessDenied, Unauthorized)) as refusal:
             locked_file_version.delete()
+        if isinstance(refusal.value, Unauthorized):
+            assert refusal.value.code == 'access_denied'
 
         locked_file_version.delete(bypass_governance=True)
         with pytest.raises(FileNotPresent):
